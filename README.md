@@ -1,5 +1,9 @@
 # hacker-cb's Claude Code plugins
 
+[![Validate](https://github.com/hacker-cb/claude-code-plugins/actions/workflows/validate.yml/badge.svg)](https://github.com/hacker-cb/claude-code-plugins/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/hacker-cb/claude-code-plugins?sort=semver)](https://github.com/hacker-cb/claude-code-plugins/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/hacker-cb/claude-code-plugins)](LICENSE)
+
 A personal [Claude Code](https://code.claude.com/docs/en/overview) **plugin marketplace** for skills, rules and workflows. Install a plugin straight into Claude Code, or grab any single skill as a standalone `.skill` file.
 
 > Marketplace name: **`hacker-cb-plugins`**
