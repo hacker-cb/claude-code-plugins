@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Package & publish .skill files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Package skills into .skill files
+        run: bash scripts/package-skills.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: skills
+          path: dist/*.skill
+          if-no-files-found: error
+
+      # On a version tag (v*), attach the .skill files to the GitHub Release.
+      - name: Attach .skill files to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*.skill
+          fail_on_unmatched_files: true
+          generate_release_notes: true

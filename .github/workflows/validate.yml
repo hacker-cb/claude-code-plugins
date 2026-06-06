@@ -1,0 +1,58 @@
+name: Validate
+
+on:
+  pull_request:
+    paths:
+      - '.claude-plugin/**'
+      - 'plugins/**'
+      - 'scripts/**'
+      - '.github/workflows/validate.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.claude-plugin/**'
+      - 'plugins/**'
+      - 'scripts/**'
+      - '.github/workflows/validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate marketplace & plugins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Fast, deterministic gate (jq + naming convention). No auth needed.
+      - name: Structural validation
+        run: bash scripts/validate.sh
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      # Authoritative schema + frontmatter validation via the official CLI.
+      - name: Official plugin validation (claude CLI)
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate .
+          claude plugin validate ./plugins/hcb-github
+
+  package:
+    name: Build .skill artifacts (preview)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Package skills
+        run: bash scripts/package-skills.sh
+
+      - name: Upload .skill artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: skills
+          path: dist/*.skill
+          if-no-files-found: error
