@@ -6,9 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Version tag to create (annotated) and release, e.g. v0.1.0'
+        description: 'Version tag to create (annotated) and release, e.g. v1.2.3'
         required: true
-        default: v0.1.0
 
 permissions:
   contents: write
@@ -22,9 +21,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Manual run: create an annotated tag at the current commit and push it.
-      # (The runner is not behind the dev sandbox's git proxy, so it can push
-      # tags.) A direct `git push origin v*` still triggers the release below.
+      # Manual run: require a v-prefixed semver, then create an annotated tag at
+      # the current commit and push it. (The runner is not behind the dev
+      # sandbox's git proxy, so it can push tags.) A direct `git push origin v*`
+      # still triggers the release job below without these steps.
+      - name: Validate tag is semver
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+          if ! printf '%s' "$TAG" | grep -Eq "$semver"; then
+            echo "::error::Tag '$TAG' is not a valid v-prefixed semver (expected e.g. v1.2.3, v1.2.3-rc.1, v1.2.3+build.5)."
+            exit 1
+          fi
+          echo "Tag '$TAG' is valid semver."
+
       - name: Create annotated tag
         if: github.event_name == 'workflow_dispatch'
         env:
