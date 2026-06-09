@@ -15,9 +15,10 @@ marketplace.
 ## Configuration
 
 On enable, the plugin prompts for a few settings (stored in `settings.json` under
-`pluginConfigs.hcb-dev.options`). All are optional — the defaults reproduce the
-author's setup and can be changed any time via the `/plugin` menu or by editing
-`settings.json`.
+`pluginConfigs."hcb-dev@hacker-cb-plugins".options`). All are optional — the
+defaults reproduce the author's setup and can be changed any time via
+`/plugin configure hcb-dev@hacker-cb-plugins`, the `--config KEY=VALUE` flag at
+install, or by editing `settings.json`.
 
 | Setting | Default | What it controls |
 | --- | --- | --- |
