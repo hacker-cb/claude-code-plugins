@@ -15,6 +15,8 @@ Official docs: <https://code.claude.com/docs/en/plugins.md> ·
 
 ## Add a skill to an existing plugin
 
+> Author skills with the **skill-creator** methodology: draft per its Skill Writing Guide and tune the `description` for reliable triggering with its `run_loop.py`. On Claude Code web it's mounted at `/mnt/skills/examples/skill-creator`; otherwise pull it from Anthropic's public skills repo.
+
 1. Create `plugins/hcb-<domain>/skills/<skill-name>/SKILL.md`:
 
    ```markdown
@@ -58,7 +60,10 @@ Official docs: <https://code.claude.com/docs/en/plugins.md> ·
 
 ## Rules
 
-There is no separate "rules" component. Model a rule as a **knowledge skill**: a `SKILL.md` whose body is guidance rather than a step-by-step procedure. If it shouldn't clutter the `/` menu or be auto-invoked, add frontmatter `user-invocable: false` and/or `disable-model-invocation: true`.
+Two patterns, depending on whether the rule is task-triggered or always-on:
+
+- **Task-triggered rule** → a **knowledge skill**: a `SKILL.md` whose body is guidance rather than a step-by-step procedure. If it shouldn't clutter the `/` menu or be auto-invoked, add frontmatter `user-invocable: false` and/or `disable-model-invocation: true`.
+- **Always-on rule** (applies every session, e.g. a communication / language house style) → a `SessionStart` **hook**: `hooks/hooks.json` plus an executable script that prints the guidance to stdout. Make any per-user knobs **configurable** with `userConfig` in `plugin.json` — Claude Code prompts for them on enable, stores non-sensitive values in `settings.json` under `pluginConfigs.<plugin>.options`, and exports them to the hook as `CLAUDE_PLUGIN_OPTION_*`. See `plugins/hcb-dev` for a worked example.
 
 ## Before opening a PR
 
