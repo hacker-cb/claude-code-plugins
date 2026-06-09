@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "hcb-dev",
+  "description": "Personal developer baseline: per-scope language (chat / plan-spec notes / code comments / project docs) injected each session via a SessionStart hook and configured through plugin settings, plus skills for resolving dependency versions and pulling current library docs from Context7.",
+  "version": "0.1.0",
+  "author": {
+    "name": "hacker-cb",
+    "email": "pavel@sokolov.me"
+  },
+  "homepage": "https://github.com/hacker-cb/claude-code-plugins",
+  "repository": "https://github.com/hacker-cb/claude-code-plugins",
+  "license": "MIT",
+  "keywords": ["developer", "rules", "preferences", "i18n", "dependencies", "documentation", "workflow"],
+  "userConfig": {
+    "lang_chat": {
+      "type": "string",
+      "title": "Chat language",
+      "description": "Language for chat replies (e.g. Russian, English).",
+      "default": "Russian"
+    },
+    "lang_plans": {
+      "type": "string",
+      "title": "Plan/spec notes language",
+      "description": "Language for temporary plan/spec working notes.",
+      "default": "Russian"
+    },
+    "lang_comments": {
+      "type": "string",
+      "title": "Code comments language",
+      "description": "Language for code comments.",
+      "default": "English"
+    },
+    "lang_docs": {
+      "type": "string",
+      "title": "Project docs language",
+      "description": "Language for project documentation.",
+      "default": "English"
+    },
+    "use_emojis": {
+      "type": "boolean",
+      "title": "Use emojis in chat",
+      "description": "Add emojis to chat replies.",
+      "default": true
+    }
+  }
+}

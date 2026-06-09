@@ -16,6 +16,13 @@
       "description": "GitHub workflow skills: drive a PR from a finished branch all the way to merge — and more to come.",
       "category": "productivity",
       "tags": ["github", "pull-request", "ci", "review", "workflow"]
+    },
+    {
+      "name": "hcb-dev",
+      "source": "./plugins/hcb-dev",
+      "description": "Personal developer baseline: per-scope language (chat / plans / comments / docs) injected each session and configurable via plugin settings, plus dependency-versioning and Context7 library-docs skills.",
+      "category": "productivity",
+      "tags": ["developer", "rules", "preferences", "i18n", "dependencies", "documentation"]
     }
   ]
 }
