@@ -4,7 +4,8 @@ description: >-
   Drive a GitHub pull request from a finished feature branch all the way to a
   merged PR — renaming auto-generated branches, keeping the branch up to date
   with base, opening the PR, looping on fixes until CI is green and Copilot has
-  no Critical/Important findings left, auto-merging with the right strategy,
+  no Critical/Important findings left, then — only with the user's explicit
+  go-ahead — merging with the right strategy,
   monitoring the merge, and reporting. Use this skill whenever the user wants to
   "ship", "open a PR", "push this up", "get this merged", "drive the PR",
   "handle the review", "address Copilot comments", or otherwise move committed
@@ -32,9 +33,14 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 - Replying to Copilot review comments
 - Reading CI status and review findings
 
-Auto-merge is allowed once **CI is green AND there are no unresolved
-Critical/Important findings** — do not ask first in that case. Only stop and ask
-the user when:
+**Merging is the one action that is NOT autonomous.** Merge only when the user has
+explicitly authorized it — either their request itself asked to merge/ship (e.g.
+"ship it", "get this merged", "merge once it's green"), or they say yes when you
+ask. If they only asked to open or drive the PR, take it all the way to "ready to
+merge" — CI green, Critical/Important findings resolved — and then stop and ask
+(see Step 5). Never merge on your own initiative.
+
+Also stop and ask the user when:
 - CI cannot go green after a reasonable number of fix iterations (~5)
 - A Critical/Important finding requires a product/design decision you can't make
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
@@ -136,17 +142,26 @@ up to ~5 iterations, then escalate:
 If after ~5 iterations CI still won't pass or a finding needs a decision you can't
 make, stop and summarize the blocker for the user.
 
-## Step 5 — Merge
+## Step 5 — Merge (only with explicit authorization)
 
-Once CI is green and there are no unresolved Critical/Important findings,
-auto-merge (no need to ask). Choose the strategy:
+Merging is gated on explicit user permission — see the Autonomy model. Once CI is
+green and there are no unresolved Critical/Important findings:
+
+- **If the user already authorized the merge** — their request asked to merge/ship
+  ("ship it", "get this merged", "merge when green"), or they've since said go
+  ahead — merge now.
+- **Otherwise, stop here.** Report that the PR is ready to merge (CI green,
+  Critical/Important findings resolved) and ask for an explicit go-ahead. Do not
+  merge until they confirm.
+
+When you do merge, choose the strategy:
 
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
   logical feature/fix. Write a clean squash commit message.
 - **Merge commit** (`gh pr merge --merge`) — when the PR contains multiple
   distinct features whose individual history is worth preserving.
-- **Stop and ask** only if it's genuinely ambiguous, or repo rules / branch
-  protection require something specific you can't satisfy.
+- If the strategy is genuinely ambiguous, or repo rules / branch protection
+  require something specific you can't satisfy, ask.
 
 Delete the source branch on merge (`--delete-branch`) unless told otherwise.
 

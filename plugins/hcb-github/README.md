@@ -20,7 +20,7 @@ Takes committed work on a feature branch and drives it to a merged PR, autonomou
 - open the PR (ready for review);
 - loop on fixes until **CI is green** and there are no unresolved Critical/Important Copilot findings;
 - reply to and resolve Copilot review threads;
-- auto-merge with the right strategy, monitor the merge, and report.
+- merge with the right strategy — only on the user's explicit go-ahead — then monitor the merge and report.
 
 See [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md) and its
 [`references/copilot.md`](skills/github-pr-workflow/references/copilot.md).
