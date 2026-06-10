@@ -39,5 +39,6 @@ jobs:
         run: |
           npm install -g @anthropic-ai/claude-code
           claude plugin validate .
-          claude plugin validate ./plugins/hcb-github
-          claude plugin validate ./plugins/hcb-dev
+          for d in plugins/*/; do
+            claude plugin validate "$d"
+          done

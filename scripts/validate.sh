@@ -15,6 +15,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 MARKET=".claude-plugin/marketplace.json"
+SEMVER='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
 errors=0
 warnings=0
 
@@ -55,6 +56,11 @@ else
         *) err "plugins[$i] ('$name'): plugin name must start with 'hcb-' (repo convention)" ;;
       esac
 
+      # version lives in plugin.json ONLY — never on the marketplace entry
+      # (applies to every entry, regardless of source type or strict mode)
+      mkver=$(jq -r ".plugins[$i].version // empty" "$MARKET")
+      [ -z "$mkver" ] || err "plugins[$i] ($name): remove 'version' from the marketplace entry — it lives in plugin.json only"
+
       # relative-path source → validate the local plugin directory
       if [ "$srctype" = "string" ]; then
         case "$src" in
@@ -79,16 +85,13 @@ else
             [ "$pjname" = "$name" ] || warn "$name: plugin.json name '$pjname' != marketplace entry '$name'"
             case "$pjname" in hcb-* | "") : ;; *) err "$name: plugin.json name '$pjname' must start with 'hcb-'" ;; esac
 
-            # version: required, valid semver, and declared in plugin.json ONLY
+            # version: required and valid semver (the repo's single version axis)
             pjver=$(jq -r '.version // empty' "$pj")
-            semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
             if [ -z "$pjver" ]; then
               err "$name: $pj missing 'version'"
-            elif ! printf '%s' "$pjver" | grep -Eq "$semver"; then
+            elif ! printf '%s' "$pjver" | grep -Eq "$SEMVER"; then
               err "$name: version '$pjver' is not valid semver (expected e.g. 1.2.3)"
             fi
-            mkver=$(jq -r ".plugins[$i].version // empty" "$MARKET")
-            [ -z "$mkver" ] || err "$name: remove 'version' from the marketplace entry — it lives in plugin.json only"
           fi
         fi
         [ -f "$dir/README.md" ] || warn "$name: no README.md in $dir"
