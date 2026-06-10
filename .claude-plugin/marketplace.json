@@ -6,8 +6,7 @@
     "email": "pavel@sokolov.me"
   },
   "metadata": {
-    "description": "Pavel Sokolov's Claude Code plugins — skills, rules and workflows.",
-    "version": "0.2.0"
+    "description": "Pavel Sokolov's Claude Code plugins — skills, rules and workflows."
   },
   "plugins": [
     {

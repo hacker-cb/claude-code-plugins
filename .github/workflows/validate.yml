@@ -40,19 +40,4 @@ jobs:
           npm install -g @anthropic-ai/claude-code
           claude plugin validate .
           claude plugin validate ./plugins/hcb-github
-
-  package:
-    name: Build .skill artifacts (preview)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Package skills
-        run: bash scripts/package-skills.sh
-
-      - name: Upload .skill artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: skills
-          path: dist/*.skill
-          if-no-files-found: error
+          claude plugin validate ./plugins/hcb-dev
