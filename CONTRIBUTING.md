@@ -56,7 +56,7 @@ Official docs: <https://code.claude.com/docs/en/plugins.md> ·
    }
    ```
 
-   Keep `version` in `plugin.json` only — don't duplicate it in the marketplace entry.
+   Keep `version` (semver) in `plugin.json` only — it's the single source of truth for the plugin. Don't add a version to the marketplace entry or anywhere else; `scripts/validate.sh` enforces both (valid semver, and no `version` on the marketplace entry).
 
 ## Rules
 
@@ -69,7 +69,6 @@ Two patterns, depending on whether the rule is task-triggered or always-on:
 
 ```bash
 bash scripts/validate.sh         # must pass (0 errors)
-bash scripts/package-skills.sh   # sanity-check packaging
 ```
 
 CI runs the same structural validation plus the official `claude plugin validate`.

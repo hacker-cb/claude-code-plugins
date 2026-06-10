@@ -1,10 +1,9 @@
 # hacker-cb's Claude Code plugins
 
 [![Validate](https://github.com/hacker-cb/claude-code-plugins/actions/workflows/validate.yml/badge.svg)](https://github.com/hacker-cb/claude-code-plugins/actions/workflows/validate.yml)
-[![Release](https://img.shields.io/github/v/release/hacker-cb/claude-code-plugins?sort=semver)](https://github.com/hacker-cb/claude-code-plugins/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/hacker-cb/claude-code-plugins)](LICENSE)
 
-A personal [Claude Code](https://code.claude.com/docs/en/overview) **plugin marketplace** for skills, rules and workflows. Install a plugin straight into Claude Code, or grab any single skill as a standalone `.skill` file.
+A personal [Claude Code](https://code.claude.com/docs/en/overview) **plugin marketplace** for skills, rules and workflows. Install a plugin straight into Claude Code.
 
 > Marketplace name: **`hacker-cb-plugins`**
 
@@ -32,15 +31,6 @@ Then invoke a skill from the `/` menu, e.g.:
 
 More GitHub-specific skills and rules (issues / backlog, …) will be added over time.
 
-## Download a single skill (`.skill`)
-
-Each skill is also publishable as a standalone `.skill` archive (a zip of the skill directory):
-
-1. Download `<skill>.skill` from the [Releases](https://github.com/hacker-cb/claude-code-plugins/releases) page, **or** build it locally with `bash scripts/package-skills.sh` (output in `dist/`).
-2. Use it either way:
-   - **claude.ai** → Settings → Capabilities → Skills → **Upload skill**, or
-   - **Claude Code** → unzip into `~/.claude/skills/` (personal) or `.claude/skills/` (project).
-
 ## Repository layout
 
 ```text
@@ -49,15 +39,13 @@ plugins/hcb-<domain>/             # one themed plugin per domain
   .claude-plugin/plugin.json
   skills/<skill>/SKILL.md
 scripts/validate.sh               # structural validation (CI + local)
-scripts/package-skills.sh         # build dist/*.skill
-.github/workflows/                # validate (PR/push) + release (tags)
+.github/workflows/                # validate (PR/push)
 ```
 
 ## Development
 
 ```bash
 bash scripts/validate.sh         # validate marketplace, plugins, skills
-bash scripts/package-skills.sh   # package skills into dist/*.skill
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add a skill, plugin or rule, plus the naming convention.
