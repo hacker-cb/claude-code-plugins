@@ -22,6 +22,13 @@
       "description": "Personal developer baseline: per-scope language (chat / plans / comments / docs) injected each session and configurable via plugin settings, plus dependency-versioning and Context7 library-docs skills.",
       "category": "productivity",
       "tags": ["developer", "rules", "preferences", "i18n", "dependencies", "documentation"]
+    },
+    {
+      "name": "hcb-diagrams",
+      "source": "./plugins/hcb-diagrams",
+      "description": "Render DBML database schemas into ER diagrams (SVG + PNG) and show the image directly in the chat — pure npm pipeline, no native graphviz required.",
+      "category": "visualization",
+      "tags": ["dbml", "database", "er-diagram", "schema", "diagrams"]
     }
   ]
 }

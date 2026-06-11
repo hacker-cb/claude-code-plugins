@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "hcb-diagrams",
+  "description": "Diagram-rendering skills for Claude Code: render DBML database schemas into ER diagrams (SVG + PNG) and show the image directly in the chat. Pure npm pipeline — no native graphviz install required.",
+  "version": "0.1.0",
+  "author": {
+    "name": "hacker-cb",
+    "email": "pavel@sokolov.me"
+  },
+  "homepage": "https://github.com/hacker-cb/claude-code-plugins",
+  "repository": "https://github.com/hacker-cb/claude-code-plugins",
+  "license": "MIT",
+  "keywords": ["diagrams", "dbml", "database", "er-diagram", "schema", "visualization", "dbdiagram"]
+}

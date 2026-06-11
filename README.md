@@ -28,6 +28,7 @@ Then invoke a skill from the `/` menu, e.g.:
 | --- | --- | --- |
 | [`hcb-github`](plugins/hcb-github) | `github-pr-workflow` | Drive a GitHub PR from a finished branch all the way to a merged PR (rename → rebase → open → CI/Copilot fix-loop → merge on your go-ahead → report). |
 | [`hcb-dev`](plugins/hcb-dev) | `dependency-versions`, `library-docs` (+ `SessionStart` hook) | Personal developer baseline — per-scope language (chat/plans/comments/docs) injected each session via a configurable hook, resolve dependency versions from the registry, and pull current library docs from Context7. |
+| [`hcb-diagrams`](plugins/hcb-diagrams) | `render-dbml` | Render a DBML schema (file, chat snippet, or SQL DDL translated first) into an ER diagram — SVG + PNG via dbml-renderer and resvg, no native graphviz — and show the image right in the chat. |
 
 More GitHub-specific skills and rules (issues / backlog, …) will be added over time.
 
