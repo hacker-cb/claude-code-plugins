@@ -21,7 +21,9 @@ Render a DBML schema (a `.dbml` file, a dbdiagram.io export, a snippet pasted
 in chat — or SQL DDL that Claude first translates to DBML) into an
 entity-relationship diagram, and show the image directly in the chat where the
 environment supports it (e.g. Claude Code web / remote sessions); otherwise it
-reports the output paths.
+reports the output paths. The source `.dbml` is always referenced alongside
+the images — important when it was generated on the fly (from SQL DDL, ORM
+models, or a chat snippet), so the editable source isn't lost.
 
 The pipeline is pure npm — **no native graphviz install needed**:
 

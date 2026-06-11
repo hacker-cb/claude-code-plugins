@@ -67,6 +67,12 @@ leaving the conversation:
   lossless original.
 - In a local terminal session with no file-sending tool, give both absolute
   paths and offer to open the image (`open` / `xdg-open`).
+- Always reference the source `.dbml` as well — give its path, or attach it
+  with the images. This matters most when the DBML was produced in Step 1
+  (translated from SQL DDL, ORM models, a chat snippet): the diagram is
+  derived output, while the DBML is the editable source the user will want to
+  keep, tweak, or paste into dbdiagram.io — and if it only lives in a temp
+  file, a render without a link to it loses that work.
 
 Then glance at the result before declaring success: if the diagram is
 obviously wrong (empty, missing tables the user asked about), say so and fix
