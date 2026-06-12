@@ -1,7 +1,8 @@
 # Dependabot version updates for this repo's GitHub Actions workflows.
 # The marketplace ships only markdown/JSON (no package manifests), so
-# github-actions is the only ecosystem to cover. `cooldown` is omitted:
-# it is not supported for the github-actions ecosystem.
+# github-actions is the only ecosystem to cover. github-actions supports
+# cooldown.default-days only (per-semver-level cooldown days are not
+# supported for it).
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -12,3 +13,5 @@ updates:
       actions-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    cooldown:
+      default-days: 7
