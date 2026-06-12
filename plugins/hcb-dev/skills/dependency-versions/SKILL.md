@@ -72,9 +72,10 @@ value up in the
 A good default entry — weekly, minor + patch grouped into one PR, and a few
 days of cooldown so unattended updates skip brand-new releases (the window
 in which compromised versions are usually caught and yanked). Substitute the
-ecosystem and directory of the manifest you touched; for current option
-syntax see the
-[options reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference):
+ecosystem and directory of the manifest you touched, and check the
+[options reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference)
+for current syntax — option support varies by ecosystem (e.g. `cooldown` is
+not supported for `github-actions`):
 
 ```yaml
 version: 2
