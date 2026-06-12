@@ -74,8 +74,9 @@ days of cooldown so unattended updates skip brand-new releases (the window
 in which compromised versions are usually caught and yanked). Substitute the
 ecosystem and directory of the manifest you touched, and check the
 [options reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference)
-for current syntax — option support varies by ecosystem (e.g. `cooldown` is
-not supported for `github-actions`):
+for current syntax — option support varies by ecosystem (e.g. for
+`github-actions`, cooldown takes only `default-days`, not the
+per-semver-level days):
 
 ```yaml
 version: 2
