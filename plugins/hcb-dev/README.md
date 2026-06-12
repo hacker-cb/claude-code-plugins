@@ -45,7 +45,10 @@ English. No invocation needed — it applies automatically.
 When adding or updating a dependency, resolve the version from the registry via
 the package manager's own `add`/`install` command instead of typing a version
 literal from memory. Covers `cargo` / `pnpm` / `npm` / `uv` / `go` / `bundle`,
-the Node.js LTS pin, and GitHub Actions version pinning.
+the Node.js LTS pin, and GitHub Actions version pinning. On GitHub-hosted repos
+it also keeps `.github/dependabot.yml` in sync with the ecosystems in use —
+extending an existing config automatically, and offering to enable Dependabot
+(with sane grouping + cooldown defaults) when there is none.
 
 #### `library-docs` — `/hcb-dev:library-docs`
 
