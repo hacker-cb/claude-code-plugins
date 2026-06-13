@@ -1,0 +1,7 @@
+{
+  "name": "markdown-docs",
+  "description": "MCP server for efficient navigation of large markdown documents (datasheets, standards, manuals).",
+  "author": {
+    "name": "hacker-cb"
+  }
+}
