@@ -58,6 +58,32 @@ Official docs: <https://code.claude.com/docs/en/plugins.md> ·
 
    Keep `version` (semver) in `plugin.json` only — it's the single source of truth for the plugin. Don't add a version to the marketplace entry or anywhere else; `scripts/validate.sh` enforces both (valid semver, and no `version` on the marketplace entry).
 
+## Add an external MCP wrapper
+
+For an MCP server that lives in its **own** repo / npm package (third-party or your own), don't re-host its code — add a thin wrapper under `external_plugins/`, mirroring the [`anthropics/claude-plugins-official`](https://github.com/anthropics/claude-plugins-official) layout:
+
+```text
+external_plugins/<name>/
+  .claude-plugin/plugin.json   # { "name": "<upstream-name>", "description": ..., "author": {...} } — NO version
+  .mcp.json                    # { "<server>": { "command": "npx", "args": ["-y", "<pkg>@latest"] } }
+  README.md
+```
+
+Then add a marketplace entry with a relative `source`:
+
+```json
+{
+  "name": "<upstream-name>",
+  "source": "./external_plugins/<name>",
+  "description": "...",
+  "category": "...",
+  "tags": ["mcp", "..."],
+  "homepage": "https://github.com/<owner>/<repo>"
+}
+```
+
+Unlike `plugins/hcb-*`, wrappers use the **upstream package name** (no `hcb-` prefix) and **omit** `version` — the server is versioned in its own repo and pinned in `.mcp.json` (`@latest` or `@x.y.z`). `scripts/validate.sh` exempts `./external_plugins/*` from the prefix and semver checks. See `external_plugins/markdown-docs/` for a worked example.
+
 ## Rules
 
 Two patterns, depending on whether the rule is task-triggered or always-on:

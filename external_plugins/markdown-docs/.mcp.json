@@ -1,0 +1,6 @@
+{
+  "markdown-docs": {
+    "command": "npx",
+    "args": ["-y", "markdown-docs-mcp@latest"]
+  }
+}

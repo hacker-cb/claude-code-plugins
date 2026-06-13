@@ -50,11 +50,21 @@ else
       [ -n "$name" ]            || err "plugins[$i]: missing 'name'"
       [ "$srctype" != "null" ]  || err "plugins[$i] ($name): missing 'source'"
 
-      # naming convention: plugin names must start with hcb-
-      case "$name" in
-        hcb-* | "") : ;;
-        *) err "plugins[$i] ('$name'): plugin name must start with 'hcb-' (repo convention)" ;;
-      esac
+      # external MCP wrappers live under ./external_plugins/ and mirror the
+      # claude-plugins-official layout: an upstream-named, version-less thin
+      # wrapper around a third-party / own npm MCP server. They are exempt from
+      # the hcb- prefix and the per-plugin-semver axis that first-party
+      # ./plugins/* must satisfy.
+      is_external=0
+      case "$src" in ./external_plugins/*) is_external=1 ;; esac
+
+      # naming convention: first-party plugin names must start with hcb-
+      if [ "$is_external" = 0 ]; then
+        case "$name" in
+          hcb-* | "") : ;;
+          *) err "plugins[$i] ('$name'): plugin name must start with 'hcb-' (repo convention)" ;;
+        esac
+      fi
 
       # version lives in plugin.json ONLY — never on the marketplace entry
       # (applies to every entry, regardless of source type or strict mode)
@@ -83,14 +93,19 @@ else
             pjname=$(jq -r '.name // empty' "$pj")
             [ -n "$pjname" ] || err "$name: $pj missing 'name'"
             [ "$pjname" = "$name" ] || warn "$name: plugin.json name '$pjname' != marketplace entry '$name'"
-            case "$pjname" in hcb-* | "") : ;; *) err "$name: plugin.json name '$pjname' must start with 'hcb-'" ;; esac
 
-            # version: required and valid semver (the repo's single version axis)
-            pjver=$(jq -r '.version // empty' "$pj")
-            if [ -z "$pjver" ]; then
-              err "$name: $pj missing 'version'"
-            elif ! printf '%s' "$pjver" | grep -Eq "$SEMVER"; then
-              err "$name: version '$pjver' is not valid semver (expected e.g. 1.2.3)"
+            # first-party ./plugins/* carry the hcb- prefix and the repo's single
+            # version axis; external_plugins/* wrappers are exempt from both.
+            if [ "$is_external" = 0 ]; then
+              case "$pjname" in hcb-* | "") : ;; *) err "$name: plugin.json name '$pjname' must start with 'hcb-'" ;; esac
+
+              # version: required and valid semver (the repo's single version axis)
+              pjver=$(jq -r '.version // empty' "$pj")
+              if [ -z "$pjver" ]; then
+                err "$name: $pj missing 'version'"
+              elif ! printf '%s' "$pjver" | grep -Eq "$SEMVER"; then
+                err "$name: version '$pjver' is not valid semver (expected e.g. 1.2.3)"
+              fi
             fi
           fi
         fi

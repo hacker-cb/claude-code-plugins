@@ -22,6 +22,14 @@
       "description": "Personal developer baseline: per-scope language (chat / plans / comments / docs) injected each session and configurable via plugin settings, plus dependency-versioning (incl. Dependabot config sync) and Context7 library-docs skills.",
       "category": "productivity",
       "tags": ["developer", "rules", "preferences", "i18n", "dependencies", "documentation"]
+    },
+    {
+      "name": "markdown-docs",
+      "source": "./external_plugins/markdown-docs",
+      "description": "MCP server for efficient navigation of large markdown documents — datasheets, standards, manuals.",
+      "category": "development",
+      "tags": ["mcp", "markdown", "documentation", "datasheet", "reference-manual"],
+      "homepage": "https://github.com/hacker-cb/markdown-docs-mcp"
     }
   ]
 }

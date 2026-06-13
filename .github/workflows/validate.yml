@@ -5,6 +5,7 @@ on:
     paths:
       - '.claude-plugin/**'
       - 'plugins/**'
+      - 'external_plugins/**'
       - 'scripts/**'
       - '.github/workflows/validate.yml'
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - '.claude-plugin/**'
       - 'plugins/**'
+      - 'external_plugins/**'
       - 'scripts/**'
       - '.github/workflows/validate.yml'
   workflow_dispatch:
@@ -39,6 +41,7 @@ jobs:
         run: |
           npm install -g @anthropic-ai/claude-code
           claude plugin validate .
-          for d in plugins/*/; do
+          for d in plugins/*/ external_plugins/*/; do
+            [ -d "$d" ] || continue
             claude plugin validate "$d"
           done
