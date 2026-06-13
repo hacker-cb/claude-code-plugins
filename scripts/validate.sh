@@ -95,7 +95,9 @@ else
             [ "$pjname" = "$name" ] || warn "$name: plugin.json name '$pjname' != marketplace entry '$name'"
 
             # first-party ./plugins/* carry the hcb- prefix and the repo's single
-            # version axis; external_plugins/* wrappers are exempt from both.
+            # version axis; external_plugins/* wrappers are exempt from both — and
+            # must NOT declare a version at all, so a wrapper can't drift into the
+            # first-party versioning model.
             if [ "$is_external" = 0 ]; then
               case "$pjname" in hcb-* | "") : ;; *) err "$name: plugin.json name '$pjname' must start with 'hcb-'" ;; esac
 
@@ -106,6 +108,12 @@ else
               elif ! printf '%s' "$pjver" | grep -Eq "$SEMVER"; then
                 err "$name: version '$pjver' is not valid semver (expected e.g. 1.2.3)"
               fi
+            else
+              # external wrapper: the version is owned by the upstream npm package,
+              # not this manifest — forbid a stray 'version' to keep wrappers
+              # version-less (pin the package in .mcp.json instead).
+              pjver=$(jq -r '.version // empty' "$pj")
+              [ -z "$pjver" ] || err "$name: $pj must not declare 'version' (external wrappers are version-less; pin the package in .mcp.json)"
             fi
           fi
         fi
