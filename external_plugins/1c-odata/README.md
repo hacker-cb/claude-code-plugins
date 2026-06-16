@@ -21,7 +21,7 @@ The server stores connection descriptors (base URL, login, server timezone) outs
 passwords go to the OS keychain. Add a connection once before use:
 
 ```text
-npx @1c-odata/mcp add my-base
+npx -y @1c-odata/mcp@latest add my-base
 ```
 
 See the upstream [README](https://github.com/hacker-cb/1c-odata) for non-interactive setup and the
