@@ -1,0 +1,7 @@
+{
+  "name": "1c-odata",
+  "description": "MCP server for querying 1C:Enterprise databases over OData V3 — live schema introspection and read-only queries.",
+  "author": {
+    "name": "hacker-cb"
+  }
+}
