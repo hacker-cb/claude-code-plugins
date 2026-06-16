@@ -1,0 +1,6 @@
+{
+  "1c-odata": {
+    "command": "npx",
+    "args": ["-y", "@1c-odata/mcp@latest", "serve"]
+  }
+}

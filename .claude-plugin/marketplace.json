@@ -30,6 +30,14 @@
       "category": "development",
       "tags": ["mcp", "markdown", "documentation", "datasheet", "reference-manual"],
       "homepage": "https://github.com/hacker-cb/markdown-docs-mcp"
+    },
+    {
+      "name": "1c-odata",
+      "source": "./external_plugins/1c-odata",
+      "description": "MCP server for querying 1C:Enterprise databases over OData V3 — live schema introspection and read-only queries.",
+      "category": "development",
+      "tags": ["mcp", "1c", "odata", "erp", "database"],
+      "homepage": "https://github.com/hacker-cb/1c-odata"
     }
   ]
 }
