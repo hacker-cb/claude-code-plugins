@@ -13,6 +13,7 @@ lang_chat="${CLAUDE_PLUGIN_OPTION_lang_chat:-${CLAUDE_PLUGIN_OPTION_LANG_CHAT:-R
 lang_plans="${CLAUDE_PLUGIN_OPTION_lang_plans:-${CLAUDE_PLUGIN_OPTION_LANG_PLANS:-Russian}}"
 lang_comments="${CLAUDE_PLUGIN_OPTION_lang_comments:-${CLAUDE_PLUGIN_OPTION_LANG_COMMENTS:-English}}"
 lang_docs="${CLAUDE_PLUGIN_OPTION_lang_docs:-${CLAUDE_PLUGIN_OPTION_LANG_DOCS:-English}}"
+lang_issues="${CLAUDE_PLUGIN_OPTION_lang_issues:-${CLAUDE_PLUGIN_OPTION_LANG_ISSUES:-Russian}}"
 use_emojis="${CLAUDE_PLUGIN_OPTION_use_emojis:-${CLAUDE_PLUGIN_OPTION_USE_EMOJIS:-true}}"
 
 # Emojis on unless the value is explicitly falsy. Appended to the chat line so
@@ -34,6 +35,7 @@ cat <<EOF
   These are temporary, per-task notes — removed once the task ships; don't link them from durable artifacts.
 - Code comments: ${lang_comments}.
 - Project documentation: ${lang_docs}.
+- GitHub / GitLab issues (titles, descriptions, comments): ${lang_issues}.
 - Other durable artifacts (code identifiers, commit messages): English.
 EOF
 
