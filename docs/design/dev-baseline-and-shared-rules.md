@@ -167,7 +167,7 @@ rules:
     tier: parameterized
     source: canonical/language.md
     companions:
-      - path: .claude/project.yml   # languages: { chat, plans, comments, docs, issues }
+      - path: .claude/hcb-dev/project.yml   # languages: { chat, plans, comments, docs, issues }
         contract: contracts/project.schema.yml
   - name: rule-authoring
     tier: canonical
@@ -177,7 +177,7 @@ rules:
 ### 4.4 Project lock (project-side opt-in)
 
 ```yaml
-# .claude/hcb-rules.yml  (committed; the project's adoption record)
+# .claude/hcb-dev/rules.yml  (committed; the project's adoption record)
 managed_by: hcb-dev
 adopted:
   - git-branches
@@ -188,8 +188,8 @@ adopted:
 # T3 rules are not listed here; they are linted, not synced.
 ```
 
-The sync skill writes a `*.lock` of expected hashes (or stores hashes inline) so
-the drift guard can compare without network access.
+The sync skill records each managed file's expected hash inline in `rules.yml`,
+so the drift guard can compare without network access.
 
 ### 4.5 Propagation flow
 
@@ -212,22 +212,33 @@ Generalize the proven `labels.yml` pattern into one rule:
 
 > A shared rule body stays **byte-identical** everywhere and **delegates every
 > project-specific literal** to a named, project-owned companion file (or a key
-> in `.claude/project.yml`) that satisfies a stated contract.
+> in `.claude/hcb-dev/project.yml`) that satisfies a stated contract.
 
 - `issue-tracking.md` → `.github/labels.yml` (label set; invariant = exactly one
   `type:*`, ≥1 component, ≤1 `awaits:*`, ≤1 `priority:*`, optional `security`).
 - `git-branches.md` → trunk/base branch names and CI triggers move to
-  `.claude/project.yml` / CI config (the body already delegates CI literals).
-- `language.md` → values in `.claude/project.yml: languages`.
+  `.claude/hcb-dev/project.yml` / CI config (the body already delegates CI literals).
+- `language.md` → values in `.claude/hcb-dev/project.yml: languages`.
 
 Extensions that have no home in canon go into a **project-owned sibling**
 (`<rule>.local.md`) — never as an edit to a synced body. The synced body remains
 verbatim; project additions are reviewed on their own.
 
-`.claude/project.yml` is the single companion contract for cross-cutting literals:
+All hcb-managed project state lives under a **plugin-namespaced `.claude/hcb-dev/`
+directory** — not a generic `.claude/project.yml`, which would squat a name in the
+Claude-Code-owned `.claude/` namespace, hide provenance, and scatter the system's
+several files (config + adoption record) across the `.claude/` root. The directory
+is owned by the baseline plugin; forge plugins (`hcb-github` / `hcb-gitlab`) read
+from it (a plugin's hook/skill runs in the project `cwd`, so reading project files
+is fine — C4 only restricts a plugin's own bundled files). The one trade-off — a
+forge-neutral canonical rule references an `hcb-dev`-named path — is acceptable:
+the canon is delivered and synced by `hcb-dev` regardless, and a future baseline
+rename is a one-shot managed-file migration (permitted by `early-stage.md`).
+
+`.claude/hcb-dev/project.yml` is the single companion contract for cross-cutting literals:
 
 ```yaml
-# .claude/project.yml
+# .claude/hcb-dev/project.yml
 forge: github            # github | gitlab | gitverse
 trunk: master
 default_base: dev
@@ -254,7 +265,7 @@ issues / other`), explicit precedence:
 ```
 plugin userConfig defaults   (fresh-session baseline, low priority)
         ▼  overridden by
-project values               (.claude/project.yml: languages — the project SSOT)
+project values               (.claude/hcb-dev/project.yml: languages — the project SSOT)
         ▼  overridden by
 explicit request in the conversation
 ```
@@ -272,7 +283,7 @@ explicit request in the conversation
 ## 7. Onboarding a new project
 
 Detection signal is **not** `.git` (always present in cloud — C8). Use absence of
-markers: no `CLAUDE.md`, no `.claude/`, no `.claude/project.yml`.
+markers: no `CLAUDE.md`, no `.claude/`, no `.claude/hcb-dev/project.yml`.
 
 - `session-baseline.sh` (SessionStart, part of `hcb-dev`) prints a soft nudge when
   the project looks uninitialized: *"this project isn't set up for hcb — run
@@ -280,7 +291,7 @@ markers: no `CLAUDE.md`, no `.claude/`, no `.claude/project.yml`.
 - `/hcb-dev:onboard` (skill): detect forge from `git remote`; scaffold
   `.claude/settings.json` (enable `hcb-dev` + the right forge plugin); run
   `/hcb-dev:rules sync` for T1/T2; drop a starter `.github/labels.yml` (or GitLab
-  equivalent); create `.claude/project.yml` (languages, trunk, `early_stage`);
+  equivalent); create `.claude/hcb-dev/project.yml` (languages, trunk, `early_stage`);
   self-check.
 
 ---
@@ -290,7 +301,7 @@ markers: no `CLAUDE.md`, no `.claude/`, no `.claude/project.yml`.
 Honest scope: **partially solvable** — there is no hook API to list loaded
 plugins (C8). The strategy:
 
-1. The project declares its expected set in `.claude/project.yml: expects_plugins`.
+1. The project declares its expected set in `.claude/hcb-dev/project.yml: expects_plugins`.
 2. `session-baseline.sh` (guaranteed to run — it *is* `hcb-dev`) prints the
    expected set and a reminder: *"if any of these slash-commands / MCP tools are
    missing, the plugin failed to load — check `/plugin`"*.
@@ -334,8 +345,8 @@ Claude Code has no plugin dependency/bundle mechanism, so this is a documentatio
 | Phase | Scope | Touches |
 |---|---|---|
 | **0** | Vendor canon into `hcb-dev` (`rules/canonical/*`, `manifest.yml`); build `/hcb-dev:rules` (sync/check/diff) + drift guard. | `hcb-dev` only |
-| **1** | Adopt in DALI + NEXUS: replace the 3 duplicated files with synced managed files; add `.claude/hcb-rules.yml`; verify `labels.yml` companion contract. | dali, nexus |
-| **2** | Language refactor: `language.md` (T2) + `.claude/project.yml: languages`; remove contradictions; collapse scattered policy. | hcb-dev, dali, nexus |
+| **1** | Adopt in DALI + NEXUS: replace the 3 duplicated files with synced managed files; add `.claude/hcb-dev/rules.yml`; verify `labels.yml` companion contract. | dali, nexus |
+| **2** | Language refactor: `language.md` (T2) + `.claude/hcb-dev/project.yml: languages`; remove contradictions; collapse scattered policy. | hcb-dev, dali, nexus |
 | **3** | Onboarding + plugin-presence: `/hcb-dev:onboard`, `session-baseline.sh`, `expects_plugins`. | hcb-dev (+ consuming repos opt-in) |
 | **4** | Forge-neutrality: rename to `issue-tracking.md`; scaffold `hcb-gitlab`; `rule-authoring.md` + T3 linter + `rule-new`. | hcb-dev, hcb-github, new hcb-gitlab |
 
