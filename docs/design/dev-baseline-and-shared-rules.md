@@ -235,6 +235,17 @@ forge-neutral canonical rule references an `hcb-dev`-named path — is acceptabl
 the canon is delivered and synced by `hcb-dev` regardless, and a future baseline
 rename is a one-shot managed-file migration (permitted by `early-stage.md`).
 
+It nests under `.claude/` rather than a repo-root `.hcb-dev/` because this is
+Claude-Code tooling config that belongs beside `.claude/settings.json` (where
+`expects_plugins` mirrors `enabledPlugins`), adds no new repo-root entry (projects
+already carry `.claude/`), is self-documenting in context, and scales to a family
+of hcb plugins (`.claude/hcb-dev/`, `.claude/hcb-github/`) without cluttering the
+root. A repo-root home would only win once **non-Claude tooling** (CI, git hooks, a
+standalone CLI) must read these facts — an absent consumer today (`early-stage.md`),
+and a near-zero migration if it appears. Claude Code reads only its known
+subpaths under `.claude/` (`rules/**`, `skills/`, `agents/`, `commands/`, `hooks/`,
+`settings.json`), so an `hcb-dev/` subdir is ignored, never parsed as a rule.
+
 `.claude/hcb-dev/project.yml` is the single companion contract for cross-cutting literals:
 
 ```yaml
