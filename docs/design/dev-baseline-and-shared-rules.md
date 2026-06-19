@@ -1,11 +1,12 @@
 # Design: dev baseline plugin + shared-rules synchronization
 
 Status: **proposal** — a *temporary working spec*. Before the feature merges, the
-durable parts are distilled into `CLAUDE.md` / the `hcb-dev` README + a kept C1–C11
+durable parts are distilled into `CLAUDE.md` / the `hcb-dev` README + a kept C1–C12
 note, and this file is removed (not landed on `main` verbatim; git history is the
-archive). · Owner: hacker-cb · Last updated: 2026-06-19 (rev 3 — re-verified against
-the full `plugins-reference.md` + `hooks.md`; added C9–C11, edit-protection §4.6, and
-settings/version checks §8; corrected the "no plugin dependencies" assumption)
+archive). · Owner: hacker-cb · Last updated: 2026-06-19 (rev 4 — read
+`plugin-dependencies`, `plugin-marketplaces`, `skills`, `plugins` in full: deps are a
+**bare same-marketplace** dependency (C12, §9), and §8 gains the cloud seed-dir /
+git-failure levers + trust-prompt bootstrap)
 
 This document proposes how the `hacker-cb-plugins` marketplace should deliver a
 reusable development baseline across many repositories (DALI, NEXUS today; more
@@ -59,8 +60,10 @@ similar. Anything host-specific (PR vs MR, `gh` vs `glab`, Copilot, sub-issues,
 ## 2. Hard constraints (verified against Claude Code docs)
 
 These facts shape every decision below. Verified 2026-06-19 against
-`code.claude.com/docs` — `plugins-reference.md` and `hooks.md` read **in full**
-(not via summary), plus `memory.md` and the public issue tracker.
+`code.claude.com/docs`, read raw (not via summarizer): `plugins-reference`,
+`plugin-dependencies`, `plugin-marketplaces`, `skills`, `plugins` **in full**;
+`hooks` + `settings` by their design-relevant sections; plus `memory` and the public
+issue tracker.
 
 | # | Fact | Source / consequence |
 |---|---|---|
@@ -75,6 +78,7 @@ These facts shape every decision below. Verified 2026-06-19 against
 | **C9** | **Plugins can declare `dependencies` on other plugins** (optionally version-constrained). Installing a plugin **auto-installs** its deps; enabling **transitively enables** them (and fails if a dep is not installed). | `plugins-reference.md` (§manifest `dependencies`, `plugin enable`/`prune`), `/en/plugin-dependencies`. **Corrects the earlier "no dependency mechanism" assumption** — the baseline↔forge link is a real dependency, not a docs convention. |
 | **C10** | `${CLAUDE_PLUGIN_DATA}` is a **persistent** per-plugin dir that survives updates; the docs give a canonical SessionStart pattern that `diff`s a bundled file against a copy there to detect "changed since last run". | `plugins-reference.md` (§Persistent data directory). The drift guard uses this idiom (stamp/hash cache) instead of a hand-rolled one. |
 | **C11** | The **`InstructionsLoaded`** hook fires when a `CLAUDE.md` / `.claude/rules/*.md` loads (at start and on lazy load). | `plugins-reference.md` (hook table), `memory.md`. Lets the guard verify a managed rule's hash **at load time** and observe which rules actually loaded — partly softening C8. |
+| **C12** | Plugin dependency **version constraints** resolve only against `{plugin-name}--v{version}` **git tags** (`claude plugin tag`). A **bare** dependency (no version) tracks the marketplace's current version and needs no tags. Deps resolve **within the same marketplace** unless the root marketplace lists the target in `allowCrossMarketplaceDependenciesOn`. | `plugin-dependencies.md`, `plugin-marketplaces.md`. The repo policy is **no release tags**, so the baseline↔forge link is a **bare** same-marketplace dep (§9). |
 
 > **On `memory.md`:** this cites the docs page *How Claude remembers your project*
 > (`code.claude.com/docs/en/memory.md`) for its **`CLAUDE.md` / `.claude/rules/` /
@@ -256,6 +260,8 @@ Two layers — **prevent in-session, detect everything else**:
   writes through a bundled `bin/` script — **not** the `Edit`/`Write` tools — and the
   tool-level deny does not cover an arbitrary subprocess (it covers Edit/Write and
   *recognized* file-commands only). So the only sanctioned mutation path is the sync.
+  The `/hcb-dev:rules` skill invokes it via `allowed-tools: Bash(hcb-rules *)` (`bin/` is
+  on `PATH` while the plugin is enabled).
 - **Optional project-side `deny`.** A project may also pin
   `permissions.deny: ["Edit(.claude/rules/<managed>)"]` in its own
   `.claude/settings.json`. A plugin **cannot** ship this (plugin `settings.json`
@@ -381,12 +387,11 @@ rules merely failed to sync.
 
 Revised after C9 — this splits into **hard** and **soft** dependencies:
 
-- **Hard deps → real `dependencies`.** A forge plugin declares
-  `dependencies: ["hcb-dev"]`; enabling the forge plugin in a project then
-  **auto-installs and transitively enables** the baseline — no nudge needed, no way
-  to "forget" it. This is the primary fix for the cloud-load worry. The exact
-  cross-marketplace resolution + version-constraint semantics live in
-  `/en/plugin-dependencies` (consult before relying on them).
+- **Hard deps → a bare `dependency`.** A forge plugin declares
+  `dependencies: ["hcb-dev"]` (bare, no version — C12); enabling it **auto-installs and
+  transitively enables** the baseline (CC ≥ 2.1.143) — no nudge, no way to "forget" it.
+  Same-marketplace, so it resolves without a cross-marketplace allowlist (§9). This is
+  the primary in-app fix for the cloud-load worry.
 - **Soft / optional companions → `expects_plugins` + nudge.** Recommended-but-not-
   required plugins (e.g. `markdown-docs`, project MCP servers) stay in
   `.claude/hcb-dev/project.yml: expects_plugins`. `session-baseline.sh` (guaranteed
@@ -397,17 +402,19 @@ Revised after C9 — this splits into **hard** and **soft** dependencies:
   declared set. There is still no API to *enumerate* plugins (C8), but the hard-dep
   path means the critical ones can no longer go missing silently.
 
-Residual gap: if the **marketplace itself** was never registered in the env, even
-`dependencies` can't resolve — that stays a declare + nudge case (and an onboarding
-concern: §7 scaffolds `extraKnownMarketplaces` + `enabledPlugins`).
+Residual gap: if neither the committed settings (trust-prompt) nor a seed dir made the
+**marketplace** available, even `dependencies` can't resolve — that stays a declare +
+nudge case, plus the cloud levers below.
 
 ### Settings presence: auto-add vs check
 
-- **Bootstrap can't be self-served (chicken-and-egg).** The `hcb-dev` hook only runs
-  *once `hcb-dev` is enabled*, so it cannot register the marketplace
-  (`extraKnownMarketplaces`) or enable our plugins from a cold project — a plugin
-  can't lift itself in. That first step is **onboarding** (`/hcb-dev:onboard` writes
-  `extraKnownMarketplaces` + `enabledPlugins`) or a manual `/plugin marketplace add`.
+- **Bootstrap is committed, not self-served.** A *plugin* can't lift itself in (the
+  `hcb-dev` hook runs only once `hcb-dev` is enabled). But **committed project
+  `.claude/settings.json`** — `extraKnownMarketplaces` + `enabledPlugins` — makes Claude
+  Code **prompt the user to install/enable on folder-trust** (`plugin-marketplaces.md`
+  §Require marketplaces for your team). So onboarding writes those once
+  (`/hcb-dev:onboard`, or a manual `/plugin marketplace add`), and every later clone is a
+  one-click trust-prompt away from the full set.
 - **Once we're in, the plugin graph is automatic.** Forge plugins `depend` on
   `hcb-dev` (C9), so installing/enabling a forge plugin pulls the baseline in — we do
   **not** hand-edit `enabledPlugins` for that.
@@ -418,6 +425,21 @@ concern: §7 scaffolds `extraKnownMarketplaces` + `enabledPlugins`).
   mutation we avoid (same principle as §4.6; cf. `autoMemoryEnabled: false`), and a hook
   edit would only take effect next session anyway (enablement resolves at start). Writes
   go through the sanctioned skill, reviewable in the diff.
+
+### Cloud / CI loading (the real fix for "plugins didn't load")
+
+Plugins failing to load in remote/cloud sessions is usually a **git failure at
+startup**, not a config gap — Claude Code clones marketplaces/plugins at launch with a
+120 s timeout. The levers (env, set by the cloud environment), from `plugin-marketplaces.md`:
+
+- **`CLAUDE_CODE_PLUGIN_SEED_DIR`** — pre-seed `marketplaces/` + `cache/` into the image
+  at build time; Claude Code uses them in place with **no runtime clone**. The robust fix
+  for ephemeral cloud envs.
+- **`CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE=1`** — keep the last-good cache when a
+  `git pull` fails (offline/airgapped) instead of wiping it.
+- **`CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS`** — raise the 120 s git timeout on slow links.
+- Private marketplace → set `GH_TOKEN` / `GL_TOKEN` for background auto-update (the DALI
+  `session-start.sh` already injects `GH_TOKEN`).
 
 ### New-version notification + offer to update
 
@@ -447,11 +469,17 @@ Recommended: **baseline + per-forge**, not one mega-plugin.
 - A project enables `hcb-dev` **plus** its forge plugin. "Complete dev experience"
   is the pair; the baseline stays portable and free of GitHub-only logic.
 
-Forge plugins declare a real **`dependency` on `hcb-dev`** (C9): enabling a forge
-plugin in a project auto-installs and transitively enables the baseline, so the
-"complete dev experience" pair is enforced by the dependency graph, not just
-convention. `expects_plugins` (§8) is then reserved for *optional* companions.
-`hcb-dev` depends on nothing and ships `defaultEnabled: true` (it is the baseline).
+Forge plugins declare a **bare `dependency` on `hcb-dev`** — `"dependencies": ["hcb-dev"]`,
+no version constraint (C9/C12): enabling a forge plugin auto-installs and transitively
+enables the baseline (Claude Code ≥ 2.1.143), and disabling `hcb-dev` is blocked while a
+forge plugin still needs it. So the "complete dev experience" pair is enforced by the
+dependency graph, not just convention. A *constrained* dep would require
+`hcb-dev--v{version}` git tags (`claude plugin tag`) — which the repo deliberately does
+not use; revisit only if baseline version-pinning is ever needed. Both plugins live in the
+**same marketplace** (`hacker-cb-plugins`), so no `allowCrossMarketplaceDependenciesOn` is
+needed — but keep baseline + forge **co-located** (a cross-marketplace split would need
+that allowlist on the root marketplace). `expects_plugins` (§8) is reserved for *optional*
+companions. `hcb-dev` depends on nothing and ships `defaultEnabled: true`.
 
 ### Forge-neutrality work
 
