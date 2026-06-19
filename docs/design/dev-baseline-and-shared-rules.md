@@ -381,6 +381,38 @@ Residual gap: if the **marketplace itself** was never registered in the env, eve
 `dependencies` can't resolve — that stays a declare + nudge case (and an onboarding
 concern: §7 scaffolds `extraKnownMarketplaces` + `enabledPlugins`).
 
+### Settings presence: auto-add vs check
+
+- **Bootstrap can't be self-served (chicken-and-egg).** The `hcb-dev` hook only runs
+  *once `hcb-dev` is enabled*, so it cannot register the marketplace
+  (`extraKnownMarketplaces`) or enable our plugins from a cold project — a plugin
+  can't lift itself in. That first step is **onboarding** (`/hcb-dev:onboard` writes
+  `extraKnownMarketplaces` + `enabledPlugins`) or a manual `/plugin marketplace add`.
+- **Once we're in, the plugin graph is automatic.** Forge plugins `depend` on
+  `hcb-dev` (C9), so installing/enabling a forge plugin pulls the baseline in — we do
+  **not** hand-edit `enabledPlugins` for that.
+- **Recurring check, not silent rewrite.** The SessionStart hook (it is running, so it
+  can read `.claude/settings.json`) verifies the required marketplace + `expects_plugins`
+  are present and **warns + offers** `/hcb-dev:onboard --fix` to write any missing
+  entries. It does **not** silently rewrite `settings.json` — that is the unpredictable
+  mutation we avoid (same principle as §4.6; cf. `autoMemoryEnabled: false`), and a hook
+  edit would only take effect next session anyway (enablement resolves at start). Writes
+  go through the sanctioned skill, reviewable in the diff.
+
+### New-version notification + offer to update
+
+Two layers compose:
+
+- **The plugin itself** updates through Claude Code natively — `/plugin update` /
+  auto-update, gated by the `hcb-dev` version bump (C7). We do not reinvent plugin
+  self-update.
+- **The rule canon** is then checked by the drift guard: it compares the canon stamp in
+  `${CLAUDE_PLUGIN_ROOT}` against the project's last-synced stamp cached in
+  `${CLAUDE_PLUGIN_DATA}` (C10) and **notifies** — *"hcb-dev canon advanced to vX; this
+  project is on vY — run `/hcb-dev:rules sync`"* — with the offer to apply. So "new
+  version → notify → offer update" is covered for the part that actually lands in the
+  project, riding the same harness-only hook (no cost unless it fires).
+
 ---
 
 ## 9. Plugin topology
