@@ -39,6 +39,11 @@ emojis), and which language to use for plan/spec notes, code comments, project
 docs, and GitHub/GitLab issues. Durable artifacts (code identifiers, commit
 messages) stay in English. No invocation needed — it applies automatically.
 
+These are **low-priority personal defaults**: they apply only when nothing more
+specific does. Project instructions (e.g. `CLAUDE.md`), conventions already
+established in the repo, and explicit requests in the conversation all take
+precedence over them.
+
 ### Skills
 
 #### `dependency-versions` — `/hcb-dev:dependency-versions`
