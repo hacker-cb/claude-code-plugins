@@ -63,6 +63,13 @@ These facts shape every decision below. Verified 2026-06-19 against
 | **C10** | `${CLAUDE_PLUGIN_DATA}` is a **persistent** per-plugin dir that survives updates; the docs give a canonical SessionStart pattern that `diff`s a bundled file against a copy there to detect "changed since last run". | `plugins-reference.md` (§Persistent data directory). The drift guard uses this idiom (stamp/hash cache) instead of a hand-rolled one. |
 | **C11** | The **`InstructionsLoaded`** hook fires when a `CLAUDE.md` / `.claude/rules/*.md` loads (at start and on lazy load). | `plugins-reference.md` (hook table), `memory.md`. Lets the guard verify a managed rule's hash **at load time** and observe which rules actually loaded — partly softening C8. |
 
+> **On `memory.md`:** this cites the docs page *How Claude remembers your project*
+> (`code.claude.com/docs/en/memory.md`) for its **`CLAUDE.md` / `.claude/rules/` /
+> `@`-import** behavior only — **not** the *auto-memory* feature described on the same
+> page. The design relies on **none** of auto-memory: both DALI and NEXUS run
+> `autoMemoryEnabled: false` (it is unpredictable by design), and every mechanism here
+> is CLAUDE.md / rules / hooks / skills / committed companion files.
+
 **Net:** drop submodules entirely; vendor canon inside `hcb-dev`; distribute via
 an explicit, drift-guarded sync skill that writes real files into the project's
 `.claude/rules/` (preserving native rule semantics from C1/C2 that hook injection
