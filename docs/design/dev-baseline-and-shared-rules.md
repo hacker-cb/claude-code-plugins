@@ -222,6 +222,35 @@ The drift-guard hook is **harness-only — no model context cost** unless it emi
 (`plugins-reference.md` §plugin details): a clean, in-sync project pays ~0 tokens;
 the warning text enters context only when there is actual drift to report.
 
+### 4.6 Protecting managed files from edits
+
+Two layers — **prevent in-session, detect everything else**:
+
+- **Prevention (in-session, hard).** `hcb-dev` ships a **`PreToolUse` hook**
+  matching `Edit`/`Write` (and recognized Bash file-commands) against the managed
+  rule paths from `rules.yml`, returning `permissionDecision: "deny"` with: *"managed
+  by hcb-dev — edit the canon and run `/hcb-dev:rules sync`."* This is the **only**
+  layer that blocks regardless of what the model decides; the docs explicitly
+  recommend `PreToolUse` for hard blocks (`memory.md`, `hooks.md`).
+- **Sanctioned-writer carve-out.** The sync must still write these files, so it
+  writes through a bundled `bin/` script — **not** the `Edit`/`Write` tools — and the
+  tool-level deny does not cover an arbitrary subprocess (it covers Edit/Write and
+  *recognized* file-commands only). So the only sanctioned mutation path is the sync.
+- **Optional project-side `deny`.** A project may also pin
+  `permissions.deny: ["Edit(.claude/rules/<managed>)"]` in its own
+  `.claude/settings.json`. A plugin **cannot** ship this (plugin `settings.json`
+  supports only `agent`/`subagentStatusLine`), so onboarding writes it, not the plugin.
+- **Detection (out-of-session).** Hooks intercept only edits made *through Claude
+  Code*. A human editor, a formatter, or a `git` op bypasses `PreToolUse` entirely;
+  those are caught after the fact by the **drift guard** (SessionStart +
+  `InstructionsLoaded`) and the **CI drift gate** (blocks the PR) — like any managed
+  artifact. The `MANAGED — do not edit` header is advisory on top.
+
+**Boundary, stated plainly:** in-session accidental edits are **prevented**;
+out-of-session edits are **detected, not prevented**. This is a guardrail, not DRM —
+a human can deliberately remove the hook/deny, after which detection still flags the
+divergence for review.
+
 ---
 
 ## 5. Project-specific overlay style (unified)
