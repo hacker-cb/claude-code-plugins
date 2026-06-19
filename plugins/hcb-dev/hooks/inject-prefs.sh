@@ -27,6 +27,11 @@ esac
 cat <<EOF
 # Developer house style (hcb-dev)
 
+Personal defaults at low priority — apply them only when nothing more specific
+does. Project instructions (e.g. CLAUDE.md), conventions already established in
+the repo, and explicit requests in the conversation all take precedence over the
+preferences below.
+
 ## Communication in chat
 - Communicate in ${lang_chat}.${emoji_bullet}
 
