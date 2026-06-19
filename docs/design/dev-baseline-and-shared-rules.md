@@ -1,6 +1,6 @@
 # Design: dev baseline plugin + shared-rules synchronization
 
-Status: **proposal** · Owner: hacker-cb · Last updated: 2026-06-19
+Status: **proposal** · Owner: hacker-cb · Last updated: 2026-06-19 (rev 2 — constraints re-verified against the full `plugins-reference.md` + `hooks.md`; added C9–C11 and corrected the "no plugin dependencies" assumption)
 
 This document proposes how the `hacker-cb-plugins` marketplace should deliver a
 reusable development baseline across many repositories (DALI, NEXUS today; more
@@ -46,18 +46,22 @@ similar. Anything host-specific (PR vs MR, `gh` vs `glab`, Copilot, sub-issues,
 ## 2. Hard constraints (verified against Claude Code docs)
 
 These facts shape every decision below. Verified 2026-06-19 against
-`code.claude.com/docs` and the public issue tracker.
+`code.claude.com/docs` — `plugins-reference.md` and `hooks.md` read **in full**
+(not via summary), plus `memory.md` and the public issue tracker.
 
 | # | Fact | Source / consequence |
 |---|---|---|
-| C1 | A plugin **cannot ship `.claude/rules/*.md`** to consuming projects. Rules are a project-local feature. | `memory.md`. The only plugin path to always-on context is a SessionStart hook printing to stdout (`additionalContext`). |
+| C1 | A plugin **cannot ship `.claude/rules/*.md`** or a context-loaded `CLAUDE.md`. A plugin-root `CLAUDE.md` is explicitly **not** loaded; plugins contribute context only through **skills, agents, and hooks**. | `plugins-reference.md` (§Plugin directory structure), `memory.md`. Always-on context from a plugin = a SessionStart hook printing to stdout (`additionalContext`). |
 | C2 | `paths:` frontmatter scoping exists **only** for project-local rules, not hook-injected text. | `memory.md`. Hook-injected guidance is always-on and costs context every session. |
 | C3 | Marketplace plugin install **does not initialize git submodules** (documented bug `anthropics/claude-code#17293`). | A submodule *inside a plugin* is dead. |
-| C4 | An installed plugin **cannot reference files outside its own root** (`../shared` is not copied to cache). | Canonical content must be **vendored inside the plugin**, not linked. |
+| C4 | An installed plugin **cannot reference files outside its own root** (`../shared` is not copied to cache). **Exception:** a symlink whose target resolves **elsewhere in the same marketplace** is *dereferenced* — its content is copied into the cache (the documented "meta-plugin" pattern). | `plugins-reference.md` (§Plugin caching and file resolution). Canon is **vendored inside `hcb-dev`**; the symlink exception is a fallback if another hcb plugin ever needs the same canon. |
 | C5 | A plugin **can bundle arbitrary non-component files** (`rules/`, `manifest.yml`); the whole plugin dir is copied to cache and is readable via `${CLAUDE_PLUGIN_ROOT}`. | Enables a canon-in-plugin + sync-skill design. |
-| C6 | `${CLAUDE_PLUGIN_ROOT}` (plugin dir) and `CLAUDE_PROJECT_DIR` / hook `cwd` (project root) are both available to hooks and bin. | A hook can `sha256` a project file and compare against canon → drift detection works. |
-| C7 | A plugin carries a `version` in `plugin.json`; consumers receive updates when that version bumps (explicit version) or per-commit (no version). There is **no per-project version pin** for a marketplace plugin. | The plugin's semver is the global propagation lever; per-project staging comes from sync being an explicit, reviewable action. |
-| C8 | A SessionStart hook **cannot enumerate which plugins are loaded**. The stdin payload is `{ session_id, cwd, source, model }` only — no plugin list, no "first run" flag, and in cloud envs `.git` always exists (fresh clone). | Plugin-presence and new-project detection must be inferred, not read from an API. |
+| C6 | `${CLAUDE_PLUGIN_ROOT}` (plugin dir) and `${CLAUDE_PROJECT_DIR}` / hook `cwd` (project root) are available to hooks and bin. | A hook can `sha256` a project file and compare against canon → drift detection works. |
+| C7 | A plugin carries a `version` in `plugin.json`; with an explicit version consumers update **only** when it bumps, else per-commit (git-SHA version). There is **no per-project version pin** for a marketplace plugin. | The plugin's semver is the global propagation lever; per-project staging comes from sync being an explicit, reviewable action. |
+| C8 | A SessionStart hook **cannot enumerate which plugins are loaded** (stdin: `session_id, cwd, source, model`; no plugin list, no "first run" flag; in cloud `.git` always exists). | New-project / plugin-presence detection is **inferred** — but C9/C11 give stronger levers than this doc first assumed. |
+| **C9** | **Plugins can declare `dependencies` on other plugins** (optionally version-constrained). Installing a plugin **auto-installs** its deps; enabling **transitively enables** them (and fails if a dep is not installed). | `plugins-reference.md` (§manifest `dependencies`, `plugin enable`/`prune`), `/en/plugin-dependencies`. **Corrects the earlier "no dependency mechanism" assumption** — the baseline↔forge link is a real dependency, not a docs convention. |
+| **C10** | `${CLAUDE_PLUGIN_DATA}` is a **persistent** per-plugin dir that survives updates; the docs give a canonical SessionStart pattern that `diff`s a bundled file against a copy there to detect "changed since last run". | `plugins-reference.md` (§Persistent data directory). The drift guard uses this idiom (stamp/hash cache) instead of a hand-rolled one. |
+| **C11** | The **`InstructionsLoaded`** hook fires when a `CLAUDE.md` / `.claude/rules/*.md` loads (at start and on lazy load). | `plugins-reference.md` (hook table), `memory.md`. Lets the guard verify a managed rule's hash **at load time** and observe which rules actually loaded — partly softening C8. |
 
 **Net:** drop submodules entirely; vendor canon inside `hcb-dev`; distribute via
 an explicit, drift-guarded sync skill that writes real files into the project's
@@ -134,7 +138,7 @@ plugins/hcb-dev/
   hooks/
     hooks.json
     inject-prefs.sh             # existing language injection (low-priority defaults)
-    session-baseline.sh         # NEW: drift warn + new-project + plugin-presence nudge
+    session-baseline.sh         # NEW: drift warn (SessionStart + InstructionsLoaded) + new-project + plugin-presence nudge
   skills/
     rules/                      # NEW: /hcb-dev:rules  (sync | check | diff)
     onboard/                    # NEW: /hcb-dev:onboard
@@ -188,8 +192,11 @@ adopted:
 # T3 rules are not listed here; they are linted, not synced.
 ```
 
-The sync skill records each managed file's expected hash inline in `rules.yml`,
-so the drift guard can compare without network access.
+The sync skill records each managed file's expected hash inline in `rules.yml`.
+The drift guard follows the documented `${CLAUDE_PLUGIN_DATA}` idiom (C10): it
+compares the project's managed files — and the canon stamp cached in the persistent
+data dir — against `${CLAUDE_PLUGIN_ROOT}`, so it works offline and detects both
+"project edited a managed file" and "canon changed since last sync".
 
 ### 4.5 Propagation flow
 
@@ -203,6 +210,10 @@ bump hcb-dev version  ──▶  SessionStart drift guard warns "behind / diverg
 This is the **same model both repos already use** for generated, drift-guarded
 artifacts (DBML, OpenAPI snapshot, TS codegen, `.env.example`): a managed file
 with a "do not edit" header plus a CI drift check. No new mental model.
+
+The drift-guard hook is **harness-only — no model context cost** unless it emits
+(`plugins-reference.md` §plugin details): a clean, in-sync project pays ~0 tokens;
+the warning text enters context only when there is actual drift to report.
 
 ---
 
@@ -294,7 +305,10 @@ explicit request in the conversation
 ## 7. Onboarding a new project
 
 Detection signal is **not** `.git` (always present in cloud — C8). Use absence of
-markers: no `CLAUDE.md`, no `.claude/`, no `.claude/hcb-dev/project.yml`.
+markers: no `CLAUDE.md`, no `.claude/`, no `.claude/hcb-dev/project.yml`. The
+`InstructionsLoaded` hook (C11) additionally reports which rule files actually
+loaded, so the baseline can tell an *uninitialized* project from one whose managed
+rules merely failed to sync.
 
 - `session-baseline.sh` (SessionStart, part of `hcb-dev`) prints a soft nudge when
   the project looks uninitialized: *"this project isn't set up for hcb — run
@@ -309,20 +323,27 @@ markers: no `CLAUDE.md`, no `.claude/`, no `.claude/hcb-dev/project.yml`.
 
 ## 8. Plugin presence in cloud envs
 
-Honest scope: **partially solvable** — there is no hook API to list loaded
-plugins (C8). The strategy:
+Revised after C9 — this splits into **hard** and **soft** dependencies:
 
-1. The project declares its expected set in `.claude/hcb-dev/project.yml: expects_plugins`.
-2. `session-baseline.sh` (guaranteed to run — it *is* `hcb-dev`) prints the
-   expected set and a reminder: *"if any of these slash-commands / MCP tools are
-   missing, the plugin failed to load — check `/plugin`"*.
-3. **The model self-checks**: in-session it sees which skills / MCP tools are
-   actually available and compares against the declared expectation. This is the
-   most reliable detector available within current constraints.
+- **Hard deps → real `dependencies`.** A forge plugin declares
+  `dependencies: ["hcb-dev"]`; enabling the forge plugin in a project then
+  **auto-installs and transitively enables** the baseline — no nudge needed, no way
+  to "forget" it. This is the primary fix for the cloud-load worry. The exact
+  cross-marketplace resolution + version-constraint semantics live in
+  `/en/plugin-dependencies` (consult before relying on them).
+- **Soft / optional companions → `expects_plugins` + nudge.** Recommended-but-not-
+  required plugins (e.g. `markdown-docs`, project MCP servers) stay in
+  `.claude/hcb-dev/project.yml: expects_plugins`. `session-baseline.sh` (guaranteed
+  to run — it *is* `hcb-dev`) prints the expected set: *"if any of these
+  slash-commands / MCP tools are missing, check `/plugin`"*.
+- **Verification levers.** `InstructionsLoaded` (C11) confirms managed rules
+  loaded; the model also self-checks which skills / MCP tools are present against the
+  declared set. There is still no API to *enumerate* plugins (C8), but the hard-dep
+  path means the critical ones can no longer go missing silently.
 
-`enabledPlugins` + `extraKnownMarketplaces` in `.claude/settings.json` (already
-present in both repos) are what *should* auto-load; the nudge covers the case
-where cloud load silently fails.
+Residual gap: if the **marketplace itself** was never registered in the env, even
+`dependencies` can't resolve — that stays a declare + nudge case (and an onboarding
+concern: §7 scaffolds `extraKnownMarketplaces` + `enabledPlugins`).
 
 ---
 
@@ -338,8 +359,11 @@ Recommended: **baseline + per-forge**, not one mega-plugin.
 - A project enables `hcb-dev` **plus** its forge plugin. "Complete dev experience"
   is the pair; the baseline stays portable and free of GitHub-only logic.
 
-Claude Code has no plugin dependency/bundle mechanism, so this is a documentation
-+ convention concern, surfaced through `expects_plugins` (§8).
+Forge plugins declare a real **`dependency` on `hcb-dev`** (C9): enabling a forge
+plugin in a project auto-installs and transitively enables the baseline, so the
+"complete dev experience" pair is enforced by the dependency graph, not just
+convention. `expects_plugins` (§8) is then reserved for *optional* companions.
+`hcb-dev` depends on nothing and ships `defaultEnabled: true` (it is the baseline).
 
 ### Forge-neutrality work
 
@@ -385,6 +409,7 @@ Captured with the recommended default (to revisit before each phase):
 
 - No backward-compatibility shims for the current hand-copied files — they are
   replaced in place (per each repo's `early-stage` policy).
-- No attempt to auto-install plugins (unsupported — C7); onboarding only scaffolds
-  `settings.json` and nudges the operator.
+- Onboarding scaffolds `settings.json` (marketplace + `enabledPlugins`) and relies
+  on plugin **`dependencies`** (C9) to pull the baseline in; it installs plugins by
+  no other means, and for *optional* companions it only nudges.
 - No runtime plugin-load enforcement beyond declare + nudge + model self-check.
