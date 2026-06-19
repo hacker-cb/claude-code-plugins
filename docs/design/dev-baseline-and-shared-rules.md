@@ -1,6 +1,11 @@
 # Design: dev baseline plugin + shared-rules synchronization
 
-Status: **proposal** · Owner: hacker-cb · Last updated: 2026-06-19 (rev 2 — constraints re-verified against the full `plugins-reference.md` + `hooks.md`; added C9–C11 and corrected the "no plugin dependencies" assumption)
+Status: **proposal** — a *temporary working spec*. Before the feature merges, the
+durable parts are distilled into `CLAUDE.md` / the `hcb-dev` README + a kept C1–C11
+note, and this file is removed (not landed on `main` verbatim; git history is the
+archive). · Owner: hacker-cb · Last updated: 2026-06-19 (rev 3 — re-verified against
+the full `plugins-reference.md` + `hooks.md`; added C9–C11, edit-protection §4.6, and
+settings/version checks §8; corrected the "no plugin dependencies" assumption)
 
 This document proposes how the `hacker-cb-plugins` marketplace should deliver a
 reusable development baseline across many repositories (DALI, NEXUS today; more
@@ -11,6 +16,14 @@ It supersedes the ad-hoc duplication currently in use: the three files
 `git-branches.md`, `github-issue-tracking.md`, `early-stage.md` are copied
 **byte-for-byte** into every repo's `.claude/rules/`, with no source of truth and
 no drift detection.
+
+**At a glance.** Rules are vendored as canon inside the `hcb-dev` plugin and synced
+into each project's `.claude/rules/` as real, drift-guarded files (no submodules, no
+stdout injection). They are classified into four tiers — **T1** verbatim · **T2**
+shared body + a contract-checked companion · **T3** project-authored to a shared form
+· **T0** the manifest/spec that runs the system. Distribution rides plugin versioning
++ an explicit `/hcb-dev:rules sync`; a `PreToolUse` deny + drift guard protect the
+synced files; the baseline↔forge link is a real plugin `dependency`.
 
 ---
 
@@ -108,6 +121,9 @@ Notes:
   and a `rule-new` scaffolder).
 - **T0 — the synchronization system.** A manifest in the plugin classifies every
   managed rule; a small project-side lock records what the project adopted.
+- **Naming note.** Examples use the **canonical** names. `issue-tracking.md` is the
+  forge-neutral canon name; the file is `github-issue-tracking.md` in the repos today
+  and is renamed in phase 4 (§9).
 
 ---
 
@@ -118,8 +134,9 @@ sync skill reconciles a project against it. No submodules anywhere (C3).
 
 ### 4.1 Three file operations (one per tier)
 
-1. **Sync managed file verbatim** (T1, and T2 bodies): write the file into
-   `.claude/rules/` with a `MANAGED — do not edit` header; guard = file hash.
+1. **Sync managed file verbatim** (T1, and T2 bodies): the sanctioned `bin/` writer
+   (§4.6) writes the file into `.claude/rules/` with a `MANAGED — do not edit` header
+   — never the model's `Edit`/`Write`, which are denied on managed paths; guard = file hash.
 2. **Validate companion against contract** (T2 slots): check `labels.yml` /
    `project.yml` against the stated invariant; guard = contract check.
 3. **Lint project file against the authoring spec** (T3): frontmatter present,
@@ -145,11 +162,14 @@ plugins/hcb-dev/
   hooks/
     hooks.json
     inject-prefs.sh             # existing language injection (low-priority defaults)
-    session-baseline.sh         # NEW: drift warn (SessionStart + InstructionsLoaded) + new-project + plugin-presence nudge
+    session-baseline.sh         # NEW: drift warn (SessionStart + InstructionsLoaded) + new-project + settings/plugin-presence nudge
+    guard-managed.sh            # NEW: PreToolUse deny on managed rule paths (§4.6)
+  bin/
+    hcb-rules                   # NEW: the sanctioned writer the sync skill calls (§4.6)
   skills/
     rules/                      # NEW: /hcb-dev:rules  (sync | check | diff)
-    onboard/                    # NEW: /hcb-dev:onboard
-    rule-new/                   # NEW (phase 3): scaffold a T3 rule per spec
+    onboard/                    # NEW: /hcb-dev:onboard  (+ --fix for settings)
+    rule-new/                   # NEW (phase 4): scaffold a T3 rule per spec
     dependency-versions/        # existing
     library-docs/               # existing
 ```
@@ -447,10 +467,10 @@ convention. `expects_plugins` (§8) is then reserved for *optional* companions.
 
 | Phase | Scope | Touches |
 |---|---|---|
-| **0** | Vendor canon into `hcb-dev` (`rules/canonical/*`, `manifest.yml`); build `/hcb-dev:rules` (sync/check/diff) + drift guard. | `hcb-dev` only |
+| **0** | Vendor canon (`rules/canonical/*`, `manifest.yml`); the `bin/` writer + `/hcb-dev:rules` (sync/check/diff); drift guard + the `PreToolUse` edit-protection hook (§4.6). | `hcb-dev` only |
 | **1** | Adopt in DALI + NEXUS: replace the 3 duplicated files with synced managed files; add `.claude/hcb-dev/rules.yml`; verify `labels.yml` companion contract. | dali, nexus |
 | **2** | Language refactor: `language.md` (T2) + `.claude/hcb-dev/project.yml: languages`; remove contradictions; collapse scattered policy. | hcb-dev, dali, nexus |
-| **3** | Onboarding + plugin-presence: `/hcb-dev:onboard`, `session-baseline.sh`, `expects_plugins`. | hcb-dev (+ consuming repos opt-in) |
+| **3** | Onboarding + presence: `/hcb-dev:onboard` (+ `--fix`), `session-baseline.sh`, `expects_plugins`, settings presence-check + new-version notification (§8). | hcb-dev (+ consuming repos opt-in) |
 | **4** | Forge-neutrality: rename to `issue-tracking.md`; scaffold `hcb-gitlab`; `rule-authoring.md` + T3 linter + `rule-new`. | hcb-dev, hcb-github, new hcb-gitlab |
 
 Phases 0–1 deliver ~90% of the value (no more duplication, SSOT, drift guard) and
