@@ -19,7 +19,7 @@
     {
       "name": "hcb-dev",
       "source": "./plugins/hcb-dev",
-      "description": "Personal developer baseline: per-scope language (chat / plans / comments / docs) injected each session and configurable via plugin settings, plus dependency-versioning (incl. Dependabot config sync) and Context7 library-docs skills.",
+      "description": "Personal developer baseline: per-scope language (chat / plans / comments / docs / issues) injected each session and configurable via plugin settings, plus dependency-versioning (incl. Dependabot config sync) and Context7 library-docs skills.",
       "category": "productivity",
       "tags": ["developer", "rules", "preferences", "i18n", "dependencies", "documentation"]
     },

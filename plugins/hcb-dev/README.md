@@ -26,6 +26,7 @@ install, or by editing `settings.json`.
 | `lang_plans` | `Russian` | Language for temporary plan/spec working notes |
 | `lang_comments` | `English` | Language for code comments |
 | `lang_docs` | `English` | Language for project documentation |
+| `lang_issues` | `Russian` | Language for GitHub / GitLab issues (titles, descriptions, comments) |
 | `use_emojis` | `true` | Whether to use emojis in chat |
 
 ## What it does
@@ -34,9 +35,9 @@ install, or by editing `settings.json`.
 
 At the start of every session, the plugin injects a short "house style" derived
 from the settings above: which language to use in chat (and whether to use
-emojis), and which language to use for plan/spec notes, code comments, and
-project docs. Durable artifacts (code identifiers, commit messages) stay in
-English. No invocation needed — it applies automatically.
+emojis), and which language to use for plan/spec notes, code comments, project
+docs, and GitHub/GitLab issues. Durable artifacts (code identifiers, commit
+messages) stay in English. No invocation needed — it applies automatically.
 
 ### Skills
 

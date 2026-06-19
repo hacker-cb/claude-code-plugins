@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hcb-dev",
-  "description": "Personal developer baseline: per-scope language (chat / plan-spec notes / code comments / project docs) injected each session via a SessionStart hook and configured through plugin settings, plus skills for resolving dependency versions (keeping GitHub Dependabot config in sync) and pulling current library docs from Context7.",
-  "version": "0.2.0",
+  "description": "Personal developer baseline: per-scope language (chat / plan-spec notes / code comments / project docs / GitHub-GitLab issues) injected each session via a SessionStart hook and configured through plugin settings, plus skills for resolving dependency versions (keeping GitHub Dependabot config in sync) and pulling current library docs from Context7.",
+  "version": "0.3.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
@@ -35,6 +35,12 @@
       "title": "Project docs language",
       "description": "Language for project documentation.",
       "default": "English"
+    },
+    "lang_issues": {
+      "type": "string",
+      "title": "Issues language",
+      "description": "Language for GitHub / GitLab issues (titles, descriptions, comments).",
+      "default": "Russian"
     },
     "use_emojis": {
       "type": "boolean",
