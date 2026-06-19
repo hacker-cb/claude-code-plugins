@@ -2,11 +2,14 @@
 
 This repo is a **Claude Code plugin marketplace** named `hacker-cb-plugins`. It both *is* a marketplace (`.claude-plugin/marketplace.json`) and *hosts* the plugins it lists — first-party plugins under `plugins/` and thin external-MCP wrappers under `external_plugins/`.
 
-Official documentation — consult before changing structure:
+Official documentation — consult before changing structure. The raw `.md` URLs are WebFetch-friendly and on Claude's preapproved doc domains, so fetch them on demand (do **not** vendor or `@`-import them — `@` imports local files only, and these large refs would load in full every session):
 
-- Plugins: <https://code.claude.com/docs/en/plugins.md>
-- Marketplaces: <https://code.claude.com/docs/en/plugin-marketplaces>
-- Skills: <https://code.claude.com/docs/en/skills>
+- Plugins (authoring guide): <https://code.claude.com/docs/en/plugins.md>
+- Plugins reference (manifest schema, component dirs, `${CLAUDE_PLUGIN_ROOT}`, version pinning, cache/file-resolution): <https://code.claude.com/docs/en/plugins-reference.md>
+- Marketplaces: <https://code.claude.com/docs/en/plugin-marketplaces.md>
+- Skills: <https://code.claude.com/docs/en/skills.md>
+- Hooks (events, stdin JSON, exit-code / `additionalContext` contract, matchers, plugin `hooks.json`): <https://code.claude.com/docs/en/hooks.md>
+- Tools reference (tool names for skill `allowed-tools` + hook matchers, `ToolName(specifier)` permission format): <https://code.claude.com/docs/en/tools-reference.md>
 
 ## Conventions
 
