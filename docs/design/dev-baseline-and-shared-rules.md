@@ -170,11 +170,11 @@ plugins/hcb-dev/
     session-start.mjs           # drift + new-project + settings/presence nudge (shares lib/)
     guard.mjs                   # PreToolUse deny on managed rule paths (§4.6)
     inject-prefs.mjs            # language injection (replaces inject-prefs.sh)
-  skills/
-    rules/                      # /hcb-dev:rules → node bin/hcb-rules.mjs (allowed-tools)
-    onboard/                    # /hcb-dev:onboard  (+ --fix for settings)
+  skills/                       # action skills (rules/onboard/rule-new): disable-model-invocation: true
+    rules/                      # /hcb-dev:rules → node bin/hcb-rules.mjs (allowed-tools: Bash(hcb-rules *))
+    onboard/                    # /hcb-dev:onboard  (+ --fix, --forge)
     rule-new/                   # phase 4: scaffold a T3 rule per spec
-    dependency-versions/  library-docs/   # existing
+    dependency-versions/  library-docs/   # existing (knowledge skills; model-invocable)
 # repo root: package.json ("type":"module", devDeps typescript + @types/node),
 #            tests/*.test.mjs (node --test), tsconfig.json (allowJs/checkJs/noEmit)
 ```
