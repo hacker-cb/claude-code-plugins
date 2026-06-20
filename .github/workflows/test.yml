@@ -1,0 +1,58 @@
+name: Test
+
+# Engine gate for the Node-based hcb-dev rules engine: full test suite with a
+# 100% coverage threshold plus a TypeScript (checkJs) type-check. Structural /
+# schema validation lives in validate.yml; this workflow owns the JS engine.
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/hcb-dev/lib/**'
+      - 'plugins/hcb-dev/bin/**'
+      - 'plugins/hcb-dev/hooks/**'
+      - 'plugins/hcb-dev/rules/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/test.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/hcb-dev/lib/**'
+      - 'plugins/hcb-dev/bin/**'
+      - 'plugins/hcb-dev/hooks/**'
+      - 'plugins/hcb-dev/rules/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Engine tests + type-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dev tooling
+        run: npm ci
+
+      - name: Test suite (100% coverage gate)
+        run: npm run test:cov
+
+      - name: Type-check (tsc --checkJs)
+        run: npm run typecheck

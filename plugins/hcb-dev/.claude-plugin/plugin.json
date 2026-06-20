@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hcb-dev",
-  "description": "Personal developer baseline: per-scope language (chat / plan-spec notes / code comments / project docs / GitHub-GitLab issues) injected each session via a SessionStart hook and configured through plugin settings, plus skills for resolving dependency versions (keeping GitHub Dependabot config in sync) and pulling current library docs from Context7.",
-  "version": "0.3.1",
+  "description": "Personal developer baseline. Injects per-scope language house style (chat / plan-spec notes / code comments / project docs / GitHub-GitLab issues) each session via a SessionStart hook, configurable in plugin settings. Synchronizes canonical cross-project rules (branching & PR flow, issue tracking, early-stage policy) into a project's .claude/rules/hcb/ via the /hcb-dev:rules command, with a PreToolUse guard and a SessionStart drift check keeping the managed copies faithful to canon. Also ships skills for resolving dependency versions (keeping GitHub Dependabot config in sync) and pulling current library docs from Context7.",
+  "version": "0.4.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
@@ -10,7 +10,7 @@
   "homepage": "https://github.com/hacker-cb/claude-code-plugins",
   "repository": "https://github.com/hacker-cb/claude-code-plugins",
   "license": "MIT",
-  "keywords": ["developer", "rules", "preferences", "i18n", "dependencies", "documentation", "workflow"],
+  "keywords": ["developer", "rules", "rules-sync", "preferences", "i18n", "dependencies", "documentation", "workflow"],
   "userConfig": {
     "lang_chat": {
       "type": "string",

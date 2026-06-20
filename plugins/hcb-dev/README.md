@@ -44,6 +44,36 @@ specific does. Project instructions (e.g. `CLAUDE.md`), conventions already
 established in the repo, and explicit requests in the conversation all take
 precedence over them.
 
+### Managed rules — `/hcb-dev:rules`
+
+The plugin carries a small set of **canonical cross-project rules** — branching
+& PR flow, issue tracking, and the early-stage breaking-change policy — that
+several of the author's repos must share verbatim. Instead of hand-copying them,
+a project adopts them with one command:
+
+```text
+/hcb-dev:rules sync     # write/update the managed rule files, record the lock
+/hcb-dev:rules check    # report drift without writing (the default with no arg)
+```
+
+`sync` materializes each enabled rule into `.claude/rules/hcb/<name>.md` (Claude
+Code loads `.claude/rules/**` automatically) and records a lock at
+`.claude/hcb-dev/rules.json`. New canon rules auto-adopt on the next `sync`; a
+rule disabled in the lock is removed. The canon itself lives in the plugin under
+`rules/canonical/`, indexed by `rules/manifest.json`.
+
+Two hooks keep the managed copies faithful to canon:
+
+- a **`PreToolUse` guard** denies any `Edit`/`Write`/`NotebookEdit` to a file
+  under `.claude/rules/hcb/` — the synced copies are owned by the plugin, so a
+  change must be made to the canon and re-synced, never edited in place;
+- a **`SessionStart` drift check** prints a short, actionable note when an
+  adopted project's managed files no longer match canon (and stays silent
+  otherwise).
+
+To change a managed rule, edit its canon in
+`plugins/hcb-dev/rules/canonical/` and run `/hcb-dev:rules sync`.
+
 ### Skills
 
 #### `dependency-versions` — `/hcb-dev:dependency-versions`
