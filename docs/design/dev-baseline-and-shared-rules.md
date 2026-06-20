@@ -539,6 +539,11 @@ Captured with the recommended default (to revisit before each phase):
 6. **Forge abstraction depth** — *recommend:* keep `forge: github|gitlab|gitverse` a
    simple enum for now; defer a capability model until the 2nd forge (`hcb-gitlab`)
    actually lands (`early-stage`: don't pre-abstract).
+7. **Engine language** — *recommend:* `bin/hcb-rules` in **Python (stdlib-only)**; machine
+   files (manifest / lock / stamp) in **JSON**; hooks become thin shims that
+   `exec hcb-rules <subcommand>`. Maximises testability (pytest, zero deps, cross-platform)
+   for the 100%-coverage goal. Alternatives: bash (hard to cover) or Node (adds
+   `node_modules`). See §13.
 
 ---
 
@@ -550,3 +555,65 @@ Captured with the recommended default (to revisit before each phase):
   on plugin **`dependencies`** (C9) to pull the baseline in; it installs plugins by
   no other means, and for *optional* companions it only nudges.
 - No runtime plugin-load enforcement beyond declare + nudge + model self-check.
+
+---
+
+## 13. Testing & CI
+
+### What "business logic" means here
+
+The deterministic core is the **`bin/hcb-rules` engine**: manifest parse + tier
+classification, T1/T2 verbatim sync (idempotent, managed header, hash recorded),
+companion-contract validation, T3 lint, drift detection (file hashes + the
+`${CLAUDE_PLUGIN_DATA}` canon stamp — C10), de-adopt deletion, the `PreToolUse` guard
+decision (§4.6), and the settings/version checks (§8). **100% coverage targets this
+engine.** Skills and agents are prompts, **not** unit-testable — they are *evaluated*
+(model-in-the-loop), not covered.
+
+### Consolidate logic into one tested engine (recommendation — §11.7)
+
+Put **all** logic in `bin/hcb-rules` (Python, stdlib-only); the hooks become **thin
+shims** that `exec hcb-rules <subcommand>`:
+
+- `guard-managed.sh` → `hcb-rules guard` (reads the `PreToolUse` JSON, emits the deny)
+- `session-baseline.sh` → `hcb-rules session-start` (drift + settings + new-version nudge)
+- `inject-prefs.sh` → `hcb-rules lang` (language injection)
+- the `/hcb-dev:rules` skill → `hcb-rules sync | check | diff`
+
+Then "100% business logic" = 100% of one Python package; the bash shims are trivial
+(`shellcheck` + a smoke invocation). Machine files (manifest / lock / stamp) are **JSON**
+(stdlib); human companions stay YAML.
+
+### Test suite (100% of the engine)
+
+- **`pytest` units** per concern: sync idempotence / managed-header / hash recording;
+  drift (project-edit, canon-change); T2 contract pass+fail; T3 lint pass+fail; de-adopt
+  deletion; guard deny-vs-allow (feed `tool_input` JSON); settings presence; version-notify.
+- **Integration smoke:** `hcb-rules sync` against a temp project dir → assert the written
+  tree + lock, and that a re-run is a no-op; `hcb-rules check` exits non-zero on drift.
+- **`shellcheck`** on the thin bash shims.
+
+### CI — a separate `test.yml`
+
+Keep `validate.yml` (structural: `scripts/validate.sh` + `claude plugin validate`). Add
+**`test.yml`** gating PRs + push to `main`, triggered on `plugins/hcb-dev/**` + `tests/**`:
+
+- `test`: `pytest` + a **100% coverage gate** on the engine package.
+- `lint`: `shellcheck` the shims + `ruff` the Python.
+- matrix: ubuntu + macOS (the dev targets).
+
+**The same `hcb-rules check`** powers both the local drift guard and the **drift gate in
+consumer CI** (dali / nexus, phase 1) — one command, two homes.
+
+### Claude token in CI — not needed for the gate
+
+The required CI is **deterministic and offline**: `scripts/validate.sh`,
+`claude plugin validate` (the existing `validate.yml` already runs it with
+`permissions: contents: read` and **no token** — it is a schema/frontmatter checker, not
+a model call), and the `pytest` engine tests. **No `ANTHROPIC_API_KEY` required.** A token
+is needed **only** for optional **model-in-the-loop skill evals** (skill-creator: does a
+skill trigger / is its output good) — paid and non-deterministic, so keep them
+**non-gating**: a manual `workflow_dispatch` / nightly job behind an `ANTHROPIC_API_KEY`
+repo secret, never the PR gate.
+
+This testing scaffold is built **with** the engine in **phase 0** (§10).
