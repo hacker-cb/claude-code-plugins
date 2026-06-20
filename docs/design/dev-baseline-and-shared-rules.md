@@ -641,9 +641,16 @@ This testing scaffold is built **with** the engine in **phase 0** (§14).
 
 ## 14. Implementation plan (end-to-end)
 
-Each phase is **one reviewable PR** and merges only when its **gate** is green; `hcb-dev`'s
-`version` bumps once per phase. Marketplace work continues on `feat/hcb-dev-baseline`;
-consumer work lands on each repo's own branch. Reference implementation throughout:
+**PR strategy.** All `hcb-dev` **marketplace** work lands as a **commit sequence on the
+current PR (#14 / `feat/hcb-dev-baseline`)** — one commit per logical step — not one PR per
+phase. The **design doc stays in the PR and is removed in the final commit** (phase 5), so
+the net diff to `main` is the implementation + distilled docs, no proposal. Each phase still
+advances behind its **gate**, and `hcb-dev`'s `version` bumps as meaningful steps land.
+
+**Cross-repo exception (a PR is one repo):** consumer adoption — DALI / NEXUS, phase 1 and
+the consumer halves of phases 2–3 — is **separate PRs in those repos** (their own branches);
+it cannot ride PR #14. A new forge plugin (`hcb-gitlab`, phase 4) is **its own PR** — an
+independent plugin, not part of the baseline. Reference implementation throughout:
 `openai/codex-plugin-cc` (§13).
 
 ### Phase 0 — Engine, canon, guards (marketplace repo only; **no consumer changes**)
