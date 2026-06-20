@@ -3,10 +3,10 @@
 Status: **proposal** — a *temporary working spec*. Before the feature merges, the
 durable parts are distilled into `CLAUDE.md` / the `hcb-dev` README + a kept C1–C12
 note, and this file is removed (not landed on `main` verbatim; git history is the
-archive). · Owner: hacker-cb · Last updated: 2026-06-19 (rev 4 — read
-`plugin-dependencies`, `plugin-marketplaces`, `skills`, `plugins` in full: deps are a
-**bare same-marketplace** dependency (C12, §9), and §8 gains the cloud seed-dir /
-git-failure levers + trust-prompt bootstrap)
+archive). · Owner: hacker-cb · Last updated: 2026-06-19 (rev 5 — **DECISION:** all
+rule-sync magic lives in `hcb-dev`; forge plugins are **independent** standard plugins
+(skills/agents) with **no rules and no dependency** on `hcb-dev`. The design no longer
+uses plugin dependencies; §8/§9/§11.4/C9/C12 updated.)
 
 This document proposes how the `hacker-cb-plugins` marketplace should deliver a
 reusable development baseline across many repositories (DALI, NEXUS today; more
@@ -24,7 +24,8 @@ stdout injection). They are classified into four tiers — **T1** verbatim · **
 shared body + a contract-checked companion · **T3** project-authored to a shared form
 · **T0** the manifest/spec that runs the system. Distribution rides plugin versioning
 + an explicit `/hcb-dev:rules sync`; a `PreToolUse` deny + drift guard protect the
-synced files; the baseline↔forge link is a real plugin `dependency`.
+synced files; `hcb-dev` owns **all** rule-sync, while forge plugins (`hcb-github`, …)
+are independent standard plugins (skills/agents) with **no rules**.
 
 ---
 
@@ -75,10 +76,10 @@ issue tracker.
 | C6 | `${CLAUDE_PLUGIN_ROOT}` (plugin dir) and `${CLAUDE_PROJECT_DIR}` / hook `cwd` (project root) are available to hooks and bin. | A hook can `sha256` a project file and compare against canon → drift detection works. |
 | C7 | A plugin carries a `version` in `plugin.json`; with an explicit version consumers update **only** when it bumps, else per-commit (git-SHA version). There is **no per-project version pin** for a marketplace plugin. | The plugin's semver is the global propagation lever; per-project staging comes from sync being an explicit, reviewable action. |
 | C8 | A SessionStart hook **cannot enumerate which plugins are loaded** (stdin: `session_id, cwd, source, model`; no plugin list, no "first run" flag; in cloud `.git` always exists). | New-project / plugin-presence detection is **inferred** — but C9/C11 give stronger levers than this doc first assumed. |
-| **C9** | **Plugins can declare `dependencies` on other plugins** (optionally version-constrained). Installing a plugin **auto-installs** its deps; enabling **transitively enables** them (and fails if a dep is not installed). | `plugins-reference.md` (§manifest `dependencies`, `plugin enable`/`prune`), `/en/plugin-dependencies`. **Corrects the earlier "no dependency mechanism" assumption** — the baseline↔forge link is a real dependency, not a docs convention. |
+| **C9** | **Plugins can declare `dependencies` on other plugins** (optionally version-constrained). Installing a plugin **auto-installs** its deps; enabling **transitively enables** them (and fails if a dep is not installed). | `plugins-reference.md` (§manifest `dependencies`, `plugin enable`/`prune`), `/en/plugin-dependencies`. Verified capability — but this design **deliberately does not use it** (forge plugins are independent — §9, §11.4); the fact is kept so a future version-pinned dependency knows the mechanics. |
 | **C10** | `${CLAUDE_PLUGIN_DATA}` is a **persistent** per-plugin dir that survives updates; the docs give a canonical SessionStart pattern that `diff`s a bundled file against a copy there to detect "changed since last run". | `plugins-reference.md` (§Persistent data directory). The drift guard uses this idiom (stamp/hash cache) instead of a hand-rolled one. |
 | **C11** | The **`InstructionsLoaded`** hook fires when a `CLAUDE.md` / `.claude/rules/*.md` loads (at start and on lazy load). | `plugins-reference.md` (hook table), `memory.md`. Lets the guard verify a managed rule's hash **at load time** and observe which rules actually loaded — partly softening C8. |
-| **C12** | Plugin dependency **version constraints** resolve only against `{plugin-name}--v{version}` **git tags** (`claude plugin tag`). A **bare** dependency (no version) tracks the marketplace's current version and needs no tags. Deps resolve **within the same marketplace** unless the root marketplace lists the target in `allowCrossMarketplaceDependenciesOn`. | `plugin-dependencies.md`, `plugin-marketplaces.md`. The repo policy is **no release tags**, so the baseline↔forge link is a **bare** same-marketplace dep (§9). |
+| **C12** | Plugin dependency **version constraints** resolve only against `{plugin-name}--v{version}` **git tags** (`claude plugin tag`). A **bare** dependency (no version) tracks the marketplace's current version and needs no tags. Deps resolve **within the same marketplace** unless the root marketplace lists the target in `allowCrossMarketplaceDependenciesOn`. | `plugin-dependencies.md`, `plugin-marketplaces.md`. **Informational** — the design uses no plugin deps (§9). Recorded so a future version-pinned dep knows it needs `--v` tags + same-marketplace (or the cross-marketplace allowlist). |
 
 > **On `memory.md`:** this cites the docs page *How Claude remembers your project*
 > (`code.claude.com/docs/en/memory.md`) for its **`CLAUDE.md` / `.claude/rules/` /
@@ -389,13 +390,13 @@ rules merely failed to sync.
 
 ## 8. Plugin presence in cloud envs
 
-Revised after C9 — this splits into **hard** and **soft** dependencies:
+We **don't** use plugin dependencies for this (forge plugins stay independent — §9).
+The layers:
 
-- **Hard deps → a bare `dependency`.** A forge plugin declares
-  `dependencies: ["hcb-dev"]` (bare, no version — C12); enabling it **auto-installs and
-  transitively enables** the baseline (CC ≥ 2.1.143) — no nudge, no way to "forget" it.
-  Same-marketplace, so it resolves without a cross-marketplace allowlist (§9). This is
-  the primary in-app fix for the cloud-load worry.
+- **Committed-settings bootstrap.** The project's `.claude/settings.json` ships
+  `extraKnownMarketplaces` + `enabledPlugins` (`hcb-dev` and any forge plugin), so Claude
+  Code **prompts to install/enable on folder-trust** — one click per clone. This is the
+  primary in-app mechanism that makes the expected set present, no dependency graph needed.
 - **Soft / optional companions → `expects_plugins` + nudge.** Recommended-but-not-
   required plugins (e.g. `markdown-docs`, project MCP servers) stay in
   `.claude/hcb-dev/project.yml: expects_plugins`. `session-baseline.sh` (guaranteed
@@ -473,17 +474,16 @@ Recommended: **baseline + per-forge**, not one mega-plugin.
 - A project enables `hcb-dev` **plus** its forge plugin. "Complete dev experience"
   is the pair; the baseline stays portable and free of GitHub-only logic.
 
-Forge plugins declare a **bare `dependency` on `hcb-dev`** — `"dependencies": ["hcb-dev"]`,
-no version constraint (C9/C12): enabling a forge plugin auto-installs and transitively
-enables the baseline (Claude Code ≥ 2.1.143), and disabling `hcb-dev` is blocked while a
-forge plugin still needs it. So the "complete dev experience" pair is enforced by the
-dependency graph, not just convention. A *constrained* dep would require
-`hcb-dev--v{version}` git tags (`claude plugin tag`) — which the repo deliberately does
-not use; revisit only if baseline version-pinning is ever needed. Both plugins live in the
-**same marketplace** (`hacker-cb-plugins`), so no `allowCrossMarketplaceDependenciesOn` is
-needed — but keep baseline + forge **co-located** (a cross-marketplace split would need
-that allowlist on the root marketplace). `expects_plugins` (§8) is reserved for *optional*
-companions. `hcb-dev` depends on nothing and ships `defaultEnabled: true`.
+Forge plugins are **independent standard plugins** — they declare **no `dependency` on
+`hcb-dev`** and carry **no rules** (decision §11.4); they live on their own and provide
+only what the standard plugin system offers (skills / agents / MCP / hooks). The
+"complete dev experience" pair is enabled by the **project's committed
+`.claude/settings.json: enabledPlugins`** (onboarding scaffolds it; the trust-prompt
+installs/enables on clone — §8), not by a plugin dependency graph. `hcb-dev` is enabled
+directly in every project; a forge plugin is an optional add-on enabled alongside, and is
+equally usable on its own (e.g. just the PR-workflow skill). This keeps baseline and forge
+concerns fully orthogonal and sidesteps the dependency machinery entirely (no version
+floor, no `--v` tags, no cross-marketplace allowlist — C12 is informational).
 
 ### Forge-neutrality work
 
@@ -522,11 +522,14 @@ Captured with the recommended default (to revisit before each phase):
    no in-file managed-region merging.
 3. **Start scope** — *recommend:* ship T0/T1/T2 (manifest + sync + drift) first;
    defer the T3 linter and `rule-new` to phase 4.
-4. **Forge-specific rule delivery** — *recommend:* keep **one** sync engine (in
-   `hcb-dev`). Forge plugins add **skills** (the existing `github-pr-workflow`
-   pattern), never their own rule-sync. If a rule's *content* must vary by forge,
-   model it as a T2 companion keyed by `forge:` in the `hcb-dev` manifest — do not
-   replicate the engine into `hcb-github` / `hcb-gitlab`.
+4. **Forge plugins — DECIDED (no rules at all).** All sync magic lives in `hcb-dev`.
+   Forge plugins (`hcb-github`, future `hcb-gitlab`) are **pure standard plugins** —
+   skills / agents / MCP / hooks only — with **no rules, no rule-sync, no companion
+   involvement**, and **no dependency on `hcb-dev`** (they "live on their own"). Rules
+   stay **forge-neutral**; forge-specific behaviour (PR vs MR, `gh` / `glab`, Copilot,
+   `#N` linking, sub-issues) lives in the forge plugin's **skills**, applied at workflow
+   time. The project's `forge:` value (companion) is the only forge hook a neutral rule
+   might name. Enablement of "baseline + forge" is settings-driven (§8), not a dep graph.
 5. **Managed-rules location** — *recommend:* sync into a segregated
    `.claude/rules/hcb/` subdir (still loaded recursively by Claude Code), not flat in
    `.claude/rules/`. Makes the `PreToolUse` deny-glob trivial
