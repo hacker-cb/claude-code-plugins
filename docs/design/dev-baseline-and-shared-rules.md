@@ -539,11 +539,17 @@ Captured with the recommended default (to revisit before each phase):
 6. **Forge abstraction depth** — *recommend:* keep `forge: github|gitlab|gitverse` a
    simple enum for now; defer a capability model until the 2nd forge (`hcb-gitlab`)
    actually lands (`early-stage`: don't pre-abstract).
-7. **Engine language** — *recommend:* `bin/hcb-rules` in **Python (stdlib-only)**; machine
-   files (manifest / lock / stamp) in **JSON**; hooks become thin shims that
-   `exec hcb-rules <subcommand>`. Maximises testability (pytest, zero deps, cross-platform)
-   for the 100%-coverage goal. Alternatives: bash (hard to cover) or Node (adds
-   `node_modules`). See §13.
+7. **Engine language** — *revised (was Python):* **Node.** It is the ecosystem-native
+   runtime — Claude Code itself is Node, so `node` is **guaranteed present** (the repo
+   already uses npm + wraps node MCP servers) — and the engine stays **zero runtime
+   dependency** (Node stdlib: `node:fs`, `node:crypto`, `JSON`; machine files in **JSON**).
+   Hooks stay thin shims (`node "${CLAUDE_PLUGIN_ROOT}/bin/hcb-rules.js" <subcommand>`).
+   Sub-choice **(open)**: **(a)** JSDoc-typed ESM JS, type-checked by
+   `tsc --noEmit --checkJs` — *no build, source runs directly* (best fit for plugins
+   copied-to-cache; **recommended**); or **(b)** real TypeScript with an esbuild/tsc step
+   emitting a committed, drift-checked `bin/hcb-rules.js` (matches the consuming repos'
+   codegen-commit pattern). Dev-only deps (`vitest` / `typescript` / `eslint`) never ship
+   in the plugin. See §13.
 
 ---
 
@@ -572,23 +578,26 @@ engine.** Skills and agents are prompts, **not** unit-testable — they are *eva
 
 ### Consolidate logic into one tested engine (recommendation — §11.7)
 
-Put **all** logic in `bin/hcb-rules` (Python, stdlib-only); the hooks become **thin
-shims** that `exec hcb-rules <subcommand>`:
+Put **all** logic in `bin/hcb-rules` (**Node, zero runtime deps** — `node` is guaranteed
+present since Claude Code is Node); the hooks become **thin shims** that
+`node "${CLAUDE_PLUGIN_ROOT}/bin/hcb-rules.js" <subcommand>`:
 
 - `guard-managed.sh` → `hcb-rules guard` (reads the `PreToolUse` JSON, emits the deny)
 - `session-baseline.sh` → `hcb-rules session-start` (drift + settings + new-version nudge)
 - `inject-prefs.sh` → `hcb-rules lang` (language injection)
 - the `/hcb-dev:rules` skill → `hcb-rules sync | check | diff`
 
-Then "100% business logic" = 100% of one Python package; the bash shims are trivial
+Then "100% business logic" = 100% of one **Node engine**; the bash shims are trivial
 (`shellcheck` + a smoke invocation). Machine files (manifest / lock / stamp) are **JSON**
-(stdlib); human companions stay YAML.
+(Node stdlib); human companions stay YAML. Type-safety comes from JSDoc + `tsc --noEmit`
+(or real TS + a build — §11.7); dev-only deps never ship in the plugin.
 
 ### Test suite (100% of the engine)
 
-- **`pytest` units** per concern: sync idempotence / managed-header / hash recording;
-  drift (project-edit, canon-change); T2 contract pass+fail; T3 lint pass+fail; de-adopt
-  deletion; guard deny-vs-allow (feed `tool_input` JSON); settings presence; version-notify.
+- **Unit tests** (`vitest`, or `node:test` + `c8`) per concern: sync idempotence /
+  managed-header / hash recording; drift (project-edit, canon-change); T2 contract pass+fail;
+  T3 lint pass+fail; de-adopt deletion; guard deny-vs-allow (feed `tool_input` JSON);
+  settings presence; version-notify.
 - **Integration smoke:** `hcb-rules sync` against a temp project dir → assert the written
   tree + lock, and that a re-run is a no-op; `hcb-rules check` exits non-zero on drift.
 - **`shellcheck`** on the thin bash shims.
@@ -598,8 +607,8 @@ Then "100% business logic" = 100% of one Python package; the bash shims are triv
 Keep `validate.yml` (structural: `scripts/validate.sh` + `claude plugin validate`). Add
 **`test.yml`** gating PRs + push to `main`, triggered on `plugins/hcb-dev/**` + `tests/**`:
 
-- `test`: `pytest` + a **100% coverage gate** on the engine package.
-- `lint`: `shellcheck` the shims + `ruff` the Python.
+- `test`: `vitest` (or `node:test` + `c8`) + a **100% coverage gate** on the engine.
+- `lint`: `shellcheck` the shims + `eslint` + `tsc --noEmit` (type-check).
 - matrix: ubuntu + macOS (the dev targets).
 
 **The same `hcb-rules check`** powers both the local drift guard and the **drift gate in
@@ -610,8 +619,8 @@ consumer CI** (dali / nexus, phase 1) — one command, two homes.
 The required CI is **deterministic and offline**: `scripts/validate.sh`,
 `claude plugin validate` (the existing `validate.yml` already runs it with
 `permissions: contents: read` and **no token** — it is a schema/frontmatter checker, not
-a model call), and the `pytest` engine tests. **No `ANTHROPIC_API_KEY` required.** A token
-is needed **only** for optional **model-in-the-loop skill evals** (skill-creator: does a
+a model call), and the engine tests (`vitest` / `node:test`). **No `ANTHROPIC_API_KEY`
+required.** A token is needed **only** for optional **model-in-the-loop skill evals** (skill-creator: does a
 skill trigger / is its output good) — paid and non-deterministic, so keep them
 **non-gating**: a manual `workflow_dispatch` / nightly job behind an `ANTHROPIC_API_KEY`
 repo secret, never the PR gate.
