@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "name": "git-branches",
+      "tier": "canonical",
+      "source": "canonical/git-branches.md"
+    },
+    {
+      "name": "issue-tracking",
+      "tier": "canonical",
+      "source": "canonical/issue-tracking.md"
+    },
+    {
+      "name": "early-stage",
+      "tier": "canonical",
+      "source": "canonical/early-stage.md",
+      "optional": true
+    }
+  ]
+}
