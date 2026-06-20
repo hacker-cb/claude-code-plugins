@@ -149,34 +149,34 @@ sync skill reconciles a project against it. No submodules anywhere (C3).
 
 ### 4.2 Plugin layout (proposed)
 
+Node layout mirroring `openai/codex-plugin-cc` (runtime `.mjs` in the plugin; dev
+tooling — `package.json` / `tests/` / `tsconfig.json` — at the **marketplace repo root**):
+
 ```
 plugins/hcb-dev/
   .claude-plugin/plugin.json
   rules/
-    manifest.yml                # T0: classifies every managed rule
+    manifest.json               # T0: classifies every managed rule (JSON — Node stdlib)
     canonical/                  # T1 bodies + T2 bodies (verbatim)
-      git-branches.md
-      early-stage.md
-      issue-tracking.md         # forge-neutral; references labels companion
-      language.md               # describes scopes; values live in companion
-      rule-authoring.md         # the T3 authoring spec (itself T1)
-    contracts/                  # T2 companion contracts + starter templates
-      labels.schema.yml
-      labels.github.starter.yml
-      project.schema.yml
-  hooks/
-    hooks.json
-    inject-prefs.sh             # existing language injection (low-priority defaults)
-    session-baseline.sh         # NEW: drift warn (SessionStart + InstructionsLoaded) + new-project + settings/plugin-presence nudge
-    guard-managed.sh            # NEW: PreToolUse deny on managed rule paths (§4.6)
+      git-branches.md  early-stage.md  issue-tracking.md  language.md  rule-authoring.md
+    contracts/                  # T2 companion contracts (JSON Schema) + starters
+      labels.schema.json  labels.github.starter.yml  project.schema.json
   bin/
-    hcb-rules                   # NEW: the sanctioned writer the sync skill calls (§4.6)
+    hcb-rules.mjs               # engine CLI: sync | check | diff   (#!/usr/bin/env node)
+  lib/                          # engine modules, one tested *.mjs per concern
+    manifest.mjs  sync.mjs  drift.mjs  contracts.mjs  lint.mjs  guard.mjs  settings.mjs
+  hooks/
+    hooks.json                  # commands: node "${CLAUDE_PLUGIN_ROOT}/hooks/<x>.mjs"
+    session-start.mjs           # drift + new-project + settings/presence nudge (shares lib/)
+    guard.mjs                   # PreToolUse deny on managed rule paths (§4.6)
+    inject-prefs.mjs            # language injection (replaces inject-prefs.sh)
   skills/
-    rules/                      # NEW: /hcb-dev:rules  (sync | check | diff)
-    onboard/                    # NEW: /hcb-dev:onboard  (+ --fix for settings)
-    rule-new/                   # NEW (phase 4): scaffold a T3 rule per spec
-    dependency-versions/        # existing
-    library-docs/               # existing
+    rules/                      # /hcb-dev:rules → node bin/hcb-rules.mjs (allowed-tools)
+    onboard/                    # /hcb-dev:onboard  (+ --fix for settings)
+    rule-new/                   # phase 4: scaffold a T3 rule per spec
+    dependency-versions/  library-docs/   # existing
+# repo root: package.json ("type":"module", devDeps typescript + @types/node),
+#            tests/*.test.mjs (node --test), tsconfig.json (allowJs/checkJs/noEmit)
 ```
 
 ### 4.3 Manifest (plugin-side SSOT)
@@ -539,17 +539,17 @@ Captured with the recommended default (to revisit before each phase):
 6. **Forge abstraction depth** — *recommend:* keep `forge: github|gitlab|gitverse` a
    simple enum for now; defer a capability model until the 2nd forge (`hcb-gitlab`)
    actually lands (`early-stage`: don't pre-abstract).
-7. **Engine language** — *revised (was Python):* **Node.** It is the ecosystem-native
-   runtime — Claude Code itself is Node, so `node` is **guaranteed present** (the repo
-   already uses npm + wraps node MCP servers) — and the engine stays **zero runtime
-   dependency** (Node stdlib: `node:fs`, `node:crypto`, `JSON`; machine files in **JSON**).
-   Hooks stay thin shims (`node "${CLAUDE_PLUGIN_ROOT}/bin/hcb-rules.js" <subcommand>`).
-   Sub-choice **(open)**: **(a)** JSDoc-typed ESM JS, type-checked by
-   `tsc --noEmit --checkJs` — *no build, source runs directly* (best fit for plugins
-   copied-to-cache; **recommended**); or **(b)** real TypeScript with an esbuild/tsc step
-   emitting a committed, drift-checked `bin/hcb-rules.js` (matches the consuming repos'
-   codegen-commit pattern). Dev-only deps (`vitest` / `typescript` / `eslint`) never ship
-   in the plugin. See §13.
+7. **Engine language — DECIDED: Node, plain `.mjs` ESM, no build (option a).** Validated
+   by the official **`openai/codex-plugin-cc`**, which uses exactly this stack: `.mjs` ESM
+   (`"type": "module"`), `node --test` (+ `node:assert/strict`), type-checking via `tsc`
+   with `allowJs/checkJs/noEmit` (non-strict), and dev-deps **only** `typescript` +
+   `@types/node`. The engine is **zero runtime dependency** (Node stdlib
+   `node:fs`/`node:crypto`/`JSON`; machine files in **JSON**); `node` is guaranteed present
+   (Claude Code is Node). Hooks call `node "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.mjs"` directly
+   — **no bash shims** (the example does the same). Full TypeScript-with-a-build (option b)
+   stays available but is not needed. (Open impl detail: the human companion `project.yml`
+   may stay YAML — then either accept a tiny `yaml` dep or make it JSON too; machine files
+   stay JSON.)
 
 ---
 
@@ -576,40 +576,46 @@ decision (§4.6), and the settings/version checks (§8). **100% coverage targets
 engine.** Skills and agents are prompts, **not** unit-testable — they are *evaluated*
 (model-in-the-loop), not covered.
 
-### Consolidate logic into one tested engine (recommendation — §11.7)
+**Reference implementation:** `openai/codex-plugin-cc` is a production plugin using this
+exact stack (`.mjs` ESM, `node --test`, `tsc --checkJs --noEmit`, token-free CI) — mirror it.
 
-Put **all** logic in `bin/hcb-rules` (**Node, zero runtime deps** — `node` is guaranteed
-present since Claude Code is Node); the hooks become **thin shims** that
-`node "${CLAUDE_PLUGIN_ROOT}/bin/hcb-rules.js" <subcommand>`:
+### Consolidate logic into one tested engine (§11.7)
 
-- `guard-managed.sh` → `hcb-rules guard` (reads the `PreToolUse` JSON, emits the deny)
-- `session-baseline.sh` → `hcb-rules session-start` (drift + settings + new-version nudge)
-- `inject-prefs.sh` → `hcb-rules lang` (language injection)
-- the `/hcb-dev:rules` skill → `hcb-rules sync | check | diff`
+Put **all** logic in **`bin/hcb-rules.mjs` + `lib/*.mjs`** (Node, zero runtime deps); the
+hooks are **node entry scripts** that share `lib/` — **no bash shims** (mirroring the
+example). `hooks.json` calls them directly:
 
-Then "100% business logic" = 100% of one **Node engine**; the bash shims are trivial
-(`shellcheck` + a smoke invocation). Machine files (manifest / lock / stamp) are **JSON**
-(Node stdlib); human companions stay YAML. Type-safety comes from JSDoc + `tsc --noEmit`
-(or real TS + a build — §11.7); dev-only deps never ship in the plugin.
+- `hooks/guard.mjs` ← `PreToolUse` (reads the tool JSON on stdin, emits the deny)
+- `hooks/session-start.mjs` ← `SessionStart` (drift + settings + new-version nudge)
+- `hooks/inject-prefs.mjs` ← `SessionStart` (language injection; replaces the bash version)
+- the `/hcb-dev:rules` skill → `node bin/hcb-rules.mjs sync | check | diff`
+
+Then "100% business logic" = 100% of the `lib/` modules (one `tests/*.test.mjs` per module,
+the example's layout). Machine files (manifest / lock / stamp) are **JSON** (Node stdlib);
+T2 contracts are **JSON Schema** (`*.schema.json`); the human companion may stay YAML
+(§11.7 impl note). Type safety = JSDoc + `tsc --checkJs --noEmit`; dev-only deps never ship.
 
 ### Test suite (100% of the engine)
 
-- **Unit tests** (`vitest`, or `node:test` + `c8`) per concern: sync idempotence /
-  managed-header / hash recording; drift (project-edit, canon-change); T2 contract pass+fail;
-  T3 lint pass+fail; de-adopt deletion; guard deny-vs-allow (feed `tool_input` JSON);
-  settings presence; version-notify.
-- **Integration smoke:** `hcb-rules sync` against a temp project dir → assert the written
-  tree + lock, and that a re-run is a no-op; `hcb-rules check` exits non-zero on drift.
-- **`shellcheck`** on the thin bash shims.
+- **Unit tests** (`node --test`, built-in — the example's runner) per concern: sync
+  idempotence / managed-header / hash recording; drift (project-edit, canon-change); T2
+  contract pass+fail; T3 lint pass+fail; de-adopt deletion; guard deny-vs-allow (feed the
+  `PreToolUse` JSON on stdin); settings presence; version-notify.
+- **Integration smoke** (temp dir + real git, per the example's `helpers.mjs`): `hcb-rules
+  sync` against a temp project → assert the written tree + lock, and that a re-run is a
+  no-op; `hcb-rules check` exits non-zero on drift.
+- **Type-check** the whole engine with `tsc --checkJs --noEmit`.
 
 ### CI — a separate `test.yml`
 
 Keep `validate.yml` (structural: `scripts/validate.sh` + `claude plugin validate`). Add
 **`test.yml`** gating PRs + push to `main`, triggered on `plugins/hcb-dev/**` + `tests/**`:
 
-- `test`: `vitest` (or `node:test` + `c8`) + a **100% coverage gate** on the engine.
-- `lint`: `shellcheck` the shims + `eslint` + `tsc --noEmit` (type-check).
-- matrix: ubuntu + macOS (the dev targets).
+- `test`: `node --test --experimental-test-coverage --test-coverage-lines=100` (built-in
+  coverage gate, zero deps).
+- `typecheck`: `tsc --checkJs --noEmit`.
+- matrix ubuntu + macOS; pin action SHAs + `timeout-minutes` + `engines.node` floor (per
+  the example).
 
 **The same `hcb-rules check`** powers both the local drift guard and the **drift gate in
 consumer CI** (dali / nexus, phase 1) — one command, two homes.
@@ -619,8 +625,10 @@ consumer CI** (dali / nexus, phase 1) — one command, two homes.
 The required CI is **deterministic and offline**: `scripts/validate.sh`,
 `claude plugin validate` (the existing `validate.yml` already runs it with
 `permissions: contents: read` and **no token** — it is a schema/frontmatter checker, not
-a model call), and the engine tests (`vitest` / `node:test`). **No `ANTHROPIC_API_KEY`
-required.** A token is needed **only** for optional **model-in-the-loop skill evals** (skill-creator: does a
+a model call), and the engine tests (`node --test`). **No `ANTHROPIC_API_KEY` required** —
+`openai/codex-plugin-cc`'s CI is the live proof (`permissions: contents: read`, no secrets;
+tests run against a fake fixture). A token is needed **only** for optional
+**model-in-the-loop skill evals** (skill-creator: does a
 skill trigger / is its output good) — paid and non-deterministic, so keep them
 **non-gating**: a manual `workflow_dispatch` / nightly job behind an `ANTHROPIC_API_KEY`
 repo secret, never the PR gate.
