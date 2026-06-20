@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+//
+// hcb-rules — thin process wrapper around lib/cli.mjs (the testable core).
+// Subcommands: sync | check | guard | session-start.
+//
+// `sync` / `check` are user-invoked (via the /hcb-dev:rules skill); `guard`
+// (PreToolUse) and `session-start` (SessionStart) are invoked by hooks and read
+// their JSON payload from stdin. The plugin-local package.json ("type":"module")
+// makes this extensionless file resolve as ESM when run as `node bin/hcb-rules`.
+
+import process from "node:process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { runCli } from "../lib/cli.mjs";
+
+const argv = process.argv.slice(2);
+const cmd = argv[0];
+
+/** Plugin root = the directory containing bin/ (fallback when the env is unset). */
+function defaultPluginRoot() {
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+}
+
+/** Drain stdin to a string; empty on a TTY (no piped hook payload). */
+async function readStdin() {
+  if (process.stdin.isTTY) return "";
+  process.stdin.setEncoding("utf8");
+  let data = "";
+  for await (const chunk of process.stdin) data += chunk;
+  return data;
+}
+
+// Only the hook subcommands consume stdin; reading it for sync/check could hang.
+const needsStdin = cmd === "guard" || cmd === "session-start";
+
+const code = runCli(argv, {
+  cwd: process.cwd(),
+  pluginRoot: process.env.CLAUDE_PLUGIN_ROOT || defaultPluginRoot(),
+  stdinText: needsStdin ? await readStdin() : "",
+  log: (s) => process.stdout.write(`${s}\n`),
+  errlog: (s) => process.stderr.write(`${s}\n`),
+});
+
+process.exit(code);

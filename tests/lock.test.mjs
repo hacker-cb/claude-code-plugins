@@ -12,6 +12,7 @@ test("loadLock returns empty when absent; saveLock round-trips", () => {
   const dir = makeTempDir();
   assert.deepEqual(loadLock(dir), emptyLock());
 
+  /** @type {import("../plugins/hcb-dev/lib/lock.mjs").Lock} */
   const lock = {
     managed_by: "hcb-dev",
     rules: [
@@ -49,6 +50,7 @@ test("isEnabled defaults true; lockEntry finds by name", () => {
   assert.equal(isEnabled({ name: "a", enabled: false }), false);
   assert.equal(isEnabled({ name: "a", enabled: true }), true);
 
+  /** @type {import("../plugins/hcb-dev/lib/lock.mjs").Lock} */
   const lock = { managed_by: "hcb-dev", rules: [{ name: "a" }] };
   assert.equal(lockEntry(lock, "a")?.name, "a");
   assert.equal(lockEntry(lock, "b"), undefined);
