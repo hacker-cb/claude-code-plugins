@@ -232,7 +232,7 @@ data dir — against `${CLAUDE_PLUGIN_ROOT}`, so it works offline and detects bo
 ### 4.5 Propagation flow
 
 ```
-bump hcb-dev version  ──▶  SessionStart drift guard warns "behind / diverged"
+change canon (a rule file / manifest `version`)  ──▶  drift guard warns "behind / diverged"
                       ──▶  /hcb-dev:rules sync   (writes managed files)
                       ──▶  review the diff in a PR
                       ──▶  merge
@@ -245,6 +245,10 @@ with a "do not edit" header plus a CI drift check. No new mental model.
 The drift-guard hook is **harness-only — no model context cost** unless it emits
 (`plugins-reference.md` §plugin details): a clean, in-sync project pays ~0 tokens;
 the warning text enters context only when there is actual drift to report.
+
+The drift trigger is the **canon content** (per-file hashes + the manifest `version`),
+**not** the plugin semver — a code-only `hcb-dev` release (e.g. a skill fix) does not
+nag for a rules sync, and a canon edit without a plugin-code change still does.
 
 ### 4.6 Protecting managed files from edits
 
@@ -518,6 +522,20 @@ Captured with the recommended default (to revisit before each phase):
    no in-file managed-region merging.
 3. **Start scope** — *recommend:* ship T0/T1/T2 (manifest + sync + drift) first;
    defer the T3 linter and `rule-new` to phase 4.
+4. **Forge-specific rule delivery** — *recommend:* keep **one** sync engine (in
+   `hcb-dev`). Forge plugins add **skills** (the existing `github-pr-workflow`
+   pattern), never their own rule-sync. If a rule's *content* must vary by forge,
+   model it as a T2 companion keyed by `forge:` in the `hcb-dev` manifest — do not
+   replicate the engine into `hcb-github` / `hcb-gitlab`.
+5. **Managed-rules location** — *recommend:* sync into a segregated
+   `.claude/rules/hcb/` subdir (still loaded recursively by Claude Code), not flat in
+   `.claude/rules/`. Makes the `PreToolUse` deny-glob trivial
+   (`Edit(.claude/rules/hcb/**)`), makes "what is managed" obvious, and avoids
+   collisions with project-authored rules. The sync engine must also **delete**
+   de-adopted managed files (e.g. `early-stage` once matured), not just stop writing.
+6. **Forge abstraction depth** — *recommend:* keep `forge: github|gitlab|gitverse` a
+   simple enum for now; defer a capability model until the 2nd forge (`hcb-gitlab`)
+   actually lands (`early-stage`: don't pre-abstract).
 
 ---
 
