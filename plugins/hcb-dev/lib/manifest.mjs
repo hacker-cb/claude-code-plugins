@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { HcbError } from "./errors.mjs";
+import { isSafeRuleName } from "./paths.mjs";
 
 /** @typedef {"canonical" | "parameterized" | "conventional"} Tier */
 
@@ -85,6 +86,9 @@ function validateRule(r, where, seen) {
   const o = /** @type {Record<string, unknown>} */ (r);
   if (typeof o.name !== "string" || o.name === "") {
     throw new HcbError(`${where}: 'name' must be a non-empty string`);
+  }
+  if (!isSafeRuleName(o.name)) {
+    throw new HcbError(`${where}: 'name' '${o.name}' must match [A-Za-z0-9._-] (single path segment, no traversal)`);
   }
   if (seen.has(o.name)) throw new HcbError(`${where}: duplicate rule name '${o.name}'`);
   seen.add(o.name);

@@ -1,7 +1,24 @@
 import path from "node:path";
+import { HcbError } from "./errors.mjs";
 
 /** Project-relative directory holding hcb-managed rule files. */
 export const MANAGED_RULES_DIR = ".claude/rules/hcb";
+
+/**
+ * Is `name` a safe rule name — a single path segment that cannot traverse out
+ * of the managed dir? Rule names come from the manifest and the on-disk lock
+ * (the latter is editable), and a name is joined into a filesystem path, so a
+ * name containing a separator, a leading dot, or `..` could escape
+ * `.claude/rules/hcb/` and cause an out-of-tree write/delete. Allow only
+ * `[A-Za-z0-9._-]`, starting with an alphanumeric — by construction a single
+ * segment with no separator and no leading dot, so `path.join` keeps it inside.
+ *
+ * @param {string} name
+ * @returns {boolean}
+ */
+export function isSafeRuleName(name) {
+  return typeof name === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name);
+}
 /** Project-relative directory holding hcb-dev project state (lock + companions). */
 export const STATE_DIR = ".claude/hcb-dev";
 /** Project-relative path of the adoption lock. */
@@ -15,7 +32,13 @@ export const LOCK_FILE = `${STATE_DIR}/rules.json`;
  * @returns {string}
  */
 export function managedRulePath(projectDir, name) {
-  return path.join(projectDir, MANAGED_RULES_DIR, `${name}.md`);
+  const file = path.join(projectDir, MANAGED_RULES_DIR, `${name}.md`);
+  // Defense-in-depth: callers validate names at the manifest/lock boundary, but
+  // never let a name escape the managed dir even if a future caller forgets.
+  if (!isManagedRulePath(projectDir, file)) {
+    throw new HcbError(`unsafe managed rule name '${name}': resolves outside ${MANAGED_RULES_DIR}`);
+  }
+  return file;
 }
 
 /**

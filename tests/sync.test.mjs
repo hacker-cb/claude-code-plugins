@@ -5,7 +5,7 @@ import { loadLock } from "../plugins/hcb-dev/lib/lock.mjs";
 import { renderManaged } from "../plugins/hcb-dev/lib/render.mjs";
 import { makeTempDir, makePluginFixture, writeFile, readFile, exists } from "./helpers.mjs";
 
-test("fresh sync writes all rules + a lock with hashes; re-sync is a no-op", () => {
+test("fresh sync writes all rules + records the lock; re-sync is a no-op", () => {
   const plugin = makePluginFixture();
   const proj = makeTempDir();
 
@@ -16,7 +16,7 @@ test("fresh sync writes all rules + a lock with hashes; re-sync is a no-op", () 
   assert.equal(readFile(proj, ".claude/rules/hcb/git-branches.md"), renderManaged("git-branches", "# Git Branches\n\nbody\n"));
 
   const lock = loadLock(proj);
-  assert.ok(lock.rules.every((e) => typeof e.sha256 === "string"));
+  assert.deepEqual(lock.rules.map((e) => e.name).sort(), ["early-stage", "git-branches"]);
 
   const r2 = syncFiles(plugin, proj);
   assert.deepEqual(r2.written, []);

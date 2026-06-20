@@ -66,10 +66,12 @@ Two hooks keep the managed copies faithful to canon:
 
 - a **`PreToolUse` guard** denies any `Edit`/`Write`/`NotebookEdit` to a file
   under `.claude/rules/hcb/` — the synced copies are owned by the plugin, so a
-  change must be made to the canon and re-synced, never edited in place;
+  change must be made to the canon and re-synced, never edited in place. The
+  guard covers Claude's file-editing tools, **not** Bash writes/`rm`; for hard
+  enforcement add a project `permissions.deny` rule on `.claude/rules/hcb/**`.
 - a **`SessionStart` drift check** prints a short, actionable note when an
   adopted project's managed files no longer match canon (and stays silent
-  otherwise).
+  otherwise) — the compensating control that catches any out-of-band edit.
 
 To change a managed rule, edit its canon in
 `plugins/hcb-dev/rules/canonical/` and run `/hcb-dev:rules sync`.

@@ -1,13 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { HcbError } from "./errors.mjs";
-import { lockPath } from "./paths.mjs";
+import { lockPath, isSafeRuleName } from "./paths.mjs";
 
 /**
  * @typedef {object} LockEntry
  * @property {string} name
  * @property {boolean} [enabled]  default `true`; `false` = adopted-but-disabled (e.g. matured early-stage)
- * @property {string} [sha256]    hash of the written managed file (present for enabled rules after sync)
  */
 
 /**
@@ -65,6 +64,7 @@ export function validateLock(data, where = "lock") {
     if (typeof r !== "object" || r === null) throw new HcbError(`${where}: rules[${i}] must be an object`);
     const e = /** @type {Record<string, unknown>} */ (r);
     if (typeof e.name !== "string" || e.name === "") throw new HcbError(`${where}: rules[${i}].name must be a non-empty string`);
+    if (!isSafeRuleName(e.name)) throw new HcbError(`${where}: rules[${i}].name '${e.name}' is not a safe rule name ([A-Za-z0-9._-], no traversal)`);
     if (seen.has(e.name)) throw new HcbError(`${where}: duplicate lock entry '${e.name}'`);
     seen.add(e.name);
     /** @type {LockEntry} */
@@ -72,10 +72,6 @@ export function validateLock(data, where = "lock") {
     if (e.enabled !== undefined) {
       if (typeof e.enabled !== "boolean") throw new HcbError(`${where}: rules[${i}].enabled must be a boolean`);
       entry.enabled = e.enabled;
-    }
-    if (e.sha256 !== undefined) {
-      if (typeof e.sha256 !== "string") throw new HcbError(`${where}: rules[${i}].sha256 must be a string`);
-      entry.sha256 = e.sha256;
     }
     return entry;
   });

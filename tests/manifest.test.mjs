@@ -36,6 +36,7 @@ test("validateManifest rejects malformed input with actionable messages", () => 
   assert.throws(() => validateManifest({ version: 1, rules: {} }), /'rules' must be an array/);
   assert.throws(() => validateManifest({ version: 1, rules: ["x"] }), /must be an object/);
   assert.throws(() => validateManifest({ version: 1, rules: [{ tier: "canonical", source: "x" }] }), /'name' must be/);
+  assert.throws(() => validateManifest({ version: 1, rules: [{ name: "../x", tier: "canonical", source: "y" }] }), /must match \[A-Za-z0-9/);
   assert.throws(() => validateManifest({ version: 1, rules: [{ name: "a", tier: "bad", source: "x" }] }), /'tier' must be one of/);
   assert.throws(() => validateManifest({ version: 1, rules: [{ name: "a", tier: "canonical" }] }), /'source' must be/);
   assert.throws(

@@ -124,14 +124,19 @@ test("session-start degrades to a soft note (exit 0) when the lock is corrupt", 
   assert.match(err.join("\n"), /session-start:/);
 });
 
-test("an unknown or missing command prints usage and exits 2", () => {
+test("an unknown command prints usage and exits 2", () => {
   const unknown = ctxFor("", "");
   assert.equal(runCli(["frobnicate"], unknown.ctx), 2);
   assert.match(unknown.err.join("\n"), /unknown command 'frobnicate'/);
+});
 
-  const none = ctxFor("", "");
-  assert.equal(runCli([], none.ctx), 2);
-  assert.match(none.err.join("\n"), /unknown command ''/);
+test("a bare invocation (no sub-command) defaults to read-only check", () => {
+  const plugin = makePluginFixture();
+  const proj = makeTempDir();
+  syncFiles(plugin, proj);
+  const { ctx, out } = ctxFor(plugin, proj);
+  assert.equal(runCli([], ctx), 0);
+  assert.match(out.join("\n"), /in sync/);
 });
 
 test("an engine error surfaces on stderr with exit 1", () => {

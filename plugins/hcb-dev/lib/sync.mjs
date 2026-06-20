@@ -2,7 +2,6 @@ import { loadManifest, canonBody } from "./manifest.mjs";
 import { loadLock, saveLock, lockEntry, isEnabled } from "./lock.mjs";
 import { managedRulePath, managedRulesDir } from "./paths.mjs";
 import { renderManaged } from "./render.mjs";
-import { sha256 } from "./hash.mjs";
 import { readIfExists, writeFileEnsured, removeIfExists, pruneEmptyDir } from "./fsutil.mjs";
 
 /**
@@ -51,7 +50,7 @@ export function syncFiles(pluginRoot, projectDir) {
       writeFileEnsured(file, content);
       written.push(rule.name);
     }
-    newRules.push({ name: rule.name, sha256: sha256(content) });
+    newRules.push({ name: rule.name });
   }
 
   // Rules dropped from the manifest but still recorded in the old lock → delete.

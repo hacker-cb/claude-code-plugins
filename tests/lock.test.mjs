@@ -16,7 +16,7 @@ test("loadLock returns empty when absent; saveLock round-trips", () => {
   const lock = {
     managed_by: "hcb-dev",
     rules: [
-      { name: "git-branches", sha256: "abc" },
+      { name: "git-branches" },
       { name: "early-stage", enabled: false },
     ],
   };
@@ -35,7 +35,7 @@ test("validateLock rejects malformed locks", () => {
   assert.throws(() => validateLock({ managed_by: "hcb-dev", rules: ["x"] }), /must be an object/);
   assert.throws(() => validateLock({ managed_by: "hcb-dev", rules: [{ enabled: true }] }), /\.name must be/);
   assert.throws(() => validateLock({ managed_by: "hcb-dev", rules: [{ name: "a", enabled: "yes" }] }), /\.enabled must be a boolean/);
-  assert.throws(() => validateLock({ managed_by: "hcb-dev", rules: [{ name: "a", sha256: 1 }] }), /\.sha256 must be a string/);
+  assert.throws(() => validateLock({ managed_by: "hcb-dev", rules: [{ name: "../escape" }] }), /is not a safe rule name/);
   assert.throws(() => validateLock({ managed_by: "hcb-dev", rules: [{ name: "a" }, { name: "a" }] }), /duplicate lock entry 'a'/);
 });
 

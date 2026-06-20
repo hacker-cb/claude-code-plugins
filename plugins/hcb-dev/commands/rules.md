@@ -5,7 +5,7 @@ disable-model-invocation: true
 allowed-tools: Bash(node:*)
 ---
 
-!`ARGS="$ARGUMENTS"; node "${CLAUDE_PLUGIN_ROOT}/bin/hcb-rules" ${ARGS:-check}`
+!`node "${CLAUDE_PLUGIN_ROOT}/bin/hcb-rules" "$ARGUMENTS"`
 
 The block above is the output of the hcb-dev rules engine for this repository.
 

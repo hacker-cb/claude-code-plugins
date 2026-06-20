@@ -52,6 +52,10 @@ function cmdCheck(ctx) {
 
 /** @param {CliContext} ctx @returns {number} */
 function cmdGuard(ctx) {
+  // Fail-open by design: malformed stdin parses to null and `guardDecision`
+  // returns null (no decision = allow), and any unexpected throw is caught by
+  // `runCli` and surfaces as a non-blocking hook error. A buggy guard must not
+  // wedge every edit; the SessionStart drift check is the compensating control.
   const decision = guardDecision(parseJson(ctx.stdinText));
   if (decision) ctx.log(JSON.stringify(decision));
   return 0;
@@ -82,7 +86,11 @@ function cmdSessionStart(ctx) {
  * @returns {number}
  */
 export function runCli(argv, ctx) {
-  const [cmd] = argv;
+  // A bare invocation (e.g. `/hcb-dev:rules` with no argument) defaults to the
+  // safe, read-only `check`; the command front-end quotes "$ARGUMENTS" so any
+  // multi-token / metacharacter input arrives as one unknown command (exit 2)
+  // rather than being word-split or shell-interpreted.
+  const cmd = argv[0] || "check";
   try {
     switch (cmd) {
       case "sync":
@@ -94,7 +102,7 @@ export function runCli(argv, ctx) {
       case "session-start":
         return cmdSessionStart(ctx);
       default:
-        ctx.errlog(`hcb-rules: unknown command '${cmd ?? ""}'; expected one of sync, check, guard, session-start`);
+        ctx.errlog(`hcb-rules: unknown command '${cmd}'; expected one of sync, check, guard, session-start`);
         return 2;
     }
   } catch (e) {

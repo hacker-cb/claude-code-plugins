@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { renderHouseStyle } from "../plugins/hcb-dev/lib/prefs.mjs";
 
 test("defaults apply with an empty env, emojis on", () => {
@@ -21,4 +23,16 @@ test("lower-case key wins, UPPER variant is a fallback, emojis off", () => {
   assert.match(out, /Project documentation: Docish\./);
   assert.match(out, /Code comments: English\./); // default branch (both unset)
   assert.doesNotMatch(out, /Use emojis/);
+});
+
+test("the inject-prefs hook prints the rendered house style to stdout", () => {
+  const hook = fileURLToPath(new URL("../plugins/hcb-dev/hooks/inject-prefs.mjs", import.meta.url));
+  const r = spawnSync(process.execPath, [hook], {
+    encoding: "utf8",
+    input: "",
+    env: { ...process.env, CLAUDE_PLUGIN_OPTION_lang_chat: "Esperanto" },
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Developer house style \(hcb-dev\)/);
+  assert.match(r.stdout, /Communicate in Esperanto\./);
 });
