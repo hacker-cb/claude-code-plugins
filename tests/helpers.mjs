@@ -51,3 +51,24 @@ export function readFile(dir, rel) {
 export function exists(dir, rel) {
   return fs.existsSync(path.join(dir, rel));
 }
+
+/**
+ * Build a fake plugin root (`rules/manifest.json` + `rules/canonical/*.md`) for
+ * engine tests. All rules are tier `canonical`.
+ *
+ * @param {object} [opts]
+ * @param {Record<string, string>} [opts.canon] rule name -> canon body. Defaults to
+ *   two rules (`git-branches`, `early-stage`).
+ * @returns {string} the plugin root directory
+ */
+export function makePluginFixture(opts = {}) {
+  const dir = makeTempDir();
+  const canon = opts.canon ?? {
+    "git-branches": "# Git Branches\n\nbody\n",
+    "early-stage": "# Early stage\n\nbody\n",
+  };
+  const rules = Object.keys(canon).map((name) => ({ name, tier: "canonical", source: `canonical/${name}.md` }));
+  writeFile(dir, "rules/manifest.json", JSON.stringify({ version: 1, rules }, null, 2));
+  for (const [name, body] of Object.entries(canon)) writeFile(dir, `rules/canonical/${name}.md`, body);
+  return dir;
+}
