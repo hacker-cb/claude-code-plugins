@@ -3,10 +3,9 @@
 Status: **proposal** — a *temporary working spec*. Before the feature merges, the
 durable parts are distilled into `CLAUDE.md` / the `hcb-dev` README + a kept C1–C12
 note, and this file is removed (not landed on `main` verbatim; git history is the
-archive). · Owner: hacker-cb · Last updated: 2026-06-19 (rev 5 — **DECISION:** all
-rule-sync magic lives in `hcb-dev`; forge plugins are **independent** standard plugins
-(skills/agents) with **no rules and no dependency** on `hcb-dev`. The design no longer
-uses plugin dependencies; §8/§9/§11.4/C9/C12 updated.)
+archive). · Owner: hacker-cb · Last updated: 2026-06-19 (rev 6 — locked: Node `.mjs` engine (no build, `node --test`,
+per `openai/codex-plugin-cc`); forge plugins **independent** (no rules, no deps); managed
+rules under `.claude/rules/hcb/`; machine files JSON; one-PR strategy; full plan in §14.)
 
 This document proposes how the `hacker-cb-plugins` marketplace should deliver a
 reusable development baseline across many repositories (DALI, NEXUS today; more
@@ -72,7 +71,7 @@ issue tracker.
 | C2 | `paths:` frontmatter scoping exists **only** for project-local rules, not hook-injected text. | `memory.md`. Hook-injected guidance is always-on and costs context every session. |
 | C3 | Marketplace plugin install **does not initialize git submodules** (documented bug `anthropics/claude-code#17293`). | A submodule *inside a plugin* is dead. |
 | C4 | An installed plugin **cannot reference files outside its own root** (`../shared` is not copied to cache). **Exception:** a symlink whose target resolves **elsewhere in the same marketplace** is *dereferenced* — its content is copied into the cache (the documented "meta-plugin" pattern). | `plugins-reference.md` (§Plugin caching and file resolution). Canon is **vendored inside `hcb-dev`**; the symlink exception is a fallback if another hcb plugin ever needs the same canon. |
-| C5 | A plugin **can bundle arbitrary non-component files** (`rules/`, `manifest.yml`); the whole plugin dir is copied to cache and is readable via `${CLAUDE_PLUGIN_ROOT}`. | Enables a canon-in-plugin + sync-skill design. |
+| C5 | A plugin **can bundle arbitrary non-component files** (`rules/`, `manifest.json`); the whole plugin dir is copied to cache and is readable via `${CLAUDE_PLUGIN_ROOT}`. | Enables a canon-in-plugin + sync-skill design. |
 | C6 | `${CLAUDE_PLUGIN_ROOT}` (plugin dir) and `${CLAUDE_PROJECT_DIR}` / hook `cwd` (project root) are available to hooks and bin. | A hook can `sha256` a project file and compare against canon → drift detection works. |
 | C7 | A plugin carries a `version` in `plugin.json`; with an explicit version consumers update **only** when it bumps, else per-commit (git-SHA version). There is **no per-project version pin** for a marketplace plugin. | The plugin's semver is the global propagation lever; per-project staging comes from sync being an explicit, reviewable action. |
 | C8 | A SessionStart hook **cannot enumerate which plugins are loaded** (stdin: `session_id, cwd, source, model`; no plugin list, no "first run" flag; in cloud `.git` always exists). | New-project / plugin-presence detection is **inferred** — but C9/C11 give stronger levers than this doc first assumed. |
@@ -105,7 +104,7 @@ because those are genuinely different operations, not one with a flag.
 | **T1 — Canonical** | 100% shared, verbatim | the whole file | hash of whole file; drift = error | `git-branches.md`, `early-stage.md` |
 | **T2 — Parameterized** | shared body + project "slots" | the body verbatim; **not** the slots | hash of body + companion contract | `issue-tracking.md` (+ `labels.yml`); `language.md` (+ values) |
 | **T3 — Conventional** | project-authored, follows a shared *form* | nothing | lint against the authoring spec | `rust.md`, `iec.md`, `dbml.md`, `frontend.md`, NEXUS domain rules |
-| **T0 — Meta** | the system itself | the manifest + the authoring spec | — | new: `manifest.yml`, `rule-authoring.md` |
+| **T0 — Meta** | the system itself | the manifest + the authoring spec | — | new: `manifest.json`, `rule-authoring.md` |
 
 Notes:
 
@@ -140,7 +139,7 @@ sync skill reconciles a project against it. No submodules anywhere (C3).
 ### 4.1 Three file operations (one per tier)
 
 1. **Sync managed file verbatim** (T1, and T2 bodies): the sanctioned `bin/` writer
-   (§4.6) writes the file into `.claude/rules/` with a `MANAGED — do not edit` header
+   (§4.6) writes the file into `.claude/rules/hcb/` with a `MANAGED — do not edit` header
    — never the model's `Edit`/`Write`, which are denied on managed paths; guard = file hash.
 2. **Validate companion against contract** (T2 slots): check `labels.yml` /
    `project.yml` against the stated invariant; guard = contract check.
@@ -155,6 +154,7 @@ tooling — `package.json` / `tests/` / `tsconfig.json` — at the **marketplace
 ```
 plugins/hcb-dev/
   .claude-plugin/plugin.json
+  package.json                  # {"type":"module"} — so extensionless bin/hcb-rules + lib resolve as ESM in the cache
   rules/
     manifest.json               # T0: classifies every managed rule (JSON — Node stdlib)
     canonical/                  # T1 bodies + T2 bodies (verbatim)
@@ -162,7 +162,7 @@ plugins/hcb-dev/
     contracts/                  # T2 companion contracts (JSON Schema) + starters
       labels.schema.json  labels.github.starter.yml  project.schema.json
   bin/
-    hcb-rules.mjs               # engine CLI: sync | check | diff   (#!/usr/bin/env node)
+    hcb-rules                   # engine CLI: sync | check | diff   (#!/usr/bin/env node; on PATH)
   lib/                          # engine modules, one tested *.mjs per concern
     manifest.mjs  sync.mjs  drift.mjs  contracts.mjs  lint.mjs  guard.mjs  settings.mjs
   hooks/
@@ -171,7 +171,7 @@ plugins/hcb-dev/
     guard.mjs                   # PreToolUse deny on managed rule paths (§4.6)
     inject-prefs.mjs            # language injection (replaces inject-prefs.sh)
   skills/                       # action skills (rules/onboard/rule-new): disable-model-invocation: true
-    rules/                      # /hcb-dev:rules → node bin/hcb-rules.mjs (allowed-tools: Bash(hcb-rules *))
+    rules/                      # /hcb-dev:rules → hcb-rules (on PATH; allowed-tools: Bash(hcb-rules *))
     onboard/                    # /hcb-dev:onboard  (+ --fix, --forge)
     rule-new/                   # phase 4: scaffold a T3 rule per spec
     dependency-versions/  library-docs/   # existing (knowledge skills; model-invocable)
@@ -181,50 +181,45 @@ plugins/hcb-dev/
 
 ### 4.3 Manifest (plugin-side SSOT)
 
-```yaml
-# plugins/hcb-dev/rules/manifest.yml
-version: 1
-rules:
-  - name: git-branches
-    tier: canonical
-    source: canonical/git-branches.md
-  - name: early-stage
-    tier: canonical
-    source: canonical/early-stage.md
-    optional: true                  # project may disable when matured
-  - name: issue-tracking
-    tier: parameterized
-    source: canonical/issue-tracking.md
-    companions:
-      - path: .github/labels.yml    # default; project may relocate
-        contract: contracts/labels.schema.yml
-        starter: contracts/labels.github.starter.yml
-  - name: language
-    tier: parameterized
-    source: canonical/language.md
-    companions:
-      - path: .claude/hcb-dev/project.yml   # languages: { chat, plans, comments, docs, issues }
-        contract: contracts/project.schema.yml
-  - name: rule-authoring
-    tier: canonical
-    source: canonical/rule-authoring.md
+```json
+// plugins/hcb-dev/rules/manifest.json
+{
+  "version": 1,
+  "rules": [
+    { "name": "git-branches",   "tier": "canonical",     "source": "canonical/git-branches.md" },
+    { "name": "early-stage",    "tier": "canonical",     "source": "canonical/early-stage.md", "optional": true },
+    { "name": "issue-tracking", "tier": "parameterized", "source": "canonical/issue-tracking.md",
+      "companions": [
+        { "path": ".github/labels.yml", "contract": "contracts/labels.schema.json",
+          "starter": "contracts/labels.github.starter.yml" }
+      ] },
+    { "name": "language",       "tier": "parameterized", "source": "canonical/language.md",
+      "companions": [
+        { "path": ".claude/hcb-dev/project.yml", "contract": "contracts/project.schema.json" }
+      ] },
+    { "name": "rule-authoring", "tier": "canonical",     "source": "canonical/rule-authoring.md" }
+  ]
+}
 ```
 
 ### 4.4 Project lock (project-side opt-in)
 
-```yaml
-# .claude/hcb-dev/rules.yml  (committed; the project's adoption record)
-managed_by: hcb-dev
-adopted:
-  - git-branches
-  - issue-tracking
-  - language
-  - rule-authoring
-  - { name: early-stage, enabled: false }   # this project has matured
-# T3 rules are not listed here; they are linted, not synced.
+```json
+// .claude/hcb-dev/rules.json  (committed; the project's adoption record)
+{
+  "managed_by": "hcb-dev",
+  "adopted": [
+    "git-branches",
+    "issue-tracking",
+    "language",
+    "rule-authoring",
+    { "name": "early-stage", "enabled": false }
+  ]
+}
 ```
+T3 rules are not listed — they are linted, not synced.
 
-The sync skill records each managed file's expected hash inline in `rules.yml`.
+The sync skill records each managed file's expected hash inline in `rules.json`.
 The drift guard follows the documented `${CLAUDE_PLUGIN_DATA}` idiom (C10): it
 compares the project's managed files — and the canon stamp cached in the persistent
 data dir — against `${CLAUDE_PLUGIN_ROOT}`, so it works offline and detects both
@@ -257,7 +252,7 @@ Two layers — **prevent in-session, detect everything else**:
 
 - **Prevention (in-session, hard).** `hcb-dev` ships a **`PreToolUse` hook**
   matching `Edit`/`Write` (and recognized Bash file-commands) against the managed
-  rule paths from `rules.yml`, returning `permissionDecision: "deny"` with: *"managed
+  rule paths from `rules.json`, returning `permissionDecision: "deny"` with: *"managed
   by hcb-dev — edit the canon and run `/hcb-dev:rules sync`."* This is the **only**
   layer that blocks regardless of what the model decides; the docs explicitly
   recommend `PreToolUse` for hard blocks (`memory.md`, `hooks.md`).
@@ -359,8 +354,8 @@ project values               (.claude/hcb-dev/project.yml: languages — the pro
 explicit request in the conversation
 ```
 
-- The `hcb-dev` `inject-prefs.sh` hook keeps printing the **defaults** framed as
-  low-priority (it already does this).
+- The `hcb-dev` `inject-prefs.mjs` hook keeps printing the **defaults** framed as
+  low-priority (porting the current `inject-prefs.sh` behaviour verbatim).
 - `language.md` (T2 canonical body) explains *how scopes work* and that project
   values win; the **values** live in the companion, not in the prose.
 - This resolves the current contradiction (plugin default `comments=en` vs DALI's
@@ -377,7 +372,7 @@ markers: no `CLAUDE.md`, no `.claude/`, no `.claude/hcb-dev/project.yml`. The
 loaded, so the baseline can tell an *uninitialized* project from one whose managed
 rules merely failed to sync.
 
-- `session-baseline.sh` (SessionStart, part of `hcb-dev`) prints a soft nudge when
+- `session-start.mjs` (SessionStart, part of `hcb-dev`) prints a soft nudge when
   the project looks uninitialized: *"this project isn't set up for hcb — run
   `/hcb-dev:onboard`"*.
 - `/hcb-dev:onboard` (skill): detect forge from `git remote`; scaffold
@@ -399,17 +394,17 @@ The layers:
   primary in-app mechanism that makes the expected set present, no dependency graph needed.
 - **Soft / optional companions → `expects_plugins` + nudge.** Recommended-but-not-
   required plugins (e.g. `markdown-docs`, project MCP servers) stay in
-  `.claude/hcb-dev/project.yml: expects_plugins`. `session-baseline.sh` (guaranteed
+  `.claude/hcb-dev/project.yml: expects_plugins`. `session-start.mjs` (guaranteed
   to run — it *is* `hcb-dev`) prints the expected set: *"if any of these
   slash-commands / MCP tools are missing, check `/plugin`"*.
 - **Verification levers.** `InstructionsLoaded` (C11) confirms managed rules
   loaded; the model also self-checks which skills / MCP tools are present against the
-  declared set. There is still no API to *enumerate* plugins (C8), but the hard-dep
-  path means the critical ones can no longer go missing silently.
+  declared set. There is still no API to *enumerate* plugins (C8); the committed-settings
+  + seed-dir path (below) keeps the expected set present, with the self-check as backstop.
 
 Residual gap: if neither the committed settings (trust-prompt) nor a seed dir made the
-**marketplace** available, even `dependencies` can't resolve — that stays a declare +
-nudge case, plus the cloud levers below.
+**marketplace** available, nothing can resolve — that stays a declare + nudge case, plus
+the cloud levers below.
 
 ### Settings presence: auto-add vs check
 
@@ -420,9 +415,10 @@ nudge case, plus the cloud levers below.
   §Require marketplaces for your team). So onboarding writes those once
   (`/hcb-dev:onboard`, or a manual `/plugin marketplace add`), and every later clone is a
   one-click trust-prompt away from the full set.
-- **Once we're in, the plugin graph is automatic.** Forge plugins `depend` on
-  `hcb-dev` (C9), so installing/enabling a forge plugin pulls the baseline in — we do
-  **not** hand-edit `enabledPlugins` for that.
+- **Both plugins are listed, independently.** The committed `enabledPlugins` names
+  **both** `hcb-dev` and the forge plugin; they are independent (no dependency — §9), so
+  each enables on its own via the trust-prompt. There is no dependency graph pulling one
+  in through the other.
 - **Recurring check, not silent rewrite.** The SessionStart hook (it is running, so it
   can read `.claude/settings.json`) verifies the required marketplace + `expects_plugins`
   are present and **warns + offers** `/hcb-dev:onboard --fix` to write any missing
@@ -517,16 +513,13 @@ dual-forge state: `forge` is a single enum, flipped once.
 
 ## 10. Phased rollout
 
-| Phase | Scope | Touches |
-|---|---|---|
-| **0** | Vendor canon (`rules/canonical/*`, `manifest.yml`); the `bin/` writer + `/hcb-dev:rules` (sync/check/diff); drift guard + the `PreToolUse` edit-protection hook (§4.6). | `hcb-dev` only |
-| **1** | Adopt in DALI + NEXUS: replace the 3 duplicated files with synced managed files; add `.claude/hcb-dev/rules.yml`; verify `labels.yml` companion contract. | dali, nexus |
-| **2** | Language refactor: `language.md` (T2) + `.claude/hcb-dev/project.yml: languages`; remove contradictions; collapse scattered policy. | hcb-dev, dali, nexus |
-| **3** | Onboarding + presence: `/hcb-dev:onboard` (+ `--fix`), `session-baseline.sh`, `expects_plugins`, settings presence-check + new-version notification (§8). | hcb-dev (+ consuming repos opt-in) |
-| **4** | Forge-neutrality: rename to `issue-tracking.md`; scaffold `hcb-gitlab`; `rule-authoring.md` + T3 linter + `rule-new`. | hcb-dev, hcb-github, new hcb-gitlab |
+The **detailed, authoritative rollout is §14** (phase 0→5, per-phase deliverables + gates).
+Summary: **0** engine + canon + guards (marketplace) → **1** adopt in DALI/NEXUS → **2**
+language → **3** onboarding + presence → **4** T3 + `hcb-gitlab` → **5** distill + retire
+this doc.
 
-Phases 0–1 deliver ~90% of the value (no more duplication, SSOT, drift guard) and
-are nearly ready today because the `labels.yml` delegation already exists.
+Phases 0–1 deliver ~90% of the value (no more duplication, SSOT, drift guard) and are
+nearly ready today because the `labels.yml` delegation already exists.
 
 ---
 
@@ -579,9 +572,10 @@ Captured with the recommended default (to revisit before each phase):
 
 - No backward-compatibility shims for the current hand-copied files — they are
   replaced in place (per each repo's `early-stage` policy).
-- Onboarding scaffolds `settings.json` (marketplace + `enabledPlugins`) and relies
-  on plugin **`dependencies`** (C9) to pull the baseline in; it installs plugins by
-  no other means, and for *optional* companions it only nudges.
+- Onboarding scaffolds `settings.json` (marketplace + `enabledPlugins` for **both**
+  `hcb-dev` and the forge plugin) and relies on the **trust-prompt** to install/enable —
+  **not** on plugin dependencies (forge plugins are independent — §9). For *optional*
+  companions it only nudges.
 - No runtime plugin-load enforcement beyond declare + nudge + model self-check.
 
 ---
@@ -603,19 +597,23 @@ exact stack (`.mjs` ESM, `node --test`, `tsc --checkJs --noEmit`, token-free CI)
 
 ### Consolidate logic into one tested engine (§11.7)
 
-Put **all** logic in **`bin/hcb-rules.mjs` + `lib/*.mjs`** (Node, zero runtime deps); the
+Put **all** logic in **`bin/hcb-rules` + `lib/*.mjs`** (Node, zero runtime deps); the
 hooks are **node entry scripts** that share `lib/` — **no bash shims** (mirroring the
 example). `hooks.json` calls them directly:
 
 - `hooks/guard.mjs` ← `PreToolUse` (reads the tool JSON on stdin, emits the deny)
 - `hooks/session-start.mjs` ← `SessionStart` (drift + settings + new-version nudge)
 - `hooks/inject-prefs.mjs` ← `SessionStart` (language injection; replaces the bash version)
-- the `/hcb-dev:rules` skill → `node bin/hcb-rules.mjs sync | check | diff`
+- the `/hcb-dev:rules` skill → `hcb-rules sync | check | diff` (on PATH)
 
 Then "100% business logic" = 100% of the `lib/` modules (one `tests/*.test.mjs` per module,
 the example's layout). Machine files (manifest / lock / stamp) are **JSON** (Node stdlib);
 T2 contracts are **JSON Schema** (`*.schema.json`); the human companion may stay YAML
 (§11.7 impl note). Type safety = JSDoc + `tsc --checkJs --noEmit`; dev-only deps never ship.
+
+The plugin ships a minimal `plugins/hcb-dev/package.json` (`{"type":"module"}`) so the
+extensionless `bin/hcb-rules` and `lib/*.mjs` resolve as **ESM in the copied cache** — the
+repo-root `package.json` governs dev tooling only and does not travel with the plugin.
 
 ### Test suite (100% of the engine)
 
