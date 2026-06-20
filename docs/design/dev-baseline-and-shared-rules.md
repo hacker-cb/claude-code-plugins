@@ -531,11 +531,13 @@ Captured with the recommended default (to revisit before each phase):
    time. The project's `forge:` value (companion) is the only forge hook a neutral rule
    might name. Enablement of "baseline + forge" is settings-driven (§8), not a dep graph.
 5. **Managed-rules location** — *recommend:* sync into a segregated
-   `.claude/rules/hcb/` subdir (still loaded recursively by Claude Code), not flat in
-   `.claude/rules/`. Makes the `PreToolUse` deny-glob trivial
-   (`Edit(.claude/rules/hcb/**)`), makes "what is managed" obvious, and avoids
-   collisions with project-authored rules. The sync engine must also **delete**
-   de-adopted managed files (e.g. `early-stage` once matured), not just stop writing.
+   `.claude/rules/hcb/` subdir, not flat in `.claude/rules/`. Claude Code discovers
+   **all `.md` under `.claude/rules/` recursively** (`memory.md`: subdirs like `frontend/`
+   are an explicit documented pattern), so a subdir loads **always-on exactly like a
+   top-level rule** — no `paths:` needed. The subdir makes the `PreToolUse` deny-glob
+   trivial (`Edit(.claude/rules/hcb/**)`), makes "what is managed" obvious, and avoids
+   collisions with project-authored rules. The sync engine must also **delete** de-adopted
+   managed files (e.g. `early-stage` once matured), not just stop writing.
 6. **Forge abstraction depth** — *recommend:* keep `forge: github|gitlab|gitverse` a
    simple enum for now; defer a capability model until the 2nd forge (`hcb-gitlab`)
    actually lands (`early-stage`: don't pre-abstract).
@@ -633,4 +635,96 @@ skill trigger / is its output good) — paid and non-deterministic, so keep them
 **non-gating**: a manual `workflow_dispatch` / nightly job behind an `ANTHROPIC_API_KEY`
 repo secret, never the PR gate.
 
-This testing scaffold is built **with** the engine in **phase 0** (§10).
+This testing scaffold is built **with** the engine in **phase 0** (§14).
+
+---
+
+## 14. Implementation plan (end-to-end)
+
+Each phase is **one reviewable PR** and merges only when its **gate** is green; `hcb-dev`'s
+`version` bumps once per phase. Marketplace work continues on `feat/hcb-dev-baseline`;
+consumer work lands on each repo's own branch. Reference implementation throughout:
+`openai/codex-plugin-cc` (§13).
+
+### Phase 0 — Engine, canon, guards (marketplace repo only; **no consumer changes**)
+
+- **Dev tooling (repo root):** `package.json` (`"type":"module"`; scripts `test`,
+  `typecheck`; devDeps `typescript` + `@types/node`), `tsconfig.json`
+  (`allowJs/checkJs/noEmit`), `tests/helpers.mjs` (temp-dir + fixture-project + `run`).
+- **Engine** `plugins/hcb-dev/`:
+  - `bin/hcb-rules` (`#!/usr/bin/env node`, on PATH) → dispatch `sync | check | diff | guard | session-start | lang`.
+  - `lib/*.mjs`: `hash` (sha256), `manifest` (load+validate `manifest.json`), `paths`
+    (resolve `.claude/rules/hcb/**`), `sync` (write verbatim + managed header + record
+    hashes in the lock; **delete de-adopted**), `drift` (files + `${CLAUDE_PLUGIN_DATA}`
+    canon stamp), `contracts` (companion vs JSON Schema), `guard` (PreToolUse decision),
+    `settings` (read `.claude/settings.json`).
+- **Canon** `rules/`: `manifest.json` + `canonical/{git-branches,early-stage,issue-tracking}.md`
+  (`issue-tracking` = today's `github-issue-tracking.md`, forge-neutral name) +
+  `contracts/{labels.schema.json, labels.github.starter.yml, project.schema.json}`.
+- **Hooks** `hooks/`: `hooks.json` (`PreToolUse`→`guard.mjs`; `SessionStart`→
+  `session-start.mjs` + `inject-prefs.mjs`) + the three `.mjs` (`inject-prefs` ports the
+  current bash output verbatim).
+- **Skills** `skills/rules/SKILL.md` (`/hcb-dev:rules`, `allowed-tools: Bash(hcb-rules *)`);
+  keep `dependency-versions`, `library-docs`.
+- **Tests** `tests/*.test.mjs` — 100% of `lib/` (`node --test`).
+- **CI** `.github/workflows/test.yml` (`node --test --test-coverage-lines=100`, `tsc`,
+  matrix ubuntu+macOS, pinned SHAs, `timeout-minutes`).
+- README/CONTRIBUTING updated; `hcb-dev` version bumped.
+
+**Gate:** `node --test` 100% · `tsc` clean · `scripts/validate.sh` + `claude plugin validate`
+pass · `test.yml` green. No consumer repo touched.
+
+### Phase 1 — Adopt in DALI + NEXUS (consumer repos)
+
+- Run `hcb-rules sync` in each → writes `.claude/rules/hcb/{git-branches,early-stage,issue-tracking}.md`
+  + `.claude/hcb-dev/rules.json` (lock) + `.claude/hcb-dev/project.yml` (companion).
+- **Delete** the hand-copied `.claude/rules/{git-branches,github-issue-tracking,early-stage}.md`.
+- Verify `.github/labels.yml` satisfies the labels contract.
+- **Consumer CI drift gate** — `hcb-rules check`, two levels: self-consistency (managed
+  files vs recorded hashes; **no plugin needed**) always; up-to-date-vs-canon (needs the
+  plugin installed) optional.
+
+**Gate:** both repos load identical shared rules from `.claude/rules/hcb/`; no dups; drift
+gate green.
+
+### Phase 2 — Language refactor
+
+- Canon `language.md` (T2) + `project.yml: languages` companion + schema.
+- In DALI/NEXUS: collapse scattered language policy into the companion SSOT; remove the
+  `comments=en` vs `rust.md` "entity comments RU" contradiction (project redefines the scope).
+- Tests for `lang`.
+
+**Gate:** one language SSOT per repo; plugin defaults defer; tests green.
+
+### Phase 3 — Onboarding + presence + version notice
+
+- `skills/onboard/SKILL.md` (`/hcb-dev:onboard [--fix]`): detect forge from `git remote`;
+  scaffold `.claude/settings.json` (`extraKnownMarketplaces` + `enabledPlugins`) + `project.yml`;
+  run sync; starter labels; self-check.
+- `hooks/session-start.mjs`: new-project detection, settings-presence warn + offer `--fix`,
+  drift warn, canon-version notice (`${CLAUDE_PLUGIN_DATA}` stamp), `expects_plugins` nudge.
+- Tests.
+
+**Gate:** onboard scaffolds a fresh project; `session-start` nudges correctly; tests green.
+
+### Phase 4 — T3 tooling + forge expansion
+
+- Canon `rule-authoring.md` (T1) + `lib/lint.mjs` (T3 lint: frontmatter / size / `paths:` /
+  no-canon-dup) + `skills/rule-new/SKILL.md`.
+- `hcb-gitlab` plugin scaffold — **independent** (skills/agents for MR workflow; no rules,
+  no deps), mirroring `hcb-github`.
+- Tests for lint.
+
+**Gate:** T3 lint available in consumer CI; `hcb-gitlab` installable; tests green.
+
+### Phase 5 — Distill + retire the design doc
+
+- Distill durable parts → marketplace `CLAUDE.md` (tiers, companion contract,
+  `.claude/rules/hcb/`, language layering, forge-independence) + `hcb-dev` README + a kept
+  `docs/notes/claude-code-constraints.md` (C1–C12).
+- **Remove this design doc**; merge the feature to `main`.
+
+**Gate:** `CLAUDE.md` / README updated; proposal doc removed; PR merged.
+
+> **Status:** design complete. Awaiting ratification of §11 **1 / 3 / 5** (7 locked by the
+> reference, §13) to begin Phase 0.
