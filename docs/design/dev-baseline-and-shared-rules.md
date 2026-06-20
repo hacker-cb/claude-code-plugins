@@ -493,6 +493,26 @@ floor, no `--v` tags, no cross-marketplace allowlist — C12 is informational).
 - `git-branches.md` is already forge-neutral — stays canonical as-is.
 - `#N` issue/PR linking and PR-vs-MR vocabulary belong to the forge adapter.
 
+### Forge migration (e.g. GitHub → GitLab self-hosted)
+
+A **one-time, localized** swap — and the payoff of forge-neutral rules + independent forge
+plugins: the **shared rules do not change**. Steps:
+
+1. `project.yml`: `forge: github` → `gitlab`.
+2. `settings.json`: swap `hcb-github` → `hcb-gitlab` in `enabledPlugins` (independent
+   plugins → a clean disable/enable, no dep graph to untangle).
+3. Relocate the labels companion (`.github/labels.yml` → the GitLab equivalent); the label
+   **taxonomy is preserved**, only the forge-specific sync mechanism changes (project CI).
+4. Port the consumer CI drift-gate (`hcb-rules check`) from `.github/workflows/` to
+   `.gitlab-ci.yml` — same command; the engine is forge-agnostic.
+5. Re-run `hcb-rules sync` → emits the **same** `.claude/rules/hcb/*` (forge-neutral) — a
+   near-no-op for the rules.
+
+`/hcb-dev:onboard --forge gitlab` mechanises steps 1–4. The **marketplace stays on GitHub**
+(marketplace source ≠ project host — `plugin-marketplaces.md`), so plugin delivery is
+unaffected (if the GitLab env is airgapped, use `CLAUDE_CODE_PLUGIN_SEED_DIR` — §8). No
+dual-forge state: `forge` is a single enum, flipped once.
+
 ---
 
 ## 10. Phased rollout
