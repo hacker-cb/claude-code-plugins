@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": [
+    "plugins/hcb-dev/lib/**/*.mjs",
+    "plugins/hcb-dev/bin/**/*.mjs",
+    "plugins/hcb-dev/hooks/**/*.mjs",
+    "tests/**/*.mjs"
+  ]
+}
