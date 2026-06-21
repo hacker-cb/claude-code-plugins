@@ -1,17 +1,17 @@
 # Dependabot version updates for this repo's GitHub Actions workflows.
 # The marketplace ships only markdown/JSON (no package manifests), so
-# github-actions is the only ecosystem to cover. github-actions supports
-# cooldown.default-days only (per-semver-level cooldown days are not
-# supported for it).
+# github-actions is the only ecosystem to cover.
+#
+# Actions are pinned to floating major tags (@vN), so within-major fixes
+# arrive via the moving tag and Dependabot only opens PRs for major bumps
+# — there are no minor/patch updates to group. github-actions supports
+# cooldown.default-days only (no per-semver-level days); it applies here to
+# those major-bump PRs.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    groups:
-      actions-minor-and-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
     cooldown:
       default-days: 7
