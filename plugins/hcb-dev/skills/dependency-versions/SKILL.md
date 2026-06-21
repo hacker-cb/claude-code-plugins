@@ -102,6 +102,9 @@ updates:
 
 When extending or proposing a config, include a `github-actions` entry if the
 repo has workflows — it keeps the pinned Action majors (see above) current.
+With floating-major pins, Actions yield only major-bump PRs, so the
+minor/patch grouping above doesn't apply to that entry — give it just a
+schedule and cooldown.
 
 ## Why this matters
 
