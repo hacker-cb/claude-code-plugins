@@ -1,13 +1,12 @@
 import { syncFiles } from "./sync.mjs";
 import { checkFiles } from "./drift.mjs";
-import { guardDecision } from "./guard.mjs";
 import { sessionStartReport } from "./session.mjs";
 
 /**
  * @typedef {object} CliContext
  * @property {string} cwd          project directory (`process.cwd()` for user commands)
  * @property {string} pluginRoot   `${CLAUDE_PLUGIN_ROOT}`
- * @property {string} stdinText    raw stdin — the hook payload for `guard` / `session-start`, `""` otherwise
+ * @property {string} stdinText    raw stdin — the hook payload for `session-start`, `""` otherwise
  * @property {(s: string) => void} log     stdout sink
  * @property {(s: string) => void} errlog  stderr sink
  */
@@ -51,17 +50,6 @@ function cmdCheck(ctx) {
 }
 
 /** @param {CliContext} ctx @returns {number} */
-function cmdGuard(ctx) {
-  // Fail-open by design: malformed stdin parses to null and `guardDecision`
-  // returns null (no decision = allow), and any unexpected throw is caught by
-  // `runCli` and surfaces as a non-blocking hook error. A buggy guard must not
-  // wedge every edit; the SessionStart drift check is the compensating control.
-  const decision = guardDecision(parseJson(ctx.stdinText));
-  if (decision) ctx.log(JSON.stringify(decision));
-  return 0;
-}
-
-/** @param {CliContext} ctx @returns {number} */
 function cmdSessionStart(ctx) {
   const input = parseJson(ctx.stdinText);
   const cwd = input && typeof input.cwd === "string" ? input.cwd : ctx.cwd;
@@ -97,12 +85,10 @@ export function runCli(argv, ctx) {
         return cmdSync(ctx);
       case "check":
         return cmdCheck(ctx);
-      case "guard":
-        return cmdGuard(ctx);
       case "session-start":
         return cmdSessionStart(ctx);
       default:
-        ctx.errlog(`hcb-rules: unknown command '${cmd}'; expected one of sync, check, guard, session-start`);
+        ctx.errlog(`hcb-rules: unknown command '${cmd}'; expected one of sync, check, session-start`);
         return 2;
     }
   } catch (e) {

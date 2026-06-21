@@ -72,24 +72,6 @@ test("check passes on a synced project and fails on drift", () => {
   assert.match(dirty.err.join("\n"), /run `\/hcb-dev:rules sync`/);
 });
 
-test("guard emits a deny decision for a managed-rule write, nothing otherwise", () => {
-  const deny = ctxFor("", "", JSON.stringify({
-    cwd: "/repo",
-    tool_name: "Edit",
-    tool_input: { file_path: "/repo/.claude/rules/hcb/git-branches.md" },
-  }));
-  assert.equal(runCli(["guard"], deny.ctx), 0);
-  assert.match(deny.out.join("\n"), /"permissionDecision":"deny"/);
-
-  const allow = ctxFor("", "", JSON.stringify({ cwd: "/repo", tool_name: "Read", tool_input: {} }));
-  assert.equal(runCli(["guard"], allow.ctx), 0);
-  assert.equal(allow.out.length, 0);
-
-  const garbage = ctxFor("", "", "{not json");
-  assert.equal(runCli(["guard"], garbage.ctx), 0);
-  assert.equal(garbage.out.length, 0);
-});
-
 test("session-start prints a drift preamble using the cwd from stdin", () => {
   const plugin = makePluginFixture();
   const proj = makeTempDir();
@@ -104,15 +86,15 @@ test("session-start prints a drift preamble using the cwd from stdin", () => {
 test("session-start falls back to ctx.cwd when stdin lacks a cwd or is empty", () => {
   const plugin = makePluginFixture();
   const proj = makeTempDir();
-  syncFiles(plugin, proj); // in sync → silent
+  syncFiles(plugin, proj); // adopted + in sync → the managed note (proves cwd resolved)
 
   const noCwd = ctxFor(plugin, proj, JSON.stringify({ hook_event_name: "SessionStart" }));
   assert.equal(runCli(["session-start"], noCwd.ctx), 0);
-  assert.equal(noCwd.out.length, 0);
+  assert.match(noCwd.out.join("\n"), /manages/);
 
   const empty = ctxFor(plugin, proj, "");
   assert.equal(runCli(["session-start"], empty.ctx), 0);
-  assert.equal(empty.out.length, 0);
+  assert.match(empty.out.join("\n"), /manages/);
 });
 
 test("session-start degrades to a soft note (exit 0) when the lock is corrupt", () => {

@@ -62,16 +62,20 @@ Code loads `.claude/rules/**` automatically) and records a lock at
 rule disabled in the lock is removed. The canon itself lives in the plugin under
 `rules/canonical/`, indexed by `rules/manifest.json`.
 
-Two hooks keep the managed copies faithful to canon:
+Keeping the synced copies faithful to canon is **advisory + detection**, not a
+hard in-session block (which would tax every edit in the repo):
 
-- a **`PreToolUse` guard** denies any `Edit`/`Write`/`NotebookEdit` to a file
-  under `.claude/rules/hcb/` — the synced copies are owned by the plugin, so a
-  change must be made to the canon and re-synced, never edited in place. The
-  guard covers Claude's file-editing tools, **not** Bash writes/`rm`; for hard
-  enforcement add a project `permissions.deny` rule on `.claude/rules/hcb/**`.
-- a **`SessionStart` drift check** prints a short, actionable note when an
-  adopted project's managed files no longer match canon (and stays silent
-  otherwise) — the compensating control that catches any out-of-band edit.
+- every managed file opens with a **`MANAGED by hcb-dev … do not edit`** header —
+  the deterrent sits right in the file, where it's read before any edit;
+- a **`SessionStart` check** states that `.claude/rules/hcb/**` is plugin-managed
+  (a one-liner when in sync) and escalates to an actionable report when the
+  managed files have drifted from canon — catching out-of-band edits (human,
+  formatter, `git`) that no in-session hook could see anyway.
+
+For a **hard** block (so even Bash/`rm` can't touch them), add a project rule to
+`.claude/settings.json` — `"permissions": { "deny": ["Edit(.claude/rules/hcb/**)"] }`.
+A plugin can't ship that itself; it's an opt-in the project owns (onboarding can
+write it later).
 
 To change a managed rule, edit its canon in
 `plugins/hcb-dev/rules/canonical/` and run `/hcb-dev:rules sync`.

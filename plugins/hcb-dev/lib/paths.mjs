@@ -64,7 +64,8 @@ export function lockPath(projectDir) {
 /**
  * Is `filePath` a file **inside** the project's managed-rules directory?
  * `filePath` may be absolute or relative to `projectDir`. The managed directory
- * itself (not a file under it) returns `false`. Used by the PreToolUse guard.
+ * itself (not a file under it) returns `false`. Backs the containment assert in
+ * {@link managedRulePath}, so no managed write can escape the dir.
  *
  * @param {string} projectDir
  * @param {string} filePath

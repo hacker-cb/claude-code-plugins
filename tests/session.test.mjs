@@ -10,11 +10,14 @@ test("a project that has not adopted hcb-dev rules is silent", () => {
   assert.equal(sessionStartReport(plugin, proj), "");
 });
 
-test("a fully synced project is silent", () => {
+test("a fully synced adopted project prints a one-line managed note", () => {
   const plugin = makePluginFixture();
   const proj = makeTempDir();
   syncFiles(plugin, proj);
-  assert.equal(sessionStartReport(plugin, proj), "");
+  const out = sessionStartReport(plugin, proj);
+  assert.match(out, /manages `\.claude\/rules\/hcb\/\*\*`/);
+  assert.doesNotMatch(out, /drift detected/);
+  assert.equal(out.includes("\n"), false); // single line
 });
 
 test("drift produces an actionable preamble listing each drifted rule", () => {

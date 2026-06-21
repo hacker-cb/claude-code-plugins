@@ -1,6 +1,7 @@
 /**
  * The single-line banner placed at the top of every managed rule file. It is
- * part of the hashed content, so tampering with it is caught by the drift guard.
+ * part of the rendered file compared on `check`, so altering or dropping it
+ * registers as drift.
  *
  * @param {string} name rule name
  * @returns {string}

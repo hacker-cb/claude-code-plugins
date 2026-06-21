@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 //
 // hcb-rules — thin process wrapper around lib/cli.mjs (the testable core).
-// Subcommands: sync | check | guard | session-start.
+// Subcommands: sync | check | session-start.
 //
-// `sync` / `check` are user-invoked (via the /hcb-dev:rules skill); `guard`
-// (PreToolUse) and `session-start` (SessionStart) are invoked by hooks and read
-// their JSON payload from stdin. The plugin-local package.json ("type":"module")
-// makes this extensionless file resolve as ESM when run as `node bin/hcb-rules`.
+// `sync` / `check` are user-invoked (via the /hcb-dev:rules command);
+// `session-start` (SessionStart hook) reads its JSON payload from stdin. The
+// plugin-local package.json ("type":"module") makes this extensionless file
+// resolve as ESM when run as `node bin/hcb-rules`.
 
 import process from "node:process";
 import path from "node:path";
@@ -30,8 +30,8 @@ async function readStdin() {
   return data;
 }
 
-// Only the hook subcommands consume stdin; reading it for sync/check could hang.
-const needsStdin = cmd === "guard" || cmd === "session-start";
+// Only the session-start hook consumes stdin; reading it for sync/check could hang.
+const needsStdin = cmd === "session-start";
 
 const code = runCli(argv, {
   cwd: process.cwd(),
