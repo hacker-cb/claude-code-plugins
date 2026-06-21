@@ -41,8 +41,14 @@ manifest by hand, look the current version up from the registry first.
 
 - **Node.js runtime**: pin to the active LTS major, not `latest`. Check with
   `nvm ls-remote --lts`.
-- **GitHub Actions**: pin to the latest major (e.g. `@v4`). Find it with
-  `gh release view -R <owner>/<repo> --json tagName --jq .tagName`.
+- **GitHub Actions**: pin to a version tag — the latest major, e.g. `@v4` —
+  **not** a commit SHA. Find it with
+  `gh release view -R <owner>/<repo> --json tagName --jq .tagName`. A floating
+  major tag keeps workflows readable and lets within-major fixes flow in
+  automatically, while Dependabot (below) raises the major when one ships.
+  SHA pins (`actions/checkout@de0fac2… # v6.0.2`) are the stricter
+  supply-chain posture but noisy and unreadable — for trusted first-party
+  `actions/*` this project takes legible, Dependabot-tracked tags instead.
 
 ## GitHub repos: keep Dependabot in sync
 
