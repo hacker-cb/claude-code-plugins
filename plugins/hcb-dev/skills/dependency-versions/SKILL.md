@@ -41,8 +41,16 @@ manifest by hand, look the current version up from the registry first.
 
 - **Node.js runtime**: pin to the active LTS major, not `latest`. Check with
   `nvm ls-remote --lts`.
-- **GitHub Actions**: pin to the latest major (e.g. `@v4`). Find it with
-  `gh release view -R <owner>/<repo> --json tagName --jq .tagName`.
+- **GitHub Actions**: pin to a version tag — the floating latest major, e.g.
+  `@vN` — **not** a commit SHA. Release tags are usually full semver (e.g.
+  `v7.0.0`), so take the major:
+  `gh release view -R <owner>/<repo> --json tagName --jq '.tagName | split(".")[0]'`
+  — a tag that's already `vN` passes through unchanged; sanity-check any
+  non-semver tag by hand. A floating major tag keeps workflows readable and lets within-major fixes
+  flow in automatically, while Dependabot (below) raises the major when one
+  ships. SHA pins (`actions/checkout@<sha> # v6.0.2`) are the stricter
+  supply-chain posture but noisy and unreadable — for trusted first-party
+  `actions/*` this project takes legible, Dependabot-tracked tags instead.
 
 ## GitHub repos: keep Dependabot in sync
 
@@ -95,6 +103,9 @@ updates:
 
 When extending or proposing a config, include a `github-actions` entry if the
 repo has workflows — it keeps the pinned Action majors (see above) current.
+With floating-major pins, Actions yield only major-bump PRs, so the
+minor/patch grouping above doesn't apply to that entry — give it just a
+schedule and cooldown.
 
 ## Why this matters
 
