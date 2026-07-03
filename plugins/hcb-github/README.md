@@ -17,9 +17,9 @@ Takes committed work on a feature branch and drives it to a merged PR, autonomou
 
 - rename an auto-generated branch to a meaningful `<type>/<name>`;
 - rebase onto the base branch and force-push with `--force-with-lease`;
-- open the PR (ready for review);
-- loop on fixes until **CI is green** and there are no unresolved Critical/Important Copilot findings;
-- reply to and resolve Copilot review threads;
+- open the PR (ready for review — drafts skip Copilot's review);
+- loop on fixes until **GitHub reports the PR mergeable** — every required check green (including any Copilot gate) and the repo's thread-resolution requirement met — reading the repo's own rulesets as the gates, with the skill's own CI-and-Copilot bar as the floor when a repo enforces little or the gates aren't trustworthy;
+- reply to and resolve Copilot review threads (all of them where the repo requires it);
 - merge with the right strategy — only on the user's explicit go-ahead — then monitor the merge and report.
 
 See [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md) and its
