@@ -37,13 +37,15 @@ Use whichever source is available (in priority order):
 2. **`gh` CLI:**
    ```bash
    gh pr view <pr> --comments
-   # review threads with resolution state (GraphQL):
+   # review threads with resolution state (GraphQL). Select the thread `id` and each
+   # comment's `databaseId` — you need them below: `id` is the `<thread_node_id>` for
+   # resolveReviewThread, `databaseId` is the `<comment_id>` for the replies endpoint.
    gh api graphql -f query='
      query($owner:String!,$repo:String!,$pr:Int!){
        repository(owner:$owner,name:$repo){
          pullRequest(number:$pr){
            reviewThreads(first:100){
-             nodes{ isResolved comments(first:20){ nodes{ author{login} body path line } } }
+             nodes{ id isResolved comments(first:20){ nodes{ databaseId author{login} body path line } } }
            }
          }
        }
