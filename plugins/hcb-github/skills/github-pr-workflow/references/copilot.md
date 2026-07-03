@@ -45,7 +45,7 @@ Use whichever source is available (in priority order):
        repository(owner:$owner,name:$repo){
          pullRequest(number:$pr){
            reviewThreads(first:100){
-             nodes{ id isResolved comments(first:20){ nodes{ databaseId author{login} body path line } } }
+             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login} body path line } } }
            }
          }
        }
