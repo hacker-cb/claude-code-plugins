@@ -104,7 +104,8 @@ separate `--json isDraft`):
 | `UNSTABLE` | a non-required check is red — GitHub *will* let you merge | don't merge until you confirm it's irrelevant or a known flake (see below) |
 | `DIRTY` | merge conflicts | resolve conflicts |
 | `UNKNOWN` | GitHub is still recomputing mergeability (transient — e.g. right after a push) | wait and re-poll |
-| `CLEAN` / `HAS_HOOKS` | GitHub's own gates are satisfied | merge-*permitted* by GitHub — still meet your own bar (Step 4) before Step 5 |
+| `HAS_HOOKS` | mergeable and checks pass, but the repo has pre-receive hooks that run *at merge time* and can still reject the merge | proceed as for `CLEAN`, but don't treat the merge as guaranteed — a hook may reject it, so confirm it actually landed (Step 6) |
+| `CLEAN` | GitHub's own gates are satisfied | merge-*permitted* by GitHub — still meet your own bar (Step 4) before Step 5 |
 
 Gate shapes you'll meet (all repo-configurable — detect, don't presume):
 - **A Copilot review gate wired as a required status check** (e.g. a check named
