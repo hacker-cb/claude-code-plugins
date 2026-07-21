@@ -1,7 +1,8 @@
 # hcb-dev
 
-A personal developer baseline for Claude Code — communication/language house
-style plus a couple of everyday best-practice skills. Part of the
+A personal developer baseline for Claude Code: resolve dependency versions from
+the registry instead of typing them from memory, and pull current library docs
+from Context7 before answering. Part of the
 [`hacker-cb-plugins`](https://github.com/hacker-cb/claude-code-plugins)
 marketplace.
 
@@ -12,41 +13,9 @@ marketplace.
 /plugin install hcb-dev@hacker-cb-plugins
 ```
 
-## Configuration
+## Skills
 
-On enable, the plugin prompts for a few settings (stored in `settings.json` under
-`pluginConfigs."hcb-dev@hacker-cb-plugins".options`). All are optional — the
-defaults reproduce the author's setup and can be changed any time via
-`/plugin configure hcb-dev@hacker-cb-plugins`, the `--config KEY=VALUE` flag at
-install, or by editing `settings.json`.
-
-| Setting | Default | What it controls |
-| --- | --- | --- |
-| `lang_chat` | `Russian` | Language for chat replies |
-| `lang_plans` | `Russian` | Language for temporary plan/spec working notes |
-| `lang_comments` | `English` | Language for code comments |
-| `lang_docs` | `English` | Language for project documentation |
-| `lang_issues` | `Russian` | Language for GitHub / GitLab issues (titles, descriptions, comments) |
-| `use_emojis` | `true` | Whether to use emojis in chat |
-
-## What it does
-
-### House style — `SessionStart` hook
-
-At the start of every session, the plugin injects a short "house style" derived
-from the settings above: which language to use in chat (and whether to use
-emojis), and which language to use for plan/spec notes, code comments, project
-docs, and GitHub/GitLab issues. Durable artifacts (code identifiers, commit
-messages) stay in English. No invocation needed — it applies automatically.
-
-These are **low-priority personal defaults**: they apply only when nothing more
-specific does. Project instructions (e.g. `CLAUDE.md`), conventions already
-established in the repo, and explicit requests in the conversation all take
-precedence over them.
-
-### Skills
-
-#### `dependency-versions` — `/hcb-dev:dependency-versions`
+### `dependency-versions` — `/hcb-dev:dependency-versions`
 
 When adding or updating a dependency, resolve the version from the registry via
 the package manager's own `add`/`install` command instead of typing a version
@@ -56,7 +25,7 @@ it also keeps `.github/dependabot.yml` in sync with the ecosystems in use —
 extending an existing config automatically, and offering to enable Dependabot
 (with sane grouping + cooldown defaults) when there is none.
 
-#### `library-docs` — `/hcb-dev:library-docs`
+### `library-docs` — `/hcb-dev:library-docs`
 
 When asked about a library, framework, SDK, API, CLI, or cloud service, pull the
 current documentation from the **Context7 MCP server** first — even for
