@@ -9,10 +9,12 @@ or when someone — you included — requests it on that PR. Read the rule befor
 loop; its two parameters drive everything below:
 
 ```bash
+# One line per matching rule — a repo may carry the rule in more than one
+# ruleset. Built-in --jq only, so this needs nothing beyond gh itself.
 gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
-  | jq -s '[ .[] | select(.enforcement=="active") | .rules[]
-             | select(.type=="copilot_code_review") | .parameters ]'
+      --jq 'select(.enforcement=="active") | .rules[]
+            | select(.type=="copilot_code_review") | .parameters | @json'
 ```
 
 - **`review_on_push: true`** — Copilot is re-requested on *every* push. So every
@@ -79,7 +81,9 @@ would hang forever. Run this protocol after each push:
 
 1. **Make sure a review is actually pending for the current head.** Under
    `review_on_push: true` GitHub requests it for you; otherwise, or if nothing
-   shows up, request one explicitly — the MCP `request_copilot_review` tool, or:
+   shows up, request one explicitly. Prefer a connected GitHub MCP server's
+   request-a-Copilot-review tool when it offers one; the portable fallback, which
+   always works wherever `gh` is authenticated, is:
    ```bash
    gh pr edit <pr> --add-reviewer "@copilot"
    ```
