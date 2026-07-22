@@ -41,8 +41,11 @@ exactly like "never involved" if you only check the first two, and its comments
 would go unread. Check for an existing review before skipping:
 
 ```bash
+# --paginate applies --jq per page, so a bare `length` prints one number *per
+# page* — sum them, or a PR with >100 reviews answers with several numbers.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
-  --jq '[ .[] | select(.user.login == "copilot-pull-request-reviewer[bot]") ] | length'
+  --jq '[ .[] | select(.user.login == "copilot-pull-request-reviewer[bot]") ] | length' \
+  | awk '{ n += $1 } END { print n + 0 }'
 ```
 
 Only when all three come back empty is Copilot genuinely not part of this repo's
