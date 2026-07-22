@@ -1,21 +1,17 @@
 name: Validate
 
+# NOTE: deliberately no `paths:` filter. The job below publishes the status check
+# `Validate marketplace & plugins`, which the default-branch ruleset lists as
+# REQUIRED. A path-filtered workflow simply does not run when nothing matches, so
+# the required check never reports — and GitHub treats "required but never
+# reported" as blocking, not as passing. That left every docs-only PR (README,
+# CLAUDE.md, CONTRIBUTING.md, LICENSE) permanently un-mergeable. Running always
+# costs about a minute of runner time; do not re-add a filter here unless you also
+# drop the check from the ruleset's required list.
 on:
   pull_request:
-    paths:
-      - '.claude-plugin/**'
-      - 'plugins/**'
-      - 'external_plugins/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
   push:
     branches: [main]
-    paths:
-      - '.claude-plugin/**'
-      - 'plugins/**'
-      - 'external_plugins/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
