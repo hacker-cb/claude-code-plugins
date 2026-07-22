@@ -2,9 +2,12 @@
 
 This repo is a Claude Code plugin marketplace (`hacker-cb-plugins`). It hosts themed plugins; each plugin bundles one or more skills (and, later, commands / agents / rules).
 
-Official docs: <https://code.claude.com/docs/en/plugins.md> ·
-<https://code.claude.com/docs/en/plugin-marketplaces> ·
-<https://code.claude.com/docs/en/skills>
+Official docs:
+
+- Plugins: <https://code.claude.com/docs/en/plugins>
+- Marketplaces: <https://code.claude.com/docs/en/plugin-marketplaces>
+- Skills: <https://code.claude.com/docs/en/skills>
+- Full index of every docs page: <https://code.claude.com/docs/llms.txt>
 
 ## Naming convention
 
