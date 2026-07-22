@@ -65,9 +65,11 @@ with the PR head:
 
 ```bash
 head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
+# `| @json` pins each review to exactly one line, so `tail -1` is the last review
+# and not whatever gh's output formatting happened to put on the last line.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
   --jq '.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")
-        | {commit_id, submitted_at}' | tail -1
+        | {commit_id, submitted_at} | @json' | tail -1
 # fresh iff commit_id == $head
 ```
 
