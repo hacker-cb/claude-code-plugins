@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hcb-dev",
   "description": "Personal developer baseline: skills for resolving dependency versions from the registry (keeping GitHub Dependabot config in sync), pulling current library docs from Context7, and driving a GitHub pull request from a finished branch to a merged PR.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
