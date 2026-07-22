@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hcb-dev",
-  "description": "Personal developer baseline: skills for resolving dependency versions from the registry (keeping GitHub Dependabot config in sync) and pulling current library docs from Context7.",
-  "version": "0.4.0",
+  "description": "Personal developer baseline: skills for resolving dependency versions from the registry (keeping GitHub Dependabot config in sync), pulling current library docs from Context7, and driving a GitHub pull request from a finished branch to a merged PR.",
+  "version": "0.5.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
@@ -10,5 +10,5 @@
   "homepage": "https://github.com/hacker-cb/claude-code-plugins",
   "repository": "https://github.com/hacker-cb/claude-code-plugins",
   "license": "MIT",
-  "keywords": ["developer", "dependencies", "documentation"]
+  "keywords": ["developer", "dependencies", "documentation", "github", "pull-request", "ci", "review", "workflow"]
 }
