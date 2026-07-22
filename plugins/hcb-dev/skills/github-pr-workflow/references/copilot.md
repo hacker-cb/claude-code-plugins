@@ -17,9 +17,10 @@ gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
             | select(.type=="copilot_code_review") | .parameters | @json'
 ```
 
-- **`review_on_push: true`** — Copilot is re-requested on *every* push. So every
-  push you make during the fix loop earns a new review that you must wait for and
-  read before you can call the PR done.
+- **`review_on_push: true`** — Copilot is re-*requested* on *every* push. Treat
+  each push in the fix loop as owing you a review to wait for and read before you
+  call the PR done — but the request is not a promise that one posts, which is why
+  the wait below is bounded rather than open-ended.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 

@@ -119,7 +119,7 @@ none of them are present until you've read them:
 |---|---|---|
 | `required_status_checks` | `required_status_checks[].context`, `strict_required_status_checks_policy` | every listed context must go green. Treat the names as **opaque** — the repo chooses them, and what any one check stands for is its own business. `strict` additionally means the branch must be current with base (Step 2). |
 | `pull_request` | `required_review_thread_resolution`, `allowed_merge_methods`, `required_approving_review_count`, `dismiss_stale_reviews_on_push` | thread resolution `true` means *every* thread must end resolved, not just the severe ones. Merge methods: pick from the allowed set only (Step 5). Approvals are often 0; if >0, `reviewDecision` reads `REVIEW_REQUIRED` and merge waits on a human. |
-| `copilot_code_review` | `review_on_push`, `review_draft_pull_requests` | Copilot review is part of this repo's flow — automatically **requested**, but gating nothing on its own (it lands as a `COMMENTED` review), so its findings are your bar rather than GitHub's. `review_on_push` means every push earns a fresh review you must wait for; drafts are skipped unless `review_draft_pull_requests`. See `references/copilot.md`. |
+| `copilot_code_review` | `review_on_push`, `review_draft_pull_requests` | Copilot review is part of this repo's flow — automatically **requested**, but gating nothing on its own (it lands as a `COMMENTED` review), so its findings are your bar rather than GitHub's. `review_on_push` re-*requests* Copilot on every push — usually, but not always, producing a new review, so confirm one landed for the current head instead of assuming it. Drafts are skipped unless `review_draft_pull_requests`. See `references/copilot.md`. |
 | `deletion`, `non_fast_forward` | — | the matched branches can't be deleted or force-pushed. Affects Step 1's rename and Step 5's `--delete-branch` when they touch a protected ref. |
 
 Anything the rules don't cover, the live signals still do: `gh pr checks` is the
@@ -250,8 +250,8 @@ severity classification only decides what you *fix*, never when you're *done*.
 3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
    them — see `references/copilot.md`.
 4. **Fix Critical and Important findings.** Batch fixes into as few pushes as is
-   reasonable — under `review_on_push` every push re-triggers Copilot, superseding
-   its prior review and costing another re-review wait (step 6).
+   reasonable — under `review_on_push` every push re-requests Copilot and costs
+   another wait at step 6, whether or not a new review actually follows.
 5. **Reply to every Copilot comment; resolve every thread the repo requires
    resolved.** The reply is *unconditional* (fixed or acknowledged, on every
    comment); *resolution* is what scales with the repo — under
@@ -260,12 +260,13 @@ severity classification only decides what you *fix*, never when you're *done*.
    otherwise at least the ones you fixed. See `references/copilot.md` for the
    reply + resolve protocol.
 6. **After pushing, wait for Copilot's review of the new head.** Under
-   `review_on_push` every push earns a fresh review, and it posts *later* than CI
-   goes green — so the PR reads mergeable while that review is still coming, and
-   finishing in that window silently drops everything it was about to say. Never
-   evaluate exit there: follow the wait protocol in `references/copilot.md`
-   (freshness is `commit_id == head`, on a bounded wait because Copilot does not
-   re-review every push), then re-read from step 1.
+   `review_on_push` a push re-requests Copilot, and any review that follows lands
+   *later* than CI goes green — so the PR reads mergeable while that review may
+   still be on its way, and finishing in that window silently drops everything it
+   was about to say. Never evaluate exit there: follow the wait protocol in
+   `references/copilot.md` (freshness is `commit_id == head`, on a bounded wait —
+   the request is not a promise, and some pushes draw no new review at all), then
+   re-read from step 1.
 
 If after ~5 iterations the gates still won't go green, or a finding needs a
 decision you can't make, stop and summarize the blocker for the user.
