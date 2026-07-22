@@ -43,7 +43,7 @@ Takes committed work on a feature branch and drives it to a merged PR, autonomou
 - rename an auto-generated branch to a meaningful `<type>/<name>`;
 - rebase onto the base branch and force-push with `--force-with-lease`;
 - open the PR (ready for review — drafts skip Copilot's review);
-- loop on fixes until **GitHub reports the PR mergeable** — every required check green and the repo's thread-resolution requirement met — reading the target repo's own rulesets as the gates, and always keeping the skill's own bar as the floor: green CI, a branch current with base, and Copilot's review *of the current head* processed (never a stale one from an earlier push);
+- loop on fixes until **GitHub reports the PR mergeable** — every required check green and the repo's thread-resolution requirement met — discovering the gates from the rules actually in force on the PR's base branch (ref scoping and org-level rulesets included, which a plain ruleset listing gets wrong), and always keeping the skill's own bar as the floor: green CI, a branch current with base, and Copilot's review *of the current head* processed (never a stale one from an earlier push);
 - reply to and resolve Copilot review threads (all of them where the repo requires it);
 - merge with the right strategy — only on the user's explicit go-ahead — then monitor the merge and report.
 
