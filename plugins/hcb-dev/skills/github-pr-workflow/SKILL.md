@@ -71,13 +71,15 @@ tell the user what to install or connect (`gh`, or a GitHub MCP connector).
 
 ## The merge gates belong to the repo — discover them, don't assume
 
-What blocks a merge — which CI checks are required, whether Copilot's review is
-mandatory, whether *every* review thread must be resolved, which merge methods are
-allowed, whether the branch must be current with base — is configured **per
-repository** (branch protection / rulesets) and **enforced by GitHub**. You can't
-change it and shouldn't hardcode assumptions about it. Your job is to **satisfy**
-whatever gates the repo has; **GitHub's own mergeability is the source of truth
-for "done"** — not your own checklist.
+What blocks a merge — which CI checks are required, whether *every* review thread
+must be resolved, which merge methods are allowed, whether the branch must be
+current with base — is configured **per repository** (branch protection /
+rulesets) and **enforced by GitHub**. You can't change it and shouldn't hardcode
+assumptions about it: **read the configuration of the repo you're working in**,
+every time, and never carry over what some *other* repo happened to require or
+what a check was called there. Your job is to **satisfy** whatever gates this repo
+has — and then clear your own bar on top of them, because GitHub's mergeability is
+necessary but never sufficient (see *When there are no gates* below).
 
 Read the live gates before and during the loop:
 
@@ -86,9 +88,13 @@ Read the live gates before and during the loop:
 # mechanism (rulesets, classic branch protection, org policy). Trust these:
 gh pr checks <pr>                                              # required checks + state
 gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision  # merge verdict + why
-# The "why", read once — from BOTH gate mechanisms (a repo may use either or both):
-gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
-  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{}          # rulesets (newer)
+# The "why", read once. Start from the per-branch view: it has already applied
+# each ruleset's ref_name conditions and includes org-level rulesets — a plain
+# /rulesets listing does neither, so it over-reports on a side branch and misses
+# whatever the organization enforces:
+gh api repos/<owner>/<repo>/rules/branches/<base>              # rules in force on the base
+gh api --paginate repos/<owner>/<repo>/rulesets --jq '.[].id' \
+  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{}          # full definitions: enforcement, bypass_actors
 gh api repos/<owner>/<repo>/branches/<base>/protection 2>/dev/null || true  # classic (NOT in /rulesets)
 ```
 
@@ -107,18 +113,21 @@ separate `--json isDraft`):
 | `HAS_HOOKS` | mergeable and checks pass, but the repo has pre-receive hooks that run *at merge time* and can still reject the merge | proceed as for `CLEAN`, but don't treat the merge as guaranteed — a hook may reject it, so confirm it actually landed (Step 6) |
 | `CLEAN` | GitHub's own gates are satisfied | merge-*permitted* by GitHub — still meet your own bar (Step 4) before Step 5 |
 
-Gate shapes you'll meet (all repo-configurable — detect, don't presume):
-- **A Copilot review gate wired as a required status check** (e.g. a check named
-  `copilot-review-gate`). "Copilot is satisfied" becomes a *machine* gate — drive
-  the check green, don't second-guess it. See `references/copilot.md`.
-- **`required_review_thread_resolution`** — *every* thread must be resolved before
-  merge, not just the severe ones.
-- **Copilot re-reviews on every push and skips draft PRs** — see
-  `references/copilot.md`.
-- **Restricted merge methods** — the repo may allow only some of
-  merge / squash / rebase; pick from the allowed set (Step 5).
-- **`required_approving_review_count`** — often 0 (no human approval needed); if
-  >0, `reviewDecision` will read `REVIEW_REQUIRED` and merge waits on a human.
+### Read the rules, not a checklist of names
+
+Rulesets express gates as **typed rules**; classic protection expresses the same
+ideas under its own keys. Map whichever rules you find onto work — and presume
+none of them are present until you've read them:
+
+| ruleset rule | parameters that matter | what it means for you |
+|---|---|---|
+| `required_status_checks` | `required_status_checks[].context`, `strict_required_status_checks_policy` | every listed context must go green. Treat the names as **opaque** — the repo chooses them, and what any one check stands for is its own business. `strict` additionally means the branch must be current with base (Step 2). |
+| `pull_request` | `required_review_thread_resolution`, `allowed_merge_methods`, `required_approving_review_count`, `dismiss_stale_reviews_on_push` | thread resolution `true` means *every* thread must end resolved, not just the severe ones. Merge methods: pick from the allowed set only (Step 5). Approvals are often 0; if >0, `reviewDecision` reads `REVIEW_REQUIRED` and merge waits on a human. |
+| `copilot_code_review` | `review_on_push`, `review_draft_pull_requests` | Copilot review is part of this repo's flow — automatically **requested**, but gating nothing on its own (it lands as a `COMMENTED` review), so its findings are your bar rather than GitHub's. `review_on_push` re-*requests* Copilot on every push — usually, but not always, producing a new review, so confirm one landed for the current head instead of assuming it. Drafts are skipped unless `review_draft_pull_requests`. See `references/copilot.md`. |
+| `deletion`, `non_fast_forward` | — | the matched branches can't be deleted or force-pushed. Affects Step 1's rename and Step 5's `--delete-branch` when they touch a protected ref. |
+
+Anything the rules don't cover, the live signals still do: `gh pr checks` is the
+final word on which contexts are required, whatever produced them.
 
 ### When there are no gates, or they can't be trusted
 
@@ -136,9 +145,11 @@ So don't just read the gates — judge whether they're real:
   you're in a rule's `bypass_actors`), `mergeStateStatus` can read `CLEAN` because
   *you're allowed to skip the gates*, not because they passed. Satisfy them as if
   you couldn't bypass.
-- **A green gate must be corroborated.** A `copilot-review-gate` is only meaningful
-  if Copilot actually reviewed the latest push and its threads are resolved — check
-  that, don't trust a vacuously-green check.
+- **A green check is not proof of a review.** A check that stands in for a review
+  can be green for reasons of its own — asserting only that *some* review exists, or
+  having run before the latest push was reviewed. Never infer "Copilot has reviewed
+  the current head" from a check's colour; verify that directly against the head SHA
+  (`references/copilot.md`).
 - **`UNSTABLE` means a non-required check is red.** GitHub will let you merge over
   it; don't, unless you've confirmed that check is irrelevant or a known flake
   (re-run flakes rather than merging past them).
@@ -148,7 +159,7 @@ it from an empty rulesets list. A repo can enforce required checks, reviews, and
 thread-resolution through **classic branch protection**, which `/rulesets` does
 **not** return, so `rulesets == []` alone does not mean unprotected. Treat gates as
 truly absent only when the live signals agree: `gh pr checks` shows no required
-checks, `reviewDecision` is empty, and *neither* rulesets *nor*
+checks, `reviewDecision` is empty, and *neither* `rules/branches/<base>` *nor*
 `branches/<base>/protection` enforces anything (or `gh api` is denied and you
 genuinely can't tell). Only then supply the gates yourself: the Step 4 loop's own
 bar becomes authoritative — green CI, Copilot Critical/Important resolved and every
@@ -205,9 +216,10 @@ git rebase --autostash origin/<base>
 ## Step 3 — Open the PR (if not already open)
 
 If there's no open PR for this branch, create one as **ready for review** (not
-draft). This matters beyond convention: Copilot commonly **skips draft PRs**
-(`review_draft_pull_requests: false`), so a draft can leave the Copilot gate
-un-run and the PR permanently un-mergeable. Open ready-for-review:
+draft). This matters beyond convention: Copilot **skips draft PRs** unless the
+`copilot_code_review` rule sets `review_draft_pull_requests`, so a draft can leave
+the review un-run entirely — and where a required check stands in for that review,
+leave the PR permanently un-mergeable. Open ready-for-review:
 
 ```bash
 gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>"
@@ -221,13 +233,13 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 ## Step 4 — The fix loop (until GitHub says mergeable)
 
 Loop until the PR is **both mergeable by GitHub and clean by your own bar** —
-every required check green (including any Copilot gate) and the thread-resolution
-requirement satisfied, plus, where the repo enforces little or the gates aren't
-trustworthy, CI genuinely green and Copilot's Critical/Important findings resolved
-regardless (see *When there are no gates, or they can't be trusted*). Up to ~5
-iterations, then escalate. Gates decide *permission* to merge, your bar decides
-*readiness*; when they diverge, the stricter one wins. The severity classification
-only decides what you *fix*, never when you're *done*.
+every required check green and the thread-resolution requirement satisfied, plus —
+always, whatever the repo does or doesn't enforce — CI genuinely green, the branch
+current with base, and Copilot's review **of the current head** processed with its
+Critical/Important findings resolved (see *When there are no gates, or they can't
+be trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
+merge, your bar decides *readiness*; when they diverge, the stricter one wins. The
+severity classification only decides what you *fix*, never when you're *done*.
 
 1. **Read the live state:** `gh pr checks <pr>` plus
    `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP
@@ -235,14 +247,15 @@ only decides what you *fix*, never when you're *done*.
    thread-resolution state use the GraphQL `reviewThreads` query in
    `references/copilot.md`. Poll while checks are in progress.
 2. **If a required check is red:** read the failing job's logs, fix the root
-   cause, commit, push. Don't guess — read the actual failure. The Copilot gate is
-   a check too: if it's red it's usually waiting on Copilot's review or on
-   unresolved threads (see `references/copilot.md`), not on a code fix.
+   cause, commit, push. Don't guess — read the actual failure. Not every red check
+   wants a code change: one that stands in for a review is typically waiting on the
+   review itself or on unresolved threads, so read what it reports before touching
+   code.
 3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
    them — see `references/copilot.md`.
 4. **Fix Critical and Important findings.** Batch fixes into as few pushes as is
-   reasonable — every push re-triggers Copilot and supersedes its prior review
-   with a fresh one.
+   reasonable — under `review_on_push` every push re-requests Copilot and costs
+   another wait at step 6, whether or not a new review actually follows.
 5. **Reply to every Copilot comment; resolve every thread the repo requires
    resolved.** The reply is *unconditional* (fixed or acknowledged, on every
    comment); *resolution* is what scales with the repo — under
@@ -250,9 +263,14 @@ only decides what you *fix*, never when you're *done*.
    acknowledge the rest, but each must end resolved or merge stays `BLOCKED`),
    otherwise at least the ones you fixed. See `references/copilot.md` for the
    reply + resolve protocol.
-6. **After pushing, wait for the re-review.** Copilot re-reviews on push and the
-   Copilot gate re-runs; don't evaluate exit against stale state — wait for the
-   new review to post and the checks to settle, then re-read from step 1.
+6. **After pushing, wait for Copilot's review of the new head.** Under
+   `review_on_push` a push re-requests Copilot, and any review that follows lands
+   *later* than CI goes green — so the PR reads mergeable while that review may
+   still be on its way, and finishing in that window silently drops everything it
+   was about to say. Never evaluate exit there: follow the wait protocol in
+   `references/copilot.md` (freshness is `commit_id == head`, on a bounded wait —
+   the request is not a promise, and some pushes draw no new review at all), then
+   re-read from step 1.
 
 If after ~5 iterations the gates still won't go green, or a finding needs a
 decision you can't make, stop and summarize the blocker for the user.
