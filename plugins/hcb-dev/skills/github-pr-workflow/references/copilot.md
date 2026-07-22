@@ -10,7 +10,7 @@ loop; its two parameters drive everything below:
 
 ```bash
 # One line per matching rule — a repo may carry the rule in more than one
-# ruleset. Built-in --jq only, so this needs nothing beyond gh itself.
+# ruleset. All filtering stays in gh's built-in --jq, so no external jq is needed.
 gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
       --jq 'select(.enforcement=="active") | .rules[]
