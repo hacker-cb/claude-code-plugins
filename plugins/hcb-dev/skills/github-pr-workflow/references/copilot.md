@@ -4,18 +4,24 @@ How to find, classify, fix, and respond to GitHub Copilot's PR review findings.
 
 ## Is Copilot even in the loop?
 
-Copilot reviews a PR when the repo's ruleset carries a `copilot_code_review` rule,
-or when someone — you included — requests it on that PR. Read the rule before the
-loop; its two parameters drive everything below:
+Copilot reviews a PR when a `copilot_code_review` rule is in force **for that PR's
+base branch**, or when someone — you included — requests it on the PR. Ask for the
+rules in force on the base rather than listing the repo's rulesets: this endpoint
+has already applied each ruleset's `ref_name` conditions *and* includes rules
+inherited from an organization-level ruleset, and a plain `/rulesets` listing does
+neither.
 
 ```bash
-# One line per matching rule — a repo may carry the rule in more than one
-# ruleset. All filtering stays in gh's built-in --jq, so no external jq is needed.
-gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
-  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
-      --jq 'select(.enforcement=="active") | .rules[]
-            | select(.type=="copilot_code_review") | .parameters | @json'
+# One line per rule in force on the base branch. `ruleset_source_type` says
+# whether it came from this repo or from an org-level ruleset.
+gh api repos/<owner>/<repo>/rules/branches/<base> \
+  --jq '.[] | select(.type=="copilot_code_review") | .parameters | @json'
 ```
+
+Several lines is normal — a repo can carry the rule in more than one ruleset that
+matches the branch. No line at all means no rule applies **to this base**, which is
+a different statement from "this repo has no such rule": the same repo can enforce
+Copilot on `master` and nothing at all on a side branch.
 
 - **`review_on_push: true`** — Copilot is re-*requested* on *every* push. Treat
   each push in the fix loop as owing you a review to wait for and read before you

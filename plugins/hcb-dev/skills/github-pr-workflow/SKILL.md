@@ -88,9 +88,13 @@ Read the live gates before and during the loop:
 # mechanism (rulesets, classic branch protection, org policy). Trust these:
 gh pr checks <pr>                                              # required checks + state
 gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision  # merge verdict + why
-# The "why", read once — from BOTH gate mechanisms (a repo may use either or both):
+# The "why", read once. Start from the per-branch view: it has already applied
+# each ruleset's ref_name conditions and includes org-level rulesets — a plain
+# /rulesets listing does neither, so it over-reports on a side branch and misses
+# whatever the organization enforces:
+gh api repos/<owner>/<repo>/rules/branches/<base>              # rules in force on the base
 gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
-  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{}          # rulesets (newer)
+  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{}          # full definitions: enforcement, bypass_actors
 gh api repos/<owner>/<repo>/branches/<base>/protection 2>/dev/null || true  # classic (NOT in /rulesets)
 ```
 
@@ -155,7 +159,7 @@ it from an empty rulesets list. A repo can enforce required checks, reviews, and
 thread-resolution through **classic branch protection**, which `/rulesets` does
 **not** return, so `rulesets == []` alone does not mean unprotected. Treat gates as
 truly absent only when the live signals agree: `gh pr checks` shows no required
-checks, `reviewDecision` is empty, and *neither* rulesets *nor*
+checks, `reviewDecision` is empty, and *neither* `rules/branches/<base>` *nor*
 `branches/<base>/protection` enforces anything (or `gh api` is denied and you
 genuinely can't tell). Only then supply the gates yourself: the Step 4 loop's own
 bar becomes authoritative — green CI, Copilot Critical/Important resolved and every
