@@ -26,7 +26,7 @@ Then invoke a skill from the `/` menu, e.g.:
 
 | Plugin | Skills | What it does |
 | --- | --- | --- |
-| [`hcb-dev`](plugins/hcb-dev) | `dependency-versions`, `library-docs`, `github-pr-workflow` | Personal developer baseline — resolve dependency versions from the registry (keeping `.github/dependabot.yml` in sync on GitHub repos), pull current library docs from Context7, and drive a GitHub PR from a finished branch all the way to a merged PR (rename → rebase → open → CI/Copilot fix-loop → merge on your go-ahead → report). |
+| [`hcb-dev`](plugins/hcb-dev) | `dependency-versions`, `github-pr-workflow` | Personal developer baseline — resolve dependency versions from the registry (keeping `.github/dependabot.yml` in sync on GitHub repos) and drive a GitHub PR from a finished branch all the way to a merged PR (rename → rebase → open → CI/Copilot fix-loop → merge on your go-ahead → report). |
 | [`markdown-docs`](external_plugins/markdown-docs) | — (MCP server) | Navigate large markdown documents — datasheets, IEC/ISO standards, reference manuals — without dumping the whole file into context. Thin wrapper around the [`markdown-docs-mcp`](https://github.com/hacker-cb/markdown-docs-mcp) npm server (`view_toc` / `read_section` / `search` / `analyze_document`). |
 | [`1c-odata`](external_plugins/1c-odata) | — (MCP server) | Query 1C:Enterprise databases over OData V3 — live schema introspection and read-only queries (`list_entities` / `describe_entity` / `query` / `register_query` / …). Thin wrapper around the [`@1c-odata/mcp`](https://github.com/hacker-cb/1c-odata) npm server. |
 

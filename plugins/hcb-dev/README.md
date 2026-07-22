@@ -1,9 +1,8 @@
 # hcb-dev
 
 A personal developer baseline for Claude Code: resolve dependency versions from
-the registry instead of typing them from memory, pull current library docs from
-Context7 before answering, and drive finished work through the GitHub
-review-and-merge lifecycle. Part of the
+the registry instead of typing them from memory, and drive finished work through
+the GitHub review-and-merge lifecycle. Part of the
 [`hacker-cb-plugins`](https://github.com/hacker-cb/claude-code-plugins)
 marketplace.
 
@@ -25,16 +24,6 @@ the Node.js LTS pin, and GitHub Actions version pinning. On GitHub-hosted repos
 it also keeps `.github/dependabot.yml` in sync with the ecosystems in use —
 extending an existing config automatically, and offering to enable Dependabot
 (with sane grouping + cooldown defaults) when there is none.
-
-### `library-docs` — `/hcb-dev:library-docs`
-
-When asked about a library, framework, SDK, API, CLI, or cloud service, pull the
-current documentation from the **Context7 MCP server** first — even for
-well-known tools — rather than relying on (possibly stale) training data. Falls
-back to web search only if Context7 returns nothing.
-
-**Requirements:** the [Context7](https://github.com/upstash/context7) MCP server
-connected. Without it, the skill falls back to web search.
 
 ### `github-pr-workflow` — `/hcb-dev:github-pr-workflow`
 
