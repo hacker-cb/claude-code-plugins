@@ -82,15 +82,15 @@ would hang forever. Run this protocol after each push:
 1. **Make sure a review is actually pending for the current head.** Under
    `review_on_push: true` GitHub requests it for you; otherwise, or if nothing
    shows up, request one explicitly. Prefer a connected GitHub MCP server's
-   request-a-Copilot-review tool when it offers one; the portable fallback, which
-   always works wherever `gh` is authenticated, is:
+   request-a-Copilot-review tool when it offers one; the portable fallback is:
    ```bash
    gh pr edit <pr> --add-reviewer "@copilot"
    ```
    Don't hand-roll that as a REST `requested_reviewers` POST: Copilot is not an
    ordinary reviewer login, and `@copilot` is the special value `gh` case-handles
-   for it (not supported on GitHub Enterprise Server). Mind the naming, too — it is
-   requested as `Copilot` but *authors* its review as
+   for it. Two limits worth knowing before you rely on it: it needs **gh 2.88.0 or
+   newer**, and it is **not supported on GitHub Enterprise Server**. Mind the
+   naming, too — it is requested as `Copilot` but *authors* its review as
    `copilot-pull-request-reviewer[bot]`, and the author login is the one to filter
    reviews and comments on.
 2. **Poll** until either a Copilot review with `commit_id == $head` appears (the
