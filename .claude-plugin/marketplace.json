@@ -10,18 +10,11 @@
   },
   "plugins": [
     {
-      "name": "hcb-github",
-      "source": "./plugins/hcb-github",
-      "description": "GitHub workflow skills: drive a PR from a finished branch all the way to merge — and more to come.",
-      "category": "productivity",
-      "tags": ["github", "pull-request", "ci", "review", "workflow"]
-    },
-    {
       "name": "hcb-dev",
       "source": "./plugins/hcb-dev",
-      "description": "Personal developer baseline: dependency-versioning (incl. Dependabot config sync) and Context7 library-docs skills.",
+      "description": "Personal developer baseline: dependency-versioning (incl. Dependabot config sync), Context7 library-docs and the GitHub PR workflow — from a finished branch all the way to merge.",
       "category": "productivity",
-      "tags": ["developer", "dependencies", "documentation"]
+      "tags": ["developer", "dependencies", "documentation", "github", "pull-request", "workflow"]
     },
     {
       "name": "markdown-docs",

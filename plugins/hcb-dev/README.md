@@ -1,8 +1,9 @@
 # hcb-dev
 
 A personal developer baseline for Claude Code: resolve dependency versions from
-the registry instead of typing them from memory, and pull current library docs
-from Context7 before answering. Part of the
+the registry instead of typing them from memory, pull current library docs from
+Context7 before answering, and drive finished work through the GitHub
+review-and-merge lifecycle. Part of the
 [`hacker-cb-plugins`](https://github.com/hacker-cb/claude-code-plugins)
 marketplace.
 
@@ -34,3 +35,21 @@ back to web search only if Context7 returns nothing.
 
 **Requirements:** the [Context7](https://github.com/upstash/context7) MCP server
 connected. Without it, the skill falls back to web search.
+
+### `github-pr-workflow` — `/hcb-dev:github-pr-workflow`
+
+Takes committed work on a feature branch and drives it to a merged PR, autonomously where safe:
+
+- rename an auto-generated branch to a meaningful `<type>/<name>`;
+- rebase onto the base branch and force-push with `--force-with-lease`;
+- open the PR (ready for review — drafts skip Copilot's review);
+- loop on fixes until **GitHub reports the PR mergeable** — every required check green (including any Copilot gate) and the repo's thread-resolution requirement met — reading the repo's own rulesets as the gates, with the skill's own CI-and-Copilot bar as the floor when a repo enforces little or the gates aren't trustworthy;
+- reply to and resolve Copilot review threads (all of them where the repo requires it);
+- merge with the right strategy — only on the user's explicit go-ahead — then monitor the merge and report.
+
+See [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md) and its
+[`references/copilot.md`](skills/github-pr-workflow/references/copilot.md).
+
+**Requirements:** a GitHub MCP server connected, or the `gh` CLI authenticated
+(`gh auth status`). Plain `git` is used for local branch / rebase / push
+operations.

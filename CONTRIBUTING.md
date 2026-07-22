@@ -11,8 +11,8 @@ Official docs:
 
 ## Naming convention
 
-- **Plugins are prefixed with `hcb-`**: `hcb-<domain>` (e.g. `hcb-github`). This makes the `/`-menu namespace obviously personal/non-official and avoids clashing with official plugins (e.g. the official `github` plugin).
-- **Skills, commands and agents are NOT prefixed.** The visible plugin namespace (`hcb-<domain>:`) already carries the provenance, so name them for what they do: `github-pr-workflow` → `/hcb-github:github-pr-workflow`.
+- **Plugins are prefixed with `hcb-`**: `hcb-<domain>` (e.g. `hcb-dev`). This makes the `/`-menu namespace obviously personal/non-official and avoids clashing with official plugins (e.g. the official `github` plugin).
+- **Skills, commands and agents are NOT prefixed.** The visible plugin namespace (`hcb-<domain>:`) already carries the provenance, so name them for what they do: `github-pr-workflow` → `/hcb-dev:github-pr-workflow`.
 
 `scripts/validate.sh` enforces the plugin-name prefix.
 
