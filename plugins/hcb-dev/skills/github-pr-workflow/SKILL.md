@@ -93,7 +93,7 @@ gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision  # merge verdic
 # /rulesets listing does neither, so it over-reports on a side branch and misses
 # whatever the organization enforces:
 gh api repos/<owner>/<repo>/rules/branches/<base>              # rules in force on the base
-gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
+gh api --paginate repos/<owner>/<repo>/rulesets --jq '.[].id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{}          # full definitions: enforcement, bypass_actors
 gh api repos/<owner>/<repo>/branches/<base>/protection 2>/dev/null || true  # classic (NOT in /rulesets)
 ```
