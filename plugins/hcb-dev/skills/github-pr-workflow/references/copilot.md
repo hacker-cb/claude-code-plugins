@@ -28,7 +28,9 @@ Copilot on `master` and nothing at all on a side branch.
   call the PR done — but the request is not a promise that one posts, which is why
   the wait below keys on Copilot leaving the requested-reviewer set (reviewed or
   declined), not on a review necessarily arriving: while it stays requested you keep
-  waiting, and a safety cap only bounds how long you take to confirm a decline.
+  waiting; a decline is confirmed only when Copilot leaves that set with no head
+  review, never by the clock — and if a safety cap runs out while it is still
+  requested you hold and escalate rather than merge.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
