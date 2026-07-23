@@ -126,11 +126,11 @@ digraph cleanup_project {
 
 ```bash
 # Zone: git
-git -C $PROJECT worktree list                      # 'prunable' = dir gone, entry left
-git -C $PROJECT branch -vv                         # ': gone]' = upstream deleted
-git -C $PROJECT symbolic-ref --short refs/remotes/origin/HEAD   # -> origin/<main>
-git -C $PROJECT branch --merged <main>
-git -C $PROJECT status --porcelain -unormal        # zone: working tree
+git -C "$PROJECT" worktree list                      # 'prunable' = dir gone, entry left
+git -C "$PROJECT" branch -vv                         # ': gone]' = upstream deleted
+git -C "$PROJECT" symbolic-ref --short refs/remotes/origin/HEAD   # -> origin/<main>
+git -C "$PROJECT" branch --merged <main>
+git -C "$PROJECT" status --porcelain -unormal        # zone: working tree
 
 # Zone: conversations / scratchpads — membership-filtered, never a bare glob
 ls -d ~/.claude/projects/<slug> ~/.claude/projects/<slug>--claude-worktrees-* \
@@ -214,19 +214,19 @@ Wait for an explicit answer. A subset means only that subset.
 ## Phase 4 — Execute (this order)
 
 ```bash
-git -C $PROJECT worktree prune --verbose                  # 1. reconcile registry first
-git -C $PROJECT worktree unlock <path>                    # 2. no-op if not locked
-git -C $PROJECT worktree remove <path>                    #    --force only if confirmed dirty
+git -C "$PROJECT" worktree prune --verbose                  # 1. reconcile registry first
+git -C "$PROJECT" worktree unlock <path>                    # 2. no-op if not locked
+git -C "$PROJECT" worktree remove <path>                    #    --force only if confirmed dirty
 rm -rf <orphan-worktree-dir>                              # 3. dirs left by crashed agents
-git -C $PROJECT branch -D <branch>                        # 4. after its worktree is gone
+git -C "$PROJECT" branch -D <branch>                        # 4. after its worktree is gone
 # 5. repair tracking — but re-point at origin/<main> ONLY when <current> IS <main>.
 #    On a feature branch that upstream no longer matches the branch name, and
 #    git's default push.default=simple then refuses `git push` outright
 #    ("upstream branch ... does not match"), leaving the branch unpushable. There,
 #    drop the dead upstream instead; `git push -u origin <current>` restores it.
 [ "<current>" = "<main>" ] \
-  && git -C $PROJECT branch --set-upstream-to=origin/<main> <current> \
-  || git -C $PROJECT branch --unset-upstream <current>
+  && git -C "$PROJECT" branch --set-upstream-to=origin/<main> <current> \
+  || git -C "$PROJECT" branch --unset-upstream <current>
 rm -rf /tmp/claude-$(id -u)/<slug>/<finished-uuid>        # 6. scratchpads
 rm -rf ~/.claude/projects/<dead-worktree-slug>            # 7. logs — approved items only
 ```
