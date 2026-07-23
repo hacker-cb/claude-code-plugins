@@ -70,8 +70,8 @@ head -1 ~/.claude/projects/<slug>/<uuid>.jsonl | grep -o '"timestamp":"[^"]*"'
 |---|---|---|
 | **Git** | `PROJECT` | merged branches, stale/locked/`prunable` worktrees, `: gone]` upstreams |
 | **Working tree** | `PROJECT` | untracked scratch scripts, `*.log`, `*.orig`/`*.rej`, `.DS_Store`, dumps |
-| **Conversations** | `~/.claude/projects/<slug>[--claude-worktrees-*\|--worktrees-*]/` | `*.jsonl` logs, `<uuid>/tool-results/` payloads |
-| **Scratchpads** | `/tmp/claude-$(id -u)/<slug>[--claude-worktrees-*\|--worktrees-*]/<uuid>/` | per-session temp files, wholly derived data |
+| **Conversations** | under `~/.claude/projects/` — `<slug>`, `<slug>--claude-worktrees-*`, `<slug>--worktrees-*` | `*.jsonl` logs, `<uuid>/tool-results/` payloads |
+| **Scratchpads** | under `/tmp/claude-$(id -u)/` — those same three slug forms, then `<uuid>/` | per-session temp files, wholly derived data |
 
 ## The two modes
 
