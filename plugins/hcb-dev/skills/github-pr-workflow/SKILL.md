@@ -284,9 +284,10 @@ severity classification only decides what you *fix*, never when you're *done*.
    was about to say. Never evaluate exit there: follow the wait protocol in
    `references/copilot.md`. Its exit turns on the *requested-reviewer* state, not a
    clock — **while Copilot is still a requested reviewer of the head it has not
-   declined, and no elapsed timer authorises merging past it**; a bounded cap only
-   confirms a genuine drop-out, and on expiry-while-pending you hold and escalate
-   rather than merge. The merge precondition a timeout never removes is that
+   declined, and no elapsed timer authorises merging past it**; a decline is
+   confirmed only by Copilot leaving `reviewRequests` with no head review, never by
+   an elapsed cap, and on cap-expiry-while-pending you hold and escalate rather than
+   merge. The merge precondition a timeout never removes is that
    Copilot's verdict on the head is *settled* — either a processed review whose
    `commit_id == head`, or a confirmed decline for the head (`references/copilot.md`
    defines both) — never an elapsed clock while it is still pending. Then re-read

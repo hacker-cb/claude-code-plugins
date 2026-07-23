@@ -117,9 +117,9 @@ would hang forever. Run this protocol after each push:
    some repos — measure this repo's real head-review latency from recent PRs and
    size any safety cap from that, never from a fixed default.
 3. **While Copilot is still in `reviewRequests` it has NOT declined — it is slow,
-   and no elapsed timer authorises merging past it.** A safety cap bounds only how
-   long you wait to confirm a genuine *drop-out*; it is never permission to merge
-   over a review still on its way. If the cap elapses while Copilot is still
+   and no elapsed timer authorises merging past it.** A safety cap is only a bound on
+   the wait — never itself a confirmation of a drop-out, and never permission to
+   merge over a review still on its way. If the cap elapses while Copilot is still
    requested, do **not** proceed: hold the merge, tell the user the head-commit
    review is still outstanding, and extend the wait or escalate.
    - **Fresh review** → process it from the top: classify, fix, reply, resolve.
