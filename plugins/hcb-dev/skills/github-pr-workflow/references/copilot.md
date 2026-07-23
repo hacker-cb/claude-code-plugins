@@ -26,7 +26,11 @@ Copilot on `master` and nothing at all on a side branch.
 - **`review_on_push: true`** — Copilot is re-*requested* on *every* push. Treat
   each push in the fix loop as owing you a review to wait for and read before you
   call the PR done — but the request is not a promise that one posts, which is why
-  the wait below is bounded rather than open-ended.
+  the wait below keys on Copilot leaving the requested-reviewer set (reviewed or
+  declined), not on a review necessarily arriving: while it stays requested you keep
+  waiting; a decline is confirmed only when Copilot leaves that set with no head
+  review, never by the clock — and if a safety cap runs out while it is still
+  requested you hold and escalate rather than merge.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
@@ -100,12 +104,35 @@ would hang forever. Run this protocol after each push:
    naming, too — it is requested as `Copilot` but *authors* its review as
    `copilot-pull-request-reviewer[bot]`, and the author login is the one to filter
    reviews and comments on.
-2. **Poll** until either a Copilot review with `commit_id == $head` appears (the
-   first review usually lands within a few minutes), or Copilot has dropped out of
-   `gh pr view <pr> --json reviewRequests` *and* a bounded wait (~10 min) elapsed.
-3. **Fresh review** → process it from the top: classify, fix, reply, resolve.
-   **No review and no pending request** → Copilot declined to re-review this push;
-   proceed, and say so in the report rather than implying it reviewed.
+2. **Poll — and read the requested-reviewer state, not a clock, as the signal.**
+   Copilot's presence in `gh pr view <pr> --json reviewRequests` is what tells you
+   a re-review is still coming: a push (re-)requests it, and the forge drops the
+   request when Copilot either posts its review or declines. Poll until **one** of
+   these settles:
+   - a Copilot review with `commit_id == $head` appears → a fresh review landed; or
+   - Copilot has **dropped out** of `reviewRequests` with no such review → it
+     declined to re-review this push (common when the push only applied its own
+     suggestions).
+   The first review usually lands within a few minutes, but can lag 15+ minutes on
+   some repos — measure this repo's real head-review latency from recent PRs and
+   size any safety cap from that, never from a fixed default.
+3. **While Copilot is still in `reviewRequests` it has NOT declined — it is slow,
+   and no elapsed timer authorises merging past it.** A safety cap is only a bound on
+   the wait — never itself a confirmation of a drop-out, and never permission to
+   merge over a review still on its way. If the cap elapses while Copilot is still
+   requested, do **not** proceed: hold the merge, tell the user the head-commit
+   review is still outstanding, and extend the wait or escalate.
+   - **Fresh review** → process it from the top: classify, fix, reply, resolve.
+   - **Confirmed drop-out** (Copilot absent from `reviewRequests`, no review of the
+     head) → it declined this push; proceed, and say so in the report rather than
+     implying it reviewed. Two absences masquerade as a decline and must be ruled
+     out first: right after a push `reviewRequests` can lag, so confirm Copilot was
+     actually (re-)requested for this head; and a review that posts against an
+     *earlier* commit consumes the request while leaving the head unreviewed — a
+     newest Copilot review whose `commit_id != head` is **not** a decline of the
+     head, so re-request Copilot (`gh pr edit <pr> --add-reviewer "@copilot"`) and
+     keep waiting. Conclude "declined" only once a request aimed at the current head
+     itself comes back empty.
 
 Do this after *every* push — including the last one, whose review is the easiest to
 skip and the most likely to be missed — and never evaluate the loop's exit until it
