@@ -49,7 +49,7 @@ to `PROJECT` only if the remainder after the slug is **empty** or starts with
 with the fact recorded in the log itself:
 
 ```bash
-grep -m1 -o '"cwd":"[^"]*"' <dir>/<session>.jsonl
+grep -m1 -o '"cwd":"[^"]*"' "<dir>/<session>.jsonl"
 ```
 
 ### Anchoring the current session
@@ -60,8 +60,8 @@ slug and this session's UUID — that UUID names the live conversation log,
 `~/.claude/projects/<slug>/<session-uuid>.jsonl`. Session start, for mode S:
 
 ```bash
-head -1 ~/.claude/projects/<slug>/<uuid>.jsonl | grep -o '"timestamp":"[^"]*"'
-# then: find <PROJECT> -newermt "<that timestamp>" -type f -not -path '*/.git/*'
+head -1 "$HOME/.claude/projects/<slug>/<uuid>.jsonl" | grep -o '"timestamp":"[^"]*"'
+# then: find "<PROJECT>" -newermt "<that timestamp>" -type f -not -path '*/.git/*'
 ```
 
 ## The four zones
@@ -132,10 +132,12 @@ git -C "$PROJECT" symbolic-ref --short refs/remotes/origin/HEAD   # -> origin/<m
 git -C "$PROJECT" branch --merged <main>
 git -C "$PROJECT" status --porcelain -unormal        # zone: working tree
 
-# Zone: conversations / scratchpads — membership-filtered, never a bare glob
+# Zone: conversations / scratchpads — membership-filtered, never a bare glob.
+# These four stay UNQUOTED on purpose: the trailing `*` has to reach the shell to
+# expand. Quote a path only where it is a literal, as everywhere else in this file.
 ls -d ~/.claude/projects/<slug> ~/.claude/projects/<slug>--claude-worktrees-* \
       ~/.claude/projects/<slug>--worktrees-* 2>/dev/null   # both worktree mechanisms
-du -sh <each>                                      # size is what makes this worth doing
+du -sh "<each>"                                    # size is what makes this worth doing
 ls -d /tmp/claude-$(id -u)/<slug>* 2>/dev/null     # then apply the membership test
 ```
 
@@ -215,9 +217,9 @@ Wait for an explicit answer. A subset means only that subset.
 
 ```bash
 git -C "$PROJECT" worktree prune --verbose                  # 1. reconcile registry first
-git -C "$PROJECT" worktree unlock <path>                    # 2. no-op if not locked
-git -C "$PROJECT" worktree remove <path>                    #    --force only if confirmed dirty
-rm -rf <orphan-worktree-dir>                              # 3. dirs left by crashed agents
+git -C "$PROJECT" worktree unlock "<path>"                  # 2. no-op if not locked
+git -C "$PROJECT" worktree remove "<path>"                  #    --force only if confirmed dirty
+rm -rf "<orphan-worktree-dir>"                            # 3. dirs left by crashed agents
 git -C "$PROJECT" branch -D <branch>                        # 4. after its worktree is gone
 # 5. repair tracking — but re-point at origin/<main> ONLY when <current> IS <main>.
 #    On a feature branch that upstream no longer matches the branch name, and
@@ -227,8 +229,8 @@ git -C "$PROJECT" branch -D <branch>                        # 4. after its workt
 [ "<current>" = "<main>" ] \
   && git -C "$PROJECT" branch --set-upstream-to=origin/<main> <current> \
   || git -C "$PROJECT" branch --unset-upstream <current>
-rm -rf /tmp/claude-$(id -u)/<slug>/<finished-uuid>        # 6. scratchpads
-rm -rf ~/.claude/projects/<dead-worktree-slug>            # 7. logs — approved items only
+rm -rf "/tmp/claude-$(id -u)/<slug>/<finished-uuid>"      # 6. scratchpads
+rm -rf "$HOME/.claude/projects/<dead-worktree-slug>"      # 7. logs — approved items only
 ```
 
 Branch deletion fails while a worktree still has it checked out — hence the
@@ -236,8 +238,8 @@ order. To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
 
 ```bash
-cd <PROJECT>                                   # a separate Bash call — cwd must truly change
-git -C <PROJECT> worktree remove <old-cwd>
+cd "<PROJECT>"                                 # a separate Bash call — cwd must truly change
+git -C "<PROJECT>" worktree remove "<old-cwd>"
 ```
 
 Then tell the user cwd moved to `PROJECT` — their old path no longer exists.
