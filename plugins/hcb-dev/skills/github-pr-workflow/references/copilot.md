@@ -26,7 +26,9 @@ Copilot on `master` and nothing at all on a side branch.
 - **`review_on_push: true`** — Copilot is re-*requested* on *every* push. Treat
   each push in the fix loop as owing you a review to wait for and read before you
   call the PR done — but the request is not a promise that one posts, which is why
-  the wait below is bounded rather than open-ended.
+  the wait below keys on Copilot leaving the requested-reviewer set (reviewed or
+  declined), not on a review necessarily arriving: while it stays requested you keep
+  waiting, and a safety cap only bounds how long you take to confirm a decline.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
@@ -119,11 +121,16 @@ would hang forever. Run this protocol after each push:
    requested, do **not** proceed: hold the merge, tell the user the head-commit
    review is still outstanding, and extend the wait or escalate.
    - **Fresh review** → process it from the top: classify, fix, reply, resolve.
-   - **Confirmed drop-out** (Copilot absent from `reviewRequests`, no fresh review)
-     → it declined this push; proceed, and say so in the report rather than
-     implying it reviewed. Before reading an absence as a drop-out, first confirm
-     Copilot was actually (re-)requested for this head — right after a push
-     `reviewRequests` can lag, and a momentary absence is not a decline.
+   - **Confirmed drop-out** (Copilot absent from `reviewRequests`, no review of the
+     head) → it declined this push; proceed, and say so in the report rather than
+     implying it reviewed. Two absences masquerade as a decline and must be ruled
+     out first: right after a push `reviewRequests` can lag, so confirm Copilot was
+     actually (re-)requested for this head; and a review that posts against an
+     *earlier* commit consumes the request while leaving the head unreviewed — a
+     newest Copilot review whose `commit_id != head` is **not** a decline of the
+     head, so re-request Copilot (`gh pr edit <pr> --add-reviewer "@copilot"`) and
+     keep waiting. Conclude "declined" only once a request aimed at the current head
+     itself comes back empty.
 
 Do this after *every* push — including the last one, whose review is the easiest to
 skip and the most likely to be missed — and never evaluate the loop's exit until it

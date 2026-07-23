@@ -286,8 +286,11 @@ severity classification only decides what you *fix*, never when you're *done*.
    clock — **while Copilot is still a requested reviewer of the head it has not
    declined, and no elapsed timer authorises merging past it**; a bounded cap only
    confirms a genuine drop-out, and on expiry-while-pending you hold and escalate
-   rather than merge. A processed review whose `commit_id == head` is a merge
-   precondition that a timeout never removes. Then re-read from step 1.
+   rather than merge. The merge precondition a timeout never removes is that
+   Copilot's verdict on the head is *settled* — either a processed review whose
+   `commit_id == head`, or a confirmed decline for the head (`references/copilot.md`
+   defines both) — never an elapsed clock while it is still pending. Then re-read
+   from step 1.
 
 If after ~5 iterations the gates still won't go green, or a finding needs a
 decision you can't make, stop and summarize the blocker for the user.
@@ -330,9 +333,11 @@ After issuing the merge, confirm it actually landed:
 
 After the merge lands, check once more for a late review: Copilot's review of the
 merged head can post *after* the merge, orphaning its findings on the now-closed PR
-(the wait protocol exists to prevent this, but a legitimately timed-out merge or a
-merge taken outside this skill can still race it). If one appears, don't drop it —
-fold its findings into the report below and open a follow-up issue or change request.
+(the wait protocol exists to prevent this, but a review can still arrive after a
+confirmed decline reverses, or after a merge taken outside this skill). If one
+appears, don't drop it — surface its findings in the report below and recommend a
+follow-up (issue or change request) as a next step; creating it is an outward action
+the user authorises, not one you take autonomously.
 
 Then give the user a short report:
 
