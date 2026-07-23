@@ -155,9 +155,14 @@ So don't just read the gates — judge whether they're real:
   *you're allowed to skip the gates*, not because they passed. Satisfy them as if
   you couldn't bypass.
 - **A green check is not proof of a review.** A check that stands in for a review
-  can be green for reasons of its own — asserting only that *some* review exists, or
-  having run before the latest push was reviewed. Never infer "Copilot has reviewed
-  the current head" from a check's colour; verify that directly against the head SHA
+  can be green for reasons of its own — passing the instant *some* review of *any*
+  commit is seen (so it flips green within seconds of a later push and says nothing
+  about the head), or having run before the latest push was reviewed. Nor does a
+  clean merge state prove it: right after a push `mergeStateStatus` can read `CLEAN`
+  with the head unreviewed — the prior review's threads stay resolved across the
+  push, and `dismiss_stale_reviews_on_push` dismisses only stale *approvals*. Never
+  infer "Copilot has reviewed the current head" from a check's colour, from `CLEAN`,
+  or from all-threads-resolved; verify it directly against the head SHA
   (`references/copilot.md`).
 - **`UNSTABLE` means a non-required check is red.** GitHub will let you merge over
   it; don't, unless you've confirmed that check is irrelevant or a known flake
@@ -277,9 +282,12 @@ severity classification only decides what you *fix*, never when you're *done*.
    *later* than CI goes green — so the PR reads mergeable while that review may
    still be on its way, and finishing in that window silently drops everything it
    was about to say. Never evaluate exit there: follow the wait protocol in
-   `references/copilot.md` (freshness is `commit_id == head`, on a bounded wait —
-   the request is not a promise, and some pushes draw no new review at all), then
-   re-read from step 1.
+   `references/copilot.md`. Its exit turns on the *requested-reviewer* state, not a
+   clock — **while Copilot is still a requested reviewer of the head it has not
+   declined, and no elapsed timer authorises merging past it**; a bounded cap only
+   confirms a genuine drop-out, and on expiry-while-pending you hold and escalate
+   rather than merge. A processed review whose `commit_id == head` is a merge
+   precondition that a timeout never removes. Then re-read from step 1.
 
 If after ~5 iterations the gates still won't go green, or a finding needs a
 decision you can't make, stop and summarize the blocker for the user.
@@ -320,7 +328,13 @@ After issuing the merge, confirm it actually landed:
 
 ## Step 7 — Report and suggest next steps
 
-After the merge lands, give the user a short report:
+After the merge lands, check once more for a late review: Copilot's review of the
+merged head can post *after* the merge, orphaning its findings on the now-closed PR
+(the wait protocol exists to prevent this, but a legitimately timed-out merge or a
+merge taken outside this skill can still race it). If one appears, don't drop it —
+fold its findings into the report below and open a follow-up issue or change request.
+
+Then give the user a short report:
 
 1. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — including

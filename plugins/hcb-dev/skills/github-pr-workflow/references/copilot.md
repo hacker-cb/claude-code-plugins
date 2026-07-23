@@ -100,12 +100,30 @@ would hang forever. Run this protocol after each push:
    naming, too — it is requested as `Copilot` but *authors* its review as
    `copilot-pull-request-reviewer[bot]`, and the author login is the one to filter
    reviews and comments on.
-2. **Poll** until either a Copilot review with `commit_id == $head` appears (the
-   first review usually lands within a few minutes), or Copilot has dropped out of
-   `gh pr view <pr> --json reviewRequests` *and* a bounded wait (~10 min) elapsed.
-3. **Fresh review** → process it from the top: classify, fix, reply, resolve.
-   **No review and no pending request** → Copilot declined to re-review this push;
-   proceed, and say so in the report rather than implying it reviewed.
+2. **Poll — and read the requested-reviewer state, not a clock, as the signal.**
+   Copilot's presence in `gh pr view <pr> --json reviewRequests` is what tells you
+   a re-review is still coming: a push (re-)requests it, and the forge drops the
+   request when Copilot either posts its review or declines. Poll until **one** of
+   these settles:
+   - a Copilot review with `commit_id == $head` appears → a fresh review landed; or
+   - Copilot has **dropped out** of `reviewRequests` with no such review → it
+     declined to re-review this push (common when the push only applied its own
+     suggestions).
+   The first review usually lands within a few minutes, but can lag 15+ minutes on
+   some repos — measure this repo's real head-review latency from recent PRs and
+   size any safety cap from that, never from a fixed default.
+3. **While Copilot is still in `reviewRequests` it has NOT declined — it is slow,
+   and no elapsed timer authorises merging past it.** A safety cap bounds only how
+   long you wait to confirm a genuine *drop-out*; it is never permission to merge
+   over a review still on its way. If the cap elapses while Copilot is still
+   requested, do **not** proceed: hold the merge, tell the user the head-commit
+   review is still outstanding, and extend the wait or escalate.
+   - **Fresh review** → process it from the top: classify, fix, reply, resolve.
+   - **Confirmed drop-out** (Copilot absent from `reviewRequests`, no fresh review)
+     → it declined this push; proceed, and say so in the report rather than
+     implying it reviewed. Before reading an absence as a drop-out, first confirm
+     Copilot was actually (re-)requested for this head — right after a push
+     `reviewRequests` can lag, and a momentary absence is not a decline.
 
 Do this after *every* push — including the last one, whose review is the easiest to
 skip and the most likely to be missed — and never evaluate the loop's exit until it
