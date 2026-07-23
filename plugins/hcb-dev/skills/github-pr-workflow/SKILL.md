@@ -290,7 +290,7 @@ severity classification only decides what you *fix*, never when you're *done*.
    Copilot's verdict on the head is *settled* — either a processed review whose
    `commit_id == head`, or a confirmed decline for the head (`references/copilot.md`
    defines both) — never an elapsed clock while it is still pending. Then re-read
-   from step 1.
+   from this loop's step 1 (the live-state read), not the top-level Step 1.
 
 If after ~5 iterations the gates still won't go green, or a finding needs a
 decision you can't make, stop and summarize the blocker for the user.
