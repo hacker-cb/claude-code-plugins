@@ -110,6 +110,13 @@ Two deliberate exceptions, each stated where it occurs:
 - **`codex-review`** / **`multi-review`**: the `codex` CLI installed and
   `codex login` live; `multi-review` also picks up the built-in code-review and
   security-review tooling when present.
-- **`shipping-workflow`** / **`github-pr-workflow`**: a GitHub MCP server
-  connected, or the `gh` CLI authenticated (`gh auth status`) — `glab` on GitLab.
-  Plain `git` is used for local branch / rebase / push operations.
+- **`shipping-workflow`**: plain `git` for the commit and the branch push, plus
+  *some* way to open a change request — a PR/MR driver skill when one is
+  installed (`github-pr-workflow` here), otherwise `gh` on GitHub or `glab` on
+  GitLab. Nothing in it is GitHub-only.
+- **`github-pr-workflow`**: GitHub specifically — a GitHub MCP server connected,
+  or the `gh` CLI authenticated (`gh auth status`). Plain `git` for the local
+  branch / rebase / push operations.
+- **`cleanup-project`**: `git` alone is enough. It reads merged/open change
+  requests through `gh` or `glab` when one is authenticated — that is what
+  catches squash-merged branches — and degrades to git-only when neither is.
