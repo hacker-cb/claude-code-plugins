@@ -128,7 +128,7 @@ digraph cleanup_project {
 # Zone: git
 git -C $PROJECT worktree list                      # 'prunable' = dir gone, entry left
 git -C $PROJECT branch -vv                         # ': gone]' = upstream deleted
-git -C $PROJECT symbolic-ref refs/remotes/origin/HEAD --short   # -> origin/<main>
+git -C $PROJECT symbolic-ref --short refs/remotes/origin/HEAD   # -> origin/<main>
 git -C $PROJECT branch --merged <main>
 git -C $PROJECT status --porcelain -unormal        # zone: working tree
 
