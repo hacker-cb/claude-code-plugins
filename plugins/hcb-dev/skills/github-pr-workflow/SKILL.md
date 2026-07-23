@@ -334,8 +334,9 @@ After issuing the merge, confirm it actually landed:
 
 After the merge lands, check once more for a late review: Copilot's review of the
 merged head can post *after* the merge, orphaning its findings on the now-closed PR
-(the wait protocol exists to prevent this, but a review can still arrive after a
-confirmed decline reverses, or after a merge taken outside this skill). If one
+(the wait protocol exists to prevent this, but a review can still land late — after a
+signal that looked like a decline at the time, or after a merge taken outside this
+skill). If one
 appears, don't drop it — surface its findings in the report below and recommend a
 follow-up (issue or change request) as a next step; creating it is an outward action
 the user authorises, not one you take autonomously.
