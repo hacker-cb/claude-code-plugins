@@ -70,8 +70,8 @@ head -1 ~/.claude/projects/<slug>/<uuid>.jsonl | grep -o '"timestamp":"[^"]*"'
 |---|---|---|
 | **Git** | `PROJECT` | merged branches, stale/locked/`prunable` worktrees, `: gone]` upstreams |
 | **Working tree** | `PROJECT` | untracked scratch scripts, `*.log`, `*.orig`/`*.rej`, `.DS_Store`, dumps |
-| **Conversations** | `~/.claude/projects/<slug>[--claude-worktrees-*]/` | `*.jsonl` logs, `<uuid>/tool-results/` payloads |
-| **Scratchpads** | `/tmp/claude-$(id -u)/<slug>[--claude-worktrees-*]/<uuid>/` | per-session temp files, wholly derived data |
+| **Conversations** | `~/.claude/projects/<slug>[--claude-worktrees-*\|--worktrees-*]/` | `*.jsonl` logs, `<uuid>/tool-results/` payloads |
+| **Scratchpads** | `/tmp/claude-$(id -u)/<slug>[--claude-worktrees-*\|--worktrees-*]/<uuid>/` | per-session temp files, wholly derived data |
 
 ## The two modes
 
@@ -133,7 +133,8 @@ git -C $PROJECT branch --merged <main>
 git -C $PROJECT status --porcelain -unormal        # zone: working tree
 
 # Zone: conversations / scratchpads — membership-filtered, never a bare glob
-ls -d ~/.claude/projects/<slug> ~/.claude/projects/<slug>--claude-worktrees-* 2>/dev/null
+ls -d ~/.claude/projects/<slug> ~/.claude/projects/<slug>--claude-worktrees-* \
+      ~/.claude/projects/<slug>--worktrees-* 2>/dev/null   # both worktree mechanisms
 du -sh <each>                                      # size is what makes this worth doing
 ls -d /tmp/claude-$(id -u)/<slug>* 2>/dev/null     # then apply the membership test
 ```
@@ -218,7 +219,14 @@ git -C $PROJECT worktree unlock <path>                    # 2. no-op if not lock
 git -C $PROJECT worktree remove <path>                    #    --force only if confirmed dirty
 rm -rf <orphan-worktree-dir>                              # 3. dirs left by crashed agents
 git -C $PROJECT branch -D <branch>                        # 4. after its worktree is gone
-git -C $PROJECT branch --set-upstream-to=origin/<main> <current>   # 5. repair tracking
+# 5. repair tracking — but re-point at origin/<main> ONLY when <current> IS <main>.
+#    On a feature branch that upstream no longer matches the branch name, and
+#    git's default push.default=simple then refuses `git push` outright
+#    ("upstream branch ... does not match"), leaving the branch unpushable. There,
+#    drop the dead upstream instead; `git push -u origin <current>` restores it.
+[ "<current>" = "<main>" ] \
+  && git -C $PROJECT branch --set-upstream-to=origin/<main> <current> \
+  || git -C $PROJECT branch --unset-upstream <current>
 rm -rf /tmp/claude-$(id -u)/<slug>/<finished-uuid>        # 6. scratchpads
 rm -rf ~/.claude/projects/<dead-worktree-slug>            # 7. logs — approved items only
 ```
@@ -246,7 +254,7 @@ Close with anything surfaced and left for the user to decide.
 | ❌ | ✅ |
 |---|---|
 | touch another project's repo, logs or scratchpads | stay inside `PROJECT`, mention neighbours in one line |
-| match slug dirs with a bare `<slug>*` glob | require empty or `--claude-worktrees-` remainder; verify via `"cwd"` |
+| match slug dirs with a bare `<slug>*` glob | require an empty, `--claude-worktrees-` or `--worktrees-` remainder; verify via `"cwd"` |
 | delete the current session's `.jsonl` or scratchpad | let them expire on their own |
 | delete an unmerged branch, or one whose status is unknown | surface it and let the user decide |
 | `--force` a dirty worktree unasked | skip it, report it |

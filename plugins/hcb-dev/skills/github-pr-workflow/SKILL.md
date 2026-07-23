@@ -11,7 +11,10 @@ description: >-
   "handle the review", "address Copilot comments", or otherwise move committed
   work through the GitHub review-and-merge lifecycle — even if they don't say
   "PR" explicitly. Trigger it both when work was just finished and needs a PR,
-  and when a PR already exists and needs to be driven to merge.
+  and when a PR already exists and needs to be driven to merge. But when finished
+  work has had no local review yet, start from `hcb-dev:shipping-workflow` — it
+  runs the reviewers and coverage gate, then hands off here; entering directly
+  skips both.
 ---
 
 # GitHub PR Workflow
@@ -20,6 +23,12 @@ Take committed work on a feature branch and drive it to a merged PR, autonomousl
 where safe. This skill is the full lifecycle; the user may enter at any stage
 (just-finished code, or an already-open PR). Detect where they are and pick up
 from there.
+
+`hcb-dev:shipping-workflow` sits directly upstream of this skill — it commits,
+runs every available local reviewer, applies the fixes and checks coverage, then
+hands off here. If you landed here on finished work that has had no local review,
+go there first; this skill starts at the PR and will not run the reviewers for
+you.
 
 ## Autonomy model
 

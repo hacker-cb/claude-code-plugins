@@ -34,12 +34,23 @@ and stop, rather than quietly reviewing the last commit instead.
 
 1. a base the caller named;
 2. the open change request's base — GitHub `gh pr view --json baseRefName -q .baseRefName`,
-   GitLab `glab mr view --output json | jq -r .target_branch`;
+   GitLab `glab mr view --output json | jq -r .target_branch`. Both answer with a
+   **bare branch name**, so pair it with whichever remote actually carries that
+   branch — in a fork checkout `origin/<branch>` is your own stale copy and
+   `upstream/<branch>` is the real base, so take the first ref that exists;
 3. where this repo's changes actually land — GitHub
    `gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c`,
    GitLab `glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c`;
-4. the default branch — `git symbolic-ref --short refs/remotes/origin/HEAD`;
+4. the default branch — `git symbolic-ref --short refs/remotes/origin/HEAD`, else
+   whichever of `origin/main`, `origin/master`, `main`, `master` exists:
+   `origin/HEAD` only exists in a clone, and a repo built with `git init` +
+   `git remote add` has none;
 5. `@{upstream}`, last resort — it narrows the review to unpushed commits.
+
+Whatever this resolves to is handed to the reviewers **explicitly**, and an
+explicit base wins over their own resolution — so a lossy answer here silently
+overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
+it. Rungs 2 and 4 above exist to keep the two in step; don't let them drift.
 
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.
@@ -150,7 +161,13 @@ the columns drift apart.
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not
 run; `n/a` — it was deliberately not run, and why; `nothing to review` — it ran
 and covered zero files; `partial` — it ran but covered less than the change, or
-the wrong range. Everything except `n/a` is a gap in coverage.
+the wrong range. Everything except `n/a` is a gap in coverage — with one
+distinction the caller needs: a `partial` forced by a reviewer's **own structural
+limit**, rather than by anything about this change, is not something anyone can
+act on. The security review is the standing example: its base is pinned to the
+default branch, so it is mis-scoped in every repo whose changes target `dev` or
+`release/*`. Report that as `partial (structural)` with the reason, so a shipping
+flow can tell it apart from a gap that is still worth closing.
 
 Then the findings, and nothing else: no fixes, no patches, no offer to apply them.
 

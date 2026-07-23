@@ -125,8 +125,17 @@ EFFORT="${EFFORT:-high}"   # always explicit — never inherit the machine's con
 # some other upstream branch. Fetch it from its own remote, and if it still will
 # not resolve, drop to the working tree as §1 says; never let Codex pick.
 if [ -n "${BASE:-}" ]; then
-  case "$BASE" in */*) REMOTE="${BASE%%/*}"; BRANCH="${BASE#*/}" ;;
-                    *) REMOTE=origin;        BRANCH="$BASE"      ;; esac
+  # Split on the first slash ONLY when the prefix really is a remote. A bare base
+  # like `release/2.0` — exactly the non-default base §1 tells you to look for —
+  # has a slash but no remote in it, and splitting it blindly runs
+  # `git fetch release 2.0`, which fails and clears BASE, silently downgrading
+  # the whole run to `--uncommitted`.
+  case "$BASE" in
+    */*) p="${BASE%%/*}"
+         if git remote | grep -qx -- "$p"; then REMOTE="$p";   BRANCH="${BASE#*/}"
+         else                                   REMOTE=origin; BRANCH="$BASE"; fi ;;
+    *)   REMOTE=origin; BRANCH="$BASE" ;;
+  esac
   have_base() { git rev-parse --verify -q "$BASE^{commit}" >/dev/null 2>&1; }
   # A bare name may exist only as a remote-tracking ref: `git fetch origin main`
   # updates `origin/main` and never creates a local `main`, so try the remote
@@ -140,7 +149,16 @@ fi
 # or one, and an unquoted expansion would leave that to word-splitting.
 if [ -n "${BASE:-}" ]; then
   set -- --base "$BASE"
-  COVERED=$(git diff --name-only "$(git merge-base "$BASE" HEAD)" | wc -l | tr -d ' ')
+  # Guard the merge-base. In a shallow clone (`clone --depth 1`, `actions/checkout`
+  # at default depth) it exits non-zero with no output; unguarded, the empty
+  # substitution makes `git diff` abort and COVERED read `0` — which §4 tells the
+  # caller to report as "nothing reviewed", stopping a ship Codex in fact ran.
+  MB="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  if [ -n "$MB" ]; then
+    COVERED=$(git diff --name-only "$MB" | wc -l | tr -d ' ')
+  else
+    COVERED="unknown (no merge-base — shallow clone?)"
+  fi
 else
   set -- --uncommitted
   COVERED=$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')

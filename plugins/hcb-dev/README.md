@@ -20,13 +20,18 @@ whole pipeline rather than seven disconnected commands:
 
 ```text
 task/issue ─▶ (code it) ─▶ shipping-workflow ─▶ multi-review ─▶ codex-review
-                                   │                              code-review (built-in)
-                                   │                              security-review (built-in)
-                                   └─▶ github-pr-workflow ─▶ (merge) ─▶ cleanup-project
-dependency-versions ── seeding-gitignore ──── run alongside, whenever the work touches them
+                                   │                            code-review (built-in)
+                                   │                            security-review (built-in)
+                                   └─▶ github-pr-workflow ─▶ (merge)
+
+dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
+cleanup-project ───────────────────────── manual only, afterwards (see below)
 ```
 
-Each skill is also useful on its own and triggers from its own `description`.
+Each skill is also useful on its own and triggers from its own `description` —
+except `cleanup-project`, which sets `disable-model-invocation: true`: Claude
+never reaches for it on its own, so it is **not** an automatic post-merge step.
+Run `/hcb-dev:cleanup-project` yourself when you want the sweep.
 
 ## Skills
 
@@ -84,11 +89,20 @@ Each skill is also useful on its own and triggers from its own `description`.
 ## Forge neutrality
 
 Per the repo's authoring rule ([`.claude/rules/forge-neutrality.md`](../../.claude/rules/forge-neutrality.md)),
-these skills don't assume a single forge. Where a review or a change request needs
-a concrete command, the GitHub (`gh`) and GitLab (`glab`) forms are given
-side-by-side. The one deliberately GitHub-specific skill is `github-pr-workflow`,
-named per the rule's `<forge>-<artifact>-workflow` convention; a `gitlab-mr-workflow`
-twin can be added later.
+these skills avoid assuming a single forge. Where the guidance needs a concrete
+command — resolving a base, opening a change request — the GitHub (`gh`) and
+GitLab (`glab`) forms are given side-by-side.
+
+Two deliberate exceptions, each stated where it occurs:
+
+- `github-pr-workflow` is GitHub-specific by design, named per the rule's
+  `<forge>-<artifact>-workflow` convention; a `gitlab-mr-workflow` twin can be
+  added later.
+- `codex-review`'s runnable block resolves the base with `gh` only. Codex itself
+  takes a plain git ref and is forge-agnostic, and where `gh` is absent the block
+  falls through to git's own remote refs; on GitLab, resolve a non-default base
+  with the mirrored `glab mr` commands in that skill's §1 and hand it in as
+  `BASE`.
 
 ## Requirements
 
