@@ -1,7 +1,7 @@
 ---
 name: git-cleanup
 description: >-
-  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, including other sessions' leftovers. Never edits files, never touches a remote, never runs `git reset`.
+  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, including other sessions' leftovers. Never edits files, never runs `git reset`, and never writes to a remote — it reads merged and open change requests through the forge CLI, but pushes, deletes and edits nothing there.
 disable-model-invocation: true
 argument-hint: "[session|all]"
 ---
@@ -65,7 +65,7 @@ for f in "$CFG"/sessions/*.json; do
   # One line per file, so a pretty-printed registry still matches. Never filter by
   # process name: an npm-installed Claude Code reports `node`, and a live session
   # read as dead is exactly the mistake that costs someone their work.
-  tr -d '\n' < "$f" | grep -o '"cwd" *: *"[^"]*"'
+  tr -d '\n' < "$f" | grep -o '"cwd" *: *"[^"]*"' | head -1
 done
 ```
 
@@ -96,7 +96,7 @@ Confirm it against git, anchored on the session's own start time:
 # Self-contained: shell state does not survive from one Bash call to the next.
 CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 ms=$(grep -o '"startedAt" *: *[0-9]*' "$CFG/sessions/${CLAUDE_PID:-$PPID}.json" 2>/dev/null \
-     | grep -o '[0-9]*$')
+     | grep -o '[0-9]*$' | head -1)   # one value, whatever else the file grows
 [ -n "$ms" ] || { echo "NO-ANCHOR"; exit 1; }   # empty would arithmetic to 1969 and match everything
 ANCHOR=$(( ms / 1000 - 300 ))     # epoch MILLIseconds -> seconds, minus a grace window
 ```
@@ -255,7 +255,9 @@ prune first and the deleted directory's registration is still there, so the
 `branch -d` refuses a branch that is not fully merged, which is a free second
 opinion on every classification derived from a forge listing or from `[gone]`.
 Reach for `-D` only where the merge is genuinely invisible to git — a squash
-merge already confirmed by `rev-list --count` — and say so when you do. To remove the worktree **you are standing in**, physically leave first
+merge already confirmed by `rev-list --count` — and say so when you do.
+
+To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
 
 ```bash
