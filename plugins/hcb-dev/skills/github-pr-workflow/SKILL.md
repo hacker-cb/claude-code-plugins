@@ -300,7 +300,6 @@ if [ -z "$BASE_REMOTE" ]; then
     || echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"
   exit 1
 fi
-# Same guard as Step 1, re-declared: shell state does not cross Bash calls.
 # Same wrapper as Step 1, re-declared because shell state does not cross Bash calls.
 netpush() {
   GIT_TERMINAL_PROMPT=0 \
