@@ -57,19 +57,27 @@ exists only while it runs:
 
 ```bash
 CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+[ -d "$CFG/sessions" ] || echo "REGISTRY-ABSENT"      # not the same as "nobody is working"
 for f in "$CFG"/sessions/*.json; do
+  [ -e "$f" ] || continue                             # unmatched glob stays literal
   pid=${f##*/}; pid=${pid%.json}
-  ps -p "$pid" -o comm= 2>/dev/null | grep -q claude || continue   # PIDs get reused
-  grep -o '"cwd":"[^"]*"' "$f"
+  kill -0 "$pid" 2>/dev/null || continue              # a file can outlive its session
+  # One line per file, so a pretty-printed registry still matches. Never filter by
+  # process name: an npm-installed Claude Code reports `node`, and a live session
+  # read as dead is exactly the mistake that costs someone their work.
+  tr -d '\n' < "$f" | grep -o '"cwd" *: *"[^"]*"'
 done
 ```
 
 **This format is internal and undocumented — treat it as a hint, never as a
-guarantee.** Degrade explicitly: if `$CFG/sessions/` is missing, empty, or shaped
-differently than expected, say so once, and treat **every** worktree other than
-the current one as *possibly occupied* — surface them, delete none.
+guarantee.** An empty result is ambiguous by itself, so separate the two cases
+before using it: `REGISTRY-ABSENT`, or a `cwd` line count of zero while session
+files exist, both mean the probe failed. Say so once and treat **every** worktree
+but the current one as *possibly occupied* — surface them, remove none. Only a
+working probe that lists live sessions licenses a removal.
 
 A worktree is occupied when its path is, or contains, a live session's `cwd`.
+Erring toward "occupied" is free; erring the other way destroys someone's work.
 
 ## Step 3 — The mode
 
@@ -85,22 +93,41 @@ The primary source for mode S is **what you remember doing in this conversation*
 Confirm it against git, anchored on the session's own start time:
 
 ```bash
-grep -o '"startedAt":[0-9]*' "$CFG/sessions/${CLAUDE_PID:-$PPID}.json"   # epoch ms
+# Self-contained: shell state does not survive from one Bash call to the next.
+CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+ms=$(grep -o '"startedAt" *: *[0-9]*' "$CFG/sessions/${CLAUDE_PID:-$PPID}.json" 2>/dev/null \
+     | grep -o '[0-9]*$')
+[ -n "$ms" ] || { echo "NO-ANCHOR"; exit 1; }   # empty would arithmetic to 1969 and match everything
+ANCHOR=$(( ms / 1000 - 300 ))     # epoch MILLIseconds -> seconds, minus a grace window
 ```
 
-Subtract a grace window of a few minutes: the worktree and its branch are created
-**a second or two before** the process that runs in them, so a zero grace hides
-your own worktree from you. `startedAt` is the start of the current **process**,
-not of the conversation — after a resume the session is older than its anchor, so
-trust your memory over the timestamp where the two disagree. Then:
+Three traps live in those two lines. `startedAt` is **milliseconds** while
+everything below is seconds — pass it through raw and the cutoff lands tens of
+thousands of years out, matching nothing. An **empty** `ms` is silently `0` in
+bash arithmetic, so an unreadable registry would yield `-300`, i.e. 1969, and
+mode `session` would quietly widen to every branch and worktree in the
+repository — refuse to continue instead. And the **grace window** matters because
+a worktree and its branch are created a second or two *before* the process that
+runs in them; with zero grace your own worktree hides from you.
 
 ```bash
 git -C "$PROJECT" reflog show --date=unix "<branch>" | tail -1   # 'branch: Created from …'
-find "$PROJECT/.git/worktrees" -maxdepth 1 -newermt "@<anchor>"  # worktree registration time
+# Date the worktree by its `commondir`, written once at registration. The
+# directory's own mtime is last-activity — every commit rewrites `index` inside
+# it — so it would attribute a busy neighbouring session's worktree to this one.
+# And use --git-common-dir, not "$PROJECT/.git": inside a worktree .git is a
+# file, and with a bare primary there is no .git directory at all.
+find "$(git -C "$PROJECT" rev-parse --path-format=absolute --git-common-dir)/worktrees" \
+     -maxdepth 2 -name commondir -newermt "@$ANCHOR"
 ```
 
-If the registry file is unreadable, fall back on your own memory of the session
-and say that the timestamps could not be confirmed.
+These timestamps only ever **confirm** what you remember; they never overrule it,
+and an empty result is not evidence that this session created nothing. Whenever
+a session is resumed or its process restarts, `startedAt` moves forward while the
+worktree keeps its original registration time, so everything the session made
+falls behind the anchor and the `find` legitimately comes back empty. Say the
+git-side confirmation was unavailable — on `NO-ANCHOR`, on an empty result, or on
+any disagreement — and go with your own record of the session.
 
 Mode decides *what is listed*. It never decides how freely something is deleted —
 the risk class does.
@@ -112,11 +139,14 @@ git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, 
 git -C "$PROJECT" for-each-ref refs/heads/ \
     --format='%(refname:short) | %(worktreepath) | %(upstream:short) %(upstream:track)'
 git -C "$PROJECT" branch --merged "<main>"
-git -C "$PROJECT" rev-list --count "<main>..<branch>"   # per branch without an upstream
+git -C "$PROJECT" rev-list --count "<main>..<branch>"   # per branch, merged or not
+git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 ```
 
 `for-each-ref` gives branch → worktree → upstream → `[gone]` in one pass; prefer
-it over parsing `branch -vv`.
+it over parsing `branch -vv`. `worktree list` never mentions modified or
+untracked files, so without that per-worktree `status` there is no clean/dirty
+signal at all and step 5 cannot tell a removable worktree from one holding work.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
 forge and that forge's CLI is authed, close the gap read-only:
@@ -130,6 +160,18 @@ glab mr list --merged --output json --per-page 100 | jq -r '.[].source_branch'  
 glab mr list          --output json --per-page 100 | jq -r '.[].source_branch'   # -> keep, in flight
 ```
 
+Both CLIs answer with **branch names only**, and a name is not an identity: a
+merged `fix/login` may have come from a fork, or the local branch of that name
+may have been recreated since with fresh commits. So a forge "merged" is a
+candidate, not a verdict — confirm the local branch carries nothing of its own:
+
+```bash
+git -C "$PROJECT" rev-list --count "<main>..<branch>"    # 0 -> nothing to lose
+```
+
+Non-zero means the local branch has commits the merge does not contain: surface
+it as class 3 instead of deleting it.
+
 Without a forge CLI, a branch outside `--merged <main>` has **unknown** merge
 status: surface it, never delete it.
 
@@ -141,20 +183,24 @@ status: surface it, never delete it.
 |---|---|
 | primary worktree | never touch |
 | the current session's own worktree | never remove from inside it — see step 7 |
-| path is a live session's `cwd` | keep — someone is working there right now |
+| path is a live session's `cwd`, or occupancy unknown | keep — someone may be working there |
 | `locked` | keep — Claude Code locks a worktree while its agent runs |
-| `prunable` | `worktree prune` (class 1) |
+| `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
+| `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
 | clean, its branch merged, unoccupied | `remove` (class 2) |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
+| on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
 
 **Branches**
 
 | Signal | Verdict |
 |---|---|
-| `<main>`, or checked out in any worktree | never delete |
+| `<main>`, or checked out in a worktree you are keeping | never delete |
+| checked out in a worktree being removed in this same run | delete after that worktree is gone — this is the common case, not an exception |
 | in `branch --merged <main>` | delete (class 2) |
-| the forge CLI says its PR/MR is `MERGED` | delete (class 2) — only the forge knows this |
+| the forge says `MERGED` **and** `rev-list --count <main>..<b>` = 0 | delete (class 2) — only the forge knows about a squash merge |
+| the forge says `MERGED` but the branch has its own commits | surface (class 3) — same name, different work |
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
@@ -165,9 +211,12 @@ status: surface it, never delete it.
 
 | Class | Meaning | Gate |
 |---|---|---|
-| 1 | no data loss — `worktree prune` of `prunable` entries | act, then report |
+| 1 | no data loss — `worktree prune` of a reachable `prunable` entry | act, then report |
 | 2 | recoverable — a merged branch, a clean worktree, an upstream repair | inside the confirmed plan |
-| 3 | irreversible — unmerged branch, dirty worktree | explicit confirmation, always |
+| 3 | irreversible — unmerged branch, dirty worktree, **any working-tree file** | explicit confirmation, always |
+
+Anything that deletes a file someone could still want is class 3, whichever
+table routed it there. An `rm -rf` is never class 1.
 
 ## Step 6 — The gate
 
@@ -178,21 +227,35 @@ answer; a subset means only that subset.
 ## Step 7 — Execute, in this order
 
 ```bash
-git -C "$PROJECT" worktree prune --verbose         # 1. reconcile the registry first
-git -C "$PROJECT" worktree remove "<path>"         # 2. --force only if confirmed dirty
-rm -rf "<orphan-worktree-dir>"                     # 3. dirs left by crashed agents
-git -C "$PROJECT" branch -D "<branch>"             # 4. after its worktree is gone
+git -C "$PROJECT" worktree remove "<path>"         # 1. --force only if confirmed dirty
+rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
+git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
+                                                   #    orphaned still blocks its branch
+git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
+git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed squash merge
 # 5. repair tracking — re-point at origin/<main> ONLY when <current> IS <main>. On a
 #    feature branch whose upstream no longer matches its name, git's default
 #    push.default=simple refuses `git push` outright, leaving it unpushable; there,
 #    drop the dead upstream instead and `git push -u origin <current>` restores it.
-[ "<current>" = "<main>" ] \
-  && git -C "$PROJECT" branch --set-upstream-to=origin/<main> <current> \
-  || git -C "$PROJECT" branch --unset-upstream <current>
+#    if/else, never `test && A || B`: that runs B when A itself fails, so a
+#    set-upstream-to against a dangling origin/<main> would strip main's tracking
+#    outright — the opposite of the repair, in exactly the case this step is for.
+if [ "<current>" = "<main>" ]; then
+  git -C "$PROJECT" branch --set-upstream-to="origin/<main>" "<current>"
+else
+  git -C "$PROJECT" branch --unset-upstream "<current>"
+fi
 ```
 
-Branch deletion fails while a worktree still has it checked out — hence the
-order. To remove the worktree **you are standing in**, physically leave first
+Order matters twice over. Branch deletion fails while a worktree still has the
+branch checked out, and `worktree prune` must come *after* any manual `rm -rf` —
+prune first and the deleted directory's registration is still there, so the
+`branch -d` behind it fails with "used by worktree at …".
+
+`branch -d` refuses a branch that is not fully merged, which is a free second
+opinion on every classification derived from a forge listing or from `[gone]`.
+Reach for `-D` only where the merge is genuinely invisible to git — a squash
+merge already confirmed by `rev-list --count` — and say so when you do. To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
 
 ```bash
@@ -216,6 +279,7 @@ without asking.
 | `git worktree unlock` something Claude Code locked | leave it; the periodic sweep releases stale locks itself |
 | delete an unmerged branch, or one whose status is unknown | surface it, let the user decide |
 | `--force` a dirty worktree unasked | skip it, report it |
+| `rm -rf` a path outside this repository's worktree directories | resolve it from `worktree list` / the git dir, never from a name |
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
 | hardcode `~/.claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` |
@@ -227,8 +291,12 @@ without asking.
 - **The forge CLI offline or rate-limited mid-run** — degrade to git-only for the
   rest of the pass and downgrade every forge-derived "merged" to "surface".
 - **Detached HEAD worktree** — classify by clean/dirty only; no branch to delete.
-- **Worktree dir on disk but absent from `worktree list`** — a filesystem orphan:
-  `rm -rf` the directory, then `prune`.
+- **Worktree dir on disk but absent from `worktree list`** — a filesystem orphan.
+  Run `git status` inside it first: empty means `rm -rf` then `prune`; anything
+  else means it still holds work, so surface it as class 3 and touch nothing.
+- **A bare primary worktree** — there is no `.git` directory; every path comes
+  from `rev-parse --git-common-dir`, and an empty `find` there is a failed probe,
+  not an empty repository.
 - **A branch checked out in a worktree of a *different* repository** — leave both
   alone; this skill stays within `PROJECT`.
 - **Submodules** — leave them alone entirely.
