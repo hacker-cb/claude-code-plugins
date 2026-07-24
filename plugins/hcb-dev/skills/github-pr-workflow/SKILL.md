@@ -195,7 +195,10 @@ Examples: `fix/security-config`, `refactor/api-names`, `feat/csv-export`.
 Pick `<type>` and `<name>` from what the work actually does (inspect the diff /
 commits, not just the old branch name). Rename locally and update the remote.
 
-Which remote to push to is `<push-remote>`, and `origin` is not it by assumption —
+Remote resolution follows the shared ladder in
+[`../../references/base-resolution.md`](../../references/base-resolution.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — read it for the reasoning
+the blocks below apply. Which remote to push to is `<push-remote>`, and `origin` is not it by assumption —
 a repo may have a single remote under another name. But it is **not** the tracked
 `@{upstream}` either: in a fork checkout the branch tracks `upstream/<base>`, and
 pushing there targets the canonical repo (permission-denied, or the PR branch
@@ -205,9 +208,23 @@ sole remote. `git branch -m` carries the branch config across the rename, so rea
 it after:
 
 ```bash
-# push is a network call too — same non-interactive guard as every fetch below
-export GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5'
-git branch -m <new-name>
+# Push is a network call: no prompts, and EXTEND the user's ssh setup rather than
+# replacing it — a flat GIT_SSH_COMMAND drops a multi-account `-i ~/.ssh/id_work`
+# or a ProxyCommand, and BatchMode then forbids the fallback, so a repo that
+# pushes fine by hand dies on "Permission denied". Per-command, not exported:
+# shell state does not survive to the next Bash call anyway, so every network
+# command in this skill — including the fix loop's force-push — must carry it.
+netpush() {
+  GIT_TERMINAL_PROMPT=0 \
+  GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
+}
+# Resolve the remote BEFORE renaming: the ambiguity path exits, and aborting after
+# `git branch -m` would leave the branch renamed locally, the old name still on the
+# remote, and the upstream no longer matching — which push.default=simple then
+# refuses outright, leaving an unpushable branch and a step that is a no-op on
+# re-run. `branch.<name>.pushRemote` is read under the CURRENT name for the same
+# reason (`git branch -m` moves that config across with it).
 cur="$(git symbolic-ref --short HEAD)"
 # git's push routing, never @{upstream} (that is the base repo in a fork). Fall
 # through to a bare `origin`, then to a lone remote whatever its name — but STOP
@@ -218,15 +235,25 @@ if [ -z "$PUSH_REMOTE" ]; then
   if   git remote | grep -qx origin;                 then PUSH_REMOTE=origin
   elif [ "$(git remote | grep -c .)" = 1 ];          then PUSH_REMOTE="$(git remote)"; fi
 fi
-# Guard the push on a resolved remote — an empty `git push ""` is an error, and on
-# a real ambiguity guessing is worse than stopping. Stop and let the user name it.
 if [ -z "$PUSH_REMOTE" ]; then
-  echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"; exit 1
+  # Say which of the two it is — "name a remote" is impossible advice when there
+  # are none, and "add one" is wrong when there are several.
+  [ "$(git remote | grep -c .)" = 0 ] \
+    && echo "NO REMOTE — add one (git remote add <name> <url>), then re-run" \
+    || echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; set branch.$cur.pushRemote or remote.pushDefault, then re-run"
+  exit 1
 fi
-git push "$PUSH_REMOTE" -u <new-name>
+git branch -m <new-name>
+netpush push "$PUSH_REMOTE" -u <new-name>
 # if the old branch was already pushed, delete the stale remote ref:
-git push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
+netpush push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
 ```
+
+Every later network command in this skill — the Step 2 fetch, the
+`--force-with-lease` push after a rebase, each push in the Step 4 fix loop — needs
+that same `netpush` wrapper. Shell state does not survive between Bash calls, so
+re-declare it in whichever block does the pushing; an unguarded push in an
+unattended loop is exactly the hang the guard exists to prevent.
 
 If the branch name is already meaningful, leave it.
 
@@ -258,10 +285,15 @@ if [ -z "$BASE_REMOTE" ]; then   # no remote-tracking copy yet — fall back to 
   [ -n "$BASE_REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && BASE_REMOTE="$(git remote)"; }
 fi
 if [ -z "$BASE_REMOTE" ]; then
-  echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"; exit 1
+  [ "$(git remote | grep -c .)" = 0 ] \
+    && echo "NO REMOTE — add one (git remote add <name> <url>), then re-run" \
+    || echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"
+  exit 1
 fi
-GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
-  git fetch "$BASE_REMOTE" <base>
+# Same guard as Step 1, re-declared: shell state does not cross Bash calls.
+GIT_TERMINAL_PROMPT=0 \
+GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+  git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 fetch "$BASE_REMOTE" <base>
 # Fetch can still come back empty-handed if the branch is not on that remote after
 # all; refuse to rebase onto a ref that does not exist rather than onto the wrong one.
 git rev-parse --verify -q "$BASE_REMOTE/<base>^{commit}" >/dev/null 2>&1 \

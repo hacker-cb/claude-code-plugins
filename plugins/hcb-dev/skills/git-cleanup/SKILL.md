@@ -56,35 +56,52 @@ applied to this sweep.
   non-interactive guard — this sweep runs unattended and an auth-walled remote
   would otherwise hang it:
 
+- carry the default forward **as the remote-tracking ref** `<remote>/<default>`,
+  never the bare name — the reference explains why (`branch --merged`/`rev-list`
+  below go fatal on a bare name in a clone with no local default branch), and why
+  that ref must be *materialised and re-verified* before any consumer runs.
+
   ```bash
+  # Every network call: no prompts, bounded stalls, and the user's own ssh setup
+  # left intact — a multi-account `core.sshCommand`/`GIT_SSH_COMMAND` must survive,
+  # or a repo that pushes fine by hand starts failing "Permission denied".
+  gitq() {
+    GIT_TERMINAL_PROMPT=0 \
+    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+      git -C "$PROJECT" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
+  }
+
   D="<remote>/<default>"
   git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1 || {
-    h="$(GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
-         git -C "$PROJECT" ls-remote --symref <remote> HEAD 2>/dev/null \
+    h="$(gitq ls-remote --symref <remote> HEAD 2>/dev/null \
          | awk '$1=="ref:" && $3=="HEAD" { sub(/^refs\/heads\//,"",$2); print $2; exit }')"
-    # An unreachable or auth-walled remote returns nothing here. Do NOT build
-    # `<remote>/` from an empty name — it is a bogus ref that makes every consumer
-    # below fatal. Stop and say the default could not be resolved instead.
-    [ -n "$h" ] && D="<remote>/$h" || { echo "DEFAULT-UNRESOLVED"; D=""; }
+    # An unreachable or auth-walled remote returns nothing. Never build `<remote>/`
+    # from an empty name — a bogus ref makes every consumer below fatal.
+    [ -n "$h" ] && D="<remote>/$h" || D=""
   }
+
+  # Materialise it: a clone that only fetched feature branches has no such ref yet.
+  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
+    gitq fetch --quiet <remote> "${D#*/}"
+  fi
+
+  # RE-VERIFY. The fetch can fail unnoticed (remote gone since ls-remote, auth
+  # wall, network) or write only FETCH_HEAD under a narrowed refspec, as a
+  # --single-branch clone has. An unchecked D is then a dangling ref: consumers
+  # die with "not a valid object name", or — far worse — the empty output of a
+  # failed `branch --merged` reads as "nothing is merged" and a `rev-list` count
+  # of 0 routes a branch to delete. Fall into the unresolved path instead.
+  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
+    D=""
+  fi
+  [ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
+  DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
   ```
 
   A `DEFAULT-UNRESOLVED` result is not "nothing is merged" — it is "the merge
   question cannot be answered". Every branch's status becomes **unknown**: surface
-  them all, delete none, and say the remote was unreachable.
-
-- carry the default forward **as the remote-tracking ref** `<remote>/<default>`,
-  never the bare name — the reference explains why (`branch --merged`/`rev-list`
-  below go fatal on a bare name in a clone with no local default branch), and why
-  the remote-tracking ref itself needs materialising before any consumer runs.
-  Guarded again, and only with a resolved `D`:
-
-  ```bash
-  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
-    GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
-      git -C "$PROJECT" fetch --quiet <remote> "${D#*/}"
-  fi
-  ```
+  them all, delete none, and say the remote was unreachable. Never read a failed
+  command's empty output as an answer.
 
 If there is no remote at all, ask the user — nothing local names the default.
 
@@ -299,8 +316,12 @@ git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed 
 #    set-upstream-to against a dangling <remote>/<default> would strip the default
 #    branch's tracking outright — the opposite of the repair, in exactly the case
 #    this step is for.
-if [ "<current>" = "<default>" ]; then
-  git -C "$PROJECT" branch --set-upstream-to="<remote>/<default>" "<current>"
+#    Compare against $DEF, the BARE name from step 1 — a branch name is never the
+#    remote-tracking form, so testing <current> against "<remote>/<default>" is
+#    false even on the default branch and would unset its tracking instead of
+#    repairing it. Refs go in --set-upstream-to; names go in the comparison.
+if [ "<current>" = "$DEF" ]; then
+  git -C "$PROJECT" branch --set-upstream-to="$D" "<current>"
 else
   git -C "$PROJECT" branch --unset-upstream "<current>"
 fi

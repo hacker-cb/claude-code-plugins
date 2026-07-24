@@ -89,17 +89,18 @@ reaches for it on its own, so it is **not** an automatic post-merge step. Run
 
 ## Shared references
 
-Guidance three skills need is kept in one place rather than copied into each —
-copies drift, and a fix then lands in two of them while the third goes on saying
-something else.
+Guidance more than one skill needs is kept in one place rather than copied into
+each — copies drift, and a fix then lands in some of them while the rest go on
+saying something else.
 
 - [`references/base-resolution.md`](references/base-resolution.md) — how to
   resolve a base branch and its remote without guessing either name: the rung
   ladder, remote ranking (`upstream` before `origin`, a lone remote whatever it is
   called), why a read symref goes stale, why only the remote-tracking form is safe
   to carry forward, the non-interactive guard every network call needs, and why a
-  base sharing no history with `HEAD` is worse than no base at all. Used by
-  `codex-review`, `multi-review` and `git-cleanup`.
+  base sharing no history with `HEAD` is worse than no base at all. Used by `codex-review`, `multi-review`, `git-cleanup`,
+  `github-pr-workflow` and `shipping-workflow` — every skill that resolves a base
+  or a remote.
 
 ## Forge neutrality
 

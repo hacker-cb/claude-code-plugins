@@ -86,8 +86,13 @@ command -v codex >/dev/null \
 # also exits 1 on failures that logging in again would not fix, and only the
 # stated "not logged in" is worth stopping for. `timeout` is optional because
 # stock macOS ships no coreutils.
+# Two network budgets, not one. 10s suits a metadata probe (`ls-remote`), but a
+# `fetch` on a large repo or a slow link is making progress — SIGTERM at 10s would
+# drop the base and silently narrow the review to the working tree. Stalls are
+# already covered by http.lowSpeed*, which is what a timeout is really for here.
 command -v timeout >/dev/null \
-  && { TO="timeout 5"; TO_NET="timeout 10"; } || { TO=""; TO_NET=""; }
+  && { TO="timeout 5"; TO_NET="timeout 10"; TO_FETCH="timeout 300"; } \
+  || { TO=""; TO_NET=""; TO_FETCH=""; }
 $TO codex login status 2>&1 | grep -qi 'not logged in' \
   && { echo "codex is not authenticated — run: codex login"; exit 1; }
 git rev-parse --git-dir >/dev/null 2>&1 \
@@ -143,15 +148,20 @@ fi
 # is a hang, and `timeout` is absent on stock macOS. The TCP connect phase is the
 # one gap left — git exposes no `http.connectTimeout` (`git help --config` lists
 # 43 `http.*` keys in 2.54 and none is that), so an unreachable host costs
-# whatever the OS allows, measured at ~10s on macOS. Bounded, not unbounded;
-# where `timeout` exists TO_NET covers the whole call outright.
+# whatever the OS allows, measured at ~10s on macOS. Bounded, not unbounded.
+# $1 is the budget, so a fetch is not held to a probe's clock; and
+# ${GIT_SSH_COMMAND:-ssh} EXTENDS the user's ssh setup rather than replacing it —
+# clobbering a multi-account `-i ~/.ssh/id_work` makes a repo that pushes fine by
+# hand fail "Permission denied", and BatchMode then forbids the fallback.
 net() {
-  $TO_NET env GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
+  budget="$1"; shift
+  $budget env GIT_TERMINAL_PROMPT=0 \
+    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
     git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
 }
 # Branch names cannot contain spaces, so awk's field split is safe.
 if [ -z "${BASE:-}" ] && [ -n "$REM" ]; then
-  h="$(net ls-remote --symref "$REM" HEAD 2>/dev/null \
+  h="$(net "$TO_NET" ls-remote --symref "$REM" HEAD 2>/dev/null \
         | awk '$1=="ref:" && $3=="HEAD" { sub(/^refs\/heads\//,"",$2); print $2; exit }')"
   [ -n "$h" ] && BASE="$REM/$h"
 fi
@@ -181,7 +191,7 @@ if [ -n "${BASE:-}" ]; then
   # `BASE="/$BRANCH"` a bogus ref, so a base already present locally still stands
   # while anything needing a fetch simply drops to `--uncommitted`.
   have_base \
-    || { [ -n "$REMOTE" ] && net fetch --quiet "$REMOTE" "$BRANCH" 2>/dev/null; have_base; } \
+    || { [ -n "$REMOTE" ] && net "$TO_FETCH" fetch --quiet "$REMOTE" "$BRANCH" 2>/dev/null; have_base; } \
     || { [ -n "$REMOTE" ] && BASE="$REMOTE/$BRANCH"; have_base; } \
     || BASE=""
 fi

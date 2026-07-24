@@ -39,13 +39,19 @@ verified — tests pass, or the behavior is confirmed — and the tree is commit
    invoked under that plugin's namespace rather than a bare name (here,
    `hcb-dev:github-pr-workflow` on GitHub). If none is installed, **push the
    branch first** —
-   `GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' git push -u <remote> <branch>`,
-   which the handoff would otherwise have done for you. Resolve `<remote>` rather
-   than assuming `origin` — git's push routing (`branch.<name>.pushRemote`, then
-   `remote.pushDefault`, then `origin`, then your sole remote), never the tracked
-   `@{upstream}`, which in a fork is the base repo you cannot push to — and keep
-   the non-interactive guard so an unattended ship fails fast on a missing
-   credential instead of hanging on the prompt — then
+   `GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 push -u <remote> <branch>`,
+   which the handoff would otherwise have done for you. Resolve `<remote>` by the
+   shared ladder
+   ([`../../references/base-resolution.md`](../../references/base-resolution.md))
+   rather than assuming `origin`: git's push routing —
+   `branch.<name>.pushRemote`, then `remote.pushDefault`, then `origin`, then your
+   sole remote — never the tracked `@{upstream}`, which in a fork is the base repo
+   you cannot push to. **With several remotes and none of those preferred, stop and
+   ask** instead of picking one: a guess here publishes the branch in someone
+   else's repository, and `hcb-dev:github-pr-workflow` refuses the same case
+   outright. Keep the guard as written — it extends the user's ssh setup rather
+   than replacing it, and bounds a stalled transfer — so an unattended ship fails
+   fast on a missing credential instead of hanging on the prompt. Then
    open it yourself (GitHub `gh pr create`,
    GitLab `glab mr create`) and say the handoff was unavailable, so nobody
    assumes a review-and-merge loop is running that isn't. Skip that push and the

@@ -128,15 +128,30 @@ SSH key turns `ls-remote`, `fetch` or `push` into an indefinite hang, and
 `timeout` is absent on stock macOS. Route every one of them through:
 
 ```bash
-GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
+GIT_TERMINAL_PROMPT=0 \
+GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
   git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 <cmd>
 ```
+
+**Extend `GIT_SSH_COMMAND`, never replace it.** The environment variable overrides
+`core.sshCommand`, so a flat `GIT_SSH_COMMAND='ssh …'` throws away a multi-account
+`ssh -i ~/.ssh/id_work -o IdentitiesOnly=yes` or a ProxyCommand the remote needs —
+and `BatchMode` then forbids the interactive fallback, so a repo that pushes fine
+by hand fails with `Permission denied (publickey)`. The `${GIT_SSH_COMMAND:-ssh}`
+form keeps whatever was already set. (It still does not pick up `core.sshCommand`;
+where a repo relies on that, pass `git -c core.sshCommand="…"` instead.)
 
 `BatchMode` suppresses prompts without weakening host-key checking. The TCP
 connect phase is the one gap left — git exposes no `http.connectTimeout`
 (`git help --config` lists 43 `http.*` keys in 2.54 and none is that), so an
 unreachable host costs whatever the OS allows, measured at ~10s on macOS.
 Bounded, not unbounded.
+
+A wall-clock `timeout` around these is fine for a **metadata** probe like
+`ls-remote`, but sizing a `fetch` by the same budget kills healthy transfers: a
+large repo on a slow link is making progress, and SIGTERM at 10s silently drops
+the base. Give a fetch a generous budget or none — the `http.lowSpeed*` pair
+already covers the case a timeout is there for, a transfer that has stalled.
 
 ## A base with no shared history is not a base
 
