@@ -47,9 +47,12 @@ Two things this skill must not let the reference's authority hide:
   from it, not by hand-copying a rung.
 - **Confirm the base shares history with `HEAD` before passing it on** —
   `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
-  base is worse than none). Empty → don't pass it; fall to `@{upstream}`, or say
-  the base could not be resolved and review the working tree alone, naming the
-  commits left unread. If nothing resolves at all, ask before launching anyone.
+  base is worse than none). Empty → don't pass it, and **don't quietly fall to
+  `@{upstream}`**: on an already-pushed branch that range is near-empty, so every
+  reviewer returns a small nonzero count, the zero-file check passes, and the
+  coverage gate records no gap while most of the branch went unread. Say the base
+  could not be resolved, review the working tree alone, and record `partial` with
+  the commits left unread. If nothing resolves at all, ask before launching anyone.
 
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.
@@ -130,12 +133,14 @@ wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
 
-**A nonzero count can still mean the commits went unread.** `codex-review`
-appends a note to its scope line when it could resolve no base, or refused one
+**A nonzero count can still mean the commits went unread.** `codex-review` prints
+a separate `coverage-warning:` line when it could resolve no base, or refused one
 sharing no history with `HEAD` — it then reviews the working tree alone, and the
-count it reports is of *those* files. Read the whole scope line, not the number:
-a count that passes the zero check while the note says the commits were not
-reviewed is `partial`, and the base is what closes it.
+count it reports is of *those* files. Read that line, not just the number: a count
+that passes the zero check while the warning says the commits were not reviewed is
+`partial`, and the base is what closes it. It is deliberately its own line rather
+than a tail on the scope line, so splitting `scope:` into the `Covered` and
+`Effort` columns below cannot bury the warning in the effort cell.
 
 When a reviewer fails, quote its error instead of guessing a cause. A `401` or an
 auth complaint in Codex's log means `codex login`, and one line saying so beats

@@ -48,7 +48,7 @@ The run block is the mechanical half and cannot ask anyone anything, so where yo
 skipped the question it falls back rather than stopping: with no base it reviews
 `--uncommitted` — staged + unstaged + untracked — and where the base shares no
 history with `HEAD` (a shallow clone fetched neither side's ancestry) it refuses
-that base and does the same. Both cases append a note to the scope line saying the
+that base and does the same. Both cases print a separate `coverage-warning:` line saying the
 commits went unreviewed. Read it: a working-tree review covers no committed work,
 and the note is there because "working tree, 4 files" otherwise reads exactly like
 a review that happened.
@@ -135,9 +135,16 @@ fi
 # can check without a network round trip on every run — an old `origin/<name>`
 # still present pre-prune passes, giving a base that is stale but shares history
 # (§1 says how to spot it).
-if [ -z "${BASE:-}" ] && [ -n "$REM" ]; then
-  c="$(git symbolic-ref --short "refs/remotes/$REM/HEAD" 2>/dev/null)"
-  [ -n "$c" ] && git rev-parse --verify -q "$c^{commit}" >/dev/null 2>&1 && BASE="$c"
+# Probe EVERY remote in rank order, not just the preferred one: `git remote add`
+# never creates `<remote>/HEAD`, so in a fork `upstream/HEAD` is typically absent
+# while `origin/HEAD` sits right there with the answer. Checking only the top rank
+# would skip it and push the whole resolution onto the network — or, offline, onto
+# `@{upstream}`, quietly narrowing the review to unpushed commits.
+if [ -z "${BASE:-}" ]; then
+  for r in $(remotes_ranked); do
+    c="$(git symbolic-ref --short "refs/remotes/$r/HEAD" 2>/dev/null)"
+    [ -n "$c" ] && git rev-parse --verify -q "$c^{commit}" >/dev/null 2>&1 && { BASE="$c"; break; }
+  done
 fi
 # `<remote>/HEAD` only exists in a clone; a repo built with `git init` + `git remote
 # add` has none, so ask the remote what its HEAD points at. Never fall back to a
@@ -180,9 +187,20 @@ if [ -n "${BASE:-}" ]; then
   case "$BASE" in
     */*) p="${BASE%%/*}"
          if git remote | grep -qx -- "$p"; then REMOTE="$p";   BRANCH="${BASE#*/}"
-         else                                   REMOTE="$REM"; BRANCH="$BASE"; fi ;;
-    *)   REMOTE="$REM"; BRANCH="$BASE" ;;
+         else                                   REMOTE="";     BRANCH="$BASE"; fi ;;
+    *)   REMOTE="";     BRANCH="$BASE" ;;
   esac
+  # A bare base names a BRANCH, not a repo — so find which remote actually carries
+  # it instead of assuming the preferred one. In a fork where both `origin` and
+  # `upstream` have a `dev`, pinning $REM would turn an explicit `dev` into
+  # `upstream/dev`: a different branch than the caller asked for, reviewed under a
+  # scope line that looks right. Rung 2 probes for the same reason.
+  if [ -z "$REMOTE" ]; then
+    for r in $(remotes_ranked); do
+      git rev-parse --verify -q "$r/$BRANCH^{commit}" >/dev/null 2>&1 && { REMOTE="$r"; break; }
+    done
+    [ -n "$REMOTE" ] || REMOTE="$REM"   # nothing carries it locally — fetch from the preferred
+  fi
   have_base() { git rev-parse --verify -q "$BASE^{commit}" >/dev/null 2>&1; }
   # A bare name may exist only as a remote-tracking ref: `git fetch <remote> <b>`
   # updates `<remote>/<b>` and never creates a local `<b>`, so try the remote form
@@ -230,7 +248,12 @@ OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")"
 codex exec review "$@" -c model_reasoning_effort="$EFFORT" -o "$OUT" > "$OUT.log" 2>&1
 # The scope line is what a caller compares against; without it nobody can tell
 # what this run actually looked at.
-echo "scope: ${BASE:-working tree}, $COVERED files, effort $EFFORT${NOTE:-}"
+echo "scope: ${BASE:-working tree}, $COVERED files, effort $EFFORT"
+# A SEPARATE line, never appended to the scope line: a caller splitting that line
+# into `Covered` and `Effort` columns would otherwise file the warning under
+# effort, and the row would read as a completed review of a nonzero file count —
+# exactly the partial-coverage gap the note exists to raise.
+[ -n "${NOTE:-}" ] && echo "coverage-warning:${NOTE}"
 if [ -s "$OUT" ]; then cat "$OUT"; else echo "codex review failed:"; tail -20 "$OUT.log"; fi
 ```
 
@@ -272,7 +295,7 @@ Two things to check in what comes back:
   reporting it.
 - A scope line reading `0 files` means nothing was reviewed. Report that as
   coverage of zero, never as a clean review.
-- A scope line carrying a note — `no base resolved`, `NO MERGE-BASE` — is a
+- A `coverage-warning:` line — `no base resolved`, `NO MERGE-BASE` — means the run is a
   nonzero count over the working tree alone. The number is real and the findings
   are real; the commits are simply not among them. Report it as partial coverage
   with that reason, never as the change having been reviewed, and go back to §1
