@@ -221,12 +221,11 @@ fi
 # Guard the push on a resolved remote — an empty `git push ""` is an error, and on
 # a real ambiguity guessing is worse than stopping. Stop and let the user name it.
 if [ -z "$PUSH_REMOTE" ]; then
-  echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"
-else
-  git push "$PUSH_REMOTE" -u <new-name>
-  # if the old branch was already pushed, delete the stale remote ref:
-  git push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
+  echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"; exit 1
 fi
+git push "$PUSH_REMOTE" -u <new-name>
+# if the old branch was already pushed, delete the stale remote ref:
+git push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
 ```
 
 If the branch name is already meaningful, leave it.
@@ -250,12 +249,11 @@ git remote | grep -qx upstream && BASE_REMOTE=upstream
 [ -z "$BASE_REMOTE" ] && git remote | grep -qx origin && BASE_REMOTE=origin
 [ -z "$BASE_REMOTE" ] && [ "$(git remote | grep -c .)" = 1 ] && BASE_REMOTE="$(git remote)"
 if [ -z "$BASE_REMOTE" ]; then
-  echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"
-else
-  GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
-    git fetch "$BASE_REMOTE" <base>
-  git rebase --autostash "$BASE_REMOTE"/<base>
+  echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"; exit 1
 fi
+GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
+  git fetch "$BASE_REMOTE" <base>
+git rebase --autostash "$BASE_REMOTE"/<base>
 ```
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
