@@ -234,6 +234,13 @@ cur="$(git symbolic-ref --short -q HEAD)" \
 # on a genuine ambiguity (several remotes, none preferred): guessing one there
 # could publish your branch in someone else's repository.
 PUSH_REMOTE="$(git config --get "branch.$cur.pushRemote" || git config --get remote.pushDefault)"
+# Config can name a remote that no longer exists — renamed, or removed and
+# re-added under another name — and taking it on trust bypasses the ladder below
+# and fails the push with git's own opaque message. Verify, then fall through.
+[ -n "$PUSH_REMOTE" ] && ! git remote | grep -qx -- "$PUSH_REMOTE" && {
+  echo "note: configured push remote '$PUSH_REMOTE' no longer exists — resolving instead"
+  PUSH_REMOTE=""
+}
 if [ -z "$PUSH_REMOTE" ]; then
   if   git remote | grep -qx origin;                 then PUSH_REMOTE=origin
   elif [ "$(git remote | grep -c .)" = 1 ];          then PUSH_REMOTE="$(git remote)"; fi
