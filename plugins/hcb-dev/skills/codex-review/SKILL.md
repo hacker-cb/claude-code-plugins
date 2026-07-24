@@ -101,7 +101,12 @@ remotes_ranked() {
   for r in upstream origin; do git remote | grep -qx -- "$r" && echo "$r"; done
   git remote | grep -vxE 'upstream|origin'
 }
-REM="$(remotes_ranked | head -1)"   # the preferred remote, or empty when there is none
+# One remote, picked outright: a preferred name, else a lone remote whatever it is
+# called. NOT `remotes_ranked | head -1` — with two remotes and neither preferred
+# that silently takes whichever sorts first. Empty means "cannot tell", and the
+# rungs below simply do not fire; `remotes_ranked` stays for *probing* every remote.
+REM="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "$r"; break; }; done)"
+[ -n "$REM" ] || { [ "$(git remote | grep -c .)" = 1 ] && REM="$(git remote)"; }
 
 # BASE and EFFORT may be handed in by the caller. Anything still unset falls back
 # to the mechanical half of the resolution above — step 3, reading where this

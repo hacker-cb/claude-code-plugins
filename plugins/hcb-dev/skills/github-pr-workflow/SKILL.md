@@ -244,15 +244,28 @@ passphrase prompt — the loop may run unattended, and `timeout` is absent on st
 macOS:
 
 ```bash
+# Preference alone is not enough: `upstream` may exist while THIS base lives only
+# on `origin` (a fork whose PR targets the fork itself). Prefer a remote that
+# actually carries <base> — probe each in rank order, and only then fall back to
+# preference, so the fetch and the rebase cannot land on the wrong ref.
 BASE_REMOTE=""
-git remote | grep -qx upstream && BASE_REMOTE=upstream
-[ -z "$BASE_REMOTE" ] && git remote | grep -qx origin && BASE_REMOTE=origin
-[ -z "$BASE_REMOTE" ] && [ "$(git remote | grep -c .)" = 1 ] && BASE_REMOTE="$(git remote)"
+for r in $(for x in upstream origin; do git remote | grep -qx -- "$x" && echo "$x"; done
+           git remote | grep -vxE 'upstream|origin'); do
+  git rev-parse --verify -q "$r/<base>^{commit}" >/dev/null 2>&1 && { BASE_REMOTE="$r"; break; }
+done
+if [ -z "$BASE_REMOTE" ]; then   # no remote-tracking copy yet — fall back to preference
+  BASE_REMOTE="$(for x in upstream origin; do git remote | grep -qx -- "$x" && { echo "$x"; break; }; done)"
+  [ -n "$BASE_REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && BASE_REMOTE="$(git remote)"; }
+fi
 if [ -z "$BASE_REMOTE" ]; then
   echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"; exit 1
 fi
 GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
   git fetch "$BASE_REMOTE" <base>
+# Fetch can still come back empty-handed if the branch is not on that remote after
+# all; refuse to rebase onto a ref that does not exist rather than onto the wrong one.
+git rev-parse --verify -q "$BASE_REMOTE/<base>^{commit}" >/dev/null 2>&1 \
+  || { echo "BASE <base> NOT ON $BASE_REMOTE — name the right remote and re-run"; exit 1; }
 git rebase --autostash "$BASE_REMOTE"/<base>
 ```
 

@@ -18,12 +18,19 @@ another name, and in a fork checkout `origin` is your own copy while `upstream`
 carries the real base. Rank the remotes that actually exist:
 
 ```bash
-# upstream and origin first, then every other remote; existing only, deduped
+# upstream and origin first, then every other remote; existing only, deduped.
+# Use this to *probe* remotes — try each until one carries the ref you want.
 remotes_ranked() {
   for r in upstream origin; do git remote | grep -qx -- "$r" && echo "$r"; done
   git remote | grep -vxE 'upstream|origin'
 }
-REMOTE="$(remotes_ranked | head -1)"   # empty when the repo has no remote at all
+
+# Picking ONE remote outright is a different question: take a preferred name, else
+# a lone remote whatever it is called. Never `remotes_ranked | head -1` here — with
+# two remotes named `alice` and `bob` that silently picks whichever sorts first,
+# which is the guess this whole file exists to prevent. Empty means "cannot tell".
+REMOTE="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "$r"; break; }; done)"
+[ -n "$REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && REMOTE="$(git remote)"; }
 ```
 
 `grep -qx` and `grep -vxE` match whole lines, so a remote named `origin2` or
