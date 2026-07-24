@@ -76,8 +76,11 @@ files exist, both mean the probe failed. Say so once and treat **every** worktre
 but the current one as *possibly occupied* — surface them, remove none. Only a
 working probe that lists live sessions licenses a removal.
 
-A worktree is occupied when its path is, or contains, a live session's `cwd`.
-Erring toward "occupied" is free; erring the other way destroys someone's work.
+A worktree is occupied when a live session's `cwd` **is that worktree's path, or
+lies anywhere beneath it** — a session that has stepped into a subdirectory is
+still working in the worktree. Compare in that direction only: the worktree is
+the ancestor, never the descendant. Erring toward "occupied" is free; erring the
+other way destroys someone's work.
 
 ## Step 3 — The mode
 
