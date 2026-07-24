@@ -38,10 +38,76 @@ git worktree list --porcelain | head -1        # 'worktree <path>' — the PRIMA
 worktree still means cleaning the repository as a whole.
 
 ```bash
-git -C "$PROJECT" symbolic-ref --short refs/remotes/origin/HEAD    # -> origin/<main>
+git -C "$PROJECT" symbolic-ref --short refs/remotes/<remote>/HEAD   # -> <remote>/<default>
 ```
 
-Never assume `main`/`master`/`dev`. If `origin/HEAD` is unset, ask.
+Never assume `main`/`master`/`dev`, and never assume the remote is `origin`.
+Both names — and the traps in that one `symbolic-ref` line — belong to the shared
+ladder in
+[`../../references/base-resolution.md`](../../references/base-resolution.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`): how to rank the remotes
+that exist, why a read symref can be stale, why the remote-tracking form is the
+only safe one to carry forward. Read it; the two blocks below are that reference
+applied to this sweep.
+
+- `symbolic-ref` **reads** the pointer without dereferencing it, so after a
+  forge-side default-branch rename it keeps printing the old name with status 0.
+  Verify the ref it names still exists; if not, ask the remote afresh, through the
+  non-interactive guard — this sweep runs unattended and an auth-walled remote
+  would otherwise hang it:
+
+- carry the default forward **as the remote-tracking ref** `<remote>/<default>`,
+  never the bare name — the reference explains why (`branch --merged`/`rev-list`
+  below go fatal on a bare name in a clone with no local default branch), and why
+  that ref must be *materialised and re-verified* before any consumer runs.
+
+  ```bash
+  # Every network call: no prompts, bounded stalls, and the user's own ssh setup
+  # left intact — a multi-account `core.sshCommand`/`GIT_SSH_COMMAND` must survive,
+  # or a repo that pushes fine by hand starts failing "Permission denied".
+  gitq() {
+    GIT_TERMINAL_PROMPT=0 \
+    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+      git -C "$PROJECT" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
+  }
+
+  D="<remote>/<default>"
+  git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1 || {
+    h="$(gitq ls-remote --symref <remote> HEAD 2>/dev/null \
+         | awk '$1=="ref:" && $3=="HEAD" { sub(/^refs\/heads\//,"",$2); print $2; exit }')"
+    # An unreachable or auth-walled remote returns nothing. Never build `<remote>/`
+    # from an empty name — a bogus ref makes every consumer below fatal.
+    [ -n "$h" ] && D="<remote>/$h" || D=""
+  }
+
+  # Materialise it: a clone that only fetched feature branches has no such ref yet.
+  # EXPLICIT refspec: a plain `fetch <remote> <branch>` obeys the remote's own
+  # configured refspec, which in a --single-branch clone matches only that branch —
+  # the fetch then writes FETCH_HEAD and no remote-tracking ref at all. Naming the
+  # destination is what actually materialises `<remote>/<default>`.
+  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
+    gitq fetch --quiet <remote> "+refs/heads/${D#*/}:refs/remotes/${D}"
+  fi
+
+  # RE-VERIFY. The fetch can fail unnoticed (remote gone since ls-remote, auth
+  # wall, network) or write only FETCH_HEAD under a narrowed refspec, as a
+  # --single-branch clone has. An unchecked D is then a dangling ref: consumers
+  # die with "not a valid object name", or — far worse — the empty output of a
+  # failed `branch --merged` reads as "nothing is merged" and a `rev-list` count
+  # of 0 routes a branch to delete. Fall into the unresolved path instead.
+  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
+    D=""
+  fi
+  [ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
+  DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
+  ```
+
+  A `DEFAULT-UNRESOLVED` result is not "nothing is merged" — it is "the merge
+  question cannot be answered". Every branch's status becomes **unknown**: surface
+  them all, delete none, and say the remote was unreachable. Never read a failed
+  command's empty output as an answer.
+
+If there is no remote at all, ask the user — nothing local names the default.
 
 Claude Code's own directory is `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` — the
 variable is documented and may point anywhere. Never write `~/.claude` literally.
@@ -150,8 +216,8 @@ the risk class does.
 git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, with reasons
 git -C "$PROJECT" for-each-ref refs/heads/ \
     --format='%(refname:short) | %(worktreepath) | %(upstream:short) %(upstream:track)'
-git -C "$PROJECT" branch --merged "<main>"
-git -C "$PROJECT" rev-list --count "<main>..<branch>"   # per branch, merged or not
+git -C "$PROJECT" branch --merged "<remote>/<default>"
+git -C "$PROJECT" rev-list --count "<remote>/<default>..<branch>"   # per branch, merged or not
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 ```
 
@@ -178,13 +244,13 @@ may have been recreated since with fresh commits. So a forge "merged" is a
 candidate, not a verdict — confirm the local branch carries nothing of its own:
 
 ```bash
-git -C "$PROJECT" rev-list --count "<main>..<branch>"    # 0 -> nothing to lose
+git -C "$PROJECT" rev-list --count "<remote>/<default>..<branch>"    # 0 -> nothing to lose
 ```
 
 Non-zero means the local branch has commits the merge does not contain: surface
 it as class 3 instead of deleting it.
 
-Without a forge CLI, a branch outside `--merged <main>` has **unknown** merge
+Without a forge CLI, a branch outside `--merged <remote>/<default>` has **unknown** merge
 status: surface it, never delete it.
 
 ## Step 5 — Classification
@@ -208,15 +274,15 @@ status: surface it, never delete it.
 
 | Signal | Verdict |
 |---|---|
-| `<main>`, or checked out in a worktree you are keeping | never delete |
+| the default branch, or checked out in a worktree you are keeping | never delete |
 | checked out in a worktree being removed in this same run | delete after that worktree is gone — this is the common case, not an exception |
-| in `branch --merged <main>` | delete (class 2) |
-| the forge says `MERGED` **and** `rev-list --count <main>..<b>` = 0 | delete (class 2) — only the forge knows about a squash merge |
+| in `branch --merged <remote>/<default>` | delete (class 2) |
+| the forge says `MERGED` **and** `rev-list --count <remote>/<default>..<b>` = 0 | delete (class 2) — only the forge knows about a squash merge |
 | the forge says `MERGED` but the branch has its own commits | surface (class 3) — same name, different work |
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
-| no upstream, `rev-list --count <main>..<b>` = 0 | delete (class 2) — nothing to lose |
+| no upstream, `rev-list --count <remote>/<default>..<b>` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
 
 **Risk classes** decide the gate, whatever the mode:
@@ -245,15 +311,27 @@ git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the ent
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
 git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed squash merge
-# 5. repair tracking — re-point at origin/<main> ONLY when <current> IS <main>. On a
-#    feature branch whose upstream no longer matches its name, git's default
-#    push.default=simple refuses `git push` outright, leaving it unpushable; there,
-#    drop the dead upstream instead and `git push -u origin <current>` restores it.
+# 5. repair tracking — re-point at <remote>/<default> ONLY when <current> IS the
+#    default branch. On a feature branch whose upstream no longer matches its name,
+#    git's default push.default=simple refuses `git push` outright, leaving it
+#    unpushable; there, drop the dead upstream instead and
+#    `git push -u <remote> <current>` restores it.
 #    if/else, never `test && A || B`: that runs B when A itself fails, so a
-#    set-upstream-to against a dangling origin/<main> would strip main's tracking
-#    outright — the opposite of the repair, in exactly the case this step is for.
-if [ "<current>" = "<main>" ]; then
-  git -C "$PROJECT" branch --set-upstream-to="origin/<main>" "<current>"
+#    set-upstream-to against a dangling <remote>/<default> would strip the default
+#    branch's tracking outright — the opposite of the repair, in exactly the case
+#    this step is for.
+#    Compare against $DEF, the BARE name from step 1 — a branch name is never the
+#    remote-tracking form, so testing <current> against "<remote>/<default>" is
+#    false even on the default branch and would unset its tracking instead of
+#    repairing it. Refs go in --set-upstream-to; names go in the comparison.
+#    And skip the whole repair when step 1 said DEFAULT-UNRESOLVED: with $DEF
+#    empty the comparison is false for EVERY branch, so the else arm would strip
+#    upstreams wholesale on exactly the run that was told it cannot answer the
+#    question. Unknown means touch nothing.
+if [ -z "$DEF" ]; then
+  echo "skipping upstream repair — default branch unresolved"
+elif [ "<current>" = "$DEF" ]; then
+  git -C "$PROJECT" branch --set-upstream-to="$D" "<current>"
 else
   git -C "$PROJECT" branch --unset-upstream "<current>"
 fi
@@ -297,7 +375,8 @@ without asking.
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
 | hardcode `~/.claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` |
-| assume `main`/`master`/`dev` | read `origin/HEAD` |
+| assume `main`/`master`/`dev`, or that the remote is `origin` | read `<remote>/HEAD`, verify it resolves, else `ls-remote` |
+| compare against a bare `<default>` | use the remote-tracking ref `<remote>/<default>` — a bare name is fatal with no local default branch |
 
 ## Edge cases
 

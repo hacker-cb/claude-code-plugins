@@ -193,27 +193,138 @@ random/temporary-looking name), rename it to a meaningful `<type>/<name>`:
 Examples: `fix/security-config`, `refactor/api-names`, `feat/csv-export`.
 
 Pick `<type>` and `<name>` from what the work actually does (inspect the diff /
-commits, not just the old branch name). Rename locally and update the remote:
+commits, not just the old branch name). Rename locally and update the remote.
+
+Remote resolution follows the shared ladder in
+[`../../references/base-resolution.md`](../../references/base-resolution.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — read it for the reasoning
+the blocks below apply. Which remote to push to is `<push-remote>`, and `origin` is not it by assumption —
+a repo may have a single remote under another name. But it is **not** the tracked
+`@{upstream}` either: in a fork checkout the branch tracks `upstream/<base>`, and
+pushing there targets the canonical repo (permission-denied, or the PR branch
+created in the wrong repository) instead of your fork. Use git's own push routing —
+`branch.<name>.pushRemote`, then `remote.pushDefault` — then `origin`, then your
+sole remote. Read `branch.<name>.pushRemote` under the branch's **current** name and
+resolve everything *before* renaming — the ambiguity case exits, and exiting after
+`git branch -m` would leave the branch renamed locally with nothing pushed. (`git
+branch -m` does carry that config across, so the rename loses nothing.)
 
 ```bash
+# Push is a network call: no prompts, and EXTEND the user's ssh setup rather than
+# replacing it — a flat GIT_SSH_COMMAND drops a multi-account `-i ~/.ssh/id_work`
+# or a ProxyCommand, and BatchMode then forbids the fallback, so a repo that
+# pushes fine by hand dies on "Permission denied". Per-command, not exported:
+# shell state does not survive to the next Bash call anyway, so every network
+# command in this skill — including the fix loop's force-push — must carry it.
+netpush() {
+  GIT_TERMINAL_PROMPT=0 \
+  GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
+}
+# Resolve the remote BEFORE renaming: the ambiguity path exits, and aborting after
+# `git branch -m` would leave the branch renamed locally, the old name still on the
+# remote, and the upstream no longer matching — which push.default=simple then
+# refuses outright, leaving an unpushable branch and a step that is a no-op on
+# re-run. `branch.<name>.pushRemote` is read under the CURRENT name for the same
+# reason (`git branch -m` moves that config across with it).
+# Detached HEAD has no branch to rename or push, and an empty $cur would silently
+# turn the lookup below into `branch..pushRemote`. Say so instead.
+cur="$(git symbolic-ref --short -q HEAD)" \
+  || { echo "DETACHED HEAD — check out a branch before shipping"; exit 1; }
+# git's push routing, never @{upstream} (that is the base repo in a fork). Fall
+# through to a bare `origin`, then to a lone remote whatever its name — but STOP
+# on a genuine ambiguity (several remotes, none preferred): guessing one there
+# could publish your branch in someone else's repository.
+PUSH_REMOTE="$(git config --get "branch.$cur.pushRemote" || git config --get remote.pushDefault)"
+# Config can name a remote that no longer exists — renamed, or removed and
+# re-added under another name — and taking it on trust bypasses the ladder below
+# and fails the push with git's own opaque message. Verify, then fall through.
+[ -n "$PUSH_REMOTE" ] && ! git remote | grep -qx -- "$PUSH_REMOTE" && {
+  echo "note: configured push remote '$PUSH_REMOTE' no longer exists — resolving instead"
+  PUSH_REMOTE=""
+}
+if [ -z "$PUSH_REMOTE" ]; then
+  if   git remote | grep -qx origin;                 then PUSH_REMOTE=origin
+  elif [ "$(git remote | grep -c .)" = 1 ];          then PUSH_REMOTE="$(git remote)"; fi
+fi
+if [ -z "$PUSH_REMOTE" ]; then
+  # Say which of the two it is — "name a remote" is impossible advice when there
+  # are none, and "add one" is wrong when there are several.
+  [ "$(git remote | grep -c .)" = 0 ] \
+    && echo "NO REMOTE — add one (git remote add <name> <url>), then re-run" \
+    || echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; set branch.$cur.pushRemote or remote.pushDefault, then re-run"
+  exit 1
+fi
 git branch -m <new-name>
-git push origin -u <new-name>
+netpush push "$PUSH_REMOTE" -u <new-name>
 # if the old branch was already pushed, delete the stale remote ref:
-git push origin --delete <old-name> 2>/dev/null || true
+netpush push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
 ```
+
+Every later network command in this skill — the Step 2 fetch, the
+`--force-with-lease` push after a rebase, each push in the Step 4 fix loop — needs
+that same `netpush` wrapper. Shell state does not survive between Bash calls, so
+re-declare it in whichever block does the pushing; an unguarded push in an
+unattended loop is exactly the hang the guard exists to prevent.
 
 If the branch name is already meaningful, leave it.
 
 ## Step 2 — Bring the branch up to date with base
 
 Identify the base branch (usually the PR's base, else the repo default — check
-`gh repo view --json defaultBranchRef` or the existing PR). Rebase the feature
-branch onto the latest base. Rebase is the default (cleaner history, plays well
-with squash):
+`gh repo view --json defaultBranchRef` or the existing PR). Its remote is
+`<base-remote>`, and again not `origin` by assumption: prefer `upstream` when it
+exists (fork checkout — the base lives in the upstream repo, not your fork), then
+`origin`, then a lone remote whatever its name — and stop on a real ambiguity
+rather than fetching the base from an arbitrary remote. Rebase the feature branch
+onto the latest base. Rebase is the default (cleaner history, plays well with
+squash). Guard the fetch so it fails closed rather than hanging on a credential or
+passphrase prompt — the loop may run unattended, and `timeout` is absent on stock
+macOS:
 
 ```bash
-git fetch origin <base>
-git rebase --autostash origin/<base>
+# Preference alone is not enough: `upstream` may exist while THIS base lives only
+# on `origin` (a fork whose PR targets the fork itself). So probe each remote in
+# rank order for one that ALREADY has a remote-tracking copy of <base>, and fall
+# back to preference only when none does. Note what that probe can and cannot see:
+# it reads local refs, so on a fresh or narrowed clone — where no copy exists yet —
+# it finds nothing and preference decides after all. The fetch below is verified
+# and the rebase refuses a missing ref, so a wrong pick fails loudly rather than
+# silently; if several remotes carry the same <base> name, pass the right one in.
+BASE_REMOTE=""
+for r in $(for x in upstream origin; do git remote | grep -qx -- "$x" && echo "$x"; done
+           git remote | grep -vxE 'upstream|origin'); do
+  git rev-parse --verify -q "$r/<base>^{commit}" >/dev/null 2>&1 && { BASE_REMOTE="$r"; break; }
+done
+if [ -z "$BASE_REMOTE" ]; then   # no remote-tracking copy yet — fall back to preference
+  BASE_REMOTE="$(for x in upstream origin; do git remote | grep -qx -- "$x" && { echo "$x"; break; }; done)"
+  [ -n "$BASE_REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && BASE_REMOTE="$(git remote)"; }
+fi
+if [ -z "$BASE_REMOTE" ]; then
+  [ "$(git remote | grep -c .)" = 0 ] \
+    && echo "NO REMOTE — add one (git remote add <name> <url>), then re-run" \
+    || echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"
+  exit 1
+fi
+# Same wrapper as Step 1, re-declared because shell state does not cross Bash calls.
+netpush() {
+  GIT_TERMINAL_PROMPT=0 \
+  GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
+}
+# Check the FETCH, not just the ref. The probe above picked this remote *because*
+# `$BASE_REMOTE/<base>` already exists, so an existence test passes against a
+# week-old copy: a failed fetch (expired credential, VPN down, BatchMode refusing a
+# passphrase) would rebase onto a stale base, the step would report "up to date",
+# and GitHub would report BEHIND at merge time. "Did not update" is the only
+# failure this step actually has.
+if ! netpush fetch "$BASE_REMOTE" <base>; then
+  echo "FETCH FAILED from $BASE_REMOTE — not rebasing onto a possibly stale base"; exit 1
+fi
+# And the ref must exist at all: the branch may simply not be on that remote.
+git rev-parse --verify -q "$BASE_REMOTE/<base>^{commit}" >/dev/null 2>&1 \
+  || { echo "BASE <base> NOT ON $BASE_REMOTE — name the right remote and re-run"; exit 1; }
+git rebase --autostash "$BASE_REMOTE"/<base>
 ```
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop

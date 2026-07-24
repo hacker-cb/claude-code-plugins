@@ -30,27 +30,29 @@ narrowed (a path, or a focus such as "only error handling") and working-tree-onl
 each reviewer builds a diff and reviews nothing when that diff is empty. Say so
 and stop, rather than quietly reviewing the last commit instead.
 
-**Base.** First hit wins:
+**Base.** Resolve it by the shared ladder in
+[`../../references/base-resolution.md`](../../references/base-resolution.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — first hit wins: a base
+the caller named; the change request's base; the merged-base histogram; the
+default branch (`<remote>/HEAD`, verified, else `ls-remote`); `@{upstream}`. The
+reference owns the mechanics — remote ranking, the remote-tracking-ref form, the
+non-interactive guard, the stale-pointer trap. Read it; don't re-derive them here.
 
-1. a base the caller named;
-2. the open change request's base — GitHub `gh pr view --json baseRefName -q .baseRefName`,
-   GitLab `glab mr view --output json | jq -r .target_branch`. Both answer with a
-   **bare branch name**, so pair it with whichever remote actually carries that
-   branch — in a fork checkout `origin/<branch>` is your own stale copy and
-   `upstream/<branch>` is the real base, so take the first ref that exists;
-3. where this repo's changes actually land — GitHub
-   `gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c`,
-   GitLab `glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c`;
-4. the default branch — `git symbolic-ref --short refs/remotes/origin/HEAD`, else
-   whichever of `origin/main`, `origin/master`, `main`, `master` exists:
-   `origin/HEAD` only exists in a clone, and a repo built with `git init` +
-   `git remote add` has none;
-5. `@{upstream}`, last resort — it narrows the review to unpushed commits.
+Two things this skill must not let the reference's authority hide:
 
-Whatever this resolves to is handed to the reviewers **explicitly**, and an
-explicit base wins over their own resolution — so a lossy answer here silently
-overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
-it. Rungs 2 and 4 above exist to keep the two in step; don't let them drift.
+- **Whatever resolves is handed to the reviewers explicitly**, and an explicit
+  base wins over *their own* resolution — so a lossy answer here silently
+  overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
+  it. That is exactly why the reference is shared: keep the two in step by reading
+  from it, not by hand-copying a rung.
+- **Confirm the base shares history with `HEAD` before passing it on** —
+  `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
+  base is worse than none). Empty → don't pass it, and **don't quietly fall to
+  `@{upstream}`**: on an already-pushed branch that range is near-empty, so every
+  reviewer returns a small nonzero count, the zero-file check passes, and the
+  coverage gate records no gap while most of the branch went unread. Say the base
+  could not be resolved, review the working tree alone, and record `partial` with
+  the commits left unread. If nothing resolves at all, ask before launching anyone.
 
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.
@@ -131,6 +133,15 @@ wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
 
+**A nonzero count can still mean the commits went unread.** `codex-review` prints
+a separate `coverage-warning:` line when it could resolve no base, or refused one
+sharing no history with `HEAD` — it then reviews the working tree alone, and the
+count it reports is of *those* files. Read that line, not just the number: a count
+that passes the zero check while the warning says the commits were not reviewed is
+`partial`, and the base is what closes it. It is deliberately its own line rather
+than a tail on the scope line, so splitting `scope:` into the `Covered` and
+`Effort` columns below cannot bury the warning in the effort cell.
+
 When a reviewer fails, quote its error instead of guessing a cause. A `401` or an
 auth complaint in Codex's log means `codex login`, and one line saying so beats
 twenty lines of transcript.
@@ -148,9 +159,9 @@ verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
-| `codex-review` | `origin/master`, 3 files | high | 2 findings |
-| `code-review` | `origin/master`, 3 files | high | no findings |
-| `security-review` | `origin/master`, 1 of 3 files | — | partial: rest uncommitted |
+| `codex-review` | `<base>`, 3 files | high | 2 findings |
+| `code-review` | `<base>`, 3 files | high | no findings |
+| `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
 
 Keep the cells short. "Covered" is always `<base>, N files`, effort gets its own
 column so a level is never left implied, and "Result" is a verdict — never the
