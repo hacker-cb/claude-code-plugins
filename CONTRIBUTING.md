@@ -34,7 +34,8 @@ Official docs:
    ```
 
 2. Optional supporting files live next to `SKILL.md`: `references/*.md`, `scripts/*`, etc. Reference them from `SKILL.md` so Claude knows when to load them.
-3. The skill is invoked as `/hcb-<domain>:<skill-name>`.
+3. **Shared between skills?** Put it one level up, in `plugins/hcb-<domain>/references/*.md`, and link it from each skill by relative path (`../../references/<file>.md`, i.e. `${CLAUDE_PLUGIN_ROOT}/references/<file>.md`). Only `skills/`, `commands/`, `agents/` and `hooks/` are component dirs, so a `references/` at the plugin root is data, not a component — `scripts/validate.sh` only scans `*/skills/*/SKILL.md` and ignores it. Prose copied into two skills drifts: a fix lands in one and the other keeps saying something else. See `plugins/hcb-dev/references/base-resolution.md`, shared by three skills.
+4. The skill is invoked as `/hcb-<domain>:<skill-name>`.
 
 A **rule** is the same artifact: a skill whose body is guidance rather than a step-by-step procedure, with the triggering conditions carried by the `description` so it's pulled in exactly when relevant. To keep one out of the `/` menu, add frontmatter `user-invocable: false` (it can still be model-invoked); to keep Claude from auto-invoking it, add `disable-model-invocation: true` (it stays available as a slash command). Setting both makes the skill unreachable.
 

@@ -22,64 +22,24 @@ and let the caller decide.
 
 Review against a base ref. `--base` diffs `merge-base(base, HEAD)` against the
 **working tree**, so a single pass covers the branch's commits *and* uncommitted
-edits to tracked files. First hit wins:
+edits to tracked files.
 
-1. A base the caller named explicitly.
-2. The base of the open change request for this branch. It answers with a bare
-   branch name, so pair it with whichever remote actually carries that branch —
-   in a fork checkout `origin/<branch>` is your own stale copy and
-   `upstream/<branch>` is the real base:
-   ```bash
-   # GitHub
-   gh pr view --json baseRefName -q .baseRefName
-   # GitLab
-   glab mr view --output json | jq -r .target_branch
-   ```
-3. Where this repo's changes actually land. A review usually runs *before* the
-   change request exists, so step 2 comes back empty and the default branch is
-   the wrong guess in any repo whose changes target `dev`, `develop`,
-   `release/*`… Look, don't assume:
-   ```bash
-   # GitHub
-   gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c
-   # GitLab
-   glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c
-   ```
-   If one non-default base dominates, use it and name it in the report.
-4. The repo default branch, in two steps that answer different questions.
-   `git symbolic-ref --short refs/remotes/<remote>/HEAD` gives a ready ref
-   (`<remote>/<name>`) but only *reads* the pointer — after the forge renames its
-   default branch this keeps printing the old name with status 0, so check the
-   ref exists before trusting it. That check catches a pointer aimed at a deleted
-   ref, not one aimed at a *stale* one: until a `fetch --prune`, the old
-   `<remote>/<name>` still exists locally, frozen at its last known commit, and it
-   passes. The base is then merely older than the real one — the history is
-   shared, so the review widens rather than breaking — and a prune fixes it.
-   Deliberately not re-checked over the network, which would cost a round trip on
-   every single run to catch that. If a review comes back scoped to a branch the
-   repo no longer has, that is this case: `git remote set-head <remote> --auto`.
-   Where it is absent or stale, ask the remote:
-   `git ls-remote --symref <remote> HEAD` prints raw
-   `ref: refs/heads/<name>\tHEAD` plus a sha line, so strip `ref: refs/heads/`
-   and pair the bare name with the remote you asked. Never guess the name from a
-   list of popular ones: every repo picks its own, and such a list resolves to a
-   real branch in the wrong repo just as readily as in the right one.
+**Resolve the base by the shared ladder** in
+[`../../references/base-resolution.md`](../../references/base-resolution.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — first hit wins:
 
-   `<remote>` is not `origin` by assumption — that name is as hardcoded as `main`
-   is. Pick it the way rung 2 does (`upstream` outranks `origin` in a fork
-   checkout, where origin is your own copy), but only among remotes that exist;
-   and where the repo has exactly one remote, that one is the answer whatever it
-   is called, so a repo whose only remote is `upstream` does not fall through as
-   if it had none.
-5. `git rev-parse --abbrev-ref @{upstream}` — last resort. When the branch tracks
-   its own remote counterpart, this narrows the review to unpushed commits only.
+1. a base the caller named;
+2. the open change request's base (`gh pr view` / `glab mr view`);
+3. where this repo's PRs actually land (the merged-base histogram) — a review
+   usually runs before the change request exists, so use this when one non-default
+   base dominates, and name it in the report;
+4. the repo default branch (`<remote>/HEAD`, verified, else `ls-remote`);
+5. `@{upstream}` — narrows the review to unpushed commits.
 
-**When none of these resolve, ask for the base — don't review without one.** With
-no remote configured there is nothing to derive a default branch *from*, and any
-local guess is the same hardcoded name under another name. Say what is missing and
-ask, naming the branch's commit count so the cost is concrete: "no remote, so I
-can't tell what this branch was cut from — give me a base, or the review covers
-only the working tree and leaves 3 commits unread."
+The reference is authoritative for *how* each rung resolves a remote and a ref —
+read it before touching this. What matters here is that the run block in §3
+implements exactly that ladder; step 3 is the one judgment call and stays yours to
+make first. If nothing resolves, ask for the base rather than review without one.
 
 Being on the default branch is fine: the merge-base collapses to `HEAD`, and the
 review becomes the working-tree diff.

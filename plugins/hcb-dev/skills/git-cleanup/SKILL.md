@@ -41,18 +41,20 @@ worktree still means cleaning the repository as a whole.
 git -C "$PROJECT" symbolic-ref --short refs/remotes/<remote>/HEAD   # -> <remote>/<default>
 ```
 
-Never assume `main`/`master`/`dev`, and never assume the remote is `origin` — a
-repo may have one remote under another name, and in a fork checkout `upstream` is
-the real base while `origin` is your own copy. Pick `<remote>` from what exists:
-`upstream` over `origin` when both are present, and with a single remote use it
-whatever it is called. Two more traps in that one line:
+Never assume `main`/`master`/`dev`, and never assume the remote is `origin`.
+Both names — and the traps in that one `symbolic-ref` line — belong to the shared
+ladder in
+[`../../references/base-resolution.md`](../../references/base-resolution.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`): how to rank the remotes
+that exist, why a read symref can be stale, why the remote-tracking form is the
+only safe one to carry forward. Read it; the two blocks below are that reference
+applied to this sweep.
 
 - `symbolic-ref` **reads** the pointer without dereferencing it, so after a
   forge-side default-branch rename it keeps printing the old name with status 0.
-  Verify the ref it names still exists; if not, ask the remote afresh — and route
-  that network call through the non-interactive guard, because nobody is at the
-  keyboard and an auth-required HTTPS remote or a passphrase-protected SSH key
-  would otherwise hang the whole sweep (`timeout` is absent on stock macOS):
+  Verify the ref it names still exists; if not, ask the remote afresh, through the
+  non-interactive guard — this sweep runs unattended and an auth-walled remote
+  would otherwise hang it:
 
   ```bash
   D="<remote>/<default>"
@@ -72,11 +74,10 @@ whatever it is called. Two more traps in that one line:
   them all, delete none, and say the remote was unreachable.
 
 - carry the default forward **as the remote-tracking ref** `<remote>/<default>`,
-  never the bare name — every `branch --merged`/`rev-list` below dies with "not a
-  valid object name" on a bare name in a clone with no local default branch. But
-  the remote-tracking ref is not guaranteed present either: a clone that only ever
-  fetched feature branches has no `<remote>/<default>` until you fetch it. So
-  materialise it before any consumer runs, again guarded (only with a resolved `D`):
+  never the bare name — the reference explains why (`branch --merged`/`rev-list`
+  below go fatal on a bare name in a clone with no local default branch), and why
+  the remote-tracking ref itself needs materialising before any consumer runs.
+  Guarded again, and only with a resolved `D`:
 
   ```bash
   if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then

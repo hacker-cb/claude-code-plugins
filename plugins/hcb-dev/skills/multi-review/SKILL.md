@@ -30,62 +30,26 @@ narrowed (a path, or a focus such as "only error handling") and working-tree-onl
 each reviewer builds a diff and reviews nothing when that diff is empty. Say so
 and stop, rather than quietly reviewing the last commit instead.
 
-**Base.** First hit wins:
+**Base.** Resolve it by the shared ladder in
+[`../../references/base-resolution.md`](../../references/base-resolution.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — first hit wins: a base
+the caller named; the change request's base; the merged-base histogram; the
+default branch (`<remote>/HEAD`, verified, else `ls-remote`); `@{upstream}`. The
+reference owns the mechanics — remote ranking, the remote-tracking-ref form, the
+non-interactive guard, the stale-pointer trap. Read it; don't re-derive them here.
 
-1. a base the caller named;
-2. the open change request's base — GitHub `gh pr view --json baseRefName -q .baseRefName`,
-   GitLab `glab mr view --output json | jq -r .target_branch`. Both answer with a
-   **bare branch name**, so pair it with whichever remote actually carries that
-   branch — in a fork checkout `origin/<branch>` is your own stale copy and
-   `upstream/<branch>` is the real base, so take the first ref that exists;
-3. where this repo's changes actually land — GitHub
-   `gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c`,
-   GitLab `glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c`.
-   The winning entry is a **bare branch name** too, so normalize it exactly as
-   rung 2 does: pair it with whichever remote actually carries it — first existing
-   ref, `upstream/<branch>` before `origin/<branch>` before any other remote — and
-   never hand a bare name onward, which dies with "not a valid object name" in a
-   clone that has no local branch of that name;
-4. the default branch, two steps and two shapes. `git symbolic-ref --short
-   refs/remotes/<remote>/HEAD` hands back a ready `<remote>/<name>`, but it only
-   *reads* the pointer — after the forge renames its default branch it keeps
-   printing the old name with status 0 — so verify the ref exists before taking
-   it. That catches a pointer at a *deleted* ref, not one at a stale-but-present
-   one: before a `fetch --prune` the old `<remote>/<name>` is still there and
-   passes, leaving a base that is older than the real one but shares its history,
-   so the review widens rather than breaks. Where it is absent, ask the remote,
-   with the non-interactive guard every network call in this ladder needs — nobody
-   is at the keyboard, so an auth-required remote hangs without it (`timeout` is
-   absent on stock macOS):
-   `GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' git ls-remote --symref <remote> HEAD`
-   prints raw `ref: refs/heads/<name>\tHEAD`, so strip `ref: refs/heads/` and
-   pair the bare name with the remote you asked, exactly as rung 2 does. Whatever
-   comes out, hand on a ref that exists — never guess the name from a list of
-   popular ones. `<remote>` is not `origin` by assumption either: keep rung 2's
-   order (`upstream` before `origin`) among the remotes that exist, and with a
-   single remote use it whatever it is named — otherwise this rung contradicts
-   rung 2 and lands on the fork's own stale copy;
-5. `@{upstream}`, last resort — it narrows the review to unpushed commits.
+Two things this skill must not let the reference's authority hide:
 
-**Nothing resolved? Ask.** No remote means there is nothing to derive a default
-branch from, and a local guess is the same hardcoded name wearing a disguise. Say
-so and ask for the base before launching anyone, naming what it costs: the
-reviewers would otherwise read the working tree alone and leave every commit on
-this branch unread.
-
-Whatever this resolves to is handed to the reviewers **explicitly**, and an
-explicit base wins over their own resolution — so a lossy answer here silently
-overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
-it. Rungs 2 and 4 above exist to keep the two in step; don't let them drift.
-
-**Before handing it on, confirm the base shares history with `HEAD`:**
-`git merge-base <base> HEAD` must be non-empty. When it is empty — a shallow clone
-(`actions/checkout` at default depth) fetched neither side's ancestry, or the ref
-is genuinely unrelated — the base is unusable: reviewers diffing against it report
-the base's own files as deletions this change never made. Don't pass it. Fall to
-`@{upstream}`, or say the base could not be resolved and review the working tree
-alone (naming the commits left unread), exactly as `codex-review`'s own block
-refuses such a base rather than reviewing against it.
+- **Whatever resolves is handed to the reviewers explicitly**, and an explicit
+  base wins over *their own* resolution — so a lossy answer here silently
+  overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
+  it. That is exactly why the reference is shared: keep the two in step by reading
+  from it, not by hand-copying a rung.
+- **Confirm the base shares history with `HEAD` before passing it on** —
+  `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
+  base is worse than none). Empty → don't pass it; fall to `@{upstream}`, or say
+  the base could not be resolved and review the working tree alone, naming the
+  commits left unread. If nothing resolves at all, ask before launching anyone.
 
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.

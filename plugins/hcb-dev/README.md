@@ -87,6 +87,20 @@ reaches for it on its own, so it is **not** an automatic post-merge step. Run
   cleanup does not — `--worktree` and desktop worktrees, `-p` leftovers, and
   branches — and never removes a worktree another live session is working in.
 
+## Shared references
+
+Guidance three skills need is kept in one place rather than copied into each —
+copies drift, and a fix then lands in two of them while the third goes on saying
+something else.
+
+- [`references/base-resolution.md`](references/base-resolution.md) — how to
+  resolve a base branch and its remote without guessing either name: the rung
+  ladder, remote ranking (`upstream` before `origin`, a lone remote whatever it is
+  called), why a read symref goes stale, why only the remote-tracking form is safe
+  to carry forward, the non-interactive guard every network call needs, and why a
+  base sharing no history with `HEAD` is worse than no base at all. Used by
+  `codex-review`, `multi-review` and `git-cleanup`.
+
 ## Forge neutrality
 
 Per the repo's authoring rule ([`.claude/rules/forge-neutrality.md`](../../.claude/rules/forge-neutrality.md)),
