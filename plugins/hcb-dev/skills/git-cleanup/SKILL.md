@@ -97,18 +97,27 @@ Confirm it against git, anchored on the session's own start time:
 CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 ms=$(grep -o '"startedAt" *: *[0-9]*' "$CFG/sessions/${CLAUDE_PID:-$PPID}.json" 2>/dev/null \
      | grep -o '[0-9]*$' | head -1)   # one value, whatever else the file grows
-[ -n "$ms" ] || { echo "NO-ANCHOR"; exit 1; }   # empty would arithmetic to 1969 and match everything
-ANCHOR=$(( ms / 1000 - 300 ))     # epoch MILLIseconds -> seconds, minus a grace window
+if [ -n "$ms" ]; then
+  ANCHOR=$(( ms / 1000 - 300 ))   # epoch MILLIseconds -> seconds, minus a grace window
+  echo "ANCHOR=$ANCHOR"
+else
+  echo "NO-ANCHOR"                # never reach the arithmetic: empty is 0, i.e. 1969
+fi
 ```
 
-Three traps live in those two lines. `startedAt` is **milliseconds** while
+Three traps live in those few lines. `startedAt` is **milliseconds** while
 everything below is seconds — pass it through raw and the cutoff lands tens of
 thousands of years out, matching nothing. An **empty** `ms` is silently `0` in
-bash arithmetic, so an unreadable registry would yield `-300`, i.e. 1969, and
-mode `session` would quietly widen to every branch and worktree in the
-repository — refuse to continue instead. And the **grace window** matters because
-a worktree and its branch are created a second or two *before* the process that
-runs in them; with zero grace your own worktree hides from you.
+bash arithmetic, so letting an unreadable registry reach the `$(( ))` would yield
+`-300`, i.e. 1969, and mode `session` would quietly widen to every branch and
+worktree in the repository — hence the `if`, which skips the arithmetic rather
+than guessing. And the **grace window** matters because a worktree and its branch
+are created a second or two *before* the process that runs in them; with zero
+grace your own worktree hides from you.
+
+`NO-ANCHOR` costs you the git-side confirmation, not the run: skip the two
+commands below, say the timestamps were unavailable, and work from the session
+record you already have.
 
 ```bash
 git -C "$PROJECT" reflog show --date=unix "<branch>" | tail -1   # 'branch: Created from …'
