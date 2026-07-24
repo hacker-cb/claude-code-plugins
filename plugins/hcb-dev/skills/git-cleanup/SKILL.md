@@ -60,21 +60,29 @@ whatever it is called. Two more traps in that one line:
     h="$(GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
          git -C "$PROJECT" ls-remote --symref <remote> HEAD 2>/dev/null \
          | awk '$1=="ref:" && $3=="HEAD" { sub(/^refs\/heads\//,"",$2); print $2; exit }')"
-    D="<remote>/$h"
+    # An unreachable or auth-walled remote returns nothing here. Do NOT build
+    # `<remote>/` from an empty name — it is a bogus ref that makes every consumer
+    # below fatal. Stop and say the default could not be resolved instead.
+    [ -n "$h" ] && D="<remote>/$h" || { echo "DEFAULT-UNRESOLVED"; D=""; }
   }
   ```
+
+  A `DEFAULT-UNRESOLVED` result is not "nothing is merged" — it is "the merge
+  question cannot be answered". Every branch's status becomes **unknown**: surface
+  them all, delete none, and say the remote was unreachable.
 
 - carry the default forward **as the remote-tracking ref** `<remote>/<default>`,
   never the bare name — every `branch --merged`/`rev-list` below dies with "not a
   valid object name" on a bare name in a clone with no local default branch. But
   the remote-tracking ref is not guaranteed present either: a clone that only ever
   fetched feature branches has no `<remote>/<default>` until you fetch it. So
-  materialise it before any consumer runs, again guarded:
+  materialise it before any consumer runs, again guarded (only with a resolved `D`):
 
   ```bash
-  git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1 \
-    || GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
-       git -C "$PROJECT" fetch --quiet <remote> "${D#*/}"
+  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
+    GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
+      git -C "$PROJECT" fetch --quiet <remote> "${D#*/}"
+  fi
   ```
 
 If there is no remote at all, ask the user — nothing local names the default.

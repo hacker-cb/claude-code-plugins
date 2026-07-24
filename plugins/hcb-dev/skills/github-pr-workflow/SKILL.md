@@ -196,16 +196,23 @@ Pick `<type>` and `<name>` from what the work actually does (inspect the diff /
 commits, not just the old branch name). Rename locally and update the remote.
 
 Which remote to push to is `<push-remote>`, and `origin` is not it by assumption —
-a repo may have a single remote under another name. Use the remote the branch
-already tracks, else your sole remote; in a fork checkout that is `origin` (your
-fork), while the base lives in `upstream` (resolved separately in Step 2):
+a repo may have a single remote under another name. But it is **not** the tracked
+`@{upstream}` either: in a fork checkout the branch tracks `upstream/<base>`, and
+pushing there targets the canonical repo (permission-denied, or the PR branch
+created in the wrong repository) instead of your fork. Use git's own push routing —
+`branch.<name>.pushRemote`, then `remote.pushDefault` — then `origin`, then your
+sole remote. `git branch -m` carries the branch config across the rename, so read
+it after:
 
 ```bash
-PUSH_REMOTE="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null | cut -d/ -f1)"
-[ -n "$PUSH_REMOTE" ] || PUSH_REMOTE="$(git remote | grep -m1 .)"   # a fresh branch tracks nothing yet
 # push is a network call too — same non-interactive guard as every fetch below
 export GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5'
 git branch -m <new-name>
+cur="$(git symbolic-ref --short HEAD)"
+PUSH_REMOTE="$(git config --get "branch.$cur.pushRemote" \
+  || git config --get remote.pushDefault \
+  || { git remote | grep -qx origin && echo origin; } \
+  || git remote | grep -m1 .)"   # never @{upstream}: that is the base repo in a fork
 git push "$PUSH_REMOTE" -u <new-name>
 # if the old branch was already pushed, delete the stale remote ref:
 git push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
