@@ -204,8 +204,10 @@ a repo may have a single remote under another name. But it is **not** the tracke
 pushing there targets the canonical repo (permission-denied, or the PR branch
 created in the wrong repository) instead of your fork. Use git's own push routing —
 `branch.<name>.pushRemote`, then `remote.pushDefault` — then `origin`, then your
-sole remote. `git branch -m` carries the branch config across the rename, so read
-it after:
+sole remote. Read `branch.<name>.pushRemote` under the branch's **current** name and
+resolve everything *before* renaming — the ambiguity case exits, and exiting after
+`git branch -m` would leave the branch renamed locally with nothing pushed. (`git
+branch -m` does carry that config across, so the rename loses nothing.)
 
 ```bash
 # Push is a network call: no prompts, and EXTEND the user's ssh setup rather than
@@ -282,9 +284,13 @@ macOS:
 
 ```bash
 # Preference alone is not enough: `upstream` may exist while THIS base lives only
-# on `origin` (a fork whose PR targets the fork itself). Prefer a remote that
-# actually carries <base> — probe each in rank order, and only then fall back to
-# preference, so the fetch and the rebase cannot land on the wrong ref.
+# on `origin` (a fork whose PR targets the fork itself). So probe each remote in
+# rank order for one that ALREADY has a remote-tracking copy of <base>, and fall
+# back to preference only when none does. Note what that probe can and cannot see:
+# it reads local refs, so on a fresh or narrowed clone — where no copy exists yet —
+# it finds nothing and preference decides after all. The fetch below is verified
+# and the rebase refuses a missing ref, so a wrong pick fails loudly rather than
+# silently; if several remotes carry the same <base> name, pass the right one in.
 BASE_REMOTE=""
 for r in $(for x in upstream origin; do git remote | grep -qx -- "$x" && echo "$x"; done
            git remote | grep -vxE 'upstream|origin'); do

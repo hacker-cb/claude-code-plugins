@@ -191,12 +191,18 @@ if [ -n "${BASE:-}" ]; then
   # `2.0` or a whole branch called `release/2.0`, and both spellings resolve the
   # same ref name. So stop guessing which it is — TRY, in order, and let the first
   # one that actually resolves win. Each attempt is a no-op when it does not.
+  # Always fetch with an EXPLICIT refspec. `git fetch <remote> <branch>` honours the
+  # remote's configured refspec, and a --single-branch or narrowed clone has one
+  # that matches only its own branch — the fetch then updates FETCH_HEAD alone and
+  # never writes refs/remotes/<remote>/<branch>, so the rev-parse below stays false
+  # for a branch that was in fact fetched. Naming the destination avoids that.
   if ! have_base; then
     # 1. the prefix as a remote, the rest as its branch — `git fetch release 2.0`
     case "$BASE" in
-      */*) p="${BASE%%/*}"
+      */*) p="${BASE%%/*}"; b2="${BASE#*/}"
            if git remote | grep -qx -- "$p"; then
-             net "$TO_FETCH" fetch --quiet "$p" "${BASE#*/}" 2>/dev/null || true
+             net "$TO_FETCH" fetch --quiet "$p" \
+               "+refs/heads/$b2:refs/remotes/$p/$b2" 2>/dev/null || true
            fi ;;
     esac
   fi
@@ -213,7 +219,8 @@ if [ -n "${BASE:-}" ]; then
     # 3. not local yet: fetch that branch from each remote in turn, taking the
     #    first whose remote-tracking ref then exists.
     for r in $(remotes_ranked); do
-      net "$TO_FETCH" fetch --quiet "$r" "$BASE" 2>/dev/null || continue
+      net "$TO_FETCH" fetch --quiet "$r" \
+        "+refs/heads/$BASE:refs/remotes/$r/$BASE" 2>/dev/null || continue
       git rev-parse --verify -q "$r/$BASE^{commit}" >/dev/null 2>&1 \
         && { BASE="$r/$BASE"; break; }
     done

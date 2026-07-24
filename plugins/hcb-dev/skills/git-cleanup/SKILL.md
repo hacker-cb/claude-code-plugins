@@ -81,8 +81,12 @@ applied to this sweep.
   }
 
   # Materialise it: a clone that only fetched feature branches has no such ref yet.
+  # EXPLICIT refspec: a plain `fetch <remote> <branch>` obeys the remote's own
+  # configured refspec, which in a --single-branch clone matches only that branch —
+  # the fetch then writes FETCH_HEAD and no remote-tracking ref at all. Naming the
+  # destination is what actually materialises `<remote>/<default>`.
   if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
-    gitq fetch --quiet <remote> "${D#*/}"
+    gitq fetch --quiet <remote> "+refs/heads/${D#*/}:refs/remotes/${D}"
   fi
 
   # RE-VERIFY. The fetch can fail unnoticed (remote gone since ls-remote, auth
