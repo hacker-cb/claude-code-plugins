@@ -209,10 +209,16 @@ it after:
 export GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5'
 git branch -m <new-name>
 cur="$(git symbolic-ref --short HEAD)"
-PUSH_REMOTE="$(git config --get "branch.$cur.pushRemote" \
-  || git config --get remote.pushDefault \
-  || { git remote | grep -qx origin && echo origin; } \
-  || git remote | grep -m1 .)"   # never @{upstream}: that is the base repo in a fork
+# git's push routing, never @{upstream} (that is the base repo in a fork). Fall
+# through to a bare `origin`, then to a lone remote whatever its name — but STOP
+# on a genuine ambiguity (several remotes, none preferred): guessing one there
+# could publish your branch in someone else's repository.
+PUSH_REMOTE="$(git config --get "branch.$cur.pushRemote" || git config --get remote.pushDefault)"
+if [ -z "$PUSH_REMOTE" ]; then
+  if   git remote | grep -qx origin;                 then PUSH_REMOTE=origin
+  elif [ "$(git remote | grep -c .)" = 1 ];          then PUSH_REMOTE="$(git remote)"
+  else echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"; fi
+fi
 git push "$PUSH_REMOTE" -u <new-name>
 # if the old branch was already pushed, delete the stale remote ref:
 git push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
@@ -225,15 +231,20 @@ If the branch name is already meaningful, leave it.
 Identify the base branch (usually the PR's base, else the repo default — check
 `gh repo view --json defaultBranchRef` or the existing PR). Its remote is
 `<base-remote>`, and again not `origin` by assumption: prefer `upstream` when it
-exists (fork checkout — the base lives in the upstream repo, not your fork), else
-your sole remote. Rebase the feature branch onto the latest base. Rebase is the
-default (cleaner history, plays well with squash). Guard the fetch so it fails
-closed rather than hanging on a credential or passphrase prompt — the loop may run
-unattended, and `timeout` is absent on stock macOS:
+exists (fork checkout — the base lives in the upstream repo, not your fork), then
+`origin`, then a lone remote whatever its name — and stop on a real ambiguity
+rather than fetching the base from an arbitrary remote. Rebase the feature branch
+onto the latest base. Rebase is the default (cleaner history, plays well with
+squash). Guard the fetch so it fails closed rather than hanging on a credential or
+passphrase prompt — the loop may run unattended, and `timeout` is absent on stock
+macOS:
 
 ```bash
-BASE_REMOTE=origin; git remote | grep -qx upstream && BASE_REMOTE=upstream
-git remote | grep -qx "$BASE_REMOTE" || BASE_REMOTE="$(git remote | grep -m1 .)"   # sole remote, any name
+BASE_REMOTE=""
+git remote | grep -qx upstream && BASE_REMOTE=upstream
+[ -z "$BASE_REMOTE" ] && git remote | grep -qx origin && BASE_REMOTE=origin
+[ -z "$BASE_REMOTE" ] && [ "$(git remote | grep -c .)" = 1 ] && BASE_REMOTE="$(git remote)"
+[ -n "$BASE_REMOTE" ] || echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it"
 GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
   git fetch "$BASE_REMOTE" <base>
 git rebase --autostash "$BASE_REMOTE"/<base>
