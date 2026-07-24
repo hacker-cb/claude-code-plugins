@@ -126,6 +126,12 @@ if [ -z "${BASE:-}" ]; then
     for r in $(remotes_ranked); do
       git rev-parse --verify -q "$r/$b^{commit}" >/dev/null 2>&1 && { BASE="$r/$b"; break; }
     done
+    # Nothing carries it *locally* yet — a --single-branch or CI checkout fetches
+    # only the PR head. Keep the bare name anyway: the materialisation block below
+    # probes and fetches it. Dropping it here would fall through to the default
+    # branch and review against the wrong base with a scope line that looks
+    # entirely legitimate — no coverage-warning fires, because a base did resolve.
+    [ -n "${BASE:-}" ] || BASE="$b"
   fi
 fi
 # `symbolic-ref` READS the symref, it does not dereference it: after the forge
@@ -179,39 +185,40 @@ EFFORT="${EFFORT:-high}"   # always explicit — never inherit the machine's con
 # some other upstream branch. Fetch it from its own remote, and if it still will
 # not resolve, drop to the working tree as §1 says; never let Codex pick.
 if [ -n "${BASE:-}" ]; then
-  # Split on the first slash ONLY when the prefix really is a remote. A bare base
-  # like `release/2.0` — exactly the non-default base §1 tells you to look for —
-  # has a slash but no remote in it, and splitting it blindly runs
-  # `git fetch release 2.0`, which fails and clears BASE, silently downgrading
-  # the whole run to `--uncommitted`.
-  case "$BASE" in
-    */*) p="${BASE%%/*}"
-         if git remote | grep -qx -- "$p"; then REMOTE="$p";   BRANCH="${BASE#*/}"
-         else                                   REMOTE="";     BRANCH="$BASE"; fi ;;
-    *)   REMOTE="";     BRANCH="$BASE" ;;
-  esac
-  # A bare base names a BRANCH, not a repo — so find which remote actually carries
-  # it instead of assuming the preferred one. In a fork where both `origin` and
-  # `upstream` have a `dev`, pinning $REM would turn an explicit `dev` into
-  # `upstream/dev`: a different branch than the caller asked for, reviewed under a
-  # scope line that looks right. Rung 2 probes for the same reason.
-  if [ -z "$REMOTE" ]; then
-    for r in $(remotes_ranked); do
-      git rev-parse --verify -q "$r/$BRANCH^{commit}" >/dev/null 2>&1 && { REMOTE="$r"; break; }
-    done
-    [ -n "$REMOTE" ] || REMOTE="$REM"   # nothing carries it locally — fetch from the preferred
-  fi
   have_base() { git rev-parse --verify -q "$BASE^{commit}" >/dev/null 2>&1; }
-  # A bare name may exist only as a remote-tracking ref: `git fetch <remote> <b>`
-  # updates `<remote>/<b>` and never creates a local `<b>`, so try the remote form
-  # before concluding there is no base and silently narrowing the review. Only when
-  # a remote is actually known: with none, `net fetch ""` is nonsense and
-  # `BASE="/$BRANCH"` a bogus ref, so a base already present locally still stands
-  # while anything needing a fetch simply drops to `--uncommitted`.
-  have_base \
-    || { [ -n "$REMOTE" ] && net "$TO_FETCH" fetch --quiet "$REMOTE" "$BRANCH" 2>/dev/null; have_base; } \
-    || { [ -n "$REMOTE" ] && BASE="$REMOTE/$BRANCH"; have_base; } \
-    || BASE=""
+  # `<prefix>/<rest>` is ambiguous and cannot be settled by inspection: with a
+  # remote named `release`, the base `release/2.0` is either that remote's branch
+  # `2.0` or a whole branch called `release/2.0`, and both spellings resolve the
+  # same ref name. So stop guessing which it is — TRY, in order, and let the first
+  # one that actually resolves win. Each attempt is a no-op when it does not.
+  if ! have_base; then
+    # 1. the prefix as a remote, the rest as its branch — `git fetch release 2.0`
+    case "$BASE" in
+      */*) p="${BASE%%/*}"
+           if git remote | grep -qx -- "$p"; then
+             net "$TO_FETCH" fetch --quiet "$p" "${BASE#*/}" 2>/dev/null || true
+           fi ;;
+    esac
+  fi
+  if ! have_base; then
+    # 2. the whole string as a branch name, on whichever remote actually carries
+    #    it — probing rather than pinning the preferred one, since in a fork both
+    #    `origin` and `upstream` may have a `dev` and the caller named just `dev`.
+    for r in $(remotes_ranked); do
+      git rev-parse --verify -q "$r/$BASE^{commit}" >/dev/null 2>&1 \
+        && { BASE="$r/$BASE"; break; }
+    done
+  fi
+  if ! have_base; then
+    # 3. not local yet: fetch that branch from each remote in turn, taking the
+    #    first whose remote-tracking ref then exists.
+    for r in $(remotes_ranked); do
+      net "$TO_FETCH" fetch --quiet "$r" "$BASE" 2>/dev/null || continue
+      git rev-parse --verify -q "$r/$BASE^{commit}" >/dev/null 2>&1 \
+        && { BASE="$r/$BASE"; break; }
+    done
+  fi
+  have_base || BASE=""   # nothing resolved — §1's fallback, reported as a warning
 fi
 # No merge-base means the base shares no history with HEAD — a shallow clone
 # (`clone --depth 1`, `actions/checkout` at default depth) fetched neither side's

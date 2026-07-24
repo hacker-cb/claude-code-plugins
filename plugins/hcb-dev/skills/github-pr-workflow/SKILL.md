@@ -294,11 +294,18 @@ if [ -z "$BASE_REMOTE" ]; then
   exit 1
 fi
 # Same guard as Step 1, re-declared: shell state does not cross Bash calls.
-GIT_TERMINAL_PROMPT=0 \
-GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-  git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 fetch "$BASE_REMOTE" <base>
-# Fetch can still come back empty-handed if the branch is not on that remote after
-# all; refuse to rebase onto a ref that does not exist rather than onto the wrong one.
+# Check the FETCH, not just the ref. The probe above picked this remote *because*
+# `$BASE_REMOTE/<base>` already exists, so an existence test passes against a
+# week-old copy: a failed fetch (expired credential, VPN down, BatchMode refusing a
+# passphrase) would rebase onto a stale base, the step would report "up to date",
+# and GitHub would report BEHIND at merge time. "Did not update" is the only
+# failure this step actually has.
+if ! GIT_TERMINAL_PROMPT=0 \
+     GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+     git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 fetch "$BASE_REMOTE" <base>; then
+  echo "FETCH FAILED from $BASE_REMOTE — not rebasing onto a possibly stale base"; exit 1
+fi
+# And the ref must exist at all: the branch may simply not be on that remote.
 git rev-parse --verify -q "$BASE_REMOTE/<base>^{commit}" >/dev/null 2>&1 \
   || { echo "BASE <base> NOT ON $BASE_REMOTE — name the right remote and re-run"; exit 1; }
 git rebase --autostash "$BASE_REMOTE"/<base>
