@@ -46,17 +46,52 @@ edits to tracked files. First hit wins:
    glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c
    ```
    If one non-default base dominates, use it and name it in the report.
-4. The repo default branch — `git symbolic-ref --short refs/remotes/origin/HEAD`,
-   else whichever of `origin/main`, `origin/master`, `main`, `master` exists.
+4. The repo default branch, in two steps that answer different questions.
+   `git symbolic-ref --short refs/remotes/<remote>/HEAD` gives a ready ref
+   (`<remote>/<name>`) but only *reads* the pointer — after the forge renames its
+   default branch this keeps printing the old name with status 0, so check the
+   ref exists before trusting it. That check catches a pointer aimed at a deleted
+   ref, not one aimed at a *stale* one: until a `fetch --prune`, the old
+   `<remote>/<name>` still exists locally, frozen at its last known commit, and it
+   passes. The base is then merely older than the real one — the history is
+   shared, so the review widens rather than breaking — and a prune fixes it.
+   Deliberately not re-checked over the network, which would cost a round trip on
+   every single run to catch that. If a review comes back scoped to a branch the
+   repo no longer has, that is this case: `git remote set-head <remote> --auto`.
+   Where it is absent or stale, ask the remote:
+   `git ls-remote --symref <remote> HEAD` prints raw
+   `ref: refs/heads/<name>\tHEAD` plus a sha line, so strip `ref: refs/heads/`
+   and pair the bare name with the remote you asked. Never guess the name from a
+   list of popular ones: every repo picks its own, and such a list resolves to a
+   real branch in the wrong repo just as readily as in the right one.
+
+   `<remote>` is not `origin` by assumption — that name is as hardcoded as `main`
+   is. Pick it the way rung 2 does (`upstream` outranks `origin` in a fork
+   checkout, where origin is your own copy), but only among remotes that exist;
+   and where the repo has exactly one remote, that one is the answer whatever it
+   is called, so a repo whose only remote is `upstream` does not fall through as
+   if it had none.
 5. `git rev-parse --abbrev-ref @{upstream}` — last resort. When the branch tracks
    its own remote counterpart, this narrows the review to unpushed commits only.
+
+**When none of these resolve, ask for the base — don't review without one.** With
+no remote configured there is nothing to derive a default branch *from*, and any
+local guess is the same hardcoded name under another name. Say what is missing and
+ask, naming the branch's commit count so the cost is concrete: "no remote, so I
+can't tell what this branch was cut from — give me a base, or the review covers
+only the working tree and leaves 3 commits unread."
 
 Being on the default branch is fine: the merge-base collapses to `HEAD`, and the
 review becomes the working-tree diff.
 
-If nothing resolves — no remote, no upstream — the run block drops to
-`--uncommitted`, reviewing staged + unstaged + untracked instead, and says so in
-its scope line. Read that line: a working-tree review covers no committed work.
+The run block is the mechanical half and cannot ask anyone anything, so where you
+skipped the question it falls back rather than stopping: with no base it reviews
+`--uncommitted` — staged + unstaged + untracked — and where the base shares no
+history with `HEAD` (a shallow clone fetched neither side's ancestry) it refuses
+that base and does the same. Both cases append a note to the scope line saying the
+commits went unreviewed. Read it: a working-tree review covers no committed work,
+and the note is there because "working tree, 4 files" otherwise reads exactly like
+a review that happened.
 
 ## 2. Check for untracked files first
 
@@ -80,7 +115,7 @@ The block below resolves the base with `gh` and is written for GitHub, but the
 resolution is the *only* forge-specific part — `codex exec review --base <ref>`
 takes a plain git ref and is forge-agnostic. Where `gh` is absent (GitLab, or no
 CLI at all) the `gh pr` calls fail closed and `BASE` falls through to git's own
-remote refs (`origin/HEAD`, then `origin/main`/`master`), which are forge-neutral;
+view of the remote (`<remote>/HEAD`, then `ls-remote`), which is forge-neutral;
 to target a *non-default* base on GitLab, resolve it with the `glab mr` discovery
 in §1 and pass it in as `BASE`.
 
@@ -91,32 +126,69 @@ command -v codex >/dev/null \
 # also exits 1 on failures that logging in again would not fix, and only the
 # stated "not logged in" is worth stopping for. `timeout` is optional because
 # stock macOS ships no coreutils.
-command -v timeout >/dev/null && TO="timeout 5" || TO=""
+command -v timeout >/dev/null \
+  && { TO="timeout 5"; TO_NET="timeout 10"; } || { TO=""; TO_NET=""; }
 $TO codex login status 2>&1 | grep -qi 'not logged in' \
   && { echo "codex is not authenticated — run: codex login"; exit 1; }
 git rev-parse --git-dir >/dev/null 2>&1 \
   || { echo "not a git repository — nothing to review here"; exit 1; }
+
+# Remotes in preference order: `upstream` and `origin` first (fork checkout — the
+# real base is in upstream, origin is your own copy), then any other remote. `origin`
+# is as hardcoded a name as `main` is, so a repo whose only remote is called something
+# else must not read as having none. Existing remotes only; deduped.
+remotes_ranked() {
+  for r in upstream origin; do git remote | grep -qx -- "$r" && echo "$r"; done
+  git remote | grep -vxE 'upstream|origin'
+}
+REM="$(remotes_ranked | head -1)"   # the preferred remote, or empty when there is none
 
 # BASE and EFFORT may be handed in by the caller. Anything still unset falls back
 # to the mechanical half of the resolution above — step 3, reading where this
 # repo's PRs actually land, is a judgment call and stays yours to make first.
 if [ -z "${BASE:-}" ]; then
   b="$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null)"
-  # A PR names a branch, not a remote. In a fork checkout `origin/$b` is your own
-  # stale copy and `upstream/$b` is the real base, so take the first ref that
-  # exists rather than assuming a prefix.
-  for r in upstream origin; do
-    [ -n "$b" ] && git rev-parse --verify -q "$r/$b^{commit}" >/dev/null 2>&1 \
-      && { BASE="$r/$b"; break; }
-  done
+  # A PR names a branch, not a remote. Probe every remote in preference order — in a
+  # fork `origin/$b` is your own stale copy and `upstream/$b` the real base, and a
+  # repo with a single differently-named remote still has to be found — taking the
+  # first ref that exists rather than assuming a prefix.
+  if [ -n "$b" ]; then
+    for r in $(remotes_ranked); do
+      git rev-parse --verify -q "$r/$b^{commit}" >/dev/null 2>&1 && { BASE="$r/$b"; break; }
+    done
+  fi
 fi
-BASE="${BASE:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)}"
-# origin/HEAD only exists in a clone; a repo built with `git init` + `git remote
-# add` has none, so fall back to the usual names before giving up.
-if [ -z "${BASE:-}" ]; then
-  for c in origin/main origin/master main master; do
-    git rev-parse --verify -q "$c^{commit}" >/dev/null 2>&1 && { BASE="$c"; break; }
-  done
+# `symbolic-ref` READS the symref, it does not dereference it: after the forge
+# renames its default branch, this keeps printing the old name with status 0
+# forever. Verify the target exists, or a dead pointer wins over the live answer
+# below and the review silently ends up on `--uncommitted`. Existence is all this
+# can check without a network round trip on every run — an old `origin/<name>`
+# still present pre-prune passes, giving a base that is stale but shares history
+# (§1 says how to spot it).
+if [ -z "${BASE:-}" ] && [ -n "$REM" ]; then
+  c="$(git symbolic-ref --short "refs/remotes/$REM/HEAD" 2>/dev/null)"
+  [ -n "$c" ] && git rev-parse --verify -q "$c^{commit}" >/dev/null 2>&1 && BASE="$c"
+fi
+# `<remote>/HEAD` only exists in a clone; a repo built with `git init` + `git remote
+# add` has none, so ask the remote what its HEAD points at. Never fall back to a
+# list of popular names — `main` and `master` both exist in plenty of repos where
+# neither is the base, so a guess that resolves is not a guess that is right.
+# EVERY network call in this block goes through this, not just the probe below:
+# nobody is at the keyboard, so a credential prompt (HTTP) or a passphrase (SSH)
+# is a hang, and `timeout` is absent on stock macOS. The TCP connect phase is the
+# one gap left — git exposes no `http.connectTimeout` (`git help --config` lists
+# 43 `http.*` keys in 2.54 and none is that), so an unreachable host costs
+# whatever the OS allows, measured at ~10s on macOS. Bounded, not unbounded;
+# where `timeout` exists TO_NET covers the whole call outright.
+net() {
+  $TO_NET env GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
+    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
+}
+# Branch names cannot contain spaces, so awk's field split is safe.
+if [ -z "${BASE:-}" ] && [ -n "$REM" ]; then
+  h="$(net ls-remote --symref "$REM" HEAD 2>/dev/null \
+        | awk '$1=="ref:" && $3=="HEAD" { sub(/^refs\/heads\//,"",$2); print $2; exit }')"
+  [ -n "$h" ] && BASE="$REM/$h"
 fi
 BASE="${BASE:-$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)}"
 EFFORT="${EFFORT:-high}"   # always explicit — never inherit the machine's config
@@ -133,42 +205,57 @@ if [ -n "${BASE:-}" ]; then
   case "$BASE" in
     */*) p="${BASE%%/*}"
          if git remote | grep -qx -- "$p"; then REMOTE="$p";   BRANCH="${BASE#*/}"
-         else                                   REMOTE=origin; BRANCH="$BASE"; fi ;;
-    *)   REMOTE=origin; BRANCH="$BASE" ;;
+         else                                   REMOTE="$REM"; BRANCH="$BASE"; fi ;;
+    *)   REMOTE="$REM"; BRANCH="$BASE" ;;
   esac
   have_base() { git rev-parse --verify -q "$BASE^{commit}" >/dev/null 2>&1; }
-  # A bare name may exist only as a remote-tracking ref: `git fetch origin main`
-  # updates `origin/main` and never creates a local `main`, so try the remote
-  # form before concluding there is no base and silently narrowing the review.
+  # A bare name may exist only as a remote-tracking ref: `git fetch <remote> <b>`
+  # updates `<remote>/<b>` and never creates a local `<b>`, so try the remote form
+  # before concluding there is no base and silently narrowing the review. Only when
+  # a remote is actually known: with none, `net fetch ""` is nonsense and
+  # `BASE="/$BRANCH"` a bogus ref, so a base already present locally still stands
+  # while anything needing a fetch simply drops to `--uncommitted`.
   have_base \
-    || { git fetch --quiet "$REMOTE" "$BRANCH" 2>/dev/null; have_base; } \
-    || { BASE="$REMOTE/$BRANCH"; have_base; } \
+    || { [ -n "$REMOTE" ] && net fetch --quiet "$REMOTE" "$BRANCH" 2>/dev/null; have_base; } \
+    || { [ -n "$REMOTE" ] && BASE="$REMOTE/$BRANCH"; have_base; } \
     || BASE=""
+fi
+# No merge-base means the base shares no history with HEAD — a shallow clone
+# (`clone --depth 1`, `actions/checkout` at default depth) fetched neither side's
+# ancestry, or the ref is simply unrelated. Reviewing against it is worse than not
+# reviewing: the diff reports the base's own files as deletions this branch never
+# made, and Codex dutifully files findings about them. Refuse the base instead,
+# and say why — a `COVERED` of "unknown" is neither zero nor a count, so it slips
+# past both §4's zero-file check and multi-review's count gate.
+if [ -n "${BASE:-}" ]; then
+  MB="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  [ -z "$MB" ] && { NOTE=" — NO MERGE-BASE with $BASE (shallow clone?), commits NOT reviewed"; BASE=""; }
 fi
 # Positional parameters, not an interpolated string: the scope is two arguments
 # or one, and an unquoted expansion would leave that to word-splitting.
 if [ -n "${BASE:-}" ]; then
   set -- --base "$BASE"
-  # Guard the merge-base. In a shallow clone (`clone --depth 1`, `actions/checkout`
-  # at default depth) it exits non-zero with no output; unguarded, the empty
-  # substitution makes `git diff` abort and COVERED read `0` — which §4 tells the
-  # caller to report as "nothing reviewed", stopping a ship Codex in fact ran.
-  MB="$(git merge-base "$BASE" HEAD 2>/dev/null)"
-  if [ -n "$MB" ]; then
-    COVERED=$(git diff --name-only "$MB" | wc -l | tr -d ' ')
-  else
-    COVERED="unknown (no merge-base — shallow clone?)"
-  fi
+  COVERED=$(git diff --name-only "$MB" | wc -l | tr -d ' ')
 else
   set -- --uncommitted
   COVERED=$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')
+  # `--uncommitted` covers no committed work, ever. When the branch carries
+  # commits, saying only "working tree, N files" reads like a review that
+  # happened; the caller has to be told the commits went unread, and §1 says to
+  # come back with a base rather than accept this. Keep the message apostrophe-free:
+  # the `word` of a `${VAR:-word}` is scanned for quotes even when the expansion
+  # itself is double-quoted, so a lone `'` there is an unterminated quote. (A plain
+  # double-quoted string is fine — `X="it's"` is literal. It is the `:-` word that
+  # bites: bash 5.3 and macOS /bin/sh both reject `X="${V:- it's}"` outright.)
+  git rev-parse --verify -q HEAD >/dev/null 2>&1 \
+    && NOTE="${NOTE:- — no base resolved; the commits on this branch are NOT reviewed}"
 fi
 
 OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")"
 codex exec review "$@" -c model_reasoning_effort="$EFFORT" -o "$OUT" > "$OUT.log" 2>&1
 # The scope line is what a caller compares against; without it nobody can tell
 # what this run actually looked at.
-echo "scope: ${BASE:-working tree}, $COVERED files, effort $EFFORT"
+echo "scope: ${BASE:-working tree}, $COVERED files, effort $EFFORT${NOTE:-}"
 if [ -s "$OUT" ]; then cat "$OUT"; else echo "codex review failed:"; tail -20 "$OUT.log"; fi
 ```
 
@@ -210,6 +297,11 @@ Two things to check in what comes back:
   reporting it.
 - A scope line reading `0 files` means nothing was reviewed. Report that as
   coverage of zero, never as a clean review.
+- A scope line carrying a note — `no base resolved`, `NO MERGE-BASE` — is a
+  nonzero count over the working tree alone. The number is real and the findings
+  are real; the commits are simply not among them. Report it as partial coverage
+  with that reason, never as the change having been reviewed, and go back to §1
+  for a base.
 - An empty review is a normal result, not a failure: Codex exits `0` saying
   something like "There are no staged, unstaged, or untracked code changes to
   review."

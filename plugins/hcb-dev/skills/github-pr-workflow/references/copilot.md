@@ -21,7 +21,7 @@ gh api repos/<owner>/<repo>/rules/branches/<base> \
 Several lines is normal — a repo can carry the rule in more than one ruleset that
 matches the branch. No line at all means no rule applies **to this base**, which is
 a different statement from "this repo has no such rule": the same repo can enforce
-Copilot on `master` and nothing at all on a side branch.
+Copilot on its default branch and nothing at all on a side branch.
 
 - **`review_on_push: true`** — Copilot is re-*requested* on *every* push. Treat
   each push in the fix loop as owing you a review to wait for and read before you

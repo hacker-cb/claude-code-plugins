@@ -38,8 +38,13 @@ verified — tests pass, or the behavior is confirmed — and the tree is commit
    requests if this machine has one; it usually arrives from a plugin and is
    invoked under that plugin's namespace rather than a bare name (here,
    `hcb-dev:github-pr-workflow` on GitHub). If none is installed, **push the
-   branch first** — `git push -u origin <branch>`, which the handoff would
-   otherwise have done for you — then open it yourself (GitHub `gh pr create`,
+   branch first** —
+   `GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' git push -u <remote> <branch>`,
+   which the handoff would otherwise have done for you. Resolve `<remote>` rather
+   than assuming `origin` (the remote the branch tracks, else your sole remote
+   whatever its name), and keep the non-interactive guard so an unattended ship
+   fails fast on a missing credential instead of hanging on the prompt — then
+   open it yourself (GitHub `gh pr create`,
    GitLab `glab mr create`) and say the handoff was unavailable, so nobody
    assumes a review-and-merge loop is running that isn't. Skip that push and the
    branch exists only locally, so the create command has no head to point at and

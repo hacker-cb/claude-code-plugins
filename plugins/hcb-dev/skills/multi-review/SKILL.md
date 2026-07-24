@@ -40,17 +40,52 @@ and stop, rather than quietly reviewing the last commit instead.
    `upstream/<branch>` is the real base, so take the first ref that exists;
 3. where this repo's changes actually land — GitHub
    `gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c`,
-   GitLab `glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c`;
-4. the default branch — `git symbolic-ref --short refs/remotes/origin/HEAD`, else
-   whichever of `origin/main`, `origin/master`, `main`, `master` exists:
-   `origin/HEAD` only exists in a clone, and a repo built with `git init` +
-   `git remote add` has none;
+   GitLab `glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c`.
+   The winning entry is a **bare branch name** too, so normalize it exactly as
+   rung 2 does: pair it with whichever remote actually carries it — first existing
+   ref, `upstream/<branch>` before `origin/<branch>` before any other remote — and
+   never hand a bare name onward, which dies with "not a valid object name" in a
+   clone that has no local branch of that name;
+4. the default branch, two steps and two shapes. `git symbolic-ref --short
+   refs/remotes/<remote>/HEAD` hands back a ready `<remote>/<name>`, but it only
+   *reads* the pointer — after the forge renames its default branch it keeps
+   printing the old name with status 0 — so verify the ref exists before taking
+   it. That catches a pointer at a *deleted* ref, not one at a stale-but-present
+   one: before a `fetch --prune` the old `<remote>/<name>` is still there and
+   passes, leaving a base that is older than the real one but shares its history,
+   so the review widens rather than breaks. Where it is absent, ask the remote,
+   with the non-interactive guard every network call in this ladder needs — nobody
+   is at the keyboard, so an auth-required remote hangs without it (`timeout` is
+   absent on stock macOS):
+   `GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' git ls-remote --symref <remote> HEAD`
+   prints raw `ref: refs/heads/<name>\tHEAD`, so strip `ref: refs/heads/` and
+   pair the bare name with the remote you asked, exactly as rung 2 does. Whatever
+   comes out, hand on a ref that exists — never guess the name from a list of
+   popular ones. `<remote>` is not `origin` by assumption either: keep rung 2's
+   order (`upstream` before `origin`) among the remotes that exist, and with a
+   single remote use it whatever it is named — otherwise this rung contradicts
+   rung 2 and lands on the fork's own stale copy;
 5. `@{upstream}`, last resort — it narrows the review to unpushed commits.
+
+**Nothing resolved? Ask.** No remote means there is nothing to derive a default
+branch from, and a local guess is the same hardcoded name wearing a disguise. Say
+so and ask for the base before launching anyone, naming what it costs: the
+reviewers would otherwise read the working tree alone and leave every commit on
+this branch unread.
 
 Whatever this resolves to is handed to the reviewers **explicitly**, and an
 explicit base wins over their own resolution — so a lossy answer here silently
 overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
 it. Rungs 2 and 4 above exist to keep the two in step; don't let them drift.
+
+**Before handing it on, confirm the base shares history with `HEAD`:**
+`git merge-base <base> HEAD` must be non-empty. When it is empty — a shallow clone
+(`actions/checkout` at default depth) fetched neither side's ancestry, or the ref
+is genuinely unrelated — the base is unusable: reviewers diffing against it report
+the base's own files as deletions this change never made. Don't pass it. Fall to
+`@{upstream}`, or say the base could not be resolved and review the working tree
+alone (naming the commits left unread), exactly as `codex-review`'s own block
+refuses such a base rather than reviewing against it.
 
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.
@@ -131,6 +166,13 @@ wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
 
+**A nonzero count can still mean the commits went unread.** `codex-review`
+appends a note to its scope line when it could resolve no base, or refused one
+sharing no history with `HEAD` — it then reviews the working tree alone, and the
+count it reports is of *those* files. Read the whole scope line, not the number:
+a count that passes the zero check while the note says the commits were not
+reviewed is `partial`, and the base is what closes it.
+
 When a reviewer fails, quote its error instead of guessing a cause. A `401` or an
 auth complaint in Codex's log means `codex login`, and one line saying so beats
 twenty lines of transcript.
@@ -148,9 +190,9 @@ verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
-| `codex-review` | `origin/master`, 3 files | high | 2 findings |
-| `code-review` | `origin/master`, 3 files | high | no findings |
-| `security-review` | `origin/master`, 1 of 3 files | — | partial: rest uncommitted |
+| `codex-review` | `<base>`, 3 files | high | 2 findings |
+| `code-review` | `<base>`, 3 files | high | no findings |
+| `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
 
 Keep the cells short. "Covered" is always `<base>, N files`, effort gets its own
 column so a level is never left implied, and "Result" is a verdict — never the

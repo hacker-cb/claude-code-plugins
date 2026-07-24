@@ -193,13 +193,22 @@ random/temporary-looking name), rename it to a meaningful `<type>/<name>`:
 Examples: `fix/security-config`, `refactor/api-names`, `feat/csv-export`.
 
 Pick `<type>` and `<name>` from what the work actually does (inspect the diff /
-commits, not just the old branch name). Rename locally and update the remote:
+commits, not just the old branch name). Rename locally and update the remote.
+
+Which remote to push to is `<push-remote>`, and `origin` is not it by assumption —
+a repo may have a single remote under another name. Use the remote the branch
+already tracks, else your sole remote; in a fork checkout that is `origin` (your
+fork), while the base lives in `upstream` (resolved separately in Step 2):
 
 ```bash
+PUSH_REMOTE="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null | cut -d/ -f1)"
+[ -n "$PUSH_REMOTE" ] || PUSH_REMOTE="$(git remote | grep -m1 .)"   # a fresh branch tracks nothing yet
+# push is a network call too — same non-interactive guard as every fetch below
+export GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5'
 git branch -m <new-name>
-git push origin -u <new-name>
+git push "$PUSH_REMOTE" -u <new-name>
 # if the old branch was already pushed, delete the stale remote ref:
-git push origin --delete <old-name> 2>/dev/null || true
+git push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
 ```
 
 If the branch name is already meaningful, leave it.
@@ -207,13 +216,20 @@ If the branch name is already meaningful, leave it.
 ## Step 2 — Bring the branch up to date with base
 
 Identify the base branch (usually the PR's base, else the repo default — check
-`gh repo view --json defaultBranchRef` or the existing PR). Rebase the feature
-branch onto the latest base. Rebase is the default (cleaner history, plays well
-with squash):
+`gh repo view --json defaultBranchRef` or the existing PR). Its remote is
+`<base-remote>`, and again not `origin` by assumption: prefer `upstream` when it
+exists (fork checkout — the base lives in the upstream repo, not your fork), else
+your sole remote. Rebase the feature branch onto the latest base. Rebase is the
+default (cleaner history, plays well with squash). Guard the fetch so it fails
+closed rather than hanging on a credential or passphrase prompt — the loop may run
+unattended, and `timeout` is absent on stock macOS:
 
 ```bash
-git fetch origin <base>
-git rebase --autostash origin/<base>
+BASE_REMOTE=origin; git remote | grep -qx upstream && BASE_REMOTE=upstream
+git remote | grep -qx "$BASE_REMOTE" || BASE_REMOTE="$(git remote | grep -m1 .)"   # sole remote, any name
+GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes -oConnectTimeout=5' \
+  git fetch "$BASE_REMOTE" <base>
+git rebase --autostash "$BASE_REMOTE"/<base>
 ```
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
