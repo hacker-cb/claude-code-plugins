@@ -320,7 +320,13 @@ git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed 
 #    remote-tracking form, so testing <current> against "<remote>/<default>" is
 #    false even on the default branch and would unset its tracking instead of
 #    repairing it. Refs go in --set-upstream-to; names go in the comparison.
-if [ "<current>" = "$DEF" ]; then
+#    And skip the whole repair when step 1 said DEFAULT-UNRESOLVED: with $DEF
+#    empty the comparison is false for EVERY branch, so the else arm would strip
+#    upstreams wholesale on exactly the run that was told it cannot answer the
+#    question. Unknown means touch nothing.
+if [ -z "$DEF" ]; then
+  echo "skipping upstream repair — default branch unresolved"
+elif [ "<current>" = "$DEF" ]; then
   git -C "$PROJECT" branch --set-upstream-to="$D" "<current>"
 else
   git -C "$PROJECT" branch --unset-upstream "<current>"

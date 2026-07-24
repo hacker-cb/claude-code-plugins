@@ -225,7 +225,10 @@ netpush() {
 # refuses outright, leaving an unpushable branch and a step that is a no-op on
 # re-run. `branch.<name>.pushRemote` is read under the CURRENT name for the same
 # reason (`git branch -m` moves that config across with it).
-cur="$(git symbolic-ref --short HEAD)"
+# Detached HEAD has no branch to rename or push, and an empty $cur would silently
+# turn the lookup below into `branch..pushRemote`. Say so instead.
+cur="$(git symbolic-ref --short -q HEAD)" \
+  || { echo "DETACHED HEAD — check out a branch before shipping"; exit 1; }
 # git's push routing, never @{upstream} (that is the base repo in a fork). Fall
 # through to a bare `origin`, then to a lone remote whatever its name — but STOP
 # on a genuine ambiguity (several remotes, none preferred): guessing one there
