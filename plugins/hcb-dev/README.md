@@ -25,13 +25,13 @@ task/issue ─▶ (code it) ─▶ shipping-workflow ─▶ multi-review ─▶ 
                                    └─▶ github-pr-workflow ─▶ (merge)
 
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
-cleanup-project ───────────────────────── manual only, afterwards (see below)
+git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
 
 Each skill is also useful on its own and triggers from its own `description` —
-except `cleanup-project`, which sets `disable-model-invocation: true`: Claude
-never reaches for it on its own, so it is **not** an automatic post-merge step.
-Run `/hcb-dev:cleanup-project` yourself when you want the sweep.
+except `git-cleanup`, which sets `disable-model-invocation: true`: Claude never
+reaches for it on its own, so it is **not** an automatic post-merge step. Run
+`/hcb-dev:git-cleanup` yourself when you want the sweep.
 
 ## Skills
 
@@ -79,12 +79,13 @@ Run `/hcb-dev:cleanup-project` yourself when you want the sweep.
 
 ### Cleaning up
 
-- **`cleanup-project`** — `/hcb-dev:cleanup-project` (manual-only)
-  Sweep what work on the current project left behind, across all four zones it
-  litters: git branches and worktrees, junk in the working tree, this project's
-  conversation logs under `~/.claude/projects/`, and its session scratchpads
-  under `/tmp/claude-<uid>/`. Two modes — `session` (only what this session
-  created) and `all` (a full audit). Scope is one project and never widens.
+- **`git-cleanup`** — `/hcb-dev:git-cleanup` (manual-only)
+  Sweep the git residue work leaves in a repository: merged and orphaned
+  branches, stale or abandoned worktrees, dead upstream tracking. Two modes —
+  `session` (only what this session created) and `all` (everything accumulated,
+  other sessions' leftovers included). It covers what Claude Code's own worktree
+  cleanup does not — `--worktree` and desktop worktrees, `-p` leftovers, and
+  branches — and never removes a worktree another live session is working in.
 
 ## Forge neutrality
 
@@ -117,6 +118,9 @@ Two deliberate exceptions, each stated where it occurs:
 - **`github-pr-workflow`**: GitHub specifically — a GitHub MCP server connected,
   or the `gh` CLI authenticated (`gh auth status`). Plain `git` for the local
   branch / rebase / push operations.
-- **`cleanup-project`**: `git` alone is enough. It reads merged/open change
-  requests through `gh` or `glab` when one is authenticated — that is what
-  catches squash-merged branches — and degrades to git-only when neither is.
+- **`git-cleanup`**: `git` alone is enough. It reads merged/open change requests
+  through `gh` or `glab` when one is authenticated — that is what catches
+  squash-merged branches — and degrades to git-only when neither is. To tell
+  which worktrees are occupied it also reads Claude Code's live-session registry
+  under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, so when
+  it is absent the skill says so and stops deleting worktrees on its own.
