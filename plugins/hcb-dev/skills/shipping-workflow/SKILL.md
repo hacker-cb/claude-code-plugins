@@ -1,62 +1,82 @@
 ---
 name: shipping-workflow
 description: >-
-  Take finished work from the working tree to an open pull request — local review
-  across every available reviewer, the fixes it turns up, a coverage check, then
-  the PR. Use it when the user says to ship, open a PR or MR, push this up, or get
-  this merged; and use it unprompted the moment a piece of work is complete and
-  verified and the tree is committable, since shipping is the default ending for
-  finished work. This is the entry point for shipping and calls
-  `hcb-dev:github-pr-workflow` itself as its last step, so prefer it over that
-  skill whenever finished work has not been through local review yet — going
-  straight to the PR driver skips the reviewers and the coverage gate this skill
-  exists to enforce. Do not use it for work that is still in progress. Where a
-  project forbids committing or pull requests, it still applies — it follows that
-  project's rules and names the step it is skipping.
+  Take one finished slice to completion — local review across every reviewer, the
+  fixes it turns up, a coverage check, then completion by mode: merged locally into
+  its parent branch, or an open change request. Use it when the user says to ship,
+  finish, open a PR or MR, get this merged, or merge it locally without a PR; and
+  use it unprompted the moment a piece of work is complete, verified, and
+  committable. Request mode hands the final step to a change-request driver
+  (`hcb-dev:github-pr-workflow` on GitHub); local mode merges into the parent
+  itself. Prefer it over the PR driver when finished work has not been reviewed
+  locally yet — entering the driver directly skips the reviewers and the coverage
+  gate this skill enforces. For work not yet built — a task or issue to implement
+  from scratch — start from `hcb-dev:implementation-workflow`, which calls this
+  skill per slice. Not for work still in progress; where a project forbids
+  committing or change requests, it still applies and names the step it skips.
 ---
 
 # Shipping workflow
 
-Finished work ships automatically. Do not ask for confirmation; the coverage gate
-below is the one exception. Work counts as ready once the change is complete and
-verified — tests pass, or the behavior is confirmed — and the tree is committable.
+Finished work completes automatically. Do not ask for confirmation; the coverage
+gate below is the one exception. Work counts as ready once the change is complete
+and verified — tests pass, or the behavior is confirmed — and the tree is
+committable.
+
+This skill runs either standalone (a bare "ship this" on finished work) or as the
+per-slice step `hcb-dev:implementation-workflow` calls. Steps 1–4 are identical in
+both **completion modes** — `local` (merge into the parent, no forge) and
+`request` (a change request) — because the mode is read only at step 5. When
+driven by the orchestrator, the caller threads the completion signals as
+invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy`, `merge-auth`,
+the coverage policy, and `defer-offer`. Standalone, they default — mode by the
+ladder in
+[`../../references/slice-completion.md`](../../references/slice-completion.md)
+(ending at `request`, so behavior matches before this skill grew a second mode),
+and `parent` = the base. That reference owns the mechanics of completion; steps
+1–4 below are the mode-blind front half.
 
 1. **Commit the change first**, new files included — one reviewer reads only
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect that reviewer to come back short.
-2. **Local review** — hand off to the `hcb-dev:multi-review` skill.
+2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
+   `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
+   base so the review covers *this* slice's range, not the cumulative feature diff
+   — a review over slice 1's already-merged work while auditing slice 2 reports a
+   nonzero count that slips past the coverage gate. Standalone, `multi-review`
+   resolves its own base.
 3. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    Skip a finding only if the fix would change intended behavior, reach well
    outside the diff, or the finding is plainly wrong, and note the skip in one
-   line. Do not open the change request with findings left unresolved — and do
-   not leave the fixes sitting uncommitted: step 5's driver pushes *commits*, and
-   a rebase with `--autostash` carries an uncommitted fix straight past the change
-   request it was meant to be in.
+   line. Do not complete with findings left unresolved — and do not leave the
+   fixes sitting uncommitted: step 5 lands *commits* (a local merge takes what is
+   committed; in request mode the driver's rebase with `--autostash` carries an
+   uncommitted fix straight past the change request it was meant to be in).
 4. **Check the coverage** — the gate below.
-5. **Open the change request** — hand off to a skill that drives pull/merge
-   requests if this machine has one; it usually arrives from a plugin and is
-   invoked under that plugin's namespace rather than a bare name (here,
-   `hcb-dev:github-pr-workflow` on GitHub). If none is installed, **push the
-   branch first** —
-   `GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 push -u <remote> <branch>`,
-   which the handoff would otherwise have done for you. Resolve `<remote>` by the
-   shared ladder
-   ([`../../references/base-resolution.md`](../../references/base-resolution.md))
-   rather than assuming `origin`: git's push routing —
-   `branch.<name>.pushRemote`, then `remote.pushDefault`, then `origin`, then your
-   sole remote — never the tracked `@{upstream}`, which in a fork is the base repo
-   you cannot push to. **With several remotes and none of those preferred, stop and
-   ask** instead of picking one: a guess here publishes the branch in someone
-   else's repository, and `hcb-dev:github-pr-workflow` refuses the same case
-   outright. Keep the guard as written — it extends the user's ssh setup rather
-   than replacing it, and bounds a stalled transfer — so an unattended ship fails
-   fast on a missing credential instead of hanging on the prompt. Then
-   open it yourself (GitHub `gh pr create`,
-   GitLab `glab mr create`) and say the handoff was unavailable, so nobody
-   assumes a review-and-merge loop is running that isn't. Skip that push and the
-   branch exists only locally, so the create command has no head to point at and
-   the ship dies at its last step.
+5. **Complete the slice by mode** — hand off to the completion contract in
+   [`../../references/slice-completion.md`](../../references/slice-completion.md)
+   (`${CLAUDE_PLUGIN_ROOT}/references/slice-completion.md`). The mode picks the
+   backend; nothing in steps 1–4 changes:
+   - **`local`** — merge the slice into its `parent` with `git`, no forge and no
+     network, using the captured `merge-strategy` (`--no-ff` by default, to keep
+     the slice a revertable boundary). Merging into a feature branch is
+     autonomous; merging into the **default/protected** branch stops and asks
+     first. Then offer — never force — a change request on the landed work, unless
+     `defer-offer` is set (the orchestrator makes one whole-feature offer instead).
+   - **`request`** — detect the forge (by the remote and what answers there, never
+     the hostname) and hand to its change-request driver — `hcb-dev:github-pr-workflow`
+     on GitHub, the mirrored `glab` path on GitLab until `gitlab-mr-workflow`
+     exists — passing `parent` as the base plus `merge-strategy` and `merge-auth`.
+     A gate-captured `merge-auth` is the driver's explicit authorization; absent
+     it, the driver keeps its own stop-and-ask. If no driver is installed, push
+     the branch and open the change request inline (mirrored `gh` / `glab`). **With
+     several remotes and none preferred, stop and ask** rather than publishing in
+     someone else's repository.
+
+   The reference owns every mechanic — parent resolution, the default-branch gate,
+   forge detection, the guarded push and inline fallback, the offer arbitration —
+   read it rather than re-deriving them here.
 
 ## The coverage gate
 
@@ -72,12 +92,15 @@ branch running in a repo whose changes target `dev` or `release/*`. Say it out
 loud every time; just don't stop for it. Otherwise the gate fires on every single
 ship in such a repo, demanding a confirmation that clears nothing.
 
-With no gaps, go straight to the PR; no confirmation needed. **With a gap, stop
-before the PR.** Report it, pass on whatever the review says would close it, and
-ship only once the user says to. This is the single confirmation gate in this
-workflow — a ship with a reviewer silently missing is exactly what it exists to
-prevent.
+With no gaps, go straight to completion; no confirmation needed. **With an
+actionable gap, stop before completing.** Report it, pass on whatever the review
+says would close it, and complete only once the user says to. This holds in
+**both modes**: a *local* merge with a reviewer silently missing is just as
+unreviewed as a change request would be — the gate is mode-blind because the
+danger is. This is the single confirmation gate in this workflow's own steps; when
+`implementation-workflow` drives the run autonomously, this stop is one of its
+legitimate interrupts, not something the autonomy waives.
 
 A project's own rules outrank this one: where the repository says to commit
-straight to a branch, or not to commit until asked, or not to open PRs at all,
-follow that and say which step you are skipping and why.
+straight to a branch, or not to commit until asked, or not to open change requests
+at all, follow that and say which step you are skipping and why.

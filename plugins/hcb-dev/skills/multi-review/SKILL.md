@@ -5,9 +5,10 @@ description: >-
   built-in code-review workflow, the built-in security review — then consolidate
   their findings and report what each one actually covered. Use when the user
   asks for a review of the current change ("прогони ревью", "review this",
-  "second opinion on this diff"), and before finished work is handed off to a
-  pull or merge request when no shipping flow is already driving that handoff —
-  a ship in progress owns the order of steps and calls this itself. Report-only:
+  "second opinion on this diff"), and before finished work is completed — merged
+  locally or handed to a change request — when no shipping flow is already driving
+  that handoff — a ship in progress owns the order of steps and calls this itself.
+  Report-only:
   it never applies fixes; the caller decides what to do with them. Not an
   auto-trigger on every edit.
 ---
@@ -182,7 +183,8 @@ flow can tell it apart from a gap that is still worth closing.
 
 Then the findings, and nothing else: no fixes, no patches, no offer to apply them.
 
-When a PR or MR is about to be opened, say the gaps out loud before the handoff
-rather than burying them under the findings. Whoever is shipping decides what to
-do about them, but a ship with a reviewer silently missing is exactly what the
-coverage lines exist to prevent.
+When the change is about to be completed — merged locally or handed to a change
+request — say the gaps out loud before the handoff rather than burying them under
+the findings. Whoever is completing the work decides what to do about them, but a
+completion with a reviewer silently missing is exactly what the coverage lines
+exist to prevent.
