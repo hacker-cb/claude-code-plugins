@@ -72,11 +72,11 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 
 **Merging is the one action that is NOT autonomous.** Merge only when the user has
 explicitly authorized it — either their request itself asked to merge/ship (e.g.
-"ship it", "get this merged", "merge once it's green"), a captured user-approved
-merge authorization was threaded in from an upstream flow (`hcb-dev:shipping-workflow`,
-or `hcb-dev:implementation-workflow`'s planning gate — the same "asked to merge"
-case, gathered earlier and shown to the user there, so a run driven with it does
-not stop to re-ask), or they say yes when you ask. If they only asked to open or drive the PR, take it all the way to "ready to
+"ship it", "get this merged", "merge once it's green"), the captured user-approved
+`merge-auth` was threaded in from an upstream flow (`hcb-dev:shipping-workflow`, or
+`hcb-dev:implementation-workflow`'s planning gate — the same "asked to merge" case,
+gathered earlier and shown to the user there, so a run driven with it does not stop
+to re-ask), or they say yes when you ask. If they only asked to open or drive the PR, take it all the way to "ready to
 merge" — Step 4's exit met: GitHub reports it mergeable *and* your own bar is
 clean (not merely `mergeStateStatus: CLEAN`, which a repo enforcing nothing
 reports from PR-open) — and then stop and ask (see Step 5). Never merge on your
