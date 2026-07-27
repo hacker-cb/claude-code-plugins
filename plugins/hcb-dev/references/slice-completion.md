@@ -98,7 +98,10 @@ and only by consent.
   publishes nothing, so this gate is about the *default* branch; a protected
   non-default branch is a request-mode concern, and merging one locally is still
   just a reversible local commit.)
-- **No push.** Ever, in this backend.
+- **No push during the merge itself** — the local backend touches no network. The
+  *only* push is when the consented escalation offer below is accepted, and that is
+  by definition a hand-off **out** of the local backend into the request one, not
+  the local merge reaching for the network.
 - **After the merge, the offer** (unless `defer-offer` is set): offer — never
   force — to open a change request on the landed work. Accepting it is the
   consented **exit** from local mode: it pushes `parent` and hands to the request

@@ -46,10 +46,13 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
    committing yet, say so and expect that reviewer to come back short.
 2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
-   base so the review covers *this* slice's range, not the cumulative feature diff
-   — a review over slice 1's already-merged work while auditing slice 2 reports a
-   nonzero count that slips past the coverage gate. Standalone, `multi-review`
-   resolves its own base.
+   base so the review covers *this* slice's range, not the cumulative feature diff.
+   The cumulative diff is a *superset* — it covers this slice **and** the
+   already-merged slices below it — so it slips past the coverage gate (the gate
+   catches a review that covered *less* than the change or the wrong range, not one
+   that covered *more*) while wasting review on landed work and muddying which
+   findings belong to this slice. The `diff-base` is what keeps coverage aligned to
+   the slice. Standalone, `multi-review` resolves its own base.
 3. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    Skip a finding only if the fix would change intended behavior, reach well
    outside the diff, or the finding is plainly wrong, and note the skip in one
