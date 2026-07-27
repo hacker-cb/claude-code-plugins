@@ -59,17 +59,21 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
    (`${CLAUDE_PLUGIN_ROOT}/references/slice-completion.md`). The mode picks the
    backend; nothing in steps 1–4 changes:
    - **`local`** — merge the slice into its `parent` with `git`, no forge and no
-     network, using the captured `merge-strategy` (`--no-ff` by default, to keep
-     the slice a revertable boundary). Merging into a feature branch is
-     autonomous; merging into the **default/protected** branch stops and asks
-     first. Then offer — never force — a change request on the landed work, unless
+     network, `--no-ff` by default so the slice stays a revertable boundary.
+     Merging into a feature branch is autonomous; merging into the **default
+     branch** — or one it cannot resolve as non-default — stops and asks first.
+     Then offer — never force — a change request on the landed work, unless
      `defer-offer` is set (the orchestrator makes one whole-feature offer instead).
    - **`request`** — detect the forge (by the remote and what answers there, never
      the hostname) and hand to its change-request driver — `hcb-dev:github-pr-workflow`
      on GitHub, the mirrored `glab` path on GitLab until `gitlab-mr-workflow`
      exists — passing `parent` as the base plus `merge-strategy` and `merge-auth`.
      A gate-captured `merge-auth` is the driver's explicit authorization; absent
-     it, the driver keeps its own stop-and-ask. If no driver is installed, push
+     it, the driver falls back to its **own** authorization rule — which still
+     treats the user's own "ship it" / "get this merged" as authorization and
+     stops to ask only when neither is present, so a standalone ship behaves
+     exactly as it did before this skill grew a mode. If no driver is installed,
+     push
      the branch and open the change request inline (mirrored `gh` / `glab`). **With
      several remotes and none preferred, stop and ask** rather than publishing in
      someone else's repository.
@@ -97,9 +101,11 @@ actionable gap, stop before completing.** Report it, pass on whatever the review
 says would close it, and complete only once the user says to. This holds in
 **both modes**: a *local* merge with a reviewer silently missing is just as
 unreviewed as a change request would be — the gate is mode-blind because the
-danger is. This is the single confirmation gate in this workflow's own steps; when
-`implementation-workflow` drives the run autonomously, this stop is one of its
-legitimate interrupts, not something the autonomy waives.
+danger is. This is the review-coverage confirmation gate, the one the front half
+(steps 1–4) turns on; local completion can add its own later (a default-branch
+merge, the post-merge offer). When `implementation-workflow` drives the run
+autonomously, this stop is one of its legitimate interrupts, not something the
+autonomy waives.
 
 A project's own rules outrank this one: where the repository says to commit
 straight to a branch, or not to commit until asked, or not to open change requests

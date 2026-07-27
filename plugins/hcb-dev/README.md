@@ -120,8 +120,9 @@ saying something else.
   called), why a read symref goes stale, why only the remote-tracking form is safe
   to carry forward, the non-interactive guard every network call needs, and why a
   base sharing no history with `HEAD` is worse than no base at all. Used by `codex-review`, `multi-review`, `git-cleanup`,
-  `github-pr-workflow`, `shipping-workflow` and `implementation-workflow` — every
-  skill that resolves a base or a remote.
+  `github-pr-workflow` and `implementation-workflow` — every skill that resolves a
+  base or a remote — and by `slice-completion.md`, through which `shipping-workflow`
+  reaches it.
 - [`references/slice-completion.md`](references/slice-completion.md) — how a slice
   *ends*: the completion contract (the signals a backend receives and returns),
   the two backends (`local` git-merge into the parent, and the forge-detected

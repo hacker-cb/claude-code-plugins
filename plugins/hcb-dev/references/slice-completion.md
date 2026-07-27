@@ -30,7 +30,9 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
   *this* slice, not the cumulative feature diff (which would re-read slice 1 while
   auditing slice 2, and the coverage gate would record no gap over the wrong
   range).
-- `merge-strategy` — the shown-and-approved default from the planning gate.
+- `merge-strategy` — the shown-and-approved gate default for the **final**
+  `feature → base` change request (a per-slice change request into a feature
+  branch always squashes).
 - `merge-auth` — request only: the gate-captured merge authorization, or absent.
 - `coverage` — the gate verdict (no unresolved **actionable** gap unless the user
   cleared it).
@@ -79,16 +81,19 @@ and only by consent.
   decision is an architectural fork ([`architecture-decisions.md`](architecture-decisions.md)),
   so stop and ask — never auto-resolve, or you can silently corrupt an earlier
   slice's work.
-- **The default / protected-branch hard-gate.** Merging into a **feature** branch
-  is autonomous. Merging into the **default branch** is the highest-blast-radius
-  action in the whole flow — an unattended commit on `master`/`main` is not
-  practically reversible and bypasses every gate the forge would otherwise
-  enforce — so **stop and ask first**. Detect the default *offline*
-  (`<remote>/HEAD`, per the reference — no network). "Protected" is a forge-side
-  attribute you cannot read offline; where the parent is non-default and you
-  cannot confirm it is unprotected without a network call, **ask rather than
-  merge** — protection is a request-mode concern, and erring toward asking is free
-  here while a wrong autonomous merge is not.
+- **The default-branch hard-gate.** Merging into a **feature** branch is
+  autonomous. Merging into the **default branch** is the highest-blast-radius
+  action here — an unattended commit on `master`/`main` is not practically
+  reversible and bypasses every gate the forge would otherwise enforce — so **stop
+  and ask first**. Resolve the default offline
+  ([`base-resolution.md`](base-resolution.md): `<remote>/HEAD`, verified). Where
+  you **cannot** resolve it — no remote at all, or a stale/unverifiable pointer —
+  do **not** assume the parent is a feature branch: ask before merging. Erring
+  toward asking is free; an unattended merge into the default is not. (Forge-side
+  *protection* is a separate thing you cannot read offline — but a local merge
+  publishes nothing, so this gate is about the *default* branch; a protected
+  non-default branch is a request-mode concern, and merging one locally is still
+  just a reversible local commit.)
 - **No push.** Ever, in this backend.
 - **After the merge, the offer** (unless `defer-offer` is set): offer — never
   force — to open a change request on the landed work. Accepting it is the
@@ -117,6 +122,9 @@ and only by consent.
   # GitLab
   glab mr create --target-branch <parent> --source-branch <branch> --fill
   ```
+  Opening it is **all** the inline path does — say so. No review-and-merge loop is
+  being driven (no CI/automated-review fix loop, no merge), so nobody who asked to
+  "ship it" assumes the change is on its way to merge while it actually sits open.
 - **Merge authorization.** Pass the gate-captured, shown-and-approved `merge-auth`
   into the driver as its **explicit** authorization — it satisfies the driver's
   own "the request asked to merge/ship" clause, so the driver does not stop to
@@ -132,13 +140,14 @@ and only by consent.
 
 ## Multi-slice topology (request)
 
-Per-slice change requests **stack** onto the feature branch, and one final
-`feature → base` change request integrates the set — so each slice stays
-independently reviewable and the whole lands once. The driver retargets each slice
-request's base as the one before it merges, and follows a defined merge order (see
-`github-pr-workflow`). This is the *natively-chosen* request path. The
-local-escalation path is different: its slices are already merged locally, so it
-yields a **single** `feature → base` change request with no stack to reconstruct.
+Each slice completes **onto the shared feature branch** before the next is cut:
+its change request targets the feature branch and is merged into it — **squashed**,
+a slice is one commit — so the next slice builds on it from the updated tip and
+every slice stays independently reviewable. When the slices are done, one final
+`feature → base` change request integrates the set, with the gate's
+`merge-strategy` (see `github-pr-workflow`, *Driving a set*). The local-escalation
+path arrives at that same single `feature → base` change request directly — its
+slices are already merged locally, with nothing left to drive.
 
 ## Offer arbitration
 

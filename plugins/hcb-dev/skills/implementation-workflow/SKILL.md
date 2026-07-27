@@ -116,7 +116,8 @@ remain and are honored — this skill does not waive the downstream skills' own
 safety gates:
 
 - an **actionable** coverage gap (Phase 1's non-waivable policy);
-- a local merge into the **default/protected** branch (`slice-completion.md`);
+- a local merge into the **default** branch — or one it cannot resolve as
+  non-default (`slice-completion.md`);
 - CI that will not go green after ~5 fix iterations (`github-pr-workflow`);
 - a Critical/Important finding that needs a product/design decision;
 - a genuinely-ambiguous merge strategy the gate did not settle;
@@ -128,6 +129,22 @@ won't pass, a blocking finding, a conflict needing a real decision): **stop**, d
 **not** auto-revert the slices already completed, report the partial state, and if
 later slices depended on the failed one, skip them and say so. A half-finished set
 is reported as half-finished, never packaged as whole.
+
+**Finishing a multi-slice set.** Once the slices are done, the set still has to
+land as a whole — and this is where `local` and `request` diverge:
+
+- **`request`** — the per-slice change requests have stacked on the feature
+  branch; now open and drive the final `feature → base` change request through the
+  forge driver (`hcb-dev:github-pr-workflow` on GitHub), with the gate's
+  `merge-strategy` and `merge-auth`. This is **completion, not an offer** —
+  request mode was chosen, so the integration change request is driven like any
+  other, or the set's work is left stranded on the feature branch.
+- **`local`** — the slices are already merged into the feature branch, so there is
+  nothing left to drive; the whole-feature change request is an **offer**, made in
+  Phase 3 (accepting it is the consented exit from local mode).
+
+A single-slice set has no feature branch and no integration step — the one slice
+completed straight onto the base in Phase 2.
 
 ## Phase 3 — Report and offers
 

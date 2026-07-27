@@ -38,24 +38,25 @@ fallback, and the stacked-PR handling added below is **documented
 forge-neutrality debt** owed to that twin: the same capability will need mirroring
 for GitLab merge trains when it lands.
 
-## Driving a stack (multi-slice sets)
+## Driving a set (multi-slice)
 
-When `hcb-dev:implementation-workflow` runs a set in request mode, each slice is a
-PR **stacked** onto the shared feature branch, and one final PR integrates the
-feature into the base. That changes two things across the steps below; standalone
-(a single PR, no set) none of it applies — there is one base and one merge.
+When `hcb-dev:implementation-workflow` runs a set in request mode, each slice
+completes **onto the shared feature branch** before the next is cut, so the slices
+build on each other and the run never reviews a slice against a base missing the
+one below it. Standalone (a single PR, no set) none of this applies — one base,
+one merge, strategy chosen as in Step 5.
 
-- **Base is the branch below, not the repo default.** Each slice PR targets the
-  feature branch (or the slice beneath it); read the base from the PR (Step 2),
-  never assume the default. As each slice PR merges, **retarget** the PRs still
-  open on top of it onto the newly-current base — GitHub retargets a PR
-  automatically when its base branch is deleted on merge, but confirm it rather
-  than trusting it, and `gh pr edit <pr> --base <new-base>` where it did not.
-- **Merge order is bottom-up.** Merge the lowest slice first and walk up; a higher
-  slice will not merge cleanly until the one below it has landed. The final
-  `feature → base` PR merges last, with the strategy the planning gate chose
-  (`merge-commit` keeps the slice history, `squash` collapses it — passed in as
-  `merge-strategy`, filtered to the repo's allowed methods).
+- **A slice PR targets the feature branch, not the repo default** — read the base
+  from the PR (Step 2), never assume the default — and is driven to **merge into
+  the feature branch** so the next slice can be cut from the updated tip.
+- **A slice PR is always squashed** — a slice is one logical commit on the feature
+  branch — *whatever* the gate chose for the final integration. The gate's
+  `merge-strategy` governs only the final PR (below), never the per-slice ones;
+  applying a gate `merge-commit` to every slice would litter the feature branch
+  with intermediate merge commits.
+- **The final PR integrates the set** — `feature → base`, driven last, with the
+  gate's `merge-strategy` (`merge-commit` keeps the slice commits, `squash`
+  collapses them), filtered to the repo's allowed methods.
 
 ## Autonomy model
 
@@ -451,10 +452,11 @@ exit is met — GitHub reports the PR mergeable *and* your own bar is clean (not
   confirm.
 
 Choose the strategy — a `merge-strategy` threaded in from the planning gate wins
-if one was passed (it is the user's shown-and-approved choice), always **filtered
-to the repo's allowed merge methods** (from the ruleset; `gh pr merge` will reject
-a disallowed one, so fall back within the allowed set and say so). Absent a
-threaded strategy, pick from the allowed set:
+if one was passed (the user's shown-and-approved choice for the **final
+integration PR**; a per-slice PR into a feature branch always squashes — see
+*Driving a set*), always **filtered to the repo's allowed merge methods** (from
+the ruleset; `gh pr merge` will reject a disallowed one, so fall back within the
+allowed set and say so). Absent a threaded strategy, pick from the allowed set:
 
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
   logical feature/fix. Write a clean squash commit message.
