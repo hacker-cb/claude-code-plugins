@@ -73,7 +73,7 @@ that is the whole point of local mode. Publishing is the escalation offer below,
 and only by consent.
 
 - **Merge strategy** — the gate's shown default. `--no-ff` by default, so the
-  slice stays a visible, revertable boundary in the parent's history and the later
+  slice stays a visible, revertible boundary in the parent's history and the later
   whole-feature change request keeps its slices reviewable. `ff` only where the
   caller asked and the history is linear; `squash` where the caller wants a single
   commit.
