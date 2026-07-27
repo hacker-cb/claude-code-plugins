@@ -26,9 +26,37 @@ from there.
 
 `hcb-dev:shipping-workflow` sits directly upstream of this skill — it commits,
 runs every available local reviewer, applies the fixes and checks coverage, then
-hands off here. If you landed here on finished work that has had no local review,
-go there first; this skill starts at the PR and will not run the reviewers for
-you.
+hands off here (in **request** mode; in local mode it merges without a PR and
+never reaches this skill). If you landed here on finished work that has had no
+local review, go there first; this skill starts at the PR and will not run the
+reviewers for you.
+
+This skill is GitHub-specific by design (the `<forge>-<artifact>-workflow`
+convention). A GitLab twin — `gitlab-mr-workflow` — is not built yet; until it is,
+GitLab change requests are handled by `hcb-dev:shipping-workflow`'s mirrored `glab`
+fallback, and the stacked-PR handling added below is **documented
+forge-neutrality debt** owed to that twin: the same capability will need mirroring
+for GitLab merge trains when it lands.
+
+## Driving a set (multi-slice)
+
+When `hcb-dev:implementation-workflow` runs a set in request mode, each slice
+completes **onto the shared feature branch** before the next is cut, so the slices
+build on each other and the run never reviews a slice against a base missing the
+one below it. Standalone (a single PR, no set) none of this applies — one base,
+one merge, strategy chosen as in Step 5.
+
+- **A slice PR targets the feature branch, not the repo default** — read the base
+  from the PR (Step 2), never assume the default — and is driven to **merge into
+  the feature branch** so the next slice can be cut from the updated tip.
+- **A slice PR is always squashed** — a slice is one logical commit on the feature
+  branch — *whatever* the gate chose for the final integration. The gate's
+  `merge-strategy` governs only the final PR (below), never the per-slice ones;
+  applying a gate `merge-commit` to every slice would litter the feature branch
+  with intermediate merge commits.
+- **The final PR integrates the set** — `feature → base`, driven last, with the
+  gate's `merge-strategy` (`merge-commit` keeps the slice commits, `squash`
+  collapses them), filtered to the repo's allowed methods.
 
 ## Autonomy model
 
@@ -44,8 +72,11 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 
 **Merging is the one action that is NOT autonomous.** Merge only when the user has
 explicitly authorized it — either their request itself asked to merge/ship (e.g.
-"ship it", "get this merged", "merge once it's green"), or they say yes when you
-ask. If they only asked to open or drive the PR, take it all the way to "ready to
+"ship it", "get this merged", "merge once it's green"), the captured user-approved
+`merge-auth` was threaded in from an upstream flow (`hcb-dev:shipping-workflow`, or
+`hcb-dev:implementation-workflow`'s planning gate — the same "asked to merge" case,
+gathered earlier and shown to the user there, so a run driven with it does not stop
+to re-ask), or they say yes when you ask. If they only asked to open or drive the PR, take it all the way to "ready to
 merge" — Step 4's exit met: GitHub reports it mergeable *and* your own bar is
 clean (not merely `mergeStateStatus: CLEAN`, which a repo enforcing nothing
 reports from PR-open) — and then stop and ask (see Step 5). Never merge on your
@@ -420,9 +451,17 @@ exit is met — GitHub reports the PR mergeable *and* your own bar is clean (not
   gates satisfied) and ask for an explicit go-ahead. Do not merge until they
   confirm.
 
-Choose the strategy **from the repo's allowed merge methods** (from the ruleset;
-`gh pr merge` will reject a disallowed one). Within the allowed set:
+Choose the strategy — a `merge-strategy` threaded in from the planning gate wins
+if one was passed (the user's shown-and-approved choice for the **final
+integration PR**; a per-slice PR into a feature branch always squashes — see
+*Driving a set*), always **filtered to the repo's allowed merge methods** (from
+the ruleset; `gh pr merge` will reject a disallowed one, so fall back within the
+allowed set and say so). Absent a threaded strategy, pick from the allowed set:
 
+- **A per-slice PR into a feature branch always squashes** — a slice is one
+  commit — regardless of the gate's `merge-strategy`; that strategy governs the
+  final `feature → base` integration PR only (see *Driving a set*). The choices
+  below apply to that final PR (or a standalone single PR).
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
   logical feature/fix. Write a clean squash commit message.
 - **Merge commit** (`gh pr merge --merge`) — when the PR contains multiple

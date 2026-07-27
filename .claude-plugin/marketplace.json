@@ -12,7 +12,7 @@
     {
       "name": "hcb-dev",
       "source": "./plugins/hcb-dev",
-      "description": "Personal developer baseline — a connected pipeline of skills: dependency versioning (with Dependabot sync), .gitignore seeding, local code review (Codex + multi-reviewer consolidation), shipping to a change request, the GitHub PR workflow to merge, and git cleanup of merged branches and stale worktrees.",
+      "description": "Personal developer baseline — a connected pipeline of skills: turning tasks or issues into sliced, reviewed work behind one planning gate; dependency versioning (with Dependabot sync); .gitignore seeding; local code review (Codex + multi-reviewer consolidation); completing work by mode (a local merge into the parent, or a change request (PR/MR), with the full review-and-merge drive on GitHub); and git cleanup of merged branches and stale worktrees.",
       "category": "productivity",
       "tags": ["developer", "dependencies", "code-review", "pull-request", "cleanup", "workflow", "github", "gitlab"]
     },
