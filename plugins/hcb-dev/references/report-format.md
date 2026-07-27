@@ -28,10 +28,10 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 3. **Incidental findings, rated by importance.** The lower-severity items
    surfaced-but-not-fixed during the run (out-of-scope observations, deferred
-   nits, follow-ups), grouped by category and rated on the reviewers' own scale —
-   `Critical` / `Important` / `Minor` (the same scale Copilot findings are
-   classified on; see
-   [`../skills/github-pr-workflow/references/copilot.md`](../skills/github-pr-workflow/references/copilot.md)).
+   nits, follow-ups), grouped by category and rated `Critical` / `Important` — as
+   [`../skills/github-pr-workflow/references/copilot.md`](../skills/github-pr-workflow/references/copilot.md)
+   defines those two — or `Minor`, this report's own tier for the below-Important
+   items that guidance lumps under `Skip` (its don't-fix-in-the-loop bucket).
    **If there are none, say so explicitly** — "no incidental findings" is a real
    result, and its absence must not read as an omission.
 
@@ -51,7 +51,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 **Coverage** — <per-slice coverage lines; name any gap; "fully covered" if clean>
 
-**Incidental findings** — <grouped, rated Critical/Important/Minor; or "none">
+**Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above; or "none">
 
 **Offers & next steps** — <open change-request offers, follow-ups, cleanup pointer; or "none">
 ```
