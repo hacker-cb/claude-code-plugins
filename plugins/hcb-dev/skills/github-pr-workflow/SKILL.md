@@ -458,6 +458,10 @@ integration PR**; a per-slice PR into a feature branch always squashes — see
 the ruleset; `gh pr merge` will reject a disallowed one, so fall back within the
 allowed set and say so). Absent a threaded strategy, pick from the allowed set:
 
+- **A per-slice PR into a feature branch always squashes** — a slice is one
+  commit — regardless of the gate's `merge-strategy`; that strategy governs the
+  final `feature → base` integration PR only (see *Driving a set*). The choices
+  below apply to that final PR (or a standalone single PR).
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
   logical feature/fix. Write a clean squash commit message.
 - **Merge commit** (`gh pr merge --merge`) — when the PR contains multiple
