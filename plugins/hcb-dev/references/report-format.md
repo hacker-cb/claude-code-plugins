@@ -30,9 +30,10 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    surfaced-but-not-fixed during the run (out-of-scope observations, deferred
    nits, follow-ups), grouped by category and rated on the reviewers' own scale —
    `Critical` / `Important` / `Minor` (the same scale Copilot findings are
-   classified on; see `github-pr-workflow/references/copilot.md`). **If there are
-   none, say so explicitly** — "no incidental findings" is a real result, and its
-   absence must not read as an omission.
+   classified on; see
+   [`../skills/github-pr-workflow/references/copilot.md`](../skills/github-pr-workflow/references/copilot.md)).
+   **If there are none, say so explicitly** — "no incidental findings" is a real
+   result, and its absence must not read as an omission.
 
 4. **Open offers and next steps** — any `deferred_offer` not taken (a change
    request the local run *could* open, per slice or whole-feature), follow-up

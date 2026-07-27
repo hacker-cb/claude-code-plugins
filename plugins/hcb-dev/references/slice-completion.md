@@ -35,10 +35,13 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
   the **final** `feature → base` strategy (a per-slice change request into a
   feature branch always squashes, whatever this value is).
 - `merge-auth` — request only: the gate-captured merge authorization, or absent.
-- `coverage` — the gate verdict (no unresolved **actionable** gap unless the user
-  cleared it).
 - `defer-offer` — suppress the per-slice offer; the orchestrator makes one
   whole-feature offer instead.
+
+Completion is **not** handed a `coverage` signal — it runs only *after* the
+coverage gate has passed (an actionable gap already stopped the run upstream, at
+step 4), so it never re-checks coverage; it simply carries whatever noted
+(structural) gaps the gate reported into the `uncovered` output below.
 
 **Outputs every backend returns** (for [`report-format.md`](report-format.md)):
 `landed_at` (local: the merge commit on `parent`; request: the change-request URL,
