@@ -107,9 +107,10 @@ other):
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
    slice's parent tip, so the review covers this slice and not the cumulative
-   feature diff), `merge-strategy`, `merge-auth`, the coverage policy, and
-   `defer-offer` (set on a multi-slice run so the per-slice offer is suppressed —
-   the one whole-feature offer is made in Phase 3).
+   feature diff), `merge-strategy`, `merge-auth`, and `defer-offer` (set on a
+   multi-slice run so the per-slice offer is suppressed — the one whole-feature
+   offer is made in Phase 3). The coverage *policy* is not threaded — an actionable
+   gap always stops (Phase 1), a fixed invariant every completion honors.
 
 **Autonomy is "no routine questions", not "never pauses".** The legitimate stops
 remain and are honored — this skill does not waive the downstream skills' own

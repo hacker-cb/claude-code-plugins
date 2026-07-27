@@ -19,9 +19,11 @@ description: >-
 # Shipping workflow
 
 Finished work completes automatically. Do not ask for confirmation; the coverage
-gate below is the one exception. Work counts as ready once the change is complete
-and verified — tests pass, or the behavior is confirmed — and the tree is
-committable.
+gate below is the one exception in the shared front half — local completion
+(step 5) adds its own, mode-specific: a stop before merging into the default
+branch, and the consent-gated post-merge offer. Work counts as ready once the
+change is complete and verified — tests pass, or the behavior is confirmed — and
+the tree is committable.
 
 This skill runs either standalone (a bare "ship this" on finished work) or as the
 per-slice step `hcb-dev:implementation-workflow` calls. Steps 1–4 are identical in
@@ -29,7 +31,9 @@ both **completion modes** — `local` (merge into the parent, no forge) and
 `request` (a change request) — because the mode is read only at step 5. When
 driven by the orchestrator, the caller threads the completion signals as
 invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy`, `merge-auth`,
-the coverage policy, and `defer-offer`. Standalone, they default — mode by the
+and `defer-offer` (the coverage *policy* is not one of them — an actionable gap
+always stops, a fixed invariant, not a threaded value). Standalone, they default —
+mode by the
 ladder in
 [`../../references/slice-completion.md`](../../references/slice-completion.md)
 (ending at `request`, so behavior matches before this skill grew a second mode),

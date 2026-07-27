@@ -30,9 +30,10 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
   *this* slice, not the cumulative feature diff (which would re-read slice 1 while
   auditing slice 2, and the coverage gate would record no gap over the wrong
   range).
-- `merge-strategy` — the shown-and-approved gate default for the **final**
-  `feature → base` change request (a per-slice change request into a feature
-  branch always squashes).
+- `merge-strategy` — the shown-and-approved gate default, **mode-dependent**: in
+  `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
+  the **final** `feature → base` strategy (a per-slice change request into a
+  feature branch always squashes, whatever this value is).
 - `merge-auth` — request only: the gate-captured merge authorization, or absent.
 - `coverage` — the gate verdict (no unresolved **actionable** gap unless the user
   cleared it).
