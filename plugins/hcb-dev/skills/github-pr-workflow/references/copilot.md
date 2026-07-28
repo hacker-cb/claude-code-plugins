@@ -57,7 +57,7 @@ would go unread. Check for an existing review before skipping:
 # --paginate applies --jq per page, so a bare `length` prints one number *per
 # page* — sum them, or a PR with >100 reviews answers with several numbers.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
-  --jq '[ .[] | select(.user.login == "copilot-pull-request-reviewer[bot]") ] | length' \
+  --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length' \
   | awk '{ n += $1 } END { print n + 0 }'
 ```
 
@@ -81,7 +81,7 @@ head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
 # `| @json` pins each review to exactly one line, so `tail -1` is the last review
 # and not whatever gh's output formatting happened to put on the last line.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
-  --jq '.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")
+  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         | {commit_id, submitted_at} | @json' | tail -1
 # fresh iff commit_id == $head
 ```
@@ -99,34 +99,42 @@ would hang forever. Run this protocol after each push:
    ```
    Don't hand-roll that as a REST `requested_reviewers` POST: Copilot is not an
    ordinary reviewer login, and `@copilot` is the special value `gh` case-handles
-   for it. Two limits worth knowing before you rely on it: it needs **gh 2.88.0 or
-   newer**, and it is **not supported on GitHub Enterprise Server**. Mind the
-   naming, too — it is requested as `Copilot` but *authors* its review as
-   `copilot-pull-request-reviewer[bot]`, and the author login is the one to filter
-   reviews and comments on.
+   for it. It is **not supported on GitHub Enterprise Server**.
 2. **Poll — and read the requested-reviewer state, not a clock, as the signal.**
-   Copilot's presence in `gh pr view <pr> --json reviewRequests` is what tells you
-   a re-review is still coming: a push (re-)requests it, and the forge drops the
-   request when Copilot either posts its review or declines. Poll until **one** of
-   these settles:
+   Copilot's presence among the PR's requested reviewers is what tells you a
+   re-review is still coming: a push (re-)requests it, and the forge drops the
+   request when Copilot either posts its review or declines.
+
+   **Do not read that with `gh pr view <pr> --json reviewRequests`** — it cannot see
+   Copilot. `gh` fetches the reviewer union including `...on Bot{login}` and then
+   exports only the `User` and `Team` members, so a Bot reviewer is dropped and the
+   array is empty whether or not Copilot is pending. Every poll then reads as a
+   decline and the loop exits while the review is in flight — the exact silent drop
+   this protocol exists to prevent. Read a surface that keeps bots:
+
+   ```bash
+   gh api repos/<owner>/<repo>/pulls/<pr> --jq '[.requested_reviewers[]?.login]'
+   ```
+
+   Poll until **one** of these settles:
    - a Copilot review with `commit_id == $head` appears → a fresh review landed; or
-   - Copilot has **dropped out** of `reviewRequests` with no such review → it
+   - Copilot has **dropped out** of that list with no such review → it
      declined to re-review this push (common when the push only applied its own
      suggestions).
    The first review usually lands within a few minutes, but can lag 15+ minutes on
    some repos — measure this repo's real head-review latency from recent PRs and
    size any safety cap from that, never from a fixed default.
-3. **While Copilot is still in `reviewRequests` it has NOT declined — it is slow,
+3. **While Copilot is still requested it has NOT declined — it is slow,
    and no elapsed timer authorises merging past it.** A safety cap is only a bound on
    the wait — never itself a confirmation of a drop-out, and never permission to
    merge over a review still on its way. If the cap elapses while Copilot is still
    requested, do **not** proceed: hold the merge, tell the user the head-commit
    review is still outstanding, and extend the wait or escalate.
    - **Fresh review** → process it from the top: classify, fix, reply, resolve.
-   - **Confirmed drop-out** (Copilot absent from `reviewRequests`, no review of the
+   - **Confirmed drop-out** (Copilot absent from the requested-reviewer read, no review of the
      head) → it declined this push; proceed, and say so in the report rather than
      implying it reviewed. Two absences masquerade as a decline and must be ruled
-     out first: right after a push `reviewRequests` can lag, so confirm Copilot was
+     out first: right after a push the request can lag, so confirm Copilot was
      actually (re-)requested for this head; and a review that posts against an
      *earlier* commit consumes the request while leaving the head unreviewed — a
      newest Copilot review whose `commit_id != head` is **not** a decline of the
@@ -156,17 +164,24 @@ Use whichever source is available (in priority order):
        repository(owner:$owner,name:$repo){
          pullRequest(number:$pr){
            reviewThreads(first:100){
-             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login} body path line } } }
+             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login __typename} body path line } } }
            }
          }
        }
      }' -F owner=<owner> -F repo=<repo> -F pr=<pr>
    ```
 3. **REST API** via `gh api repos/<owner>/<repo>/pulls/<pr>/comments` as a
-   fallback.
+   fallback — filter it with the same `type == "Bot"` + `^copilot` form; on this
+   surface the login is a bare `Copilot`, so the `[bot]` spelling matches nothing.
 
-Copilot's comments come from the bot author `copilot-pull-request-reviewer[bot]`;
-include any review summary it posts alongside the inline comments.
+**One actor, a different login per surface** — `copilot-pull-request-reviewer[bot]`
+on REST `/reviews`, a bare `Copilot` on REST `/comments` and `requested_reviewers`,
+`copilot-pull-request-reviewer` in GraphQL. So never test one literal: match on
+`type == "Bot"` (`__typename` in GraphQL) plus a case-insensitive `^copilot`, and
+reach every field through `?` — `test/1` raises on the `"user": null` a deleted
+account leaves behind, and one such row aborts the whole `--jq` program, turning a
+PR full of findings into a PR with none. Include any review summary it posts
+alongside the inline comments.
 
 ## Classifying severity
 

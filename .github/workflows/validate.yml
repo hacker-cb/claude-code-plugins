@@ -40,9 +40,11 @@ jobs:
           args: --offline --no-progress './**/*.md' '.claude/**/*.md'
           fail: true
 
+      # `lts/*` is the active LTS at run time — what the plugin's own
+      # dependency-versions skill asks for, and it cannot go stale a release behind.
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: 'lts/*'
 
       # Authoritative schema + frontmatter validation via the official CLI.
       - name: Official plugin validation (claude CLI)

@@ -291,8 +291,11 @@ A caller — a person or another skill — may hand you the base and the effort
 level; both are meant to be passed in, and an explicit base wins over the
 resolution above. Set the effort on every run rather than letting
 `~/.codex/config.toml` decide, since that file differs from machine to machine.
-The ladder is `minimal`, `low`, `medium`, `high`, `xhigh`; an unknown value is
-rejected outright, so a typo cannot silently downgrade a review. `-m <model>`
+For `codex exec review` the accepted values are `none`, `low`, `medium`, `high`,
+`xhigh` — **not** `minimal` and **not** `max`, which belong to other Codex models.
+Nothing validates this locally: the CLI accepts any string, prints it in its own
+header, starts the session, and the API then returns a 400 — so a wrong level does
+not downgrade the review, it destroys the run. `-m <model>`
 overrides the model the same way. `--output-schema` is accepted but ignored in
 review mode — the output is always prose.
 

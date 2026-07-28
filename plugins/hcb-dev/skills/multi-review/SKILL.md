@@ -89,7 +89,7 @@ Three questions per reviewer, in order:
 
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
-| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | `minimal` `low` `medium` `high` `xhigh` |
+| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | `none` `low` `medium` `high` `xhigh` |
 | `code-review` workflow | the `Workflow` tool exists | `@{upstream}...HEAD` plus `git diff HEAD` unless given a target | yes, as a target argument | `high` `xhigh` `max` |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
@@ -99,7 +99,9 @@ the default branch — report that, do not hide it. The code-review workflow is 
 only reviewer checking `CLAUDE.md` compliance, and its cheap levels are out of
 reach: `low` and `medium` belong to the `/code-review` slash command, which only
 the user can invoke, and an unknown level is not rejected — it silently becomes
-`high`, with the word forwarded as the review target.
+`high`, with the word forwarded as the review target. The two ladders do not line
+up: `max` is Claude Code's top rung and not a Codex value, so translate rather than
+reuse a word.
 
 ## 3. Run
 
@@ -113,10 +115,10 @@ Start the detachable reviewers first so they overlap with the inline one.
   empty, and it would review nothing while the other two review the change. This
   skill is the explicit instruction authorizing that call.
 - **security-review** — invoke the skill inline, last. Do not delegate it to a
-  subagent to save context: subagents have neither the `Agent` nor the `Task`
-  tool, so the skill's own filtering pass — parallel sub-tasks dropping every
-  candidate below confidence 8 — silently does not run, and what comes back is
-  unfiltered.
+  subagent to save context: that skill's value is its own filtering pass, which
+  fans out sub-tasks to drop every candidate below confidence 8, and nesting eats
+  the budget that pass needs — at the three-layer limit the fan-out is gone and
+  what comes back is unfiltered.
 
 ## 4. Collect
 

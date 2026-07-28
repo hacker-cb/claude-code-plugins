@@ -134,8 +134,14 @@ Read the live gates before and during the loop:
 ```bash
 # The AUTHORITATIVE signals — these already fold in whatever is enforced, by any
 # mechanism (rulesets, classic branch protection, org policy). Trust these:
-gh pr checks <pr>                                              # required checks + state
-gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision  # merge verdict + why
+# `--required` answers "which checks GATE this merge"; without it you cannot tell a
+# red advisory check from a red gate. READ THE ARRAY, NOT THE EXIT CODE: gh exits 1
+# both when nothing is required and when a required check FAILED, and reading a red
+# build as "this repo is ungated" is the worst direction to be wrong in. Exit 8 is
+# the one status worth reading — checks still pending.
+gh pr checks <pr> --required --json name,bucket                # the checks that gate
+gh pr checks <pr> --json name,bucket                           # everything that ran
+gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision,isDraft
 # The "why", read once. Start from the per-branch view: it has already applied
 # each ruleset's ref_name conditions and includes org-level rulesets — a plain
 # /rulesets listing does neither, so it over-reports on a side branch and misses
@@ -148,13 +154,15 @@ gh api repos/<owner>/<repo>/branches/<base>/protection 2>/dev/null || true  # cl
 
 `mergeStateStatus` names exactly what's missing (the GraphQL enum is `BEHIND`,
 `BLOCKED`, `UNSTABLE`, `DIRTY`, `UNKNOWN`, `HAS_HOOKS`, `CLEAN` — there is no
-`DRAFT` value; a draft PR reads `BLOCKED`, and you detect draftness via the
-separate `--json isDraft`):
+`DRAFT` value). It carries **no draft signal at all** — `DRAFT` is deprecated and
+no longer returned, so a draft reads whatever its base's gates make it read, which
+on an ungated base is `CLEAN`. Draftness is visible only in `isDraft`, which is why
+Step 3 reads it unconditionally:
 
 | status | meaning | what to do |
 |---|---|---|
 | `BEHIND` | branch not up to date with base (strict policy) | re-sync (Step 2) |
-| `BLOCKED` | a required check, review, or thread resolution is missing (a draft also reads `BLOCKED`) | keep looping (Step 4); if it's a draft, mark ready (Step 3) |
+| `BLOCKED` | a required check, review, or thread resolution is missing | keep looping (Step 4) |
 | `UNSTABLE` | a non-required check is red — GitHub *will* let you merge | don't merge until you confirm it's irrelevant or a known flake (see below) |
 | `DIRTY` | merge conflicts | resolve conflicts |
 | `UNKNOWN` | GitHub is still recomputing mergeability (transient — e.g. right after a push) | wait and re-poll |
@@ -426,7 +434,18 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 - Title: concise, matches the branch intent.
 - Body: what changed and why, in the user's own framing if known; a short summary
   and a bullet list of notable changes.
-- If a PR already exists, skip creation and move to the loop.
+**If a PR already exists, read `isDraft` before anything else and take it out of
+draft.** Unconditional, because nothing else will tell you: `mergeStateStatus`
+carries no draft signal, so on an ungated base a draft reads `CLEAN` and sails
+through the whole loop with Copilot never having run on it.
+
+```bash
+gh pr view <pr> --json isDraft -q .isDraft   # true -> the next line
+gh pr ready <pr>
+```
+
+Where the user explicitly asked for a draft, keep it — and say plainly that Copilot
+will not review it and the loop's Copilot bar cannot be met.
 
 ## Step 4 — The fix loop (until GitHub says mergeable)
 
