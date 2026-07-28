@@ -231,17 +231,17 @@ name that already describes the change alone.
 
 On a run driven from upstream the **rename** is usually a no-op:
 `hcb-dev:shipping-workflow` step 0 normalized the name before the branch was ever
-pushed. The **publish** is not. `netpush push "$PUSH_REMOTE" -u "$NEW"` below is
-the only place this skill puts the branch on the remote, and without it Step 2's
-`--force-with-lease`
-dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
-ref at all — so skip the rename when the name is already right, and never skip the
-push. The rename half also stays because the user can enter this skill directly,
-and because this is the **last** point at which a rename is possible at all: once
-the PR is open, renaming means deleting its head ref, and that closes the PR.
+pushed. **The publish never is.** It is the only place this skill puts the branch
+on the remote, and without it Step 2's `--force-with-lease` dies on "no upstream
+branch" while Step 3's `gh pr create --head` finds no head ref at all. So the
+rename may be skipped; the push may not.
 
-What this step owns is the mechanics that reference points back at: renaming a
-branch that may already be on a remote, and publishing it under the final name.
+The rename half stays here because the user can enter this skill directly, and
+because this is the **last** point at which a rename is possible at all: once the
+PR is open, renaming means deleting its head ref, and that closes the PR.
+
+What this step owns is the half the shared script cannot: publishing the branch
+under whatever name it ended up with, and cleaning up the old remote ref.
 
 Remote resolution follows the shared ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md) —
@@ -303,35 +303,36 @@ if [ -z "$PUSH_REMOTE" ]; then
     || echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; set branch.$cur.pushRemote or remote.pushDefault, then re-run"
   exit 1
 fi
-NEW="<new-name>"   # from branch-naming.md, whose block validates it — MAY equal $cur
-# An open PR pins the name: renaming means deleting the head ref below, which
-# closes the PR and takes its review threads with it. Keep the name instead.
-# This probe must fail CLOSED. Empty output covers two very different answers —
-# "no PR" and "gh could not tell me" (auth expired, wrong default repo, network) —
-# and reading the second as the first renames the branch and deletes the old ref,
-# closing a PR you never saw. Keep the exit status, not just the output.
-if pr_open="$(gh pr list --head "$cur" --state open --json number -q '.[].number' 2>/dev/null)"; then
-  pr_known=1
-else
-  pr_known=0
-fi
-if [ "$cur" != "$NEW" ] && [ "$pr_known" = 0 ]; then
-  echo "PR STATE UNKNOWN for $cur — keeping the name; a rename here could close a PR I cannot see"
-  NEW="$cur"
-elif [ "$cur" != "$NEW" ] && [ -n "$pr_open" ]; then
-  echo "note: PR already open on $cur — keeping the name (renaming would close it)"
-  NEW="$cur"
-fi
+NEW="<new-name>"   # chosen per branch-naming.md; MAY equal $cur
 [ "$cur" = "$NEW" ] || git branch -m "$NEW"
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
 # 3 both assume an upstream exists, and neither creates one.
 netpush push "$PUSH_REMOTE" -u "$NEW"
-# Delete the stale remote ref ONLY when the name actually changed. With
-# $cur == $NEW this deletes the ref the line above just pushed — unpublishing the
-# branch and closing any PR whose head it is — and `2>/dev/null || true` would
-# swallow every trace, leaving Step 2 to proceed as if the branch were pushed.
+```
+
+**The stale ref is the one irreversible step here**, and it gets its own block.
+Deleting the head ref of an open PR closes the PR and takes its review threads with
+it, so this must run on a **positive** answer — "the forge told me there is no open
+PR" — and never on the mere absence of a negative one. Those look identical and are
+easy to reach: `gh` with the wrong default repo exits 0 with empty output, an
+expired token errors, `gh` may not be installed at all. Any of those means leave the
+old ref and say so; a stale branch on the remote costs nothing, a closed PR is not
+recoverable.
+
+```bash
+# Only when the name actually changed — with $cur == $NEW this would delete the ref
+# just pushed, unpublishing the branch.
 if [ "$cur" != "$NEW" ]; then
-  netpush push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
+  if n="$(gh pr list --head "$cur" --state open --json number --jq 'length' 2>/dev/null)" \
+     && [ -n "$n" ]; then
+    if [ "$n" = 0 ]; then
+      netpush push "$PUSH_REMOTE" --delete "$cur"
+    else
+      echo "KEEPING $cur on the remote — $n open PR(s) still point at it"
+    fi
+  else
+    echo "KEEPING $cur on the remote — could not confirm no PR points at it"
+  fi
 fi
 ```
 

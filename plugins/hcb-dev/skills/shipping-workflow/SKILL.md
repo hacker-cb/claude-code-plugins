@@ -40,17 +40,18 @@ ladder in
 and `parent` = the base. That reference owns the mechanics of completion; steps
 0–4 below are the mode-blind front half.
 
-0. **Normalize the branch name** — rename an auto-generated or placeholder name
-   (a host session's `claude/…`, a `wip`) to the shape in
-   [`../../references/branch-naming.md`](../../references/branch-naming.md) —
-   which also defines what counts as auto-generated and leaves a name that
-   already describes the change alone. It comes **first and in both modes** because this is the cheapest the
-   rename ever gets — the branch is typically still unpushed, so it is a bare
-   `git branch -m` touching no network — and because both doors it beats shut
-   later: a name under an open change request cannot be fixed at all, and a
-   `local` completion's `--no-ff` merge writes the branch name into the parent's
-   history permanently. Do not rename a branch someone else has pulled, or one
-   whose change request is already open; the reference lists those cases.
+0. **Normalize the branch name** — `git branch -m`, per
+   [`../../references/branch-naming.md`](../../references/branch-naming.md), which
+   defines the shape, what counts as auto-generated, what to leave alone, and the
+   two cases where the rename is off the table. Git enforces the rest itself; a
+   name it rejects fails loudly and you pick another.
+
+   It comes **first and in both modes**, because this is the cheapest the rename
+   ever gets — the branch is typically still unpushed, so nothing touches the
+   network — and because of the two doors it beats shut: a name under an open change
+   request cannot be fixed at all, and a `local` completion's `--no-ff` merge writes
+   the branch name into the parent's history permanently. Keeping the name is a
+   normal outcome; say why in one line and carry on.
 1. **Commit the change first**, new files included — one reviewer reads only
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
