@@ -73,8 +73,9 @@ applied to this sweep.
 
   D="<remote>/<default>"
   git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1 || {
+    # The parser and why it is `sed` live in the shared reference linked above.
     h="$(gitq ls-remote --symref <remote> HEAD 2>/dev/null \
-         | awk '$1=="ref:" && $3=="HEAD" { sub(/^refs\/heads\//,"",$2); print $2; exit }')"
+         | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p' | head -1)"
     # An unreachable or auth-walled remote returns nothing. Never build `<remote>/`
     # from an empty name — a bogus ref makes every consumer below fatal.
     [ -n "$h" ] && D="<remote>/$h" || D=""

@@ -34,6 +34,8 @@ Official docs:
    ```
 
 2. Optional supporting files live next to `SKILL.md`: `references/*.md`, `scripts/*`, etc. Reference them from `SKILL.md` so Claude knows when to load them.
+
+   **A shell or awk positional parameter cannot be written in a `SKILL.md`.** Claude Code replaces it with a word from whatever arguments the skill was invoked with, so a run block using one arrives corrupted — and still looks runnable, which is the dangerous part. Use a named variable set before the call, or `sed` / `awk -v`; escape it with a backslash where a literal is what you mean. This holds for the whole file, comments included. A `references/*.md` is exempt: it reaches Claude through `Read`, verbatim. `scripts/validate.sh` fails the build on one.
 3. **Shared between skills?** Put it one level up, in `plugins/hcb-<domain>/references/*.md`, and link it from each skill by relative path (`../../references/<file>.md`). Only `skills/`, `commands/`, `agents/` and `hooks/` are component dirs, so a `references/` at the plugin root is data, not a component — `scripts/validate.sh` only scans `*/skills/*/SKILL.md` and ignores it. Prose copied into two skills drifts: a fix lands in one and the other keeps saying something else. See [`plugins/hcb-dev/references/base-resolution.md`](plugins/hcb-dev/references/base-resolution.md), shared by five skills.
 4. The skill is invoked as `/hcb-<domain>:<skill-name>`.
 

@@ -25,6 +25,30 @@ ok()   { echo "OK:    $*"; }
 
 command -v jq >/dev/null 2>&1 || { echo "FATAL: jq is required but not installed." >&2; exit 2; }
 
+# Claude Code replaces a positional reference in skill and agent content with a
+# word from the invocation arguments, so a shell or awk positional written there
+# never reaches a shell as itself — it arrives as whatever the caller typed,
+# leaving a block that is wrong but still looks runnable. Named variables and
+# `sed` / `awk -v` do the same work and survive.
+#
+# NOT flagged, each for its own reason:
+#   \$1     the documented escape for a literal — a price, a verbatim snippet
+#   $@ $*   not substituted
+#   ${VAR}  a name, not a position
+#
+# The whole file is scanned, not just its fenced blocks: substitution does not
+# read markdown, so a comment explaining this trap is rewritten by it too.
+positional_check() {
+  pc_file="$1"; pc_label="$2"
+  while IFS= read -r hit; do
+    [ -n "$hit" ] && err "$pc_label: positional parameter in substituted content — $hit"
+  done < <(awk '
+    match($0, /(^|[^\\])\$\{?[0-9]/) {
+      start = (RSTART > 20) ? RSTART - 20 : 1
+      printf "line %d: %s%s\n", NR, (start > 1 ? "..." : ""), substr($0, start, 70)
+    }' "$pc_file")
+}
+
 # --- marketplace.json -------------------------------------------------------
 if [ ! -f "$MARKET" ]; then
   err "$MARKET not found"
@@ -147,8 +171,20 @@ while IFS= read -r skill; do
     warn "skill '$base': frontmatter name '$fmname' != directory name"
   fi
 
+  positional_check "$skill" "skill '$base'"
+
   ok "skill '$base'"
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
+
+# --- agents -----------------------------------------------------------------
+# The other substitution site the docs name. None exist in this repo today; the
+# loop is here so the first one added is covered rather than discovered later.
+# `commands/` is deliberately NOT scanned: there a positional IS the feature,
+# which is exactly why a shell one must not be written beside it.
+while IFS= read -r agent; do
+  [ -n "$agent" ] || continue
+  positional_check "$agent" "agent '$(basename "$agent" .md)'"
+done < <(find plugins -type f -path '*/agents/*.md' 2>/dev/null | sort)
 
 # --- link form --------------------------------------------------------------
 # Whether a link still RESOLVES is lychee's job (lychee.toml); this checks the

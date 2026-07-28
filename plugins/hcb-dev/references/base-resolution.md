@@ -94,11 +94,19 @@ it can publish a branch in someone else's repository.
 
    Absent or dead, ask the remote — it is the only thing that knows:
    ```bash
-   git ls-remote --symref <remote> HEAD
+   git ls-remote --symref <remote> HEAD \
+     | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p' | head -1
    # raw: "ref: refs/heads/<name>\tHEAD" plus a sha line
    ```
-   Strip `ref: refs/heads/` and pair the bare name with the remote you asked.
-   Never fall back to a list of popular names.
+   Pair the bare name with the remote you asked. Never fall back to a list of
+   popular names.
+
+   **Parse it with `sed`, not `awk`.** The obvious `awk '$1=="ref:"'` cannot be
+   written in a skill: Claude Code substitutes a positional reference in skill
+   and agent content with a word from the invocation arguments, so awk's field
+   references arrive replaced and the program silently compares the wrong things.
+   `head -1` rather than a bare `q`, which would quit on the first *input* line
+   whether or not it matched — the symref line is not guaranteed to be first.
 
 5. **`@{upstream}`** — last resort. When the branch tracks its own remote
    counterpart this narrows the range to unpushed commits only.
