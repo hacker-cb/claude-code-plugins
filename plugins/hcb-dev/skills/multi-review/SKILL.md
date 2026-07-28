@@ -32,8 +32,8 @@ each reviewer builds a diff and reviews nothing when that diff is empty. Say so
 and stop, rather than quietly reviewing the last commit instead.
 
 **Base.** Resolve it by the shared ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md)
-(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — first hit wins: a base
+[`../../references/base-resolution.md`](../../references/base-resolution.md) —
+first hit wins: a base
 the caller named; the change request's base; the merged-base histogram; the
 default branch (`<remote>/HEAD`, verified, else `ls-remote`); `@{upstream}`. The
 reference owns the mechanics — remote ranking, the remote-tracking-ref form, the

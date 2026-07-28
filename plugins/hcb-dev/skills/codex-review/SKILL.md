@@ -25,8 +25,8 @@ Review against a base ref. `--base` diffs `merge-base(base, HEAD)` against the
 edits to tracked files.
 
 **Resolve the base by the shared ladder** in
-[`../../references/base-resolution.md`](../../references/base-resolution.md)
-(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — first hit wins:
+[`../../references/base-resolution.md`](../../references/base-resolution.md) —
+first hit wins:
 
 1. a base the caller named;
 2. the open change request's base (`gh pr view` / `glab mr view`);

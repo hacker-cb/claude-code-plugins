@@ -42,10 +42,9 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
 
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
    (a host session's `claude/…`, a `wip`) to the shape in
-   [`../../references/branch-naming.md`](../../references/branch-naming.md)
-   (`${CLAUDE_PLUGIN_ROOT}/references/branch-naming.md`), which also defines what
-   counts as auto-generated and leaves a name that already describes the change
-   alone. It comes **first and in both modes** because this is the cheapest the
+   [`../../references/branch-naming.md`](../../references/branch-naming.md) —
+   which also defines what counts as auto-generated and leaves a name that
+   already describes the change alone. It comes **first and in both modes** because this is the cheapest the
    rename ever gets — the branch is typically still unpushed, so it is a bare
    `git branch -m` touching no network — and because both doors it beats shut
    later: a name under an open change request cannot be fixed at all, and a
@@ -75,8 +74,7 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
 4. **Check the coverage** — the gate below.
 5. **Complete the slice by mode** — hand off to the completion contract in
    [`../../references/slice-completion.md`](../../references/slice-completion.md)
-   (`${CLAUDE_PLUGIN_ROOT}/references/slice-completion.md`). The mode picks the
-   backend; nothing in steps 0–4 changes:
+   — the mode picks the backend; nothing in steps 0–4 changes:
    - **`local`** — merge the slice into its `parent` with `git`, no forge and no
      network, `--no-ff` by default so the slice stays a revertible boundary.
      Merging into a feature branch is autonomous; merging into the **default
