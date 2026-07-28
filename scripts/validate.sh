@@ -147,6 +147,20 @@ while IFS= read -r skill; do
     warn "skill '$base': frontmatter name '$fmname' != directory name"
   fi
 
+  # Claude Code replaces $0-$9 in skill content with the words of the invocation
+  # arguments, so a shell or awk positional parameter written here never reaches
+  # a shell as itself — it arrives as whatever the caller typed, leaving a block
+  # that is wrong but still looks runnable. Named variables and `sed` / `awk -v`
+  # do the same work and survive. `$@`, `$*` and `${VAR}` are not substituted.
+  #
+  # Scoped to SKILL.md: a references/*.md reaches Claude through Read, which
+  # returns the file verbatim, so positional parameters there are untouched.
+  while IFS= read -r hit; do
+    [ -n "$hit" ] && err "skill '$base': positional parameter in skill content — $hit"
+  # The whole file, not just its fenced blocks: substitution does not care about
+  # markdown, so a comment explaining the trap gets rewritten by it too.
+  done < <(awk '/\$[0-9]([^0-9]|$)/ { printf "line %d: %s\n", NR, substr($0, 1, 70) }' "$skill")
+
   ok "skill '$base'"
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
 
