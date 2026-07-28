@@ -175,13 +175,12 @@ net() {
     GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
     git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
 }
-# `sed` rather than awk for the same reason: awk field references are positional
-# (`$N`) too, and would be replaced before any shell saw them. The symref line is
+# The parser and why it is `sed` live in the shared reference above. The line is
 # `ref: refs/heads/<branch>\tHEAD`, and a branch name cannot contain whitespace.
 if [ -z "${BASE:-}" ] && [ -n "$REM" ]; then
   NET_BUDGET="$TO_NET"
   h="$(net ls-remote --symref "$REM" HEAD 2>/dev/null \
-        | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p')"
+        | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p' | head -1)"
   [ -n "$h" ] && BASE="$REM/$h"
 fi
 BASE="${BASE:-$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)}"
