@@ -28,10 +28,12 @@ jobs:
       - name: Structural validation
         run: bash scripts/validate.sh
 
-      # Internal paths only — `--offline` skips every http(s) URL, so this step
-      # touches no network and cannot fail on someone else's outage or rate
-      # limit. External URLs rot with time rather than with a PR, and are
-      # checked on a schedule by link-check.yml instead.
+      # Internal paths only: `--offline` skips every http(s) URL in the repo, so
+      # no link in this repo is resolved over the network and a docs host having
+      # a bad day cannot fail a PR. The action itself still downloads the lychee
+      # binary, so the step is not network-free — it just does not depend on any
+      # host this repo links to. External URLs rot with time rather than with a
+      # PR, and are checked on a schedule by link-check.yml instead.
       - name: Link check (internal paths)
         uses: lycheeverse/lychee-action@v2
         with:

@@ -180,69 +180,93 @@ md_files() {
 # `cmd | while`. A pipeline puts the loop in a subshell, where `err` still
 # prints but its increment of $errors is discarded when the subshell exits —
 # the script would report failures and then exit 0.
+# A fenced block holds examples, not links. CLAUDE.md and CONTRIBUTING.md both
+# show the convention by writing out the wrong form next to the right one, and a
+# rule that reads those would fail the very file that defines it. Blank the
+# fenced lines rather than dropping them, so reported line content still lines up
+# with the file.
+prose() { awk '/^[[:space:]]*(```|~~~)/ { f = !f; print ""; next } f { print ""; next } { print }' "$1"; }
+
+# NOTE: every loop below reads via `< <(...)` process substitution, never
+# `cmd | while`. A pipeline puts the loop in a subshell, where `err` still
+# prints but its increment of $errors is discarded when the subshell exits —
+# the script would report failures and then exit 0.
 while IFS= read -r md; do
   [ -n "$md" ] || continue
   case "$(basename "$md")" in README.md|CONTRIBUTING.md) audience=human ;; *) audience=claude ;; esac
+  body=$(prose "$md")
 
   # Targets linked anywhere in this file, by basename. Rule 5 reads it.
-  linked=$(grep -o ']([^)]*)' "$md" 2>/dev/null \
+  linked=$(printf '%s\n' "$body" | grep -o ']([^)]*)' 2>/dev/null \
     | sed 's/^](//; s/)$//; s/#.*//' | sed 's|.*/||' | sort -u)
 
   # 1. A link text written as a path must BE the path it points at. Prose text
   #    ([MIT](LICENSE), [`hcb-dev`](plugins/hcb-dev)) is exempt: only a text
-  #    containing a slash or a file extension is claiming to be a path.
+  #    containing a slash or a file extension is claiming to be a path. A
+  #    `#fragment` on the target is not part of the path — deep-linking to a
+  #    section is exactly what the "read this" lists encourage.
   while IFS= read -r lnk; do
     [ -n "$lnk" ] || continue
     text=${lnk#*[\`}; text=${text%%\`]*}
     tgt=${lnk##*](}; tgt=${tgt%)}
     case "$tgt" in http*|mailto:*) continue ;; esac
     case "$text" in *[/.]*) ;; *) continue ;; esac
-    [ "$text" = "$tgt" ] || err "$md: link text '$text' is not its target '$tgt'"
-  done < <(grep -o '\[`[^`]*`\]([^)]*)' "$md" 2>/dev/null)
+    [ "$text" = "$tgt" ] || [ "$text" = "${tgt%%#*}" ] \
+      || err "$md: link text '$text' is not its target '$tgt'"
+  done < <(printf '%s\n' "$body" | grep -o '\[`[^`]*`\]([^)]*)' 2>/dev/null)
 
   # 2. '## Reference files' is the one list whose entire job is to send the
   #    reader elsewhere. Every entry is a link.
   while IFS= read -r line; do
     [ -n "$line" ] && err "$md: Reference files entry is not a link: $line"
-  done < <(awk '
+  done < <(printf '%s\n' "$body" | awk '
     /^## Reference files/ { inref = 1; next }
     /^## / { inref = 0 }
     inref && /^- / && !/\]\(/ { print substr($0, 1, 60) }
-  ' "$md")
+  ')
 
   # 3. ${CLAUDE_PLUGIN_ROOT} is substituted in skill and agent content only, and
-  #    a relative path already resolves everywhere. Named templates
-  #    (`<file>.md`) stay legal — CONTRIBUTING.md teaches the pattern with one.
+  #    a relative path already resolves everywhere — so no markdown file is ever
+  #    named through it. Restricted to `.md` on purpose: a bundled *script* path
+  #    is the placeholder's documented use, including inside `allowed-tools`
+  #    frontmatter, and is nothing anyone would link. A `<name>` template is
+  #    exempt too — CONTRIBUTING.md teaches the pattern with one, and a template
+  #    names no file to link.
   while IFS= read -r hit; do
     [ -n "$hit" ] || continue
-    printf '%s\n' "$ref_names" | grep -qxF -- "${hit##*/}" \
-      && err "$md: '$hit' — link the reference by relative path instead"
-  done < <(grep -o '\${CLAUDE_PLUGIN_ROOT}/references/[A-Za-z0-9._-]*\.md' "$md" 2>/dev/null)
+    case "$hit" in *'<'*) continue ;; esac
+    err "$md: '$hit' — link the file by relative path instead"
+  done < <(printf '%s\n' "$body" | grep -o '\${CLAUDE_PLUGIN_ROOT}/[A-Za-z0-9._/<>-]*\.md' 2>/dev/null)
 
   # 4. A docs URL fetched by Claude should return raw markdown; one a person
   #    clicks should return the rendered page. Which applies is decided by the
-  #    file it is written in, not by the link.
+  #    file it is written in, not by the link. Sentence punctuation is not part
+  #    of a URL — without trimming it, `…/hooks.md.` reads as missing the suffix
+  #    it already carries.
   while IFS= read -r u; do
     [ -n "$u" ] || continue
+    u=${u%%[.,;:)]}
     case "$u" in *llms.txt) continue ;; esac
     if [ "$audience" = human ]; then
       case "$u" in *.md) err "$md: '$u' — drop '.md', this file is read by people" ;; esac
     else
       case "$u" in *.md) ;; *) err "$md: '$u' — add '.md', this file is fetched by Claude" ;; esac
     fi
-  done < <(grep -o 'https://code\.claude\.com/docs/[A-Za-z0-9./-]*' "$md" 2>/dev/null)
+  done < <(printf '%s\n' "$body" | grep -o 'https://code\.claude\.com/docs/[A-Za-z0-9./-]*' 2>/dev/null)
 
   # 5. A bare backticked reference is the short form for something already
   #    linked in this file. With no link anywhere in it, the reader has no way
-  #    to reach the file at all.
+  #    to reach the file at all. A file naming itself is not a pointer — there
+  #    is nothing to link it to.
   while IFS= read -r m; do
     [ -n "$m" ] || continue
     case "$m" in '${'*) continue ;; esac   # rule 3 already owns the placeholder form
     b=${m##*/}
+    [ "$b" = "$(basename "$md")" ] && continue
     printf '%s\n' "$ref_names" | grep -qxF -- "$b" || continue
     printf '%s\n' "$linked" | grep -qxF -- "$b" \
       || err "$md: '$m' is never linked in this file — link its first mention"
-  done < <(grep -o '`[^`]*\.md`' "$md" 2>/dev/null | tr -d '`')
+  done < <(printf '%s\n' "$body" | grep -o '`[^`]*\.md`' 2>/dev/null | tr -d '`' | sort -u)
 done < <(md_files)
 
 # --- summary ----------------------------------------------------------------

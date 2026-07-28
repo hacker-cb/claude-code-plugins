@@ -4,10 +4,10 @@ This repo is a Claude Code plugin marketplace (`hacker-cb-plugins`). It hosts th
 
 Official docs:
 
-- Plugins: <https://code.claude.com/docs/en/plugins>
-- Marketplaces: <https://code.claude.com/docs/en/plugin-marketplaces>
-- Skills: <https://code.claude.com/docs/en/skills>
-- Full index of every docs page: <https://code.claude.com/docs/llms.txt>
+- [Plugins](https://code.claude.com/docs/en/plugins)
+- [Marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)
+- [Skills](https://code.claude.com/docs/en/skills)
+- [Full index of every docs page](https://code.claude.com/docs/llms.txt)
 
 ## Naming convention
 

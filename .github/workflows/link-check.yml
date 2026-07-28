@@ -33,17 +33,35 @@ jobs:
         with:
           args: --no-progress './**/*.md' '.claude/**/*.md'
           # Report rather than fail: the issue below is the signal, and a red
-          # cron job nobody opens is not.
+          # cron job nobody opens is not. This does NOT cover `failIfEmpty`,
+          # which defaults to true and fails the step outright — deliberately
+          # left on, since zero links found means the globs stopped matching,
+          # not that every link is fine. The steps below run either way.
           fail: false
 
-      # Reuses the single open issue with this title instead of filing a new one
-      # each week, so a link that stays broken does not become a pile.
+      # The action has no notion of "the issue for this": given `issue-number`
+      # it updates that issue, and without one it opens a new issue every run.
+      # Find the open one by title first, or a link that stays broken files a
+      # fresh issue every Monday.
+      - name: Find the existing report, if any
+        id: existing
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh issue list --state open --label documentation \
+                --search 'Link check — broken links found in:title' \
+                --json number,title \
+                --jq 'map(select(.title == "Link check — broken links found")) | .[0].number // empty')
+          echo "number=$n" >> "$GITHUB_OUTPUT"
+
       - name: File or update the report
-        if: steps.lychee.outputs.exit_code != 0
+        if: always() && steps.lychee.outputs.exit_code != 0
         uses: peter-evans/create-issue-from-file@v6
         with:
           title: Link check — broken links found
           content-filepath: ./lychee/out.md
+          issue-number: ${{ steps.existing.outputs.number }}
           # `documentation` already exists in this repo. A label that does not
           # exist yet would have to be created first, and the run would fail
           # trying to apply it.
