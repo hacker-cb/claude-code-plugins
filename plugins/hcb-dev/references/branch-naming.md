@@ -60,14 +60,26 @@ branch named past it is unpushable rather than merely unconventional. Read it
 where you can — mirrored, because a `gh`-only check leaves every GitLab repo to
 discover its own rule from a rejected push:
 
+"No rule configured" is a normal answer on both forges — GitHub returns a list
+without the rule, GitLab answers 404 outright — so capture the result and read the
+variable, rather than piping a failed call into `jq` and printing its error as if
+it were a pattern:
+
 ```bash
 # GitHub — rules already in force on that branch, ref_name conditions applied
-gh api "repos/<owner>/<repo>/rules/branches/<branch>" \
-  --jq '.[] | select(.type=="branch_name_pattern") | .parameters'
-# GitLab — one push-rule object per project; <project> is URL-encoded ("group%2Frepo").
-# 404 means no push rules are configured at all, which is not an error here.
-glab api "projects/<project>/push_rule" | jq -r '.branch_name_regex // "none"'
+gh_rule="$(gh api "repos/<owner>/<repo>/rules/branches/<branch>" 2>/dev/null \
+  | jq -r '.[] | select(.type=="branch_name_pattern") | .parameters.pattern // empty' 2>/dev/null)"
+echo "GitHub: ${gh_rule:-none}"
+# GitLab — one push-rule object per project; <project> is URL-encoded ("group%2Frepo")
+gl_rule="$(glab api "projects/<project>/push_rule" 2>/dev/null \
+  | jq -r '.branch_name_regex // empty' 2>/dev/null)"
+echo "GitLab: ${gl_rule:-none}"
 ```
+
+`// empty` rather than `// "none"` in the filter: on an empty body — which is what
+a 404 or an auth failure leaves behind — `jq` prints nothing and still exits 0, so
+a default inside the filter never fires and `|| echo none` never runs. The shell's
+`${var:-none}` is what actually covers that case.
 
 Treat a rejected push as a naming failure, not a permissions one.
 

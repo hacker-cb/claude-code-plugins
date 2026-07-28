@@ -223,8 +223,9 @@ name that already describes the change alone.
 
 On a run driven from upstream the **rename** is usually a no-op:
 `hcb-dev:shipping-workflow` step 0 normalized the name before the branch was ever
-pushed. The **publish** is not. `netpush push -u` below is the only place this
-skill puts the branch on the remote, and without it Step 2's `--force-with-lease`
+pushed. The **publish** is not. `netpush push "$PUSH_REMOTE" -u "$NEW"` below is
+the only place this skill puts the branch on the remote, and without it Step 2's
+`--force-with-lease`
 dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
 ref at all — so skip the rename when the name is already right, and never skip the
 push. The rename half also stays because the user can enter this skill directly,
@@ -297,8 +298,19 @@ fi
 NEW="<new-name>"   # from branch-naming.md, whose block validates it — MAY equal $cur
 # An open PR pins the name: renaming means deleting the head ref below, which
 # closes the PR and takes its review threads with it. Keep the name instead.
-if [ "$cur" != "$NEW" ] \
-   && [ -n "$(gh pr list --head "$cur" --state open --json number -q '.[].number' 2>/dev/null)" ]; then
+# This probe must fail CLOSED. Empty output covers two very different answers —
+# "no PR" and "gh could not tell me" (auth expired, wrong default repo, network) —
+# and reading the second as the first renames the branch and deletes the old ref,
+# closing a PR you never saw. Keep the exit status, not just the output.
+if pr_open="$(gh pr list --head "$cur" --state open --json number -q '.[].number' 2>/dev/null)"; then
+  pr_known=1
+else
+  pr_known=0
+fi
+if [ "$cur" != "$NEW" ] && [ "$pr_known" = 0 ]; then
+  echo "PR STATE UNKNOWN for $cur — keeping the name; a rename here could close a PR I cannot see"
+  NEW="$cur"
+elif [ "$cur" != "$NEW" ] && [ -n "$pr_open" ]; then
   echo "note: PR already open on $cur — keeping the name (renaming would close it)"
   NEW="$cur"
 fi
