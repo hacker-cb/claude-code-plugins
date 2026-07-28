@@ -89,6 +89,12 @@ Also stop and ask the user when:
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it
 
+Each of those stops shows your recommended option **first**, with a one-line
+reason grounded in the code — a bare question hands back the work this skill's own
+analysis was there to do. Both that and the split above (act on the mechanical and
+reversible, stop on what cannot be walked back) come from the shared protocol in
+[`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
+
 When you do act autonomously, narrate what you did and why in a short line, so the
 user can follow along.
 
@@ -542,3 +548,7 @@ Keep it scannable: short grouped bullets, not an essay.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
   auto-generated, and when a rename is off the table. Read it before Step 1; the
   push mechanics stay in that step.
+- [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — where autonomy ends and
+  asking begins, and why every stop carries a recommendation rather than a bare
+  question. It governs the stop-and-ask list near the top and Step 5's merge
+  authorization; read it before the first stop, not at it.
