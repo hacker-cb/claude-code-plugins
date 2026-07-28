@@ -132,7 +132,7 @@ and only by consent.
   request. Then push the branch (non-interactive guard,
   [`base-resolution.md`](base-resolution.md)) and open the change request inline,
   mirrored:
-  ```bash
+```text
   # GitHub
   gh pr create   --base <parent> --head <branch> --fill
   # GitLab
@@ -148,3 +148,5 @@ and only by consent.
   declined it — the driver keeps its own stop-and-ask: it drives to "ready to
   merge" and waits. Completion never invents authorization the gate did not
   capture.
+
+```

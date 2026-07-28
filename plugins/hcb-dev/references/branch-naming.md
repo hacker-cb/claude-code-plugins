@@ -62,7 +62,7 @@ without the rule, GitLab answers 404 outright — so capture the result and read
 variable, rather than piping a failed call into `jq` and printing its error as if
 it were a pattern:
 
-```bash
+```text
 # GitHub — rules already in force on that branch, ref_name conditions applied
 gh_rule="$(gh api "repos/<owner>/<repo>/rules/branches/<branch>" 2>/dev/null \
   | jq -r '.[] | select(.type=="branch_name_pattern") | .parameters.pattern // empty' 2>/dev/null)"
@@ -137,7 +137,7 @@ Two cases git will **not** stop you on, because it cannot see them:
   upstream is push-time config, and `git push <remote> <branch>` without `-u`
   publishes the branch while setting nothing.
 
-  ```bash
+```text
   # GitHub
   gh pr list --head "<branch>" --state open --json number
   # GitLab
@@ -170,3 +170,5 @@ because nothing local can detect them, or because they belong to the caller:
 | derive the new name from the old one | read the diff and the task; the old name is the thing with no information in it |
 | ask the user what to call a branch | a branch name is mechanical and reversible ([`architecture-decisions.md`](architecture-decisions.md) §1) — name it and narrate one line |
 | impose this shape over the repo's own convention | read what the repo already does; flag a bad convention, follow it anyway |
+
+```

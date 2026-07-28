@@ -35,9 +35,11 @@ Two values, and every later step needs both. Shell state does not survive betwee
 silent no-op against cwd, which is the one thing this step exists to prevent.
 
 ```bash
-git worktree list --porcelain | sed -n '1s/^worktree //p'   # PROJECT: the PRIMARY worktree
-git -C "<PROJECT>" symbolic-ref --short refs/remotes/<remote>/HEAD
+git worktree list --porcelain | sed -n '1s/^worktree //p'   # the PRIMARY worktree
 ```
+
+Then read `<remote>/HEAD` in it — `symbolic-ref --short refs/remotes/<remote>/HEAD`,
+with the remote resolved rather than assumed.
 
 `PROJECT` is the primary worktree, **not** cwd: a run started inside a worktree
 still cleans the repository as a whole.
@@ -114,13 +116,26 @@ the risk class does.
 
 ## Step 4 — Discovery (read-only, one parallel batch)
 
+Runnable as-is — it derives the primary worktree rather than taking it on trust:
+
 ```bash
-git -C "<PROJECT>" worktree list --porcelain     # locked / prunable / detached, with reasons
-git -C "<PROJECT>" for-each-ref refs/heads/ \
+P="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
+git -C "$P" worktree list --porcelain      # locked / prunable / detached, with reasons
+git -C "$P" for-each-ref refs/heads/ \
     --format='%(refname:short) | %(worktreepath) | %(upstream:short) %(upstream:track)'
-git -C "<PROJECT>" branch --merged "<remote>/<default>"
-git -C "<PROJECT>" rev-list --count "<remote>/<default>..<branch>"   # per branch, merged or not
-git -C "<each worktree path>" status --porcelain --ignored=traditional -unormal
+git -C "$P" worktree list --porcelain | sed -n 's/^worktree //p' \
+  | while read -r w; do
+      printf '%s: ' "$w"
+      git -C "$w" status --porcelain --ignored=traditional -unormal | tr '\n' ' '; echo
+    done
+```
+
+Two more need the default branch step 1 resolved, so substitute it — these are a
+recipe, not a script:
+
+```text
+git -C <P> branch --merged <remote>/<default>
+git -C <P> rev-list --count <remote>/<default>..<branch>     # per branch, merged or not
 ```
 
 **Ask for ignored files, and use `traditional`.** `worktree remove` deletes the
@@ -158,8 +173,8 @@ merged `fix/login` may have come from a fork, or the local branch of that name
 may have been recreated since with fresh commits. So a forge "merged" is a
 candidate, not a verdict — confirm the local branch carries nothing of its own:
 
-```bash
-git -C "<PROJECT>" rev-list --count "<remote>/<default>..<branch>"    # 0 -> nothing to lose
+```text
+git -C <P> rev-list --count <remote>/<default>..<branch>     # 0 -> nothing to lose
 ```
 
 Non-zero means the local branch has commits the merge does not contain: surface
@@ -226,11 +241,11 @@ answer; a subset means only that subset.
 
 Substitute the literals step 1 resolved.
 
-```bash
-git -C "<PROJECT>" worktree remove "<path>"     # 1. --force only if confirmed dirty
-git -C "<PROJECT>" worktree prune --verbose     # 2. repo-global and unaimable
-git -C "<PROJECT>" branch -d "<branch>"         # 3. -d re-checks "fully merged"
-git -C "<PROJECT>" branch -D "<branch>"         #    -D only for a confirmed squash merge
+```text
+git -C <P> worktree remove <path>      1. --force only if confirmed dirty
+git -C <P> worktree prune --verbose    2. repo-global and unaimable
+git -C <P> branch -d <branch>          3. -d re-checks "fully merged"
+git -C <P> branch -D <branch>             -D only for a confirmed squash merge
 ```
 
 Worktree removals come first: branch deletion fails while a worktree still holds

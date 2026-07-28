@@ -11,7 +11,7 @@ has already applied each ruleset's `ref_name` conditions *and* includes rules
 inherited from an organization-level ruleset, and a plain `/rulesets` listing does
 neither.
 
-```bash
+```text
 # One line per rule in force on the base branch. `ruleset_source_type` says
 # whether it came from this repo or from an org-level ruleset.
 gh api repos/<owner>/<repo>/rules/branches/<base> \
@@ -53,7 +53,7 @@ repo without the rule a manually-requested Copilot that has already reviewed loo
 exactly like "never involved" if you only check the first two, and its comments
 would go unread. Check for an existing review before skipping:
 
-```bash
+```text
 # --paginate applies --jq per page, so a bare `length` prints one number *per
 # page* — sum them, or a PR with >100 reviews answers with several numbers.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
@@ -76,7 +76,7 @@ So the test is never "does a Copilot review exist" but "**has Copilot reviewed t
 exact commit**". Each review carries the SHA it reviewed in `commit_id`; compare it
 with the PR head:
 
-```bash
+```text
 head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
 # `| @json` pins each review to exactly one line, so `tail -1` is the last review
 # and not whatever gh's output formatting happened to put on the last line.
@@ -116,7 +116,7 @@ Use whichever source is available (in priority order):
    and review threads. Richest structured output (author, path, line, body,
    thread/resolution state).
 2. **`gh` CLI:**
-   ```bash
+```text
    gh pr view <pr> --comments
    # review threads with resolution state (GraphQL). Select the thread `id` and each
    # comment's `databaseId` — you need them below: `id` is the `<thread_node_id>` for
@@ -196,7 +196,7 @@ loop and keeps the review thread honest.
   the repo — see *Classifying severity*.)
 
 Reply + resolve via:
-```bash
+```text
 # reply to a review comment thread:
 gh api repos/<owner>/<repo>/pulls/<pr>/comments/<comment_id>/replies \
   -f body="<reply text>"

@@ -111,7 +111,7 @@ necessary but never sufficient (see *When there are no gates* below).
 
 Read the live gates before and during the loop:
 
-```bash
+```text
 # The AUTHORITATIVE signals — these already fold in whatever is enforced, by any
 # mechanism (rulesets, classic branch protection, org policy). Trust these:
 # `--required` answers "which checks GATE this merge"; without it you cannot tell a
@@ -193,23 +193,20 @@ Four things are local to this step, and nothing else here is:
    nothing.
 4. **Never delete when the name did not change** — that ref is the one just pushed.
 
+Ask the forge, with the old name, and act on the count — never on the absence of
+an answer. `gh` exits 0 with empty output when the default repo is wrong, and an
+uninstalled CLI prints nothing either; both look exactly like "no PR".
+
 ```bash
-cur="<the name it had>"; NEW="<the name it has now>"   # equal -> nothing to delete
-PUSH_REMOTE="<resolved above>"
-# `n` is a count, and `[ -n "$n" ]` is what separates "gh answered 0" from "gh could
-# not answer" — the latter also prints nothing, and reading it as a 0 deletes the
-# head ref of a PR you never saw.
-if [ "$cur" != "$NEW" ]; then
-  if n="$(gh pr list --head "$cur" --state open --json number --jq 'length' 2>/dev/null)" \
-     && [ -n "$n" ] && [ "$n" = 0 ]; then
-    GIT_TERMINAL_PROMPT=0 \
-    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-      git push "$PUSH_REMOTE" --delete "$cur"
-  else
-    echo "KEEPING $cur on the remote — no confirmation that nothing points at it"
-  fi
-fi
+gh pr list --head "$OLD" --state open --json number --jq 'length'
 ```
+
+`0` and only `0` licenses the delete. Route it through the same non-interactive
+guard as every other network call in this skill
+([`../../references/base-resolution.md`](../../references/base-resolution.md)) —
+an unattended run otherwise hangs on a credential prompt:
+`GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes" git push <push-remote> --delete "$OLD"`.
+
 
 ## Step 2 — Bring the branch up to date with base
 
@@ -241,7 +238,7 @@ draft). This matters beyond convention: Copilot **skips draft PRs** unless the
 the review un-run entirely — and where a required check stands in for that review,
 leave the PR permanently un-mergeable. Open ready-for-review:
 
-```bash
+```text
 gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>"
 ```
 
@@ -253,7 +250,7 @@ draft.** Unconditional, because nothing else will tell you: `mergeStateStatus`
 carries no draft signal, so on an ungated base a draft reads `CLEAN` and sails
 through the whole loop with Copilot never having run on it.
 
-```bash
+```text
 gh pr view <pr> --json isDraft -q .isDraft   # true -> the next line
 gh pr ready <pr>
 ```

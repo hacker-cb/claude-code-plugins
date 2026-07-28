@@ -55,7 +55,7 @@ it can publish a branch in someone else's repository.
 2. **The base of the open change request.** Both CLIs answer with a *bare branch
    name*, so pair it with whichever remote actually carries that branch — take
    the first ref that exists, in `remotes_ranked` order:
-   ```bash
+```text
    # GitHub
    gh pr view --json baseRefName -q .baseRefName
    # GitLab
@@ -141,7 +141,7 @@ Nobody is at the keyboard. An auth-required HTTPS remote or a passphrase-locked
 SSH key turns `ls-remote`, `fetch` or `push` into an indefinite hang, and
 `timeout` is absent on stock macOS. Route every one of them through:
 
-```bash
+```text
 GIT_TERMINAL_PROMPT=0 \
 GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
   git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 <cmd>
