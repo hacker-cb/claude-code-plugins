@@ -53,8 +53,14 @@ rated), `deferred_offer` (local only — an open offer, recorded not executed),
 **Invariants both backends honor:** never complete on an unresolved *actionable*
 coverage gap without explicit clearance (a structural gap is noted, never
 blocking — see `multi-review`); never guess a base or a remote
-([`base-resolution.md`](base-resolution.md)); leave the tree in a known state;
-emit a completion record.
+([`base-resolution.md`](base-resolution.md)); never land an auto-generated branch
+name **silently** — normalization happens upstream at `shipping-workflow` step 0,
+and both backends here are what make it permanent, but where
+[`branch-naming.md`](branch-naming.md) forbids the rename outright (a shared
+branch others have pulled, an open change request, a branch checked out in another
+worktree) that prohibition wins: land the work under the name it has and say so in
+the report, rather than deadlocking two absolutes against each other; leave the
+tree in a known state; emit a completion record.
 
 ## Mode — resolve, don't assume
 
@@ -76,6 +82,16 @@ Pure git; works with **no remote at all**. It touches the network for *nothing* 
 that is the whole point of local mode. Publishing is the escalation offer below,
 and only by consent.
 
+- **The name lands with the merge.** `--no-ff` writes the branch name into the
+  parent's history (`Merge branch 'claude/…' into …`) — and unlike a change
+  request's branch, which dies at merge, that line stays for good. A slice
+  arriving here still carrying an auto-generated name means step 0 was skipped:
+  rename it before merging ([`branch-naming.md`](branch-naming.md)) — the local
+  half of that reference and nothing more: a bare `git branch -m`, no network. If
+  the branch was pushed at some earlier point, the stale remote ref **stays**;
+  removing it is an outward write, so it rides with the consented escalation offer
+  below and the report says the old name is still on the remote until then. Local
+  mode does not reach for the network to tidy up a name.
 - **Merge strategy** — the gate's shown default. `--no-ff` by default, so the
   slice stays a visible, revertible boundary in the parent's history and the later
   whole-feature change request keeps its slices reviewable. `ff` only where the
@@ -120,8 +136,12 @@ and only by consent.
   base plus `merge-strategy` and `merge-auth`: GitHub → `hcb-dev:github-pr-workflow`;
   GitLab → `hcb-dev:gitlab-mr-workflow` once it exists (deferred — until then
   GitLab falls to the inline fallback below).
-- **No driver installed** — push the branch (non-interactive guard,
-  [`base-resolution.md`](base-resolution.md)), then open the change request inline,
+- **No driver installed** — normalize the branch name **first**
+  ([`branch-naming.md`](branch-naming.md)): this path has no driver Step 1 behind
+  it to catch an auto-generated name, and once the change request is open the name
+  is fixed for good — renaming means deleting the old head ref, which closes the
+  request. Then push the branch (non-interactive guard,
+  [`base-resolution.md`](base-resolution.md)) and open the change request inline,
   mirrored:
   ```bash
   # GitHub

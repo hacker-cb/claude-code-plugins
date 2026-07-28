@@ -84,11 +84,12 @@ for it on its own, so it is **not** an automatic post-completion step. Run
 ### Completing it
 
 - **`shipping-workflow`** — `/hcb-dev:shipping-workflow`
-  Take one finished, verified slice to completion: commit, hand off to
-  `multi-review`, apply the fixes, check coverage, then complete **by mode** —
-  merged locally into its parent branch, or an open change request (handed to a
-  PR/MR driver below). Steps 1–4 are identical in both modes; the mode is read
-  only at the last step. The one confirmation gate is a coverage gap.
+  Take one finished, verified slice to completion: normalize the branch name,
+  commit, hand off to `multi-review`, apply the fixes, check coverage, then
+  complete **by mode** — merged locally into its parent branch, or an open change
+  request (handed to a PR/MR driver below). Steps 0–4 are identical in both modes;
+  the mode is read only at the last step. The one confirmation gate is a coverage
+  gap.
 - **`github-pr-workflow`** — `/hcb-dev:github-pr-workflow`
   Drive a GitHub pull request from a finished branch to a merged PR: rename an
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
@@ -123,6 +124,16 @@ saying something else.
   `github-pr-workflow` and `implementation-workflow` — every skill that resolves a
   base or a remote — and by `slice-completion.md`, through which `shipping-workflow`
   reaches it.
+- [`references/branch-naming.md`](references/branch-naming.md) — the shape a
+  branch name takes (`<type>/<name>`), how a feature branch and its slices are
+  named (`--` suffix, never nested with `/` — refs are paths and the nested form
+  collides), what counts as auto-generated, the three points at which the name is
+  applied (creation → normalization → the driver's last resort, each idempotent),
+  and the cases where a rename is off the table (an open change request, another
+  session's worktree, a shared branch). Read by `implementation-workflow` (naming
+  at creation), `shipping-workflow` (step 0, mode-blind normalization),
+  `github-pr-workflow` (its Step 1) and `slice-completion.md` (both backends —
+  a `--no-ff` merge writes the name into history permanently).
 - [`references/slice-completion.md`](references/slice-completion.md) — how a slice
   *ends*: the completion contract (the signals a backend receives and returns),
   the two backends (`local` git-merge into the parent, and the forge-detected
