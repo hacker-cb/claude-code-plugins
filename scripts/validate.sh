@@ -168,18 +168,18 @@ ref_names=$(find plugins -type f -path '*/references/*.md' -exec basename {} \; 
 # ignoring — `.claude/worktrees/`, `.worktrees/`, `node_modules/` — so a checkout
 # with a stale nested worktree fails the gate on a copy of the repo that is not
 # the one being validated. `git ls-files` cannot see an ignored path at all.
+# The fallback prunes the same directories by name: without a `.git` there is
+# nothing to ask, and a source tree unpacked from an archive can still carry a
+# worktree directory someone copied in.
 md_files() {
   if git rev-parse --git-dir >/dev/null 2>&1; then
     git ls-files '*.md' | sort
   else
-    find . -type f -name '*.md' -not -path './.git/*' 2>/dev/null | sed 's|^\./||' | sort
+    find . \( -name .git -o -path './.claude/worktrees' -o -name .worktrees -o -name node_modules \) -prune \
+      -o -type f -name '*.md' -print 2>/dev/null | sed 's|^\./||' | sort
   fi
 }
 
-# NOTE: every loop below reads via `< <(...)` process substitution, never
-# `cmd | while`. A pipeline puts the loop in a subshell, where `err` still
-# prints but its increment of $errors is discarded when the subshell exits —
-# the script would report failures and then exit 0.
 # A fenced block holds examples, not links. CLAUDE.md and CONTRIBUTING.md both
 # show the convention by writing out the wrong form next to the right one, and a
 # rule that reads those would fail the very file that defines it. Blank the
