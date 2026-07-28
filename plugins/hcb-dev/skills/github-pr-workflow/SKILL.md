@@ -537,8 +537,8 @@ Keep it scannable: short grouped bullets, not an essay.
 
 ## Reference files
 
-- `references/copilot.md` — How to find, classify (Critical/Important vs skip),
+- [`references/copilot.md`](references/copilot.md) — How to find, classify (Critical/Important vs skip),
   fix, and reply to Copilot review findings. Read it before Step 4.
-- `../../references/branch-naming.md` — the shape of a branch name, what counts as
+- [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
   auto-generated, and when a rename is off the table. Read it before Step 1; the
   push mechanics stay in that step.

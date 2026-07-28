@@ -97,7 +97,7 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   clean, then — only on your explicit go-ahead — merge, monitor, and report.
   Discovers the repo's actual merge gates instead of assuming them. See
   [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md) and
-  [`references/copilot.md`](skills/github-pr-workflow/references/copilot.md).
+  [`skills/github-pr-workflow/references/copilot.md`](skills/github-pr-workflow/references/copilot.md).
 
 ### Cleaning up
 
@@ -152,7 +152,7 @@ saying something else.
 
 ## Forge neutrality
 
-Per the repo's authoring rule ([`.claude/rules/forge-neutrality.md`](../../.claude/rules/forge-neutrality.md)),
+Per the repo's authoring rule ([`../../.claude/rules/forge-neutrality.md`](../../.claude/rules/forge-neutrality.md)),
 these skills avoid assuming a single forge. Where the guidance needs a concrete
 command — resolving a base, opening a change request — the GitHub (`gh`) and
 GitLab (`glab`) forms are given side-by-side.
