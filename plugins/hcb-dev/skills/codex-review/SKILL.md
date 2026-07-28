@@ -162,20 +162,26 @@ fi
 # one gap left — git exposes no `http.connectTimeout` (`git help --config` lists
 # 43 `http.*` keys in 2.54 and none is that), so an unreachable host costs
 # whatever the OS allows, measured at ~10s on macOS. Bounded, not unbounded.
-# $1 is the budget, so a fetch is not held to a probe's clock; and
-# ${GIT_SSH_COMMAND:-ssh} EXTENDS the user's ssh setup rather than replacing it —
-# clobbering a multi-account `-i ~/.ssh/id_work` makes a repo that pushes fine by
-# hand fail "Permission denied", and BatchMode then forbids the fallback.
+# NET_BUDGET carries the timeout so a fetch is not held to a probe's clock. It is
+# a named variable rather than a positional parameter (`$N`) because Claude Code
+# substitutes those in skill content with words from the invocation arguments —
+# a positional would reach the shell already rewritten as whatever the caller
+# typed. `$@` is not substituted and stays. And ${GIT_SSH_COMMAND:-ssh} EXTENDS the user's ssh setup
+# rather than replacing it — clobbering a multi-account `-i ~/.ssh/id_work` makes
+# a repo that pushes fine by hand fail "Permission denied", and BatchMode then
+# forbids the fallback.
 net() {
-  budget="$1"; shift
-  $budget env GIT_TERMINAL_PROMPT=0 \
+  $NET_BUDGET env GIT_TERMINAL_PROMPT=0 \
     GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
     git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
 }
-# Branch names cannot contain spaces, so awk's field split is safe.
+# `sed` rather than awk for the same reason: awk field references are positional
+# (`$N`) too, and would be replaced before any shell saw them. The symref line is
+# `ref: refs/heads/<branch>\tHEAD`, and a branch name cannot contain whitespace.
 if [ -z "${BASE:-}" ] && [ -n "$REM" ]; then
-  h="$(net "$TO_NET" ls-remote --symref "$REM" HEAD 2>/dev/null \
-        | awk '$1=="ref:" && $3=="HEAD" { sub(/^refs\/heads\//,"",$2); print $2; exit }')"
+  NET_BUDGET="$TO_NET"
+  h="$(net ls-remote --symref "$REM" HEAD 2>/dev/null \
+        | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p')"
   [ -n "$h" ] && BASE="$REM/$h"
 fi
 BASE="${BASE:-$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)}"
@@ -201,7 +207,8 @@ if [ -n "${BASE:-}" ]; then
     case "$BASE" in
       */*) p="${BASE%%/*}"; b2="${BASE#*/}"
            if git remote | grep -qx -- "$p"; then
-             net "$TO_FETCH" fetch --quiet "$p" \
+             NET_BUDGET="$TO_FETCH"
+             net fetch --quiet "$p" \
                "+refs/heads/$b2:refs/remotes/$p/$b2" 2>/dev/null || true
            fi ;;
     esac
@@ -219,7 +226,8 @@ if [ -n "${BASE:-}" ]; then
     # 3. not local yet: fetch that branch from each remote in turn, taking the
     #    first whose remote-tracking ref then exists.
     for r in $(remotes_ranked); do
-      net "$TO_FETCH" fetch --quiet "$r" \
+      NET_BUDGET="$TO_FETCH"
+      net fetch --quiet "$r" \
         "+refs/heads/$BASE:refs/remotes/$r/$BASE" 2>/dev/null || continue
       git rev-parse --verify -q "$r/$BASE^{commit}" >/dev/null 2>&1 \
         && { BASE="$r/$BASE"; break; }
