@@ -9,7 +9,13 @@
 # `.claude/rules/` are otherwise never scanned.
 
 # `.git` holds packed objects and hook samples full of URL-shaped text.
-exclude_path = [".git"]
+#
+# These are REGULAR EXPRESSIONS matched against the whole path, not directory
+# names. An unanchored `.git` therefore also matches `skills/git-cleanup`,
+# `skills/github-pr-workflow` and `skills/seeding-gitignore` — `.` is any
+# character — and lychee reports no error for a file it never opened, so four
+# files silently dropped out of a run that still read "0 errors". Anchor it.
+exclude_path = ["^\\.git/"]
 
 # Keep the scheduled external run cheap and stable across reruns. A week between
 # full re-checks is well inside the cadence at which a docs page gets renamed.

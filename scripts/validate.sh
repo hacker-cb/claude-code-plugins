@@ -164,6 +164,18 @@ done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
 # project, not pointing at a file here, and must not be dragged into a link.
 ref_names=$(find plugins -type f -path '*/references/*.md' -exec basename {} \; 2>/dev/null | sort -u)
 
+# Tracked markdown only. A plain `find .` also descends into whatever git is
+# ignoring — `.claude/worktrees/`, `.worktrees/`, `node_modules/` — so a checkout
+# with a stale nested worktree fails the gate on a copy of the repo that is not
+# the one being validated. `git ls-files` cannot see an ignored path at all.
+md_files() {
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    git ls-files '*.md' | sort
+  else
+    find . -type f -name '*.md' -not -path './.git/*' 2>/dev/null | sed 's|^\./||' | sort
+  fi
+}
+
 # NOTE: every loop below reads via `< <(...)` process substitution, never
 # `cmd | while`. A pipeline puts the loop in a subshell, where `err` still
 # prints but its increment of $errors is discarded when the subshell exits —
@@ -203,7 +215,7 @@ while IFS= read -r md; do
   #    (`<file>.md`) stay legal — CONTRIBUTING.md teaches the pattern with one.
   while IFS= read -r hit; do
     [ -n "$hit" ] || continue
-    printf '%s\n' "$ref_names" | grep -qx "${hit##*/}" \
+    printf '%s\n' "$ref_names" | grep -qxF -- "${hit##*/}" \
       && err "$md: '$hit' — link the reference by relative path instead"
   done < <(grep -o '\${CLAUDE_PLUGIN_ROOT}/references/[A-Za-z0-9._-]*\.md' "$md" 2>/dev/null)
 
@@ -227,11 +239,11 @@ while IFS= read -r md; do
     [ -n "$m" ] || continue
     case "$m" in '${'*) continue ;; esac   # rule 3 already owns the placeholder form
     b=${m##*/}
-    printf '%s\n' "$ref_names" | grep -qx "$b" || continue
-    printf '%s\n' "$linked" | grep -qx "$b" \
+    printf '%s\n' "$ref_names" | grep -qxF -- "$b" || continue
+    printf '%s\n' "$linked" | grep -qxF -- "$b" \
       || err "$md: '$m' is never linked in this file — link its first mention"
   done < <(grep -o '`[^`]*\.md`' "$md" 2>/dev/null | tr -d '`')
-done < <(find . -type f -name '*.md' -not -path './.git/*' 2>/dev/null | sort)
+done < <(md_files)
 
 # --- summary ----------------------------------------------------------------
 echo ""
