@@ -1,0 +1,22 @@
+# Link checking for this repo. Two modes share this file:
+#
+#   lychee --offline './**/*.md' '.claude/**/*.md'   # CI, every PR: internal paths only
+#   lychee './**/*.md' '.claude/**/*.md'             # scheduled + local: external URLs too
+#
+# The inputs are passed on the command line, not here, because the two modes
+# differ only in --offline. `.claude/**/*.md` must be spelled out: a leading-dot
+# directory does not match `./**/*.md`, so the authoring rules under
+# `.claude/rules/` are otherwise never scanned.
+
+# `.git` holds packed objects and hook samples full of URL-shaped text.
+exclude_path = [".git"]
+
+# Keep the scheduled external run cheap and stable across reruns. A week between
+# full re-checks is well inside the cadence at which a docs page gets renamed.
+cache = true
+max_cache_age = "7d"
+
+# 429 is rate limiting, not a broken link — GitHub and docs.github.com both hand
+# it out under load, and treating it as a failure would make the scheduled run
+# report rot that isn't there.
+accept = ["200", "429"]

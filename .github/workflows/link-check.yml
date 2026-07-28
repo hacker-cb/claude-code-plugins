@@ -1,0 +1,50 @@
+name: Link check (external)
+
+# External URLs break with time, not with a pull request: a docs page is renamed,
+# a repo is moved, a host has a bad afternoon. Checking them on every PR would
+# fail changes that never touched a link, so they are checked here on a schedule
+# instead. Internal paths ARE checked per-PR, by the `--offline` step in
+# validate.yml.
+#
+# This job is deliberately NOT in the default-branch ruleset's required list. It
+# is allowed to go red without blocking anything — a rate limit upstream is not a
+# reason to stop merging.
+on:
+  schedule:
+    # Mondays, 06:17 UTC. Off the hour on purpose: the top of the hour is when
+    # every cron-scheduled job on GitHub fires at once and runners queue.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write # to file the report below
+
+jobs:
+  link-check:
+    name: External links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check every link, internal and external
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress './**/*.md' '.claude/**/*.md'
+          # Report rather than fail: the issue below is the signal, and a red
+          # cron job nobody opens is not.
+          fail: false
+
+      # Reuses the single open issue with this title instead of filing a new one
+      # each week, so a link that stays broken does not become a pile.
+      - name: File or update the report
+        if: steps.lychee.outputs.exit_code != 0
+        uses: peter-evans/create-issue-from-file@v6
+        with:
+          title: Link check — broken links found
+          content-filepath: ./lychee/out.md
+          # `documentation` already exists in this repo. A label that does not
+          # exist yet would have to be created first, and the run would fail
+          # trying to apply it.
+          labels: documentation

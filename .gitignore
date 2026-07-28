@@ -35,3 +35,6 @@ CLAUDE.local.md
 # Git worktrees
 .worktrees/
 .claude/worktrees/
+
+# lychee link-checker cache (local, regenerated on every run)
+.lycheecache
