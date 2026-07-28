@@ -1,11 +1,11 @@
 # Resolving the base branch and its remote
 
-Shared by every skill in this plugin that needs a base to diff against, a default
-branch to reason about, or a remote to push to — `codex-review`, `multi-review`,
-`git-cleanup`, `github-pr-workflow`, `shipping-workflow`. It lives here, not in
-any one of them, because prose copies drift: a fix lands in some and the rest go
-on saying something else. (Take the list as a pointer, not a census — the rule is
-that anything resolving a base or a remote links here.)
+Read by anything in this plugin that needs a base to diff against, a default
+branch to reason about, or a remote to push to. It lives here, not in any one
+skill, because prose copies drift: a fix lands in some and the rest go on saying
+something else. Which skills read it is not listed here — the links pointing at
+this file are that record, and the map for humans lives in
+[`../README.md`](../README.md).
 
 The one rule everything below serves: **never guess a name.** `master`, `main`,
 `dev`, `develop`, `trunk` — every repo picks its own, and `origin` is the same

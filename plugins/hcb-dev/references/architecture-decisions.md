@@ -1,10 +1,8 @@
 # Deciding with the user — when to ask, how to ask, when to flag
 
-Shared by the skills that make decisions *with* a person rather than for them —
-chiefly `implementation-workflow` at its planning gate, and the stop-and-ask
-points inside `shipping-workflow` and the change-request drivers. Three rules,
-each with a reason, because the reason is what lets you apply them to a case this
-file never named.
+Read wherever a decision is made *with* a person rather than for them — a
+planning gate, a stop-and-ask point. Three rules, each with a reason, because the
+reason is what lets you apply them to a case this file never named.
 
 ## 1. Ask about architecture; act on mechanics
 
