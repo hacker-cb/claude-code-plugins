@@ -86,65 +86,27 @@ gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
 # fresh iff commit_id == $head
 ```
 
-Copilot does **not** reliably re-review every push, though — a push that only
-applies its own suggestions often earns no new review — so waiting unconditionally
-would hang forever. Run this protocol after each push:
+Copilot does **not** reliably re-review every push — one that only applies its own
+suggestions often earns no new review — so waiting unconditionally hangs forever.
+Four rules cover it:
 
-1. **Make sure a review is actually pending for the current head.** Under
-   `review_on_push: true` GitHub requests it for you; otherwise, or if nothing
-   shows up, request one explicitly. Prefer a connected GitHub MCP server's
-   request-a-Copilot-review tool when it offers one; the portable fallback is:
-   ```bash
-   gh pr edit <pr> --add-reviewer "@copilot"
-   ```
-   Don't hand-roll that as a REST `requested_reviewers` POST: Copilot is not an
-   ordinary reviewer login, and `@copilot` is the special value `gh` case-handles
-   for it. It is **not supported on GitHub Enterprise Server**.
-2. **Poll — and read the requested-reviewer state, not a clock, as the signal.**
-   Copilot's presence among the PR's requested reviewers is what tells you a
-   re-review is still coming: a push (re-)requests it, and the forge drops the
-   request when Copilot either posts its review or declines.
+1. **Freshness is `commit_id == $head`,** never "a review exists". A stale review
+   is indistinguishable from a fresh one by any other signal.
+2. **Read the requested-reviewer state through a bot-visible surface** (above), and
+   make sure a review is actually pending: under `review_on_push` GitHub requests it
+   for you, otherwise `gh pr edit <pr> --add-reviewer "@copilot"`. Do not hand-roll
+   that as a REST `requested_reviewers` POST — `@copilot` is a value `gh`
+   case-handles.
+3. **Settled means a review of the head, or Copilot gone from the request list with
+   no head review.** A review posted against an *earlier* commit consumes the request
+   while leaving the head unreviewed — that is not a decline; re-request and keep
+   waiting.
+4. **A cap bounds the wait, never authorises passing it.** Cap elapsed while Copilot
+   is still requested → hold, tell the user the head-commit review is outstanding,
+   and extend or escalate.
 
-   **Do not read that with `gh pr view <pr> --json reviewRequests`** — it cannot see
-   Copilot. `gh` fetches the reviewer union including `...on Bot{login}` and then
-   exports only the `User` and `Team` members, so a Bot reviewer is dropped and the
-   array is empty whether or not Copilot is pending. Every poll then reads as a
-   decline and the loop exits while the review is in flight — the exact silent drop
-   this protocol exists to prevent. Read a surface that keeps bots:
-
-   ```bash
-   gh api repos/<owner>/<repo>/pulls/<pr> --jq '[.requested_reviewers[]?.login]'
-   ```
-
-   Poll until **one** of these settles:
-   - a Copilot review with `commit_id == $head` appears → a fresh review landed; or
-   - Copilot has **dropped out** of that list with no such review → it
-     declined to re-review this push (common when the push only applied its own
-     suggestions).
-   The first review usually lands within a few minutes, but can lag 15+ minutes on
-   some repos — measure this repo's real head-review latency from recent PRs and
-   size any safety cap from that, never from a fixed default.
-3. **While Copilot is still requested it has NOT declined — it is slow,
-   and no elapsed timer authorises merging past it.** A safety cap is only a bound on
-   the wait — never itself a confirmation of a drop-out, and never permission to
-   merge over a review still on its way. If the cap elapses while Copilot is still
-   requested, do **not** proceed: hold the merge, tell the user the head-commit
-   review is still outstanding, and extend the wait or escalate.
-   - **Fresh review** → process it from the top: classify, fix, reply, resolve.
-   - **Confirmed drop-out** (Copilot absent from the requested-reviewer read, no review of the
-     head) → it declined this push; proceed, and say so in the report rather than
-     implying it reviewed. Two absences masquerade as a decline and must be ruled
-     out first: right after a push the request can lag, so confirm Copilot was
-     actually (re-)requested for this head; and a review that posts against an
-     *earlier* commit consumes the request while leaving the head unreviewed — a
-     newest Copilot review whose `commit_id != head` is **not** a decline of the
-     head, so re-request Copilot (`gh pr edit <pr> --add-reviewer "@copilot"`) and
-     keep waiting. Conclude "declined" only once a request aimed at the current head
-     itself comes back empty.
-
-Do this after *every* push — including the last one, whose review is the easiest to
-skip and the most likely to be missed — and never evaluate the loop's exit until it
-settles.
+Do this after *every* push, the last one included — its review is the easiest to
+skip and the most likely to be missed.
 
 ## Finding the comments
 
@@ -231,7 +193,7 @@ loop and keeps the review thread honest.
 - After replying, **resolve the thread where the repo requires it** — all threads
   under `required_review_thread_resolution`, otherwise at least the ones you fixed —
   so the PR's review state is clean. (Reply is unconditional; resolution scales with
-  the repo — see *Classifying severity* and *Loop exit*.)
+  the repo — see *Classifying severity*.)
 
 Reply + resolve via:
 ```bash
@@ -244,16 +206,3 @@ gh api graphql -f query='
   -F threadId=<thread_node_id>
 ```
 Or the equivalent MCP tools if available.
-
-## Loop exit
-
-The loop ends when the PR is **both mergeable by GitHub and clean by your own
-bar** — every required check green and the repo's thread-resolution requirement
-met, *plus* CI genuinely green and Copilot's review **of the current head**
-processed with its Critical/Important findings resolved, whatever the repo does or
-doesn't enforce. On a repo with no enforced gates GitHub reports mergeable from
-PR-open, so mergeability alone is never the exit — your own bar is the floor (see
-the main skill's *When there are no gates, or they can't be trusted*). Where all
-threads must be resolved, an unresolved nit blocks the merge as much as a Critical
-one; where they need not, replied-but-unresolved minor items don't block. Detect
-which applies, don't assume.
