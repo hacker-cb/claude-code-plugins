@@ -44,8 +44,7 @@ mode once, at the gate, and threads it down; the mechanics live in
 - **Draft a slicing.** Split the work into **independently reviewable slices** — a
   slice is a chunk that can be reviewed and completed on its own. **One slice is
   the normal case.** Keep each small enough to review and coherent enough to stand
-  alone; more than one usually stacks on a shared feature branch and the slices
-  can depend on each other.
+  alone; more than one stacks, each taking the previous as its base.
 - **The lower bound (Tier 0).** Trivial work — one slice, no architectural
   decisions, a couple of files — skips the gate and this whole orchestration: just
   make the edit and hand it to `hcb-dev:shipping-workflow`. The gate is for work
@@ -61,20 +60,14 @@ project rule that fights good architecture gets flagged — see
 
 Settle, in one gate:
 
-- **Slice breakdown + branch layout** — a shared feature branch only for more than
-  one slice; a single slice's parent is the base. Name both the feature branch and
-  its slices per
-  [`../../references/branch-naming.md`](../../references/branch-naming.md) — the
-  slices carry the feature's name with a `--` suffix, never nested under it with a
-  `/` (refs are paths, and the nested form collides). Show the names in the plan;
-  they are mechanical, so present them, don't ask about them.
+- **Slice breakdown + branch layout.** Name the branches per
+  [`../../references/branch-naming.md`](../../references/branch-naming.md) and show
+  them in the plan; they are mechanical, so present them rather than asking. More
+  than one slice stacks by giving each the previous one as its base — there is no
+  feature-branch machinery to set up.
 - **Architectural / implementation forks** — the choices the code cannot answer.
 - **Completion mode** — `local` or `request` (default `request` if the user is
   silent and phrasing does not decide).
-- **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request;
-  the real choice is the final `feature → base` PR: `merge-commit` to keep slice
-  history, `squash` to collapse), filtered for request mode to the repo's allowed
-  methods.
 - **Merge authorization** (request only) — merge-on-green as the shown default;
   approving the plan *is* the explicit authorization, threaded to the driver so
   the run does not stop to re-ask. Local completion needs none (choosing local is
@@ -88,37 +81,33 @@ Settle, in one gate:
 | Tier | Work | Gate | Persistence |
 |---|---|---|---|
 | 0 | trivial, 1 slice, no arch forks | none (skip) | none |
-| 1 | a slice or two | a brief inline confirm | native task-list |
-| 2 | multi-slice, real forks | native plan mode | plan-doc under the resolved plans dir + task-list |
-| 3 | large / team / multi-session | plan mode | + an optional forge tracking issue (offer; deferred capability) |
+| 1 | exactly one slice | a brief inline confirm | native task-list |
+| 2 | two or more slices, real forks | native plan mode | plan-doc + task-list |
 
-For anything multi-slice, **persist the plan and the captured authorizations** so
-a long autonomous run survives context compaction — track slice progress on the
-native task list, and keep the plan (mode, merge authorization, strategy) in a
-durable plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans` (resolve the
-path from the variable; never hardcode `~/.claude`). Losing the mode or the merge
-authorization to a compaction mid-run is the failure this guards against.
+From Tier 2 up, **persist the plan and the captured authorizations** and **read
+them back before each handoff** — `mode` and `merge-auth` are exactly what a long
+run loses to compaction, and writing them down only helps if someone reads them.
+Track slice progress on the native task list; keep the plan under
+`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, resolving the path from the variable.
+Where they cannot be recovered, **stop and re-ask** rather than defaulting — a
+silent default here publishes under an authorization nobody gave.
 
 ## Phase 2 — Autonomous execution
 
 Per slice, **in order** (slices run sequentially — they stack and depend on each
 other):
 
-1. **Cut the slice branch from the current tip of its parent** (the feature
-   branch, or the base for a single slice) — not all up front, so a later slice
-   sees the ones below it and conflicts less. Cut it under the name the gate
-   showed ([`../../references/branch-naming.md`](../../references/branch-naming.md)):
+1. **Cut the slice branch from the current tip of its parent** — one at a time, so
+   a later slice sees the ones below it and conflicts less. Cut it under the name
+   the gate showed ([`../../references/branch-naming.md`](../../references/branch-naming.md)):
    naming it right at creation is free, and it makes the normalization step
    downstream (`shipping-workflow` step 0) the no-op it is meant to be.
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do.
-3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
-   completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
-   slice's parent tip, so the review covers this slice and not the cumulative
-   feature diff), `merge-strategy`, `merge-auth`, and `defer-offer` (set on a
-   multi-slice run so the per-slice offer is suppressed — the one whole-feature
-   offer is made in Phase 3). The coverage *policy* is not threaded — an actionable
-   gap always stops (Phase 1), a fixed invariant every completion honors.
+3. **Verify, then hand the slice to `hcb-dev:shipping-workflow`** — run the tests,
+   or exercise the behavior where there are none; its precondition is "complete and
+   verified" and it does not re-check. Thread `mode`, `parent`, and `merge-auth`
+   where the gate captured one.
 
 **Autonomy is "no routine questions", not "never pauses".** The legitimate stops
 remain and are honored — this skill does not waive the downstream skills' own
@@ -129,7 +118,6 @@ safety gates:
   non-default (`slice-completion.md`);
 - CI that will not go green after ~5 fix iterations (`github-pr-workflow`);
 - a Critical/Important finding that needs a product/design decision;
-- a genuinely-ambiguous merge strategy the gate did not settle;
 - a git operation that would lose work on a shared branch;
 - a genuinely-**unforeseen** architectural fork.
 
@@ -139,31 +127,13 @@ won't pass, a blocking finding, a conflict needing a real decision): **stop**, d
 later slices depended on the failed one, skip them and say so. A half-finished set
 is reported as half-finished, never packaged as whole.
 
-**Finishing a multi-slice set.** Once the slices are done, the set still has to
-land as a whole — and this is where `local` and `request` diverge:
-
-- **`request`** — the per-slice change requests have stacked on the feature
-  branch; now open and drive the final `feature → base` change request through the
-  forge driver (`hcb-dev:github-pr-workflow` on GitHub), with the gate's
-  `merge-strategy` and `merge-auth`. This is **completion, not an offer** —
-  request mode was chosen, so the integration change request is driven like any
-  other, or the set's work is left stranded on the feature branch.
-- **`local`** — the slices are already merged into the feature branch, so there is
-  nothing left to drive; the whole-feature change request is an **offer**, made in
-  Phase 3 (accepting it is the consented exit from local mode).
-
-A single-slice set has no feature branch and no integration step — the one slice
-completed straight onto the base in Phase 2.
-
 ## Phase 3 — Report and offers
 
 - **The report** — [`../../references/report-format.md`](../../references/report-format.md):
   per-slice outcomes, review coverage and what stayed uncovered, incidental
   findings rated by importance (or an explicit "none").
-- **After a local set** — offer, never force, **one** whole-feature change request
-  on the feature branch (a single `feature → base` PR; the slices are already
-  merged locally, so there is no stack to reconstruct). This is the consented exit
-  from local mode.
+- **After a local set** — offer, never force, a change request on the landed work.
+  This is the consented exit from local mode.
 - **Issues output** (consent-gated, mirrored `gh` / `glab`) — offer to file
   follow-up / incidental-finding issues, and to close or link the intake issue.
   In local mode there is no change request to close it, so an issue taken in by
@@ -173,10 +143,10 @@ completed straight onto the base in Phase 2.
 
 ## Why a skill — not a subagent, not a Workflow
 
-- **Not a subagent.** `hcb-dev:multi-review` must run in the main conversation: a
-  subagent has neither the `Agent` nor the `Task` tool, so multi-review's own
-  filtering pass silently does not run and the security review comes back
-  unfiltered. And only the main agent can hold the planning gate with the user.
+- **Not a subagent.** Subagents do not get `Workflow`, `AskUserQuestion` or
+  `EnterPlanMode`. The first means `hcb-dev:multi-review` cannot fire the built-in
+  `code-review` at all, so a whole reviewer disappears from the coverage table; the
+  other two mean the planning gate cannot be held with the user.
 - **Not a Workflow.** The gate and the emergent forks are interactive, and the
   per-slice work is judgment, not a deterministic fan-out. Workflow stays a leaf
   where it already earns its place — `multi-review` fires the built-in

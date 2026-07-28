@@ -111,25 +111,29 @@ it can publish a branch in someone else's repository.
 5. **`@{upstream}`** — last resort. When the branch tracks its own remote
    counterpart this narrows the range to unpushed commits only.
 
-## What every rung owes the caller: a ref that exists
+## Ref or name — they are not interchangeable
 
-Hand on the **remote-tracking form** `<remote>/<default>`, never the bare name.
-A clone that only ever checked out feature branches has no local default branch
-at all, and there both
+A resolved default has two uses, and crossing them fails in opposite ways:
 
-```bash
-git branch --merged <default>              # fatal: not a valid object name
-git rev-list --count <default>..<branch>   # fatal: unknown revision
-```
+| The consumer wants | Form | Examples |
+|---|---|---|
+| a **ref** | `<remote>/<default>` | `diff`, `merge-base`, `rev-list`, `branch --merged`, `--set-upstream-to` |
+| a **name** | bare `<default>` | `git switch`, a merge target, `[ "$cur" = "$default" ]` |
 
-die outright — taking the whole step with them.
+A bare name used as a ref is fatal and says so. **A ref used as a name is silent**:
+`[ "$cur" = "<remote>/<default>" ]` is false even while standing on the default
+branch, so a guard written that way never fires, and `git switch <remote>/<default>`
+detaches HEAD instead of failing. That asymmetry is the whole reason to keep the two
+straight.
 
-The remote-tracking ref is not guaranteed present either: a clone that fetched
-only feature branches has no `<remote>/<default>` until you fetch it. Materialise
-it before any consumer runs, and **never compose a ref from an empty name** — an
-unreachable remote returns nothing, and `<remote>/` is a bogus ref that makes
-every consumer fatal. An unresolved default is "the question cannot be answered",
-not "nothing matched": say so and treat what depended on it as unknown.
+The remote-tracking ref is not guaranteed present: a clone that fetched only feature
+branches has none until you fetch it, and a plain `git fetch <remote> <branch>` obeys
+a narrowed clone's configured refspec — it writes `FETCH_HEAD` and no remote-tracking
+ref at all. Name the destination explicitly
+(`+refs/heads/<b>:refs/remotes/<r>/<b>`), then verify. And **never compose a ref from
+an empty name**: an unreachable remote returns nothing, and `<remote>/` makes every
+consumer fatal. An unresolved default is "the question cannot be answered", not
+"nothing matched".
 
 ## Every network call is non-interactive
 

@@ -80,23 +80,6 @@ a default inside the filter never fires and `|| echo none` never runs. The shell
 
 Treat a rejected push as a naming failure, not a permissions one.
 
-## Sets — a feature branch and its slices
-
-```text
-feat/csv-export            # the shared feature branch
-feat/csv-export--parser    # slice 1
-feat/csv-export--writer    # slice 2
-```
-
-**Never nest a slice under its feature branch with a slash.** Refs are paths:
-`refs/heads/feat/csv-export` is a *file*, so `refs/heads/feat/csv-export/parser`
-would require that same path to be a *directory* — git refuses one or the other
-outright ("cannot lock ref"), and which one dies depends on the order they were
-created. The `--` separator reads as the same nesting and cannot collide.
-
-A single slice has no feature branch and no suffix: the one branch is named for
-the change and lands on the base directly.
-
 ## Auto-generated, meaningful, and how to tell them apart
 
 | The name is | Examples | Verdict |
@@ -185,6 +168,5 @@ because nothing local can detect them, or because they belong to the caller:
 | rename a shared branch others have pulled | leave it; a nicer name is not worth breaking someone's upstream, and no local probe can see that they pulled |
 | rename a host-session branch earlier than needed | the host owns `claude/…` and cleans up its own worktree sessions through internal, undocumented bookkeeping — normalize on the way into completion, not at cut |
 | derive the new name from the old one | read the diff and the task; the old name is the thing with no information in it |
-| nest a slice under its feature branch with `/` | `--` — refs are paths, and the nested form is a D/F collision |
 | ask the user what to call a branch | a branch name is mechanical and reversible ([`architecture-decisions.md`](architecture-decisions.md) §1) — name it and narrate one line |
 | impose this shape over the repo's own convention | read what the repo already does; flag a bad convention, follow it anyway |

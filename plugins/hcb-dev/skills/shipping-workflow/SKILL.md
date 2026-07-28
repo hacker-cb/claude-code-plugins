@@ -30,11 +30,10 @@ per-slice step `hcb-dev:implementation-workflow` calls. Steps 0–4 are identica
 both **completion modes** — `local` (merge into the parent, no forge) and
 `request` (a change request) — because the mode is read only at step 5. When
 driven by the orchestrator, the caller threads the completion signals as
-invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy`, `merge-auth`,
-and `defer-offer` (the coverage *policy* is not one of them — an actionable gap
-always stops, a fixed invariant, not a threaded value). Standalone, they default —
-mode by the
-ladder in
+invocation prose: `mode`, `parent`, and — request only — `merge-auth`. Nothing
+else: the review base is `parent`, the merge strategy is the driver's to filter
+against what the repo allows, and an actionable coverage gap always stops (a fixed
+invariant, not a threaded value). Standalone, they default — mode by the ladder in
 [`../../references/slice-completion.md`](../../references/slice-completion.md)
 (ending at `request`, so behavior matches before this skill grew a second mode),
 and `parent` = the base. That reference owns the mechanics of completion; steps
@@ -56,15 +55,8 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect that reviewer to come back short.
-2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
-   `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
-   base so the review covers *this* slice's range, not the cumulative feature diff.
-   The cumulative diff is a *superset* — it covers this slice **and** the
-   already-merged slices below it — so it slips past the coverage gate (the gate
-   catches a review that covered *less* than the change or the wrong range, not one
-   that covered *more*) while wasting review on landed work and muddying which
-   findings belong to this slice. The `diff-base` is what keeps coverage aligned to
-   the slice. Standalone, `multi-review` resolves its own base.
+2. **Local review** — hand off to `hcb-dev:multi-review`, with `parent` as the
+   explicit base so the review covers this slice and not whatever came before it.
 3. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    Skip a finding only if the fix would change intended behavior, reach well
    outside the diff, or the finding is plainly wrong, and note the skip in one
@@ -80,19 +72,14 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
      network, `--no-ff` by default so the slice stays a revertible boundary.
      Merging into a feature branch is autonomous; merging into the **default
      branch** — or one it cannot resolve as non-default — stops and asks first.
-     Then offer — never force — a change request on the landed work, unless
-     `defer-offer` is set (the orchestrator makes one whole-feature offer instead).
+     Then offer — never force — a change request on the landed work.
    - **`request`** — detect the forge (by the remote and what answers there, never
      the hostname) and hand to its change-request driver — `hcb-dev:github-pr-workflow`
      on GitHub, the mirrored `glab` path on GitLab until `gitlab-mr-workflow`
-     exists — passing `parent` as the base plus `merge-strategy` and `merge-auth`.
-     A gate-captured `merge-auth` is the driver's explicit authorization; absent
-     it, the driver falls back to its **own** authorization rule — which still
-     treats the user's own "ship it" / "get this merged" as authorization and
-     stops to ask only when neither is present, so a standalone ship behaves
-     exactly as it did before this skill grew a mode. If no driver is installed,
-     push
-     the branch and open the change request inline (mirrored `gh` / `glab`). **With
+     exists — passing `parent` as the base and `merge-auth` where the gate captured
+     one. Absent it, the driver keeps its own rule: the user's "ship it" is
+     authorization, and it stops to ask when neither is present. If no driver is
+     installed, push the branch and open the change request inline (mirrored `gh` / `glab`). **With
      several remotes and none preferred, stop and ask** rather than publishing in
      someone else's repository.
 
