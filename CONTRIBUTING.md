@@ -97,3 +97,12 @@ bash scripts/validate.sh         # must pass (0 errors)
 ```
 
 CI runs the same structural validation plus the official `claude plugin validate`.
+
+Links follow one rule: a pointer to another file in this repo is a markdown link
+whose path is **relative to the file it is written in**. `scripts/validate.sh`
+checks the form; `lychee` checks that every link still resolves, and CI runs it
+over internal paths on each PR. To check external URLs too, run it locally:
+
+```bash
+lychee './**/*.md' '.claude/**/*.md'
+```
