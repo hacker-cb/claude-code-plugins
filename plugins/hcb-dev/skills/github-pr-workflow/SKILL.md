@@ -217,8 +217,8 @@ your judgment is the only safety net.
 
 The shape a name takes, what counts as auto-generated, and the cases where a
 rename is *not* allowed all live in
-[`../../references/branch-naming.md`](../../references/branch-naming.md)
-(`${CLAUDE_PLUGIN_ROOT}/references/branch-naming.md`) — apply it here, and leave a
+[`../../references/branch-naming.md`](../../references/branch-naming.md) —
+apply it here, and leave a
 name that already describes the change alone.
 
 On a run driven from upstream the **rename** is usually a no-op:
@@ -236,8 +236,8 @@ What this step owns is the mechanics that reference points back at: renaming a
 branch that may already be on a remote, and publishing it under the final name.
 
 Remote resolution follows the shared ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md)
-(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`) — read it for the reasoning
+[`../../references/base-resolution.md`](../../references/base-resolution.md) —
+read it for the reasoning
 the blocks below apply. Which remote to push to is `<push-remote>`, and `origin` is not it by assumption —
 a repo may have a single remote under another name. But it is **not** the tracked
 `@{upstream}` either: in a fork checkout the branch tracks `upstream/<base>`, and
@@ -537,8 +537,8 @@ Keep it scannable: short grouped bullets, not an essay.
 
 ## Reference files
 
-- `references/copilot.md` — How to find, classify (Critical/Important vs skip),
+- [`references/copilot.md`](references/copilot.md) — How to find, classify (Critical/Important vs skip),
   fix, and reply to Copilot review findings. Read it before Step 4.
-- `../../references/branch-naming.md` — the shape of a branch name, what counts as
+- [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
   auto-generated, and when a rename is off the table. Read it before Step 1; the
   push mechanics stay in that step.

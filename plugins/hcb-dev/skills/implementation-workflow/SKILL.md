@@ -184,13 +184,13 @@ completed straight onto the base in Phase 2.
 
 ## Reference files
 
-- `../../references/slice-completion.md` — how a slice ends, both backends; read
+- [`../../references/slice-completion.md`](../../references/slice-completion.md) — how a slice ends, both backends; read
   before Phase 2's handoff.
-- `../../references/architecture-decisions.md` — when to ask, always with a
+- [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — when to ask, always with a
   recommendation, and flagging rule-vs-architecture drift; read before Phase 1.
-- `../../references/report-format.md` — the Phase 3 report shape.
-- `../../references/base-resolution.md` — resolving a base and a remote without
+- [`../../references/report-format.md`](../../references/report-format.md) — the Phase 3 report shape.
+- [`../../references/base-resolution.md`](../../references/base-resolution.md) — resolving a base and a remote without
   guessing either name; the slice parent is handed to the reviewers and to
   completion as an explicit base.
-- `../../references/branch-naming.md` — the shape of a branch name and the
+- [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name and the
   feature/slice layout; read before Phase 1's branch layout and Phase 2's cut.

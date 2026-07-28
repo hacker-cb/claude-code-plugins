@@ -1,0 +1,37 @@
+# Link checking for this repo. Two modes share this file:
+#
+#   lychee --offline './**/*.md' '.claude/**/*.md'   # CI, every PR: internal paths only
+#   lychee './**/*.md' '.claude/**/*.md'             # scheduled + local: external URLs too
+#
+# The inputs are passed on the command line, not here, because the two modes
+# differ only in --offline. `.claude/**/*.md` must be spelled out: a leading-dot
+# directory does not match `./**/*.md`, so the authoring rules under
+# `.claude/rules/` are otherwise never scanned.
+
+# REGULAR EXPRESSIONS matched against the whole path, not directory names — an
+# unanchored `.git` also matches `skills/git-cleanup`, `skills/github-pr-workflow`
+# and `skills/seeding-gitignore`, since `.` is any character. lychee reports
+# nothing for a file it never opened, so that silently dropped four files from a
+# run still reading "0 errors". Anchor every entry.
+#
+# The worktree entries matter for the local command above rather than for CI: a
+# developer checkout with `.claude/worktrees/` populated otherwise feeds every
+# other branch's markdown into the same run. They are gitignored, so CI never
+# sees them.
+exclude_path = [
+  "^\\.git/",
+  "^\\.claude/worktrees/",
+  "^\\.worktrees/",
+]
+
+# `accept` REPLACES lychee's default 2xx range rather than extending it, so the
+# range has to be spelled out or a 201/204/206 counts as a broken link. 429 is
+# rate limiting, not rot — GitHub and docs.github.com both hand it out under
+# load, and failing on it would make the scheduled run report breakage that
+# isn't there.
+accept = ["200..=299", "429"]
+
+# No `cache`: nothing restores or saves `.lycheecache` between CI runs, and the
+# scheduled job runs weekly — further apart than any cache lifetime worth
+# keeping. Locally, `.lycheecache` is gitignored; add `--cache` on the command
+# line when iterating.

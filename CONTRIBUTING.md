@@ -4,10 +4,10 @@ This repo is a Claude Code plugin marketplace (`hacker-cb-plugins`). It hosts th
 
 Official docs:
 
-- Plugins: <https://code.claude.com/docs/en/plugins>
-- Marketplaces: <https://code.claude.com/docs/en/plugin-marketplaces>
-- Skills: <https://code.claude.com/docs/en/skills>
-- Full index of every docs page: <https://code.claude.com/docs/llms.txt>
+- [Plugins](https://code.claude.com/docs/en/plugins)
+- [Marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)
+- [Skills](https://code.claude.com/docs/en/skills)
+- [Full index of every docs page](https://code.claude.com/docs/llms.txt)
 
 ## Naming convention
 
@@ -34,7 +34,7 @@ Official docs:
    ```
 
 2. Optional supporting files live next to `SKILL.md`: `references/*.md`, `scripts/*`, etc. Reference them from `SKILL.md` so Claude knows when to load them.
-3. **Shared between skills?** Put it one level up, in `plugins/hcb-<domain>/references/*.md`, and link it from each skill by relative path (`../../references/<file>.md`, i.e. `${CLAUDE_PLUGIN_ROOT}/references/<file>.md`). Only `skills/`, `commands/`, `agents/` and `hooks/` are component dirs, so a `references/` at the plugin root is data, not a component — `scripts/validate.sh` only scans `*/skills/*/SKILL.md` and ignores it. Prose copied into two skills drifts: a fix lands in one and the other keeps saying something else. See `plugins/hcb-dev/references/base-resolution.md`, shared by five skills.
+3. **Shared between skills?** Put it one level up, in `plugins/hcb-<domain>/references/*.md`, and link it from each skill by relative path (`../../references/<file>.md`). Only `skills/`, `commands/`, `agents/` and `hooks/` are component dirs, so a `references/` at the plugin root is data, not a component — `scripts/validate.sh` only scans `*/skills/*/SKILL.md` and ignores it. Prose copied into two skills drifts: a fix lands in one and the other keeps saying something else. See [`plugins/hcb-dev/references/base-resolution.md`](plugins/hcb-dev/references/base-resolution.md), shared by five skills.
 4. The skill is invoked as `/hcb-<domain>:<skill-name>`.
 
 A **rule** is the same artifact: a skill whose body is guidance rather than a step-by-step procedure, with the triggering conditions carried by the `description` so it's pulled in exactly when relevant. To keep one out of the `/` menu, add frontmatter `user-invocable: false` (it can still be model-invoked); to keep Claude from auto-invoking it, add `disable-model-invocation: true` (it stays available as a slash command). Setting both makes the skill unreachable.
@@ -88,7 +88,7 @@ Then add a marketplace entry with a relative `source`:
 }
 ```
 
-Unlike `plugins/hcb-*`, wrappers use the **upstream package name** (no `hcb-` prefix) and **omit** `version` — the server is versioned in its own repo and pinned in `.mcp.json` (`@latest` or `@x.y.z`). `scripts/validate.sh` exempts `./external_plugins/*` from the prefix and semver checks. See `external_plugins/markdown-docs/` for a worked example.
+Unlike `plugins/hcb-*`, wrappers use the **upstream package name** (no `hcb-` prefix) and **omit** `version` — the server is versioned in its own repo and pinned in `.mcp.json` (`@latest` or `@x.y.z`). `scripts/validate.sh` exempts `./external_plugins/*` from the prefix and semver checks. See [`external_plugins/markdown-docs`](external_plugins/markdown-docs) for a worked example.
 
 ## Before opening a PR
 
@@ -97,3 +97,12 @@ bash scripts/validate.sh         # must pass (0 errors)
 ```
 
 CI runs the same structural validation plus the official `claude plugin validate`.
+
+Links follow one rule: a pointer to another file in this repo is a markdown link
+whose path is **relative to the file it is written in**. `scripts/validate.sh`
+checks the form; `lychee` checks that every link still resolves, and CI runs it
+over internal paths on each PR. To check external URLs too, run it locally:
+
+```bash
+lychee './**/*.md' '.claude/**/*.md'
+```

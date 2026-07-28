@@ -44,8 +44,8 @@ git -C "$PROJECT" symbolic-ref --short refs/remotes/<remote>/HEAD   # -> <remote
 Never assume `main`/`master`/`dev`, and never assume the remote is `origin`.
 Both names — and the traps in that one `symbolic-ref` line — belong to the shared
 ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md)
-(`${CLAUDE_PLUGIN_ROOT}/references/base-resolution.md`): how to rank the remotes
+[`../../references/base-resolution.md`](../../references/base-resolution.md) —
+how to rank the remotes
 that exist, why a read symref can be stale, why the remote-tracking form is the
 only safe one to carry forward. Read it; the two blocks below are that reference
 applied to this sweep.

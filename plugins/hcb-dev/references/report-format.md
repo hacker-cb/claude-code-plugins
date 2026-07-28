@@ -1,10 +1,9 @@
 # The final report
 
-Shared by the skills that report on finished work — `implementation-workflow`
-after a set, and `shipping-workflow` after a standalone slice — so the shape is
-the same whichever ran and the wording does not drift. It sits at a different
-altitude from `github-pr-workflow`'s Step 7: that one reports on a single merged
-change request; this one reports on the *whole run*, across slices. In a
+Read by whatever reports on finished work, so the shape is the same whichever ran
+and the wording does not drift. It sits at a different altitude from
+`github-pr-workflow`'s Step 7: that one reports on a single merged change
+request; this one reports on the *whole run*, across slices. In a
 multi-slice request set you get several Step 7s (one per change request) **and**
 one of these at the end; they don't compete because they cover different scopes —
 don't fold one into the other.

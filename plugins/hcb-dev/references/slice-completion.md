@@ -1,11 +1,10 @@
 # Completing a slice — the local and change-request backends
 
-Shared by the two skills that *finish* a slice: `shipping-workflow` (its final
-step) and `implementation-workflow` (the end-of-run whole-feature offer). It owns
-the one place the completion **mode** changes anything — so the front half stays
-mode-blind and the two backends cannot drift apart in two skills. It lives here,
-not in either skill, for the same reason `base-resolution.md` does: prose copies
-drift, and a fix then lands in one and the other goes on saying something else.
+Read by whatever *finishes* a slice. It owns the one place the completion **mode**
+changes anything — so the front half stays mode-blind and the two backends cannot
+drift apart across skills. It lives here, not in any one of them, for the same
+reason [`base-resolution.md`](base-resolution.md) does: prose copies drift, and a
+fix then lands in one and the other goes on saying something else.
 
 A slice arrives here already **committed, reviewed, and past the coverage gate**.
 Completion never reviews, commits, or re-runs the gate — all of that happened

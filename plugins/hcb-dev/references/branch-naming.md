@@ -1,12 +1,9 @@
 # Naming a branch — the shape, and when to apply it
 
-Shared by every skill that *creates* a branch, *normalizes* one it was handed, or
-*publishes* one: `implementation-workflow` (cuts the feature and slice branches),
-`shipping-workflow` (normalizes before the work lands), `slice-completion.md`
-(both backends land a named branch), `github-pr-workflow` (renames before the
-change request opens). It lives here, not in any one of them, because the shape
-of a name is **forge-independent** — the repo's own authoring rule names branch
-naming as exactly the kind of thing that belongs in one shared reference, since
+Read by anything that *creates* a branch, *normalizes* one it was handed, or
+*publishes* one. It lives here, not in any one skill, because the shape of a name
+is **forge-independent** — the repo's own authoring rule names branch naming as
+exactly the kind of thing that belongs in one shared reference, since
 prose copies drift and a fix then lands in some of them while the rest go on
 saying something else.
 
