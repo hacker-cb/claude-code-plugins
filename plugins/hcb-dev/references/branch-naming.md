@@ -1,0 +1,152 @@
+# Naming a branch — the shape, and when to apply it
+
+Shared by every skill that *creates* a branch, *normalizes* one it was handed, or
+*publishes* one: `implementation-workflow` (cuts the feature and slice branches),
+`shipping-workflow` (normalizes before the work lands), `slice-completion.md`
+(both backends land a named branch), `github-pr-workflow` (renames before the
+change request opens). It lives here, not in any one of them, because the shape
+of a name is **forge-independent** — the repo's own authoring rule names branch
+naming as exactly the kind of thing that belongs in one shared reference, since
+prose copies drift and a fix then lands in some of them while the rest go on
+saying something else.
+
+The one rule everything below serves: **the name describes the change, and it is
+chosen before anything reads it** — the merge commit, the change request, someone
+scanning `git branch -a` six months from now. A name is cheap to fix while it is
+local and expensive afterwards: published, it costs a network round trip; merged
+with `--no-ff`, it is in the history for good.
+
+## The shape
+
+```text
+<type>/<name>
+```
+
+- `<type>` ∈ `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
+- `<name>` — a short kebab-case description of what the change actually does
+
+Examples: `fix/security-config`, `refactor/api-names`, `feat/csv-export`.
+
+Pick both from the **diff and the task**, never from the old branch name — an
+auto-generated name is precisely the thing carrying no information, and a
+host-generated slug echoes the prompt that started the session, not the change
+that came out of it. Lowercase ASCII, hyphens between words, a few words at most:
+the name is read at a glance in a list, and every ref is also a path on disk.
+
+## The repository's convention outranks this shape
+
+Look before imposing anything. Where a repo clearly names its branches some other
+way — `JIRA-1234-…`, `<user>/…`, a bare description with no type — follow it and
+say in one line that you did; a house style that everyone's tooling already
+expects beats a nicer shape imported from outside (`architecture-decisions.md`
+§3: follow the rule, flag it non-blockingly if it fights good practice).
+
+```bash
+# GitHub
+gh pr list --state merged --limit 30 --json headRefName -q '.[].headRefName'
+# GitLab
+glab mr list --merged --output json --per-page 30 | jq -r '.[].source_branch'
+# Offline — whatever names the remote still carries. `lstrip=3` drops exactly
+# `refs/remotes/<remote>/` and leaves the rest intact, so `feat/csv-export` stays
+# two segments; `refname:short` would collapse `origin/HEAD` to a bare `origin`
+# and seed the sample with a non-branch.
+git for-each-ref --format='%(refname:lstrip=3)' refs/remotes | grep -vx HEAD
+```
+
+**A forge-side pattern is a gate, not a preference.** GitHub rulesets carry a
+`branch_name_pattern` metadata rule and GitLab push rules a `branch_name_regex`;
+where one is configured, a name that does not match is rejected **at push time**,
+so a branch named past it is unpushable rather than merely unconventional. Read
+it where you can (`gh api repos/<owner>/<repo>/rules/branches/<branch>`), and
+treat a rejected push as a naming failure, not a permissions one.
+
+## Sets — a feature branch and its slices
+
+```text
+feat/csv-export            # the shared feature branch
+feat/csv-export--parser    # slice 1
+feat/csv-export--writer    # slice 2
+```
+
+**Never nest a slice under its feature branch with a slash.** Refs are paths:
+`refs/heads/feat/csv-export` is a *file*, so `refs/heads/feat/csv-export/parser`
+would require that same path to be a *directory* — git refuses one or the other
+outright ("cannot lock ref"), and which one dies depends on the order they were
+created. The `--` separator reads as the same nesting and cannot collide.
+
+A single slice has no feature branch and no suffix: the one branch is named for
+the change and lands on the base directly.
+
+## Auto-generated, meaningful, and how to tell them apart
+
+| The name is | Examples | Verdict |
+|---|---|---|
+| a host/tooling prefix | `claude/…`, `codex/…` | rename |
+| a random or hashed suffix | `…-b29e59`, a bare uuid | rename |
+| a placeholder | `wip`, `tmp`, `temp`, `branch-1`, `<user>-patch-1` | rename |
+| a date or a bare number | `2026-07-28`, `1234` | rename, unless that *is* the repo convention |
+| descriptive, but with no `<type>` | `csv-export`, `fix-login` | **leave it** — it is not auto-generated |
+| already the shape | `feat/csv-export` | leave it — this step is a no-op |
+
+The test is whether the name says what the change does. A descriptive name
+missing its type prefix passes that test, so renaming it is cosmetics: it buys
+nothing, and once the branch is published it costs a push plus a remote deletion.
+Idempotence matters more than tidiness — every point below must be safe to run
+over a name that is already fine.
+
+## When it happens — three points, each idempotent
+
+| Point | Who | What |
+|---|---|---|
+| **Creation** | `implementation-workflow` (Phase 1 layout, Phase 2 cut) | name it correctly up front — nothing to rename later |
+| **Normalization** | `shipping-workflow`, before the work lands | rename a name that came from outside (a host worktree session, a hand-cut branch) |
+| **Last resort** | `github-pr-workflow` Step 1 | catch anything that reached the driver directly |
+
+**Normalization is mode-blind.** A local completion needs it as much as a change
+request does — arguably more: `git merge --no-ff` writes the branch name into the
+merge commit (`Merge branch 'claude/…' into …`), where it stays in the parent's
+history permanently. In request mode the name dies with the branch at merge; in
+local mode it is the part that survives.
+
+**Do it before the first push, and always before a change request opens.** Both
+are one-way doors: a pushed name needs a remote deletion to undo, and a name
+under an open change request cannot be fixed at all (below).
+
+## Renaming — the mechanics
+
+- **Unpushed, checked out here** — `git branch -m <new>`. That is the whole
+  operation; no network, and git carries the `branch.<old>.*` config across with
+  it, `pushRemote` included.
+- **Already pushed** — rename, push the new name, delete the stale remote ref.
+  Resolve the push remote **before** `git branch -m` (the ambiguity path exits,
+  and exiting after the rename leaves a branch renamed locally with nothing
+  pushed), and route every network call through the non-interactive guard. The
+  full runnable block lives in `github-pr-workflow` Step 1; remote resolution
+  itself in [`base-resolution.md`](base-resolution.md).
+- **Validate before renaming** — an invalid or colliding name fails the rename
+  and, mid-flow, leaves the step half-applied:
+
+  ```bash
+  # check-ref-format echoes the name on success and a `fatal:` on failure — the
+  # exit status is the answer, so silence both streams and read that.
+  git check-ref-format --branch "<new>" >/dev/null 2>&1 || echo "INVALID NAME"
+  git show-ref --verify --quiet "refs/heads/<new>"      && echo "NAME TAKEN"
+  # D/F collision: an existing `<new>/…` branch makes `<new>` itself impossible.
+  git for-each-ref --format='%(refname:short)' "refs/heads/<new>/**" | head -1
+  ```
+
+- **Never `git branch -M`.** The force form overwrites an existing branch of that
+  name — someone else's work, silently. On a collision pick a different name.
+
+## Never
+
+| ❌ | ✅ |
+|---|---|
+| rename a branch that already has an open change request | normalize *before* it opens — deleting the old head ref closes the change request and its review with it |
+| rename a branch checked out in another worktree | it belongs to another session — leave it alone |
+| rename a shared branch others have pulled | leave it; a nicer name is not worth breaking someone's upstream |
+| rename a host-session branch earlier than needed | the host owns `claude/…` and cleans up its own worktree sessions through internal, undocumented bookkeeping — normalize on the way into completion, not at cut |
+| derive the new name from the old one | read the diff and the task; the old name is the thing with no information in it |
+| nest a slice under its feature branch with `/` | `--` — refs are paths, and the nested form is a D/F collision |
+| ask the user what to call a branch | a branch name is mechanical and reversible ([`architecture-decisions.md`](architecture-decisions.md) §1) — name it and narrate one line |
+| impose this shape over the repo's own convention | read what the repo already does; flag a bad convention, follow it anyway |

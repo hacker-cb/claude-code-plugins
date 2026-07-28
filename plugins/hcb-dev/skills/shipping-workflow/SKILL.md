@@ -26,7 +26,7 @@ change is complete and verified — tests pass, or the behavior is confirmed —
 the tree is committable.
 
 This skill runs either standalone (a bare "ship this" on finished work) or as the
-per-slice step `hcb-dev:implementation-workflow` calls. Steps 1–4 are identical in
+per-slice step `hcb-dev:implementation-workflow` calls. Steps 0–4 are identical in
 both **completion modes** — `local` (merge into the parent, no forge) and
 `request` (a change request) — because the mode is read only at step 5. When
 driven by the orchestrator, the caller threads the completion signals as
@@ -38,8 +38,20 @@ ladder in
 [`../../references/slice-completion.md`](../../references/slice-completion.md)
 (ending at `request`, so behavior matches before this skill grew a second mode),
 and `parent` = the base. That reference owns the mechanics of completion; steps
-1–4 below are the mode-blind front half.
+0–4 below are the mode-blind front half.
 
+0. **Normalize the branch name** — rename an auto-generated or placeholder name
+   (a host session's `claude/…`, a `wip`) to the shape in
+   [`../../references/branch-naming.md`](../../references/branch-naming.md)
+   (`${CLAUDE_PLUGIN_ROOT}/references/branch-naming.md`), which also defines what
+   counts as auto-generated and leaves a name that already describes the change
+   alone. It comes **first and in both modes** because this is the cheapest the
+   rename ever gets — the branch is typically still unpushed, so it is a bare
+   `git branch -m` touching no network — and because both doors it beats shut
+   later: a name under an open change request cannot be fixed at all, and a
+   `local` completion's `--no-ff` merge writes the branch name into the parent's
+   history permanently. Do not rename a branch someone else has pulled, or one
+   whose change request is already open; the reference lists those cases.
 1. **Commit the change first**, new files included — one reviewer reads only
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
@@ -109,7 +121,7 @@ says would close it, and complete only once the user says to. This holds in
 **both modes**: a *local* merge with a reviewer silently missing is just as
 unreviewed as a change request would be — the gate is mode-blind because the
 danger is. This is the review-coverage confirmation gate, the one the front half
-(steps 1–4) turns on; local completion can add its own later (a default-branch
+(steps 0–4) turns on; local completion can add its own later (a default-branch
 merge, the post-merge offer). When `implementation-workflow` drives the run
 autonomously, this stop is one of its legitimate interrupts, not something the
 autonomy waives.

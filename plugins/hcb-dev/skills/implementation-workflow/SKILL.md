@@ -62,7 +62,12 @@ project rule that fights good architecture gets flagged — see
 Settle, in one gate:
 
 - **Slice breakdown + branch layout** — a shared feature branch only for more than
-  one slice; a single slice's parent is the base.
+  one slice; a single slice's parent is the base. Name both the feature branch and
+  its slices per
+  [`../../references/branch-naming.md`](../../references/branch-naming.md) — the
+  slices carry the feature's name with a `--` suffix, never nested under it with a
+  `/` (refs are paths, and the nested form collides). Show the names in the plan;
+  they are mechanical, so present them, don't ask about them.
 - **Architectural / implementation forks** — the choices the code cannot answer.
 - **Completion mode** — `local` or `request` (default `request` if the user is
   silent and phrasing does not decide).
@@ -101,7 +106,10 @@ other):
 
 1. **Cut the slice branch from the current tip of its parent** (the feature
    branch, or the base for a single slice) — not all up front, so a later slice
-   sees the ones below it and conflicts less.
+   sees the ones below it and conflicts less. Cut it under the name the gate
+   showed ([`../../references/branch-naming.md`](../../references/branch-naming.md)):
+   naming it right at creation is free, and it makes the normalization step
+   downstream (`shipping-workflow` step 0) the no-op it is meant to be.
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
@@ -184,3 +192,5 @@ completed straight onto the base in Phase 2.
 - `../../references/base-resolution.md` — resolving a base and a remote without
   guessing either name; the slice parent is handed to the reviewers and to
   completion as an explicit base.
+- `../../references/branch-naming.md` — the shape of a branch name and the
+  feature/slice layout; read before Phase 1's branch layout and Phase 2's cut.

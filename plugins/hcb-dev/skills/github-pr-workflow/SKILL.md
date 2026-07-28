@@ -24,9 +24,9 @@ where safe. This skill is the full lifecycle; the user may enter at any stage
 (just-finished code, or an already-open PR). Detect where they are and pick up
 from there.
 
-`hcb-dev:shipping-workflow` sits directly upstream of this skill — it commits,
-runs every available local reviewer, applies the fixes and checks coverage, then
-hands off here (in **request** mode; in local mode it merges without a PR and
+`hcb-dev:shipping-workflow` sits directly upstream of this skill — it normalizes
+the branch name, commits, runs every available local reviewer, applies the fixes
+and checks coverage, then hands off here (in **request** mode; in local mode it merges without a PR and
 never reaches this skill). If you landed here on finished work that has had no
 local review, go there first; this skill starts at the PR and will not run the
 reviewers for you.
@@ -215,16 +215,20 @@ your judgment is the only safety net.
 
 ## Step 1 — Branch naming
 
-If the current branch name is auto-generated (e.g. starts with `claude/`, or is a
-random/temporary-looking name), rename it to a meaningful `<type>/<name>`:
+The shape a name takes, what counts as auto-generated, and the cases where a
+rename is *not* allowed all live in
+[`../../references/branch-naming.md`](../../references/branch-naming.md)
+(`${CLAUDE_PLUGIN_ROOT}/references/branch-naming.md`) — apply it here, and leave a
+name that already describes the change alone.
 
-- `<type>` ∈ `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
-- `<name>` is a short kebab-case description of the actual change
+On a run driven from upstream this step is a **no-op**: `hcb-dev:shipping-workflow`
+step 0 normalized the name before the branch was ever pushed. It stays because the
+user can enter this skill directly, and because this is the **last** point at
+which a rename is possible at all — once the PR is open, renaming means deleting
+its head ref, and that closes the PR.
 
-Examples: `fix/security-config`, `refactor/api-names`, `feat/csv-export`.
-
-Pick `<type>` and `<name>` from what the work actually does (inspect the diff /
-commits, not just the old branch name). Rename locally and update the remote.
+What this step owns is the mechanics that reference points back at: renaming a
+branch that may already be on a remote, and pushing it under the new name.
 
 Remote resolution follows the shared ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md)
@@ -297,8 +301,6 @@ Every later network command in this skill — the Step 2 fetch, the
 that same `netpush` wrapper. Shell state does not survive between Bash calls, so
 re-declare it in whichever block does the pushing; an unguarded push in an
 unattended loop is exactly the hang the guard exists to prevent.
-
-If the branch name is already meaningful, leave it.
 
 ## Step 2 — Bring the branch up to date with base
 
@@ -506,3 +508,6 @@ Keep it scannable: short grouped bullets, not an essay.
 
 - `references/copilot.md` — How to find, classify (Critical/Important vs skip),
   fix, and reply to Copilot review findings. Read it before Step 4.
+- `../../references/branch-naming.md` — the shape of a branch name, what counts as
+  auto-generated, and when a rename is off the table. Read it before Step 1; the
+  push mechanics stay in that step.
