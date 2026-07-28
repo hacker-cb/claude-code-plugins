@@ -2,6 +2,15 @@
 
 This repo is a **Claude Code plugin marketplace** named `hacker-cb-plugins`. It both *is* a marketplace (`.claude-plugin/marketplace.json`) and *hosts* the plugins it lists — first-party plugins under `plugins/` and thin external-MCP wrappers under `external_plugins/`.
 
+## What earns a place in a skill
+
+A `SKILL.md` body loads in full on every trigger. These were measured, not argued — `git log` this section for the experiments.
+
+- **Silent or irreversible, or cut it.** What a tool rejects loudly, the agent fixes at runtime for free.
+- **A guard, never a paragraph.** Where the rule is known but skipped, only a gate on the irreversible command helps — and it must turn on a *positive* answer: an unauthenticated CLI looks exactly like a clean repo.
+- **No fence that looks runnable and is not.** Real shell, or prose — never both with `<placeholders>`. Fixed mechanics go to `scripts/`, invoked via `${CLAUDE_PLUGIN_ROOT}`; the contract stays in the skill.
+- **One fact, one place.** Three copies take three edits and get one.
+
 Official documentation — consult before changing structure. The raw `.md` URLs are WebFetch-friendly and on Claude's preapproved doc domains, so fetch them on demand (do **not** vendor or `@`-import them — `@` imports local files only, and these large refs would load in full every session).
 
 **Start from the index**: <https://code.claude.com/docs/llms.txt> lists every docs page as one line (title, `.md` URL, one-sentence summary). Fetch it when the page you need isn't in the shortlist below, or to confirm a URL still exists before trusting one from memory — pages get renamed and merged (custom slash commands, for instance, now live inside the Skills page).
