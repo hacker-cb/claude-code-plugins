@@ -2,8 +2,8 @@
 
 Lookup for `github-pr-workflow`'s discovery step: what the typed rules mean once you
 have them in front of you, and how to tell a gate that is real from one that only
-looks like it. The decisive rule — gates are a floor, never a ceiling — lives in the
-skill body, because it applies on every loop iteration.
+looks like it. The rule these serve — gates are a floor, never a ceiling — is in the
+skill body, where it applies on every loop iteration.
 
 ## Read the rules, not a checklist of names
 
@@ -23,13 +23,7 @@ final word on which contexts are required, whatever produced them.
 
 ## When there are no gates
 
-**GitHub's mergeability is necessary but not sufficient.** A repo with no *enforced*
-gates reports `CLEAN` the instant the PR opens — that means "GitHub won't stop you,"
-not "the work is ready." Your own quality bar always applies *on top* of whatever the
-repo enforces: CI actually green, Copilot's findings actually addressed, branch
-current with base. **Gates are a floor, never a ceiling.**
-
-So don't just read the gates — judge whether they're real:
+Read the gates, then judge whether they are real:
 
 - **`enforcement` must be `active`.** An `evaluate` or `disabled` ruleset shows up
   in the API but blocks nothing — it's advisory.

@@ -35,8 +35,8 @@ else: the review base is `parent`, the merge strategy is the driver's to filter
 against what the repo allows, and an actionable coverage gap always stops (a fixed
 invariant, not a threaded value). Standalone, they default — mode by the ladder in
 [`../../references/slice-completion.md`](../../references/slice-completion.md)
-(ending at `request`, so behavior matches before this skill grew a second mode),
-and `parent` = the base. That reference owns the mechanics of completion; steps
+(whose last rung asks, rather than publishing by default, when neither the user's
+phrasing nor a planning gate settled the mode), and `parent` = the base. That reference owns the mechanics of completion; steps
 0–4 below are the mode-blind front half.
 
 0. **Normalize the branch name** — `git branch -m`, per

@@ -194,12 +194,17 @@ Four things are local to this step, and nothing else here is:
 4. **Never delete when the name did not change** — that ref is the one just pushed.
 
 ```bash
-# `n` is a count, and the `&& [ -n "$n" ]` is what separates "gh answered 0" from
-# "gh could not answer": the latter also prints nothing.
+cur="<the name it had>"; NEW="<the name it has now>"   # equal -> nothing to delete
+PUSH_REMOTE="<resolved above>"
+# `n` is a count, and `[ -n "$n" ]` is what separates "gh answered 0" from "gh could
+# not answer" — the latter also prints nothing, and reading it as a 0 deletes the
+# head ref of a PR you never saw.
 if [ "$cur" != "$NEW" ]; then
   if n="$(gh pr list --head "$cur" --state open --json number --jq 'length' 2>/dev/null)" \
      && [ -n "$n" ] && [ "$n" = 0 ]; then
-    git push "$PUSH_REMOTE" --delete "$cur"
+    GIT_TERMINAL_PROMPT=0 \
+    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
+      git push "$PUSH_REMOTE" --delete "$cur"
   else
     echo "KEEPING $cur on the remote — no confirmation that nothing points at it"
   fi
