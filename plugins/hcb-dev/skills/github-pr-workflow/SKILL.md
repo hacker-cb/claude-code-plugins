@@ -221,14 +221,18 @@ rename is *not* allowed all live in
 (`${CLAUDE_PLUGIN_ROOT}/references/branch-naming.md`) — apply it here, and leave a
 name that already describes the change alone.
 
-On a run driven from upstream this step is a **no-op**: `hcb-dev:shipping-workflow`
-step 0 normalized the name before the branch was ever pushed. It stays because the
-user can enter this skill directly, and because this is the **last** point at
-which a rename is possible at all — once the PR is open, renaming means deleting
-its head ref, and that closes the PR.
+On a run driven from upstream the **rename** is usually a no-op:
+`hcb-dev:shipping-workflow` step 0 normalized the name before the branch was ever
+pushed. The **publish** is not. `netpush push -u` below is the only place this
+skill puts the branch on the remote, and without it Step 2's `--force-with-lease`
+dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
+ref at all — so skip the rename when the name is already right, and never skip the
+push. The rename half also stays because the user can enter this skill directly,
+and because this is the **last** point at which a rename is possible at all: once
+the PR is open, renaming means deleting its head ref, and that closes the PR.
 
 What this step owns is the mechanics that reference points back at: renaming a
-branch that may already be on a remote, and pushing it under the new name.
+branch that may already be on a remote, and publishing it under the final name.
 
 Remote resolution follows the shared ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md)
@@ -290,10 +294,25 @@ if [ -z "$PUSH_REMOTE" ]; then
     || echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; set branch.$cur.pushRemote or remote.pushDefault, then re-run"
   exit 1
 fi
-git branch -m <new-name>
-netpush push "$PUSH_REMOTE" -u <new-name>
-# if the old branch was already pushed, delete the stale remote ref:
-netpush push "$PUSH_REMOTE" --delete <old-name> 2>/dev/null || true
+NEW="<new-name>"   # from branch-naming.md, whose block validates it — MAY equal $cur
+# An open PR pins the name: renaming means deleting the head ref below, which
+# closes the PR and takes its review threads with it. Keep the name instead.
+if [ "$cur" != "$NEW" ] \
+   && [ -n "$(gh pr list --head "$cur" --state open --json number -q '.[].number' 2>/dev/null)" ]; then
+  echo "note: PR already open on $cur — keeping the name (renaming would close it)"
+  NEW="$cur"
+fi
+[ "$cur" = "$NEW" ] || git branch -m "$NEW"
+# UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
+# 3 both assume an upstream exists, and neither creates one.
+netpush push "$PUSH_REMOTE" -u "$NEW"
+# Delete the stale remote ref ONLY when the name actually changed. With
+# $cur == $NEW this deletes the ref the line above just pushed — unpublishing the
+# branch and closing any PR whose head it is — and `2>/dev/null || true` would
+# swallow every trace, leaving Step 2 to proceed as if the branch were pushed.
+if [ "$cur" != "$NEW" ]; then
+  netpush push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
+fi
 ```
 
 Every later network command in this skill — the Step 2 fetch, the

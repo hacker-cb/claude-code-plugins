@@ -54,9 +54,13 @@ rated), `deferred_offer` (local only — an open offer, recorded not executed),
 coverage gap without explicit clearance (a structural gap is noted, never
 blocking — see `multi-review`); never guess a base or a remote
 ([`base-resolution.md`](base-resolution.md)); never land an auto-generated branch
-name ([`branch-naming.md`](branch-naming.md) — normalization happens upstream at
-`shipping-workflow` step 0, and both backends here are what make it permanent);
-leave the tree in a known state; emit a completion record.
+name **silently** — normalization happens upstream at `shipping-workflow` step 0,
+and both backends here are what make it permanent, but where
+[`branch-naming.md`](branch-naming.md) forbids the rename outright (a shared
+branch others have pulled, an open change request, a branch checked out in another
+worktree) that prohibition wins: land the work under the name it has and say so in
+the report, rather than deadlocking two absolutes against each other; leave the
+tree in a known state; emit a completion record.
 
 ## Mode — resolve, don't assume
 
@@ -82,10 +86,12 @@ and only by consent.
   parent's history (`Merge branch 'claude/…' into …`) — and unlike a change
   request's branch, which dies at merge, that line stays for good. A slice
   arriving here still carrying an auto-generated name means step 0 was skipped:
-  rename it before merging ([`branch-naming.md`](branch-naming.md)). In local mode
-  the branch has usually never left the machine, so that is a bare `git branch -m`
-  with no network involved; where it *has* been pushed, the rename carries the
-  remote cleanup the reference describes.
+  rename it before merging ([`branch-naming.md`](branch-naming.md)) — the local
+  half of that reference and nothing more: a bare `git branch -m`, no network. If
+  the branch was pushed at some earlier point, the stale remote ref **stays**;
+  removing it is an outward write, so it rides with the consented escalation offer
+  below and the report says the old name is still on the remote until then. Local
+  mode does not reach for the network to tidy up a name.
 - **Merge strategy** — the gate's shown default. `--no-ff` by default, so the
   slice stays a visible, revertible boundary in the parent's history and the later
   whole-feature change request keeps its slices reviewable. `ff` only where the

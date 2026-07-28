@@ -76,7 +76,7 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
 5. **Complete the slice by mode** — hand off to the completion contract in
    [`../../references/slice-completion.md`](../../references/slice-completion.md)
    (`${CLAUDE_PLUGIN_ROOT}/references/slice-completion.md`). The mode picks the
-   backend; nothing in steps 1–4 changes:
+   backend; nothing in steps 0–4 changes:
    - **`local`** — merge the slice into its `parent` with `git`, no forge and no
      network, `--no-ff` by default so the slice stays a revertible boundary.
      Merging into a feature branch is autonomous; merging into the **default
