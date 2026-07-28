@@ -90,8 +90,10 @@ Also stop and ask the user when:
   (shared branch) — fall back to a merge instead of rebase and note it
 
 Each of those stops shows your recommended option **first**, with a one-line
-reason grounded in the code — a bare question hands back the work this skill's own
-analysis was there to do. Both that and the split above (act on the mechanical and
+reason grounded in the code **and the constraints** — half these stops turn on
+neither the diff nor the code (a ruleset's allowed merge methods, what the CI logs
+say), and a reason invented to look code-shaped is worse than the bare question it
+replaced. Both that and the split above (act on the mechanical and
 reversible, stop on what cannot be walked back) come from the shared protocol in
 [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
 

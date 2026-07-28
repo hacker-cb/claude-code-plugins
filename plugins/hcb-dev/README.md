@@ -148,11 +148,11 @@ saying something else.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
   findings rated by importance, an explicit "none"). Read by
-  `implementation-workflow` at Phase 3, and only there: it reports on a whole run,
-  across slices, a different altitude from `github-pr-workflow`'s Step 7 report on
-  a single merged change request. The two coexist in a multi-slice set rather than
-  replacing each other. `shipping-workflow` produces neither: it carries one slice,
-  and in `request` mode the Step 7 report comes from the driver it hands off to.
+  `implementation-workflow` at Phase 3 — the one place a report of this shape is
+  produced. It covers a whole run, a different altitude from `github-pr-workflow`'s
+  Step 7 report on a single merged change request, and the two do not replace each
+  other. `shipping-workflow` produces neither; it reaches this file through
+  `slice-completion.md`, which shapes what each backend returns to fit it.
 
 ## Forge neutrality
 

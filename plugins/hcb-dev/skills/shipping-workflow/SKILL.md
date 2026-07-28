@@ -139,4 +139,6 @@ straight to a branch, or not to commit until asked, or not to open change reques
 at all, follow that and say which step you are skipping and why. Following a rule
 is not endorsing it — where one fights what the work actually needs, name it in a
 line and go on following it (`architecture-decisions.md` §3). That flag is
-non-blocking; it stops nothing.
+non-blocking, with one exception the reference keeps: it stops the run where the
+conflict actually blocks correct work — a rule forbidding the commit a required
+fix needs leaves nothing to complete.
