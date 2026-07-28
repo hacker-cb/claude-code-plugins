@@ -150,6 +150,89 @@ while IFS= read -r skill; do
   ok "skill '$base'"
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
 
+# --- link form --------------------------------------------------------------
+# Whether a link still RESOLVES is lychee's job (lychee.toml); this checks the
+# shape the repo agreed on, which no link checker can see. Two of the five rules
+# below live entirely in code spans — invisible to any link checker by
+# construction, since a backtick is not a link.
+#
+# Every path is relative to the file it is written in, so each rule resolves
+# candidates against that file's own directory, never against the repo root.
+
+# Basenames of the shared references. Rules 3 and 5 apply only to these: a
+# mention of `.github/dependabot.yml` or `package.json` is describing the user's
+# project, not pointing at a file here, and must not be dragged into a link.
+ref_names=$(find plugins -type f -path '*/references/*.md' -exec basename {} \; 2>/dev/null | sort -u)
+
+# NOTE: every loop below reads via `< <(...)` process substitution, never
+# `cmd | while`. A pipeline puts the loop in a subshell, where `err` still
+# prints but its increment of $errors is discarded when the subshell exits —
+# the script would report failures and then exit 0.
+while IFS= read -r md; do
+  [ -n "$md" ] || continue
+  case "$(basename "$md")" in README.md|CONTRIBUTING.md) audience=human ;; *) audience=claude ;; esac
+
+  # Targets linked anywhere in this file, by basename. Rule 5 reads it.
+  linked=$(grep -o ']([^)]*)' "$md" 2>/dev/null \
+    | sed 's/^](//; s/)$//; s/#.*//' | sed 's|.*/||' | sort -u)
+
+  # 1. A link text written as a path must BE the path it points at. Prose text
+  #    ([MIT](LICENSE), [`hcb-dev`](plugins/hcb-dev)) is exempt: only a text
+  #    containing a slash or a file extension is claiming to be a path.
+  while IFS= read -r lnk; do
+    [ -n "$lnk" ] || continue
+    text=${lnk#*[\`}; text=${text%%\`]*}
+    tgt=${lnk##*](}; tgt=${tgt%)}
+    case "$tgt" in http*|mailto:*) continue ;; esac
+    case "$text" in *[/.]*) ;; *) continue ;; esac
+    [ "$text" = "$tgt" ] || err "$md: link text '$text' is not its target '$tgt'"
+  done < <(grep -o '\[`[^`]*`\]([^)]*)' "$md" 2>/dev/null)
+
+  # 2. '## Reference files' is the one list whose entire job is to send the
+  #    reader elsewhere. Every entry is a link.
+  while IFS= read -r line; do
+    [ -n "$line" ] && err "$md: Reference files entry is not a link: $line"
+  done < <(awk '
+    /^## Reference files/ { inref = 1; next }
+    /^## / { inref = 0 }
+    inref && /^- / && !/\]\(/ { print substr($0, 1, 60) }
+  ' "$md")
+
+  # 3. ${CLAUDE_PLUGIN_ROOT} is substituted in skill and agent content only, and
+  #    a relative path already resolves everywhere. Named templates
+  #    (`<file>.md`) stay legal — CONTRIBUTING.md teaches the pattern with one.
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    printf '%s\n' "$ref_names" | grep -qx "${hit##*/}" \
+      && err "$md: '$hit' — link the reference by relative path instead"
+  done < <(grep -o '\${CLAUDE_PLUGIN_ROOT}/references/[A-Za-z0-9._-]*\.md' "$md" 2>/dev/null)
+
+  # 4. A docs URL fetched by Claude should return raw markdown; one a person
+  #    clicks should return the rendered page. Which applies is decided by the
+  #    file it is written in, not by the link.
+  while IFS= read -r u; do
+    [ -n "$u" ] || continue
+    case "$u" in *llms.txt) continue ;; esac
+    if [ "$audience" = human ]; then
+      case "$u" in *.md) err "$md: '$u' — drop '.md', this file is read by people" ;; esac
+    else
+      case "$u" in *.md) ;; *) err "$md: '$u' — add '.md', this file is fetched by Claude" ;; esac
+    fi
+  done < <(grep -o 'https://code\.claude\.com/docs/[A-Za-z0-9./-]*' "$md" 2>/dev/null)
+
+  # 5. A bare backticked reference is the short form for something already
+  #    linked in this file. With no link anywhere in it, the reader has no way
+  #    to reach the file at all.
+  while IFS= read -r m; do
+    [ -n "$m" ] || continue
+    case "$m" in '${'*) continue ;; esac   # rule 3 already owns the placeholder form
+    b=${m##*/}
+    printf '%s\n' "$ref_names" | grep -qx "$b" || continue
+    printf '%s\n' "$linked" | grep -qx "$b" \
+      || err "$md: '$m' is never linked in this file — link its first mention"
+  done < <(grep -o '`[^`]*\.md`' "$md" 2>/dev/null | tr -d '`')
+done < <(find . -type f -name '*.md' -not -path './.git/*' 2>/dev/null | sort)
+
 # --- summary ----------------------------------------------------------------
 echo ""
 echo "Summary: $errors error(s), $warnings warning(s)."
