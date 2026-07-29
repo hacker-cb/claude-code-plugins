@@ -56,8 +56,14 @@ Two things this skill must not let the reference's authority hide:
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.
 
-**Risk** decides effort in the next step. The default is `high` on every ladder —
-name the level, never "the middle", which lands on a different rung per reviewer.
+**Risk** decides effort in the next step. Always name the level — never "the
+middle", which lands on a different rung per reviewer.
+
+`codex-review` starts at **`xhigh`** — one pass by one reviewer, a minute or two on
+a slice, and it runs in the background beside a fan-out workflow that takes longer
+anyway. It resolves its own model and ladder, so pass a level and let it place
+that level; risk mostly moves it *down*. Everything else starts at `high`.
+
 Raise it when the change reaches past itself (public interface, shared helper,
 config, schema, wire format), cannot be walked back (it writes, migrates,
 publishes, or persists a format someone else reads), meets input whose shape you
@@ -76,18 +82,21 @@ is a fine answer; it just goes into the report.
 
 ## 2. Pick
 
-Three questions per reviewer, in order:
+Four questions per reviewer, in order:
 
 - **Available?** If not, record `UNAVAILABLE` with the reason; do not launch it.
 - **Applicable?** When the scope asks for something a reviewer cannot do, skip it
   with a recorded reason — `n/a`.
-- **How hard?** Map the risk onto that reviewer's own ladder and pass the level
-  explicitly — never a machine-local default, since this skill runs on other
+- **Worth its cost on this change?** They do not cost the same, and the expensive
+  one is not owed a run just for existing — see *What each run costs* below. A
+  skip here is `n/a` with the reason in its row, same as any other.
+- **At what level?** Map the risk onto that reviewer's own ladder and pass the
+  level explicitly — never a machine-local default, since this skill runs on other
   people's machines.
 
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
-| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | `none` `low` `medium` `high` `xhigh` |
+| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
 | `code-review` workflow | the `Workflow` tool exists | `@{upstream}...HEAD` plus `git diff HEAD` unless given a target | yes, as a target argument | `high` `xhigh` `max` |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
@@ -108,6 +117,20 @@ credential pasted into an example, or a command a reader will copy and run, is
 exactly what the security review is for. `n/a` only when the honest answer to *what
 behaves differently now* is "nothing" — and say that reason in the row, since `n/a`
 is the one status the coverage gate does not treat as a gap.
+
+### What each run costs
+
+| Reviewer | A run costs | Earns it when |
+|---|---|---|
+| `codex-review` | one pass by one reviewer, a minute or two | always, while it is installed — it is the floor the other two build on |
+| `code-review` | a fan-out of agents, and by far the longest of the three | the change has more than one place to be wrong — it spans files that interact, or moves a convention others follow. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
+| `security-review` | inline, plus its own filtering pass | something now executes differently (above) |
+
+**Size is a signal, not a threshold.** Two thousand lines of regenerated fixture
+hide less than twenty inside an auth check. Ask what the change could be
+concealing, never how much of it there is — no line counts, no file counts. A
+single self-contained edit whose whole surface fits in one reading is covered by
+one pass; breadth is what the fan-out is for, so give it something wide.
 
 ## 3. Run
 
@@ -162,7 +185,7 @@ verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
-| `codex-review` | `<base>`, 3 files | high | 2 findings |
+| `codex-review` | `<base>`, 3 files | xhigh | 2 findings |
 | `code-review` | `<base>`, 3 files | high | no findings |
 | `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
 

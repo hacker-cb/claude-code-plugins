@@ -65,12 +65,16 @@ becomes an untracked file that Codex then reads as part of the change.
 `codex exec review --base <ref>` takes a plain git ref and is forge-agnostic.
 Resolution was the only forge-specific step, and it already happened in §1.
 
-Fill the two values at the top of the block from §1 and from the ladder note
-below. Everything under them is live.
+Use `codex exec review`, not the top-level `codex review`: the latter has no `-o`,
+and the block below splits the verdict from the transcript with it.
+
+Fill the three values at the top of the block — the base from §1, the model and
+level from the catalog note below. Everything under them is live.
 
 ```bash
 BASE="<the ref resolved in §1 — leave EMPTY for a working-tree review>"
-EFFORT="<none|low|medium|high|xhigh — high unless the caller said otherwise>"
+MODEL="<top of the catalog, or the one the caller named>"
+EFFORT="<xhigh, or that model's highest when it offers no xhigh>"
 
 # Positional parameters, not an interpolated string: the scope is two arguments
 # or one, and an unquoted expansion would leave that to word-splitting.
@@ -86,10 +90,11 @@ else
 fi
 
 OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")"
-codex exec review "$@" -c model_reasoning_effort="$EFFORT" -o "$OUT" > "$OUT.log" 2>&1
+codex exec review "$@" -c model="$MODEL" -c model_reasoning_effort="$EFFORT" \
+  -o "$OUT" > "$OUT.log" 2>&1
 # The scope line is what a caller compares against; without it nobody can tell
 # what this run actually looked at.
-echo "scope: ${BASE:-working tree}, $COVERED files, effort $EFFORT"
+echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $EFFORT"
 # A SEPARATE line, never appended to the scope line: a caller splitting that line
 # into `Covered` and `Effort` columns would otherwise file the warning under
 # effort, and the row would read as a completed review of a nonzero file count —
@@ -108,31 +113,36 @@ call so the run is recognizable in the task list.
   output is already the report.
 - **Foreground** — same block, read inline.
 
-A caller — a person or another skill — may hand you the base and the effort
-level; both are meant to be passed in, and an explicit base wins over the
-resolution above. Set the effort on every run rather than letting
-`~/.codex/config.toml` decide, since that file differs from machine to machine.
+A caller — a person or another skill — may hand you the base, the model or the
+effort level; each is meant to be passed in, and an explicit one wins over the
+resolution here.
 
-The ladder **in review mode** is `none`, `low`, `medium`, `high`, `xhigh`. Do not
-copy the set from Codex's general config docs: `minimal` and `max` are valid
-`reasoning.effort` values there and the *review* model refuses both, because review
-does not run the model the banner names — the banner prints `model: gpt-5.5` while
-the request goes to a `…-codex-…` review variant with its own supported set. The
-ladder therefore belongs to that model, and `-m` moves it.
+**Resolve the model and its ladder from the catalog on every run**, never from
+memory and never from `~/.codex/config.toml`, which differs from machine to
+machine. `codex debug models` prints both offline, in one call:
 
-The CLI prints whatever you passed (`reasoning effort: <whatever>`) and sends it
-on, so that banner line confirms nothing. The API is what refuses a bad level, in
-two distinguishable ways — `invalid_enum_value` for a string that is no effort at
-all, `unsupported_value` for a real one this model does not take. Both name the
-accepted set, which makes the error, not this paragraph, the authority when they
-disagree.
+```bash
+CAT="$(codex debug models)"
+MODEL="$(printf '%s' "$CAT" | jq -r '[.models[] | select(.visibility=="list")] | sort_by(.priority)[0].slug')"
+LEVELS="$(printf '%s' "$CAT" | jq -r --arg m "$MODEL" '.models[] | select(.slug==$m) | [.supported_reasoning_levels[].effort] | join(" ")')"
+```
 
-`-m <model>` overrides the model the same way. `--output-schema` is accepted but
-ignored in review mode — the output is always prose.
+`priority` ascends from the newest frontier model, so entry 0 of that sort is the
+one to review with. Take `xhigh` when `$LEVELS` offers it, otherwise that model's
+highest — the set moves with the model, and no fixed list holds: `gpt-5.5` stops at
+`xhigh` while the `gpt-5.6` family adds `max` and `ultra`.
+
+Nothing local checks the level you pass. The CLI prints it back
+(`reasoning effort: <whatever>`) and sends it on, so that banner confirms nothing;
+the API is what refuses a level the model does not take, and its message names the
+accepted set.
+
+`--output-schema` is accepted but ignored in review mode — the output is always
+prose.
 
 ## 4. Hand back the findings
 
-The block prints a `scope:` line — base, file count, effort — and then Codex's
+The block prints a `scope:` line — base, file count, model and level — and then Codex's
 report. Pass the scope line on as the coverage record; it is the only statement
 of what this run actually looked at. Return the report itself **verbatim** — no
 paraphrase, no summary, no commentary around it. Its shape is a one-paragraph
