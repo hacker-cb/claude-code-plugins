@@ -52,16 +52,12 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 explicitly authorized it — either their request itself asked to merge/ship (e.g.
 "ship it", "get this merged", "merge once it's green"), the captured user-approved
 `merge-auth` was threaded in from an upstream flow (`hcb-dev:shipping-workflow`, or
-`hcb-dev:implementation-workflow`'s planning gate — the same "asked to merge" case,
-gathered earlier and shown to the user there, so a run driven with it does not stop
-to re-ask), or they say yes when you ask. If they only asked to open or drive the PR, take it all the way to "ready to
-merge" — Step 4's exit met: GitHub reports it mergeable *and* your own bar is
-clean (not merely `mergeStateStatus: CLEAN`, which a repo enforcing nothing
-reports from PR-open) — and then stop and ask (see Step 5). Never merge on your
-own initiative.
+`hcb-dev:implementation-workflow`'s planning gate), or they say yes when you ask.
+If they only asked to open or drive the PR, take it to Step 4's exit and then stop
+and ask (see Step 5). Never merge on your own initiative.
 
 Also stop and ask the user when:
-- The required gates cannot go green after a reasonable number of fix iterations (~5)
+- The required gates will not go green within Step 4's iteration budget
 - A Critical/Important finding requires a product/design decision you can't make
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
@@ -102,9 +98,8 @@ rulesets) and **enforced by GitHub**. You can't change it and shouldn't hardcode
 assumptions about it: **read the configuration of the repo you're working in**,
 every time, and never carry over what some *other* repo happened to require or
 what a check was called there. Your job is to **satisfy** whatever gates this repo
-has — and then clear your own bar on top of them, because GitHub's mergeability is
-necessary but never sufficient (see *When there are no gates, or they can't be
-trusted* below).
+has, then clear your own bar on top of them (see *When there are no gates, or they
+can't be trusted* below).
 
 Read the live gates before and during the loop:
 
@@ -156,11 +151,9 @@ final word on which contexts are required, whatever produced them.
 
 ### When there are no gates, or they can't be trusted
 
-**GitHub's mergeability is necessary but not sufficient.** A repo with no *enforced*
-gates reports `CLEAN` the instant the PR opens — that means "GitHub won't stop you,"
-not "the work is ready." Your own quality bar always applies *on top* of whatever the
-repo enforces: CI actually green, Copilot's findings actually addressed, branch
-current with base. **Gates are a floor, never a ceiling.**
+A repo with no *enforced* gates reports `CLEAN` the instant the PR opens — that
+means "GitHub won't stop you," not "the work is ready." **Gates are a floor, never
+a ceiling**; Step 4's bar applies on top of whatever the repo enforces.
 
 **Don't merge on a bypass.** Where `current_user_can_bypass` is not `never`, or you
 are in a rule's `bypass_actors`, `mergeStateStatus` reads `CLEAN` because you are
@@ -194,25 +187,15 @@ pushed. The **publish** is not. The push below is the only place this skill puts
 the branch on the remote, and without it Step 2's `--force-with-lease`
 dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
 ref at all — so skip the rename when the name is already right, and never skip the
-push. The rename half also stays because the user can enter this skill directly,
-and because this is the **last** point at which a rename is possible at all: once
-the PR is open, renaming means deleting its head ref, and that closes the PR.
+push.
 
 What this step owns is the mechanics that reference points back at: renaming a
 branch that may already be on a remote, and publishing it under the final name.
 
 **Which remote to push to is
 [`../../references/base-resolution.md`](../../references/base-resolution.md)'s
-question** — its *Pushing is a different question* covers the routing, why the
-tracked `@{upstream}` is the wrong answer in a fork, and stopping rather than
-guessing among several remotes. Resolve it there.
-
-This step adds one constraint on *when*: resolve it **before** renaming, reading
-`branch.<name>.pushRemote` under the branch's current name. The ambiguity path
-exits, and exiting after `git branch -m` leaves the branch renamed locally with
-nothing pushed and an upstream that no longer matches — which `push.default=simple`
-refuses outright, so the branch is unpushable and the step a no-op on re-run.
-(`git branch -m` carries that config across, so resolving first loses nothing.)
+question** — resolve it there, and resolve it **before** renaming, reading
+`branch.<name>.pushRemote` under the branch's current name.
 
 Fill the two values at the top; everything under them is live.
 
@@ -299,10 +282,7 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
 ## Step 3 — Open the PR (if not already open)
 
 If there's no open PR for this branch, create one as **ready for review** (not
-draft). This matters beyond convention: Copilot **skips draft PRs** unless the
-`copilot_code_review` rule sets `review_draft_pull_requests`, so a draft can leave
-the review un-run entirely — and where a required check stands in for that review,
-leave the PR permanently un-mergeable. Open ready-for-review:
+draft) — Copilot skips drafts, and `references/copilot.md` says what that costs:
 
 ```bash
 gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>"
@@ -340,28 +320,16 @@ severity classification only decides what you *fix*, never when you're *done*.
    reasonable — under `review_on_push` every push re-requests Copilot and costs
    another wait at step 6, whether or not a new review actually follows.
 5. **Reply to every Copilot comment; resolve every thread the repo requires
-   resolved.** The reply is *unconditional* (fixed or acknowledged, on every
-   comment); *resolution* is what scales with the repo — under
-   `required_review_thread_resolution` that's *all* threads (fix the serious ones,
-   acknowledge the rest, but each must end resolved or merge stays `BLOCKED`),
-   otherwise at least the ones you fixed. See `references/copilot.md` for the
-   reply + resolve protocol.
-6. **After pushing, wait for Copilot's review of the new head.** Any review that
-   follows a push lands *later* than CI goes green, so the PR reads mergeable while
-   that review is still on its way, and finishing there silently drops everything
-   it was about to say. Never evaluate exit until Copilot's verdict on the head is
-   settled — `references/copilot.md` owns the wait and defines what settles it.
-   Then re-read from this loop's step 1 (the live-state read), not the top-level
-   Step 1.
-
-If after ~5 iterations the gates still won't go green, or a finding needs a
-decision you can't make, stop and summarize the blocker for the user.
+   resolved** — `references/copilot.md` owns the reply + resolve protocol.
+6. **After pushing, wait for Copilot's review of the new head** — never evaluate
+   exit until its verdict on the head is settled; `references/copilot.md` owns the
+   wait and defines what settles it. Then re-read from this loop's step 1 (the
+   live-state read), not the top-level Step 1.
 
 ## Step 5 — Merge (only with explicit authorization)
 
 Merging is gated on explicit user permission — see the Autonomy model. Once Step 4's
-exit is met — GitHub reports the PR mergeable *and* your own bar is clean (not merely
-`mergeStateStatus: CLEAN` on a repo that enforces nothing):
+exit is met:
 
 - **If the user already authorized the merge** — their request asked to merge/ship
   ("ship it", "get this merged", "merge when green"), or they've since said go
