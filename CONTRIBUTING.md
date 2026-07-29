@@ -25,7 +25,7 @@ Official docs:
    ```markdown
    ---
    name: <skill-name>          # optional; if set, must equal the directory name
-   description: <what it does and WHEN to use it>   # required in practice; ≤ 1024 chars
+   description: <what it does and WHEN to use it>   # required in practice; ≤ 1024 chars, measured by validate.sh
    ---
 
    # <Skill title>
@@ -36,7 +36,7 @@ Official docs:
 2. Optional supporting files live next to `SKILL.md`: `references/*.md`, `scripts/*`, etc. Reference them from `SKILL.md` so Claude knows when to load them.
 
    **A shell or awk positional parameter cannot be written in a `SKILL.md`.** Claude Code replaces it with a word from whatever arguments the skill was invoked with, so a run block using one arrives corrupted — and still looks runnable, which is the dangerous part. Use a named variable set before the call, or `sed` / `awk -v`; escape it with a backslash where a literal is what you mean. This holds for the whole file, comments included. A `references/*.md` is exempt: it reaches Claude through `Read`, verbatim. `scripts/validate.sh` fails the build on one.
-3. **Shared between skills?** Put it one level up, in `plugins/hcb-<domain>/references/*.md`, and link it from each skill by relative path (`../../references/<file>.md`). Only `skills/`, `commands/`, `agents/` and `hooks/` are component dirs, so a `references/` at the plugin root is data, not a component — `scripts/validate.sh` only scans `*/skills/*/SKILL.md` and ignores it. Prose copied into two skills drifts: a fix lands in one and the other keeps saying something else. See [`plugins/hcb-dev/references/base-resolution.md`](plugins/hcb-dev/references/base-resolution.md), shared by five skills.
+3. **Shared between skills?** Put it one level up, in `plugins/hcb-<domain>/references/*.md`, and link it from each skill by relative path (`../../references/<file>.md`). Only `skills/`, `commands/`, `agents/` and `hooks/` are component dirs, so a `references/` at the plugin root is data, not a component — `scripts/validate.sh` skips it when scanning skills, and still applies every link rule to it. Prose copied into two skills drifts: a fix lands in one and the other keeps saying something else. See [`plugins/hcb-dev/references/base-resolution.md`](plugins/hcb-dev/references/base-resolution.md), shared by five skills.
 4. The skill is invoked as `/hcb-<domain>:<skill-name>`.
 
 A **rule** is the same artifact: a skill whose body is guidance rather than a step-by-step procedure, with the triggering conditions carried by the `description` so it's pulled in exactly when relevant. To keep one out of the `/` menu, add frontmatter `user-invocable: false` (it can still be model-invoked); to keep Claude from auto-invoking it, add `disable-model-invocation: true` (it stays available as a slash command). Setting both makes the skill unreachable.
@@ -100,10 +100,19 @@ bash scripts/validate.sh         # must pass (0 errors)
 
 CI runs the same structural validation plus the official `claude plugin validate`.
 
-Links follow one rule: a pointer to another file in this repo is a markdown link
-whose path is **relative to the file it is written in**. `scripts/validate.sh`
-checks the form; `lychee` checks that every link still resolves, and CI runs it
-over internal paths on each PR. To check external URLs too, run it locally:
+A pointer to another file in this repo is a markdown link whose path is
+**relative to the file it is written in**. `scripts/validate.sh` takes that as
+given and checks five things on top of it:
+
+1. A link text written as a path is the path it points at.
+2. Every entry under `## Reference files` is a link.
+3. No markdown file is named through the `CLAUDE_PLUGIN_ROOT` placeholder.
+4. A `code.claude.com/docs` URL carries `.md` in the files Claude reads, and
+   drops it in `README.md` / `CONTRIBUTING.md`, which people read.
+5. A shared reference named in backticks is linked at least once in that file.
+
+`lychee` is what proves a link resolves; CI runs it over internal paths on each
+PR. To check external URLs too, run it locally:
 
 ```bash
 lychee './**/*.md' '.claude/**/*.md'
