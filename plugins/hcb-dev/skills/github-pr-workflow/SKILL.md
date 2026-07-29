@@ -162,41 +162,23 @@ not "the work is ready." Your own quality bar always applies *on top* of whateve
 repo enforces: CI actually green, Copilot's findings actually addressed, branch
 current with base. **Gates are a floor, never a ceiling.**
 
-So don't just read the gates — judge whether they're real:
+**Don't merge on a bypass.** Where `current_user_can_bypass` is not `never`, or you
+are in a rule's `bypass_actors`, `mergeStateStatus` reads `CLEAN` because you are
+allowed to skip the gates — not because they passed. Satisfy them as if you could
+not. An `evaluate` or `disabled` ruleset is advisory in the same way: it appears in
+the API and blocks nothing.
 
-- **`enforcement` must be `active`.** An `evaluate` or `disabled` ruleset shows up
-  in the API but blocks nothing — it's advisory.
-- **Don't merge on a bypass.** If `current_user_can_bypass` isn't `never` (or
-  you're in a rule's `bypass_actors`), `mergeStateStatus` can read `CLEAN` because
-  *you're allowed to skip the gates*, not because they passed. Satisfy them as if
-  you couldn't bypass.
-- **A green check is not proof of a review.** A check that stands in for a review
-  can be green for reasons of its own — passing the instant *some* review of *any*
-  commit is seen (so it flips green within seconds of a later push and says nothing
-  about the head), or having run before the latest push was reviewed. Nor does a
-  clean merge state prove it: right after a push `mergeStateStatus` can read `CLEAN`
-  with the head unreviewed — the prior review's threads stay resolved across the
-  push, and `dismiss_stale_reviews_on_push` dismisses only stale *approvals*. Never
-  infer "Copilot has reviewed the current head" from a check's colour, from `CLEAN`,
-  or from all-threads-resolved; verify it directly against the head SHA
-  (`references/copilot.md`).
-- **`UNSTABLE` means a non-required check is red.** GitHub will let you merge over
-  it; don't, unless you've confirmed that check is irrelevant or a known flake
-  (re-run flakes rather than merging past them).
+**Confirm gates are absent; don't infer it from an empty rulesets list.** A repo
+can enforce required checks, reviews and thread-resolution through **classic branch
+protection**, which `/rulesets` does not return. Treat them as truly absent only
+when the live signals agree: `gh pr checks` shows no required checks,
+`reviewDecision` is empty, and neither `rules/branches/<base>` nor
+`branches/<base>/protection` enforces anything.
 
-**When gates are absent, weak, or unreadable** — but confirm *absent*, don't infer
-it from an empty rulesets list. A repo can enforce required checks, reviews, and
-thread-resolution through **classic branch protection**, which `/rulesets` does
-**not** return, so `rulesets == []` alone does not mean unprotected. Treat gates as
-truly absent only when the live signals agree: `gh pr checks` shows no required
-checks, `reviewDecision` is empty, and *neither* `rules/branches/<base>` *nor*
-`branches/<base>/protection` enforces anything (or `gh api` is denied and you
-genuinely can't tell). Only then supply the gates yourself: the Step 4 loop's own
-bar becomes authoritative — green CI, Copilot Critical/Important resolved and every
-thread replied, branch up to date — and because nothing external protects the base,
-be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
-irreversible force-pushes, and tell the user the repo has no enforced protection so
-your judgment is the only safety net.
+Then supply the gates yourself — the Step 4 loop's bar becomes the authoritative
+one — and be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
+irreversible force-pushes, and tell the user their judgment is the only safety net
+here.
 
 ## Step 1 — Branch naming
 
@@ -364,21 +346,13 @@ severity classification only decides what you *fix*, never when you're *done*.
    acknowledge the rest, but each must end resolved or merge stays `BLOCKED`),
    otherwise at least the ones you fixed. See `references/copilot.md` for the
    reply + resolve protocol.
-6. **After pushing, wait for Copilot's review of the new head.** Under
-   `review_on_push` a push re-requests Copilot, and any review that follows lands
-   *later* than CI goes green — so the PR reads mergeable while that review may
-   still be on its way, and finishing in that window silently drops everything it
-   was about to say. Never evaluate exit there: follow the wait protocol in
-   `references/copilot.md`. Its exit turns on the *requested-reviewer* state, not a
-   clock — **while Copilot is still a requested reviewer of the head it has not
-   declined, and no elapsed timer authorises merging past it**; a decline is
-   confirmed only by Copilot leaving `reviewRequests` with no head review, never by
-   an elapsed cap, and on cap-expiry-while-pending you hold and escalate rather than
-   merge. The merge precondition a timeout never removes is that
-   Copilot's verdict on the head is *settled* — either a processed review whose
-   `commit_id == head`, or a confirmed decline for the head (`references/copilot.md`
-   defines both) — never an elapsed clock while it is still pending. Then re-read
-   from this loop's step 1 (the live-state read), not the top-level Step 1.
+6. **After pushing, wait for Copilot's review of the new head.** Any review that
+   follows a push lands *later* than CI goes green, so the PR reads mergeable while
+   that review is still on its way, and finishing there silently drops everything
+   it was about to say. Never evaluate exit until Copilot's verdict on the head is
+   settled — `references/copilot.md` owns the wait and defines what settles it.
+   Then re-read from this loop's step 1 (the live-state read), not the top-level
+   Step 1.
 
 If after ~5 iterations the gates still won't go green, or a finding needs a
 decision you can't make, stop and summarize the blocker for the user.

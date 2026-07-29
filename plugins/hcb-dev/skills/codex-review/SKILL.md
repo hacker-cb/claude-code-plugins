@@ -143,21 +143,16 @@ verdict followed by findings:
   Why it breaks, in concrete terms.
 ```
 
-Two things to check in what comes back:
+Check the scope line against the report before passing either on:
 
-- If Codex's own first line names a base other than the one in the `scope:` line,
-  the review missed its target — re-run against the right ref rather than
-  reporting it.
-- A scope line reading `0 files` means nothing was reviewed. Report that as
-  coverage of zero, never as a clean review.
-- A `coverage-warning:` line means the run is a nonzero count over the working
-  tree alone. The number is real and the findings are real; the commits are simply
-  not among them. Report it as partial coverage — naming which case it was, since
-  the block only knows that no base arrived, not why — never as the change having
-  been reviewed, and go back to §1 for a base.
-- An empty review is a normal result, not a failure: Codex exits `0` saying
-  something like "There are no staged, unstaged, or untracked code changes to
-  review."
+- If Codex's own first line names a base other than the one in `scope:`, the review
+  missed its target — re-run against the right ref rather than reporting it.
+- `0 files` means nothing was reviewed. Report that as coverage of zero, never as a
+  clean review.
+- A `coverage-warning:` line means the count is over the working tree alone. The
+  number and the findings are real; the commits are not among them. Report it as
+  partial coverage, name which case it was — the block only knows that no base
+  arrived, not why — and go back to §1 for a base.
 
 A missing CLI, an expired login and a non-repository all leave `-o` empty and land
 in the `codex review failed:` branch, where the log tail names which it was. Pass

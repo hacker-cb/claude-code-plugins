@@ -51,14 +51,10 @@ matches the branch. No line at all means no rule applies **to this base**, which
 a different statement from "this repo has no such rule": the same repo can enforce
 Copilot on its default branch and nothing at all on a side branch.
 
-- **`review_on_push: true`** — Copilot is re-*requested* on *every* push. Treat
-  each push in the fix loop as owing you a review to wait for and read before you
-  call the PR done — but the request is not a promise that one posts, which is why
-  the wait below keys on Copilot leaving the requested-reviewer set (reviewed or
-  declined), not on a review necessarily arriving: while it stays requested you keep
-  waiting; a decline is confirmed only when Copilot leaves that set with no head
-  review, never by the clock — and if a safety cap runs out while it is still
-  requested you hold and escalate rather than merge.
+- **`review_on_push: true`** — Copilot is re-*requested* on *every* push, so every
+  push in the fix loop owes you a review to wait for and read before you call the
+  PR done. The request is not a promise that one posts; *Wait for the review of the
+  CURRENT head* below is what that costs you.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
@@ -114,56 +110,29 @@ gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
 # fresh iff commit_id == $head
 ```
 
-Copilot does **not** reliably re-review every push, though — a push that only
-applies its own suggestions often earns no new review — so waiting unconditionally
-would hang forever. Run this protocol after each push:
+Copilot does not re-review every push — one that only applies its own suggestions
+often earns none — so the wait ends on the **requested-reviewer state**, never on a
+clock. After each push:
 
-1. **Make sure a review is actually pending for the current head.** Under
-   `review_on_push: true` GitHub requests it for you; otherwise, or if nothing
-   shows up, request one explicitly. Prefer a connected GitHub MCP server's
-   request-a-Copilot-review tool when it offers one; the portable fallback is:
+1. **Make sure a review is pending.** `review_on_push` requests it for you;
+   otherwise request one:
    ```bash
    gh pr edit <pr> --add-reviewer "@copilot"
    ```
-   Don't hand-roll that as a REST `requested_reviewers` POST: Copilot is not an
-   ordinary reviewer login, and `@copilot` is the special value `gh` case-handles
-   for it. Two limits worth knowing before you rely on it: it needs **gh 2.88.0 or
-   newer**, and it is **not supported on GitHub Enterprise Server**. Whatever it is
-   *requested* as, do not carry that spelling over to the surface you then read —
-   every one of them names it differently (*Identifying Copilot*).
-2. **Poll — and read the requested-reviewer state, not a clock, as the signal.**
-   Copilot's presence in `gh pr view <pr> --json reviewRequests` is what tells you
-   a re-review is still coming: a push (re-)requests it, and the forge drops the
-   request when Copilot either posts its review or declines. Poll until **one** of
-   these settles:
-   - a Copilot review with `commit_id == $head` appears → a fresh review landed; or
-   - Copilot has **dropped out** of `reviewRequests` with no such review → it
-     declined to re-review this push (common when the push only applied its own
-     suggestions).
-   The first review usually lands within a few minutes, but can lag 15+ minutes on
-   some repos — measure this repo's real head-review latency from recent PRs and
-   size any safety cap from that, never from a fixed default.
-3. **While Copilot is still in `reviewRequests` it has NOT declined — it is slow,
-   and no elapsed timer authorises merging past it.** A safety cap is only a bound on
-   the wait — never itself a confirmation of a drop-out, and never permission to
-   merge over a review still on its way. If the cap elapses while Copilot is still
-   requested, do **not** proceed: hold the merge, tell the user the head-commit
-   review is still outstanding, and extend the wait or escalate.
-   - **Fresh review** → process it from the top: classify, fix, reply, resolve.
-   - **Confirmed drop-out** (Copilot absent from `reviewRequests`, no review of the
-     head) → it declined this push; proceed, and say so in the report rather than
-     implying it reviewed. Two absences masquerade as a decline and must be ruled
-     out first: right after a push `reviewRequests` can lag, so confirm Copilot was
-     actually (re-)requested for this head; and a review that posts against an
-     *earlier* commit consumes the request while leaving the head unreviewed — a
-     newest Copilot review whose `commit_id != head` is **not** a decline of the
-     head, so re-request Copilot (`gh pr edit <pr> --add-reviewer "@copilot"`) and
-     keep waiting. Conclude "declined" only once a request aimed at the current head
-     itself comes back empty.
+   Not a REST `requested_reviewers` POST — that endpoint takes ordinary logins,
+   while `@copilot` is a value `gh` case-handles. Unsupported on GitHub Enterprise
+   Server; there, rely on the rule instead.
+2. **Wait until it settles**, which is one of exactly two things: a Copilot review
+   whose `commit_id == $head`, or Copilot gone from
+   `gh pr view <pr> --json reviewRequests` with no such review — a decline, which
+   the report says out loud rather than implying it reviewed.
+3. **A review of an earlier commit is not a decline.** It consumes the request and
+   leaves the head unreviewed, so re-request and keep waiting. For the same reason
+   no elapsed time settles anything: while Copilot is still a requested reviewer,
+   hold, and say the head review is outstanding.
 
-Do this after *every* push — including the last one, whose review is the easiest to
-skip and the most likely to be missed — and never evaluate the loop's exit until it
-settles.
+Do this after *every* push, the last one included — its review is the easiest to
+skip and the most likely to be missed.
 
 ## Finding the comments
 

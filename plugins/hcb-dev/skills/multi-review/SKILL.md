@@ -133,17 +133,11 @@ tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
 
 **A nonzero count can still mean the commits went unread.** `codex-review` prints
-a separate `coverage-warning:` line when it could resolve no base, or refused one
-sharing no history with `HEAD` — it then reviews the working tree alone, and the
-count it reports is of *those* files. Read that line, not just the number: a count
-that passes the zero check while the warning says the commits were not reviewed is
-`partial`, and the base is what closes it. It is deliberately its own line rather
-than a tail on the scope line, so splitting `scope:` into the `Covered` and
-`Effort` columns below cannot bury the warning in the effort cell.
+a `coverage-warning:` line when it reviewed the working tree alone; the count is
+then of *those* files. Read that line as well as the number — a count that passes
+the zero check under such a warning is `partial`, and a base is what closes it.
 
-When a reviewer fails, quote its error instead of guessing a cause. A `401` or an
-auth complaint in Codex's log means `codex login`, and one line saying so beats
-twenty lines of transcript.
+When a reviewer fails, quote its error instead of guessing a cause.
 
 ## 5. Consolidate
 

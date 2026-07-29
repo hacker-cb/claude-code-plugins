@@ -295,16 +295,10 @@ without asking.
 
 ## Edge cases
 
-- **Not a git repository** — nothing to do; say so and stop.
 - **The forge CLI offline or rate-limited mid-run** — degrade to git-only for the
-  rest of the pass and downgrade every forge-derived "merged" to "surface".
+  rest of the pass and downgrade every forge-derived "merged" to "surface". The
+  sweep gets narrower, never wider.
 - **Detached HEAD worktree** — classify by clean/dirty only; no branch to delete.
-- **Worktree dir on disk but absent from `worktree list`** — a filesystem orphan.
-  Run `git status` inside it first: empty means `rm -rf` then `prune`; anything
-  else means it still holds work, so surface it as class 3 and touch nothing.
-- **A bare primary worktree** — there is no `.git` directory; every path comes
-  from `rev-parse --git-common-dir`, and an empty `find` there is a failed probe,
-  not an empty repository.
 - **A branch checked out in a worktree of a *different* repository** — leave both
   alone; this skill stays within `PROJECT`.
 - **Submodules** — leave them alone entirely.

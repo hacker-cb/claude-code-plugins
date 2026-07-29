@@ -172,8 +172,3 @@ guess is the same hardcoded name wearing a disguise. Say what is missing and ask
 naming the cost concretely — "no remote, so I can't tell what this branch was cut
 from: give me a base, or this covers only the working tree and leaves 3 commits
 unread."
-
-A mechanical block cannot ask anyone anything, so where the question was skipped
-it must degrade *loudly*: fall back, and say in its own output that the commits
-went unreviewed. "working tree, 4 files" otherwise reads exactly like a review
-that happened.
