@@ -49,6 +49,83 @@ positional_check() {
     }' "$pc_file")
 }
 
+# The Agent Skills spec caps a skill `description` at 1024 characters, and
+# nothing else counts them: `claude plugin validate` does not look at the length
+# at all, so an over-long one reaches a release unremarked.
+#
+# Measuring it means folding the YAML scalar, and this reads the subset the repo
+# actually writes rather than pretending to be a YAML parser:
+#
+#   description: >-        a folded block; every line break becomes one character,
+#   description: |         a literal block; ditto, absent blank lines
+#   description: text      a plain or quoted one-liner, continuation lines folded
+#
+# Anything else prints UNSUPPORTED and the caller errors, because an approximate
+# count against a hard limit is worse than no count — it passes what it should
+# stop. A blank line inside a literal block is the one such case: `>` folds it to
+# a single newline (which the arithmetic below already gets right) while `|` keeps
+# both, and guessing which by one character at exactly 1024 is not a check.
+description_len() {
+  # awk folds the scalar; it does NOT measure it. `length()` counts bytes, and on
+  # a description full of em dashes that overreports by several characters against
+  # a limit expressed in characters. The arithmetic below does the measuring.
+  dl_raw=$(awk '
+    NR == 1 { next }                                   # opening ---
+    /^---[[:space:]]*$/ { exit }                       # closing --- ends frontmatter
+
+    !mode && /^[[:space:]]*description[[:space:]]*:/ {
+      rest = $0
+      sub(/^[[:space:]]*description[[:space:]]*:[[:space:]]*/, "", rest)
+      sub(/[[:space:]]+$/, "", rest)
+      if (rest ~ /^[|>][-+]?$/) {                      # block scalar
+        literal = (substr(rest, 1, 1) == "|")
+        keep    = (rest !~ /-$/)                       # `-` strips the trailing newline
+        mode = 1; next
+      }
+      # Anything else opening with > or | is a block scalar this does not model —
+      # an explicit indentation indicator (`>-2`, `>2-`) most likely. Say so:
+      # falling through would read it as a plain one-liner and measure the
+      # indicator itself, reporting three characters for a full description.
+      if (rest ~ /^[|>]/) { print "!!UNSUPPORTED (block scalar header " rest ")"; exit }
+      if (rest == "") { print "!!UNSUPPORTED (empty value)"; exit }
+      sub(/^\042/, "", rest); sub(/\042$/, "", rest)   # a quoted one-liner
+      sub(/^\047/, "", rest); sub(/\047$/, "", rest)
+      out = rest; seen = 1; mode = 2; next
+    }
+
+    mode {
+      if ($0 ~ /^[^[:space:]]/) { exit }               # next key at column 0 — block over
+      line = $0
+      sub(/^[[:space:]]+/, "", line); sub(/[[:space:]]+$/, "", line)
+      if (line == "") {
+        if (literal) { print "!!UNSUPPORTED (blank line in a literal block)"; exit }
+        next                                           # folded: the break collapses to the
+      }                                                # single separator already counted
+      out = out (seen ? " " : "") line
+      seen = 1
+    }
+
+    END {
+      if (!seen) { print "!!NODESC"; exit }
+      # The chomp indicator rides on the FIRST line, not the last: command
+      # substitution strips trailing newlines, so a `>` that keeps one would come
+      # back indistinguishable from a `>-` that does not.
+      printf "%d\n%s", (mode == 1 && keep ? 1 : 0), out
+    }
+  ' "$1")
+
+  case "$dl_raw" in '!!'*) printf '%s\n' "${dl_raw#\!\!}"; return 0 ;; esac
+
+  dl_adjust=${dl_raw%%$'\n'*}
+  dl_text=${dl_raw#*$'\n'}
+  # Characters, not bytes, and without depending on a UTF-8 locale being present:
+  # every byte of a valid UTF-8 stream is either a character's first byte or a
+  # continuation byte in 0x80-0xBF, so the difference is the character count.
+  dl_bytes=$(printf '%s' "$dl_text" | wc -c | tr -d ' ')
+  dl_cont=$(printf '%s' "$dl_text" | LC_ALL=C tr -dc '\200-\277' | wc -c | tr -d ' ')
+  echo $(( dl_bytes - dl_cont + dl_adjust ))
+}
+
 # --- marketplace.json -------------------------------------------------------
 if [ ! -f "$MARKET" ]; then
   err "$MARKET not found"
@@ -162,8 +239,17 @@ while IFS= read -r skill; do
   # frontmatter block = everything between the first two '---' lines
   fm=$(awk 'NR==1 { next } /^---[[:space:]]*$/ { exit } { print }' "$skill")
 
-  echo "$fm" | grep -Eq '^[[:space:]]*description[[:space:]]*:' \
-    || err "skill '$base': frontmatter missing 'description'"
+  if ! echo "$fm" | grep -Eq '^[[:space:]]*description[[:space:]]*:'; then
+    err "skill '$base': frontmatter missing 'description'"
+  else
+    dlen=$(description_len "$skill")
+    case "$dlen" in
+      UNSUPPORTED*) err "skill '$base': cannot measure the description — $dlen; use a folded (>-) or plain scalar" ;;
+      NODESC)       err "skill '$base': 'description' key present but empty" ;;
+      *) [ "$dlen" -le 1024 ] \
+           || err "skill '$base': description is $dlen characters, over the 1024 limit" ;;
+    esac
+  fi
 
   fmname=$(echo "$fm" | grep -E '^[[:space:]]*name[[:space:]]*:' | head -n1 \
     | sed -E "s/^[[:space:]]*name[[:space:]]*:[[:space:]]*//; s/^[\"']//; s/[\"']$//")
@@ -200,16 +286,22 @@ done < <(find plugins -type f -path '*/agents/*.md' 2>/dev/null | sort)
 # project, not pointing at a file here, and must not be dragged into a link.
 ref_names=$(find plugins -type f -path '*/references/*.md' -exec basename {} \; 2>/dev/null | sort -u)
 
-# Tracked markdown only. A plain `find .` also descends into whatever git is
-# ignoring — `.claude/worktrees/`, `.worktrees/`, `node_modules/` — so a checkout
-# with a stale nested worktree fails the gate on a copy of the repo that is not
-# the one being validated. `git ls-files` cannot see an ignored path at all.
-# The fallback prunes the same directories by name: without a `.git` there is
-# nothing to ask, and a source tree unpacked from an archive can still carry a
-# worktree directory someone copied in.
+# Every markdown file git would let you commit — tracked and not-yet-added alike.
+# A plain `find .` also descends into whatever git is ignoring —
+# `.claude/worktrees/`, `.worktrees/`, `node_modules/` — so a checkout with a
+# stale nested worktree fails the gate on a copy of the repo that is not the one
+# being validated; git will not report an ignored path at all.
+#
+# `-c` alone would skip a file the author has just written, which is exactly when
+# they run this: the gate would pass locally and the same rules would then fail in
+# CI, where the file has become tracked. `-o --exclude-standard` adds the
+# untracked-but-committable ones without letting the ignored directories back in.
+# The fallback prunes those by name: without a `.git` there is nothing to ask, and
+# a source tree unpacked from an archive can still carry a worktree directory
+# someone copied in.
 md_files() {
   if git rev-parse --git-dir >/dev/null 2>&1; then
-    git ls-files '*.md' | sort
+    git ls-files -co --exclude-standard '*.md' | sort -u
   else
     find . \( -name .git -o -path './.claude/worktrees' -o -name .worktrees -o -name node_modules \) -prune \
       -o -type f -name '*.md' -print 2>/dev/null | sed 's|^\./||' | sort
