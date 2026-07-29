@@ -89,7 +89,7 @@ Three questions per reviewer, in order:
 
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
-| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | `minimal` `low` `medium` `high` `xhigh` |
+| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | `none` `low` `medium` `high` `xhigh` |
 | `code-review` workflow | the `Workflow` tool exists | `@{upstream}...HEAD` plus `git diff HEAD` unless given a target | yes, as a target argument | `high` `xhigh` `max` |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 

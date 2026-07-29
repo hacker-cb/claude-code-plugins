@@ -291,10 +291,26 @@ A caller — a person or another skill — may hand you the base and the effort
 level; both are meant to be passed in, and an explicit base wins over the
 resolution above. Set the effort on every run rather than letting
 `~/.codex/config.toml` decide, since that file differs from machine to machine.
-The ladder is `minimal`, `low`, `medium`, `high`, `xhigh`; an unknown value is
-rejected outright, so a typo cannot silently downgrade a review. `-m <model>`
-overrides the model the same way. `--output-schema` is accepted but ignored in
-review mode — the output is always prose.
+
+The ladder **in review mode** is `none`, `low`, `medium`, `high`, `xhigh`. Do not
+copy the set from Codex's general config docs: `minimal` and `max` are valid
+`reasoning.effort` values there and the *review* model refuses both, because review
+does not run the model the banner names — the banner prints `model: gpt-5.5` while
+the request goes to a `…-codex-…` review variant with its own supported set. The
+ladder therefore belongs to that model, and `-m` moves it.
+
+Nothing local checks the value. The CLI prints whatever you passed
+(`reasoning effort: <whatever>`) and sends it on, so that line confirms nothing;
+the API is what refuses it, in two distinguishable ways — `invalid_enum_value` for
+a string that is no effort at all, `unsupported_value` for a real one this model
+does not take. Both name the accepted set, which makes the error, not this
+paragraph, the authority when they disagree. The run aborts cleanly either way:
+`codex` exits 1 leaving `-o` empty, so §3's block takes its `codex review failed:`
+branch and passes the message through. A bad level costs a wasted round trip and a
+report of nothing, never a quiet downgrade — so no pre-check belongs here.
+
+`-m <model>` overrides the model the same way. `--output-schema` is accepted but
+ignored in review mode — the output is always prose.
 
 ## 4. Hand back the findings
 
