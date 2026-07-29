@@ -30,9 +30,9 @@ per-slice step `hcb-dev:implementation-workflow` calls. Steps 0–4 are identica
 both **completion modes** — `local` (merge into the parent, no forge) and
 `request` (a change request) — because the mode is read only at step 5. When
 driven by the orchestrator, the caller threads the completion signals as
-invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy`, `merge-auth`,
-and `defer-offer` (the coverage *policy* is not one of them — an actionable gap
-always stops, a fixed invariant, not a threaded value). Standalone, they default —
+invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`
+(the coverage *policy* is not one of them — an actionable gap always stops, a
+fixed invariant, not a threaded value). Standalone, they default —
 mode by the
 ladder in
 [`../../references/slice-completion.md`](../../references/slice-completion.md)
@@ -79,8 +79,8 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
      network, `--no-ff` by default so the slice stays a revertible boundary.
      Merging into a feature branch is autonomous; merging into the **default
      branch** — or one it cannot resolve as non-default — stops and asks first.
-     Then offer — never force — a change request on the landed work, unless
-     `defer-offer` is set (the orchestrator makes one whole-feature offer instead).
+     Then offer — never force — a change request on the landed work; on an
+     orchestrated set that offer is made once, at the end, on the whole feature.
    - **`request`** — detect the forge (by the remote and what answers there, never
      the hostname) and hand to its change-request driver — `hcb-dev:github-pr-workflow`
      on GitHub, the mirrored `glab` path on GitLab until `gitlab-mr-workflow`

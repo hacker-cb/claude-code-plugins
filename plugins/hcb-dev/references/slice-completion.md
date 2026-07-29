@@ -34,8 +34,6 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
   the **final** `feature → base` strategy (a per-slice change request into a
   feature branch always squashes, whatever this value is).
 - `merge-auth` — request only: the gate-captured merge authorization, or absent.
-- `defer-offer` — suppress the per-slice offer; the orchestrator makes one
-  whole-feature offer instead.
 
 Completion is **not** handed a `coverage` signal — it runs only *after* the
 coverage gate has passed (an actionable gap already stopped the run upstream, at
@@ -46,8 +44,8 @@ step 4), so it never re-checks coverage; it simply carries whatever noted
 `landed_at` (local: the merge commit on `parent`; request: the change-request URL,
 plus a merge commit if it was driven to merge), `mode_used`, `uncovered` (coverage
 gaps carried into the report), `incidental` (surfaced-not-fixed findings, severity
-rated), `deferred_offer` (local only — an open offer, recorded not executed),
-`follow_ups`.
+rated), `declined_offer` (local only — a change request the run could have opened
+and the user turned down, recorded so it is not silently dropped), `follow_ups`.
 
 **Invariants both backends honor:** never complete on an unresolved *actionable*
 coverage gap without explicit clearance (a structural gap is noted, never
@@ -117,12 +115,13 @@ and only by consent.
   *only* push is when the consented escalation offer below is accepted, and that is
   by definition a hand-off **out** of the local backend into the request one, not
   the local merge reaching for the network.
-- **After the merge, the offer** (unless `defer-offer` is set): offer — never
-  force — to open a change request on the landed work. Accepting it is the
-  consented **exit** from local mode: it pushes `parent` and hands to the request
-  backend. The escalated change request carries **no** merge authorization (none
-  was captured at a gate, and merge-on-green is request-only) — it is governed by
-  the driver's own stop-and-ask, not by request-mode auto-merge.
+- **After the merge, the offer** — offer, never force, to open a change request on
+  the landed work. Accepting it is the consented **exit** from local mode: it
+  pushes `parent` and hands to the request backend. The escalated change request
+  carries **no** merge authorization (none was captured at a gate, and
+  merge-on-green is request-only) — it is governed by the driver's own
+  stop-and-ask, not by request-mode auto-merge. **One offer per run**: after a set,
+  it is made once on the whole feature at the end, not once per slice.
 
 ## Backend: request — a change request, by forge
 
@@ -174,13 +173,3 @@ every slice stays independently reviewable. When the slices are done, one final
 `merge-strategy` (see `github-pr-workflow`, *Driving a set*). The local-escalation
 path arrives at that same single `feature → base` change request directly — its
 slices are already merged locally, with nothing left to drive.
-
-## Offer arbitration
-
-Two offers must not double-fire on the same work — the **per-slice** offer (local
-backend, standalone or single-slice) and the **whole-feature** offer (the
-orchestrator, after a local set). `defer-offer` suppresses the per-slice one
-during an orchestrated multi-slice run, so exactly one whole-feature offer is made
-at the end. Every offer is consent-gated — opening or publishing a change request
-is an outward action — and records `deferred_offer` for the report when declined,
-so nothing the run *could* publish is silently dropped.

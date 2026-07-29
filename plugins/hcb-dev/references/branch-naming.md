@@ -135,41 +135,31 @@ under an open change request cannot be fixed at all (below).
 ## Renaming — the mechanics
 
 The local half is plain git — no forge, no network — so it runs wherever
-normalization happens, `shipping-workflow` step 0 included. Run it whole: each
-check below exists because git either fails loudly mid-rename or, worse, succeeds
-where it should not.
+normalization happens, `shipping-workflow` step 0 included.
+
+Only two things here are worth checking in advance, because only two go wrong
+**quietly**. Everything else `git branch -m` refuses itself, with `exit 128` and a
+message naming the exact conflicting ref — an invalid name, a name already taken,
+a directory/file collision in either direction (`refs/heads/fix/a` blocks `fix`,
+and `docs` blocks `docs/x`), a detached HEAD. Read what it says and pick another
+name; a pre-check would only restate it less precisely.
 
 ```bash
 cur="$(git symbolic-ref --short -q HEAD)" \
   || { echo "DETACHED HEAD — check out a branch first"; exit 1; }
 NEW="<new>"
-# Idempotence, and the guard that makes it safe. `git branch -m <same-name>` exits
-# 0, so a caller running this block for its push half would sail on to delete the
-# ref it had just pushed under that same name. "Nothing to do" is a result.
+# QUIET #1 — `git branch -m <same-name>` exits 0 having done nothing, so a caller
+# running this block for its push half would sail on to delete the ref it had just
+# pushed under that same name. "Nothing to do" is a result, not a no-op.
 [ "$cur" = "$NEW" ] && { echo "ALREADY $NEW — nothing to rename"; exit 0; }
-# check-ref-format echoes the name on success and a `fatal:` on failure — the exit
-# status is the answer, so silence both streams and read that.
-git check-ref-format --branch "$NEW" >/dev/null 2>&1 || { echo "INVALID NAME"; exit 1; }
-git show-ref --verify --quiet "refs/heads/$NEW" && { echo "NAME TAKEN"; exit 1; }
-# D/F collisions, BOTH directions — refs are paths and either side blocks the
-# other. Suffix: an existing `<new>/…` branch makes `<new>` impossible. Prefix: a
-# branch sitting on any ancestor path of `<new>` does the same — and since the
-# shape is `<type>/<name>` over seven fixed words, a stray branch called `fix` or
-# `docs` is the likeliest collision this scheme has. Checking one direction only
-# hands a colliding name to `git branch -m`, which dies "cannot lock ref".
-git for-each-ref --format='%(refname:short)' "refs/heads/$NEW/**" \
-  | grep -q . && { echo "D/F COLLISION — a branch exists under $NEW/"; exit 1; }
-p="$NEW"; while [ "$p" != "${p%/*}" ]; do p="${p%/*}"
-  git show-ref --verify --quiet "refs/heads/$p" \
-    && { echo "D/F COLLISION — branch '$p' occupies a path segment of $NEW"; exit 1; }
-done
-# A branch checked out somewhere else belongs to another session. Git normally
-# holds one branch in one worktree, so for the CURRENT branch this fires only
-# where `git worktree add --force` put it in two — verified: it does, and the
-# rename then retargets both HEADs. The wider case the table below forbids is the
-# two-argument `git branch -m <other> <new>`, which git performs happily and
-# silently, and which nothing in git prevents. Compare against THIS worktree's
-# path, or the branch you are standing on reads as someone else's.
+# QUIET #2 — a branch checked out in ANOTHER worktree belongs to another session,
+# and renaming it retargets that session's HEAD without a word (verified: exit 0,
+# the other worktree silently follows the new name). Git normally holds one branch
+# in one worktree, so for the CURRENT branch this fires only where
+# `git worktree add --force` put it in two; the wider case the table below forbids
+# is the two-argument `git branch -m <other> <new>`, which nothing in git prevents.
+# Compare against THIS worktree's path, or the branch you stand on reads as
+# someone else's.
 here="$(git rev-parse --show-toplevel)"
 git worktree list --porcelain | awk -v cur="refs/heads/$cur" -v here="$here" '
     /^worktree /{w=substr($0,10)}

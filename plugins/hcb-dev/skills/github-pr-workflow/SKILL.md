@@ -303,7 +303,7 @@ if [ -z "$PUSH_REMOTE" ]; then
     || echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; set branch.$cur.pushRemote or remote.pushDefault, then re-run"
   exit 1
 fi
-NEW="<new-name>"   # from branch-naming.md, whose block validates it — MAY equal $cur
+NEW="<new-name>"   # from branch-naming.md — MAY equal $cur; a bad one git rejects itself
 # An open PR pins the name: renaming means deleting the head ref below, which
 # closes the PR and takes its review threads with it. Keep the name instead.
 # This probe must fail CLOSED. Empty output covers two very different answers —

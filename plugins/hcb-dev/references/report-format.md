@@ -34,8 +34,8 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    **If there are none, say so explicitly** — "no incidental findings" is a real
    result, and its absence must not read as an omission.
 
-4. **Open offers and next steps** — any `deferred_offer` not taken (a change
-   request the local run *could* open, per slice or whole-feature), follow-up
+4. **Open offers and next steps** — a `declined_offer` (a change request the local
+   run *could* have opened and the user turned down), follow-up
    issues worth filing, and — after a local set that left merged-but-unpushed
    branches — a pointer to `/hcb-dev:git-cleanup` for the residue.
 

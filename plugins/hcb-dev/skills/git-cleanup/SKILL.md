@@ -159,57 +159,16 @@ The argument picks it. With no argument, ask — do not guess.
 | Scope | branches and worktrees created after this session started | every branch and worktree, any age |
 | Typical use | before closing a session | periodic audit |
 
-The primary source for mode S is **what you remember doing in this conversation**.
-Confirm it against git, anchored on the session's own start time:
+**Mode S is what you remember creating in this conversation.** That record is the
+source, not a corroborating one — you were there for every branch cut and every
+worktree added. A timestamp probe cannot overrule it and does not settle the case
+it looks built for: a session that was resumed, or whose process restarted, has a
+start time later than the worktree it made, so its own work dates as somebody
+else's.
 
-```bash
-# Self-contained: shell state does not survive from one Bash call to the next.
-CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-ms=$(grep -o '"startedAt" *: *[0-9]*' "$CFG/sessions/${CLAUDE_PID:-$PPID}.json" 2>/dev/null \
-     | grep -o '[0-9]*$' | head -1)   # one value, whatever else the file grows
-if [ -n "$ms" ]; then
-  ANCHOR=$(( ms / 1000 - 300 ))   # epoch MILLIseconds -> seconds, minus a grace window
-  echo "ANCHOR=$ANCHOR"
-else
-  echo "NO-ANCHOR"                # never reach the arithmetic: empty is 0, i.e. 1969
-fi
-```
-
-Three traps live in those few lines. `startedAt` is **milliseconds** while
-everything below is seconds — pass it through raw and the cutoff lands tens of
-thousands of years out, matching nothing. An **empty** `ms` is silently `0` in
-bash arithmetic, so letting an unreadable registry reach the `$(( ))` would yield
-`-300`, i.e. 1969, and mode `session` would quietly widen to every branch and
-worktree in the repository — hence the `if`, which skips the arithmetic rather
-than guessing. And the **grace window** matters because a worktree and its branch
-are created a second or two *before* the process that runs in them; with zero
-grace your own worktree hides from you.
-
-`NO-ANCHOR` costs you the git-side confirmation, not the run: skip the two
-commands below, say the timestamps were unavailable, and work from the session
-record you already have.
-
-```bash
-git -C "$PROJECT" reflog show --date=unix "<branch>" | tail -1   # 'branch: Created from …'
-# Date the worktree by its `commondir`, written once at registration. The
-# directory's own mtime is last-activity — every commit rewrites `index` inside
-# it — so it would attribute a busy neighbouring session's worktree to this one.
-# And use --git-common-dir, not "$PROJECT/.git": inside a worktree .git is a
-# file, and with a bare primary there is no .git directory at all.
-find "$(git -C "$PROJECT" rev-parse --path-format=absolute --git-common-dir)/worktrees" \
-     -maxdepth 2 -name commondir -newermt "@$ANCHOR"
-```
-
-These timestamps only ever **confirm** what you remember; they never overrule it,
-and an empty result is not evidence that this session created nothing. Whenever
-a session is resumed or its process restarts, `startedAt` moves forward while the
-worktree keeps its original registration time, so everything the session made
-falls behind the anchor and the `find` legitimately comes back empty. Say the
-git-side confirmation was unavailable — on `NO-ANCHOR`, on an empty result, or on
-any disagreement — and go with your own record of the session.
-
-Mode decides *what is listed*. It never decides how freely something is deleted —
-the risk class does.
+Where memory is genuinely unsure about one item, list it. Mode decides *what is
+listed*, never how freely anything is deleted — the risk class does that, and
+step 6 puts the whole list in front of the user before a single deletion.
 
 ## Step 4 — Discovery (read-only, one parallel batch)
 
