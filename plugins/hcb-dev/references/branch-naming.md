@@ -73,10 +73,8 @@ gl_rule="$(glab api "projects/<project>/push_rule" 2>/dev/null \
 echo "GitLab: ${gl_rule:-none}"
 ```
 
-`// empty` rather than `// "none"` in the filter: on an empty body — which is what
-a 404 or an auth failure leaves behind — `jq` prints nothing and still exits 0, so
-a default inside the filter never fires and `|| echo none` never runs. The shell's
-`${var:-none}` is what actually covers that case.
+`// empty` in the filter and `${var:-none}` in the shell: a default inside the jq
+filter never fires on an empty body, which is what a missing rule leaves behind.
 
 Treat a rejected push as a naming failure, not a permissions one.
 
@@ -88,11 +86,9 @@ feat/csv-export--parser    # slice 1
 feat/csv-export--writer    # slice 2
 ```
 
-**Never nest a slice under its feature branch with a slash.** Refs are paths:
-`refs/heads/feat/csv-export` is a *file*, so `refs/heads/feat/csv-export/parser`
-would require that same path to be a *directory* — git refuses one or the other
-outright ("cannot lock ref"), and which one dies depends on the order they were
-created. The `--` separator reads as the same nesting and cannot collide.
+**Never nest a slice under its feature branch with a slash.** Refs are paths, so
+the nested form needs one path to be both a file and a directory and git refuses
+it. The `--` separator reads as the same nesting and cannot collide.
 
 A single slice has no feature branch and no suffix: the one branch is named for
 the change and lands on the base directly.

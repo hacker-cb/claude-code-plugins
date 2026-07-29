@@ -87,9 +87,8 @@ The last row is the one exception to the row above, and it holds for one reason:
 the lease-holder is the one asking. It does not extend to a *sibling* worktree of
 the same host, whose holder is not in the room.
 
-Which clients cut worktrees of their own is not established — the desktop app does,
-and a session started elsewhere may simply be sitting in one the desktop made.
-Treat an unfamiliar client as another host, not as an absence of one.
+Treat an unfamiliar client as another host, not as an absence of one: a session
+started in one client may be sitting in a worktree another one cut.
 
 ## What this answers, and what it does not
 

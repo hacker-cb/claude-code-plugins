@@ -11,7 +11,8 @@ enforces are in `CLAUDE.md`; this is the content axis, which no linter sees.
 
 Both carry **what to do**, and nothing else earns its place. The test, applied to
 a paragraph: delete it — does any action change? If not, it was never an
-instruction.
+instruction. A test the reader applies to a case the file never named counts as
+an instruction; the deliberation that produced it does not.
 
 ## Leave out
 

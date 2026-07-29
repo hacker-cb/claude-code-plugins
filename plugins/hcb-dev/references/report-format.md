@@ -1,12 +1,11 @@
 # The final report
 
 Read by whatever reports on finished work, so the shape is the same whichever ran
-and the wording does not drift. It sits at a different altitude from
-`github-pr-workflow`'s Step 7: that one reports on a single merged change
-request; this one reports on the *whole run*, across slices. In a
-multi-slice request set you get several Step 7s (one per change request) **and**
-one of these at the end; they don't compete because they cover different scopes —
-don't fold one into the other.
+and the wording does not drift. It sits at a different altitude from a
+change-request driver's own report: that one covers a single merged change
+request, this one the *whole run*, across slices. A multi-slice request set
+produces several of the first and one of these at the end — different scopes,
+so don't fold one into the other.
 
 Keep it scannable: short grouped bullets, a small table, not an essay.
 
@@ -55,8 +54,6 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 **Offers & next steps** — <open change-request offers, follow-ups, cleanup pointer; or "none">
 ```
 
-The `State` column is the honest-coverage discipline the plugin is built on,
-applied to a whole run: a reader glancing at it must be able to tell a clean,
-complete set from one that landed part of the work — the offer to open a
-whole-feature change request over an incomplete branch must never be presented as
-if the set were whole.
+A reader glancing at the `State` column must be able to tell a clean, complete set
+from one that landed part of the work: an offer made over an incomplete branch is
+never presented as if the set were whole.

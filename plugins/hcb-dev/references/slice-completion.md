@@ -103,10 +103,8 @@ and only by consent.
   failure to route around: `git worktree list --porcelain` names the directory
   holding it, and `git -C <that dir> merge` lands the slice without moving anyone's
   HEAD. Only when no worktree holds it do you switch, merge, and switch back.
-- **Chain whichever of the two you use.** Unchained, they fail into a false
-  success: a refused switch exits 128, the merge behind it then runs while still on
-  the slice, git says "Already up to date.", exits 0, and the run reports work
-  landed in a parent it never touched.
+- **Chain whichever of the two you use** — unchained, a refused switch still lets
+  the merge run on the slice and report success.
 - **Merge strategy** — the gate's shown default. `--no-ff` by default, so the
   slice stays a visible, revertible boundary in the parent's history and the later
   whole-feature change request keeps its slices reviewable. `ff` only where the

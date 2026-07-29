@@ -88,12 +88,9 @@ stake of the two.
 
    That check catches a pointer at a **deleted** ref, not one at a
    **stale-but-present** one — before a `fetch --prune` the old `<remote>/<name>`
-   is still there, frozen at its last known commit, and it passes. The base is
-   then merely older than the real one; the history is shared, so a review widens
-   rather than breaks, and a prune fixes it. Deliberately not re-checked over the
-   network, which would cost a round trip on every single run to catch that. A
-   run scoped to a branch the repo no longer has is this case:
-   `git remote set-head <remote> --auto`.
+   is still there and passes. The base is then merely older than the real one, so
+   a review widens rather than breaks. A run scoped to a branch the repo no longer
+   has is this case: `git remote set-head <remote> --auto`.
 
    Absent or dead, ask the remote — it is the only thing that knows:
    ```bash

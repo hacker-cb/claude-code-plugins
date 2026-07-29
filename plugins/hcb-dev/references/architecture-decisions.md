@@ -1,8 +1,8 @@
 # Deciding with the user — when to ask, how to ask, when to flag
 
 Read wherever a decision is made *with* a person rather than for them — a
-planning gate, a stop-and-ask point. Three rules, each with a reason, because the
-reason is what lets you apply them to a case this file never named.
+planning gate, a stop-and-ask point. Three rules, each with the test that applies
+it to a case this file never named.
 
 ## 1. Ask about architecture; act on mechanics
 
@@ -41,9 +41,8 @@ merge-on-green) honest rather than silent. The recommendation must be grounded i
 the code and the constraints, not asserted; "I'd do A because the schema already
 does A elsewhere" beats "A (recommended)".
 
-The existing stop-and-ask points inherit this rule: where `github-pr-workflow`
-stops because a Critical/Important finding needs a product decision, or
-`shipping-workflow`'s coverage gate stops on a gap, present the options with a
+Every stop-and-ask point inherits this rule — a finding that needs a product
+decision, a coverage gap, an ambiguous merge strategy: present the options with a
 recommendation, not an open question.
 
 ## 3. Follow the project's rules — but flag when one fights good architecture
@@ -62,6 +61,4 @@ I'd change it to W, but I'll follow the rule until you say otherwise."
 
 **A flag is non-blocking.** Raise it in the report or in a one-line narration and
 carry on following the rule; it stops the run only if the conflict actually blocks
-correct work. The point is that a rule-vs-architecture tension never disappears
-unremarked — the same anti-drift instinct that keeps this plugin's shared
-references honest, turned on the host project.
+correct work.
