@@ -107,15 +107,13 @@ works, in this order:
 
 1. **GitHub MCP server** — if MCP tools for GitHub are connected, prefer them for
    reading PR review comments and findings (richest structured data).
-2. **`gh` CLI** — check with `gh auth status`. Use for almost everything:
-   `gh pr create`, `gh pr view --comments`, `gh pr checks`, `gh pr merge`,
-   `gh api` for anything the porcelain commands don't cover.
+2. **`gh` CLI** — used for almost everything: `gh pr create`,
+   `gh pr view --comments`, `gh pr checks`, `gh pr merge`, and `gh api` for
+   anything the porcelain commands don't cover.
 3. **GitHub REST API** via `gh api` or `curl` with a token — fallback for review
    threads, comment replies, and resolving conversations.
 
-Plain `git` is always used for local branch/rebase/push operations. Verify the
-tool works (a quick read command) before relying on it; if none are available,
-tell the user what to install or connect (`gh`, or a GitHub MCP connector).
+Plain `git` handles the local branch/rebase/push operations.
 
 ## The merge gates belong to the repo — discover them, don't assume
 
@@ -265,13 +263,6 @@ NEW="<the name from branch-naming.md — MAY equal the current one>"
 # turn a `branch.<name>.*` lookup into `branch..*`. Say so instead.
 cur="$(git symbolic-ref --short -q HEAD)" \
   || { echo "DETACHED HEAD — check out a branch before shipping"; exit 1; }
-# The non-interactive guard the reference defines. Re-declared rather than
-# exported: shell state does not survive to the next Bash call.
-netpush() {
-  GIT_TERMINAL_PROMPT=0 \
-  GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
-}
 # An open PR pins the name: renaming means deleting the head ref below, which
 # closes the PR and takes its review threads with it. Keep the name instead.
 # This probe must fail CLOSED. Empty output covers two very different answers —
@@ -293,21 +284,15 @@ fi
 [ "$cur" = "$NEW" ] || git branch -m "$NEW"
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
 # 3 both assume an upstream exists, and neither creates one.
-netpush push "$PUSH_REMOTE" -u "$NEW"
+git push "$PUSH_REMOTE" -u "$NEW"
 # Delete the stale remote ref ONLY when the name actually changed. With
 # $cur == $NEW this deletes the ref the line above just pushed — unpublishing the
 # branch and closing any PR whose head it is — and `2>/dev/null || true` would
 # swallow every trace, leaving Step 2 to proceed as if the branch were pushed.
 if [ "$cur" != "$NEW" ]; then
-  netpush push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
+  git push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
 fi
 ```
-
-Every later network command in this skill — the Step 2 fetch, the
-`--force-with-lease` push after a rebase, each push in the Step 4 fix loop — needs
-that same `netpush` wrapper. Shell state does not survive between Bash calls, so
-re-declare it in whichever block does the pushing; an unguarded push in an
-unattended loop is exactly the hang the guard exists to prevent.
 
 ## Step 2 — Bring the branch up to date with base
 
@@ -321,10 +306,9 @@ rebase onto it; rebase is the default (cleaner history, plays well with squash).
 One thing this step must not take on trust: **check the fetch, not just the ref.**
 Whichever remote you picked, you picked it *because* `<base-remote>/<base>` is
 already there — so an existence test passes just as happily against a week-old
-copy. A failed fetch (expired credential, VPN down, BatchMode refusing a
-passphrase) then rebases onto a stale base, this step reports "up to date", and
-GitHub reports `BEHIND` at merge time. "Did not update" is the only failure this
-step actually has.
+copy. A fetch that failed (VPN down, the remote gone) then rebases onto a stale
+base, this step reports "up to date", and GitHub reports `BEHIND` at merge time.
+"Did not update" is the only failure this step actually has.
 
 Fill the two values at the top; everything under them is live.
 
@@ -332,13 +316,7 @@ Fill the two values at the top; everything under them is live.
 BASE_REMOTE="<resolved per base-resolution.md>"
 BASE="<the PR's base branch, bare name>"
 
-# Same guard as Step 1, re-declared because shell state does not cross Bash calls.
-netpush() {
-  GIT_TERMINAL_PROMPT=0 \
-  GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
-}
-if ! netpush fetch "$BASE_REMOTE" "$BASE"; then
+if ! git fetch "$BASE_REMOTE" "$BASE"; then
   echo "FETCH FAILED from $BASE_REMOTE — not rebasing onto a possibly stale base"; exit 1
 fi
 # And the ref must exist at all: the branch may simply not be on that remote.

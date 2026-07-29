@@ -119,7 +119,7 @@ saying something else.
   resolve a base branch and its remote without guessing either name: the rung
   ladder, remote ranking (`upstream` before `origin`, a lone remote whatever it is
   called), why a read symref goes stale, why only the remote-tracking form is safe
-  to carry forward, the non-interactive guard every network call needs, and why a
+  to carry forward, and why a
   base sharing no history with `HEAD` is worse than no base at all. Used by `codex-review`, `multi-review`, `git-cleanup`,
   `github-pr-workflow` and `implementation-workflow` — every skill that resolves a
   base or a remote — and by `slice-completion.md`, through which `shipping-workflow`
@@ -190,8 +190,8 @@ Two deliberate exceptions, each stated where it occurs:
   installed (`github-pr-workflow` here), otherwise `gh` on GitHub or `glab` on
   GitLab. Nothing in it is GitHub-only.
 - **`github-pr-workflow`**: GitHub specifically — a GitHub MCP server connected,
-  or the `gh` CLI authenticated (`gh auth status`). Plain `git` for the local
-  branch / rebase / push operations.
+  or an authenticated `gh` CLI. Plain `git` for the local branch / rebase / push
+  operations.
 - **`git-cleanup`**: `git` alone is enough. It reads merged/open change requests
   through `gh` or `glab` when one is authenticated — that is what catches
   squash-merged branches — and degrades to git-only when neither is. To tell

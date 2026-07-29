@@ -34,8 +34,8 @@ and stop, rather than quietly reviewing the last commit instead.
 **Base.** Resolve it by the shared ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md),
 which owns all of it — the rungs and their order, remote ranking, the
-remote-tracking-ref form, the non-interactive guard, the stale-pointer trap. Read
-it; don't re-derive any of it here.
+remote-tracking-ref form, the stale-pointer trap. Read it; don't re-derive any of
+it here.
 
 Two things this skill must not let the reference's authority hide:
 

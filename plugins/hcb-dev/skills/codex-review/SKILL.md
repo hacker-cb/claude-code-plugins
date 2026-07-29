@@ -26,8 +26,8 @@ edits to tracked files.
 
 **Resolve it by the shared ladder** —
 [`../../references/base-resolution.md`](../../references/base-resolution.md) owns
-all of it: the rungs, which remote answers which question, the non-interactive
-guard, and the rule that a base sharing no history with `HEAD` is not a base.
+all of it: the rungs, which remote answers which question, and the rule that a
+base sharing no history with `HEAD` is not a base.
 Resolve first, then hand the result to §3; it is the same ladder every other skill
 here reads, which is the point of having one copy of it.
 
@@ -72,16 +72,6 @@ below. Everything under them is live.
 ```bash
 BASE="<the ref resolved in §1 — leave EMPTY for a working-tree review>"
 EFFORT="<none|low|medium|high|xhigh — high unless the caller said otherwise>"
-
-command -v codex >/dev/null \
-  || { echo "codex CLI not installed — brew install codex (or npm i -g @openai/codex)"; exit 1; }
-# ~20 ms, purely local. Match the message, not the exit code: `codex login status`
-# also exits 1 on failures that logging in again would not fix, and only the
-# stated "not logged in" is worth stopping for.
-codex login status 2>&1 | grep -qi 'not logged in' \
-  && { echo "codex is not authenticated — run: codex login"; exit 1; }
-git rev-parse --git-dir >/dev/null 2>&1 \
-  || { echo "not a git repository — nothing to review here"; exit 1; }
 
 # Positional parameters, not an interpolated string: the scope is two arguments
 # or one, and an unquoted expansion would leave that to word-splitting.
@@ -131,15 +121,12 @@ does not run the model the banner names — the banner prints `model: gpt-5.5` w
 the request goes to a `…-codex-…` review variant with its own supported set. The
 ladder therefore belongs to that model, and `-m` moves it.
 
-Nothing local checks the value. The CLI prints whatever you passed
-(`reasoning effort: <whatever>`) and sends it on, so that line confirms nothing;
-the API is what refuses it, in two distinguishable ways — `invalid_enum_value` for
-a string that is no effort at all, `unsupported_value` for a real one this model
-does not take. Both name the accepted set, which makes the error, not this
-paragraph, the authority when they disagree. The run aborts cleanly either way:
-`codex` exits 1 leaving `-o` empty, so §3's block takes its `codex review failed:`
-branch and passes the message through. A bad level costs a wasted round trip and a
-report of nothing, never a quiet downgrade — so no pre-check belongs here.
+The CLI prints whatever you passed (`reasoning effort: <whatever>`) and sends it
+on, so that banner line confirms nothing. The API is what refuses a bad level, in
+two distinguishable ways — `invalid_enum_value` for a string that is no effort at
+all, `unsupported_value` for a real one this model does not take. Both name the
+accepted set, which makes the error, not this paragraph, the authority when they
+disagree.
 
 `-m <model>` overrides the model the same way. `--output-schema` is accepted but
 ignored in review mode — the output is always prose.
@@ -173,6 +160,7 @@ Two things to check in what comes back:
   something like "There are no staged, unstaged, or untracked code changes to
   review."
 
-When the run block stops early — no CLI, no login, not a git repository — its
-output is a single line. Pass that line through as the result. Same for anything
-else Codex refuses on: report it as-is rather than working around it.
+A missing CLI, an expired login and a non-repository all leave `-o` empty and land
+in the `codex review failed:` branch, where the log tail names which it was. Pass
+that line through as the result, the same as anything else Codex refuses on,
+rather than working around it.

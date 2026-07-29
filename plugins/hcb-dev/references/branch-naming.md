@@ -137,12 +137,9 @@ under an open change request cannot be fixed at all (below).
 The local half is plain git — no forge, no network — so it runs wherever
 normalization happens, `shipping-workflow` step 0 included.
 
-Only two things here are worth checking in advance, because only two go wrong
-**quietly**. Everything else `git branch -m` refuses itself, with `exit 128` and a
-message naming the exact conflicting ref — an invalid name, a name already taken,
-a directory/file collision in either direction (`refs/heads/fix/a` blocks `fix`,
-and `docs` blocks `docs/x`), a detached HEAD. Read what it says and pick another
-name; a pre-check would only restate it less precisely.
+Two things are checked in advance, because only these two go wrong **quietly** —
+an invalid name, a taken one, a directory/file collision, a detached HEAD all stop
+`git branch -m` outright, naming the ref that blocked it.
 
 ```bash
 cur="$(git symbolic-ref --short -q HEAD)" \
@@ -177,8 +174,7 @@ git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
   closes the request. Resolve the push remote *before* renaming — the ambiguity
   path exits, and exiting after `git branch -m` leaves a branch renamed locally
   with nothing pushed — per [`base-resolution.md`](base-resolution.md) ("Pushing is
-  a different question"), routing every network call through its non-interactive
-  guard. The runnable version is `github-pr-workflow` Step 1.
+  a different question"). The runnable version is `github-pr-workflow` Step 1.
 - **Never `git branch -M`.** The force form overwrites an existing branch of that
   name — someone else's work, silently. On a collision pick a different name.
 

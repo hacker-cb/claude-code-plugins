@@ -138,9 +138,7 @@ and only by consent.
   ([`branch-naming.md`](branch-naming.md)): this path has no driver Step 1 behind
   it to catch an auto-generated name, and once the change request is open the name
   is fixed for good — renaming means deleting the old head ref, which closes the
-  request. Then push the branch (non-interactive guard,
-  [`base-resolution.md`](base-resolution.md)) and open the change request inline,
-  mirrored:
+  request. Then push the branch and open the change request inline, mirrored:
   ```bash
   # GitHub
   gh pr create   --base <parent> --head <branch> --fill
