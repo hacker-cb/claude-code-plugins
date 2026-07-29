@@ -122,11 +122,16 @@ clock. After each push:
    Not a REST `requested_reviewers` POST — that endpoint takes ordinary logins,
    while `@copilot` is a value `gh` case-handles. Unsupported on GitHub Enterprise
    Server; there, rely on the rule instead.
-2. **Wait until it settles**, which is one of exactly two things: a Copilot review
-   whose `commit_id == $head`, or Copilot gone from
-   `gh pr view <pr> --json reviewRequests` with no such review — a decline, which
-   the report says out loud rather than implying it reviewed.
-3. **A review of an earlier commit is not a decline.** It consumes the request and
+2. **See Copilot in `gh pr view <pr> --json reviewRequests` before reading that
+   list for anything else.** Under `review_on_push` the request is registered
+   asynchronously, so right after a push the list is briefly empty — absence there
+   is "not yet", and only becomes an answer once you have watched the request
+   appear for this head.
+3. **Wait until it settles**, which is one of exactly two things: a Copilot review
+   whose `commit_id == $head`, or a request you *saw* arrive and then leave with no
+   such review — a decline, which the report says out loud rather than implying it
+   reviewed.
+4. **A review of an earlier commit is not a decline.** It consumes the request and
    leaves the head unreviewed, so re-request and keep waiting. For the same reason
    no elapsed time settles anything: while Copilot is still a requested reviewer,
    hold, and say the head review is outstanding.

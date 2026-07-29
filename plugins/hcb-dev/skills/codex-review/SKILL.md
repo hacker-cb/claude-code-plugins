@@ -12,8 +12,7 @@ description: >-
 # Codex review
 
 `codex exec review` is Codex's built-in reviewer, running non-interactively in a
-read-only sandbox. It needs `codex` on `PATH` and a live `codex login`; nothing
-else.
+read-only sandbox. It needs `codex` on `PATH` and a live `codex login`.
 
 This skill is **review-only**. Never fix what it reports — return the findings
 and let the caller decide.

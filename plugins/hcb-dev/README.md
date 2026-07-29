@@ -179,24 +179,31 @@ fallback.
 
 ## Requirements
 
-- **`implementation-workflow`**: plain `git`, plus whatever the reviewers and the
-  completion it drives per slice need (`multi-review` / `codex`, and in request
-  mode `github-pr-workflow` or `gh` / `glab`). Forge-neutral issue intake reads a
-  given issue number via `gh` / `glab`. Runs in the main conversation.
+**`git` and `jq` are assumed everywhere** — every skill shells out to `git`, and
+most parse JSON through `jq`: a forge CLI's output, a tool's catalog.
+
+**An authenticated forge CLI is assumed wherever the work touches a forge**, which
+is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without the
+other. What it buys differs per skill: an issue read, a change request opened, a
+squash-merge that git alone cannot see. Where a skill can go on without it, it says
+what it loses rather than stopping.
+
+Per skill, on top of those:
+
+- **`implementation-workflow`**: whatever the reviewers and the completion it
+  drives per slice need — `multi-review` / `codex`, and in request mode
+  `github-pr-workflow`. Runs in the main conversation.
 - **`dependency-versions`**: the relevant package manager on `PATH`.
 - **`codex-review`** / **`multi-review`**: the `codex` CLI installed and
   `codex login` live; `multi-review` also picks up the built-in code-review and
   security-review tooling when present.
-- **`shipping-workflow`**: plain `git` for the commit and the branch push, plus
-  *some* way to open a change request — a PR/MR driver skill when one is
-  installed (`github-pr-workflow` here), otherwise `gh` on GitHub or `glab` on
-  GitLab. Nothing in it is GitHub-only.
-- **`github-pr-workflow`**: GitHub specifically — a GitHub MCP server connected,
-  or an authenticated `gh` CLI. Plain `git` for the local branch / rebase / push
-  operations.
-- **`git-cleanup`**: `git` alone is enough. It reads merged/open change requests
-  through `gh` or `glab` when one is authenticated — that is what catches
-  squash-merged branches — and degrades to git-only when neither is. To tell
-  which worktrees are occupied it also reads Claude Code's live-session registry
-  under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, so when
-  it is absent the skill says so and stops deleting worktrees on its own.
+- **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
+  skill when one is installed (`github-pr-workflow` here), otherwise the forge CLI
+  directly. Nothing in it is GitHub-only.
+- **`github-pr-workflow`**: GitHub specifically — a connected GitHub MCP server
+  is preferred over `gh` for reading reviews, but `gh` alone suffices.
+- **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
+  branch, and without it the skill degrades to git-only. To tell which worktrees
+  are occupied it also reads Claude Code's live-session registry under
+  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, so when it is
+  absent the skill says so and stops deleting worktrees on its own.

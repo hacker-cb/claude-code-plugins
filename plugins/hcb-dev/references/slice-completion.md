@@ -20,13 +20,18 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
 **Inputs every backend receives:**
 
 - `mode` — `local` or `request` (resolution ladder below).
-- `parent` — the branch this slice lands on, always a **bare local name**. It is a
-  destination, not a ref to read: the local backend checks it out and merges into
-  it, and `base-resolution.md` shows what a `<remote>/<name>` does there —
-  `checkout` detaches HEAD quietly and the merge then lands nowhere.
+- `parent` — the branch this slice lands on, as a **bare local name**, carried
+  alongside the `<remote>/<name>` ref it was reduced from. It is a destination, not
+  a ref to read: the local backend checks it out and merges into it, and
+  `base-resolution.md` shows what a `<remote>/<name>` does there — `checkout`
+  detaches HEAD quietly and the merge then lands nowhere. Keep the ref too, because
+  the name alone does not say which tip was resolved: with the same branch on two
+  remotes, or a local copy behind its remote, merging into the name lands somewhere
+  the reviewers never read. Before merging, confirm the local branch is at that ref
+  or fast-forwards to it; where it does not, stop and say so.
   Multi-slice: the shared feature branch (known to the orchestrator — it created
-  it). Single slice: the base, resolved by that ladder and **reduced to its name**,
-  then handed on as an explicit base, which is the ladder's rung 1.
+  it). Single slice: the base, resolved by that ladder, handed on as an explicit
+  base — the ladder's rung 1 — in both forms.
 - `diff-base` — the range the reviewers already covered: the slice's parent tip,
   threaded to `multi-review` as its **explicit** base so per-slice coverage is
   *this* slice, not the cumulative feature diff (which would re-read slice 1 while
@@ -90,9 +95,15 @@ and only by consent.
   removing it is an outward write, so it rides with the consented escalation offer
   below and the report says the old name is still on the remote until then. Local
   mode does not reach for the network to tidy up a name.
-- **The merge runs from the parent, and the three commands must be chained.**
-  `git merge` lands into whatever is checked out, and on arrival that is the slice —
-  so switch to `parent`, merge, switch back. Unchained, they fail into a false
+- **The merge runs from wherever `parent` is checked out — find that first.**
+  `git merge` lands into whatever is checked out, and on arrival that is the slice.
+  A slice cut in a linked worktree is the normal case, and there the parent is
+  usually checked out in another worktree already, so `git switch` refuses it
+  outright (`fatal: 'master' is already used by worktree at …`). That is not a
+  failure to route around: `git worktree list --porcelain` names the directory
+  holding it, and `git -C <that dir> merge` lands the slice without moving anyone's
+  HEAD. Only when no worktree holds it do you switch, merge, and switch back.
+- **Chain whichever of the two you use.** Unchained, they fail into a false
   success: a refused switch exits 128, the merge behind it then runs while still on
   the slice, git says "Already up to date.", exits 0, and the run reports work
   landed in a parent it never touched.
