@@ -1,7 +1,7 @@
 ---
 name: git-cleanup
 description: >-
-  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, other sessions' leftovers included. Deletes branches; a worktree Claude Code created it reports rather than removes, because the host leases those to sessions that outlive their processes. Never edits files, never runs `git reset`, and never writes to a remote — it reads merged and open change requests through the forge CLI, but pushes, deletes and edits nothing there.
+  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, other sessions' leftovers included. Deletes branches; a worktree Claude Code created for another session it reports rather than removes, because the host leases those to sessions that outlive their processes. Never edits files, never runs `git reset`, and never writes to a remote — it reads merged and open change requests through the forge CLI, but pushes, deletes and edits nothing there.
 disable-model-invocation: true
 argument-hint: "[session|all]"
 ---
@@ -10,18 +10,6 @@ argument-hint: "[session|all]"
 
 Branches and worktrees only. Untracked junk in the working tree is not this
 skill's business — `.gitignore` is, and `seeding-gitignore` owns that.
-
-## What is left over for this skill
-
-**Branches, mostly.** No host cleanup touches them, they accumulate fastest, and
-nothing else is going to delete them.
-
-Worktrees are the narrower half, because the ones Claude Code created stay Claude
-Code's — it leases them to sessions that outlive their processes, and it sweeps its
-own pool. Read
-[`../../references/claude-worktrees.md`](../../references/claude-worktrees.md)
-first: this skill *reports* those and removes only what it cut itself. Fighting the
-host's own bookkeeping is how a sweep destroys work someone meant to resume.
 
 ## Step 1 — Ground truth
 
@@ -57,21 +45,20 @@ straight to deletion.
 
 If there is no remote at all, ask the user — nothing local names the default.
 
-Claude Code's own directory is `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` — the
-variable is documented and may point anywhere. Never write `~/.claude` literally.
-
 ## Step 2 — Who is still working here
 
 A worktree with a live session in it must not be removed, and git alone cannot
-tell you. Run the probe from `claude-worktrees.md` and carry its answer into
-step 5 — **in one direction only.** A live session proves the worktree is in use.
-Its absence proves nothing: the host leases worktrees to *sessions*, not to
-processes, and a session that was merely closed keeps its lease until it is
-archived. The lease is not readable from here.
+tell you. Run the probe from
+[`../../references/claude-worktrees.md`](../../references/claude-worktrees.md) and
+carry its answer into step 5 — **in one direction only.** A live session proves
+the worktree is in use. Its absence proves nothing: the host leases worktrees to
+*sessions*, not to processes, and a session that was merely closed keeps its lease
+until it is archived. The lease is not readable from here.
 
-So a worktree the host created is never this skill's to remove, running or not.
-What is left after that is still worth the sweep: worktrees you cut yourself, and —
-the larger share — **branches**, which no host cleanup touches.
+So a worktree the host created for another session is never this skill's to
+remove, running or not. What is left after that is still worth the sweep:
+worktrees you cut yourself, and — the larger share — **branches**, which no host
+cleanup touches.
 
 Where the probe itself failed (no registry, or no `cwd` lines while session files
 exist) say so once and treat every worktree but the current one as in use.
@@ -201,15 +188,7 @@ git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fu
 git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed squash merge
 ```
 
-Order matters twice over. Branch deletion fails while a worktree still has the
-branch checked out, and `worktree prune` must come *after* any manual `rm -rf` —
-prune first and the deleted directory's registration is still there, so the
-`branch -d` behind it fails with "used by worktree at …".
-
-`branch -d` refuses a branch that is not fully merged, which is a free second
-opinion on every classification derived from a forge listing or from `[gone]`.
-Reach for `-D` only where the merge is genuinely invisible to git — a squash
-merge already confirmed by `rev-list --count` — and say so when you do.
+Say so in the report wherever `-D` was used.
 
 To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
@@ -229,17 +208,10 @@ them here unsets the tracking this was meant to repair.
 ```bash
 CURRENT="<the branch being repaired>"
 
-# Re-point at the default ONLY when this IS the default branch. On a feature
-# branch whose upstream no longer matches its name, git's push.default=simple
-# refuses `git push` outright (exit 128, "does not match the name of your current
-# branch"), leaving it unpushable — so there, drop the dead upstream instead and
-# let `git push -u <remote> "$CURRENT"` restore it.
-# if/else, never `test && A || B`: that runs B when A itself fails, so a
-# set-upstream-to against a dangling $D would strip the default branch's tracking
-# outright — the opposite of the repair, in exactly the case this step is for.
-# And skip the whole thing when step 1 said DEFAULT-UNRESOLVED: with $DEF empty
-# the comparison is false for EVERY branch, so the else arm would strip upstreams
-# wholesale on the one run that was told it cannot answer the question.
+# Re-point at the default ONLY when this IS the default branch; on any other
+# branch drop the dead upstream and let `git push -u <remote> "$CURRENT"` restore
+# it. Skip entirely on DEFAULT-UNRESOLVED: an empty $DEF matches no branch, so the
+# else arm would strip every upstream on the one run told it cannot answer.
 if [ -z "$DEF" ]; then
   echo "skipping upstream repair — default branch unresolved"
 elif [ "$CURRENT" = "$DEF" ]; then
@@ -262,13 +234,10 @@ without asking.
 | remove a worktree Claude Code created, however idle it looks | report it — the lease outlives the process and is unreadable from here |
 | read "no live session" as "nobody needs it" | the probe proves presence only; absence is not an answer |
 | `git worktree unlock` something Claude Code locked | leave it; the periodic sweep releases stale locks itself |
-| delete an unmerged branch, or one whose status is unknown | surface it, let the user decide |
-| `--force` a dirty worktree unasked | skip it, report it |
 | `rm -rf` a path outside this repository's worktree directories | resolve it from `worktree list` / the git dir, never from a name |
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
 | hardcode `~/.claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` |
-| name a default branch or a remote yourself, or feed a bare name where a ref belongs | resolve both per `base-resolution.md` — step 1 carries out `$D` and `$DEF` for exactly that split |
 
 ## Edge cases
 
