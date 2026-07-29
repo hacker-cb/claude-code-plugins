@@ -70,6 +70,10 @@ description_len() {
   # a description full of em dashes that overreports by several characters against
   # a limit expressed in characters. The arithmetic below does the measuring.
   dl_raw=$(awk '
+    # A verdict reached mid-file still runs END, so mark it: otherwise END adds its
+    # own "!!NODESC" underneath and the caller compares a two-line string.
+    function bail(msg) { print msg; bailed = 1; exit }
+
     NR == 1 { next }                                   # opening ---
     /^---[[:space:]]*$/ { exit }                       # closing --- ends frontmatter
 
@@ -86,8 +90,8 @@ description_len() {
       # an explicit indentation indicator (`>-2`, `>2-`) most likely. Say so:
       # falling through would read it as a plain one-liner and measure the
       # indicator itself, reporting three characters for a full description.
-      if (rest ~ /^[|>]/) { print "!!UNSUPPORTED (block scalar header " rest ")"; exit }
-      if (rest == "") { print "!!UNSUPPORTED (empty value)"; exit }
+      if (rest ~ /^[|>]/) { bail("!!UNSUPPORTED (block scalar header " rest ")") }
+      if (rest == "") { bail("!!NODESC") }
       sub(/^\042/, "", rest); sub(/\042$/, "", rest)   # a quoted one-liner
       sub(/^\047/, "", rest); sub(/\047$/, "", rest)
       out = rest; seen = 1; mode = 2; next
@@ -98,14 +102,19 @@ description_len() {
       line = $0
       sub(/^[[:space:]]+/, "", line); sub(/[[:space:]]+$/, "", line)
       if (line == "") {
-        if (literal) { print "!!UNSUPPORTED (blank line in a literal block)"; exit }
-        next                                           # folded: the break collapses to the
-      }                                                # single separator already counted
+        if (literal) { bail("!!UNSUPPORTED (blank line in a literal block)") }
+        # One blank line folds to the single separator the next line already adds.
+        # Two or more fold to that many newlines, which this does not model.
+        if (blank++) { bail("!!UNSUPPORTED (consecutive blank lines in a folded block)") }
+        next
+      }
+      blank = 0
       out = out (seen ? " " : "") line
       seen = 1
     }
 
     END {
+      if (bailed) { exit }
       if (!seen) { print "!!NODESC"; exit }
       # The chomp indicator rides on the FIRST line, not the last: command
       # substitution strips trailing newlines, so a `>` that keeps one would come
