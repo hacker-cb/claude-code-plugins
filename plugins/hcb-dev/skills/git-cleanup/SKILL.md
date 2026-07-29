@@ -223,30 +223,6 @@ git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the ent
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
 git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed squash merge
-# 5. repair tracking — re-point at <remote>/<default> ONLY when <current> IS the
-#    default branch. On a feature branch whose upstream no longer matches its name,
-#    git's default push.default=simple refuses `git push` outright, leaving it
-#    unpushable; there, drop the dead upstream instead and
-#    `git push -u <remote> <current>` restores it.
-#    if/else, never `test && A || B`: that runs B when A itself fails, so a
-#    set-upstream-to against a dangling <remote>/<default> would strip the default
-#    branch's tracking outright — the opposite of the repair, in exactly the case
-#    this step is for.
-#    Compare against $DEF, the BARE name from step 1 — a branch name is never the
-#    remote-tracking form, so testing <current> against "<remote>/<default>" is
-#    false even on the default branch and would unset its tracking instead of
-#    repairing it. Refs go in --set-upstream-to; names go in the comparison.
-#    And skip the whole repair when step 1 said DEFAULT-UNRESOLVED: with $DEF
-#    empty the comparison is false for EVERY branch, so the else arm would strip
-#    upstreams wholesale on exactly the run that was told it cannot answer the
-#    question. Unknown means touch nothing.
-if [ -z "$DEF" ]; then
-  echo "skipping upstream repair — default branch unresolved"
-elif [ "<current>" = "$DEF" ]; then
-  git -C "$PROJECT" branch --set-upstream-to="$D" "<current>"
-else
-  git -C "$PROJECT" branch --unset-upstream "<current>"
-fi
 ```
 
 Order matters twice over. Branch deletion fails while a worktree still has the
@@ -268,6 +244,36 @@ git -C "<PROJECT>" worktree remove "<old-cwd>"
 ```
 
 Then tell the user cwd moved to `PROJECT` — their old path no longer exists.
+
+**Last, repair the tracking** — one branch at a time, and only on branches that
+survived the deletions above. `$D` and `$DEF` are step 1's ref and its bare name;
+which belongs where is
+[`../../references/base-resolution.md`](../../references/base-resolution.md)'s
+ref-versus-name rule, and swapping them here unsets the tracking this was meant to
+repair.
+
+```bash
+CURRENT="<the branch being repaired>"
+
+# Re-point at the default ONLY when this IS the default branch. On a feature
+# branch whose upstream no longer matches its name, git's push.default=simple
+# refuses `git push` outright (exit 128, "does not match the name of your current
+# branch"), leaving it unpushable — so there, drop the dead upstream instead and
+# let `git push -u <remote> "$CURRENT"` restore it.
+# if/else, never `test && A || B`: that runs B when A itself fails, so a
+# set-upstream-to against a dangling $D would strip the default branch's tracking
+# outright — the opposite of the repair, in exactly the case this step is for.
+# And skip the whole thing when step 1 said DEFAULT-UNRESOLVED: with $DEF empty
+# the comparison is false for EVERY branch, so the else arm would strip upstreams
+# wholesale on the one run that was told it cannot answer the question.
+if [ -z "$DEF" ]; then
+  echo "skipping upstream repair — default branch unresolved"
+elif [ "$CURRENT" = "$DEF" ]; then
+  git -C "$PROJECT" branch --set-upstream-to="$D" "$CURRENT"
+else
+  git -C "$PROJECT" branch --unset-upstream "$CURRENT"
+fi
+```
 
 ## Step 8 — Verify and report
 
