@@ -1,7 +1,7 @@
 ---
 name: git-cleanup
 description: >-
-  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, including other sessions' leftovers. Never edits files, never runs `git reset`, and never writes to a remote — it reads merged and open change requests through the forge CLI, but pushes, deletes and edits nothing there.
+  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, other sessions' leftovers included. Deletes branches; a worktree Claude Code created it reports rather than removes, because the host leases those to sessions that outlive their processes. Never edits files, never runs `git reset`, and never writes to a remote — it reads merged and open change requests through the forge CLI, but pushes, deletes and edits nothing there.
 disable-model-invocation: true
 argument-hint: "[session|all]"
 ---
@@ -11,22 +11,17 @@ argument-hint: "[session|all]"
 Branches and worktrees only. Untracked junk in the working tree is not this
 skill's business — `.gitignore` is, and `seeding-gitignore` owns that.
 
-## What Claude Code already cleans up
+## What is left over for this skill
 
-Do not duplicate or fight these — they run on their own:
+**Branches, mostly.** No host cleanup touches them, they accumulate fastest, and
+nothing else is going to delete them.
 
-- **Exiting an interactive worktree session.** A clean, unnamed session's
-  worktree and branch are removed automatically; a named one, or one holding
-  work, prompts first.
-- **The periodic sweep** removes worktrees Claude created for **subagents and
-  background sessions** once they are older than `cleanupPeriodDays`, skipping
-  any that still hold work. It **never** removes a `--worktree` worktree.
-- **`git worktree lock` while an agent runs.** The sweep releases a lock left by
-  a session whose process exited; it never releases a lock set by hand.
-
-What is left over for this skill: `--worktree` and desktop-session worktrees, the
-worktrees of `-p` runs (which have no exit prompt at all), anything the sweep
-skipped because it held work — and **branches**, which the sweep never touches.
+Worktrees are the narrower half, because the ones Claude Code created stay Claude
+Code's — it leases them to sessions that outlive their processes, and it sweeps its
+own pool. Read
+[`../../references/claude-worktrees.md`](../../references/claude-worktrees.md)
+first: this skill *reports* those and removes only what it cut itself. Fighting the
+host's own bookkeeping is how a sweep destroys work someone meant to resume.
 
 ## Step 1 — Ground truth
 
@@ -68,38 +63,18 @@ variable is documented and may point anywhere. Never write `~/.claude` literally
 ## Step 2 — Who is still working here
 
 A worktree with a live session in it must not be removed, and git alone cannot
-tell you: desktop and `--worktree` sessions do **not** lock their worktree, so a
-busy one looks idle in `worktree list`.
+tell you. Run the probe from `claude-worktrees.md` and carry its answer into
+step 5 — **in one direction only.** A live session proves the worktree is in use.
+Its absence proves nothing: the host leases worktrees to *sessions*, not to
+processes, and a session that was merely closed keeps its lease until it is
+archived. The lease is not readable from here.
 
-The live-session registry answers it. Each file is one running session; the file
-exists only while it runs:
+So a worktree the host created is never this skill's to remove, running or not.
+What is left after that is still worth the sweep: worktrees you cut yourself, and —
+the larger share — **branches**, which no host cleanup touches.
 
-```bash
-CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -d "$CFG/sessions" ] || echo "REGISTRY-ABSENT"      # not the same as "nobody is working"
-for f in "$CFG"/sessions/*.json; do
-  [ -e "$f" ] || continue                             # unmatched glob stays literal
-  pid=${f##*/}; pid=${pid%.json}
-  kill -0 "$pid" 2>/dev/null || continue              # a file can outlive its session
-  # One line per file, so a pretty-printed registry still matches. Never filter by
-  # process name: an npm-installed Claude Code reports `node`, and a live session
-  # read as dead is exactly the mistake that costs someone their work.
-  tr -d '\n' < "$f" | grep -o '"cwd" *: *"[^"]*"' | head -1
-done
-```
-
-**This format is internal and undocumented — treat it as a hint, never as a
-guarantee.** An empty result is ambiguous by itself, so separate the two cases
-before using it: `REGISTRY-ABSENT`, or a `cwd` line count of zero while session
-files exist, both mean the probe failed. Say so once and treat **every** worktree
-but the current one as *possibly occupied* — surface them, remove none. Only a
-working probe that lists live sessions licenses a removal.
-
-A worktree is occupied when a live session's `cwd` **is that worktree's path, or
-lies anywhere beneath it** — a session that has stepped into a subdirectory is
-still working in the worktree. Compare in that direction only: the worktree is
-the ancestor, never the descendant. Erring toward "occupied" is free; erring the
-other way destroys someone's work.
+Where the probe itself failed (no registry, or no `cwd` lines while session files
+exist) say so once and treat every worktree but the current one as in use.
 
 ## Step 3 — The mode
 
@@ -172,12 +147,13 @@ status: surface it, never delete it.
 | Signal | Verdict |
 |---|---|
 | primary worktree | never touch |
-| the current session's own worktree | never remove from inside it — see step 7 |
-| path is a live session's `cwd`, or occupancy unknown | keep — someone may be working there |
+| the current session's own worktree | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
+| path is a live session's `cwd` | keep — someone is working there |
+| **another** worktree the host made — a `claude/…` branch, or a directory in the host's own worktree dir — **that is still on disk** | **surface, never remove** — its lease survives the process and is unreadable from here (`claude-worktrees.md`). A registration whose directory is already gone is not this case: nothing is left to destroy, so it falls to the `prunable` rows below |
 | `locked` | keep — Claude Code locks a worktree while its agent runs |
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
-| clean, its branch merged, unoccupied | `remove` (class 2) |
+| clean, its branch merged, and **this session cut it** | `remove` (class 2) |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
@@ -283,7 +259,8 @@ without asking.
 
 | ❌ | ✅ |
 |---|---|
-| remove a worktree without checking occupancy | live session `cwd`, or unknown → keep |
+| remove a worktree Claude Code created, however idle it looks | report it — the lease outlives the process and is unreadable from here |
+| read "no live session" as "nobody needs it" | the probe proves presence only; absence is not an answer |
 | `git worktree unlock` something Claude Code locked | leave it; the periodic sweep releases stale locks itself |
 | delete an unmerged branch, or one whose status is unknown | surface it, let the user decide |
 | `--force` a dirty worktree unasked | skip it, report it |

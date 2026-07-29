@@ -105,9 +105,10 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   Sweep the git residue work leaves in a repository: merged and orphaned
   branches, stale or abandoned worktrees, dead upstream tracking. Two modes —
   `session` (only what this session created) and `all` (everything accumulated,
-  other sessions' leftovers included). It covers what Claude Code's own worktree
-  cleanup does not — `--worktree` and desktop worktrees, `-p` leftovers, and
-  branches — and never removes a worktree another live session is working in.
+  other sessions' leftovers included). **Branches** are the bulk of it — no host
+  cleanup touches those. A worktree Claude Code created it reports rather than
+  removes: the host leases those to sessions that outlive their processes, so an
+  idle one is routinely still someone's.
 
 ## Shared references
 
@@ -145,6 +146,15 @@ saying something else.
   recommendation (never a bare question), and flag a project rule that fights good
   architecture as possible drift. Read by `implementation-workflow` at its gate,
   and by the stop-and-ask points in `shipping-workflow` and `github-pr-workflow`.
+- [`references/claude-worktrees.md`](references/claude-worktrees.md) — Claude Code's
+  own worktrees and sessions: which of them the host removes by itself and which it
+  leaves behind, and how to tell whether a worktree still has a live session in it.
+  It describes the host rather than this plugin, so it changes on the host's
+  schedule and is kept in one place for that reason. Read by `git-cleanup` (a
+  worktree the host made stays the host's — uncollected is not the same as free —
+  so the sweep reports those and deletes branches) and by `branch-naming.md` (a
+  host-session branch is not renamed early). Answers *whose is this right now* —
+  never what another session is doing.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
   findings rated by importance, an explicit "none"). Read by

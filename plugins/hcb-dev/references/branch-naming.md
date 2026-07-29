@@ -186,7 +186,7 @@ git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
 | rename a branch checked out in another worktree — `git branch -m <other> <new>` | probe `git worktree list` first (the block above); git performs that rename happily and retargets the other session's HEAD without a word |
 | delete the old remote ref when the name did not change | the block exits on `cur == NEW`; a push followed by a delete of that same ref unpublishes the branch and closes any change request whose head it is |
 | rename a shared branch others have pulled | leave it; a nicer name is not worth breaking someone's upstream |
-| rename a host-session branch earlier than needed | the host owns `claude/…` and cleans up its own worktree sessions through internal, undocumented bookkeeping — normalize on the way into completion, not at cut |
+| rename a host-session branch earlier than needed | Claude Code manages some of its own worktree sessions through undocumented bookkeeping ([`claude-worktrees.md`](claude-worktrees.md)) — normalize on the way into completion, not at cut |
 | derive the new name from the old one | read the diff and the task; the old name is the thing with no information in it |
 | nest a slice under its feature branch with `/` | `--` — refs are paths, and the nested form is a D/F collision |
 | ask the user what to call a branch | a branch name is mechanical and reversible ([`architecture-decisions.md`](architecture-decisions.md) §1) — name it and narrate one line |
