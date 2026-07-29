@@ -22,8 +22,8 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
 - `mode` — `local` or `request` (resolution ladder below).
 - `parent` — the branch this slice lands on, always a **bare local name**. It is a
   destination, not a ref to read: the local backend checks it out and merges into
-  it, and [`base-resolution.md`](base-resolution.md) shows what a `<remote>/<name>`
-  does there — `checkout` detaches HEAD quietly and the merge then lands nowhere.
+  it, and `base-resolution.md` shows what a `<remote>/<name>` does there —
+  `checkout` detaches HEAD quietly and the merge then lands nowhere.
   Multi-slice: the shared feature branch (known to the orchestrator — it created
   it). Single slice: the base, resolved by that ladder and **reduced to its name**,
   then handed on as an explicit base, which is the ladder's rung 1.
@@ -52,8 +52,7 @@ and the user turned down, recorded so it is not silently dropped), `follow_ups`.
 **Invariants both backends honor:** never complete on an unresolved *actionable*
 coverage gap without explicit clearance (a structural gap is noted, never
 blocking — see `multi-review`); never guess a base or a remote
-([`base-resolution.md`](base-resolution.md)); never land an auto-generated branch
-name **silently** — normalization happens upstream at `shipping-workflow` step 0,
+(`base-resolution.md`); never land an auto-generated branch name **silently** — normalization happens upstream at `shipping-workflow` step 0,
 and both backends here are what make it permanent, but where
 [`branch-naming.md`](branch-naming.md) forbids the rename outright (a shared
 branch others have pulled, an open change request, a branch checked out in another
@@ -85,7 +84,7 @@ and only by consent.
   parent's history (`Merge branch 'claude/…' into …`) — and unlike a change
   request's branch, which dies at merge, that line stays for good. A slice
   arriving here still carrying an auto-generated name means step 0 was skipped:
-  rename it before merging ([`branch-naming.md`](branch-naming.md)) — the local
+  rename it before merging (`branch-naming.md`) — the local
   half of that reference and nothing more: a bare `git branch -m`, no network. If
   the branch was pushed at some earlier point, the stale remote ref **stays**;
   removing it is an outward write, so it rides with the consented escalation offer
@@ -111,8 +110,8 @@ and only by consent.
   action here — an unattended commit on `master`/`main` is not practically
   reversible and bypasses every gate the forge would otherwise enforce — so **stop
   and ask first**. Resolve the default offline
-  ([`base-resolution.md`](base-resolution.md): `<remote>/HEAD`, verified). Where
-  you **cannot** resolve it — no remote at all, or a stale/unverifiable pointer —
+  (`base-resolution.md`: `<remote>/HEAD`, verified). Where you **cannot** resolve
+  it — no remote at all, or a stale/unverifiable pointer —
   do **not** assume the parent is a feature branch: ask before merging. Erring
   toward asking is free; an unattended merge into the default is not. (Forge-side
   *protection* is a separate thing you cannot read offline — but a local merge
@@ -143,7 +142,7 @@ and only by consent.
   GitLab → `hcb-dev:gitlab-mr-workflow` once it exists (deferred — until then
   GitLab falls to the inline fallback below).
 - **No driver installed** — normalize the branch name **first**
-  ([`branch-naming.md`](branch-naming.md)): this path has no driver Step 1 behind
+  (`branch-naming.md`): this path has no driver Step 1 behind
   it to catch an auto-generated name, and once the change request is open the name
   is fixed for good — renaming means deleting the old head ref, which closes the
   request. Then push the branch and open the change request inline, mirrored:

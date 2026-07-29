@@ -275,9 +275,8 @@ fi
 
 ## Step 2 — Bring the branch up to date with base
 
-The base branch and the remote carrying it both come from
-[`../../references/base-resolution.md`](../../references/base-resolution.md): rung
-2, the open PR's own base, answers it here, and the reference's remote ranking
+The base branch and the remote carrying it both come from `base-resolution.md`:
+rung 2, the open PR's own base, answers it here, and the reference's remote ranking
 says which remote actually holds that branch — `upstream` can exist while *this*
 base lives only on `origin`, in a fork whose PR targets the fork itself. Then
 rebase onto it; rebase is the default (cleaner history, plays well with squash).
@@ -405,10 +404,10 @@ strategy, pick from the allowed set:
 
 - **A PR whose base is a feature branch is a slice, and a slice always squashes**
   — one commit — regardless of the gate's `merge-strategy`, which governs the
-  final `feature → base` integration PR only
-  ([`../../references/slice-completion.md`](../../references/slice-completion.md)
-  owns that topology). The choices below apply to that final PR, or to a
-  standalone single one.
+  final `feature → base` integration PR only —
+  [`../../references/slice-completion.md`](../../references/slice-completion.md)
+  owns that topology. The choices below apply to that final PR, or to a standalone
+  single one.
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
   logical feature/fix. Write a clean squash commit message.
 - **Merge commit** (`gh pr merge --merge`) — when the PR contains multiple

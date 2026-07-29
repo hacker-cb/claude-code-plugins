@@ -32,14 +32,12 @@ both **completion modes** — `local` (merge into the parent, no forge) and
 driven by the orchestrator, the caller threads the completion signals as
 invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`
 (the coverage *policy* is not one of them — an actionable gap always stops, a
-fixed invariant, not a threaded value). Standalone, they default —
-mode by the
+fixed invariant, not a threaded value). Standalone, they default — mode by the
 ladder in
 [`../../references/slice-completion.md`](../../references/slice-completion.md)
-(ending at `request`),
-and `parent` = the base **reduced to its bare name** — the ladder answers with a
-`<remote>/<name>` ref, and step 5 checks that value out and merges into it, which
-a ref does not survive. That reference owns the mechanics of completion; steps
+(ending at `request`), and `parent` = the base **reduced to its bare name** — the
+ladder answers with a `<remote>/<name>` ref, and step 5 checks that value out and
+merges into it, which a ref does not survive. That reference owns the mechanics of completion; steps
 0–4 below are the mode-blind front half.
 
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
@@ -75,8 +73,8 @@ a ref does not survive. That reference owns the mechanics of completion; steps
    uncommitted fix straight past the change request it was meant to be in).
 4. **Check the coverage** — the gate below.
 5. **Complete the slice by mode** — hand off to the completion contract in
-   [`../../references/slice-completion.md`](../../references/slice-completion.md)
-   — the mode picks the backend; nothing in steps 0–4 changes:
+   `slice-completion.md` — the mode picks the backend; nothing in steps 0–4
+   changes:
    - **`local`** — merge the slice into its `parent` with `git`, no forge and no
      network, `--no-ff` by default so the slice stays a revertible boundary.
      Merging into a feature branch is autonomous; merging into the **default

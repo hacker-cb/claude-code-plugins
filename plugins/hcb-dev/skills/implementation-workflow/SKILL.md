@@ -107,9 +107,9 @@ other):
 1. **Cut the slice branch from the current tip of its parent** (the feature
    branch, or the base for a single slice) — not all up front, so a later slice
    sees the ones below it and conflicts less. Cut it under the name the gate
-   showed ([`../../references/branch-naming.md`](../../references/branch-naming.md)):
-   naming it right at creation is free, and it makes the normalization step
-   downstream (`shipping-workflow` step 0) the no-op it is meant to be.
+   showed (`branch-naming.md`): naming it right at creation is free, and it makes
+   the normalization step downstream (`shipping-workflow` step 0) the no-op it is
+   meant to be.
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the

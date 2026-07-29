@@ -247,10 +247,8 @@ Then tell the user cwd moved to `PROJECT` — their old path no longer exists.
 
 **Last, repair the tracking** — one branch at a time, and only on branches that
 survived the deletions above. `$D` and `$DEF` are step 1's ref and its bare name;
-which belongs where is
-[`../../references/base-resolution.md`](../../references/base-resolution.md)'s
-ref-versus-name rule, and swapping them here unsets the tracking this was meant to
-repair.
+which belongs where is `base-resolution.md`'s ref-versus-name rule, and swapping
+them here unsets the tracking this was meant to repair.
 
 ```bash
 CURRENT="<the branch being repaired>"
@@ -293,7 +291,7 @@ without asking.
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
 | hardcode `~/.claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` |
-| name a default branch or a remote yourself, or feed a bare name where a ref belongs | resolve both per [`../../references/base-resolution.md`](../../references/base-resolution.md) — step 1 carries out `$D` and `$DEF` for exactly that split |
+| name a default branch or a remote yourself, or feed a bare name where a ref belongs | resolve both per `base-resolution.md` — step 1 carries out `$D` and `$DEF` for exactly that split |
 
 ## Edge cases
 

@@ -74,14 +74,14 @@ both match:
 → `npm`; pip / poetry → `pip`; uv → `uv`; Rust → `cargo`; Go → `gomod`; Ruby
 → `bundler`; workflow files → `github-actions`. For anything else, look the
 value up in the
-[supported ecosystems reference](https://docs.github.com/en/code-security/reference/supply-chain-security/supported-ecosystems-and-repositories)
+[supported ecosystems reference](https://docs.github.com/en/code-security/reference/supply-chain-security/supported-ecosystems-and-repositories.md)
 — same rule: resolve, never recall.
 
 A good default entry — weekly, minor + patch grouped into one PR, and a few
 days of cooldown so unattended updates skip brand-new releases (the window
 in which compromised versions are usually caught and yanked). Substitute the
 ecosystem and directory of the manifest you touched, and check the
-[options reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference)
+[options reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference.md)
 for current syntax — option support varies by ecosystem (e.g. for
 `github-actions`, cooldown takes only `default-days`, not the
 per-semver-level days):

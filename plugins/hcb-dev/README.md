@@ -119,8 +119,8 @@ saying something else.
   resolve a base branch and its remote without guessing either name: the rung
   ladder, remote ranking (`upstream` before `origin`, a lone remote whatever it is
   called), why a read symref goes stale, why only the remote-tracking form is safe
-  to carry forward, and why a
-  base sharing no history with `HEAD` is worse than no base at all. Used by `codex-review`, `multi-review`, `git-cleanup`,
+  to carry forward, and why a base sharing no history with `HEAD` is worse than
+  no base at all. Used by `codex-review`, `multi-review`, `git-cleanup`,
   `github-pr-workflow` and `implementation-workflow` — every skill that resolves a
   base or a remote — and by `slice-completion.md`, through which `shipping-workflow`
   reaches it.
