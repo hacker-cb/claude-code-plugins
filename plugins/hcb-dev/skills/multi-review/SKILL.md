@@ -92,12 +92,22 @@ Three questions per reviewer, in order:
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 What that decides in practice: the security review goes `n/a` on a narrowed or
-working-tree-only scope, and is mis-scoped whenever the PR targets anything but
-the default branch — report that, do not hide it. The code-review workflow is the
+working-tree-only scope, is mis-scoped whenever the PR targets anything but the
+default branch — report that, do not hide it — and is `n/a` again where the change
+alters nothing that anything executes. The code-review workflow is the
 only reviewer checking `CLAUDE.md` compliance, and its cheap levels are out of
 reach: `low` and `medium` belong to the `/code-review` slash command, which only
 the user can invoke, and an unknown level is not rejected — it silently becomes
 `high`, with the word forwarded as the review target.
+
+**That last one is your judgement about behaviour, never a list of extensions.**
+Ask what now runs differently, not what the files are called. A `SKILL.md`, a
+workflow, a `.sh`, a `dependabot.yml` are all instructions something obeys — this
+plugin is markdown an agent executes. And prose is not automatically inert: a
+credential pasted into an example, or a command a reader will copy and run, is
+exactly what the security review is for. `n/a` only when the honest answer to *what
+behaves differently now* is "nothing" — and say that reason in the row, since `n/a`
+is the one status the coverage gate does not treat as a gap.
 
 ## 3. Run
 
