@@ -4,7 +4,7 @@ How to find, classify, fix, and respond to GitHub Copilot's PR review findings.
 
 ## Identifying Copilot — never match one literal
 
-One actor, a different login on **every** surface. Measured, not recalled:
+One actor, a different login on **every** surface:
 
 | Surface | `login` | the type field |
 |---|---|---|

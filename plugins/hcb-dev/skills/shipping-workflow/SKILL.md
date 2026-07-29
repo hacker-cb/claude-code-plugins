@@ -36,8 +36,10 @@ fixed invariant, not a threaded value). Standalone, they default —
 mode by the
 ladder in
 [`../../references/slice-completion.md`](../../references/slice-completion.md)
-(ending at `request`, so behavior matches before this skill grew a second mode),
-and `parent` = the base. That reference owns the mechanics of completion; steps
+(ending at `request`),
+and `parent` = the base **reduced to its bare name** — the ladder answers with a
+`<remote>/<name>` ref, and step 5 checks that value out and merges into it, which
+a ref does not survive. That reference owns the mechanics of completion; steps
 0–4 below are the mode-blind front half.
 
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
@@ -86,11 +88,9 @@ and `parent` = the base. That reference owns the mechanics of completion; steps
      on GitHub, the mirrored `glab` path on GitLab until `gitlab-mr-workflow`
      exists — passing `parent` as the base plus `merge-strategy` and `merge-auth`.
      A gate-captured `merge-auth` is the driver's explicit authorization; absent
-     it, the driver falls back to its **own** authorization rule — which still
-     treats the user's own "ship it" / "get this merged" as authorization and
-     stops to ask only when neither is present, so a standalone ship behaves
-     exactly as it did before this skill grew a mode. If no driver is installed,
-     push
+     it, the driver falls back to its **own** authorization rule — which treats the
+     user's own "ship it" / "get this merged" as authorization and stops to ask
+     only when neither is present. If no driver is installed, push
      the branch and open the change request inline (mirrored `gh` / `glab`). **With
      several remotes and none preferred, stop and ask** rather than publishing in
      someone else's repository.

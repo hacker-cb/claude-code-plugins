@@ -29,8 +29,8 @@ remotes_ranked() {
 
 # Picking ONE remote outright is a different question: take a preferred name, else
 # a lone remote whatever it is called. Never `remotes_ranked | head -1` here — with
-# two remotes named `alice` and `bob` that silently picks whichever sorts first,
-# which is the guess this whole file exists to prevent. Empty means "cannot tell".
+# two remotes named `alice` and `bob` that silently takes whichever sorts first.
+# Empty means "cannot tell", which is an answer; stop and ask.
 REMOTE="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "$r"; break; }; done)"
 [ -n "$REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && REMOTE="$(git remote)"; }
 ```
@@ -111,18 +111,37 @@ it can publish a branch in someone else's repository.
 5. **`@{upstream}`** — last resort. When the branch tracks its own remote
    counterpart this narrows the range to unpushed commits only.
 
-## What every rung owes the caller: a ref that exists
+## What every rung owes the caller: a ref, and the name beside it
 
-Hand on the **remote-tracking form** `<remote>/<default>`, never the bare name.
-A clone that only ever checked out feature branches has no local default branch
-at all, and there both
+A resolved default gets used two ways, and they want opposite forms:
+
+| the consumer wants | form | examples |
+|---|---|---|
+| a **ref** to read | `<remote>/<default>` | `diff`, `merge-base`, `rev-list`, `branch --merged`, `--set-upstream-to` |
+| a **name** to become, merge into, or compare | bare `<default>` | `git switch`, `git merge`'s destination, `[ "$cur" = "$default" ]` |
+
+Hand on **both** — the ref, and `${ref#*/}` beside it — because each direction of
+the mistake fails differently and only one of them tells you.
+
+**A bare name where a ref belongs is loud.** A clone that only ever checked out
+feature branches has no local default branch at all, and there both
 
 ```bash
 git branch --merged <default>              # fatal: not a valid object name
 git rev-list --count <default>..<branch>   # fatal: unknown revision
 ```
 
-die outright — taking the whole step with them.
+die outright, taking the whole step with them.
+
+**A ref where a name belongs is quiet, and that is the direction that costs work.**
+`git switch <remote>/<name>` does refuse — `fatal: a branch is expected, got remote
+branch` — but `git checkout <remote>/<name>` exits 0 and detaches HEAD behind a
+note that reads like routine output. A `git merge` run from there also exits 0,
+writing the merge commit onto the detached HEAD while the branch it was meant to
+land on never moves: the run reports work merged into a parent that is unchanged,
+and the commit becomes unreachable as soon as anything else is checked out.
+Comparisons go the same way: `[ "$cur" = "<remote>/<default>" ]` is false while
+standing on the default branch — test `$cur` against the bare name.
 
 The remote-tracking ref is not guaranteed present either: a clone that fetched
 only feature branches has no `<remote>/<default>` until you fetch it. Materialise

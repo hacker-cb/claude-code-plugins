@@ -34,9 +34,7 @@ reviewers for you.
 This skill is GitHub-specific by design (the `<forge>-<artifact>-workflow`
 convention). A GitLab twin — `gitlab-mr-workflow` — is not built yet; until it is,
 GitLab change requests are handled by `hcb-dev:shipping-workflow`'s mirrored `glab`
-fallback, and the stacked-PR handling added below is **documented
-forge-neutrality debt** owed to that twin: the same capability will need mirroring
-for GitLab merge trains when it lands.
+fallback.
 
 ## Driving a set (multi-slice)
 
@@ -450,13 +448,11 @@ After issuing the merge, confirm it actually landed:
 ## Step 7 — Report and suggest next steps
 
 After the merge lands, check once more for a late review: Copilot's review of the
-merged head can post *after* the merge, orphaning its findings on the now-closed PR
-(the wait protocol exists to prevent this, but a review can still land late — after a
-signal that looked like a decline at the time, or after a merge taken outside this
-skill). If one
-appears, don't drop it — surface its findings in the report below and recommend a
-follow-up (issue or change request) as a next step; creating it is an outward action
-the user authorises, not one you take autonomously.
+merged head can post *after* the merge, orphaning its findings on the now-closed
+PR — behind a signal that read as a decline, or behind a merge taken outside this
+skill. If one appears, don't drop it: surface its findings in the report below and
+recommend a follow-up (issue or change request) as a next step; creating it is an
+outward action the user authorises, not one you take autonomously.
 
 Then give the user a short report:
 

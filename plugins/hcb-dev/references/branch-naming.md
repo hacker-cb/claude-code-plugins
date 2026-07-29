@@ -149,10 +149,10 @@ NEW="<new>"
 # running this block for its push half would sail on to delete the ref it had just
 # pushed under that same name. "Nothing to do" is a result, not a no-op.
 [ "$cur" = "$NEW" ] && { echo "ALREADY $NEW — nothing to rename"; exit 0; }
-# QUIET #2 — a branch checked out in ANOTHER worktree belongs to another session,
-# and renaming it retargets that session's HEAD without a word (verified: exit 0,
-# the other worktree silently follows the new name). Git normally holds one branch
-# in one worktree, so for the CURRENT branch this fires only where
+# QUIET #2 — a branch checked out in ANOTHER worktree belongs to another session.
+# Renaming it exits 0 and retargets that session's HEAD onto the new name without
+# a word. Git normally holds one branch in one worktree, so for the CURRENT branch
+# this fires only where
 # `git worktree add --force` put it in two; the wider case the table below forbids
 # is the two-argument `git branch -m <other> <new>`, which nothing in git prevents.
 # Compare against THIS worktree's path, or the branch you stand on reads as

@@ -20,10 +20,13 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
 **Inputs every backend receives:**
 
 - `mode` — `local` or `request` (resolution ladder below).
-- `parent` — the branch this slice lands on. Multi-slice: the shared feature
-  branch (known to the orchestrator — it created it). Single slice: the base,
-  resolved by the shared ladder ([`base-resolution.md`](base-resolution.md)) and
-  handed on as an **explicit** base, which is that ladder's rung 1.
+- `parent` — the branch this slice lands on, always a **bare local name**. It is a
+  destination, not a ref to read: the local backend checks it out and merges into
+  it, and [`base-resolution.md`](base-resolution.md) shows what a `<remote>/<name>`
+  does there — `checkout` detaches HEAD quietly and the merge then lands nowhere.
+  Multi-slice: the shared feature branch (known to the orchestrator — it created
+  it). Single slice: the base, resolved by that ladder and **reduced to its name**,
+  then handed on as an explicit base, which is the ladder's rung 1.
 - `diff-base` — the range the reviewers already covered: the slice's parent tip,
   threaded to `multi-review` as its **explicit** base so per-slice coverage is
   *this* slice, not the cumulative feature diff (which would re-read slice 1 while
@@ -66,8 +69,8 @@ First hit wins:
 1. **Explicit user phrasing** — "merge locally / no PR / land it in `dev`" →
    `local`; "ship it / open a PR / get this merged" → `request`.
 2. **The value the planning gate settled** (the orchestrator threads it down).
-3. **Fallback: `request`.** Behavior-preserving — finishing has always meant a
-   change request, so a silent completion behaves exactly as before.
+3. **Fallback: `request`.** Where nothing said otherwise, finishing means a change
+   request.
 
 Only `implementation-workflow` (asks/infers at the gate) and `shipping-workflow`
 (consumes it; owns the standalone fallback) touch mode. Every skill upstream is
@@ -89,6 +92,12 @@ and only by consent.
   removing it is an outward write, so it rides with the consented escalation offer
   below and the report says the old name is still on the remote until then. Local
   mode does not reach for the network to tidy up a name.
+- **The merge runs from the parent, and the three commands must be chained.**
+  `git merge` lands into whatever is checked out, and on arrival that is the slice —
+  so switch to `parent`, merge, switch back. Unchained, they fail into a false
+  success: a refused switch exits 128, the merge behind it then runs while still on
+  the slice, git says "Already up to date.", exits 0, and the run reports work
+  landed in a parent it never touched.
 - **Merge strategy** — the gate's shown default. `--no-ff` by default, so the
   slice stays a visible, revertible boundary in the parent's history and the later
   whole-feature change request keeps its slices reviewable. `ff` only where the

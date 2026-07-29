@@ -28,8 +28,7 @@ edits to tracked files.
 [`../../references/base-resolution.md`](../../references/base-resolution.md) owns
 all of it: the rungs, which remote answers which question, and the rule that a
 base sharing no history with `HEAD` is not a base.
-Resolve first, then hand the result to §3; it is the same ladder every other skill
-here reads, which is the point of having one copy of it.
+Resolve first, then hand the result to §3.
 
 Two of its rules decide this skill's output, so do not skip them: confirm
 `git merge-base <base> HEAD` is non-empty before passing a base on, and where

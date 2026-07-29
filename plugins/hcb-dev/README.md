@@ -161,19 +161,11 @@ these skills avoid assuming a single forge. Where the guidance needs a concrete
 command — resolving a base, opening a change request — the GitHub (`gh`) and
 GitLab (`glab`) forms are given side-by-side.
 
-Two deliberate exceptions, each stated where it occurs:
-
-- `github-pr-workflow` is GitHub-specific by design, named per the rule's
-  `<forge>-<artifact>-workflow` convention; a `gitlab-mr-workflow` twin can be
-  added later. Until it exists, request-mode completion on GitLab uses
-  `shipping-workflow`'s mirrored `glab` fallback — and the stacked-PR handling in
-  `github-pr-workflow` is documented forge-neutrality **debt** owed to that twin
-  (it will need a GitLab merge-train mirror when it lands).
-- `codex-review`'s runnable block resolves the base with `gh` only. Codex itself
-  takes a plain git ref and is forge-agnostic, and where `gh` is absent the block
-  falls through to git's own remote refs; on GitLab, resolve a non-default base
-  with the mirrored `glab mr` commands in that skill's §1 and hand it in as
-  `BASE`.
+One deliberate exception, stated where it occurs: `github-pr-workflow` is
+GitHub-specific by design, named per the rule's `<forge>-<artifact>-workflow`
+convention; a `gitlab-mr-workflow` twin can be added later. Until it exists,
+request-mode completion on GitLab uses `shipping-workflow`'s mirrored `glab`
+fallback.
 
 ## Requirements
 
