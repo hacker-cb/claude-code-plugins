@@ -34,29 +34,7 @@ reviewers for you.
 This skill is GitHub-specific by design (the `<forge>-<artifact>-workflow`
 convention). A GitLab twin — `gitlab-mr-workflow` — is not built yet; until it is,
 GitLab change requests are handled by `hcb-dev:shipping-workflow`'s mirrored `glab`
-fallback, and the stacked-PR handling added below is **documented
-forge-neutrality debt** owed to that twin: the same capability will need mirroring
-for GitLab merge trains when it lands.
-
-## Driving a set (multi-slice)
-
-When `hcb-dev:implementation-workflow` runs a set in request mode, each slice
-completes **onto the shared feature branch** before the next is cut, so the slices
-build on each other and the run never reviews a slice against a base missing the
-one below it. Standalone (a single PR, no set) none of this applies — one base,
-one merge, strategy chosen as in Step 5.
-
-- **A slice PR targets the feature branch, not the repo default** — read the base
-  from the PR (Step 2), never assume the default — and is driven to **merge into
-  the feature branch** so the next slice can be cut from the updated tip.
-- **A slice PR is always squashed** — a slice is one logical commit on the feature
-  branch — *whatever* the gate chose for the final integration. The gate's
-  `merge-strategy` governs only the final PR (below), never the per-slice ones;
-  applying a gate `merge-commit` to every slice would litter the feature branch
-  with intermediate merge commits.
-- **The final PR integrates the set** — `feature → base`, driven last, with the
-  gate's `merge-strategy` (`merge-commit` keeps the slice commits, `squash`
-  collapses them), filtered to the repo's allowed methods.
+fallback.
 
 ## Autonomy model
 
@@ -74,16 +52,12 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 explicitly authorized it — either their request itself asked to merge/ship (e.g.
 "ship it", "get this merged", "merge once it's green"), the captured user-approved
 `merge-auth` was threaded in from an upstream flow (`hcb-dev:shipping-workflow`, or
-`hcb-dev:implementation-workflow`'s planning gate — the same "asked to merge" case,
-gathered earlier and shown to the user there, so a run driven with it does not stop
-to re-ask), or they say yes when you ask. If they only asked to open or drive the PR, take it all the way to "ready to
-merge" — Step 4's exit met: GitHub reports it mergeable *and* your own bar is
-clean (not merely `mergeStateStatus: CLEAN`, which a repo enforcing nothing
-reports from PR-open) — and then stop and ask (see Step 5). Never merge on your
-own initiative.
+`hcb-dev:implementation-workflow`'s planning gate), or they say yes when you ask.
+If they only asked to open or drive the PR, take it to Step 4's exit and then stop
+and ask (see Step 5). Never merge on your own initiative.
 
 Also stop and ask the user when:
-- The required gates cannot go green after a reasonable number of fix iterations (~5)
+- The required gates will not go green within Step 4's iteration budget
 - A Critical/Important finding requires a product/design decision you can't make
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
@@ -107,15 +81,13 @@ works, in this order:
 
 1. **GitHub MCP server** — if MCP tools for GitHub are connected, prefer them for
    reading PR review comments and findings (richest structured data).
-2. **`gh` CLI** — check with `gh auth status`. Use for almost everything:
-   `gh pr create`, `gh pr view --comments`, `gh pr checks`, `gh pr merge`,
-   `gh api` for anything the porcelain commands don't cover.
+2. **`gh` CLI** — used for almost everything: `gh pr create`,
+   `gh pr view --comments`, `gh pr checks`, `gh pr merge`, and `gh api` for
+   anything the porcelain commands don't cover.
 3. **GitHub REST API** via `gh api` or `curl` with a token — fallback for review
    threads, comment replies, and resolving conversations.
 
-Plain `git` is always used for local branch/rebase/push operations. Verify the
-tool works (a quick read command) before relying on it; if none are available,
-tell the user what to install or connect (`gh`, or a GitHub MCP connector).
+Plain `git` handles the local branch/rebase/push operations.
 
 ## The merge gates belong to the repo — discover them, don't assume
 
@@ -126,8 +98,8 @@ rulesets) and **enforced by GitHub**. You can't change it and shouldn't hardcode
 assumptions about it: **read the configuration of the repo you're working in**,
 every time, and never carry over what some *other* repo happened to require or
 what a check was called there. Your job is to **satisfy** whatever gates this repo
-has — and then clear your own bar on top of them, because GitHub's mergeability is
-necessary but never sufficient (see *When there are no gates* below).
+has, then clear your own bar on top of them (see *When there are no gates, or they
+can't be trusted* below).
 
 Read the live gates before and during the loop:
 
@@ -179,47 +151,27 @@ final word on which contexts are required, whatever produced them.
 
 ### When there are no gates, or they can't be trusted
 
-**GitHub's mergeability is necessary but not sufficient.** A repo with no *enforced*
-gates reports `CLEAN` the instant the PR opens — that means "GitHub won't stop you,"
-not "the work is ready." Your own quality bar always applies *on top* of whatever the
-repo enforces: CI actually green, Copilot's findings actually addressed, branch
-current with base. **Gates are a floor, never a ceiling.**
+A repo with no *enforced* gates reports `CLEAN` the instant the PR opens — that
+means "GitHub won't stop you," not "the work is ready." **Gates are a floor, never
+a ceiling**; Step 4's bar applies on top of whatever the repo enforces.
 
-So don't just read the gates — judge whether they're real:
+**Don't merge on a bypass.** Where `current_user_can_bypass` is not `never`, or you
+are in a rule's `bypass_actors`, `mergeStateStatus` reads `CLEAN` because you are
+allowed to skip the gates — not because they passed. Satisfy them as if you could
+not. An `evaluate` or `disabled` ruleset is advisory in the same way: it appears in
+the API and blocks nothing.
 
-- **`enforcement` must be `active`.** An `evaluate` or `disabled` ruleset shows up
-  in the API but blocks nothing — it's advisory.
-- **Don't merge on a bypass.** If `current_user_can_bypass` isn't `never` (or
-  you're in a rule's `bypass_actors`), `mergeStateStatus` can read `CLEAN` because
-  *you're allowed to skip the gates*, not because they passed. Satisfy them as if
-  you couldn't bypass.
-- **A green check is not proof of a review.** A check that stands in for a review
-  can be green for reasons of its own — passing the instant *some* review of *any*
-  commit is seen (so it flips green within seconds of a later push and says nothing
-  about the head), or having run before the latest push was reviewed. Nor does a
-  clean merge state prove it: right after a push `mergeStateStatus` can read `CLEAN`
-  with the head unreviewed — the prior review's threads stay resolved across the
-  push, and `dismiss_stale_reviews_on_push` dismisses only stale *approvals*. Never
-  infer "Copilot has reviewed the current head" from a check's colour, from `CLEAN`,
-  or from all-threads-resolved; verify it directly against the head SHA
-  (`references/copilot.md`).
-- **`UNSTABLE` means a non-required check is red.** GitHub will let you merge over
-  it; don't, unless you've confirmed that check is irrelevant or a known flake
-  (re-run flakes rather than merging past them).
+**Confirm gates are absent; don't infer it from an empty rulesets list.** A repo
+can enforce required checks, reviews and thread-resolution through **classic branch
+protection**, which `/rulesets` does not return. Treat them as truly absent only
+when the live signals agree: `gh pr checks` shows no required checks,
+`reviewDecision` is empty, and neither `rules/branches/<base>` nor
+`branches/<base>/protection` enforces anything.
 
-**When gates are absent, weak, or unreadable** — but confirm *absent*, don't infer
-it from an empty rulesets list. A repo can enforce required checks, reviews, and
-thread-resolution through **classic branch protection**, which `/rulesets` does
-**not** return, so `rulesets == []` alone does not mean unprotected. Treat gates as
-truly absent only when the live signals agree: `gh pr checks` shows no required
-checks, `reviewDecision` is empty, and *neither* `rules/branches/<base>` *nor*
-`branches/<base>/protection` enforces anything (or `gh api` is denied and you
-genuinely can't tell). Only then supply the gates yourself: the Step 4 loop's own
-bar becomes authoritative — green CI, Copilot Critical/Important resolved and every
-thread replied, branch up to date — and because nothing external protects the base,
-be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
-irreversible force-pushes, and tell the user the repo has no enforced protection so
-your judgment is the only safety net.
+Then supply the gates yourself — the Step 4 loop's bar becomes the authoritative
+one — and be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
+irreversible force-pushes, and tell the user their judgment is the only safety net
+here.
 
 ## Step 1 — Branch naming
 
@@ -231,79 +183,30 @@ name that already describes the change alone.
 
 On a run driven from upstream the **rename** is usually a no-op:
 `hcb-dev:shipping-workflow` step 0 normalized the name before the branch was ever
-pushed. The **publish** is not. `netpush push "$PUSH_REMOTE" -u "$NEW"` below is
-the only place this skill puts the branch on the remote, and without it Step 2's
-`--force-with-lease`
+pushed. The **publish** is not. The push below is the only place this skill puts
+the branch on the remote, and without it Step 2's `--force-with-lease`
 dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
 ref at all — so skip the rename when the name is already right, and never skip the
-push. The rename half also stays because the user can enter this skill directly,
-and because this is the **last** point at which a rename is possible at all: once
-the PR is open, renaming means deleting its head ref, and that closes the PR.
+push.
 
 What this step owns is the mechanics that reference points back at: renaming a
 branch that may already be on a remote, and publishing it under the final name.
 
-Remote resolution follows the shared ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md) —
-read it for the reasoning
-the blocks below apply. Which remote to push to is `<push-remote>`, and `origin` is not it by assumption —
-a repo may have a single remote under another name. But it is **not** the tracked
-`@{upstream}` either: in a fork checkout the branch tracks `upstream/<base>`, and
-pushing there targets the canonical repo (permission-denied, or the PR branch
-created in the wrong repository) instead of your fork. Use git's own push routing —
-`branch.<name>.pushRemote`, then `remote.pushDefault` — then `origin`, then your
-sole remote. Read `branch.<name>.pushRemote` under the branch's **current** name and
-resolve everything *before* renaming — the ambiguity case exits, and exiting after
-`git branch -m` would leave the branch renamed locally with nothing pushed. (`git
-branch -m` does carry that config across, so the rename loses nothing.)
+**Which remote to push to is
+[`../../references/base-resolution.md`](../../references/base-resolution.md)'s
+question** — resolve it there, and resolve it **before** renaming, reading
+`branch.<name>.pushRemote` under the branch's current name.
+
+Fill the two values at the top; everything under them is live.
 
 ```bash
-# Push is a network call: no prompts, and EXTEND the user's ssh setup rather than
-# replacing it — a flat GIT_SSH_COMMAND drops a multi-account `-i ~/.ssh/id_work`
-# or a ProxyCommand, and BatchMode then forbids the fallback, so a repo that
-# pushes fine by hand dies on "Permission denied". Per-command, not exported:
-# shell state does not survive to the next Bash call anyway, so every network
-# command in this skill — including the fix loop's force-push — must carry it.
-netpush() {
-  GIT_TERMINAL_PROMPT=0 \
-  GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
-}
-# Resolve the remote BEFORE renaming: the ambiguity path exits, and aborting after
-# `git branch -m` would leave the branch renamed locally, the old name still on the
-# remote, and the upstream no longer matching — which push.default=simple then
-# refuses outright, leaving an unpushable branch and a step that is a no-op on
-# re-run. `branch.<name>.pushRemote` is read under the CURRENT name for the same
-# reason (`git branch -m` moves that config across with it).
+PUSH_REMOTE="<resolved per base-resolution.md, before any rename>"
+NEW="<the name from branch-naming.md — MAY equal the current one>"
+
 # Detached HEAD has no branch to rename or push, and an empty $cur would silently
-# turn the lookup below into `branch..pushRemote`. Say so instead.
+# turn a `branch.<name>.*` lookup into `branch..*`. Say so instead.
 cur="$(git symbolic-ref --short -q HEAD)" \
   || { echo "DETACHED HEAD — check out a branch before shipping"; exit 1; }
-# git's push routing, never @{upstream} (that is the base repo in a fork). Fall
-# through to a bare `origin`, then to a lone remote whatever its name — but STOP
-# on a genuine ambiguity (several remotes, none preferred): guessing one there
-# could publish your branch in someone else's repository.
-PUSH_REMOTE="$(git config --get "branch.$cur.pushRemote" || git config --get remote.pushDefault)"
-# Config can name a remote that no longer exists — renamed, or removed and
-# re-added under another name — and taking it on trust bypasses the ladder below
-# and fails the push with git's own opaque message. Verify, then fall through.
-[ -n "$PUSH_REMOTE" ] && ! git remote | grep -qx -- "$PUSH_REMOTE" && {
-  echo "note: configured push remote '$PUSH_REMOTE' no longer exists — resolving instead"
-  PUSH_REMOTE=""
-}
-if [ -z "$PUSH_REMOTE" ]; then
-  if   git remote | grep -qx origin;                 then PUSH_REMOTE=origin
-  elif [ "$(git remote | grep -c .)" = 1 ];          then PUSH_REMOTE="$(git remote)"; fi
-fi
-if [ -z "$PUSH_REMOTE" ]; then
-  # Say which of the two it is — "name a remote" is impossible advice when there
-  # are none, and "add one" is wrong when there are several.
-  [ "$(git remote | grep -c .)" = 0 ] \
-    && echo "NO REMOTE — add one (git remote add <name> <url>), then re-run" \
-    || echo "PUSH REMOTE AMBIGUOUS — several remotes, none preferred; set branch.$cur.pushRemote or remote.pushDefault, then re-run"
-  exit 1
-fi
-NEW="<new-name>"   # from branch-naming.md, whose block validates it — MAY equal $cur
 # An open PR pins the name: renaming means deleting the head ref below, which
 # closes the PR and takes its review threads with it. Keep the name instead.
 # This probe must fail CLOSED. Empty output covers two very different answers —
@@ -325,78 +228,44 @@ fi
 [ "$cur" = "$NEW" ] || git branch -m "$NEW"
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
 # 3 both assume an upstream exists, and neither creates one.
-netpush push "$PUSH_REMOTE" -u "$NEW"
+git push "$PUSH_REMOTE" -u "$NEW"
 # Delete the stale remote ref ONLY when the name actually changed. With
 # $cur == $NEW this deletes the ref the line above just pushed — unpublishing the
 # branch and closing any PR whose head it is — and `2>/dev/null || true` would
 # swallow every trace, leaving Step 2 to proceed as if the branch were pushed.
 if [ "$cur" != "$NEW" ]; then
-  netpush push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
+  git push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
 fi
 ```
 
-Every later network command in this skill — the Step 2 fetch, the
-`--force-with-lease` push after a rebase, each push in the Step 4 fix loop — needs
-that same `netpush` wrapper. Shell state does not survive between Bash calls, so
-re-declare it in whichever block does the pushing; an unguarded push in an
-unattended loop is exactly the hang the guard exists to prevent.
-
 ## Step 2 — Bring the branch up to date with base
 
-Identify the base branch (usually the PR's base, else the repo default — check
-`gh repo view --json defaultBranchRef` or the existing PR). Its remote is
-`<base-remote>`, and again not `origin` by assumption: prefer `upstream` when it
-exists (fork checkout — the base lives in the upstream repo, not your fork), then
-`origin`, then a lone remote whatever its name — and stop on a real ambiguity
-rather than fetching the base from an arbitrary remote. Rebase the feature branch
-onto the latest base. Rebase is the default (cleaner history, plays well with
-squash). Guard the fetch so it fails closed rather than hanging on a credential or
-passphrase prompt — the loop may run unattended, and `timeout` is absent on stock
-macOS:
+The base branch and the remote carrying it both come from `base-resolution.md`:
+rung 2, the open PR's own base, answers it here, and the reference's remote ranking
+says which remote actually holds that branch — `upstream` can exist while *this*
+base lives only on `origin`, in a fork whose PR targets the fork itself. Then
+rebase onto it; rebase is the default (cleaner history, plays well with squash).
+
+One thing this step must not take on trust: **check the fetch, not just the ref.**
+Whichever remote you picked, you picked it *because* `<base-remote>/<base>` is
+already there — so an existence test passes just as happily against a week-old
+copy. A fetch that failed (VPN down, the remote gone) then rebases onto a stale
+base, this step reports "up to date", and GitHub reports `BEHIND` at merge time.
+"Did not update" is the only failure this step actually has.
+
+Fill the two values at the top; everything under them is live.
 
 ```bash
-# Preference alone is not enough: `upstream` may exist while THIS base lives only
-# on `origin` (a fork whose PR targets the fork itself). So probe each remote in
-# rank order for one that ALREADY has a remote-tracking copy of <base>, and fall
-# back to preference only when none does. Note what that probe can and cannot see:
-# it reads local refs, so on a fresh or narrowed clone — where no copy exists yet —
-# it finds nothing and preference decides after all. The fetch below is verified
-# and the rebase refuses a missing ref, so a wrong pick fails loudly rather than
-# silently; if several remotes carry the same <base> name, pass the right one in.
-BASE_REMOTE=""
-for r in $(for x in upstream origin; do git remote | grep -qx -- "$x" && echo "$x"; done
-           git remote | grep -vxE 'upstream|origin'); do
-  git rev-parse --verify -q "$r/<base>^{commit}" >/dev/null 2>&1 && { BASE_REMOTE="$r"; break; }
-done
-if [ -z "$BASE_REMOTE" ]; then   # no remote-tracking copy yet — fall back to preference
-  BASE_REMOTE="$(for x in upstream origin; do git remote | grep -qx -- "$x" && { echo "$x"; break; }; done)"
-  [ -n "$BASE_REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && BASE_REMOTE="$(git remote)"; }
-fi
-if [ -z "$BASE_REMOTE" ]; then
-  [ "$(git remote | grep -c .)" = 0 ] \
-    && echo "NO REMOTE — add one (git remote add <name> <url>), then re-run" \
-    || echo "BASE REMOTE AMBIGUOUS — several remotes, none preferred; name it and re-run"
-  exit 1
-fi
-# Same wrapper as Step 1, re-declared because shell state does not cross Bash calls.
-netpush() {
-  GIT_TERMINAL_PROMPT=0 \
-  GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-    git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
-}
-# Check the FETCH, not just the ref. The probe above picked this remote *because*
-# `$BASE_REMOTE/<base>` already exists, so an existence test passes against a
-# week-old copy: a failed fetch (expired credential, VPN down, BatchMode refusing a
-# passphrase) would rebase onto a stale base, the step would report "up to date",
-# and GitHub would report BEHIND at merge time. "Did not update" is the only
-# failure this step actually has.
-if ! netpush fetch "$BASE_REMOTE" <base>; then
+BASE_REMOTE="<resolved per base-resolution.md>"
+BASE="<the PR's base branch, bare name>"
+
+if ! git fetch "$BASE_REMOTE" "$BASE"; then
   echo "FETCH FAILED from $BASE_REMOTE — not rebasing onto a possibly stale base"; exit 1
 fi
 # And the ref must exist at all: the branch may simply not be on that remote.
-git rev-parse --verify -q "$BASE_REMOTE/<base>^{commit}" >/dev/null 2>&1 \
-  || { echo "BASE <base> NOT ON $BASE_REMOTE — name the right remote and re-run"; exit 1; }
-git rebase --autostash "$BASE_REMOTE"/<base>
+git rev-parse --verify -q "$BASE_REMOTE/$BASE^{commit}" >/dev/null 2>&1 \
+  || { echo "BASE $BASE NOT ON $BASE_REMOTE — name the right remote and re-run"; exit 1; }
+git rebase --autostash "$BASE_REMOTE/$BASE"
 ```
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
@@ -413,10 +282,7 @@ git rebase --autostash "$BASE_REMOTE"/<base>
 ## Step 3 — Open the PR (if not already open)
 
 If there's no open PR for this branch, create one as **ready for review** (not
-draft). This matters beyond convention: Copilot **skips draft PRs** unless the
-`copilot_code_review` rule sets `review_draft_pull_requests`, so a draft can leave
-the review un-run entirely — and where a required check stands in for that review,
-leave the PR permanently un-mergeable. Open ready-for-review:
+draft) — Copilot skips drafts, and `references/copilot.md` says what that costs:
 
 ```bash
 gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>"
@@ -454,36 +320,16 @@ severity classification only decides what you *fix*, never when you're *done*.
    reasonable — under `review_on_push` every push re-requests Copilot and costs
    another wait at step 6, whether or not a new review actually follows.
 5. **Reply to every Copilot comment; resolve every thread the repo requires
-   resolved.** The reply is *unconditional* (fixed or acknowledged, on every
-   comment); *resolution* is what scales with the repo — under
-   `required_review_thread_resolution` that's *all* threads (fix the serious ones,
-   acknowledge the rest, but each must end resolved or merge stays `BLOCKED`),
-   otherwise at least the ones you fixed. See `references/copilot.md` for the
-   reply + resolve protocol.
-6. **After pushing, wait for Copilot's review of the new head.** Under
-   `review_on_push` a push re-requests Copilot, and any review that follows lands
-   *later* than CI goes green — so the PR reads mergeable while that review may
-   still be on its way, and finishing in that window silently drops everything it
-   was about to say. Never evaluate exit there: follow the wait protocol in
-   `references/copilot.md`. Its exit turns on the *requested-reviewer* state, not a
-   clock — **while Copilot is still a requested reviewer of the head it has not
-   declined, and no elapsed timer authorises merging past it**; a decline is
-   confirmed only by Copilot leaving `reviewRequests` with no head review, never by
-   an elapsed cap, and on cap-expiry-while-pending you hold and escalate rather than
-   merge. The merge precondition a timeout never removes is that
-   Copilot's verdict on the head is *settled* — either a processed review whose
-   `commit_id == head`, or a confirmed decline for the head (`references/copilot.md`
-   defines both) — never an elapsed clock while it is still pending. Then re-read
-   from this loop's step 1 (the live-state read), not the top-level Step 1.
-
-If after ~5 iterations the gates still won't go green, or a finding needs a
-decision you can't make, stop and summarize the blocker for the user.
+   resolved** — `references/copilot.md` owns the reply + resolve protocol.
+6. **After pushing, wait for Copilot's review of the new head** — never evaluate
+   exit until its verdict on the head is settled; `references/copilot.md` owns the
+   wait and defines what settles it. Then re-read from this loop's step 1 (the
+   live-state read), not the top-level Step 1.
 
 ## Step 5 — Merge (only with explicit authorization)
 
 Merging is gated on explicit user permission — see the Autonomy model. Once Step 4's
-exit is met — GitHub reports the PR mergeable *and* your own bar is clean (not merely
-`mergeStateStatus: CLEAN` on a repo that enforces nothing):
+exit is met:
 
 - **If the user already authorized the merge** — their request asked to merge/ship
   ("ship it", "get this merged", "merge when green"), or they've since said go
@@ -493,16 +339,17 @@ exit is met — GitHub reports the PR mergeable *and* your own bar is clean (not
   confirm.
 
 Choose the strategy — a `merge-strategy` threaded in from the planning gate wins
-if one was passed (the user's shown-and-approved choice for the **final
-integration PR**; a per-slice PR into a feature branch always squashes — see
-*Driving a set*), always **filtered to the repo's allowed merge methods** (from
-the ruleset; `gh pr merge` will reject a disallowed one, so fall back within the
-allowed set and say so). Absent a threaded strategy, pick from the allowed set:
+if one was passed (the user's shown-and-approved choice), always **filtered to the
+repo's allowed merge methods** (from the ruleset; `gh pr merge` will reject a
+disallowed one, so fall back within the allowed set and say so). Absent a threaded
+strategy, pick from the allowed set:
 
-- **A per-slice PR into a feature branch always squashes** — a slice is one
-  commit — regardless of the gate's `merge-strategy`; that strategy governs the
-  final `feature → base` integration PR only (see *Driving a set*). The choices
-  below apply to that final PR (or a standalone single PR).
+- **A PR whose base is a feature branch is a slice, and a slice always squashes**
+  — one commit — regardless of the gate's `merge-strategy`, which governs the
+  final `feature → base` integration PR only —
+  [`../../references/slice-completion.md`](../../references/slice-completion.md)
+  owns that topology. The choices below apply to that final PR, or to a standalone
+  single one.
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
   logical feature/fix. Write a clean squash commit message.
 - **Merge commit** (`gh pr merge --merge`) — when the PR contains multiple
@@ -524,13 +371,11 @@ After issuing the merge, confirm it actually landed:
 ## Step 7 — Report and suggest next steps
 
 After the merge lands, check once more for a late review: Copilot's review of the
-merged head can post *after* the merge, orphaning its findings on the now-closed PR
-(the wait protocol exists to prevent this, but a review can still land late — after a
-signal that looked like a decline at the time, or after a merge taken outside this
-skill). If one
-appears, don't drop it — surface its findings in the report below and recommend a
-follow-up (issue or change request) as a next step; creating it is an outward action
-the user authorises, not one you take autonomously.
+merged head can post *after* the merge, orphaning its findings on the now-closed
+PR — behind a signal that read as a decline, or behind a merge taken outside this
+skill. If one appears, don't drop it: surface its findings in the report below and
+recommend a follow-up (issue or change request) as a next step; creating it is an
+outward action the user authorises, not one you take autonomously.
 
 Then give the user a short report:
 
@@ -550,6 +395,9 @@ Keep it scannable: short grouped bullets, not an essay.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
   auto-generated, and when a rename is off the table. Read it before Step 1; the
   push mechanics stay in that step.
+- [`../../references/base-resolution.md`](../../references/base-resolution.md) — which remote to push to, which one carries
+  the base, and the ref-versus-name split. Steps 1 and 2 both resolve through it
+  and fill the result in; read it before either.
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — where autonomy ends and
   asking begins, and why every stop carries a recommendation rather than a bare
   question. It governs the stop-and-ask list near the top and Step 5's merge

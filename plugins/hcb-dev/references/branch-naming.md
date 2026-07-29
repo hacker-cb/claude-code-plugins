@@ -73,10 +73,8 @@ gl_rule="$(glab api "projects/<project>/push_rule" 2>/dev/null \
 echo "GitLab: ${gl_rule:-none}"
 ```
 
-`// empty` rather than `// "none"` in the filter: on an empty body — which is what
-a 404 or an auth failure leaves behind — `jq` prints nothing and still exits 0, so
-a default inside the filter never fires and `|| echo none` never runs. The shell's
-`${var:-none}` is what actually covers that case.
+`// empty` in the filter and `${var:-none}` in the shell: a default inside the jq
+filter never fires on an empty body, which is what a missing rule leaves behind.
 
 Treat a rejected push as a naming failure, not a permissions one.
 
@@ -88,11 +86,9 @@ feat/csv-export--parser    # slice 1
 feat/csv-export--writer    # slice 2
 ```
 
-**Never nest a slice under its feature branch with a slash.** Refs are paths:
-`refs/heads/feat/csv-export` is a *file*, so `refs/heads/feat/csv-export/parser`
-would require that same path to be a *directory* — git refuses one or the other
-outright ("cannot lock ref"), and which one dies depends on the order they were
-created. The `--` separator reads as the same nesting and cannot collide.
+**Never nest a slice under its feature branch with a slash.** Refs are paths, so
+the nested form needs one path to be both a file and a directory and git refuses
+it. The `--` separator reads as the same nesting and cannot collide.
 
 A single slice has no feature branch and no suffix: the one branch is named for
 the change and lands on the base directly.
@@ -118,9 +114,9 @@ over a name that is already fine.
 
 | Point | Who | What |
 |---|---|---|
-| **Creation** | `implementation-workflow` (Phase 1 layout, Phase 2 cut) | name it correctly up front — nothing to rename later |
-| **Normalization** | `shipping-workflow`, before the work lands | rename a name that came from outside (a host worktree session, a hand-cut branch) |
-| **Last resort** | `github-pr-workflow` Step 1 | catch anything that reached the driver directly |
+| **Creation** | whatever cuts the branch | name it correctly up front — nothing to rename later |
+| **Normalization** | whatever completes the work, before it lands | rename a name that came from outside (a host worktree session, a hand-cut branch) |
+| **Last resort** | the change-request driver | catch anything that reached the driver directly |
 
 **Normalization is mode-blind.** A local completion needs it as much as a change
 request does — arguably more: `git merge --no-ff` writes the branch name into the
@@ -135,41 +131,28 @@ under an open change request cannot be fixed at all (below).
 ## Renaming — the mechanics
 
 The local half is plain git — no forge, no network — so it runs wherever
-normalization happens, `shipping-workflow` step 0 included. Run it whole: each
-check below exists because git either fails loudly mid-rename or, worse, succeeds
-where it should not.
+normalization happens, `shipping-workflow` step 0 included.
+
+Two things are checked in advance, because only these two go wrong **quietly** —
+an invalid name, a taken one, a directory/file collision, a detached HEAD all stop
+`git branch -m` outright, naming the ref that blocked it.
 
 ```bash
 cur="$(git symbolic-ref --short -q HEAD)" \
   || { echo "DETACHED HEAD — check out a branch first"; exit 1; }
 NEW="<new>"
-# Idempotence, and the guard that makes it safe. `git branch -m <same-name>` exits
-# 0, so a caller running this block for its push half would sail on to delete the
-# ref it had just pushed under that same name. "Nothing to do" is a result.
+# QUIET #1 — `git branch -m <same-name>` exits 0 having done nothing, so a caller
+# running this block for its push half would sail on to delete the ref it had just
+# pushed under that same name. "Nothing to do" is a result, not a no-op.
 [ "$cur" = "$NEW" ] && { echo "ALREADY $NEW — nothing to rename"; exit 0; }
-# check-ref-format echoes the name on success and a `fatal:` on failure — the exit
-# status is the answer, so silence both streams and read that.
-git check-ref-format --branch "$NEW" >/dev/null 2>&1 || { echo "INVALID NAME"; exit 1; }
-git show-ref --verify --quiet "refs/heads/$NEW" && { echo "NAME TAKEN"; exit 1; }
-# D/F collisions, BOTH directions — refs are paths and either side blocks the
-# other. Suffix: an existing `<new>/…` branch makes `<new>` impossible. Prefix: a
-# branch sitting on any ancestor path of `<new>` does the same — and since the
-# shape is `<type>/<name>` over seven fixed words, a stray branch called `fix` or
-# `docs` is the likeliest collision this scheme has. Checking one direction only
-# hands a colliding name to `git branch -m`, which dies "cannot lock ref".
-git for-each-ref --format='%(refname:short)' "refs/heads/$NEW/**" \
-  | grep -q . && { echo "D/F COLLISION — a branch exists under $NEW/"; exit 1; }
-p="$NEW"; while [ "$p" != "${p%/*}" ]; do p="${p%/*}"
-  git show-ref --verify --quiet "refs/heads/$p" \
-    && { echo "D/F COLLISION — branch '$p' occupies a path segment of $NEW"; exit 1; }
-done
-# A branch checked out somewhere else belongs to another session. Git normally
-# holds one branch in one worktree, so for the CURRENT branch this fires only
-# where `git worktree add --force` put it in two — verified: it does, and the
-# rename then retargets both HEADs. The wider case the table below forbids is the
-# two-argument `git branch -m <other> <new>`, which git performs happily and
-# silently, and which nothing in git prevents. Compare against THIS worktree's
-# path, or the branch you are standing on reads as someone else's.
+# QUIET #2 — a branch checked out in ANOTHER worktree belongs to another session.
+# Renaming it exits 0 and retargets that session's HEAD onto the new name without
+# a word. Git normally holds one branch in one worktree, so for the CURRENT branch
+# this fires only where
+# `git worktree add --force` put it in two; the wider case the table below forbids
+# is the two-argument `git branch -m <other> <new>`, which nothing in git prevents.
+# Compare against THIS worktree's path, or the branch you stand on reads as
+# someone else's.
 here="$(git rev-parse --show-toplevel)"
 git worktree list --porcelain | awk -v cur="refs/heads/$cur" -v here="$here" '
     /^worktree /{w=substr($0,10)}
@@ -187,8 +170,7 @@ git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
   closes the request. Resolve the push remote *before* renaming — the ambiguity
   path exits, and exiting after `git branch -m` leaves a branch renamed locally
   with nothing pushed — per [`base-resolution.md`](base-resolution.md) ("Pushing is
-  a different question"), routing every network call through its non-interactive
-  guard. The runnable version is `github-pr-workflow` Step 1.
+  a different question"). The runnable version is `github-pr-workflow` Step 1.
 - **Never `git branch -M`.** The force form overwrites an existing branch of that
   name — someone else's work, silently. On a collision pick a different name.
 
@@ -200,7 +182,7 @@ git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
 | rename a branch checked out in another worktree — `git branch -m <other> <new>` | probe `git worktree list` first (the block above); git performs that rename happily and retargets the other session's HEAD without a word |
 | delete the old remote ref when the name did not change | the block exits on `cur == NEW`; a push followed by a delete of that same ref unpublishes the branch and closes any change request whose head it is |
 | rename a shared branch others have pulled | leave it; a nicer name is not worth breaking someone's upstream |
-| rename a host-session branch earlier than needed | the host owns `claude/…` and cleans up its own worktree sessions through internal, undocumented bookkeeping — normalize on the way into completion, not at cut |
+| rename a host-session branch earlier than needed | Claude Code manages some of its own worktree sessions through undocumented bookkeeping ([`claude-worktrees.md`](claude-worktrees.md)) — normalize on the way into completion, not at cut |
 | derive the new name from the old one | read the diff and the task; the old name is the thing with no information in it |
 | nest a slice under its feature branch with `/` | `--` — refs are paths, and the nested form is a D/F collision |
 | ask the user what to call a branch | a branch name is mechanical and reversible ([`architecture-decisions.md`](architecture-decisions.md) §1) — name it and narrate one line |

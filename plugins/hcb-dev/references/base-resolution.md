@@ -29,8 +29,8 @@ remotes_ranked() {
 
 # Picking ONE remote outright is a different question: take a preferred name, else
 # a lone remote whatever it is called. Never `remotes_ranked | head -1` here — with
-# two remotes named `alice` and `bob` that silently picks whichever sorts first,
-# which is the guess this whole file exists to prevent. Empty means "cannot tell".
+# two remotes named `alice` and `bob` that silently takes whichever sorts first.
+# Empty means "cannot tell", which is an answer; stop and ask.
 REMOTE="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "$r"; break; }; done)"
 [ -n "$REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && REMOTE="$(git remote)"; }
 ```
@@ -38,15 +38,18 @@ REMOTE="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "
 `grep -qx` and `grep -vxE` match whole lines, so a remote named `origin2` or
 `my-upstream` is neither mistaken for the real thing nor dropped from the tail.
 
-**Pushing is a different question.** The remote you *read* a base from is not the
-one you *write* a branch to: in a fork the base is in `upstream`, which you
-cannot push to. For a push, use git's own routing — `branch.<name>.pushRemote`,
-then `remote.pushDefault`, then `origin`, then a lone remote whatever its name —
-and never `@{upstream}`, which in a fork points at the canonical repo.
-
 Where several remotes exist and none is preferred, **stop and ask** rather than
 taking the first alphabetically. For a read that costs a wrong review; for a push
 it can publish a branch in someone else's repository.
+
+## Pushing is a different question
+
+The remote you *read* a base from is not the one you *write* a branch to: in a
+fork the base is in `upstream`, which you cannot push to. For a push, use git's
+own routing — `branch.<name>.pushRemote`, then `remote.pushDefault`, then
+`origin`, then a lone remote whatever its name — and never `@{upstream}`, which in
+a fork points at the canonical repo. Ambiguity stops here too, and for the higher
+stake of the two.
 
 ## The ladder — first hit wins
 
@@ -85,12 +88,9 @@ it can publish a branch in someone else's repository.
 
    That check catches a pointer at a **deleted** ref, not one at a
    **stale-but-present** one — before a `fetch --prune` the old `<remote>/<name>`
-   is still there, frozen at its last known commit, and it passes. The base is
-   then merely older than the real one; the history is shared, so a review widens
-   rather than breaks, and a prune fixes it. Deliberately not re-checked over the
-   network, which would cost a round trip on every single run to catch that. A
-   run scoped to a branch the repo no longer has is this case:
-   `git remote set-head <remote> --auto`.
+   is still there and passes. The base is then merely older than the real one, so
+   a review widens rather than breaks. A run scoped to a branch the repo no longer
+   has is this case: `git remote set-head <remote> --auto`.
 
    Absent or dead, ask the remote — it is the only thing that knows:
    ```bash
@@ -111,18 +111,37 @@ it can publish a branch in someone else's repository.
 5. **`@{upstream}`** — last resort. When the branch tracks its own remote
    counterpart this narrows the range to unpushed commits only.
 
-## What every rung owes the caller: a ref that exists
+## What every rung owes the caller: a ref, and the name beside it
 
-Hand on the **remote-tracking form** `<remote>/<default>`, never the bare name.
-A clone that only ever checked out feature branches has no local default branch
-at all, and there both
+A resolved default gets used two ways, and they want opposite forms:
+
+| the consumer wants | form | examples |
+|---|---|---|
+| a **ref** to read | `<remote>/<default>` | `diff`, `merge-base`, `rev-list`, `branch --merged`, `--set-upstream-to` |
+| a **name** to become, merge into, or compare | bare `<default>` | `git switch`, `git merge`'s destination, `[ "$cur" = "$default" ]` |
+
+Hand on **both** — the ref, and `${ref#*/}` beside it — because each direction of
+the mistake fails differently and only one of them tells you.
+
+**A bare name where a ref belongs is loud.** A clone that only ever checked out
+feature branches has no local default branch at all, and there both
 
 ```bash
 git branch --merged <default>              # fatal: not a valid object name
 git rev-list --count <default>..<branch>   # fatal: unknown revision
 ```
 
-die outright — taking the whole step with them.
+die outright, taking the whole step with them.
+
+**A ref where a name belongs is quiet, and that is the direction that costs work.**
+`git switch <remote>/<name>` does refuse — `fatal: a branch is expected, got remote
+branch` — but `git checkout <remote>/<name>` exits 0 and detaches HEAD behind a
+note that reads like routine output. A `git merge` run from there also exits 0,
+writing the merge commit onto the detached HEAD while the branch it was meant to
+land on never moves: the run reports work merged into a parent that is unchanged,
+and the commit becomes unreachable as soon as anything else is checked out.
+Comparisons go the same way: `[ "$cur" = "<remote>/<default>" ]` is false while
+standing on the default branch — test `$cur` against the bare name.
 
 The remote-tracking ref is not guaranteed present either: a clone that fetched
 only feature branches has no `<remote>/<default>` until you fetch it. Materialise
@@ -130,38 +149,6 @@ it before any consumer runs, and **never compose a ref from an empty name** — 
 unreachable remote returns nothing, and `<remote>/` is a bogus ref that makes
 every consumer fatal. An unresolved default is "the question cannot be answered",
 not "nothing matched": say so and treat what depended on it as unknown.
-
-## Every network call is non-interactive
-
-Nobody is at the keyboard. An auth-required HTTPS remote or a passphrase-locked
-SSH key turns `ls-remote`, `fetch` or `push` into an indefinite hang, and
-`timeout` is absent on stock macOS. Route every one of them through:
-
-```bash
-GIT_TERMINAL_PROMPT=0 \
-GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-  git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 <cmd>
-```
-
-**Extend `GIT_SSH_COMMAND`, never replace it.** The environment variable overrides
-`core.sshCommand`, so a flat `GIT_SSH_COMMAND='ssh …'` throws away a multi-account
-`ssh -i ~/.ssh/id_work -o IdentitiesOnly=yes` or a ProxyCommand the remote needs —
-and `BatchMode` then forbids the interactive fallback, so a repo that pushes fine
-by hand fails with `Permission denied (publickey)`. The `${GIT_SSH_COMMAND:-ssh}`
-form keeps whatever was already set. (It still does not pick up `core.sshCommand`;
-where a repo relies on that, pass `git -c core.sshCommand="…"` instead.)
-
-`BatchMode` suppresses prompts without weakening host-key checking. The TCP
-connect phase is the one gap left — git exposes no `http.connectTimeout`
-(`git help --config` lists 43 `http.*` keys in 2.54 and none is that), so an
-unreachable host costs whatever the OS allows, measured at ~10s on macOS.
-Bounded, not unbounded.
-
-A wall-clock `timeout` around these is fine for a **metadata** probe like
-`ls-remote`, but sizing a `fetch` by the same budget kills healthy transfers: a
-large repo on a slow link is making progress, and SIGTERM at 10s silently drops
-the base. Give a fetch a generous budget or none — the `http.lowSpeed*` pair
-already covers the case a timeout is there for, a transfer that has stalled.
 
 ## A base with no shared history is not a base
 
@@ -182,8 +169,3 @@ guess is the same hardcoded name wearing a disguise. Say what is missing and ask
 naming the cost concretely — "no remote, so I can't tell what this branch was cut
 from: give me a base, or this covers only the working tree and leaves 3 commits
 unread."
-
-A mechanical block cannot ask anyone anything, so where the question was skipped
-it must degrade *loudly*: fall back, and say in its own output that the commits
-went unreviewed. "working tree, 4 files" otherwise reads exactly like a review
-that happened.

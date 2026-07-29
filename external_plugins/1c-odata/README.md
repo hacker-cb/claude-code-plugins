@@ -20,7 +20,7 @@ demand via `npx @1c-odata/mcp@latest serve` (see [`.mcp.json`](.mcp.json)).
 The server stores connection descriptors (base URL, login, server timezone) outside this wrapper —
 passwords go to the OS keychain. Add a connection once before use:
 
-```text
+```bash
 npx -y @1c-odata/mcp@latest add my-base
 ```
 

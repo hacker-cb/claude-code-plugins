@@ -2,6 +2,34 @@
 
 How to find, classify, fix, and respond to GitHub Copilot's PR review findings.
 
+## Identifying Copilot — never match one literal
+
+One actor, a different login on **every** surface:
+
+| Surface | `login` | the type field |
+|---|---|---|
+| REST `…/pulls/<pr>/reviews` | `copilot-pull-request-reviewer[bot]` | `.user.type` |
+| REST `…/pulls/<pr>/comments` | `Copilot` | `.user.type` |
+| REST `…/pulls/<pr>` → `requested_reviewers` | `Copilot` | `.type` |
+| GraphQL — `author`, `reviewRequests` | `copilot-pull-request-reviewer` | `__typename` |
+
+So a filter pinned to any one spelling matches nothing on the other three, and the
+failure is **silent**: the inline comments are exactly what a `/comments` filter
+returns, and an empty result reads as "Copilot had no findings" rather than as a
+filter that missed. Match the pair instead — `Bot` **and** a case-insensitive
+`^copilot` prefix, which also survives GitHub renaming the bot again:
+
+```jq
+select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
+```
+
+In GraphQL the same test reads `.author.__typename` and `.author.login`.
+
+**Reach every field through `?` and `// ""`.** `test/1` raises on anything that is
+not a string, and a deleted account leaves `"user": null` behind — one such row
+aborts the whole `--jq` program, turning a PR full of findings into a PR with
+none. That is the same silent-empty failure by another route.
+
 ## Is Copilot even in the loop?
 
 Copilot reviews a PR when a `copilot_code_review` rule is in force **for that PR's
@@ -23,14 +51,10 @@ matches the branch. No line at all means no rule applies **to this base**, which
 a different statement from "this repo has no such rule": the same repo can enforce
 Copilot on its default branch and nothing at all on a side branch.
 
-- **`review_on_push: true`** — Copilot is re-*requested* on *every* push. Treat
-  each push in the fix loop as owing you a review to wait for and read before you
-  call the PR done — but the request is not a promise that one posts, which is why
-  the wait below keys on Copilot leaving the requested-reviewer set (reviewed or
-  declined), not on a review necessarily arriving: while it stays requested you keep
-  waiting; a decline is confirmed only when Copilot leaves that set with no head
-  review, never by the clock — and if a safety cap runs out while it is still
-  requested you hold and escalate rather than merge.
+- **`review_on_push: true`** — Copilot is re-*requested* on *every* push, so every
+  push in the fix loop owes you a review to wait for and read before you call the
+  PR done. The request is not a promise that one posts; *Wait for the review of the
+  CURRENT head* below is what that costs you.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
@@ -57,7 +81,7 @@ would go unread. Check for an existing review before skipping:
 # --paginate applies --jq per page, so a bare `length` prints one number *per
 # page* — sum them, or a PR with >100 reviews answers with several numbers.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
-  --jq '[ .[] | select(.user.login == "copilot-pull-request-reviewer[bot]") ] | length' \
+  --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length' \
   | awk '{ n += $1 } END { print n + 0 }'
 ```
 
@@ -81,62 +105,39 @@ head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
 # `| @json` pins each review to exactly one line, so `tail -1` is the last review
 # and not whatever gh's output formatting happened to put on the last line.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
-  --jq '.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")
+  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         | {commit_id, submitted_at} | @json' | tail -1
 # fresh iff commit_id == $head
 ```
 
-Copilot does **not** reliably re-review every push, though — a push that only
-applies its own suggestions often earns no new review — so waiting unconditionally
-would hang forever. Run this protocol after each push:
+Copilot does not re-review every push — one that only applies its own suggestions
+often earns none — so the wait ends on the **requested-reviewer state**, never on a
+clock. After each push:
 
-1. **Make sure a review is actually pending for the current head.** Under
-   `review_on_push: true` GitHub requests it for you; otherwise, or if nothing
-   shows up, request one explicitly. Prefer a connected GitHub MCP server's
-   request-a-Copilot-review tool when it offers one; the portable fallback is:
+1. **Make sure a review is pending.** `review_on_push` requests it for you;
+   otherwise request one:
    ```bash
    gh pr edit <pr> --add-reviewer "@copilot"
    ```
-   Don't hand-roll that as a REST `requested_reviewers` POST: Copilot is not an
-   ordinary reviewer login, and `@copilot` is the special value `gh` case-handles
-   for it. Two limits worth knowing before you rely on it: it needs **gh 2.88.0 or
-   newer**, and it is **not supported on GitHub Enterprise Server**. Mind the
-   naming, too — it is requested as `Copilot` but *authors* its review as
-   `copilot-pull-request-reviewer[bot]`, and the author login is the one to filter
-   reviews and comments on.
-2. **Poll — and read the requested-reviewer state, not a clock, as the signal.**
-   Copilot's presence in `gh pr view <pr> --json reviewRequests` is what tells you
-   a re-review is still coming: a push (re-)requests it, and the forge drops the
-   request when Copilot either posts its review or declines. Poll until **one** of
-   these settles:
-   - a Copilot review with `commit_id == $head` appears → a fresh review landed; or
-   - Copilot has **dropped out** of `reviewRequests` with no such review → it
-     declined to re-review this push (common when the push only applied its own
-     suggestions).
-   The first review usually lands within a few minutes, but can lag 15+ minutes on
-   some repos — measure this repo's real head-review latency from recent PRs and
-   size any safety cap from that, never from a fixed default.
-3. **While Copilot is still in `reviewRequests` it has NOT declined — it is slow,
-   and no elapsed timer authorises merging past it.** A safety cap is only a bound on
-   the wait — never itself a confirmation of a drop-out, and never permission to
-   merge over a review still on its way. If the cap elapses while Copilot is still
-   requested, do **not** proceed: hold the merge, tell the user the head-commit
-   review is still outstanding, and extend the wait or escalate.
-   - **Fresh review** → process it from the top: classify, fix, reply, resolve.
-   - **Confirmed drop-out** (Copilot absent from `reviewRequests`, no review of the
-     head) → it declined this push; proceed, and say so in the report rather than
-     implying it reviewed. Two absences masquerade as a decline and must be ruled
-     out first: right after a push `reviewRequests` can lag, so confirm Copilot was
-     actually (re-)requested for this head; and a review that posts against an
-     *earlier* commit consumes the request while leaving the head unreviewed — a
-     newest Copilot review whose `commit_id != head` is **not** a decline of the
-     head, so re-request Copilot (`gh pr edit <pr> --add-reviewer "@copilot"`) and
-     keep waiting. Conclude "declined" only once a request aimed at the current head
-     itself comes back empty.
+   Not a REST `requested_reviewers` POST — that endpoint takes ordinary logins,
+   while `@copilot` is a value `gh` case-handles. Unsupported on GitHub Enterprise
+   Server; there, rely on the rule instead.
+2. **See Copilot in `gh pr view <pr> --json reviewRequests` before reading that
+   list for anything else.** Under `review_on_push` the request is registered
+   asynchronously, so right after a push the list is briefly empty — absence there
+   is "not yet", and only becomes an answer once you have watched the request
+   appear for this head.
+3. **Wait until it settles**, which is one of exactly two things: a Copilot review
+   whose `commit_id == $head`, or a request you *saw* arrive and then leave with no
+   such review — a decline, which the report says out loud rather than implying it
+   reviewed.
+4. **A review of an earlier commit is not a decline.** It consumes the request and
+   leaves the head unreviewed, so re-request and keep waiting. For the same reason
+   no elapsed time settles anything: while Copilot is still a requested reviewer,
+   hold, and say the head review is outstanding.
 
-Do this after *every* push — including the last one, whose review is the easiest to
-skip and the most likely to be missed — and never evaluate the loop's exit until it
-settles.
+Do this after *every* push, the last one included — its review is the easiest to
+skip and the most likely to be missed.
 
 ## Finding the comments
 
@@ -156,7 +157,7 @@ Use whichever source is available (in priority order):
        repository(owner:$owner,name:$repo){
          pullRequest(number:$pr){
            reviewThreads(first:100){
-             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login} body path line } } }
+             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login __typename} body path line } } }
            }
          }
        }
@@ -165,8 +166,11 @@ Use whichever source is available (in priority order):
 3. **REST API** via `gh api repos/<owner>/<repo>/pulls/<pr>/comments` as a
    fallback.
 
-Copilot's comments come from the bot author `copilot-pull-request-reviewer[bot]`;
-include any review summary it posts alongside the inline comments.
+Filter all three by the pair from *Identifying Copilot*, never by a login you saw
+on another surface: on `/comments` the login is a bare `Copilot`, and in GraphQL it
+carries no `[bot]` suffix. Include any review summary it posts alongside the inline
+comments — that one is a *review* body, so it comes from `/reviews`, not from
+either comment source.
 
 ## Classifying severity
 
@@ -216,7 +220,7 @@ loop and keeps the review thread honest.
 - After replying, **resolve the thread where the repo requires it** — all threads
   under `required_review_thread_resolution`, otherwise at least the ones you fixed —
   so the PR's review state is clean. (Reply is unconditional; resolution scales with
-  the repo — see *Classifying severity* and *Loop exit*.)
+  the repo — see *Classifying severity*.)
 
 Reply + resolve via:
 ```bash
@@ -229,16 +233,3 @@ gh api graphql -f query='
   -F threadId=<thread_node_id>
 ```
 Or the equivalent MCP tools if available.
-
-## Loop exit
-
-The loop ends when the PR is **both mergeable by GitHub and clean by your own
-bar** — every required check green and the repo's thread-resolution requirement
-met, *plus* CI genuinely green and Copilot's review **of the current head**
-processed with its Critical/Important findings resolved, whatever the repo does or
-doesn't enforce. On a repo with no enforced gates GitHub reports mergeable from
-PR-open, so mergeability alone is never the exit — your own bar is the floor (see
-the main skill's *When there are no gates, or they can't be trusted*). Where all
-threads must be resolved, an unresolved nit blocks the merge as much as a Critical
-one; where they need not, replied-but-unresolved minor items don't block. Detect
-which applies, don't assume.

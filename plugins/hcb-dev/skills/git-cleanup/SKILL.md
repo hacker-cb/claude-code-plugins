@@ -1,7 +1,7 @@
 ---
 name: git-cleanup
 description: >-
-  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, including other sessions' leftovers. Never edits files, never runs `git reset`, and never writes to a remote — it reads merged and open change requests through the forge CLI, but pushes, deletes and edits nothing there.
+  Manual-only. Sweep the git residue work leaves in this repository — merged and orphaned branches, stale or abandoned worktrees, dead upstream tracking. Two modes, given as the argument: (S) `session` — only the branches and worktrees this session created, run before closing it; (A) `all` — everything the repository has accumulated, other sessions' leftovers included. Deletes branches; a worktree Claude Code created for another session it reports rather than removes, because the host leases those to sessions that outlive their processes. Never edits files, never runs `git reset`, and never writes to a remote — it reads merged and open change requests through the forge CLI, but pushes, deletes and edits nothing there.
 disable-model-invocation: true
 argument-hint: "[session|all]"
 ---
@@ -10,23 +10,6 @@ argument-hint: "[session|all]"
 
 Branches and worktrees only. Untracked junk in the working tree is not this
 skill's business — `.gitignore` is, and `seeding-gitignore` owns that.
-
-## What Claude Code already cleans up
-
-Do not duplicate or fight these — they run on their own:
-
-- **Exiting an interactive worktree session.** A clean, unnamed session's
-  worktree and branch are removed automatically; a named one, or one holding
-  work, prompts first.
-- **The periodic sweep** removes worktrees Claude created for **subagents and
-  background sessions** once they are older than `cleanupPeriodDays`, skipping
-  any that still hold work. It **never** removes a `--worktree` worktree.
-- **`git worktree lock` while an agent runs.** The sweep releases a lock left by
-  a session whose process exited; it never releases a lock set by hand.
-
-What is left over for this skill: `--worktree` and desktop-session worktrees, the
-worktrees of `-p` runs (which have no exit prompt at all), anything the sweep
-skipped because it held work — and **branches**, which the sweep never touches.
 
 ## Step 1 — Ground truth
 
@@ -37,117 +20,48 @@ git worktree list --porcelain | head -1        # 'worktree <path>' — the PRIMA
 `PROJECT` is that primary worktree path, **not** cwd: running from inside a
 worktree still means cleaning the repository as a whole.
 
+**The default branch and its remote come from
+[`../../references/base-resolution.md`](../../references/base-resolution.md)** —
+its rung 4 answers this, and it owns every trap on the way: why a read symref goes
+on naming a branch the forge renamed away, why the answer travels as the
+remote-tracking ref and never as a bare name, and why that ref must be materialised
+and re-verified before anything consumes it. Resolve it there, then carry two
+values into the rest of the sweep:
+
 ```bash
-git -C "$PROJECT" symbolic-ref --short refs/remotes/<remote>/HEAD   # -> <remote>/<default>
+D="<the remote-tracking ref, per base-resolution.md — EMPTY if it did not resolve>"
+DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
+[ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
 ```
 
-Never assume `main`/`master`/`dev`, and never assume the remote is `origin`.
-Both names — and the traps in that one `symbolic-ref` line — belong to the shared
-ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md) —
-how to rank the remotes
-that exist, why a read symref can be stale, why the remote-tracking form is the
-only safe one to carry forward. Read it; the two blocks below are that reference
-applied to this sweep.
-
-- `symbolic-ref` **reads** the pointer without dereferencing it, so after a
-  forge-side default-branch rename it keeps printing the old name with status 0.
-  Verify the ref it names still exists; if not, ask the remote afresh, through the
-  non-interactive guard — this sweep runs unattended and an auth-walled remote
-  would otherwise hang it:
-
-- carry the default forward **as the remote-tracking ref** `<remote>/<default>`,
-  never the bare name — the reference explains why (`branch --merged`/`rev-list`
-  below go fatal on a bare name in a clone with no local default branch), and why
-  that ref must be *materialised and re-verified* before any consumer runs.
-
-  ```bash
-  # Every network call: no prompts, bounded stalls, and the user's own ssh setup
-  # left intact — a multi-account `core.sshCommand`/`GIT_SSH_COMMAND` must survive,
-  # or a repo that pushes fine by hand starts failing "Permission denied".
-  gitq() {
-    GIT_TERMINAL_PROMPT=0 \
-    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-      git -C "$PROJECT" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
-  }
-
-  D="<remote>/<default>"
-  git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1 || {
-    # The parser and why it is `sed` live in the shared reference linked above.
-    h="$(gitq ls-remote --symref <remote> HEAD 2>/dev/null \
-         | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p' | head -1)"
-    # An unreachable or auth-walled remote returns nothing. Never build `<remote>/`
-    # from an empty name — a bogus ref makes every consumer below fatal.
-    [ -n "$h" ] && D="<remote>/$h" || D=""
-  }
-
-  # Materialise it: a clone that only fetched feature branches has no such ref yet.
-  # EXPLICIT refspec: a plain `fetch <remote> <branch>` obeys the remote's own
-  # configured refspec, which in a --single-branch clone matches only that branch —
-  # the fetch then writes FETCH_HEAD and no remote-tracking ref at all. Naming the
-  # destination is what actually materialises `<remote>/<default>`.
-  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
-    gitq fetch --quiet <remote> "+refs/heads/${D#*/}:refs/remotes/${D}"
-  fi
-
-  # RE-VERIFY. The fetch can fail unnoticed (remote gone since ls-remote, auth
-  # wall, network) or write only FETCH_HEAD under a narrowed refspec, as a
-  # --single-branch clone has. An unchecked D is then a dangling ref: consumers
-  # die with "not a valid object name", or — far worse — the empty output of a
-  # failed `branch --merged` reads as "nothing is merged" and a `rev-list` count
-  # of 0 routes a branch to delete. Fall into the unresolved path instead.
-  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
-    D=""
-  fi
-  [ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
-  DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
-  ```
-
-  A `DEFAULT-UNRESOLVED` result is not "nothing is merged" — it is "the merge
-  question cannot be answered". Every branch's status becomes **unknown**: surface
-  them all, delete none, and say the remote was unreachable. Never read a failed
-  command's empty output as an answer.
+**`DEFAULT-UNRESOLVED` is not "nothing is merged"** — it is "the merge question
+cannot be answered", and holding those two apart is this skill's whole safety
+margin. Every branch's status becomes **unknown**: surface them all, delete none,
+and say the remote was unreachable. The reason it matters here more than anywhere
+else is that both failing commands answer in the vocabulary of success — a
+`branch --merged` that died prints nothing, which reads as "no branches are
+merged", and a `rev-list --count` that died prints 0, which routes a branch
+straight to deletion.
 
 If there is no remote at all, ask the user — nothing local names the default.
-
-Claude Code's own directory is `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` — the
-variable is documented and may point anywhere. Never write `~/.claude` literally.
 
 ## Step 2 — Who is still working here
 
 A worktree with a live session in it must not be removed, and git alone cannot
-tell you: desktop and `--worktree` sessions do **not** lock their worktree, so a
-busy one looks idle in `worktree list`.
+tell you. Run the probe from
+[`../../references/claude-worktrees.md`](../../references/claude-worktrees.md) and
+carry its answer into step 5 — **in one direction only.** A live session proves
+the worktree is in use. Its absence proves nothing: the host leases worktrees to
+*sessions*, not to processes, and a session that was merely closed keeps its lease
+until it is archived. The lease is not readable from here.
 
-The live-session registry answers it. Each file is one running session; the file
-exists only while it runs:
+So a worktree the host created for another session is never this skill's to
+remove, running or not. What is left after that is still worth the sweep:
+worktrees you cut yourself, and — the larger share — **branches**, which no host
+cleanup touches.
 
-```bash
-CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -d "$CFG/sessions" ] || echo "REGISTRY-ABSENT"      # not the same as "nobody is working"
-for f in "$CFG"/sessions/*.json; do
-  [ -e "$f" ] || continue                             # unmatched glob stays literal
-  pid=${f##*/}; pid=${pid%.json}
-  kill -0 "$pid" 2>/dev/null || continue              # a file can outlive its session
-  # One line per file, so a pretty-printed registry still matches. Never filter by
-  # process name: an npm-installed Claude Code reports `node`, and a live session
-  # read as dead is exactly the mistake that costs someone their work.
-  tr -d '\n' < "$f" | grep -o '"cwd" *: *"[^"]*"' | head -1
-done
-```
-
-**This format is internal and undocumented — treat it as a hint, never as a
-guarantee.** An empty result is ambiguous by itself, so separate the two cases
-before using it: `REGISTRY-ABSENT`, or a `cwd` line count of zero while session
-files exist, both mean the probe failed. Say so once and treat **every** worktree
-but the current one as *possibly occupied* — surface them, remove none. Only a
-working probe that lists live sessions licenses a removal.
-
-A worktree is occupied when a live session's `cwd` **is that worktree's path, or
-lies anywhere beneath it** — a session that has stepped into a subdirectory is
-still working in the worktree. Compare in that direction only: the worktree is
-the ancestor, never the descendant. Erring toward "occupied" is free; erring the
-other way destroys someone's work.
+Where the probe itself failed (no registry, or no `cwd` lines while session files
+exist) say so once and treat every worktree but the current one as in use.
 
 ## Step 3 — The mode
 
@@ -159,57 +73,16 @@ The argument picks it. With no argument, ask — do not guess.
 | Scope | branches and worktrees created after this session started | every branch and worktree, any age |
 | Typical use | before closing a session | periodic audit |
 
-The primary source for mode S is **what you remember doing in this conversation**.
-Confirm it against git, anchored on the session's own start time:
+**Mode S is what you remember creating in this conversation.** That record is the
+source, not a corroborating one — you were there for every branch cut and every
+worktree added. A timestamp probe cannot overrule it and does not settle the case
+it looks built for: a session that was resumed, or whose process restarted, has a
+start time later than the worktree it made, so its own work dates as somebody
+else's.
 
-```bash
-# Self-contained: shell state does not survive from one Bash call to the next.
-CFG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-ms=$(grep -o '"startedAt" *: *[0-9]*' "$CFG/sessions/${CLAUDE_PID:-$PPID}.json" 2>/dev/null \
-     | grep -o '[0-9]*$' | head -1)   # one value, whatever else the file grows
-if [ -n "$ms" ]; then
-  ANCHOR=$(( ms / 1000 - 300 ))   # epoch MILLIseconds -> seconds, minus a grace window
-  echo "ANCHOR=$ANCHOR"
-else
-  echo "NO-ANCHOR"                # never reach the arithmetic: empty is 0, i.e. 1969
-fi
-```
-
-Three traps live in those few lines. `startedAt` is **milliseconds** while
-everything below is seconds — pass it through raw and the cutoff lands tens of
-thousands of years out, matching nothing. An **empty** `ms` is silently `0` in
-bash arithmetic, so letting an unreadable registry reach the `$(( ))` would yield
-`-300`, i.e. 1969, and mode `session` would quietly widen to every branch and
-worktree in the repository — hence the `if`, which skips the arithmetic rather
-than guessing. And the **grace window** matters because a worktree and its branch
-are created a second or two *before* the process that runs in them; with zero
-grace your own worktree hides from you.
-
-`NO-ANCHOR` costs you the git-side confirmation, not the run: skip the two
-commands below, say the timestamps were unavailable, and work from the session
-record you already have.
-
-```bash
-git -C "$PROJECT" reflog show --date=unix "<branch>" | tail -1   # 'branch: Created from …'
-# Date the worktree by its `commondir`, written once at registration. The
-# directory's own mtime is last-activity — every commit rewrites `index` inside
-# it — so it would attribute a busy neighbouring session's worktree to this one.
-# And use --git-common-dir, not "$PROJECT/.git": inside a worktree .git is a
-# file, and with a bare primary there is no .git directory at all.
-find "$(git -C "$PROJECT" rev-parse --path-format=absolute --git-common-dir)/worktrees" \
-     -maxdepth 2 -name commondir -newermt "@$ANCHOR"
-```
-
-These timestamps only ever **confirm** what you remember; they never overrule it,
-and an empty result is not evidence that this session created nothing. Whenever
-a session is resumed or its process restarts, `startedAt` moves forward while the
-worktree keeps its original registration time, so everything the session made
-falls behind the anchor and the `find` legitimately comes back empty. Say the
-git-side confirmation was unavailable — on `NO-ANCHOR`, on an empty result, or on
-any disagreement — and go with your own record of the session.
-
-Mode decides *what is listed*. It never decides how freely something is deleted —
-the risk class does.
+Where memory is genuinely unsure about one item, list it. Mode decides *what is
+listed*, never how freely anything is deleted — the risk class does that, and
+step 6 puts the whole list in front of the user before a single deletion.
 
 ## Step 4 — Discovery (read-only, one parallel batch)
 
@@ -261,12 +134,13 @@ status: surface it, never delete it.
 | Signal | Verdict |
 |---|---|
 | primary worktree | never touch |
-| the current session's own worktree | never remove from inside it — see step 7 |
-| path is a live session's `cwd`, or occupancy unknown | keep — someone may be working there |
+| the current session's own worktree | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
+| path is a live session's `cwd` | keep — someone is working there |
+| **another** worktree the host made — a `claude/…` branch, or a directory in the host's own worktree dir — **that is still on disk** | **surface, never remove** — its lease survives the process and is unreadable from here (`claude-worktrees.md`). A registration whose directory is already gone is not this case: nothing is left to destroy, so it falls to the `prunable` rows below |
 | `locked` | keep — Claude Code locks a worktree while its agent runs |
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
-| clean, its branch merged, unoccupied | `remove` (class 2) |
+| clean, its branch merged, and **this session cut it** | `remove` (class 2) |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
@@ -312,41 +186,9 @@ git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the ent
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
 git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed squash merge
-# 5. repair tracking — re-point at <remote>/<default> ONLY when <current> IS the
-#    default branch. On a feature branch whose upstream no longer matches its name,
-#    git's default push.default=simple refuses `git push` outright, leaving it
-#    unpushable; there, drop the dead upstream instead and
-#    `git push -u <remote> <current>` restores it.
-#    if/else, never `test && A || B`: that runs B when A itself fails, so a
-#    set-upstream-to against a dangling <remote>/<default> would strip the default
-#    branch's tracking outright — the opposite of the repair, in exactly the case
-#    this step is for.
-#    Compare against $DEF, the BARE name from step 1 — a branch name is never the
-#    remote-tracking form, so testing <current> against "<remote>/<default>" is
-#    false even on the default branch and would unset its tracking instead of
-#    repairing it. Refs go in --set-upstream-to; names go in the comparison.
-#    And skip the whole repair when step 1 said DEFAULT-UNRESOLVED: with $DEF
-#    empty the comparison is false for EVERY branch, so the else arm would strip
-#    upstreams wholesale on exactly the run that was told it cannot answer the
-#    question. Unknown means touch nothing.
-if [ -z "$DEF" ]; then
-  echo "skipping upstream repair — default branch unresolved"
-elif [ "<current>" = "$DEF" ]; then
-  git -C "$PROJECT" branch --set-upstream-to="$D" "<current>"
-else
-  git -C "$PROJECT" branch --unset-upstream "<current>"
-fi
 ```
 
-Order matters twice over. Branch deletion fails while a worktree still has the
-branch checked out, and `worktree prune` must come *after* any manual `rm -rf` —
-prune first and the deleted directory's registration is still there, so the
-`branch -d` behind it fails with "used by worktree at …".
-
-`branch -d` refuses a branch that is not fully merged, which is a free second
-opinion on every classification derived from a forge listing or from `[gone]`.
-Reach for `-D` only where the merge is genuinely invisible to git — a squash
-merge already confirmed by `rev-list --count` — and say so when you do.
+Say so in the report wherever `-D` was used.
 
 To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
@@ -358,6 +200,27 @@ git -C "<PROJECT>" worktree remove "<old-cwd>"
 
 Then tell the user cwd moved to `PROJECT` — their old path no longer exists.
 
+**Last, repair the tracking** — one branch at a time, and only on branches that
+survived the deletions above. `$D` and `$DEF` are step 1's ref and its bare name;
+which belongs where is `base-resolution.md`'s ref-versus-name rule, and swapping
+them here unsets the tracking this was meant to repair.
+
+```bash
+CURRENT="<the branch being repaired>"
+
+# Re-point at the default ONLY when this IS the default branch; on any other
+# branch drop the dead upstream and let `git push -u <remote> "$CURRENT"` restore
+# it. Skip entirely on DEFAULT-UNRESOLVED: an empty $DEF matches no branch, so the
+# else arm would strip every upstream on the one run told it cannot answer.
+if [ -z "$DEF" ]; then
+  echo "skipping upstream repair — default branch unresolved"
+elif [ "$CURRENT" = "$DEF" ]; then
+  git -C "$PROJECT" branch --set-upstream-to="$D" "$CURRENT"
+else
+  git -C "$PROJECT" branch --unset-upstream "$CURRENT"
+fi
+```
+
 ## Step 8 — Verify and report
 
 Re-run discovery. Report what went, what was kept and why, and — separately —
@@ -368,29 +231,20 @@ without asking.
 
 | ❌ | ✅ |
 |---|---|
-| remove a worktree without checking occupancy | live session `cwd`, or unknown → keep |
+| remove a worktree Claude Code created, however idle it looks | report it — the lease outlives the process and is unreadable from here |
+| read "no live session" as "nobody needs it" | the probe proves presence only; absence is not an answer |
 | `git worktree unlock` something Claude Code locked | leave it; the periodic sweep releases stale locks itself |
-| delete an unmerged branch, or one whose status is unknown | surface it, let the user decide |
-| `--force` a dirty worktree unasked | skip it, report it |
 | `rm -rf` a path outside this repository's worktree directories | resolve it from `worktree list` / the git dir, never from a name |
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
 | hardcode `~/.claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` |
-| assume `main`/`master`/`dev`, or that the remote is `origin` | read `<remote>/HEAD`, verify it resolves, else `ls-remote` |
-| compare against a bare `<default>` | use the remote-tracking ref `<remote>/<default>` — a bare name is fatal with no local default branch |
 
 ## Edge cases
 
-- **Not a git repository** — nothing to do; say so and stop.
 - **The forge CLI offline or rate-limited mid-run** — degrade to git-only for the
-  rest of the pass and downgrade every forge-derived "merged" to "surface".
+  rest of the pass and downgrade every forge-derived "merged" to "surface". The
+  sweep gets narrower, never wider.
 - **Detached HEAD worktree** — classify by clean/dirty only; no branch to delete.
-- **Worktree dir on disk but absent from `worktree list`** — a filesystem orphan.
-  Run `git status` inside it first: empty means `rm -rf` then `prune`; anything
-  else means it still holds work, so surface it as class 3 and touch nothing.
-- **A bare primary worktree** — there is no `.git` directory; every path comes
-  from `rev-parse --git-common-dir`, and an empty `find` there is a failed probe,
-  not an empty repository.
 - **A branch checked out in a worktree of a *different* repository** — leave both
   alone; this skill stays within `PROJECT`.
 - **Submodules** — leave them alone entirely.

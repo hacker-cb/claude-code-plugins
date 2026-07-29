@@ -1,16 +1,15 @@
 ---
 name: multi-review
 description: >-
-  Review one change with every available reviewer at once — the Codex CLI, the
-  built-in code-review workflow, the built-in security review — then consolidate
-  their findings and report what each one actually covered. Use when the user
-  asks for a review of the current change ("прогони ревью", "review this",
-  "second opinion on this diff"), and before finished work is completed — merged
-  locally or handed to a change request — when no shipping flow is already driving
-  that handoff — a ship in progress owns the order of steps and calls this itself.
-  Report-only:
-  it never applies fixes; the caller decides what to do with them. Not an
-  auto-trigger on every edit.
+  Review one change with several independent reviewers at once — the Codex CLI,
+  the built-in code-review workflow, the built-in security review — then
+  consolidate their findings and report what each one actually covered. Use when
+  the user asks for a review of the current change ("прогони ревью", "review
+  this", "second opinion on this diff"), and before finished work is completed —
+  merged locally or handed to a change request — unless
+  `hcb-dev:shipping-workflow` is already driving that handoff and calls this
+  itself. Report-only: it never applies fixes; the caller decides what to do with
+  them. Not an auto-trigger on every edit.
 ---
 
 # Multi-review
@@ -32,20 +31,16 @@ each reviewer builds a diff and reviews nothing when that diff is empty. Say so
 and stop, rather than quietly reviewing the last commit instead.
 
 **Base.** Resolve it by the shared ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md) —
-first hit wins: a base
-the caller named; the change request's base; the merged-base histogram; the
-default branch (`<remote>/HEAD`, verified, else `ls-remote`); `@{upstream}`. The
-reference owns the mechanics — remote ranking, the remote-tracking-ref form, the
-non-interactive guard, the stale-pointer trap. Read it; don't re-derive them here.
+[`../../references/base-resolution.md`](../../references/base-resolution.md),
+which owns all of it — the rungs and their order, remote ranking, the
+remote-tracking-ref form, the stale-pointer trap. Read it; don't re-derive any of
+it here.
 
 Two things this skill must not let the reference's authority hide:
 
 - **Whatever resolves is handed to the reviewers explicitly**, and an explicit
-  base wins over *their own* resolution — so a lossy answer here silently
-  overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
-  it. That is exactly why the reference is shared: keep the two in step by reading
-  from it, not by hand-copying a rung.
+  base wins over any resolution they would do themselves — so a lossy answer here
+  is the last word, with nothing downstream to catch it.
 - **Confirm the base shares history with `HEAD` before passing it on** —
   `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
   base is worse than none). Empty → don't pass it, and **don't quietly fall to
@@ -58,8 +53,13 @@ Two things this skill must not let the reference's authority hide:
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.
 
-**Risk** decides effort in the next step. The default is `high` on every ladder —
-name the level, never "the middle", which lands on a different rung per reviewer.
+**Risk** decides effort in the next step. Always name the level — never "the
+middle", which lands on a different rung per reviewer.
+
+`codex-review` starts at **`xhigh`** — it resolves its own model and ladder, so
+pass a level and let it place that level; risk mostly moves it *down*. Everything
+else starts at `high`.
+
 Raise it when the change reaches past itself (public interface, shared helper,
 config, schema, wire format), cannot be walked back (it writes, migrates,
 publishes, or persists a format someone else reads), meets input whose shape you
@@ -78,28 +78,53 @@ is a fine answer; it just goes into the report.
 
 ## 2. Pick
 
-Three questions per reviewer, in order:
+Four questions per reviewer, in order:
 
 - **Available?** If not, record `UNAVAILABLE` with the reason; do not launch it.
 - **Applicable?** When the scope asks for something a reviewer cannot do, skip it
   with a recorded reason — `n/a`.
-- **How hard?** Map the risk onto that reviewer's own ladder and pass the level
-  explicitly — never a machine-local default, since this skill runs on other
+- **Worth its cost on this change?** They do not cost the same, and the expensive
+  one is not owed a run just for existing — see *What each run costs* below. A
+  skip here is `n/a` with the reason in its row, same as any other.
+- **At what level?** Map the risk onto that reviewer's own ladder and pass the
+  level explicitly — never a machine-local default, since this skill runs on other
   people's machines.
 
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
-| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | `minimal` `low` `medium` `high` `xhigh` |
+| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
 | `code-review` workflow | the `Workflow` tool exists | `@{upstream}...HEAD` plus `git diff HEAD` unless given a target | yes, as a target argument | `high` `xhigh` `max` |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 What that decides in practice: the security review goes `n/a` on a narrowed or
-working-tree-only scope, and is mis-scoped whenever the PR targets anything but
-the default branch — report that, do not hide it. The code-review workflow is the
-only reviewer checking `CLAUDE.md` compliance, and its cheap levels are out of
-reach: `low` and `medium` belong to the `/code-review` slash command, which only
-the user can invoke, and an unknown level is not rejected — it silently becomes
+working-tree-only scope, and `n/a` again where the change alters nothing that
+anything executes. The code-review workflow's cheap levels are out of reach:
+`low` and `medium` belong to the `/code-review` slash command, which only the
+user can invoke, and an unknown level is not rejected — it silently becomes
 `high`, with the word forwarded as the review target.
+
+**That last one is your judgement about behaviour, never a list of extensions.**
+Ask what now runs differently, not what the files are called. A `SKILL.md`, a
+workflow, a `.sh`, a `dependabot.yml` are all instructions something obeys — this
+plugin is markdown an agent executes. And prose is not automatically inert: a
+credential pasted into an example, or a command a reader will copy and run, is
+exactly what the security review is for. `n/a` only when the honest answer to *what
+behaves differently now* is "nothing" — and say that reason in the row, since `n/a`
+is the one status the coverage gate does not treat as a gap.
+
+### What each run costs
+
+| Reviewer | A run costs | Earns it when |
+|---|---|---|
+| `codex-review` | one pass by one reviewer, a minute or two | always, while it is installed — it is the floor the other two build on |
+| `code-review` | a fan-out of agents, and by far the longest of the three | the change has more than one place to be wrong — it spans files that interact, or moves a convention others follow. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
+| `security-review` | inline, plus its own filtering pass | something now executes differently (above) |
+
+**Size is a signal, not a threshold.** Two thousand lines of regenerated fixture
+hide less than twenty inside an auth check. Ask what the change could be
+concealing, never how much of it there is — no line counts, no file counts. A
+single self-contained edit whose whole surface fits in one reading is covered by
+one pass; breadth is what the fan-out is for, so give it something wide.
 
 ## 3. Run
 
@@ -135,17 +160,11 @@ tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
 
 **A nonzero count can still mean the commits went unread.** `codex-review` prints
-a separate `coverage-warning:` line when it could resolve no base, or refused one
-sharing no history with `HEAD` — it then reviews the working tree alone, and the
-count it reports is of *those* files. Read that line, not just the number: a count
-that passes the zero check while the warning says the commits were not reviewed is
-`partial`, and the base is what closes it. It is deliberately its own line rather
-than a tail on the scope line, so splitting `scope:` into the `Covered` and
-`Effort` columns below cannot bury the warning in the effort cell.
+a `coverage-warning:` line when it reviewed the working tree alone; the count is
+then of *those* files. Read that line as well as the number — a count that passes
+the zero check under such a warning is `partial`, and a base is what closes it.
 
-When a reviewer fails, quote its error instead of guessing a cause. A `401` or an
-auth complaint in Codex's log means `codex login`, and one line saying so beats
-twenty lines of transcript.
+When a reviewer fails, quote its error instead of guessing a cause.
 
 ## 5. Consolidate
 
@@ -160,15 +179,13 @@ verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
-| `codex-review` | `<base>`, 3 files | high | 2 findings |
+| `codex-review` | `<base>`, 3 files | xhigh | 2 findings |
 | `code-review` | `<base>`, 3 files | high | no findings |
 | `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
 
 Keep the cells short. "Covered" is always `<base>, N files`, effort gets its own
 column so a level is never left implied, and "Result" is a verdict — never the
 description of a finding, which belongs below the table where it can wrap freely.
-A fixed-width block pretending to be a table wraps badly in a narrow window and
-the columns drift apart.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not
 run; `n/a` — it was deliberately not run, and why; `nothing to review` — it ran

@@ -24,12 +24,6 @@ tracked stays tracked after the pattern is added; untrack it with
 .DS_Store
 .AppleDouble
 .LSOverride
-# No bare `Icon` line here, on purpose. macOS names the custom-folder-icon file
-# `Icon` + a carriage return, so the only pattern that matches it is `Icon`
-# followed by two literal CR bytes (see github/gitignore's macOS template) — and
-# those cannot survive being copy-pasted out of a document. A bare `Icon` is
-# worse than nothing: it does *not* match that file, and it *does* hide a real
-# `Icon/` asset directory. Add the CR-terminated form by hand if a repo needs it.
 ._*
 Thumbs.db
 ehthumbs.db

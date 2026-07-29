@@ -43,7 +43,7 @@ external_plugins/<name>/          # thin wrapper around an external npm MCP serv
   .claude-plugin/plugin.json      #   upstream name, no version
   .mcp.json                       #   npx <pkg>@latest
 scripts/validate.sh               # structural validation (CI + local)
-.github/workflows/                # validate (PR/push)
+.github/workflows/                # validate (PR/push), link-check (weekly)
 ```
 
 ## Development
