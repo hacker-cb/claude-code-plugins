@@ -246,7 +246,7 @@ loop and keeps the review thread honest.
 - After replying, **resolve the thread where the repo requires it** — all threads
   under `required_review_thread_resolution`, otherwise at least the ones you fixed —
   so the PR's review state is clean. (Reply is unconditional; resolution scales with
-  the repo — see *Classifying severity* and *Loop exit*.)
+  the repo — see *Classifying severity*.)
 
 Reply + resolve via:
 ```bash
@@ -259,16 +259,3 @@ gh api graphql -f query='
   -F threadId=<thread_node_id>
 ```
 Or the equivalent MCP tools if available.
-
-## Loop exit
-
-The loop ends when the PR is **both mergeable by GitHub and clean by your own
-bar** — every required check green and the repo's thread-resolution requirement
-met, *plus* CI genuinely green and Copilot's review **of the current head**
-processed with its Critical/Important findings resolved, whatever the repo does or
-doesn't enforce. On a repo with no enforced gates GitHub reports mergeable from
-PR-open, so mergeability alone is never the exit — your own bar is the floor (see
-the main skill's *When there are no gates, or they can't be trusted*). Where all
-threads must be resolved, an unresolved nit blocks the merge as much as a Critical
-one; where they need not, replied-but-unresolved minor items don't block. Detect
-which applies, don't assume.

@@ -34,8 +34,7 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
   range).
 - `merge-strategy` — the shown-and-approved gate default, **mode-dependent**: in
   `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
-  the **final** `feature → base` strategy (a per-slice change request into a
-  feature branch always squashes, whatever this value is).
+  the **final** `feature → base` strategy only (*Multi-slice topology* below).
 - `merge-auth` — request only: the gate-captured merge authorization, or absent.
 
 Completion is **not** handed a `coverage` signal — it runs only *after* the
@@ -164,11 +163,9 @@ and only by consent.
   declined it — the driver keeps its own stop-and-ask: it drives to "ready to
   merge" and waits. Completion never invents authorization the gate did not
   capture.
-- **Merge strategy.** Pass `merge-strategy`; the driver filters it to the repo's
-  allowed methods (the repo may forbid one). The strategy that actually matters is
-  the final `feature → base` change request in a multi-slice set — `merge-commit`
-  keeps the slice history, `squash` collapses it — which is exactly the gate's
-  shown choice.
+- **Merge strategy.** Pass `merge-strategy` and let the driver filter it to the
+  repo's allowed methods. Which change request it actually governs is the topology
+  question below.
 
 ## Multi-slice topology (request)
 
@@ -176,7 +173,8 @@ Each slice completes **onto the shared feature branch** before the next is cut:
 its change request targets the feature branch and is merged into it — **squashed**,
 a slice is one commit — so the next slice builds on it from the updated tip and
 every slice stays independently reviewable. When the slices are done, one final
-`feature → base` change request integrates the set, with the gate's
-`merge-strategy` (see `github-pr-workflow`, *Driving a set*). The local-escalation
-path arrives at that same single `feature → base` change request directly — its
-slices are already merged locally, with nothing left to drive.
+`feature → base` change request integrates the set, driven last, with the gate's
+`merge-strategy` — `merge-commit` keeps the slice commits, `squash` collapses
+them — filtered to whatever methods the repo allows. The local-escalation path
+arrives at that same single `feature → base` change request directly, its slices
+already merged locally, with nothing left to drive.
