@@ -50,9 +50,9 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   codebase, splits the work into independently reviewable slices (one is the
   normal case), settles the architectural questions **and** the completion mode
   (local merge vs change request) at one planning gate, then runs each slice
-  through development, `multi-review`, and `shipping-workflow` autonomously —
-  closing with a per-slice report. Calls `shipping-workflow` per slice; not for
-  work that is already finished (that is `shipping-workflow` directly).
+  through development and `shipping-workflow` autonomously — closing with a
+  per-slice report. Calls `shipping-workflow` per slice; not for work that is
+  already finished (that is `shipping-workflow` directly).
 
 ### Preparing a change
 
@@ -76,7 +76,7 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   read-only sandbox. Review-only: returns Codex's findings verbatim and fixes
   nothing.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  Run every available reviewer over one change at once — `codex-review`, the
+  Run several independent reviewers over one change at once — `codex-review`, the
   built-in code-review workflow, the built-in security review — then consolidate
   the findings and report what each reviewer actually covered (the coverage gate
   most of the skill exists to keep honest). Report-only.
@@ -88,8 +88,7 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   commit, hand off to `multi-review`, apply the fixes, check coverage, then
   complete **by mode** — merged locally into its parent branch, or an open change
   request (handed to a PR/MR driver below). Steps 0–4 are identical in both modes;
-  the mode is read only at the last step. The one confirmation gate is a coverage
-  gap.
+  the mode is read only at the last step.
 - **`github-pr-workflow`** — `/hcb-dev:github-pr-workflow`
   Drive a GitHub pull request from a finished branch to a merged PR: rename an
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
@@ -106,9 +105,9 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   branches, stale or abandoned worktrees, dead upstream tracking. Two modes —
   `session` (only what this session created) and `all` (everything accumulated,
   other sessions' leftovers included). **Branches** are the bulk of it — no host
-  cleanup touches those. A worktree Claude Code created it reports rather than
-  removes: the host leases those to sessions that outlive their processes, so an
-  idle one is routinely still someone's.
+  cleanup touches those. A worktree Claude Code created for another session it
+  reports rather than removes: the host leases those to sessions that outlive
+  their processes, so an idle one is routinely still someone's.
 
 ## Shared references
 
@@ -121,48 +120,38 @@ saying something else.
   ladder, remote ranking (`upstream` before `origin`, a lone remote whatever it is
   called), why a read symref goes stale, why only the remote-tracking form is safe
   to carry forward, and why a base sharing no history with `HEAD` is worse than
-  no base at all. Used by `codex-review`, `multi-review`, `git-cleanup`,
-  `github-pr-workflow` and `implementation-workflow` — every skill that resolves a
-  base or a remote — and by `slice-completion.md`, through which `shipping-workflow`
-  reaches it.
+  no base at all. Read wherever a base or a remote is resolved.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name takes (`<type>/<name>`), how a feature branch and its slices are
   named (`--` suffix, never nested with `/` — refs are paths and the nested form
   collides), what counts as auto-generated, the three points at which the name is
   applied (creation → normalization → the driver's last resort, each idempotent),
   and the cases where a rename is off the table (an open change request, another
-  session's worktree, a shared branch). Read by `implementation-workflow` (naming
-  at creation), `shipping-workflow` (step 0, mode-blind normalization),
-  `github-pr-workflow` (its Step 1) and `slice-completion.md` (both backends —
-  a `--no-ff` merge writes the name into history permanently).
+  session's worktree, a shared branch). Read wherever a branch is named, renamed
+  or landed under its name.
 - [`references/slice-completion.md`](references/slice-completion.md) — how a slice
   *ends*: the completion contract (the signals a backend receives and returns),
   the two backends (`local` git-merge into the parent, and the forge-detected
   `request` change request), the default/protected-branch hard-gate, the merge
-  strategy and authorization, and the offer arbitration. Read by `shipping-workflow`
-  (its final step) and `implementation-workflow` (the whole-feature offer).
+  strategy and authorization, and the offer arbitration. Read by whatever finishes
+  a slice.
 - [`references/architecture-decisions.md`](references/architecture-decisions.md) —
   the decision protocol: ask about architecture / act on mechanics, always show a
   recommendation (never a bare question), and flag a project rule that fights good
-  architecture as possible drift. Read by `implementation-workflow` at its gate,
-  and by the stop-and-ask points in `shipping-workflow` and `github-pr-workflow`.
+  architecture as possible drift. Read at every planning gate and every
+  stop-and-ask.
 - [`references/claude-worktrees.md`](references/claude-worktrees.md) — Claude Code's
   own worktrees and sessions: which of them the host removes by itself and which it
   leaves behind, and how to tell whether a worktree still has a live session in it.
   It describes the host rather than this plugin, so it changes on the host's
-  schedule and is kept in one place for that reason. Read by `git-cleanup` (a
-  worktree the host made stays the host's — uncollected is not the same as free —
-  so the sweep reports those and deletes branches) and by `branch-naming.md` (a
-  host-session branch is not renamed early). Answers *whose is this right now* —
-  never what another session is doing.
+  schedule and is kept in one place for that reason. Read wherever a worktree's
+  occupancy decides what may be touched. Answers *whose is this right now* — never
+  what another session is doing.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
-  findings rated by importance, an explicit "none"). Read by
-  `implementation-workflow` at Phase 3 — the one place a report of this shape is
-  produced. It covers a whole run, a different altitude from `github-pr-workflow`'s
-  Step 7 report on a single merged change request, and the two do not replace each
-  other. `shipping-workflow` produces neither; it reaches this file through
-  `slice-completion.md`, which shapes what each backend returns to fit it.
+  findings rated by importance, an explicit "none"). Read where a whole run is
+  reported. That is a different altitude from a driver's report on one merged
+  change request, and the two do not replace each other.
 
 ## Forge neutrality
 
@@ -179,8 +168,10 @@ fallback.
 
 ## Requirements
 
-**`git` and `jq` are assumed everywhere** — every skill shells out to `git`, and
-most parse JSON through `jq`: a forge CLI's output, a tool's catalog.
+**`git` and `jq` are the shared tools** — `git` in every skill but
+`dependency-versions`, which touches the package manager and never the repository;
+`jq` wherever a tool's JSON is parsed by hand, which the shared references do on
+their `glab` paths.
 
 **An authenticated forge CLI is assumed wherever the work touches a forge**, which
 is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without the
@@ -194,9 +185,9 @@ Per skill, on top of those:
   drives per slice need — `multi-review` / `codex`, and in request mode
   `github-pr-workflow`. Runs in the main conversation.
 - **`dependency-versions`**: the relevant package manager on `PATH`.
-- **`codex-review`** / **`multi-review`**: the `codex` CLI installed and
-  `codex login` live; `multi-review` also picks up the built-in code-review and
-  security-review tooling when present.
+- **`codex-review`**: the `codex` CLI installed and `codex login` live.
+- **`multi-review`**: nothing of its own — it picks up whichever reviewers are
+  present and records a missing one as a row in the report rather than stopping.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
   skill when one is installed (`github-pr-workflow` here), otherwise the forge CLI
   directly. Nothing in it is GitHub-only.
@@ -205,5 +196,6 @@ Per skill, on top of those:
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
   are occupied it also reads Claude Code's live-session registry under
-  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, so when it is
-  absent the skill says so and stops deleting worktrees on its own.
+  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, and the probe
+  proves presence only — a worktree the host created for another session is
+  reported either way.

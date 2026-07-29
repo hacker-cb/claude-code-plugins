@@ -118,9 +118,9 @@ over a name that is already fine.
 
 | Point | Who | What |
 |---|---|---|
-| **Creation** | `implementation-workflow` (Phase 1 layout, Phase 2 cut) | name it correctly up front — nothing to rename later |
-| **Normalization** | `shipping-workflow`, before the work lands | rename a name that came from outside (a host worktree session, a hand-cut branch) |
-| **Last resort** | `github-pr-workflow` Step 1 | catch anything that reached the driver directly |
+| **Creation** | whatever cuts the branch | name it correctly up front — nothing to rename later |
+| **Normalization** | whatever completes the work, before it lands | rename a name that came from outside (a host worktree session, a hand-cut branch) |
+| **Last resort** | the change-request driver | catch anything that reached the driver directly |
 
 **Normalization is mode-blind.** A local completion needs it as much as a change
 request does — arguably more: `git merge --no-ff` writes the branch name into the
