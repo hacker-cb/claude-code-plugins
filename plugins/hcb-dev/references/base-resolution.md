@@ -38,15 +38,18 @@ REMOTE="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "
 `grep -qx` and `grep -vxE` match whole lines, so a remote named `origin2` or
 `my-upstream` is neither mistaken for the real thing nor dropped from the tail.
 
-**Pushing is a different question.** The remote you *read* a base from is not the
-one you *write* a branch to: in a fork the base is in `upstream`, which you
-cannot push to. For a push, use git's own routing — `branch.<name>.pushRemote`,
-then `remote.pushDefault`, then `origin`, then a lone remote whatever its name —
-and never `@{upstream}`, which in a fork points at the canonical repo.
-
 Where several remotes exist and none is preferred, **stop and ask** rather than
 taking the first alphabetically. For a read that costs a wrong review; for a push
 it can publish a branch in someone else's repository.
+
+## Pushing is a different question
+
+The remote you *read* a base from is not the one you *write* a branch to: in a
+fork the base is in `upstream`, which you cannot push to. For a push, use git's
+own routing — `branch.<name>.pushRemote`, then `remote.pushDefault`, then
+`origin`, then a lone remote whatever its name — and never `@{upstream}`, which in
+a fork points at the canonical repo. Ambiguity stops here too, and for the higher
+stake of the two.
 
 ## The ladder — first hit wins
 

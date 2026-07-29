@@ -103,7 +103,8 @@ assumptions about it: **read the configuration of the repo you're working in**,
 every time, and never carry over what some *other* repo happened to require or
 what a check was called there. Your job is to **satisfy** whatever gates this repo
 has — and then clear your own bar on top of them, because GitHub's mergeability is
-necessary but never sufficient (see *When there are no gates* below).
+necessary but never sufficient (see *When there are no gates, or they can't be
+trusted* below).
 
 Read the live gates before and during the loop:
 
@@ -453,6 +454,9 @@ Keep it scannable: short grouped bullets, not an essay.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
   auto-generated, and when a rename is off the table. Read it before Step 1; the
   push mechanics stay in that step.
+- [`../../references/base-resolution.md`](../../references/base-resolution.md) — which remote to push to, which one carries
+  the base, and the ref-versus-name split. Steps 1 and 2 both resolve through it
+  and fill the result in; read it before either.
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — where autonomy ends and
   asking begins, and why every stop carries a recommendation rather than a bare
   question. It governs the stop-and-ask list near the top and Step 5's merge
