@@ -1,16 +1,15 @@
 ---
 name: multi-review
 description: >-
-  Review one change with every available reviewer at once — the Codex CLI, the
-  built-in code-review workflow, the built-in security review — then consolidate
-  their findings and report what each one actually covered. Use when the user
-  asks for a review of the current change ("прогони ревью", "review this",
-  "second opinion on this diff"), and before finished work is completed — merged
-  locally or handed to a change request — when no shipping flow is already driving
-  that handoff — a ship in progress owns the order of steps and calls this itself.
-  Report-only:
-  it never applies fixes; the caller decides what to do with them. Not an
-  auto-trigger on every edit.
+  Review one change with several independent reviewers at once — the Codex CLI,
+  the built-in code-review workflow, the built-in security review — then
+  consolidate their findings and report what each one actually covered. Use when
+  the user asks for a review of the current change ("прогони ревью", "review
+  this", "second opinion on this diff"), and before finished work is completed —
+  merged locally or handed to a change request — unless
+  `hcb-dev:shipping-workflow` is already driving that handoff and calls this
+  itself. Report-only: it never applies fixes; the caller decides what to do with
+  them. Not an auto-trigger on every edit.
 ---
 
 # Multi-review
@@ -41,9 +40,7 @@ Two things this skill must not let the reference's authority hide:
 
 - **Whatever resolves is handed to the reviewers explicitly**, and an explicit
   base wins over any resolution they would do themselves — so a lossy answer here
-  is the last word, with nothing downstream to catch it. Every reviewer reads the
-  same reference, so the only way the two drift apart is by hand-copying a rung
-  instead of reading it.
+  is the last word, with nothing downstream to catch it.
 - **Confirm the base shares history with `HEAD` before passing it on** —
   `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
   base is worse than none). Empty → don't pass it, and **don't quietly fall to
@@ -59,10 +56,9 @@ with the uncommitted edits sitting on top of them.
 **Risk** decides effort in the next step. Always name the level — never "the
 middle", which lands on a different rung per reviewer.
 
-`codex-review` starts at **`xhigh`** — one pass by one reviewer, a minute or two on
-a slice, and it runs in the background beside a fan-out workflow that takes longer
-anyway. It resolves its own model and ladder, so pass a level and let it place
-that level; risk mostly moves it *down*. Everything else starts at `high`.
+`codex-review` starts at **`xhigh`** — it resolves its own model and ladder, so
+pass a level and let it place that level; risk mostly moves it *down*. Everything
+else starts at `high`.
 
 Raise it when the change reaches past itself (public interface, shared helper,
 config, schema, wire format), cannot be walked back (it writes, migrates,
@@ -101,12 +97,10 @@ Four questions per reviewer, in order:
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 What that decides in practice: the security review goes `n/a` on a narrowed or
-working-tree-only scope, is mis-scoped whenever the PR targets anything but the
-default branch — report that, do not hide it — and is `n/a` again where the change
-alters nothing that anything executes. The code-review workflow is the
-only reviewer checking `CLAUDE.md` compliance, and its cheap levels are out of
-reach: `low` and `medium` belong to the `/code-review` slash command, which only
-the user can invoke, and an unknown level is not rejected — it silently becomes
+working-tree-only scope, and `n/a` again where the change alters nothing that
+anything executes. The code-review workflow's cheap levels are out of reach:
+`low` and `medium` belong to the `/code-review` slash command, which only the
+user can invoke, and an unknown level is not rejected — it silently becomes
 `high`, with the word forwarded as the review target.
 
 **That last one is your judgement about behaviour, never a list of extensions.**
@@ -192,8 +186,6 @@ verdict:
 Keep the cells short. "Covered" is always `<base>, N files`, effort gets its own
 column so a level is never left implied, and "Result" is a verdict — never the
 description of a finding, which belongs below the table where it can wrap freely.
-A fixed-width block pretending to be a table wraps badly in a narrow window and
-the columns drift apart.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not
 run; `n/a` — it was deliberately not run, and why; `nothing to review` — it ran
