@@ -15,13 +15,9 @@ description: >-
 
 # Dependency versions: resolve, never recall
 
-Version numbers recalled from memory are routinely wrong or stale — the registry
-is the source of truth. Whenever you add or change a dependency, let the package
-manager resolve the version for you instead of typing a literal into a manifest.
-
-## Rule
-
-Never type a version string from memory. Always resolve it from the registry.
+Never type a version string from memory. Whenever you add or change a dependency,
+let the package manager resolve it from the registry instead of typing a literal
+into a manifest.
 
 ## How
 
@@ -42,22 +38,18 @@ manifest by hand, look the current version up from the registry first.
 - **Node.js runtime**: pin to the active LTS major, not `latest`. Check with
   `nvm ls-remote --lts`.
 - **GitHub Actions**: pin to a version tag — the floating latest major, e.g.
-  `@vN` — **not** a commit SHA. Release tags are usually full semver (e.g.
-  `v7.0.0`), so take the major:
+  `@vN` — **not** a commit SHA. Release tags are usually full semver, so take the
+  major:
   `gh release view -R <owner>/<repo> --json tagName --jq '.tagName | split(".")[0]'`
   — a tag that's already `vN` passes through unchanged; sanity-check any
-  non-semver tag by hand. A floating major tag keeps workflows readable and lets within-major fixes
-  flow in automatically, while Dependabot (below) raises the major when one
-  ships. SHA pins (`actions/checkout@<sha> # v6.0.2`) are the stricter
-  supply-chain posture but noisy and unreadable — for trusted first-party
-  `actions/*` this project takes legible, Dependabot-tracked tags instead.
+  non-semver tag by hand. Dependabot (below) raises the major when one ships.
 
 ## GitHub repos: keep Dependabot in sync
 
 Resolving from the registry fixes a version *today*; Dependabot keeps it
-current *afterwards* with automated update PRs. On a GitHub-hosted repo
-(remote on `github.com` or a GitHub Enterprise host), whenever you add or
-update dependencies, check `.github/dependabot.yml`. Entries are scoped by
+current *afterwards* with automated update PRs. On a GitHub-hosted repo,
+whenever you add or update dependencies, check `.github/dependabot.yml`.
+Entries are scoped by
 `package-ecosystem` **and** `directory` — a manifest is covered only when
 both match:
 
@@ -106,10 +98,3 @@ repo has workflows — it keeps the pinned Action majors (see above) current.
 With floating-major pins, Actions yield only major-bump PRs, so the
 minor/patch grouping above doesn't apply to that entry — give it just a
 schedule and cooldown.
-
-## Why this matters
-
-A version typed from memory may not exist, may have been yanked, or may be months
-behind — and you usually won't find out until install or CI fails. Letting the
-tool resolve it keeps the manifest and lockfile consistent and current with a
-single command, with no guesswork.
