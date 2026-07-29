@@ -2,6 +2,34 @@
 
 How to find, classify, fix, and respond to GitHub Copilot's PR review findings.
 
+## Identifying Copilot — never match one literal
+
+One actor, a different login on **every** surface. Measured, not recalled:
+
+| Surface | `login` | the type field |
+|---|---|---|
+| REST `…/pulls/<pr>/reviews` | `copilot-pull-request-reviewer[bot]` | `.user.type` |
+| REST `…/pulls/<pr>/comments` | `Copilot` | `.user.type` |
+| REST `…/pulls/<pr>` → `requested_reviewers` | `Copilot` | `.type` |
+| GraphQL — `author`, `reviewRequests` | `copilot-pull-request-reviewer` | `__typename` |
+
+So a filter pinned to any one spelling matches nothing on the other three, and the
+failure is **silent**: the inline comments are exactly what a `/comments` filter
+returns, and an empty result reads as "Copilot had no findings" rather than as a
+filter that missed. Match the pair instead — `Bot` **and** a case-insensitive
+`^copilot` prefix, which also survives GitHub renaming the bot again:
+
+```bash
+select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
+```
+
+In GraphQL the same test reads `.author.__typename` and `.author.login`.
+
+**Reach every field through `?` and `// ""`.** `test/1` raises on anything that is
+not a string, and a deleted account leaves `"user": null` behind — one such row
+aborts the whole `--jq` program, turning a PR full of findings into a PR with
+none. That is the same silent-empty failure by another route.
+
 ## Is Copilot even in the loop?
 
 Copilot reviews a PR when a `copilot_code_review` rule is in force **for that PR's
@@ -57,7 +85,7 @@ would go unread. Check for an existing review before skipping:
 # --paginate applies --jq per page, so a bare `length` prints one number *per
 # page* — sum them, or a PR with >100 reviews answers with several numbers.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
-  --jq '[ .[] | select(.user.login == "copilot-pull-request-reviewer[bot]") ] | length' \
+  --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length' \
   | awk '{ n += $1 } END { print n + 0 }'
 ```
 
@@ -81,7 +109,7 @@ head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
 # `| @json` pins each review to exactly one line, so `tail -1` is the last review
 # and not whatever gh's output formatting happened to put on the last line.
 gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
-  --jq '.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")
+  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         | {commit_id, submitted_at} | @json' | tail -1
 # fresh iff commit_id == $head
 ```
@@ -100,10 +128,9 @@ would hang forever. Run this protocol after each push:
    Don't hand-roll that as a REST `requested_reviewers` POST: Copilot is not an
    ordinary reviewer login, and `@copilot` is the special value `gh` case-handles
    for it. Two limits worth knowing before you rely on it: it needs **gh 2.88.0 or
-   newer**, and it is **not supported on GitHub Enterprise Server**. Mind the
-   naming, too — it is requested as `Copilot` but *authors* its review as
-   `copilot-pull-request-reviewer[bot]`, and the author login is the one to filter
-   reviews and comments on.
+   newer**, and it is **not supported on GitHub Enterprise Server**. Whatever it is
+   *requested* as, do not carry that spelling over to the surface you then read —
+   every one of them names it differently (*Identifying Copilot*).
 2. **Poll — and read the requested-reviewer state, not a clock, as the signal.**
    Copilot's presence in `gh pr view <pr> --json reviewRequests` is what tells you
    a re-review is still coming: a push (re-)requests it, and the forge drops the
@@ -156,7 +183,7 @@ Use whichever source is available (in priority order):
        repository(owner:$owner,name:$repo){
          pullRequest(number:$pr){
            reviewThreads(first:100){
-             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login} body path line } } }
+             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login __typename} body path line } } }
            }
          }
        }
@@ -165,8 +192,11 @@ Use whichever source is available (in priority order):
 3. **REST API** via `gh api repos/<owner>/<repo>/pulls/<pr>/comments` as a
    fallback.
 
-Copilot's comments come from the bot author `copilot-pull-request-reviewer[bot]`;
-include any review summary it posts alongside the inline comments.
+Filter all three by the pair from *Identifying Copilot*, never by a login you saw
+on another surface: on `/comments` the login is a bare `Copilot`, and in GraphQL it
+carries no `[bot]` suffix. Include any review summary it posts alongside the inline
+comments — that one is a *review* body, so it comes from `/reviews`, not from
+either comment source.
 
 ## Classifying severity
 
