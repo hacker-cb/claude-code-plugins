@@ -19,6 +19,8 @@ Official docs:
 ## Add a skill to an existing plugin
 
 > Author skills with the **skill-creator** methodology: draft per its Skill Writing Guide and tune the `description` for reliable triggering with its `run_loop.py`. On Claude Code web it's mounted at `/mnt/skills/examples/skill-creator`; otherwise pull it from Anthropic's public skills repo.
+>
+> What belongs in the body, and what stays out of it, is [`.claude/rules/skill-authoring.md`](.claude/rules/skill-authoring.md) — Claude loads it automatically when editing under `plugins/`.
 
 1. Create `plugins/hcb-<domain>/skills/<skill-name>/SKILL.md`:
 
