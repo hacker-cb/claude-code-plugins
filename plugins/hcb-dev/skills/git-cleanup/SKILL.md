@@ -37,76 +37,28 @@ git worktree list --porcelain | head -1        # 'worktree <path>' — the PRIMA
 `PROJECT` is that primary worktree path, **not** cwd: running from inside a
 worktree still means cleaning the repository as a whole.
 
+**The default branch and its remote come from
+[`../../references/base-resolution.md`](../../references/base-resolution.md)** —
+its rung 4 answers this, and it owns every trap on the way: why a read symref goes
+on naming a branch the forge renamed away, why the answer travels as the
+remote-tracking ref and never as a bare name, and why that ref must be materialised
+and re-verified before anything consumes it. Resolve it there, then carry two
+values into the rest of the sweep:
+
 ```bash
-git -C "$PROJECT" symbolic-ref --short refs/remotes/<remote>/HEAD   # -> <remote>/<default>
+D="<the remote-tracking ref, per base-resolution.md — EMPTY if it did not resolve>"
+DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
+[ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
 ```
 
-Never assume `main`/`master`/`dev`, and never assume the remote is `origin`.
-Both names — and the traps in that one `symbolic-ref` line — belong to the shared
-ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md) —
-how to rank the remotes
-that exist, why a read symref can be stale, why the remote-tracking form is the
-only safe one to carry forward. Read it; the two blocks below are that reference
-applied to this sweep.
-
-- `symbolic-ref` **reads** the pointer without dereferencing it, so after a
-  forge-side default-branch rename it keeps printing the old name with status 0.
-  Verify the ref it names still exists; if not, ask the remote afresh, through the
-  non-interactive guard — this sweep runs unattended and an auth-walled remote
-  would otherwise hang it:
-
-- carry the default forward **as the remote-tracking ref** `<remote>/<default>`,
-  never the bare name — the reference explains why (`branch --merged`/`rev-list`
-  below go fatal on a bare name in a clone with no local default branch), and why
-  that ref must be *materialised and re-verified* before any consumer runs.
-
-  ```bash
-  # Every network call: no prompts, bounded stalls, and the user's own ssh setup
-  # left intact — a multi-account `core.sshCommand`/`GIT_SSH_COMMAND` must survive,
-  # or a repo that pushes fine by hand starts failing "Permission denied".
-  gitq() {
-    GIT_TERMINAL_PROMPT=0 \
-    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -oBatchMode=yes -oConnectTimeout=5" \
-      git -C "$PROJECT" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=10 "$@"
-  }
-
-  D="<remote>/<default>"
-  git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1 || {
-    # The parser and why it is `sed` live in the shared reference linked above.
-    h="$(gitq ls-remote --symref <remote> HEAD 2>/dev/null \
-         | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p' | head -1)"
-    # An unreachable or auth-walled remote returns nothing. Never build `<remote>/`
-    # from an empty name — a bogus ref makes every consumer below fatal.
-    [ -n "$h" ] && D="<remote>/$h" || D=""
-  }
-
-  # Materialise it: a clone that only fetched feature branches has no such ref yet.
-  # EXPLICIT refspec: a plain `fetch <remote> <branch>` obeys the remote's own
-  # configured refspec, which in a --single-branch clone matches only that branch —
-  # the fetch then writes FETCH_HEAD and no remote-tracking ref at all. Naming the
-  # destination is what actually materialises `<remote>/<default>`.
-  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
-    gitq fetch --quiet <remote> "+refs/heads/${D#*/}:refs/remotes/${D}"
-  fi
-
-  # RE-VERIFY. The fetch can fail unnoticed (remote gone since ls-remote, auth
-  # wall, network) or write only FETCH_HEAD under a narrowed refspec, as a
-  # --single-branch clone has. An unchecked D is then a dangling ref: consumers
-  # die with "not a valid object name", or — far worse — the empty output of a
-  # failed `branch --merged` reads as "nothing is merged" and a `rev-list` count
-  # of 0 routes a branch to delete. Fall into the unresolved path instead.
-  if [ -n "$D" ] && ! git -C "$PROJECT" rev-parse --verify -q "$D^{commit}" >/dev/null 2>&1; then
-    D=""
-  fi
-  [ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
-  DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
-  ```
-
-  A `DEFAULT-UNRESOLVED` result is not "nothing is merged" — it is "the merge
-  question cannot be answered". Every branch's status becomes **unknown**: surface
-  them all, delete none, and say the remote was unreachable. Never read a failed
-  command's empty output as an answer.
+**`DEFAULT-UNRESOLVED` is not "nothing is merged"** — it is "the merge question
+cannot be answered", and holding those two apart is this skill's whole safety
+margin. Every branch's status becomes **unknown**: surface them all, delete none,
+and say the remote was unreachable. The reason it matters here more than anywhere
+else is that both failing commands answer in the vocabulary of success — a
+`branch --merged` that died prints nothing, which reads as "no branches are
+merged", and a `rev-list --count` that died prints 0, which routes a branch
+straight to deletion.
 
 If there is no remote at all, ask the user — nothing local names the default.
 
@@ -335,8 +287,7 @@ without asking.
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
 | hardcode `~/.claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` |
-| assume `main`/`master`/`dev`, or that the remote is `origin` | read `<remote>/HEAD`, verify it resolves, else `ls-remote` |
-| compare against a bare `<default>` | use the remote-tracking ref `<remote>/<default>` — a bare name is fatal with no local default branch |
+| name a default branch or a remote yourself, or feed a bare name where a ref belongs | resolve both per [`../../references/base-resolution.md`](../../references/base-resolution.md) — step 1 carries out `$D` and `$DEF` for exactly that split |
 
 ## Edge cases
 
