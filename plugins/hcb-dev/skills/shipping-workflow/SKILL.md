@@ -32,38 +32,26 @@ both **completion modes** — `local` (merge into the parent, no forge) and
 driven by the orchestrator, the caller threads the completion signals as
 invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`
 (the coverage *policy* is not one of them — an actionable gap always stops, a
-fixed invariant, not a threaded value). Standalone, they default — mode by the
-ladder in
-[`../../references/slice-completion.md`](../../references/slice-completion.md)
-(ending at `request`), and `parent` = the base **reduced to its bare name** — the
-ladder answers with a `<remote>/<name>` ref, and step 5 checks that value out and
-merges into it, which a ref does not survive. That reference owns the mechanics of completion; steps
+fixed invariant, not a threaded value). Standalone, they default — mode and
+`parent` by the ladders in
+[`../../references/slice-completion.md`](../../references/slice-completion.md),
+mode ending at `request`. That reference owns the mechanics of completion; steps
 0–4 below are the mode-blind front half.
 
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
    (a host session's `claude/…`, a `wip`) to the shape in
-   [`../../references/branch-naming.md`](../../references/branch-naming.md) —
-   which also defines what counts as auto-generated and leaves a name that
-   already describes the change alone. It comes **first and in both modes** because this is the cheapest the
-   rename ever gets — the branch is typically still unpushed, so it is a bare
-   `git branch -m` touching no network — and because both doors it beats shut
-   later: a name under an open change request cannot be fixed at all, and a
-   `local` completion's `--no-ff` merge writes the branch name into the parent's
-   history permanently. Do not rename a branch someone else has pulled, or one
-   whose change request is already open; the reference lists those cases.
+   [`../../references/branch-naming.md`](../../references/branch-naming.md),
+   **first and in both modes**. That reference defines what counts as
+   auto-generated, leaves a name that already describes the change alone, and
+   lists the cases where the rename is off the table.
 1. **Commit the change first**, new files included — one reviewer reads only
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect that reviewer to come back short.
 2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
-   base so the review covers *this* slice's range, not the cumulative feature diff.
-   The cumulative diff is a *superset* — it covers this slice **and** the
-   already-merged slices below it — so it slips past the coverage gate (the gate
-   catches a review that covered *less* than the change or the wrong range, not one
-   that covered *more*) while wasting review on landed work and muddying which
-   findings belong to this slice. The `diff-base` is what keeps coverage aligned to
-   the slice. Standalone, `multi-review` resolves its own base.
+   base so the review covers *this* slice's range, not the cumulative feature
+   diff. Standalone, `multi-review` resolves its own base.
 3. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    Skip a finding only if the fix would change intended behavior, reach well
    outside the diff, or the finding is plainly wrong, and note the skip in one
@@ -73,70 +61,37 @@ merges into it, which a ref does not survive. That reference owns the mechanics 
    uncommitted fix straight past the change request it was meant to be in).
 4. **Check the coverage** — the gate below.
 5. **Complete the slice by mode** — hand off to the completion contract in
-   `slice-completion.md` — the mode picks the backend; nothing in steps 0–4
-   changes:
-   - **`local`** — merge the slice into its `parent` with `git`, no forge and no
-     network, `--no-ff` by default so the slice stays a revertible boundary.
-     Merging into a feature branch is autonomous; merging into the **default
-     branch** — or one it cannot resolve as non-default — stops and asks first.
-     Then offer — never force — a change request on the landed work; on an
-     orchestrated set that offer is made once, at the end, on the whole feature.
-   - **`request`** — detect the forge (by the remote and what answers there, never
-     the hostname) and hand to its change-request driver — `hcb-dev:github-pr-workflow`
-     on GitHub, the mirrored `glab` path on GitLab until `gitlab-mr-workflow`
-     exists — passing `parent` as the base plus `merge-strategy` and `merge-auth`.
-     A gate-captured `merge-auth` is the driver's explicit authorization; absent
-     it, the driver falls back to its **own** authorization rule — which treats the
-     user's own "ship it" / "get this merged" as authorization and stops to ask
-     only when neither is present. If no driver is installed, push
-     the branch and open the change request inline (mirrored `gh` / `glab`). **With
-     several remotes and none preferred, stop and ask** rather than publishing in
-     someone else's repository.
-
-   The reference owns every mechanic — parent resolution, the default-branch gate,
-   forge detection, the guarded push and inline fallback, the offer arbitration —
-   read it rather than re-deriving them here.
+   `slice-completion.md`, which owns every mechanic of both backends. `local`
+   merges the slice into its `parent` with git alone, no forge and no network;
+   `request` hands to the forge's change-request driver
+   (`hcb-dev:github-pr-workflow` on GitHub), passing `parent` as the base plus
+   `merge-strategy` and `merge-auth`. Nothing in steps 0–4 changes with the mode.
 
 ## The coverage gate
 
-The review reports what each reviewer actually covered. A gap is a reviewer that
-could not run, one that ran and covered nothing, and one that covered less than
-the change or the wrong range — a nonzero file count is not proof it read *this*
-change.
-
-Two things get reported but do **not** count as gaps: a deliberate skip with a
-stated reason, and a **structural** limit of the reviewer itself — one no answer
-from the user could close, such as a reviewer whose base is pinned to the default
-branch running in a repo whose changes target `dev` or `release/*`. Say it out
-loud every time; just don't stop for it. Otherwise the gate fires on every single
-ship in such a repo, demanding a confirmation that clears nothing.
+The review reports what each reviewer actually covered, with the coverage status
+already classified. Two of those statuses reach you closed: `n/a`, a deliberate
+skip with a stated reason, and `partial (structural)`, a limit of the reviewer
+itself that no answer from the user could lift. Say both out loud every time;
+neither stops the ship. Everything else is an **actionable** gap.
 
 With no gaps, go straight to completion; no confirmation needed. **With an
 actionable gap, stop before completing.** Report it, pass on whatever the review
 says would close it, and complete only once the user says to. This holds in
 **both modes**: a *local* merge with a reviewer silently missing is just as
 unreviewed as a change request would be — the gate is mode-blind because the
-danger is. This is the review-coverage confirmation gate, the one the front half
-(steps 0–4) turns on; local completion can add its own later (a default-branch
-merge, the post-merge offer). When `implementation-workflow` drives the run
-autonomously, this stop is one of its legitimate interrupts, not something the
-autonomy waives.
+danger is. When `implementation-workflow` drives the run autonomously, this stop
+is one of its legitimate interrupts, not something the autonomy waives.
 
 Every stop this skill takes — this gate, step 5's default-branch merge, several
 remotes with none preferred — carries your recommended option **first**, per
 [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md),
 which also draws the line the autonomy above follows: act on what is mechanical
-and reversible, stop on what cannot be walked back. A stop that hands back a bare
-question pushes onto the user the analysis this skill just did. Read it here
-rather than assuming it arrived: an orchestrated slice inherits the protocol from
-`hcb-dev:implementation-workflow`'s planning gate, a standalone "ship this" never
-passes through one.
+and reversible, stop on what cannot be walked back.
 
 A project's own rules outrank this one: where the repository says to commit
 straight to a branch, or not to commit until asked, or not to open change requests
-at all, follow that and say which step you are skipping and why. Following a rule
-is not endorsing it — where one fights what the work actually needs, name it in a
-line and go on following it (`architecture-decisions.md` §3). That flag is
-non-blocking, with one exception the reference keeps: it stops the run where the
-conflict actually blocks correct work — a rule forbidding the commit a required
-fix needs leaves nothing to complete.
+at all, follow that and say which step you are skipping and why. Where such a rule
+fights what the work actually needs, flag it and go on following it
+(`architecture-decisions.md` §3) — except where it blocks correct work outright:
+a rule forbidding the commit a required fix needs leaves nothing to complete.
