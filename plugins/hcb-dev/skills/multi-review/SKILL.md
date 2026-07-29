@@ -42,10 +42,10 @@ non-interactive guard, the stale-pointer trap. Read it; don't re-derive them her
 Two things this skill must not let the reference's authority hide:
 
 - **Whatever resolves is handed to the reviewers explicitly**, and an explicit
-  base wins over *their own* resolution — so a lossy answer here silently
-  overrides `hcb-dev:codex-review`'s more careful ladder rather than deferring to
-  it. That is exactly why the reference is shared: keep the two in step by reading
-  from it, not by hand-copying a rung.
+  base wins over any resolution they would do themselves — so a lossy answer here
+  is the last word, with nothing downstream to catch it. Every reviewer reads the
+  same reference, so the only way the two drift apart is by hand-copying a rung
+  instead of reading it.
 - **Confirm the base shares history with `HEAD` before passing it on** —
   `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
   base is worse than none). Empty → don't pass it, and **don't quietly fall to
