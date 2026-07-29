@@ -19,7 +19,7 @@ returns, and an empty result reads as "Copilot had no findings" rather than as a
 filter that missed. Match the pair instead — `Bot` **and** a case-insensitive
 `^copilot` prefix, which also survives GitHub renaming the bot again:
 
-```bash
+```jq
 select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
 ```
 

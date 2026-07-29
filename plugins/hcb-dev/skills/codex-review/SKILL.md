@@ -138,7 +138,7 @@ of what this run actually looked at. Return the report itself **verbatim** — n
 paraphrase, no summary, no commentary around it. Its shape is a one-paragraph
 verdict followed by findings:
 
-```
+```text
 - [P1] Short title — /abs/path/file.js:12-14
   Why it breaks, in concrete terms.
 ```

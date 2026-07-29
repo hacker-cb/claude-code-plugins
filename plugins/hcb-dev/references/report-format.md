@@ -41,7 +41,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 ## Template
 
-```
+```markdown
 ## Run report
 
 | Slice | What | Completion | State |
