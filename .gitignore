@@ -31,6 +31,8 @@ CLAUDE.local.md
 # Local agent-tooling state
 .superpowers/
 .agentsroom/
+.playwright-mcp/
+.playwright-cli/
 
 # Git worktrees
 .worktrees/
