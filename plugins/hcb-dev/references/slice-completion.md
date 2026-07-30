@@ -161,6 +161,8 @@ and only by consent.
   # GitLab
   glab mr create --target-branch <parent> --source-branch <branch> --fill
   ```
+  Any flag beyond these comes from [`forge-docs.md`](forge-docs.md) — the
+  installed CLI's `--help` first, since it is the one that describes this build.
   Opening it is **all** the inline path does — say so. No review-and-merge loop is
   being driven (no CI/automated-review fix loop, no merge), so nobody who asked to
   "ship it" assumes the change is on its way to merge while it actually sits open.

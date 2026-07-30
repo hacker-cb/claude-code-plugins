@@ -392,6 +392,10 @@ Keep it scannable: short grouped bullets, not an essay.
 
 - [`references/copilot.md`](references/copilot.md) — How to find, classify (Critical/Important vs skip),
   fix, and reply to Copilot review findings. Read it before Step 4.
+- [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
+  flag, an endpoint or a ruleset field gets resolved: the installed CLI's
+  `--help` for what this build accepts, the docs sites for what a field means.
+  Read it before writing an invocation this skill does not already spell out.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
   auto-generated, and when a rename is off the table. Read it before Step 1; the
   push mechanics stay in that step.

@@ -377,19 +377,46 @@ while IFS= read -r md; do
 
   # 4. A docs URL fetched by Claude should return raw markdown; one a person
   #    clicks should return the rendered page. Which applies is decided by the
-  #    file it is written in, not by the link. Sentence punctuation is not part
-  #    of a URL — without trimming it, `…/hooks.md.` reads as missing the suffix
-  #    it already carries.
+  #    file it is written in, not by the link. The markdown form is per-site —
+  #    a `.md` suffix on Claude Code's docs and GitHub's, `<path>/index.md` on
+  #    GitLab's, whose bare `<path>.md` is refused outright.
+  #
+  #    Only a site that serves the form for EVERY page can have it demanded,
+  #    and GitHub is not one: a page outside its page list has no markdown
+  #    twin, so a demand there would leave a correct link with no spelling that
+  #    passes, and this gate is offline and cannot tell the two apart. So a
+  #    Claude-read GitHub link is left alone — `lychee` is what proves it
+  #    resolves. The reverse direction still holds everywhere, the human branch
+  #    included: a suffix in a file people click is wrong on all three sites.
+  #
+  #    Two trims before any of that, and their order is the whole trick. A bare
+  #    autolink lends the URL its closing bracket (`<…/hooks.md>` matches
+  #    through the `>`, since the opening one sits outside the match), and a
+  #    sentence can add punctuation after it — `<…/hooks.md>.` carries both.
+  #    Punctuation goes first: the other order strands the `>` mid-token, where
+  #    the extension guard below reads `hooks.md>` as an artefact and skips the
+  #    URL silently. The bracket goes only where the match holds no `<`, so a
+  #    templated `<path>` keeps its own and leaves as the non-page it is.
   while IFS= read -r u; do
     [ -n "$u" ] || continue
     u=${u%%[.,;:)]}
-    case "$u" in *llms.txt) continue ;; esac
+    case "$u" in *'<'*) ;; *) u=${u%>} ;; esac
+    case "$u" in *'<'*) continue ;; esac
+    # A last segment carrying any extension other than the markdown one is an
+    # artefact, not a page, and no markdown twin exists for it. A rule rather
+    # than the list of extensions seen so far — `.png` and `.zip` are as much
+    # not-a-page as `.json` is.
+    case "${u##*/}" in *.md) ;; *.*) continue ;; esac
+    case "$u" in https://docs.github.com/api/*) continue ;; esac
+    case "$u" in https://docs.gitlab.com/*) want=/index.md ;; *) want=.md ;; esac
     if [ "$audience" = human ]; then
-      case "$u" in *.md) err "$md: '$u' — drop '.md', this file is read by people" ;; esac
+      case "$u" in *"$want") err "$md: '$u' — drop '$want', this file is read by people" ;; esac
     else
-      case "$u" in *.md) ;; *) err "$md: '$u' — add '.md', this file is fetched by Claude" ;; esac
+      case "$u" in https://docs.github.com/*) continue ;; esac
+      case "$u" in *"$want") ;; *) err "$md: '$u' — use the '$want' form, this file is fetched by Claude" ;; esac
     fi
-  done < <(printf '%s\n' "$body" | grep -o 'https://code\.claude\.com/docs/[A-Za-z0-9./-]*' 2>/dev/null)
+  done < <(printf '%s\n' "$body" \
+    | grep -oE 'https://(code\.claude\.com/docs|docs\.github\.com|docs\.gitlab\.com)/[A-Za-z0-9./@<>_-]*' 2>/dev/null)
 
   # 5. A bare backticked reference is the short form for something already
   #    linked in this file. With no link anywhere in it, the reader has no way
