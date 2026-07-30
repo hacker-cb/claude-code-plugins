@@ -66,18 +66,11 @@ Editing a section that already leans one way — Actions pinning, Dependabot,
 Copilot — means neutralising it or adding its mirror in the same change. Never
 deepen one forge alone.
 
-## Concept mirror
+## Verify against the docs
 
-Exact flags and endpoints get verified against the docs before they land in a
-skill — resolve, never recall, same as `dependency-versions` demands of
-versions.
-
-| concept | GitHub | GitLab |
-|---|---|---|
-| CLI (host override) | `gh` (`GH_HOST`) | `glab` (`GITLAB_HOST`) |
-| change request | pull request (PR) | merge request (MR) |
-| merge gates | rulesets + classic branch protection | protected branches + approval rules |
-| automated review | Copilot code review | GitLab Duo Code Review |
-| review conversations | review threads (resolve) | discussions (resolve) |
-| CI | Actions (`.github/workflows/`) | GitLab CI (`.gitlab-ci.yml`) |
-| dependency updates | Dependabot (`.github/dependabot.yml`) | Renovate (`renovate.json`) |
+Exact flags and endpoints get verified before they land in a skill — resolve,
+never recall, same as `dependency-versions` demands of versions. Where to resolve
+them, and what each forge calls the concept its counterpart names differently, is
+[`../../plugins/hcb-dev/references/forge-docs.md`](../../plugins/hcb-dev/references/forge-docs.md).
+It ships with the plugin rather than living here, so the skills reach it at run
+time too.

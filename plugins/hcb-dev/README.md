@@ -152,6 +152,12 @@ saying something else.
   findings rated by importance, an explicit "none"). Read where a whole run is
   reported. That is a different altitude from a driver's report on one merged
   change request, and the two do not replace each other.
+- [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
+  endpoint or a concept name gets resolved on either forge: the installed CLI's
+  `--help` for what exists in this build, the docs sites for what things mean and
+  for everything the porcelain never wrapped, plus the term-for-term mirror
+  between the two forges. Read before writing an invocation or naming a concept
+  in prose.
 
 ## Forge neutrality
 
