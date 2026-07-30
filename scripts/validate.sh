@@ -389,19 +389,19 @@ while IFS= read -r md; do
   #    resolves. The reverse direction still holds everywhere, the human branch
   #    included: a suffix in a file people click is wrong on all three sites.
   #
-  #    Two trims before any of that, and their order is the whole trick. `>`
-  #    goes only when the match carries no `<`: a bare autolink lends the URL
-  #    its closing bracket (`<…/hooks.md>` matches through the `>`, since the
-  #    opening one sits outside the match), while a templated `<path>` is a
-  #    page that does not exist and leaves entirely. Trim first and the
-  #    template loses its own bracket and is checked as if it named a page.
-  #    Sentence punctuation is not part of a URL either — without trimming it,
-  #    `…/hooks.md.` reads as missing the suffix it already carries.
+  #    Two trims before any of that, and their order is the whole trick. A bare
+  #    autolink lends the URL its closing bracket (`<…/hooks.md>` matches
+  #    through the `>`, since the opening one sits outside the match), and a
+  #    sentence can add punctuation after it — `<…/hooks.md>.` carries both.
+  #    Punctuation goes first: the other order strands the `>` mid-token, where
+  #    the extension guard below reads `hooks.md>` as an artefact and skips the
+  #    URL silently. The bracket goes only where the match holds no `<`, so a
+  #    templated `<path>` keeps its own and leaves as the non-page it is.
   while IFS= read -r u; do
     [ -n "$u" ] || continue
+    u=${u%%[.,;:)]}
     case "$u" in *'<'*) ;; *) u=${u%>} ;; esac
     case "$u" in *'<'*) continue ;; esac
-    u=${u%%[.,;:)]}
     # A last segment carrying any extension other than the markdown one is an
     # artefact, not a page, and no markdown twin exists for it. A rule rather
     # than the list of extensions seen so far — `.png` and `.zip` are as much
