@@ -377,19 +377,29 @@ while IFS= read -r md; do
 
   # 4. A docs URL fetched by Claude should return raw markdown; one a person
   #    clicks should return the rendered page. Which applies is decided by the
-  #    file it is written in, not by the link. Sentence punctuation is not part
-  #    of a URL — without trimming it, `…/hooks.md.` reads as missing the suffix
-  #    it already carries.
+  #    file it is written in, not by the link. Which *form* says it is per-site:
+  #    Claude Code's docs and GitHub's answer to a `.md` suffix, GitLab's only to
+  #    `<path>/index.md` — its bare `<path>.md` is refused outright, so a suffix
+  #    appended by rule fails there. Sentence punctuation is not part of a URL —
+  #    without trimming it, `…/hooks.md.` reads as missing the suffix it already
+  #    carries. Skipped: a templated `<path>` names no page, and neither does a
+  #    machine endpoint or a downloadable artefact — none has a markdown twin.
   while IFS= read -r u; do
     [ -n "$u" ] || continue
+    case "$u" in *'<'*) continue ;; esac
     u=${u%%[.,;:)]}
-    case "$u" in *llms.txt) continue ;; esac
+    case "$u" in
+      *.txt|*.json|*.yaml|*.yml) continue ;;
+      https://docs.github.com/api/*) continue ;;
+    esac
+    case "$u" in https://docs.gitlab.com/*) want=/index.md ;; *) want=.md ;; esac
     if [ "$audience" = human ]; then
-      case "$u" in *.md) err "$md: '$u' — drop '.md', this file is read by people" ;; esac
+      case "$u" in *.md) err "$md: '$u' — drop the markdown suffix, this file is read by people" ;; esac
     else
-      case "$u" in *.md) ;; *) err "$md: '$u' — add '.md', this file is fetched by Claude" ;; esac
+      case "$u" in *"$want") ;; *) err "$md: '$u' — use the '$want' form, this file is fetched by Claude" ;; esac
     fi
-  done < <(printf '%s\n' "$body" | grep -o 'https://code\.claude\.com/docs/[A-Za-z0-9./-]*' 2>/dev/null)
+  done < <(printf '%s\n' "$body" \
+    | grep -oE 'https://(code\.claude\.com/docs|docs\.github\.com|docs\.gitlab\.com)/[A-Za-z0-9./@<>_-]*' 2>/dev/null)
 
   # 5. A bare backticked reference is the short form for something already
   #    linked in this file. With no link anywhere in it, the reader has no way
