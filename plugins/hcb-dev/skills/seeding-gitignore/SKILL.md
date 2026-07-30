@@ -1,7 +1,7 @@
 ---
 name: seeding-gitignore
 description: >-
-  Use whenever a `.gitignore` at any depth is created or edited, when a repo is initialized (`git init`), and before every commit — check what is about to be staged and ignore local artifacts instead of committing them. Also use when the user asks to ignore `.DS_Store`, Claude Code local files, Superpowers artifacts, AgentsRoom (Agentsroom AI) project state, git worktrees, or any OS-level noise. Provides the canonical baseline every project of this user carries — OS noise, editor swap files, per-developer Claude Code files (`.claude/settings.local.json`, `CLAUDE.local.md`) while the rest of `.claude/` stays committed, local agent-tooling state (`.superpowers/`, `.agentsroom/`), and git worktree directories (`.worktrees/`, `.claude/worktrees/`). Apply unconditionally regardless of language or framework; language-specific patterns are chosen separately, from what the project actually uses.
+  Use whenever a `.gitignore` at any depth is created or edited, when a repo is initialized (`git init`), and before every commit — check what is about to be staged and ignore local artifacts instead of committing them. Also use when the user asks to ignore `.DS_Store`, Claude Code local files, Superpowers artifacts, AgentsRoom (Agentsroom AI) project state, Playwright or other browser/test-run output, git worktrees, or any OS-level noise. Provides the canonical baseline every project of this user carries — OS noise, editor swap files, per-developer Claude Code files (`.claude/settings.local.json`, `CLAUDE.local.md`) while the rest of `.claude/` stays committed, local agent-tooling state (`.superpowers/`, `.agentsroom/`, `.playwright-mcp/`, `.playwright-cli/`), and git worktree directories (`.worktrees/`, `.claude/worktrees/`). Apply unconditionally regardless of language or framework; language-specific patterns are chosen separately, from what the project actually uses.
 ---
 
 # Seeding `.gitignore`
@@ -46,6 +46,8 @@ CLAUDE.local.md
 # --- Local agent-tooling state ---
 .superpowers/
 .agentsroom/
+.playwright-mcp/
+.playwright-cli/
 
 # --- Git worktrees ---
 .worktrees/
@@ -65,6 +67,10 @@ What each ignored entry is, so nothing gets over- or under-matched:
   harmless if those plugins are unused.
 - `.superpowers/` — Superpowers per-session artifacts.
 - `.agentsroom/` — AgentsRoom (Agentsroom AI) per-project state.
+- `.playwright-mcp/`, `.playwright-cli/` — where Playwright's browser tooling
+  drops screenshots, traces, sessions and page snapshots: the directory it was
+  started in, which is the repo. Two names because the mode picks one — the MCP
+  server writes the first, the agent CLI the second.
 - `.worktrees/`, `.claude/worktrees/` — checkouts of the repo inside itself,
   never committed. Two paths because two mechanisms create them: the Superpowers
   `using-git-worktrees` skill defaults to the first, Claude Code's native
@@ -90,7 +96,11 @@ one-size-fits-all list:
 3. Put them in their own section below the baseline, never mixed into it.
 
 If unsure which patterns a stack needs, take the canonical template from
-`github/gitignore` for that language rather than inventing entries.
+[github/gitignore](https://github.com/github/gitignore) for that language rather
+than inventing entries. Those templates stop at the language and its build
+system: for a test runner, a task cache, a hosting or deploy CLI — and for
+deciding which of a visual test's directories is committed and which is ignored —
+read [`references/tool-artifacts.md`](references/tool-artifacts.md).
 
 ## Editing an existing `.gitignore`
 

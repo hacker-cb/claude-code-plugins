@@ -64,10 +64,13 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   `.github/dependabot.yml` in sync with the ecosystems in use.
 - **`seeding-gitignore`** — `/hcb-dev:seeding-gitignore`
   Seed or extend a `.gitignore`: a fixed baseline this user carries everywhere
-  (OS noise, editor swap files, per-developer Claude Code files, agent-tooling
-  state, worktree dirs) plus language/framework patterns derived from what the
-  project actually contains. Runs before every commit to keep local artifacts out
-  of git.
+  (OS noise, editor swap files, per-developer Claude Code files, agent- and
+  browser-tooling state, worktree dirs) plus language/framework patterns derived
+  from what the project actually contains. Runs before every commit to keep local
+  artifacts out of git. What the canonical templates leave out — test-runner,
+  task-cache and deploy-CLI output, and which of a visual test's directories stays
+  committed — is
+  [`skills/seeding-gitignore/references/tool-artifacts.md`](skills/seeding-gitignore/references/tool-artifacts.md).
 
 ### Reviewing it
 
