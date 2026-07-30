@@ -177,3 +177,7 @@ completed straight onto the base in Phase 2.
   completion as an explicit base.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name and the
   feature/slice layout; read before Phase 1's branch layout and Phase 2's cut.
+- [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
+  forge flag, endpoint or concept name gets resolved, and what each forge calls
+  the thing the other names differently; read before reading a task out of an
+  issue or writing any `gh` / `glab` invocation.

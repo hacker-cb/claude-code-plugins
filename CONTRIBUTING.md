@@ -109,8 +109,11 @@ given and checks five things on top of it:
 1. A link text written as a path is the path it points at.
 2. Every entry under `## Reference files` is a link.
 3. No markdown file is named through the `CLAUDE_PLUGIN_ROOT` placeholder.
-4. A `code.claude.com/docs` URL carries `.md` in the files Claude reads, and
-   drops it in `README.md` / `CONTRIBUTING.md`, which people read.
+4. A docs URL carries the markdown form in the files Claude reads and drops it
+   in `README.md` / `CONTRIBUTING.md`, which people read. The form differs per
+   site — `.md` on `code.claude.com/docs`, `<path>/index.md` on
+   `docs.gitlab.com` — and is only *demanded* where every page has one, so a
+   `docs.github.com` link is checked in the human direction alone.
 5. A shared reference named in backticks is linked at least once in that file.
 
 `lychee` is what proves a link resolves; CI runs it over internal paths on each

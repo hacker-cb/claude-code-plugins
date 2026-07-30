@@ -23,21 +23,31 @@ back to the rendered page.
 | a page | `https://docs.github.com/en/<path>.md` | `https://docs.gitlab.com/<path>/index.md` |
 | what comes back | the page as markdown | the Hugo source, shortcodes (`{{< details >}}`) left in |
 | the CLI's own pages | `https://docs.github.com/en/github-cli/<path>.md` — install and configuration only, never the command reference | `https://docs.gitlab.com/cli/<path>/index.md` — the full command reference, generated from the source |
-| every path there is | [the page list](https://docs.github.com/api/pagelist/en/free-pro-team@latest) — and it decides the row above: a path it enumerates has the markdown twin, a legacy URL outside it serves rendered HTML and nothing else | [llms.txt](https://docs.gitlab.com/llms.txt) — the navigation tree only, so a deep page is reached from its parent, not from here |
-| search | `https://docs.github.com/api/search/v1?query=<q>&language=en&version=<ver>&client_name=<caller>` — the `client_name` is mandatory | none |
-| a self-hosted version | `enterprise-server@<ver>` leads the path; which ones are still served is [the versions endpoint](https://docs.github.com/api/pagelist/versions) | the site carries the current release only — for an older one take the source at `https://gitlab.com/gitlab-org/gitlab/-/raw/<tag>/doc/<path>/_index.md`, since [archives.docs.gitlab.com](https://archives.docs.gitlab.com/) is rendered HTML |
+| every path there is | `https://docs.github.com/api/pagelist/en/<version>` — one path per line, and it decides the row above: only a path it enumerates has the markdown twin | [llms.txt](https://docs.gitlab.com/llms.txt) — the navigation tree only, so a deep page is reached from its parent, not from here |
+| search | `https://docs.github.com/api/search/v1?query=<q>&language=en&version=<ver>&client_name=<caller>` — `client_name` is mandatory, and the `&` mean the URL is quoted wherever a shell sees it | none |
+| a self-hosted version | `enterprise-server@<ver>` leads the path, and is a `<version>` the page list takes; which ones are still served is [the versions endpoint](https://docs.github.com/api/pagelist/versions) | the site carries the current release only — for an older one take the source under `https://gitlab.com/gitlab-org/gitlab/-/raw/<tag>/doc/`, since [archives.docs.gitlab.com](https://archives.docs.gitlab.com/) is rendered HTML |
+
+**A URL outside the page list has no markdown, and asking for it anyway fails
+quietly rather than loudly.** The `.md` suffix 404s, which is the honest answer;
+`https://docs.github.com/api/article/body?pathname=<path>` instead returns the
+*parent* page's markdown under a 200, so the fetch looks like it worked and the
+content is of something else. Check the page list rather than either response.
+
+In the GitLab source tree the file name follows what the path is: a section
+directory holds `<path>/_index.md`, a leaf page is a flat `<path>.md`. Try the
+flat form when `_index.md` 404s.
 
 GitHub's [llms.txt](https://docs.github.com/llms.txt) is a curated shortlist, not
 an index: when a path is not in it, go to the page list. GitLab publishes no
 `llms-full.txt`.
 
-Fetch the page a flag is on, never the section above it — reference pages run to
-hundreds of kilobytes, GitLab's GraphQL schema reference to megabytes.
+Fetch the page a flag is on, never the section above it — a schema or API
+reference is large enough to crowd out the context you needed it for.
 
-Only one of the two publishes its command reference as markdown. For `gh` the
-site documents installation and nothing about the commands, so `--help` is not
-merely the authority on the installed build — it is the only machine-readable
-command reference there is.
+Neither site publishes `gh`'s command reference as markdown: `docs.github.com`
+carries installation and configuration, and `cli.github.com/manual/` carries the
+generated per-command pages as HTML. `--help` is the markdown-free way to the
+same content, and the only one that describes the installed build.
 
 ## What each forge calls it
 
@@ -71,7 +81,8 @@ implies one mechanism per forge will be wrong on both.
 
 ## Issues: the porcelain stops at the flat issue
 
-`gh issue` and `glab issue` create, edit, list, comment and close. Neither wraps
+Both CLIs stop at the single flat issue — create it, list, view, comment, close,
+and edit its own fields (`gh issue edit`, `glab issue update`). Neither wraps
 hierarchy or dependencies on either forge, so both are reached through the `api`
 subcommand — `gh api` / `glab api`, against REST, or with `graphql` as the
 endpoint where the schema carries what REST does not.

@@ -72,5 +72,6 @@ Exact flags and endpoints get verified before they land in a skill — resolve,
 never recall, same as `dependency-versions` demands of versions. Where to resolve
 them, and what each forge calls the concept its counterpart names differently, is
 [`../../plugins/hcb-dev/references/forge-docs.md`](../../plugins/hcb-dev/references/forge-docs.md).
-It ships with the plugin rather than living here, so the skills reach it at run
-time too.
+It ships with the plugin rather than living here, so a skill that needs it links
+it and reaches it at run time — this rule does not, and a skill that only relies
+on the rule gets nothing.

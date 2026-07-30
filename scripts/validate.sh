@@ -377,25 +377,42 @@ while IFS= read -r md; do
 
   # 4. A docs URL fetched by Claude should return raw markdown; one a person
   #    clicks should return the rendered page. Which applies is decided by the
-  #    file it is written in, not by the link. Which *form* says it is per-site:
-  #    Claude Code's docs and GitHub's answer to a `.md` suffix, GitLab's only to
-  #    `<path>/index.md` — its bare `<path>.md` is refused outright, so a suffix
-  #    appended by rule fails there. Sentence punctuation is not part of a URL —
-  #    without trimming it, `…/hooks.md.` reads as missing the suffix it already
-  #    carries. Skipped: a templated `<path>` names no page, and neither does a
-  #    machine endpoint or a downloadable artefact — none has a markdown twin.
+  #    file it is written in, not by the link. The markdown form is per-site —
+  #    a `.md` suffix on Claude Code's docs and GitHub's, `<path>/index.md` on
+  #    GitLab's, whose bare `<path>.md` is refused outright.
+  #
+  #    Only a site that serves the form for EVERY page can have it demanded,
+  #    and GitHub is not one: a page outside its page list has no markdown
+  #    twin, so a demand there would leave a correct link with no spelling that
+  #    passes, and this gate is offline and cannot tell the two apart. So a
+  #    Claude-read GitHub link is left alone — `lychee` is what proves it
+  #    resolves. The reverse direction still holds everywhere, the human branch
+  #    included: a suffix in a file people click is wrong on all three sites.
+  #
+  #    Two trims before any of that, and their order is the whole trick. `>`
+  #    goes only when the match carries no `<`: a bare autolink lends the URL
+  #    its closing bracket (`<…/hooks.md>` matches through the `>`, since the
+  #    opening one sits outside the match), while a templated `<path>` is a
+  #    page that does not exist and leaves entirely. Trim first and the
+  #    template loses its own bracket and is checked as if it named a page.
+  #    Sentence punctuation is not part of a URL either — without trimming it,
+  #    `…/hooks.md.` reads as missing the suffix it already carries.
   while IFS= read -r u; do
     [ -n "$u" ] || continue
+    case "$u" in *'<'*) ;; *) u=${u%>} ;; esac
     case "$u" in *'<'*) continue ;; esac
     u=${u%%[.,;:)]}
-    case "$u" in
-      *.txt|*.json|*.yaml|*.yml) continue ;;
-      https://docs.github.com/api/*) continue ;;
-    esac
+    # A last segment carrying any extension other than the markdown one is an
+    # artefact, not a page, and no markdown twin exists for it. A rule rather
+    # than the list of extensions seen so far — `.png` and `.zip` are as much
+    # not-a-page as `.json` is.
+    case "${u##*/}" in *.md) ;; *.*) continue ;; esac
+    case "$u" in https://docs.github.com/api/*) continue ;; esac
     case "$u" in https://docs.gitlab.com/*) want=/index.md ;; *) want=.md ;; esac
     if [ "$audience" = human ]; then
-      case "$u" in *.md) err "$md: '$u' — drop the markdown suffix, this file is read by people" ;; esac
+      case "$u" in *"$want") err "$md: '$u' — drop '$want', this file is read by people" ;; esac
     else
+      case "$u" in https://docs.github.com/*) continue ;; esac
       case "$u" in *"$want") ;; *) err "$md: '$u' — use the '$want' form, this file is fetched by Claude" ;; esac
     fi
   done < <(printf '%s\n' "$body" \
