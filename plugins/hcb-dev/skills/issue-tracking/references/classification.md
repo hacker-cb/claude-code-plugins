@@ -36,17 +36,20 @@ and not only the names.
 
 **Never pass a name you did not just read.** On GitLab an unknown name handed to a
 label parameter is created as a new label, so a typo becomes part of the set
-permanently; on GitHub a label write without push access is dropped in silence.
-Confirm the labels that came back, not the exit status.
+permanently; on GitHub labels passed while creating or updating an issue are
+dropped in silence when the caller has no push access. Confirm the labels that came
+back, not the exit status.
 
 ## Resolve the mechanism — first hit wins
 
 1. **A native field.** GitHub issue types belong to organisation-owned
-   repositories and hold one type per issue; the repository endpoint answering
-   `404` is that forge saying "not available here", not an authorization failure.
-   GitLab's configurable work item types are a paid-tier feature configured on the
-   top-level group. Where a native field carries a role, nothing is labelled for
-   it. Neither forge's `issue` commands reach these —
+   repositories and hold one type per issue; GitLab's configurable work item types
+   are a paid-tier feature configured on the top-level group. A `404` from either
+   endpoint reads the same whether the feature is absent or merely invisible to
+   this token, so treat it as absent only once something else confirms the token
+   reaches this repository, and say which of the two you concluded. Where a native
+   field carries a role, nothing is labelled for it. Neither forge's `issue`
+   commands reach these —
    [`../../../references/forge-docs.md`](../../../references/forge-docs.md) has the
    entry points.
 2. **A label family** — the set read above.
