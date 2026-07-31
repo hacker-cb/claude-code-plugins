@@ -1,8 +1,9 @@
-# Naming a branch — the shape, and when to apply it
+# Naming what lands in history — a branch, a commit, a change request
 
-Read by anything that *creates* a branch, *normalizes* one it was handed, or
-*publishes* one. It lives here, not in any one skill, because the shape of a name
-is **forge-independent** — the repo's own authoring rule names branch naming as
+Read by anything that *creates* a branch, *normalizes* one it was handed,
+*publishes* one, or writes the subject of a commit or the title of a change
+request. It lives here, not in any one skill, because the shape of a name is
+**forge-independent** — the repo's own authoring rule names branch naming as
 exactly the kind of thing that belongs in one shared reference, since
 prose copies drift and a fix then lands in some of them while the rest go on
 saying something else.
@@ -16,13 +17,14 @@ with `--no-ff`, it is in the history for good.
 ## The shape
 
 ```text
-<type>/<name>
+<type>/[<issue>-]<name>
 ```
 
-- `<type>` ∈ `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
+- `<type>` — a [Conventional Commits](https://www.conventionalcommits.org) type
+- `<issue>` — the tracker number, where the work has one
 - `<name>` — a short kebab-case description of what the change actually does
 
-Examples: `fix/security-config`, `refactor/api-names`, `feat/csv-export`.
+Examples: `fix/security-config`, `refactor/api-names`, `feat/420-csv-export`.
 
 Pick both from the **diff and the task**, never from the old branch name — an
 auto-generated name is precisely the thing carrying no information, and a
@@ -30,10 +32,24 @@ host-generated slug echoes the prompt that started the session, not the change
 that came out of it. Lowercase ASCII, hyphens between words, a few words at most:
 the name is read at a glance in a list, and every ref is also a path on disk.
 
+## The commit subject and the change-request title take the same type
+
+```text
+<type>(<scope>): summary
+```
+
+One shape across all three, so the type chosen for the branch is the type the
+history ends up carrying: a change request's title becomes the squash commit's
+subject on the base.
+
+The change-request number is **not** written into the title — a forge appends its
+own according to its merge settings, and a hand-written one then arrives twice.
+
 ## The repository's convention outranks this shape
 
-Look before imposing anything. Where a repo clearly names its branches some other
-way — `JIRA-1234-…`, `<user>/…`, a bare description with no type — follow it and
+Look before imposing anything. Where a repo clearly names its branches or writes
+its subjects some other way — `JIRA-1234-…`, `<user>/…`, a bare description with
+no type — follow it and
 say in one line that you did; a house style that everyone's tooling already
 expects beats a nicer shape imported from outside (`architecture-decisions.md`
 §3: follow the rule, flag it non-blockingly if it fights good practice).

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "hcb-dev",
-  "description": "Personal developer baseline: a connected set of skills — turn tasks or issues into sliced, reviewed work; resolve dependency versions from the registry (Dependabot in sync); seed .gitignore; review a change locally (Codex + multi-reviewer consolidation); complete finished work by mode — merged locally into its parent, or an open change request (PR/MR), with the full review-and-merge drive on GitHub; and sweep a repository's git residue (merged branches, stale worktrees).",
-  "version": "0.14.0",
+  "description": "Personal developer baseline: a connected set of skills — turn tasks or issues into sliced, reviewed work; keep deferred work in the forge's issue tracker, with the classification resolved from the repository rather than assumed; resolve dependency versions from the registry (Dependabot in sync); seed .gitignore; review a change locally (Codex + multi-reviewer consolidation); complete finished work by mode — merged locally into its parent, or an open change request (PR/MR), with the full review-and-merge drive on GitHub; and sweep a repository's git residue (merged branches, stale worktrees).",
+  "version": "0.15.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
@@ -10,5 +10,5 @@
   "homepage": "https://github.com/hacker-cb/claude-code-plugins",
   "repository": "https://github.com/hacker-cb/claude-code-plugins",
   "license": "MIT",
-  "keywords": ["developer", "dependencies", "gitignore", "code-review", "pull-request", "merge-request", "cleanup", "workflow", "github", "gitlab"]
+  "keywords": ["developer", "dependencies", "gitignore", "code-review", "pull-request", "merge-request", "issues", "backlog", "cleanup", "workflow", "github", "gitlab"]
 }

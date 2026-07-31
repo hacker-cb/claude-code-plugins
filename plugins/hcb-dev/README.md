@@ -17,7 +17,7 @@ marketplace.
 ## How the skills fit together
 
 Most of these skills call each other, so installing the plugin gives you the
-whole pipeline rather than eight disconnected commands:
+whole pipeline rather than nine disconnected commands:
 
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
@@ -29,6 +29,7 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
                                                            local   ─▶ git merge into parent  (then offer a PR/MR)
                                                            request ─▶ github-pr-workflow ─▶ (merge)
 
+issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
@@ -53,6 +54,22 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   through development and `shipping-workflow` autonomously — closing with a
   per-slice report. Calls `shipping-workflow` per slice; not for work that is
   already finished (that is `shipping-workflow` directly).
+
+### Tracking deferred work
+
+- **`issue-tracking`** — `/hcb-dev:issue-tracking`
+  The backlog side of the pipeline, on GitHub and GitLab alike: what earns an
+  issue and what does not, the search that comes before opening one, the
+  `## Drive-by observations` protocol that puts a finding to you as
+  OPEN / DEFER / DISMISS, the shape of the issue body, and the three moments worth
+  consulting open issues at. Which mechanism carries the kind of work in a given
+  repository — native issue types, a label family, or neither — the cardinality
+  between the families and who holds it when the platform will not, how a set gets
+  proposed and created where the repository has none, and the two milestone
+  patterns a repository can run, are
+  [`skills/issue-tracking/references/classification.md`](skills/issue-tracking/references/classification.md).
+  Called by `implementation-workflow` at intake and in its report, and by
+  `github-pr-workflow` after a merge.
 
 ### Preparing a change
 
@@ -193,6 +210,9 @@ Per skill, on top of those:
 - **`implementation-workflow`**: whatever the reviewers and the completion it
   drives per slice need — `multi-review` / `codex`, and in request mode
   `github-pr-workflow`. Runs in the main conversation.
+- **`issue-tracking`**: the forge CLI — every step of it is a tracker read or
+  write. Issue hierarchy and dependencies are past what either CLI's `issue`
+  commands wrap, so those go through its `api` subcommand.
 - **`dependency-versions`**: the relevant package manager on `PATH`.
 - **`codex-review`**: the `codex` CLI installed and `codex login` live.
 - **`multi-review`**: nothing of its own — it picks up whichever reviewers are

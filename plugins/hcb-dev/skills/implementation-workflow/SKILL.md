@@ -38,6 +38,9 @@ mode once, at the gate, and threads it down; the mechanics live in
   detecting the forge from the remote and what answers there, never the hostname.
   Reading an issue is reading a *spec*, not a mandate to do everything written in
   it: surface the actual asks and let the gate confirm scope.
+- **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue
+  already covering these tasks changes the scope; one covering part of them
+  changes the slicing.
 - **Deep-read the codebase against the tasks** — what is affected, what is risky,
   where the genuinely-open questions are.
 - **Draft a slicing.** Split the work into **independently reviewable slices** — a
@@ -158,10 +161,10 @@ completed straight onto the base in Phase 2.
 - **After a local set** — offer, never force, **one** whole-feature
   `feature → base` change request on the feature branch. This is the consented
   exit from local mode.
-- **Issues output** (consent-gated, mirrored `gh` / `glab`) — offer to file
-  follow-up / incidental-finding issues, and to close or link the intake issue.
-  In local mode there is no change request to close it, so an issue taken in by
-  number is left stale unless this offer is taken.
+- **Issues output** — hand the incidental findings and the follow-ups to
+  `hcb-dev:issue-tracking`, which owns the surfacing protocol and the
+  classification. In local mode no change request closes the intake issue, so
+  closing or linking it rides with that handoff or the issue is left stale.
 - **Cleanup** — after a local set that left merged-but-unpushed slice branches,
   point at `/hcb-dev:git-cleanup` (it is manual-only; suggest, don't run it).
 
