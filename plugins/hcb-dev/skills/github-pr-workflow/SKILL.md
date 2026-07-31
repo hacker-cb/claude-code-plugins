@@ -271,9 +271,12 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
   and ask.
 - After a successful rebase, push with `--force-with-lease`.
-- **Exception:** if the branch is shared (others have commits or it's referenced
-  by other open PRs), do NOT rebase — merge base into the branch instead and note
-  why.
+- **Exception:** if the branch is shared, do NOT rebase — merge base into the
+  branch instead and note why. Shared means anything is built on its current tip:
+  others have commits, another open PR references it, or — a set's feature branch —
+  a slice is still open against it or already cut from it. Once every slice has
+  landed and its PR is closed, the branch is yours again and rebase is the default
+  as usual.
 - **Under a strict required-checks policy, being up to date is itself a merge
   gate:** whenever GitHub reports the branch `BEHIND` (base moved while the PR was
   open, including right before merge), re-sync again — `gh pr update-branch <pr>`
@@ -288,9 +291,14 @@ draft) — Copilot skips drafts, and `references/copilot.md` says what that cost
 gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>"
 ```
 
-- Title: concise, matches the branch intent.
+- Title: the shape in `branch-naming.md` — GitHub makes it the squash commit's
+  subject, and appends the PR number itself.
 - Body: what changed and why, in the user's own framing if known; a short summary
-  and a bullet list of notable changes.
+  and a bullet list of notable changes, plus `Closes #N` for every issue this PR
+  settles. GitHub acts on that keyword only for a PR whose base is the default
+  branch, so on any other base — a slice PR onto its feature branch, a repo whose
+  PRs target another trunk — the issue is closed explicitly after the merge lands
+  (`hcb-dev:issue-tracking`).
 - If a PR already exists, skip creation and move to the loop.
 
 ## Step 4 — The fix loop (until GitHub says mergeable)
@@ -375,7 +383,8 @@ merged head can post *after* the merge, orphaning its findings on the now-closed
 PR — behind a signal that read as a decline, or behind a merge taken outside this
 skill. If one appears, don't drop it: surface its findings in the report below and
 recommend a follow-up (issue or change request) as a next step; creating it is an
-outward action the user authorises, not one you take autonomously.
+outward action the user authorises, not one you take autonomously — the surfacing
+protocol and the classification are `hcb-dev:issue-tracking`'s.
 
 Then give the user a short report:
 

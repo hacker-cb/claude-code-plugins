@@ -188,3 +188,12 @@ every slice stays independently reviewable. When the slices are done, one final
 them — filtered to whatever methods the repo allows. The local-escalation path
 arrives at that same single `feature → base` change request directly, its slices
 already merged locally, with nothing left to drive.
+
+## Keeping the feature branch current — both modes
+
+Where the base moves while a set is still in flight, the feature branch takes it
+the way any branch does — **rebase by default, merge while something is built on
+its current tip**: a slice still open against it, or one already cut from it,
+whose base a rewrite would pull out from under it. Between slices, with every one
+of them landed, nothing is built on it and rebase is safe again. A slice itself
+rebases onto the feature branch.
