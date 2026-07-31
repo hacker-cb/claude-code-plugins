@@ -142,7 +142,9 @@ saying something else.
   to carry forward, and why a base sharing no history with `HEAD` is worse than
   no base at all. Read wherever a base or a remote is resolved.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
-  branch name takes (`<type>/<name>`), how a feature branch and its slices are
+  branch name takes (`<type>/[<issue>-]<name>`), the same Conventional Commits
+  type carried into the commit subject and the change-request title, how a
+  feature branch and its slices are
   named (`--` suffix, never nested with `/` — refs are paths and the nested form
   collides), what counts as auto-generated, the three points at which the name is
   applied (creation → normalization → the driver's last resort, each idempotent),

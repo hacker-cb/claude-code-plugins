@@ -33,11 +33,15 @@ and what answers there, never from the hostname.
 Closed ones too — a finding already decided against must not return under a new
 number, with the decision left behind on the old one.
 
+Both stop at a small default page, so ask for more than the tracker is likely to
+return — a search that silently ends at the first page reads as "nothing covers
+this".
+
 ```bash
 # GitHub
-gh issue list --state all --search "<terms>"
+gh issue list --state all --limit <n> --search "<terms>"
 # GitLab
-glab issue list --all --search "<terms>"
+glab issue list --all --per-page <n> --search "<terms>"
 ```
 
 Three outcomes — **covered** → cite it and open nothing; **covered, but the
@@ -94,10 +98,14 @@ mechanisms on both forges — the entry points are in
 Where a bare `#N` would not autolink — documentation, code comments, anything read
 outside its own issue or change request — write `[#N](<url>)`.
 
-Closing rides on the merged change request, so the closed-issue list *is* the
-shipped journal and nothing is maintained by hand. In a set, each child closes as
-its slice lands and the parent when the last one does. Follow-ups the work raised
-become issues opened in the same effort.
+A closing keyword in the change request body closes the issue **only where the
+forge acts on it** — which it does for a request targeting the default branch, and
+not for one targeting a feature branch or any other trunk the repository merges
+into. Write the keyword anyway; where the forge will not act on it, and wherever
+the work completes with no change request at all, close or link the issue
+explicitly once the work lands, with the user's go-ahead. In a set, each child
+closes as its slice lands and the parent when the last one does. Follow-ups the
+work raised become issues opened in the same effort.
 
 ## Reference files
 

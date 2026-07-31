@@ -191,7 +191,9 @@ already merged locally, with nothing left to drive.
 
 ## Keeping the feature branch current — both modes
 
-Where the base moves while a set is still in flight, bring it into the feature
-branch by **merge, not rebase**: slices are cut from that branch and one of them
-may already be published, so a rebase rewrites what they were based on. A slice
-itself still rebases onto the feature branch.
+Where the base moves while a set is still in flight, the feature branch takes it
+the way any branch does — **rebase by default, merge while something is built on
+its current tip**: a slice still open against it, or one already cut from it,
+whose base a rewrite would pull out from under it. Between slices, with every one
+of them landed, nothing is built on it and rebase is safe again. A slice itself
+rebases onto the feature branch.

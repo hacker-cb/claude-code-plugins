@@ -19,16 +19,16 @@ parked reason.
 
 ## Read the set before applying anything
 
-Read it whole, with an explicit page size above the repository's label count: both
-CLIs page at a small default, and a short read is indistinguishable from a missing
-family.
+Read it whole — both CLIs stop at a small default page, and a short read is
+indistinguishable from a missing family.
 
 ```bash
 # GitHub
-gh label list --limit <n> --json name,description,isDefault
-# GitLab — a project listing folds in inherited group labels unless told not to,
-# and archived ones arrive in the same list: never apply an archived label
-glab api "projects/<project>/labels?per_page=<n>&include_ancestor_groups=false"
+gh label list --limit <n> --json name,color,description,isDefault
+# GitLab — <project> is URL-encoded ("group%2Frepo"). The listing carries the
+# group's inherited labels, which apply here, and archived ones, which do not:
+# never apply an archived label.
+glab api --paginate "projects/<project>/labels?per_page=100"
 ```
 
 Map the roles onto the prefixes that set already uses, reading the descriptions

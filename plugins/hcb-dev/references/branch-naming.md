@@ -39,11 +39,12 @@ the name is read at a glance in a list, and every ref is also a path on disk.
 ```
 
 One shape across all three, so the type chosen for the branch is the type the
-history ends up carrying: a change request's title becomes the squash commit's
-subject on the base.
+history ends up carrying: where a change request is squashed, its title becomes
+the commit's subject on the base.
 
-The change-request number is **not** written into the title — a forge appends its
-own according to its merge settings, and a hand-written one then arrives twice.
+Never write the change-request number into the title. Whether a number reaches
+that subject at all is the forge's own merge setting, and where it does, a
+hand-written one arrives twice.
 
 ## The repository's convention outranks this shape
 
