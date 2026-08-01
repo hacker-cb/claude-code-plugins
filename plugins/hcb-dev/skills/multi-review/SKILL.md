@@ -59,9 +59,10 @@ middle", which lands on a different rung per reviewer.
 `codex-review` starts at **`xhigh`** — it resolves its own model and ladder, so
 pass a level and let it place that level; risk mostly moves it *down*.
 
-`code-review` runs at **`high`**, always — risk never moves it. Pass `xhigh` or
-`max` only where one of them was named in this run — by the user, or by a caller
-threading a level down — never off your own reading of the change. Pass the rung
+`code-review` gets **`high`** every time this skill picks the level, because it
+never picks another one: risk does not move it. `xhigh` and `max` arrive only
+from outside — named in this run by the user, or threaded down by a caller —
+never off your own reading of the change. Pass the rung
 itself, never the wording it arrived in: "maximum effort" maps onto `max`, and a
 word off the ladder is not a level at all (step 2 says what one does to the
 target). What risk decides for this reviewer is whether it runs at all, in the
