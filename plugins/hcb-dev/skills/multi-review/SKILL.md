@@ -127,7 +127,7 @@ is the one status the coverage gate does not treat as a gap.
 
 | Reviewer | A run costs | Earns it when |
 |---|---|---|
-| `codex-review` | one pass by one reviewer, a minute or two | always, while it is installed — it is the floor the other two build on |
+| `codex-review` | one pass by one reviewer, started detached and read back later | always, while it is installed — it is the floor the other two build on |
 | `code-review` | a fan-out of agents, and by far the longest of the three | the change has more than one place to be wrong — it spans files that interact, or moves a convention others follow. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
 | `security-review` | inline, plus its own filtering pass | something now executes differently (above) |
 
@@ -141,8 +141,8 @@ one pass; breadth is what the fan-out is for, so give it something wide.
 
 Start the detachable reviewers first so they overlap with the inline one.
 
-- **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base, the
-  effort level, and the fact that this is a pipeline run so it backgrounds the call.
+- **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base and
+  the effort level.
 - **code-review** — `Workflow({ name: "code-review", args: "high <base>" })`
   returns immediately and runs detached. The first argument is a rung off that
   ladder — `high`, or the `xhigh` / `max` Scope allowed — and nothing else ever
