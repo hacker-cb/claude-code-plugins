@@ -60,8 +60,11 @@ middle", which lands on a different rung per reviewer.
 pass a level and let it place that level; risk mostly moves it *down*.
 
 `code-review` runs at **`high`**, always — risk never moves it. Pass `xhigh` or
-`max` only where the user named one in this run, never off your own reading of
-the change; what risk decides for this reviewer is whether it runs at all, in the
+`max` only where one of them was named in this run — by the user, or by a caller
+threading a level down — never off your own reading of the change. Pass the rung
+itself, never the wording it arrived in: "maximum effort" maps onto `max`, and a
+word off the ladder is not a level at all (step 2 says what one does to the
+target). What risk decides for this reviewer is whether it runs at all, in the
 next step.
 
 Treat the change as high-risk when it reaches past itself (public interface,
@@ -71,8 +74,9 @@ shape you do not control, has nothing else checking it (no tests that run, no
 types, no compiler), removes a guard, an error path or a test, or touches paths
 the project marks sensitive (`CLAUDE.md`, `CODEOWNERS`, `SECURITY.md`). High risk
 holds `codex-review` at its start and argues for the fan-out; mechanics with no
-behavior change lower the one and skip the other. An explicit instruction from
-the caller wins.
+behavior change lower `codex-review`, and leave the fan-out to the cost question
+in the next step — which is where a skip is decided, and recorded with its
+reason. An explicit instruction from the caller wins.
 
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
@@ -139,8 +143,9 @@ Start the detachable reviewers first so they overlap with the inline one.
 - **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base, the
   effort level, and the fact that this is a pipeline run so it backgrounds the call.
 - **code-review** — `Workflow({ name: "code-review", args: "high <base>" })`
-  returns immediately and runs detached. `high` is the level unless the user
-  named another in this run. Hand it the resolved base: left to
+  returns immediately and runs detached. The first argument is a rung off that
+  ladder — `high`, or the `xhigh` / `max` Scope allowed — and nothing else ever
+  goes in that position. Hand it the resolved base: left to
   itself it diffs `@{upstream}...HEAD`, which on an already-pushed branch is
   empty, and it would review nothing while the other two review the change. This
   skill is the explicit instruction authorizing that call.
