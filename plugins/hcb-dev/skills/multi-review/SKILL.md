@@ -57,16 +57,22 @@ with the uncommitted edits sitting on top of them.
 middle", which lands on a different rung per reviewer.
 
 `codex-review` starts at **`xhigh`** — it resolves its own model and ladder, so
-pass a level and let it place that level; risk mostly moves it *down*. Everything
-else starts at `high`.
+pass a level and let it place that level; risk mostly moves it *down*.
 
-Raise it when the change reaches past itself (public interface, shared helper,
-config, schema, wire format), cannot be walked back (it writes, migrates,
-publishes, or persists a format someone else reads), meets input whose shape you
-do not control, has nothing else checking it (no tests that run, no types, no
-compiler), removes a guard, an error path or a test, or touches paths the project
-marks sensitive (`CLAUDE.md`, `CODEOWNERS`, `SECURITY.md`). Lower it only for
-mechanics with no behavior change; an explicit instruction from the caller wins.
+`code-review` runs at **`high`**, always — risk never moves it. Pass `xhigh` or
+`max` only where the user named one in this run, never off your own reading of
+the change; what risk decides for this reviewer is whether it runs at all, in the
+next step.
+
+Treat the change as high-risk when it reaches past itself (public interface,
+shared helper, config, schema, wire format), cannot be walked back (it writes,
+migrates, publishes, or persists a format someone else reads), meets input whose
+shape you do not control, has nothing else checking it (no tests that run, no
+types, no compiler), removes a guard, an error path or a test, or touches paths
+the project marks sensitive (`CLAUDE.md`, `CODEOWNERS`, `SECURITY.md`). High risk
+holds `codex-review` at its start and argues for the fan-out; mechanics with no
+behavior change lower the one and skip the other. An explicit instruction from
+the caller wins.
 
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
@@ -86,14 +92,14 @@ Four questions per reviewer, in order:
 - **Worth its cost on this change?** They do not cost the same, and the expensive
   one is not owed a run just for existing — see *What each run costs* below. A
   skip here is `n/a` with the reason in its row, same as any other.
-- **At what level?** Map the risk onto that reviewer's own ladder and pass the
-  level explicitly — never a machine-local default, since this skill runs on other
-  people's machines.
+- **At what level?** Pass the level Scope fixed for that reviewer explicitly —
+  never a machine-local default, since this skill runs on other people's
+  machines.
 
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
 | `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
-| `code-review` workflow | the `Workflow` tool exists | `@{upstream}...HEAD` plus `git diff HEAD` unless given a target | yes, as a target argument | `high` `xhigh` `max` |
+| `code-review` workflow | the `Workflow` tool exists | `@{upstream}...HEAD` plus `git diff HEAD` unless given a target | yes, as a target argument | `high` — `xhigh` / `max` only where the user names one |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 What that decides in practice: the security review goes `n/a` on a narrowed or
@@ -132,8 +138,9 @@ Start the detachable reviewers first so they overlap with the inline one.
 
 - **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base, the
   effort level, and the fact that this is a pipeline run so it backgrounds the call.
-- **code-review** — `Workflow({ name: "code-review", args: "<level> <base>" })`
-  returns immediately and runs detached. Hand it the resolved base: left to
+- **code-review** — `Workflow({ name: "code-review", args: "high <base>" })`
+  returns immediately and runs detached. `high` is the level unless the user
+  named another in this run. Hand it the resolved base: left to
   itself it diffs `@{upstream}...HEAD`, which on an already-pushed branch is
   empty, and it would review nothing while the other two review the change. This
   skill is the explicit instruction authorizing that call.
