@@ -127,7 +127,7 @@ is the one status the coverage gate does not treat as a gap.
 
 | Reviewer | A run costs | Earns it when |
 |---|---|---|
-| `codex-review` | one pass by one reviewer, long but detached — nothing else waits on it | always, while it is installed — it is the floor the other two build on |
+| `codex-review` | one pass by one reviewer, long — but detached, so it overlaps the others | always, while it is installed — it is the floor the other two build on |
 | `code-review` | a fan-out of agents, and by far the longest of the three | the change has more than one place to be wrong — it spans files that interact, or moves a convention others follow. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
 | `security-review` | inline, plus its own filtering pass | something now executes differently (above) |
 
