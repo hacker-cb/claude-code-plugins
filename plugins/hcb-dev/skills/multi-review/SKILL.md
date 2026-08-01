@@ -127,7 +127,7 @@ is the one status the coverage gate does not treat as a gap.
 
 | Reviewer | A run costs | Earns it when |
 |---|---|---|
-| `codex-review` | one pass by one reviewer, started detached and read back later | always, while it is installed — it is the floor the other two build on |
+| `codex-review` | one pass by one reviewer, long but detached — nothing else waits on it | always, while it is installed — it is the floor the other two build on |
 | `code-review` | a fan-out of agents, and by far the longest of the three | the change has more than one place to be wrong — it spans files that interact, or moves a convention others follow. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
 | `security-review` | inline, plus its own filtering pass | something now executes differently (above) |
 
@@ -162,6 +162,11 @@ Take two things from each reviewer: what it covered — base and file count, fro
 that reviewer's own output — and its findings. Never carry one reviewer's count
 across to another's row; a borrowed number is how a reviewer that read nothing
 gets recorded as having read the change.
+
+**Wait for every reviewer you launched.** None of the four statuses in §6 says
+"still running", so a row filled before its reviewer returns asserts something
+about a run that has not finished — and the one status that fits an empty cell,
+`n/a`, is the one the coverage gate treats as closed.
 
 **Zero files covered is not a pass.** Decide it by the count, never by matching a
 reviewer's wording: each phrases an empty review differently, and Codex phrases it

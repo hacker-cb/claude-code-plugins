@@ -92,12 +92,14 @@ if [ -s "$OUT" ]; then cat "$OUT"; else echo "codex review failed:"; tail -20 "$
 the report and nothing else. Pass `description: "Codex review"` on the `Bash`
 call so the run is recognizable in the task list.
 
-- **Background** — the default: run that exact block with
-  `Bash(run_in_background: true)`. The finished task's output is already the
-  report, and nothing waits on it.
-- **Foreground** — only where a caller is watching for the report in the turn it
-  asked for one: the same block, read inline, with the `timeout` on the `Bash`
-  call set explicitly rather than left at its default.
+Run it with `Bash(run_in_background: true)`, whoever asked and however small the
+diff looks — read inline, the call is killed on the tool's own limit, and the kill
+takes the block's `scope:` line and its `codex review failed:` branch with it, so
+the run comes back as neither a review nor a named failure.
+
+The finished task's output is the report: collect it when the task completes and
+take it through §4 before answering. Detached is how it runs, not permission to
+answer without it.
 
 A caller — a person or another skill — may hand you the base, the model or the
 effort level; each is meant to be passed in, and an explicit one wins over the
