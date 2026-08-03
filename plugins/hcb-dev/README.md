@@ -17,7 +17,7 @@ marketplace.
 ## How the skills fit together
 
 Most of these skills call each other, so installing the plugin gives you the
-whole pipeline rather than nine disconnected commands:
+whole pipeline rather than eleven disconnected commands:
 
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
@@ -31,15 +31,19 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
 
 issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
+session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
 
 `implementation-workflow` is the front door when you start from tasks or issues;
 `shipping-workflow` is where you enter with finished work in hand. Each skill is
-also useful on its own and triggers from its own `description` — except
-`git-cleanup`, which sets `disable-model-invocation: true`: Claude never reaches
-for it on its own, so it is **not** an automatic post-completion step. Run
-`/hcb-dev:git-cleanup` yourself when you want the sweep.
+also useful on its own and triggers from its own `description` — except the three
+that set `disable-model-invocation: true`, `session-dispatch`, `session-handoff`
+and `git-cleanup`: Claude never reaches for any of them on its own, so none is an
+automatic post-completion step. Run them yourself when you want them.
+
+Nothing crosses between sessions on its own — you carry every dispatch and every
+handoff by hand, so the prompt text is the whole channel.
 
 ## Skills
 
@@ -118,6 +122,36 @@ for it on its own, so it is **not** an automatic post-completion step. Run
   [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md) and
   [`skills/github-pr-workflow/references/copilot.md`](skills/github-pr-workflow/references/copilot.md).
 
+### Handing work across sessions
+
+Two directions of one channel. The discriminator between them is whether the
+work is **done** — not how the ask is worded.
+
+- **`session-dispatch`** — `/hcb-dev:session-dispatch` (manual-only)
+  Work this session will **not** do, turned into an order for another session to
+  **implement**, run through `implementation-workflow`. This session's numbers,
+  coordinates and settled decisions are the payload, and what it did *not* check
+  is named beside them. Settles the ask, where to work, any mandatory domain
+  methodology, the checks, the terminal deliverable, the completion mode (so the
+  planning gate does not ask for it), which forks come back to you, and the
+  negative constraint. Ends in a closing act that is never empty: either the
+  shape of the answer to return — carried inline, because a sub-session cannot
+  invoke a manual-only skill on its own — or an end state with nothing coming
+  back. Tags each order so its answer can be matched to it. A question is not
+  dispatched at all: that is a subagent or a workflow in the session that has it.
+- **`session-handoff`** — `/hcb-dev:session-handoff` (manual-only)
+  What this session **finished**, in whatever form the result took — code on a
+  branch or in a change request, an investigation that changed no files, issues
+  rewritten or reclassified, a documentation change. Carries the result, the
+  complete list of change requests and issues it touched (each with the state it
+  stopped at or what became of it), how to reach the work from the reader's own
+  checkout, and a re-read of every number on the forge in full, comments
+  included. Two postures — answering an order, where it reconciles against that
+  order's own terms starting with the premises that did not survive; or unbidden,
+  where it weighs the work against what the reader already has in flight,
+  summarizes that for you and raises the non-obvious consequences before acting.
+  Ends by offering `git-cleanup` for the residue.
+
 ### Cleaning up
 
 - **`git-cleanup`** — `/hcb-dev:git-cleanup` (manual-only)
@@ -169,6 +203,13 @@ saying something else.
   schedule and is kept in one place for that reason. Read wherever a worktree's
   occupancy decides what may be touched. Answers *whose is this right now* — never
   what another session is doing.
+- [`references/session-prompts.md`](references/session-prompts.md) — the envelope
+  shared by every prompt that crosses between sessions, whichever direction it
+  travels: the reader is elsewhere and no path may be named, it is a task rather
+  than a document, pointers instead of retelling, every assertion carrying where
+  to re-check it, the origin line and its tag, the mandatory negative part, a
+  closing act that is never empty, and delivery as one fenced block. Read by
+  whatever produces such a prompt; what fills the slots stays with the skill.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
   findings rated by importance, an explicit "none"). Read where a whole run is
@@ -224,6 +265,11 @@ Per skill, on top of those:
   directly. Nothing in it is GitHub-only.
 - **`github-pr-workflow`**: GitHub specifically — a connected GitHub MCP server
   is preferred over `gh` for reading reviews, but `gh` alone suffices.
+- **`session-dispatch`** and **`session-handoff`**: nothing in the session that
+  writes the prompt — both produce text from what it recalls, and neither reads
+  the repository or the forge; the verification they call for happens on the
+  receiving side. A dispatched order does name `implementation-workflow`, so the
+  session that receives one needs this plugin installed.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
   are occupied it also reads Claude Code's live-session registry under
