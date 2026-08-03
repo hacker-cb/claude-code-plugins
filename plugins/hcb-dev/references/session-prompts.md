@@ -11,9 +11,10 @@ text is the whole channel: what is not written in it does not arrive.
 ## The reader is elsewhere
 
 It has no access to this session. Nothing points back here — no "as discussed
-above", no reference to earlier output, and never a filesystem path, which is
-this session's and not the reader's. Name a repository only where the reader
-could be in a different one.
+above", no reference to earlier output, and never an absolute or
+checkout-specific path, which is this session's and not the reader's. A
+repo-relative path is the portable form, and it is what a coordinate is written
+in. Name a repository only where the reader could be in a different one.
 
 ## It is a task, not a document
 

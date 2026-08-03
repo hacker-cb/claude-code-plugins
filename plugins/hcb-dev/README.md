@@ -17,7 +17,7 @@ marketplace.
 ## How the skills fit together
 
 Most of these skills call each other, so installing the plugin gives you the
-whole pipeline rather than ten disconnected commands:
+whole pipeline rather than eleven disconnected commands:
 
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
@@ -265,10 +265,11 @@ Per skill, on top of those:
   directly. Nothing in it is GitHub-only.
 - **`github-pr-workflow`**: GitHub specifically — a connected GitHub MCP server
   is preferred over `gh` for reading reviews, but `gh` alone suffices.
-- **`session-dispatch`** and **`session-handoff`**: nothing at all — both produce
-  text from what the session itself recalls, and neither reads the repository or
-  the forge. The verification they call for happens in the session that receives
-  the prompt.
+- **`session-dispatch`** and **`session-handoff`**: nothing in the session that
+  writes the prompt — both produce text from what it recalls, and neither reads
+  the repository or the forge; the verification they call for happens on the
+  receiving side. A dispatched order does name `implementation-workflow`, so the
+  session that receives one needs this plugin installed.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
   are occupied it also reads Claude Code's live-session registry under

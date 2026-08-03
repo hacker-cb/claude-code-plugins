@@ -48,7 +48,9 @@ Each of these is stated or explicitly empty:
 - **The ask** — one imperative, in the second person.
 - **Where to work** — a rule about the receiver's own checkout, and refreshing
   its base is step one, never a closing sentence. Where the work belongs on a
-  separate track, say which base to cut from and which branch not to build on.
+  separate track, say which base to cut from and which branch not to build on —
+  the base being one you resolved rather than one you remember
+  ([`../../references/base-resolution.md`](../../references/base-resolution.md)).
 - **The process** — `hcb-dev:implementation-workflow`, which brings its own
   slicing, review and completion. Past that, name only a domain methodology the
   receiving session's own rules do not already carry, and mark it mandatory.
@@ -138,5 +140,6 @@ Say what this session is now waiting on, and do not begin the dispatched work.
 ## Reference files
 
 - [`../../references/session-prompts.md`](../../references/session-prompts.md)
+- [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/slice-completion.md`](../../references/slice-completion.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

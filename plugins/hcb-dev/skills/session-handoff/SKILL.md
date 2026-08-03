@@ -42,6 +42,9 @@ its ask is unbidden.
    from leaving out how it got there, never from leaving out an outcome.
    Something unfinished is said to be unfinished.
 
+   **What a review left uncovered, and what it surfaced without fixing, goes
+   here too.** A reader given only the outcome reads the work as reviewed clean.
+
 2. **Where it is** — the branch, where there is one. Where the work belongs
    outside the reader's current track, say so and say which base it was cut
    from.
@@ -55,9 +58,10 @@ its ask is unbidden.
    an issue that no longer exists still needs its line, or the reader reads a
    dead number as a mistake in the prompt.
 
-   **Where nothing landed in a repository** this part carries the findings
-   instead: each claim at the coordinate it was read at, and beside them what
-   was ruled out and by what. What was *not* checked goes here too — a reader
+   **Where no files changed and the result is findings alone** this part carries
+   them instead: each claim at the repo-relative coordinate it was read at, and
+   beside them what was ruled out and by what. Work that lives in the tracker is
+   not this case — there the list above *is* the result. What was *not* checked goes here too — a reader
    told only what is known treats the rest as known.
 
 4. **How to get it, and check it** — the opening step depends on where the work
@@ -65,7 +69,7 @@ its ask is unbidden.
 
    | Landed | Opening step |
    |---|---|
-   | merged into the base | update the base and rebase onto it, then read what arrived |
+   | merged into the base | fetch the base and read what arrived first; rebase the reader's own work onto it only once that work's overlap is known |
    | an open change request | read it — it is not in the base yet |
    | a branch, unmerged | check out or fetch the branch |
    | the tracker alone — issues rewritten, reclassified or closed | read those issues in full; the repository is untouched |
@@ -75,18 +79,23 @@ its ask is unbidden.
    included** — a discussion may have moved since this was written, and what
    stands there now outranks what the prompt says.
 
-5. **The closing steps**, by posture.
+5. **The closing part**, by posture — and the two postures put it in different
+   places.
 
-   **Answering an order**, in this order: the premises of the order that did not
-   survive, first; then the deliverable, answered in the terms it was asked for;
-   then the decision taken at each fork the order named; then what is left
-   undone and why. Carry the tag on the first line.
+   **Answering an order** — this *is* the answer, so it goes in the body of the
+   prompt, never among the reader's steps: the premises of the order that did
+   not survive, first; then the deliverable, answered in the terms it was asked
+   for; then the decision taken at each fork the order named; then what is left
+   undone and why. Only this session knows these four. The tag rides on the
+   first line.
 
-   **Unbidden**: work out what this changes for what the reader is already
-   doing — what it overlaps, what it conflicts with, what assumption it breaks,
-   what it has already done for them — then summarize that back to the user,
-   saying plainly where it changes nothing, and put the non-obvious consequences
-   up before acting on them. Silence reads as "not checked".
+   **Unbidden** — these are the reader's steps: work out what this changes for
+   what it is already doing — what it overlaps, what it conflicts with, what
+   assumption it breaks, what it has already done for them — then summarize that
+   back to the user, saying plainly where it changes nothing, and put the
+   non-obvious consequences up before acting on them
+   ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
+   Silence reads as "not checked".
 
    A reader already mid-flight is told what this breaks for it whichever posture
    applies: where the handoff invalidates a premise it stands on, name it, and
@@ -106,24 +115,35 @@ Work from another Claude Code session — nobody asked for it; this is input.
 
 What it did:
 <the result, in a few lines>
+Not covered / not fixed: <review gaps, and findings surfaced but left alone; or
+"none">
+
+<answering an order — the four below go here, filled in, in this order:>
+Premises of the order that did not survive: <...>
+Delivered: <the deliverable, in the terms the order asked for>
+Decisions at the forks the order named: <...>
+Left undone: <what, and why>
 
 Branch <branch, or "nothing in the repository — it is all in the tracker" / "no
 files changed — findings only"><, repo <name> — only where the reader may not be
 in it>
 
-Change requests and issues touched — the full list:
-- #<n> PR/MR — <open / merged / draft> — <one line>
+Change requests and issues touched — everything, from this session's own recall:
+- <change request — `#<n>` on GitHub, `!<n>` on GitLab> — <open / merged / draft> — <one line>
 - #<n> issue — <created / edited / commented / closed by #n / reopened / deleted> — <what it says now>
-<or, where nothing landed: the findings, each at file:line — and what was ruled
-out, by what, and what was never checked>
+<or, where no files changed: the findings, each at a repo-relative file:line —
+and what was ruled out, by what, and what was never checked>
 
 Do this, in order:
 1. <the opening step from the table above>
 2. Read the changes yourself — start at <where>
 3. Re-read every issue and change request above in full, comments included —
-   the discussion may have moved on, and what is there now outranks this
-4. <closing steps by posture — reconcile against the order, or weigh against
-   your own work, summarize it back to me, and raise the non-obvious parts
+   the discussion may have moved on, and what is there now outranks this. One
+   marked deleted you confirm is still gone
+4. <answering an order — check the four answers above against what the order
+   asked for>
+   <unbidden — weigh this against your own work in flight, summarize it back to
+   me including a plain "changes nothing", and raise the non-obvious parts
    before acting, each with your recommendation>
 
 Don't <what would duplicate or undo it, and the tracks that are not yours to touch>
