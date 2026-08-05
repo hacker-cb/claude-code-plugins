@@ -41,8 +41,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs", "hook-release", "--reason=session-end"],
-            "timeout": 1
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs", "hook-release", "--reason=session-end"]
           }
         ]
       }

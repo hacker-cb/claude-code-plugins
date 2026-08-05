@@ -15,8 +15,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const HERE = import.meta.dirname ?? path.dirname(decodeURIComponent(new URL(import.meta.url).pathname));
+// fileURLToPath, not the URL's pathname: on Windows that pathname is `/C:/…`, which
+// is not a path anything can open.
+const HERE = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
 // constants
@@ -530,7 +533,12 @@ function addressCandidates() {
     const data = readJsonFile(file);
     if (!data) continue;
     if (data.socketPath != null) out.push({ socketPath: String(data.socketPath), userDataDir: dir, file, source: 'port-file' });
-    else if (data.port != null) out.push({ port: Number(data.port), userDataDir: dir, file, source: 'port-file' });
+    else if (data.port != null) {
+      // An unusable port has to be dropped here: net.createConnection throws on NaN
+      // or an out-of-range number, which would escape the classifier as a crash.
+      const port = Number(data.port);
+      if (Number.isInteger(port) && port > 0 && port < 65536) out.push({ port, userDataDir: dir, file, source: 'port-file' });
+    }
   }
   if (!out.length && process.platform === 'win32') {
     // The pipe name is fixed, so a missing address file is not fatal on Windows.
@@ -669,7 +677,7 @@ function rpcSocket(addr, body, timeoutMs) {
       try { socket?.destroy(); } catch { /* ignore */ }
       resolve(r);
     };
-    const timer = setTimeout(() => done({ status: 'timeout' }), timeoutMs);
+    const timer = setTimeout(() => done({ status: 'timeout', timeoutMs }), timeoutMs);
     timer.unref?.();
     try {
       socket = addr.socketPath != null ? net.createConnection(addr.socketPath) : net.createConnection(addr.port, '127.0.0.1');
@@ -731,7 +739,7 @@ function rpcCli(body, timeoutMs) {
       try { child?.kill('SIGKILL'); } catch { /* ignore */ }
       resolve(r);
     };
-    const timer = setTimeout(() => done({ status: 'timeout' }), timeoutMs);
+    const timer = setTimeout(() => done({ status: 'timeout', timeoutMs }), timeoutMs);
     timer.unref?.();
     try {
       child = spawn(rt.exec, [cli, '--request', reqFile], {
@@ -758,7 +766,7 @@ function transportFailure(res, tool) {
   if (res.status === 'timeout') {
     return {
       kind: 'transport', code: 'TIMEOUT',
-      message: `the client did not answer within ${OPT.timeout} ms`,
+      message: `the client did not answer within ${res.timeoutMs ?? OPT.timeout} ms`,
       hint: 'The client has no timeout of its own, so the call is probably still running server-side. Wait before repeating anything that changes state; raise --timeout for a cold client, whose first call after idling takes several seconds.',
       retriable: true, tool,
     };
