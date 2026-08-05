@@ -87,7 +87,15 @@ settings, the `--settings` flag, and managed (organization) settings — and
 **ignores** a project's `.claude/settings.json` or `.claude/settings.local.json`.
 A repository you clone therefore cannot lower the setting on you.
 
-For one session, override it from the environment instead:
+How it reaches a call matters too. Claude Code hands a plugin's config only to
+the processes it starts from the plugin's own configuration — the hooks here, not
+the companion runs the skills make. So the `SessionStart` hook records the value
+it was given in the plugin's state directory, and every call reads it from there.
+The consequence to know: a change made mid-session lands in the next one, since
+that is when the hook runs again.
+
+For one session, or to override what the hook recorded, set the environment
+variable — every call reads it directly:
 
 ```bash
 HCB_TAOBAO_LOCK_MODE=deny claude
@@ -115,9 +123,17 @@ searching for it in the app.
 The same calling-app label is also appended to the query string of any URL the
 client opens, so it travels to the page you land on.
 
-Locally, a normal run does **not** write call contents to disk: the client's file
-log runs at `warn`, and the lines carrying the calls are `info`. Raising the log
+The client's own file log leaves nothing of a call behind on a normal run: it
+runs at `warn`, and the lines carrying the calls are `info`. Raising the log
 level changes that.
+
+What the plugin itself writes goes to one directory — `hcb-taobao/` inside your
+Claude Code config directory, which is `~/.claude` unless `CLAUDE_CONFIG_DIR`
+says otherwise. It holds the cross-session lock, the recorded `lock_mode`, and
+the spill files a large result is written to instead of being printed; a spill
+file keeps whatever the call returned — search results, page text — until you
+delete it. The directory is created `0700` and its files `0600`, so nothing on
+the machine reads them but you. Set `HCB_TAOBAO_STATE_DIR` to put it elsewhere.
 
 ## Origin
 

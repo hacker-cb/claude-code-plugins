@@ -65,18 +65,39 @@ handed, so a message passed here goes out before the user has seen it.
 
 ## 4. Get approval
 
-Show the user the exact Chinese text, a translation into their language, and
-which shop it goes to. Send on an explicit yes. That yes covers that text: an
-edit needs a new one, and so does every follow-up message.
+Show the user the exact Chinese text, a translation into their language, and the
+shop it goes to, named as the client names it — that name is what the next step
+checks against. Send on an explicit yes. That yes covers that text: an edit needs
+a new one, and so does every follow-up message.
 
-## 5. Send
+## 5. Re-open the conversation, then send
+
+`send_chat_message` takes no recipient: it goes to whichever conversation the
+client has open when it runs, and the approval arrives a turn later, after the
+client has been left unattended. So re-establish the conversation immediately
+before sending, with no other call in between.
+
+Re-run the `open_chat` of step 2 with the same `source` and product name, then
+read the chat page and take the shop name off it:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" read
+```
+
+Compare that name against the one in the approval, and send only when the two are
+the same shop:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call send_chat_message --args-file /tmp/tb-msg.json
 ```
 
+Every other outcome is a stop, the undecidable ones included — a different shop,
+a page that yields no shop name, a pathology verdict. Send nothing, tell the user
+which conversation the client is on instead, and take the approval again against
+that.
+
 An image travels the same way, as an absolute path — only a file the user
-pointed at, and only after the same approval.
+pointed at, and only after the same approval and the same check.
 
 ## 6. Read the reply
 

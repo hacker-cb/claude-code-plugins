@@ -1,16 +1,13 @@
 # Calling the Taobao desktop client
 
-Every call to the client goes through the bundled companion. Run it with `node`
-and the plugin-root path; nothing else touches the client.
+Every call to the client goes through the bundled companion, `scripts/tb.mjs`
+under `node`; nothing else touches the client. Each skill carries that invocation
+in full — below, a call is named by its subcommand and flags alone.
 
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" up
-```
-
-`up` resolves the runtime, starts the client if it is not running, checks the
-gates, and reports what it found. Run it once before the first call of a task.
-When it reports a gate, show the user its `hint` and stop — a gate is a switch
-only they can flip.
+Run `up` before the first call of a task: it resolves the runtime, starts the
+client if it is not running, checks the gates, and reports what it found. When it
+reports a gate, show the user its `hint` and stop — a gate is a switch only they
+can flip.
 
 ## Subcommands
 
@@ -27,7 +24,8 @@ only they can flip.
 
 Useful flags: `--timeout <ms>`, `--out <path>` to force the spill file,
 `--max-inline <bytes>` to change when a result spills, `--no-lock` for read-only
-probing, `--source-app <name>`, `--raw` to see the wire envelope while debugging.
+probing, `--source-app <name>`, `--raw` for the unabridged answer — the wire
+envelope, and the argument schemas `tools` drops by default.
 
 ## Reading the answer
 
@@ -102,4 +100,9 @@ sellers by grouping product results on their shop name instead.
 
 Reading a page right after navigating to it returns a page that has not rendered.
 The companion waits, but the first call after the client has idled still takes
-several seconds — a cold navigation measured over six. Let it.
+several seconds. Let it.
+
+One call at a time, always — the client drives a single background tab with
+shared buffers, so overlapping calls read each other's page. That holds across
+skills and across whatever is being driven: two searches, two listings, a read
+issued while a navigation is still in flight.

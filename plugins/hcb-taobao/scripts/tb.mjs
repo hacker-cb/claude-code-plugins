@@ -37,10 +37,6 @@ const WINDOWS_PIPE = '\\\\.\\pipe\\taobao-cli-rpc';
 const USER_DATA_NAMES = ['taobao', 'com.alibaba.taobao'];
 const CHAT_CONSENT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-const LOCK_HEARTBEAT_MS = 5000;
-const LOCK_STALE_MS = 20000;
-const LOCK_PROBE_MS = 700;
-
 /**
  * Tools that change client state. The list is explicit on purpose: a regex over
  * verbs would silently misclassify the next tool the vendor adds. Anything that
@@ -67,6 +63,26 @@ const MUTATING_TOOLS = new Set([
   'hold_keyboard_key',
 ]);
 
+/**
+ * Tools known to change nothing, so repeating one is harmless. A name in neither
+ * set is treated as mutating: an unrecognised tool is never re-run behind the
+ * caller's back and never runs unlocked.
+ */
+const READ_ONLY_TOOLS = new Set([
+  '_ping',
+  '_help',
+  'get_browse_history',
+  'get_current_tab',
+  'inspect_page',
+  'list_available_pages',
+  'read_page_content',
+]);
+
+const mutates = (tool) => MUTATING_TOOLS.has(tool) || !READ_ONLY_TOOLS.has(tool);
+
+/** Every tool that spends a search slot, so every one of them is paced. */
+const SEARCH_TOOLS = new Set(['search_products', 'image_search']);
+
 const envInt = (name, def) => {
   const raw = process.env[name];
   const n = raw == null ? NaN : Number(raw);
@@ -78,6 +94,12 @@ const envNum = (name, def) => {
   return Number.isFinite(n) && n > 0 ? n : def;
 };
 
+const LEASE = {
+  ttlMs: Math.max(5000, envInt('HCB_TAOBAO_LEASE_TTL_MS', 120000)),
+  // Past this a live pid proves nothing: the number gets recycled.
+  pidGraceMs: envInt('HCB_TAOBAO_LEASE_PID_GRACE_MS', 900000),
+};
+
 const SEARCH = {
   minIntervalMs: envInt('HCB_TAOBAO_SEARCH_INTERVAL_MS', 25000),
   backoffBaseMs: envInt('HCB_TAOBAO_SEARCH_BACKOFF_MS', 300000),
@@ -86,6 +108,10 @@ const SEARCH = {
   maxAttempts: Math.max(1, envInt('HCB_TAOBAO_SEARCH_ATTEMPTS', 6)),
   canaryKeyword: process.env.HCB_TAOBAO_SEARCH_CANARY || '手机',
   canaryTtlMs: envInt('HCB_TAOBAO_SEARCH_CANARY_TTL_MS', 60000),
+  // One process is one call: waiting longer than this belongs to the caller.
+  // Under the host's own call timeout, so the throttle verdict is returned rather
+  // than killed with the command that was carrying it.
+  budgetMs: Math.max(1000, envInt('HCB_TAOBAO_SEARCH_BUDGET_MS', 90000)),
 };
 
 // ---------------------------------------------------------------------------
@@ -140,10 +166,12 @@ function toJsonLine(obj) {
 function emit(payload, exitCode) {
   if (emitted) return;
   emitted = true;
-  releaseLock();
+  // The lease outlives the process on purpose — see acquireLease.
   let line;
   try {
-    line = toJsonLine(payload);
+    line = toJsonLine(STATE.warning && payload && typeof payload === 'object' && payload.stateWarning === undefined
+      ? { ...payload, stateWarning: STATE.warning }
+      : payload);
   } catch {
     line = JSON.stringify({
       ok: false, kind: 'unknown', code: 'UNSERIALISABLE_RESULT',
@@ -185,14 +213,45 @@ const trunc = (s, n) => {
   return t.length <= n ? t : t.slice(0, n) + '…';
 };
 
-function dataDir() {
-  const d = process.env.CLAUDE_PLUGIN_DATA;
-  if (d && d.trim()) return d.trim();
-  return path.join(os.tmpdir(), 'hcb-taobao');
+/** Anything the companion remembers between calls, degraded rather than fatal. */
+const STATE = { dir: null, warning: null };
+
+/**
+ * State sits next to Claude Code's own configuration. `CLAUDE_CONFIG_DIR` is a
+ * real environment variable, so a hook and a plain Bash call resolve the same
+ * path — which is the whole point, since the lease is written by one and read by
+ * the other.
+ */
+function stateDir() {
+  if (STATE.dir) return STATE.dir;
+  const override = process.env.HCB_TAOBAO_STATE_DIR;
+  if (override && override.trim()) {
+    STATE.dir = path.resolve(override.trim());
+    return STATE.dir;
+  }
+  const cfg = process.env.CLAUDE_CONFIG_DIR;
+  let base = cfg && cfg.trim() ? path.resolve(cfg.trim()) : '';
+  if (!base) {
+    let home = '';
+    try { home = os.homedir() || ''; } catch { /* fall through */ }
+    if (!home) home = process.env.HOME || process.env.USERPROFILE || os.tmpdir();
+    base = path.join(home, '.claude');
+  }
+  STATE.dir = path.join(base, 'hcb-taobao');
+  return STATE.dir;
 }
 
+/** 0700 throughout: the lease, the pace file and the spills are this user's. */
 function ensureDir(p) {
-  try { fs.mkdirSync(p, { recursive: true }); return true; } catch { return false; }
+  try { fs.mkdirSync(p, { recursive: true, mode: 0o700 }); return true; } catch { return false; }
+}
+
+/** Returns the state directory, or null once — and records why it is gone. */
+function ensureStateDir() {
+  const d = stateDir();
+  if (ensureDir(d)) return d;
+  if (!STATE.warning) STATE.warning = `the state directory ${d} could not be created`;
+  return null;
 }
 
 function readJsonFile(p) {
@@ -200,17 +259,20 @@ function readJsonFile(p) {
 }
 
 /** Durable small write: a torn owner.json or pace file would be worse than none. */
-function writeJsonAtomic(p, obj) {
+function writeFileAtomic(p, text) {
   const tmp = `${p}.tmp.${process.pid}.${Math.random().toString(36).slice(2, 8)}`;
   try {
-    fs.writeFileSync(tmp, JSON.stringify(obj, null, 2), 'utf8');
+    fs.writeFileSync(tmp, text, { encoding: 'utf8', mode: 0o600 });
     fs.renameSync(tmp, p);
     return true;
-  } catch {
+  } catch (e) {
     try { fs.rmSync(tmp, { force: true }); } catch { /* ignore */ }
+    if (!STATE.warning) STATE.warning = `state could not be written to ${p} (${e.message})`;
     return false;
   }
 }
+
+const writeJsonAtomic = (p, obj) => writeFileAtomic(p, JSON.stringify(obj, null, 2));
 
 const nonce = () => process.pid.toString(36) + Math.random().toString(36).slice(2, 8);
 
@@ -257,7 +319,9 @@ function pageLength(result) {
 
 function evalStructure(structure, result) {
   const evidence = {};
-  if (!structure || typeof structure !== 'object') return { ok: false, evidence };
+  // No structural test at all is a rule decided by its signatures alone.
+  if (structure == null) return { ok: true, evidence };
+  if (typeof structure !== 'object' || Array.isArray(structure)) return { ok: false, evidence };
   for (const [name, arg] of Object.entries(structure)) {
     switch (name) {
       case 'pageLengthAtMost': {
@@ -457,21 +521,45 @@ function userDataCandidates() {
   return out;
 }
 
-function resolveAddress() {
+function addressCandidates() {
   const override = process.env.HCB_TAOBAO_SOCKET_PATH;
-  if (override && override.trim()) return { socketPath: override.trim(), userDataDir: null, source: 'env' };
+  if (override && override.trim()) return [{ socketPath: override.trim(), userDataDir: null, source: 'env' }];
+  const out = [];
   for (const dir of userDataCandidates()) {
     const file = path.join(dir, PORT_FILE);
     const data = readJsonFile(file);
     if (!data) continue;
-    if (data.socketPath != null) return { socketPath: String(data.socketPath), userDataDir: dir, file, source: 'port-file' };
-    if (data.port != null) return { port: Number(data.port), userDataDir: dir, file, source: 'port-file' };
+    if (data.socketPath != null) out.push({ socketPath: String(data.socketPath), userDataDir: dir, file, source: 'port-file' });
+    else if (data.port != null) out.push({ port: Number(data.port), userDataDir: dir, file, source: 'port-file' });
   }
-  if (process.platform === 'win32') {
+  if (!out.length && process.platform === 'win32') {
     // The pipe name is fixed, so a missing address file is not fatal on Windows.
-    return { socketPath: WINDOWS_PIPE, userDataDir: userDataCandidates()[0] ?? null, source: 'well-known-pipe' };
+    out.push({ socketPath: WINDOWS_PIPE, userDataDir: userDataCandidates()[0] ?? null, source: 'well-known-pipe' });
   }
-  return null;
+  return out;
+}
+
+let addressCache = null;
+
+/**
+ * A port file outlives the client that wrote it, so the first one parsed is not
+ * the address — the one that answers is. A single candidate is handed back
+ * unprobed: the call about to be made is its own probe.
+ */
+async function resolveAddress(opts = {}) {
+  if (addressCache && !opts.fresh) return addressCache;
+  if (opts.fresh) addressCache = null;
+  const cands = addressCandidates();
+  if (!cands.length) return null;
+  if (cands.length === 1) { addressCache = cands[0]; return addressCache; }
+  for (const c of cands) {
+    if ((await ping(c, opts.timeoutMs ?? PING_TIMEOUT_MS)).alive) {
+      addressCache = { ...c, verified: true };
+      return addressCache;
+    }
+  }
+  // Nothing answered: name a real candidate so the failure is about an address.
+  return { ...cands[0], verified: false };
 }
 
 function activeUserDataDir() {
@@ -479,6 +567,14 @@ function activeUserDataDir() {
     if (fs.existsSync(path.join(dir, PORT_FILE)) || fs.existsSync(path.join(dir, CONFIG_FILE))) return dir;
   }
   return null;
+}
+
+/** The Wangwang consent runs out on a clock the client records; null when unset. */
+function chatConsent(config) {
+  const at = Number(config?.mcpChatAgreedAt);
+  if (!Number.isFinite(at) || at <= 0) return null;
+  const leftMs = at + CHAT_CONSENT_TTL_MS - Date.now();
+  return { leftMs, expiresInDays: Math.round((leftMs / 86400000) * 10) / 10, lapsed: leftMs <= 0 };
 }
 
 function resolveRuntime() {
@@ -619,10 +715,9 @@ function rpcCli(body, timeoutMs) {
     const unsafe = cliPayloadUnsafe(body);
     if (unsafe) return resolve({ status: 'unsafe', reason: unsafe });
 
-    const dir = dataDir();
-    ensureDir(dir);
+    const dir = ensureStateDir() ?? os.tmpdir();
     const reqFile = path.join(dir, `req-${nonce()}.json`);
-    try { fs.writeFileSync(reqFile, JSON.stringify(body), 'utf8'); } catch (e) { return resolve({ status: 'error', error: e }); }
+    try { fs.writeFileSync(reqFile, JSON.stringify(body), { encoding: 'utf8', mode: 0o600 }); } catch (e) { return resolve({ status: 'error', error: e }); }
 
     const rt = resolveRuntime();
     let child;
@@ -715,7 +810,7 @@ async function callTool(tool, args, opts = {}) {
   const timeout = opts.timeout ?? OPT.timeout;
   const body = { tool, arguments: args ?? {} };
   const wantCli = OPT.transport === 'cli';
-  const addr = wantCli ? null : resolveAddress();
+  const addr = wantCli ? null : await resolveAddress();
 
   if (!wantCli && !addr) {
     return {
@@ -730,9 +825,10 @@ async function callTool(tool, args, opts = {}) {
   const shapeIsWrong = res.status === 'badjson'
     || (res.status === 'ok' && ['NOT_AN_ENVELOPE', 'NO_RESULT_FIELD'].includes(classify(res.envelope, tool, opts.suppress).code));
 
-  // Auto-fallback only where re-running is harmless: a mutating call has already
-  // executed server-side even when its answer was unreadable.
-  if (OPT.transport === 'auto' && shapeIsWrong && !MUTATING_TOOLS.has(tool)) {
+  // Auto-fallback only for a tool known to change nothing: any other call has
+  // already executed server-side even when its answer was unreadable, and a tool
+  // this build has never heard of is exactly the one not to run twice.
+  if (OPT.transport === 'auto' && shapeIsWrong && READ_ONLY_TOOLS.has(tool)) {
     const alt = await rpcCli(body, timeout);
     if (alt.status === 'ok') { res = alt; via = 'cli-fallback'; }
   }
@@ -816,8 +912,7 @@ function summarise(tool, r) {
 }
 
 function spillDir() {
-  const d = process.env.CLAUDE_PLUGIN_DATA;
-  const base = d && d.trim() ? path.join(d.trim(), 'results') : path.join(os.tmpdir(), 'hcb-taobao', 'results');
+  const base = path.join(stateDir(), 'results');
   ensureDir(base);
   return base;
 }
@@ -835,7 +930,7 @@ function finishOk(tool, ms, result, extra = {}) {
   const file = OPT.out ? path.resolve(OPT.out) : path.join(spillDir(), `${tool}-${stamp()}.json`);
   try {
     ensureDir(path.dirname(file));
-    fs.writeFileSync(file, JSON.stringify({ tool, ms, ...extra, result }, null, 2), 'utf8');
+    fs.writeFileSync(file, JSON.stringify({ tool, ms, ...extra, result }, null, 2), { encoding: 'utf8', mode: 0o600 });
   } catch (e) {
     if (bytes === Infinity) {
       return fail({
@@ -865,12 +960,12 @@ function emitClassified(cls, extra = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// cross-session lock
+// cross-session lease
 // ---------------------------------------------------------------------------
 
-const LOCK = { dir: null, held: false, reentrant: false, timer: null, server: null, endpoint: null };
-
-const lockDirPath = () => path.join(dataDir(), 'client.lock.d');
+const lockDirPath = () => path.join(stateDir(), 'client.lock.d');
+const ownerPath = (dir) => path.join(dir, 'owner.json');
+const lockModePath = () => path.join(stateDir(), 'lock-mode');
 
 /** Set from a hook payload's session_id, which outranks the environment. */
 let sessionOverride = null;
@@ -884,186 +979,251 @@ function sessionId() {
   return `ppid:${process.ppid}`;
 }
 
-function lockMode() {
-  const raw = (process.env.HCB_TAOBAO_LOCK_MODE || process.env.CLAUDE_PLUGIN_OPTION_LOCK_MODE || 'warn').trim().toLowerCase();
-  return ['off', 'warn', 'ask', 'deny'].includes(raw) ? raw : 'warn';
+const LOCK_MODES = ['off', 'warn', 'ask', 'deny'];
+
+/**
+ * `CLAUDE_PLUGIN_OPTION_LOCK_MODE` is exported only into processes Claude Code
+ * spawns from plugin config, which a Bash call is not — so the preflight hook,
+ * which does see it, writes it down and every later call reads it from there.
+ * The first source that has anything to say decides; a value that names no known
+ * mode means warn rather than a silent `off`.
+ */
+function lockModeInfo() {
+  const sources = [
+    ['HCB_TAOBAO_LOCK_MODE', process.env.HCB_TAOBAO_LOCK_MODE],
+    ['CLAUDE_PLUGIN_OPTION_LOCK_MODE', process.env.CLAUDE_PLUGIN_OPTION_LOCK_MODE],
+    ['state', readLockModeFile()],
+  ];
+  for (const [source, raw] of sources) {
+    if (raw == null) continue;
+    const v = String(raw).trim().toLowerCase();
+    if (!v) continue;
+    return LOCK_MODES.includes(v) ? { mode: v, source } : { mode: 'warn', source, unknown: v };
+  }
+  return { mode: 'warn', source: 'default' };
 }
 
-const ownerPath = (dir) => path.join(dir, 'owner.json');
-const heartbeatPath = (dir) => path.join(dir, 'heartbeat');
+const lockMode = () => lockModeInfo().mode;
 
-function heartbeatAgeMs(dir) {
-  try { return Date.now() - fs.statSync(heartbeatPath(dir)).mtimeMs; } catch { return null; }
+function readLockModeFile() {
+  try { return fs.readFileSync(lockModePath(), 'utf8'); } catch { return null; }
 }
 
-function endpointAddress() {
-  const id = nonce();
-  // Short path on purpose: a unix socket path is capped near 104 bytes.
-  return process.platform === 'win32' ? `\\\\.\\pipe\\hcb-tb-lock-${id}` : path.join(os.tmpdir(), `hcb-tb-${id}.sock`);
+/** Hook-only: carries the plugin option across to plain Bash calls. */
+function persistLockMode() {
+  const raw = process.env.CLAUDE_PLUGIN_OPTION_LOCK_MODE;
+  if (raw == null || !String(raw).trim()) return null;
+  const v = String(raw).trim().toLowerCase();
+  if (!ensureStateDir()) return null;
+  if (readLockModeFile()?.trim().toLowerCase() === v) return null;
+  return writeFileAtomic(lockModePath(), `${v}\n`) ? v : null;
 }
 
-/** A kernel-level witness: only a live process can keep this listener bound. */
-function endpointResponds(addr, timeoutMs = LOCK_PROBE_MS) {
-  return new Promise((resolve) => {
-    let settled = false;
-    let s = null;
-    const done = (v) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      try { s?.destroy(); } catch { /* ignore */ }
-      resolve(v);
-    };
-    const timer = setTimeout(() => done(false), timeoutMs);
-    timer.unref?.();
-    try { s = net.createConnection(addr); } catch { return done(false); }
-    s.on('connect', () => done(true));
-    s.on('error', () => done(false));
-  });
+const leaseTtlOf = (owner) => {
+  const ttl = Number(owner?.leaseMs);
+  return Number.isFinite(ttl) && ttl > 0 ? ttl : LEASE.ttlMs;
+};
+
+function leaseLeftMs(owner) {
+  const at = Number(owner?.renewedAt);
+  if (!Number.isFinite(at)) return null;
+  return at + leaseTtlOf(owner) - Date.now();
 }
 
-async function holderIsAlive(dir, owner) {
+function pidLooksAlive(owner) {
+  if (!owner || owner.host !== os.hostname()) return false;
+  const pid = Number(owner.pid);
+  if (!Number.isInteger(pid) || pid <= 1) return false;
+  const at = Number(owner.renewedAt);
+  if (!Number.isFinite(at) || Date.now() - at > LEASE.pidGraceMs) return false;
+  try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
+}
+
+/**
+ * A lease, not a process. The holder's process exits between calls — a chain of
+ * navigate → read → click is one driver across several of them — so liveness is
+ * the freshness of the lease. A process still running past its lease is a call
+ * in flight and holds it too, which is why the pid is recorded.
+ */
+function holderIsAlive(dir, owner) {
   if (!owner) {
     // The winner of mkdir has not written owner.json yet; a brand-new directory
-    // is a lock being taken, not an orphan.
+    // is a lease being taken, not an orphan.
     try {
       const st = fs.statSync(dir);
-      if (Date.now() - Math.max(st.birthtimeMs || 0, st.ctimeMs || 0) < 2000) return true;
-    } catch { /* ignore */ }
+      return Date.now() - Math.max(st.birthtimeMs || 0, st.ctimeMs || 0) < 2000;
+    } catch { return false; }
   }
-  const endpointOk = owner?.endpoint ? await endpointResponds(owner.endpoint) : null;
-  if (endpointOk === true) return true;
-
-  const age = heartbeatAgeMs(dir);
-  const fresh = age !== null && age < LOCK_STALE_MS;
-  if (fresh) return true;
-
-  if (endpointOk === null && owner?.pid && owner.host === os.hostname()) {
-    try { process.kill(owner.pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
-  }
-  return false;
+  const left = leaseLeftMs(owner);
+  if (left !== null && left > 0) return true;
+  return pidLooksAlive(owner);
 }
 
-/** rename is atomic, so exactly one racer reaps a given orphan. */
-function reapLock(dir) {
+const ownerMatches = (owner, expect) => Boolean(
+  owner && expect && (
+    (expect.nonce && owner.nonce === expect.nonce)
+    || (expect.sessionId && owner.sessionId === expect.sessionId)
+  ),
+);
+
+/**
+ * Removes at most one socket, and only one this companion could have written:
+ * an `endpoint` in a lease record is data, and data never names a path to delete.
+ */
+function removeStateSocket(p) {
+  if (typeof p !== 'string' || !p || process.platform === 'win32') return;
+  const abs = path.resolve(p);
+  const root = path.resolve(stateDir()) + path.sep;
+  if (!abs.startsWith(root)) return;
+  try { if (!fs.lstatSync(abs).isSocket()) return; } catch { return; }
+  try { fs.rmSync(abs, { force: true }); } catch { /* ignore */ }
+}
+
+/**
+ * rename is atomic, so exactly one racer reaps a given record. With `expect`,
+ * the record is dropped only when it is still the one named — releasing another
+ * session's live lease is how two drivers end up on one tab.
+ */
+function reapLock(dir, expect) {
+  if (expect) {
+    const owner = readJsonFile(ownerPath(dir));
+    if (!ownerMatches(owner, expect)) return false;
+    // A holder that came back renews the record it already had, so the nonce is
+    // still the same one: only the timestamp tells a lease judged dead apart
+    // from that lease alive again.
+    if (expect.renewedAt !== undefined && Number(owner?.renewedAt) !== Number(expect.renewedAt)) return false;
+  }
   const dead = `${dir}.dead.${nonce()}`;
   try { fs.renameSync(dir, dead); } catch { return false; }
-  const owner = readJsonFile(ownerPath(dead));
-  if (owner?.endpoint && process.platform !== 'win32') {
-    try { fs.rmSync(owner.endpoint, { force: true }); } catch { /* ignore */ }
-  }
+  removeStateSocket(readJsonFile(ownerPath(dead))?.endpoint);
   try { fs.rmSync(dead, { recursive: true, force: true }); } catch { /* ignore */ }
   return true;
 }
 
-function startHeartbeat(dir) {
-  const beat = () => {
-    try { fs.utimesSync(heartbeatPath(dir), new Date(), new Date()); } catch {
-      // The file may have been swept; recreating it keeps the lock from reading as stale.
-      try { fs.writeFileSync(heartbeatPath(dir), String(Date.now()), 'utf8'); } catch { /* ignore */ }
-    }
+function ownerRecord(reason, prev) {
+  return {
+    nonce: prev?.nonce ?? nonce(),
+    sessionId: sessionId(),
+    pid: process.pid,
+    host: os.hostname(),
+    since: prev?.since ?? new Date().toISOString(),
+    renewedAt: Date.now(),
+    leaseMs: LEASE.ttlMs,
+    reason: reason || null,
+    argv: process.argv.slice(2, 6).join(' '),
   };
-  try { fs.writeFileSync(heartbeatPath(dir), String(Date.now()), 'utf8'); } catch { /* ignore */ }
-  const t = setInterval(beat, LOCK_HEARTBEAT_MS);
-  t.unref?.();
-  return t;
 }
 
-async function acquireLock(reason) {
+/**
+ * Takes the lease, or renews the one this session already holds. It is not
+ * dropped when the process exits: the next call of the same chain renews it, an
+ * abandoned one expires on its own, and the session hooks end it early.
+ */
+async function acquireLease(reason) {
+  if (!ensureStateDir()) return { state: 'unavailable', error: STATE.warning };
   const dir = lockDirPath();
-  if (!ensureDir(path.dirname(dir))) return { state: 'unavailable' };
 
   for (let attempt = 0; attempt < 4; attempt++) {
+    let mine = false;
     try {
-      fs.mkdirSync(dir);
+      // No `recursive`: EEXIST is what makes this the mutual exclusion.
+      fs.mkdirSync(dir, { mode: 0o700 });
+      mine = true;
     } catch (e) {
       if (e.code !== 'EEXIST') return { state: 'unavailable', error: e.message };
-      const owner = readJsonFile(ownerPath(dir));
-      if (owner && owner.sessionId && owner.sessionId === sessionId()) {
-        LOCK.reentrant = true;
-        return { state: 'reentrant', owner };
-      }
-      if (await holderIsAlive(dir, owner)) return { state: 'held', owner };
-      if (!reapLock(dir)) await sleep(120);
-      continue;
     }
 
-    LOCK.dir = dir;
-    LOCK.held = true;
-    const ep = endpointAddress();
-    try {
-      // A prober destroys its socket the moment it connects, so the close is
-      // routine — without this listener the EPIPE would surface as a crash.
-      const srv = net.createServer((c) => { c.on('error', () => {}); c.end(); });
-      srv.on('error', () => { /* the lock stands without its witness */ });
-      srv.listen(ep);
-      srv.unref?.();
-      LOCK.server = srv;
-      LOCK.endpoint = ep;
-    } catch { LOCK.endpoint = null; }
+    if (mine) {
+      const rec = ownerRecord(reason, null);
+      if (!writeJsonAtomic(ownerPath(dir), rec)) {
+        // An unidentifiable record blocks everyone for a whole lease; drop it.
+        try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
+        return { state: 'unavailable', error: 'the lease record could not be written' };
+      }
+      return { state: 'acquired', owner: rec };
+    }
 
-    writeJsonAtomic(ownerPath(dir), {
-      pid: process.pid,
-      sessionId: sessionId(),
-      host: os.hostname(),
-      since: new Date().toISOString(),
-      reason: reason || null,
-      endpoint: LOCK.endpoint,
-      argv: process.argv.slice(2, 6).join(' '),
-    });
-    LOCK.timer = startHeartbeat(dir);
-    return { state: 'acquired' };
+    const owner = readJsonFile(ownerPath(dir));
+    if (owner && owner.sessionId && owner.sessionId === sessionId()) {
+      const rec = ownerRecord(reason, { nonce: owner.nonce, since: owner.since });
+      const written = writeJsonAtomic(ownerPath(dir), rec);
+      return { state: 'renewed', owner: written ? rec : owner, ...(written ? {} : { degraded: 'the lease could not be renewed on disk; it will expire on its own schedule' }) };
+    }
+    if (holderIsAlive(dir, owner)) return { state: 'held', owner };
+    // Drop the record that was judged dead, not whatever sits there now: the
+    // holder renewing in this gap is a live lease, and taking it would put two
+    // drivers on one tab. A record too damaged to name its holder is reaped
+    // unconditionally — nothing else would ever clear it.
+    if (!reapLock(dir, owner?.nonce ? { nonce: owner.nonce, renewedAt: owner.renewedAt } : null)) await sleep(80);
   }
   return { state: 'held', owner: readJsonFile(ownerPath(dir)) };
 }
 
-function releaseLock() {
-  if (LOCK.timer) { try { clearInterval(LOCK.timer); } catch { /* ignore */ } LOCK.timer = null; }
-  if (LOCK.server) { try { LOCK.server.close(); } catch { /* ignore */ } LOCK.server = null; }
-  if (LOCK.endpoint && process.platform !== 'win32') {
-    try { fs.rmSync(LOCK.endpoint, { force: true }); } catch { /* ignore */ }
-  }
-  LOCK.endpoint = null;
-  if (!LOCK.held || !LOCK.dir) return;
-  LOCK.held = false;
-  try { fs.rmSync(LOCK.dir, { recursive: true, force: true }); } catch { /* ignore */ }
+/** The lease another session holds right now, or null. */
+function foreignLease() {
+  const dir = lockDirPath();
+  if (!fs.existsSync(dir)) return null;
+  const owner = readJsonFile(ownerPath(dir));
+  if (owner && owner.sessionId && owner.sessionId === sessionId()) return null;
+  if (!holderIsAlive(dir, owner)) return null;
+  return owner || {};
 }
 
-/** Acquires only for tools that change client state. Returns null, or a payload fragment to merge. */
-async function guardLock(tool) {
-  if (!MUTATING_TOOLS.has(tool)) return {};
-  const mode = OPT.noLock ? 'off' : lockMode();
-  if (mode === 'off') return {};
+const describeOwner = (owner) => (owner.sessionId
+  ? `session ${owner.sessionId}, pid ${owner.pid ?? '?'}${owner.since ? `, since ${owner.since}` : ''}`
+  : 'another session is claiming it right now and has not identified itself yet');
 
-  const res = await acquireLock(tool);
-  if (res.state === 'acquired' || res.state === 'reentrant') {
-    return res.state === 'reentrant' ? { lock: 'reentrant' } : {};
-  }
-  if (res.state === 'unavailable') {
-    return { lockWarning: `the lock directory could not be used${res.error ? ` (${res.error})` : ''}; proceeding without a lock` };
-  }
-  const owner = res.owner || {};
-  const who = owner.sessionId
-    ? `session ${owner.sessionId}, pid ${owner.pid ?? '?'}${owner.since ? `, since ${owner.since}` : ''}`
-    : 'another session is claiming it right now and has not identified itself yet';
+/** Returns a payload fragment, or null once the refusal has been emitted. */
+function refuseOrWarn(owner, mode) {
+  const who = describeOwner(owner);
   if (mode === 'warn') return { lockWarning: `another session is driving the client (${who}); proceeding anyway because lock_mode is warn` };
-
+  const left = leaseLeftMs(owner);
   fail({
     kind: 'lock', code: 'LOCK_HELD',
     message: `another session is driving the client (${who})`,
     hint: mode === 'ask'
-      ? 'Ask the user whether to take over. To go ahead re-run with --no-lock; to drop a lock whose holder is gone run `lock release`.'
+      ? 'Ask the user whether to take over. To go ahead re-run with --no-lock; to drop a lease whose holder is gone run `lock release`.'
       : 'Wait for the other session to finish, or run `lock release` if you know its holder is gone.',
     retriable: true, owner, lockMode: mode,
+    ...(left !== null && left > 0 ? { retryAfterMs: left } : {}),
   });
   return null;
+}
+
+/**
+ * A mutating call takes or renews the lease. A read takes none — but the client
+ * drives one shared tab, so a read issued while another session is steering it
+ * answers about that session's page, and the mode decides what to do about it.
+ */
+async function guardLock(tool) {
+  const mode = OPT.noLock ? 'off' : lockMode();
+  if (mode === 'off') return {};
+
+  if (!mutates(tool)) {
+    const foreign = foreignLease();
+    return foreign ? refuseOrWarn(foreign, mode) : {};
+  }
+
+  const res = await acquireLease(tool);
+  if (res.state === 'acquired' || res.state === 'renewed') {
+    const left = leaseLeftMs(res.owner);
+    return {
+      lock: res.state,
+      ...(left !== null ? { leaseExpiresInMs: Math.max(0, left) } : {}),
+      ...(res.degraded ? { lockWarning: res.degraded } : {}),
+    };
+  }
+  if (res.state === 'unavailable') {
+    return { lockWarning: `the lease could not be recorded${res.error ? ` (${res.error})` : ''}; proceeding without a lock` };
+  }
+  return refuseOrWarn(res.owner || {}, mode);
 }
 
 // ---------------------------------------------------------------------------
 // search pacing
 // ---------------------------------------------------------------------------
 
-const pacePath = () => path.join(dataDir(), 'search-pace.json');
+const pacePath = () => path.join(stateDir(), 'search-pace.json');
 
 function readPace() {
   const d = readJsonFile(pacePath());
@@ -1071,16 +1231,22 @@ function readPace() {
 }
 
 function writePace(patch) {
-  ensureDir(dataDir());
-  writeJsonAtomic(pacePath(), { ...readPace(), ...patch });
+  if (!ensureStateDir()) return false;
+  return writeJsonAtomic(pacePath(), { ...readPace(), ...patch });
 }
 
 /** Pacing is per client, not per process, so the last call time lives in a file. */
-async function respectPace() {
+function paceWaitMs() {
   const last = Number(readPace().lastSearchAt);
   if (!Number.isFinite(last)) return 0;
-  const wait = last + SEARCH.minIntervalMs - Date.now();
+  return Math.max(0, last + SEARCH.minIntervalMs - Date.now());
+}
+
+/** Sleeps out the pacing interval; null when the wait outlasts the budget left. */
+async function respectPace(budgetLeftMs = Infinity) {
+  const wait = paceWaitMs();
   if (wait <= 0) return 0;
+  if (wait > budgetLeftMs) return null;
   await sleep(wait);
   return wait;
 }
@@ -1102,14 +1268,17 @@ function productCount(result) {
 
 /**
  * A throttled search and an honestly empty one look identical, so a control
- * keyword decides. The verdict is cached briefly: it costs a search slot.
+ * keyword decides. Only a `blocked` verdict is remembered, and only briefly:
+ * "alive" is the verdict that turns a block into "nothing was found", so it is
+ * earned again for every search rather than read off a cache.
  */
-async function canaryVerdict(searchTool, baseArgs) {
+async function canaryVerdict(searchTool, baseArgs, budgetLeftMs = Infinity) {
   const cached = readPace().canary;
-  if (cached && Number.isFinite(cached.at) && Date.now() - cached.at < SEARCH.canaryTtlMs) {
-    return { verdict: cached.verdict, cached: true };
+  if (cached && cached.verdict === 'blocked' && Number.isFinite(cached.at) && Date.now() - cached.at < SEARCH.canaryTtlMs) {
+    return { verdict: 'blocked', cached: true };
   }
-  await respectPace();
+  const paced = await respectPace(budgetLeftMs);
+  if (paced === null) return { verdict: 'unknown', cached: false, outOfBudget: true, waitMs: paceWaitMs() };
   const cls = await callTool(searchTool, { ...baseArgs, keyword: SEARCH.canaryKeyword }, {
     suppress: new Set(['SEARCH_SILENT_THROTTLE']),
   });
@@ -1120,7 +1289,7 @@ async function canaryVerdict(searchTool, baseArgs) {
     if (n === null) verdict = 'unknown';
     else verdict = n > 0 ? 'alive' : 'blocked';
   }
-  writePace({ canary: { at: Date.now(), verdict, keyword: SEARCH.canaryKeyword } });
+  writePace({ canary: verdict === 'blocked' ? { at: Date.now(), verdict, keyword: SEARCH.canaryKeyword } : null });
   return { verdict, cached: false, failure: cls.kind === 'ok' ? null : cls };
 }
 
@@ -1181,8 +1350,12 @@ async function cmdCall() {
   if (args === null) return;
   const lockFragment = await guardLock(tool);
   if (lockFragment === null) return;
+  // Pacing is per client and per search slot, not per subcommand: a search tool
+  // reached through `call` spends the same slot `search` does.
+  const paced = SEARCH_TOOLS.has(tool) ? await respectPace() : 0;
   const cls = await callTool(tool, withSourceApp(args));
-  emitClassified(cls, lockFragment);
+  if (SEARCH_TOOLS.has(tool)) markPace();
+  emitClassified(cls, { ...lockFragment, ...(paced ? { waits: [{ reason: 'pacing', ms: paced }] } : {}) });
 }
 
 async function cmdRead() {
@@ -1192,8 +1365,10 @@ async function cmdRead() {
   if (Number.isFinite(max) && max > 0) args.maxLength = Math.floor(max);
   const offset = Number(OPT.flags.offset);
   if (Number.isFinite(offset) && offset >= 0) args.offset = Math.floor(offset);
+  const lockFragment = await guardLock('read_page_content');
+  if (lockFragment === null) return;
   const cls = await callTool('read_page_content', withSourceApp(args));
-  emitClassified(cls);
+  emitClassified(cls, lockFragment);
 }
 
 async function cmdTools() {
@@ -1216,18 +1391,42 @@ async function cmdSearch() {
   // Test seam: lets the pacing and canary machinery be exercised without a live search.
   const searchTool = process.env.HCB_TAOBAO_SEARCH_TOOL || 'search_products';
 
-  const lockFragment = await guardLock('search_products');
+  const lockFragment = await guardLock(searchTool);
   if (lockFragment === null) return;
 
   const base = withSourceApp(typeof OPT.flags.type === 'string' ? { type: OPT.flags.type } : {});
   const t0 = Date.now();
+  const budgetLeft = () => SEARCH.budgetMs - (Date.now() - t0);
   const suppress = new Set(['SEARCH_SILENT_THROTTLE']);
   const waits = [];
   let lastZero = null;
+  let attempt = 0;
 
-  for (let attempt = 1; attempt <= SEARCH.maxAttempts; attempt++) {
-    const paced = await respectPace();
+  /**
+   * One process is one call, so a wait that does not fit the budget is handed
+   * back as `retryAfterMs` instead of slept through: the caller comes back later
+   * and keeps its own turn responsive.
+   */
+  const throttled = (message, retryAfterMs, extra = {}) => fail({
+    kind: 'pathology', code: 'SEARCH_THROTTLED',
+    message,
+    hint: 'The client is being throttled, not asked a bad question. Wait out `retryAfterMs` before searching again — the working recipe is a long pause, not a faster retry — and tell the user why the shortlist is incomplete.',
+    retriable: true, retryAfterMs: Math.max(1000, Math.round(retryAfterMs)),
+    tool: searchTool, ms: Date.now() - t0, attempts: attempt, budgetMs: SEARCH.budgetMs,
+    ...(waits.length ? { waits } : {}), ...lockFragment, ...extra,
+    ...(OPT.raw && lastZero?.envelope !== undefined ? { raw: lastZero.envelope } : {}),
+  });
+
+  while (attempt < SEARCH.maxAttempts) {
+    const paced = await respectPace(budgetLeft());
+    if (paced === null) {
+      return throttled(
+        `the client's search pacing still needs ${paceWaitMs()} ms and this call's ${SEARCH.budgetMs} ms budget is spent`,
+        paceWaitMs(), { verdict: 'unattempted' },
+      );
+    }
     if (paced) waits.push({ reason: 'pacing', ms: paced });
+    attempt++;
 
     const cls = await callTool(searchTool, { ...base, keyword }, { suppress });
     markPace();
@@ -1251,34 +1450,41 @@ async function cmdSearch() {
     }
 
     lastZero = cls;
-    const canary = await canaryVerdict(searchTool, base);
+    const canary = await canaryVerdict(searchTool, base, budgetLeft());
     // A gate or a dead transport is not something backing off can fix.
     if (canary.failure && ['gate', 'transport', 'protocol'].includes(canary.failure.kind)) {
       return emitClassified(canary.failure, { ...lockFragment, attempts: attempt, duringCanary: true });
     }
+    if (canary.outOfBudget) {
+      return throttled(
+        `search returned zero products and this call's ${SEARCH.budgetMs} ms budget ran out before the control keyword "${SEARCH.canaryKeyword}" could tell an empty query from a block`,
+        canary.waitMs, { verdict: 'unverified' },
+      );
+    }
     if (canary.verdict === 'alive') {
       return finishOk(searchTool, Date.now() - t0, cls.result, {
         via: cls.via, attempts: attempt, verdict: 'empty-confirmed',
-        note: `the control keyword "${SEARCH.canaryKeyword}" still returns results${canary.cached ? ' (cached verdict)' : ''}, so this keyword is genuinely empty rather than blocked`,
+        note: `the control keyword "${SEARCH.canaryKeyword}" still returns results, so this keyword is genuinely empty rather than blocked`,
         ...(waits.length ? { waits } : {}), ...lockFragment,
       });
     }
 
     if (attempt >= SEARCH.maxAttempts) break;
     const delay = backoffMs(attempt);
+    if (delay > budgetLeft()) {
+      return throttled(
+        `search returned zero products on ${attempt} attempt${attempt === 1 ? '' : 's'} and the control keyword "${SEARCH.canaryKeyword}" came back ${canary.verdict}; the next back-off of ${delay} ms does not fit this call's ${SEARCH.budgetMs} ms budget`,
+        delay, { verdict: canary.verdict },
+      );
+    }
     waits.push({ reason: canary.verdict === 'blocked' ? 'throttle-backoff' : 'unverified-backoff', ms: delay });
     await sleep(delay);
   }
 
-  fail({
-    kind: 'pathology', code: 'SEARCH_THROTTLED',
-    message: `search returned zero products on every one of ${SEARCH.maxAttempts} attempts, and the control keyword "${SEARCH.canaryKeyword}" came back empty too`,
-    hint: 'The client is being throttled, not asked a bad question. Stop searching for a while — the working recipe is a long pause, not a faster retry — and tell the user why the shortlist is incomplete.',
-    retriable: true, retryAfterMs: SEARCH.backoffCapMs,
-    tool: searchTool, ms: Date.now() - t0, attempts: SEARCH.maxAttempts,
-    ...(waits.length ? { waits } : {}), ...lockFragment,
-    ...(OPT.raw && lastZero?.envelope !== undefined ? { raw: lastZero.envelope } : {}),
-  });
+  throttled(
+    `search returned zero products on every one of ${attempt} attempt${attempt === 1 ? '' : 's'}, and the control keyword "${SEARCH.canaryKeyword}" came back empty too`,
+    SEARCH.backoffCapMs, { verdict: 'exhausted' },
+  );
 }
 
 function removeStartupMarkers() {
@@ -1315,18 +1521,22 @@ function launchApp(appPath) {
 async function cmdUp() {
   const t0 = Date.now();
   const runtime = resolveRuntime();
-  const appPath = resolveAppPath();
   const report = {
     runtime: { kind: runtime.kind, node: runtime.node, exec: runtime.exec },
-    client: { running: false, launched: false, appPath, version: readAppVersion(appPath) },
+    client: { running: false, launched: false, appPath: null, version: null },
     gates: {},
     warnings: [],
   };
 
-  let addr = resolveAddress();
+  let addr = await resolveAddress();
   let alive = addr ? (await ping(addr)).alive : false;
 
   if (!alive) {
+    // Locating the application costs an mdfind; only a client that has to be
+    // started needs it.
+    const appPath = resolveAppPath();
+    report.client.appPath = appPath;
+    report.client.version = readAppVersion(appPath);
     if (!appPath) {
       return fail({
         kind: 'transport', code: 'CLIENT_NOT_FOUND',
@@ -1351,12 +1561,12 @@ async function cmdUp() {
     while (Date.now() < deadline) {
       await sleep(STARTUP_POLL_MS);
       if (!startupMarkerPresent()) continue;
-      addr = resolveAddress();
+      addr = await resolveAddress({ fresh: true });
       if (addr && (await ping(addr)).alive) { alive = true; break; }
     }
     if (!alive) {
       // The marker is written on home-page load; liveness is decided by _ping.
-      addr = resolveAddress();
+      addr = await resolveAddress({ fresh: true });
       alive = addr ? (await ping(addr)).alive : false;
     }
     if (!alive) {
@@ -1380,10 +1590,10 @@ async function cmdUp() {
     report.gates.aiAgent = config.mcpEnabled === false ? 'off' : 'on';
     report.gates.ordering = config.mcpOrderEnabled === true ? 'on' : 'off';
     report.gates.chat = config.mcpChatEnabled === true ? 'on' : 'off';
-    if (typeof config.mcpChatAgreedAt === 'number' && config.mcpChatAgreedAt > 0) {
-      const left = config.mcpChatAgreedAt + CHAT_CONSENT_TTL_MS - Date.now();
-      report.gates.chatConsentExpiresInDays = Math.round((left / 86400000) * 10) / 10;
-      if (left <= 0) report.warnings.push('the Wangwang chat consent has lapsed; the user must re-authorise it before any chat tool works');
+    const consent = chatConsent(config);
+    if (consent) {
+      report.gates.chatConsentExpiresInDays = consent.expiresInDays;
+      if (consent.lapsed) report.warnings.push('the Wangwang chat consent has lapsed; the user must re-authorise it before any chat tool works');
     }
     if (config.usernick) report.client.account = String(config.usernick);
     if (report.gates.aiAgent === 'off') {
@@ -1398,20 +1608,23 @@ async function cmdUp() {
     report.warnings.push('the client config could not be read, so the gate states below come only from the probe call');
   }
 
+  // _ping is answered by the transport; the probe is the first thing that proves
+  // a tool actually runs. Preflight that passes on a failed probe passes on
+  // nothing, so the probe decides `up`.
   const probe = await callTool('get_current_tab', withSourceApp({}), { timeout: Math.max(OPT.timeout, 15000) });
   report.probe = { tool: 'get_current_tab', ms: probe.ms, kind: probe.kind, via: probe.via };
-  if (probe.kind === 'gate') {
+  if (probe.kind !== 'ok') {
+    report.probe.code = probe.code;
     return fail({
-      kind: 'gate', code: probe.code, message: probe.message, hint: probe.hint,
-      retriable: Boolean(probe.retriable), ms: Date.now() - t0, report,
+      kind: probe.kind, code: probe.code, message: probe.message, hint: probe.hint,
+      retriable: Boolean(probe.retriable),
+      ...(probe.retryAfterMs !== undefined ? { retryAfterMs: probe.retryAfterMs } : {}),
+      ...(probe.evidence ? { evidence: probe.evidence } : {}),
+      ms: Date.now() - t0, report,
     });
   }
-  if (probe.kind === 'ok') {
-    report.probe.url = trunc(probe.result?.url, 120);
-    report.probe.title = trunc(probe.result?.title, 80);
-  } else {
-    report.warnings.push(`the probe call came back ${probe.kind}/${probe.code}: ${trunc(probe.message, 160)}`);
-  }
+  report.probe.url = trunc(probe.result?.url, 120);
+  report.probe.title = trunc(probe.result?.title, 80);
 
   if (report.gates.ordering === 'off') report.warnings.push('ordering is not authorised in the client; work stops at the cart');
   if (report.gates.chat === 'off') report.warnings.push('chatting with sellers is not authorised in the client');
@@ -1423,7 +1636,7 @@ async function cmdDoctor() {
   const t0 = Date.now();
   const baseline = loadBaseline();
   const appPath = resolveAppPath();
-  const addr = resolveAddress();
+  const addr = await resolveAddress();
   const observed = {
     platform: process.platform,
     appPath,
@@ -1480,7 +1693,9 @@ async function cmdDoctor() {
       if (missing.length) diff.push({ field: 'tools.missing', expected: missing, observed: [] });
       const unknownMutating = [...MUTATING_TOOLS].filter((n) => !names.includes(n));
       if (unknownMutating.length) observed.mutatingToolsNotInRegistry = unknownMutating;
-      const unclassified = names.filter((n) => !MUTATING_TOOLS.has(n) && !expectedTools.includes(n));
+      // A name in neither set is driven as mutating and never re-run; naming it
+      // here is what gets it classified properly.
+      const unclassified = names.filter((n) => !MUTATING_TOOLS.has(n) && !READ_ONLY_TOOLS.has(n));
       if (unclassified.length) {
         diff.push({ field: 'tools.unclassified', expected: [], observed: unclassified });
       }
@@ -1494,14 +1709,19 @@ async function cmdDoctor() {
     diff.push({ field: 'pathologies.structure', expected: 'predicates tb.mjs implements', observed: [...UNSUPPORTED_PREDICATES] });
   }
 
+  const modeInfo = lockModeInfo();
+
   // doctor reports; it never fails the run.
   finishOk('doctor', Date.now() - t0, {
     matchesBaseline: diff.length === 0,
     baseline: baseline ? { version: baseline.client?.version, toolCount: baseline.toolCount, baselineVersion: baseline.baselineVersion } : null,
     observed,
     diff,
-    lockMode: OPT.noLock ? 'off (--no-lock)' : lockMode(),
-    dataDir: dataDir(),
+    lockMode: OPT.noLock ? 'off (--no-lock)' : modeInfo.mode,
+    lockModeSource: OPT.noLock ? '--no-lock' : modeInfo.source,
+    leaseTtlMs: LEASE.ttlMs,
+    stateDir: stateDir(),
+    ...(STATE.warning ? { stateWarning: STATE.warning } : {}),
   });
 }
 
@@ -1510,28 +1730,38 @@ async function cmdLock() {
   const dir = lockDirPath();
   const owner = readJsonFile(ownerPath(dir));
   const exists = fs.existsSync(dir);
+  const mine = Boolean(owner && owner.sessionId && owner.sessionId === sessionId());
+  const modeInfo = lockModeInfo();
 
   if (action === 'status') {
-    const age = heartbeatAgeMs(dir);
-    const alive = exists ? await holderIsAlive(dir, owner) : false;
+    const alive = exists ? holderIsAlive(dir, owner) : false;
+    const left = owner ? leaseLeftMs(owner) : null;
     return finishOk('lock', 0, {
       held: exists,
       alive,
-      mine: Boolean(owner && owner.sessionId === sessionId()),
+      mine,
       owner,
-      heartbeatAgeMs: age,
+      leaseExpiresInMs: left,
+      leaseTtlMs: LEASE.ttlMs,
       lockDir: dir,
-      mode: OPT.noLock ? 'off (--no-lock)' : lockMode(),
+      stateDir: stateDir(),
+      mode: OPT.noLock ? 'off (--no-lock)' : modeInfo.mode,
+      modeSource: OPT.noLock ? '--no-lock' : modeInfo.source,
       sessionId: sessionId(),
+      ...(STATE.warning ? { stateWarning: STATE.warning } : {}),
     });
   }
   if (action === 'release') {
-    if (!exists) return finishOk('lock', 0, { released: false, held: false, lockDir: dir, note: 'no lock was held' });
-    const alive = await holderIsAlive(dir, owner);
-    const done = reapLock(dir);
+    if (!exists) return finishOk('lock', 0, { released: false, held: false, lockDir: dir, note: 'no lease was held' });
+    const alive = holderIsAlive(dir, owner);
+    // Ours goes only if it is still ours when the record is read again. Someone
+    // else's is the operator's call — this subcommand is the way out of a lease
+    // whose holder is gone for good.
+    const done = reapLock(dir, mine ? { sessionId: sessionId() } : null);
     return finishOk('lock', 0, {
-      released: done, previousOwner: owner, holderWasAlive: alive, lockDir: dir,
-      ...(alive ? { warning: 'the holder still looked alive; it will not notice the lock is gone' } : {}),
+      released: done, previousOwner: owner, holderWasAlive: alive, mine, lockDir: dir,
+      ...(alive && !mine ? { warning: 'the holder still looked alive; it will not notice the lease is gone' } : {}),
+      ...(!done ? { note: 'the record changed hands while it was being read; nothing was released' } : {}),
     });
   }
   fail({ kind: 'protocol', code: 'USAGE', message: `unknown lock action: ${action}`, hint: 'node tb.mjs lock status | node tb.mjs lock release', retriable: false });
@@ -1588,22 +1818,31 @@ async function adoptHookSession() {
   if (id) sessionOverride = id;
 }
 
-/** SessionStart: clear a lock left behind by a holder that is gone. */
+/**
+ * SessionStart: write down the plugin option a plain Bash call cannot see, and
+ * clear a lease left behind by a holder that is gone.
+ */
 async function cmdHookPreflight() {
   await adoptHookSession();
+  const notes = [];
+  const mode = persistLockMode();
+  if (mode) notes.push(`recorded lock_mode=${mode}`);
+
   const dir = lockDirPath();
-  if (!fs.existsSync(dir)) return hookDone(null);
-  const owner = readJsonFile(ownerPath(dir));
-  if (owner && owner.sessionId === sessionId()) {
-    return hookDone(reapLock(dir) ? 'swept a client lock left by an earlier process of this session' : null);
+  if (fs.existsSync(dir)) {
+    const owner = readJsonFile(ownerPath(dir));
+    if (owner && owner.sessionId && owner.sessionId === sessionId()) {
+      if (reapLock(dir, { sessionId: sessionId() })) notes.push('swept a client lease left by an earlier process of this session');
+    } else if (!holderIsAlive(dir, owner)) {
+      if (reapLock(dir)) notes.push('swept an orphaned client lease');
+    }
   }
-  if (await holderIsAlive(dir, owner)) return hookDone(null);
-  hookDone(reapLock(dir) ? 'swept an orphaned client lock' : null);
+  hookDone(notes.length ? notes.join('; ') : null);
 }
 
 /**
- * Stop / idle / SessionEnd: drop the lock this session holds. Only this
- * session's — another session's lock is its own to release, and a hook firing
+ * Stop / idle / SessionEnd: end the lease this session holds early. Only this
+ * session's — another session's lease is its own to release, and a hook firing
  * mid-call there would hand the client to two drivers at once.
  */
 async function cmdHookRelease() {
@@ -1612,8 +1851,8 @@ async function cmdHookRelease() {
   const dir = lockDirPath();
   if (!fs.existsSync(dir)) return hookDone(null);
   const owner = readJsonFile(ownerPath(dir));
-  if (!owner || owner.sessionId !== sessionId()) return hookDone(null);
-  hookDone(reapLock(dir) ? `released the client lock held by this session (${reason})` : null);
+  if (!owner || !owner.sessionId || owner.sessionId !== sessionId()) return hookDone(null);
+  hookDone(reapLock(dir, { sessionId: sessionId() }) ? `released the client lease held by this session (${reason})` : null);
 }
 
 // ---------------------------------------------------------------------------
@@ -1644,8 +1883,8 @@ const USAGE = {
     search: 'search --keyword <words> [--type <all|shop|tmall|pc_taobao|22pc_b>]',
     read: 'read [--scope <css>] [--max <chars>] [--offset <n>]',
     lock: 'lock status | lock release',
-    'hook-preflight': 'session hook: clear a client lock whose holder is gone (no stdout)',
-    'hook-release': 'session hook: drop the client lock this session holds (no stdout)',
+    'hook-preflight': 'session hook: record lock_mode and clear a client lease whose holder is gone (no stdout)',
+    'hook-release': 'session hook: end the client lease this session holds (no stdout)',
   },
   flags: ['--timeout <ms>', '--out <path>', '--max-inline <bytes>', '--no-lock', '--source-app <name>', '--raw', '--ascii', '--transport socket|cli|auto'],
 };
@@ -1677,10 +1916,13 @@ async function main() {
   }
 }
 
-process.on('exit', releaseLock);
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
   process.on(sig, () => {
-    fail({ kind: 'transport', code: 'INTERRUPTED', message: `interrupted by ${sig}`, hint: 'Nothing was left locked. A call already sent still runs to completion inside the client — it has no timeout of its own.', retriable: true });
+    fail({
+      kind: 'transport', code: 'INTERRUPTED', message: `interrupted by ${sig}`,
+      hint: 'A call already sent still runs to completion inside the client — it has no timeout of its own. Any lease this session took expires on its own; `lock release` ends it now.',
+      retriable: true,
+    });
   });
 }
 process.on('uncaughtException', (e) => {

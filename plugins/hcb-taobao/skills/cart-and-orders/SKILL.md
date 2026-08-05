@@ -115,9 +115,18 @@ repeated. Write from what the user told you about the purchase; never invent an
 experience they have not described.
 
 Then show them, before anything is sent: the Chinese text, a translation into
-their language, the three star scores, and whether it goes out anonymously. The
-call publishes — the review is public, under their account, and there is no
-unsend. Send only on an explicit yes.
+their language, the three star scores, and whether it goes out anonymously. Pair
+each text with the item it belongs to, by name. The call publishes — the review is
+public, under their account, and there is no unsend. Send only on an explicit yes.
+
+The texts are matched to items by position alone, and the yes arrives a turn
+later, with the client left unattended in between. So re-establish the page
+before publishing, with no other call in between: navigate to that same order's
+rating entry again, and run the reporting call above a second time. Compare the
+item list it returns against the one the user approved — same items, same count,
+same order.
+
+Publish only on a full match:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call submit_product_rating --args-file /tmp/tb-rating.json
@@ -125,7 +134,12 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call submit_product_rating --args-fi
 
 with one text per item in page order and the three scores on a first review; a
 follow-up review sets the append flag instead, since the scores are already
-recorded. The call submits unless told otherwise.
+recorded.
+
+Any difference is a stop, an empty or unreadable list included: publish nothing,
+show the user the list that came back, and take the approval again against it —
+re-pairing the texts to the items, and writing a new one for any item that was
+not in the draft.
 
 ## 7. Report
 

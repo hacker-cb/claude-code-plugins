@@ -110,10 +110,8 @@ carries more than any average — and translate the lines you quote.
 
 ## 4. Several listings
 
-Read them one after another, never overlapping: the client drives a single
-background tab, so concurrent reads land on each other's page. Pull the same
-sections in the same order for each, so the comparison has no holes that are
-really gaps in your reading.
+Pull the same sections in the same order for each, so the comparison has no holes
+that are really gaps in your reading.
 
 ## 5. Report
 

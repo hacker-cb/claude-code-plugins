@@ -30,13 +30,7 @@ format and the failure classes:
 How the result reaches the user is
 [`../../references/taobao-presentation.md`](../../references/taobao-presentation.md).
 
-## 1. Preflight
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" up
-```
-
-## 2. Build the keyword set
+## 1. Build the keyword set
 
 The request arrives as one keyword at best, and the number of keywords is what
 decides the breadth of the answer. Derive them from what the thing *is*, in
@@ -55,22 +49,19 @@ Five to ten keywords cover a category. When the request is ambiguous enough that
 half of them would describe a different product, ask which one first — a sweep
 costs minutes of the user's client.
 
-## 3. Run the sweep
+## 2. Run the sweep
 
-One keyword per call, and one call at a time:
+One keyword per call:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" search --keyword "4盘位 nas 机箱"
 ```
 
-Sequential is a constraint, not a preference: the client drives a single
-background tab with shared buffers, so overlapping calls read each other's page.
-
-`--type` narrows to one marketplace slice when the user asks for one; the live
-registry is what says which values the client takes:
+`--type` narrows to one marketplace slice when the user asks for one. Take the
+values it accepts off the live registry, whose schemas need `--raw`:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" tools
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" tools --raw
 ```
 
 A picture is a search route of its own. Write the absolute path of a file the
@@ -88,7 +79,7 @@ stop the sweep instead of walking the remaining keywords: from that point every
 keyword returns an empty page indistinguishable from a real answer. Report which
 keywords ran and which never did.
 
-## 4. Merge
+## 3. Merge
 
 **Dedup on `itemId`.** The same listing surfaces under several keywords. Keep one
 record, and keep the set of keywords that found it — that overlap is the one
@@ -105,7 +96,7 @@ the client does not return it and offer to read candidates instead of inventing
 an order. Compare prices numerically, and keep the string that came back for
 display.
 
-## 5. Report
+## 4. Report
 
 Render per the presentation reference. Two things a sweep owes on top of it:
 
@@ -114,7 +105,7 @@ Render per the presentation reference. Two things a sweep owes on top of it:
   them apart;
 - the sellers that carry more than one of the shortlist, named.
 
-## 6. Hand on
+## 5. Hand on
 
 A shortlist is not an answer: a search record has no specs, and its price is the
 display price rather than what a variant costs. Take the two or three listings
