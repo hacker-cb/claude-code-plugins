@@ -1,0 +1,67 @@
+{
+  "baselineVersion": 1,
+  "client": {
+    "name": "淘宝桌面版",
+    "version": "2.5.1",
+    "platform": "darwin"
+  },
+  "transport": {
+    "addressFile": "cli-rpc-port.json",
+    "addressField": "socketPath",
+    "windowsPipe": "\\\\.\\pipe\\taobao-cli-rpc",
+    "userDataDirNames": ["taobao", "com.alibaba.taobao"],
+    "readyMarkerFile": "startup-ready.json",
+    "oneRequestPerConnection": true,
+    "serverSideTimeoutMs": null
+  },
+  "envelope": {
+    "requestKeys": ["tool", "arguments"],
+    "successKey": "result",
+    "errorKey": "error",
+    "errorAlsoInsideResult": true
+  },
+  "pseudoTools": {
+    "_ping": { "result": "ok" },
+    "_help": { "resultKeys": ["tools"] }
+  },
+  "toolCount": 22,
+  "tools": [
+    "add_to_cart",
+    "click_element",
+    "close_page",
+    "get_browse_history",
+    "get_current_tab",
+    "get_product_skus",
+    "hold_keyboard_key",
+    "image_search",
+    "input_text",
+    "inspect_page",
+    "list_available_pages",
+    "navigate",
+    "navigate_to_url",
+    "open_chat",
+    "read_page_content",
+    "scan_page_elements",
+    "scroll_page",
+    "search_products",
+    "send_chat_message",
+    "submit_product_rating",
+    "trigger_key_sequence",
+    "trigger_keyboard_event"
+  ],
+  "expectations": {
+    "listAvailablePagesCount": 38,
+    "searchProductsMaxResults": 50,
+    "searchProductsProductKeys": [
+      "image",
+      "productUrl",
+      "itemId",
+      "skuId",
+      "title",
+      "shopUrl",
+      "shopName",
+      "price"
+    ],
+    "backgroundTabIdleCloseMs": 300000
+  }
+}

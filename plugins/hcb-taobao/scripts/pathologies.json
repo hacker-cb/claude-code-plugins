@@ -1,0 +1,135 @@
+{
+  "dataVersion": 1,
+  "_note": "Signatures only refine a diagnosis. The verdict success/failure is decided by tb.mjs on structure: a string in result.error, count === 0, page length, a blank title. A rule with requireSignature:true never fires on structure alone.",
+
+  "gates": [
+    {
+      "code": "AI_AGENT_DISABLED",
+      "signatures": ["未启用 AI 代理", "未启用AI代理"],
+      "retriable": false,
+      "hint": "The client's AI agent is off. Ask the user to open the Taobao desktop client, go to 设置 → AI 设置 and switch on 启用 AI 代理, then run `up` again. Nothing else can be called until they do."
+    },
+    {
+      "code": "NOT_LOGGED_IN",
+      "signatures": ["未登录", "已打开登录页面", "请先登录"],
+      "retriable": false,
+      "hint": "Nobody is signed in to the client, and it has just opened its login page. Ask the user to sign in there, then run `up` again."
+    },
+    {
+      "code": "ORDER_PERMISSION_OFF",
+      "signatures": ["当前未开启下单权限", "未开启下单权限"],
+      "retriable": false,
+      "hint": "Ordering is not authorised in the client. Ask the user to turn the ordering permission on in 设置 → AI 设置 if they want it. Paying always stays with them."
+    },
+    {
+      "code": "CHAT_CONSENT_EXPIRED",
+      "signatures": ["旺旺聊天权限已失效"],
+      "retriable": false,
+      "hint": "The Wangwang chat consent has lapsed — it lasts seven days and is renewed by use. Ask the user to re-authorise 启用AI代理操作旺旺聊天 in 设置 → AI 设置, then retry."
+    },
+    {
+      "code": "CHAT_PERMISSION_OFF",
+      "signatures": ["当前未开启旺旺聊天权限", "未开启旺旺聊天权限"],
+      "retriable": false,
+      "hint": "Chatting with sellers is not authorised. Ask the user to switch on 启用AI代理操作旺旺聊天 in 设置 → AI 设置 and re-authorise, then retry."
+    },
+    {
+      "code": "TOOL_LAYER_NOT_READY",
+      "signatures": ["Tool 执行层未就绪", "请确保应用已加载完成"],
+      "retriable": true,
+      "retryAfterMs": 5000,
+      "hint": "The client is running but has not finished loading its tool layer. Wait a few seconds and retry, or run `up`, which waits for the home page to finish loading."
+    },
+    {
+      "code": "SERVICE_UNAVAILABLE",
+      "signatures": ["服务不可用"],
+      "retriable": true,
+      "retryAfterMs": 5000,
+      "hint": "The client answered but has no tool executor bound. Run `up`; if it keeps happening ask the user to restart the client."
+    }
+  ],
+
+  "toolErrors": [
+    {
+      "code": "UNKNOWN_TOOL",
+      "signatures": ["未知工具"],
+      "retriable": false,
+      "hint": "This client build has no tool by that name. Run `tools` for the live registry — it is the only trustworthy list."
+    },
+    {
+      "code": "SCOPE_NOT_FOUND",
+      "signatures": ["未找到scope容器"],
+      "retriable": true,
+      "retryAfterMs": 3000,
+      "hint": "The CSS selector passed as `scope` matched nothing on the page that is actually open. Read without a scope first, or scan the page to see what is there."
+    },
+    {
+      "code": "ELEMENT_NOT_FOUND",
+      "signatures": ["未找到包含", "未找到元素", "未找到匹配", "未找到输入框", "未找到按钮"],
+      "retriable": true,
+      "retryAfterMs": 3000,
+      "hint": "The element is not on the page as addressed. Re-scan with scan_page_elements and use the fresh [index] — indices go stale as soon as the page changes, and every session shares one scan buffer."
+    },
+    {
+      "code": "INVALID_REQUEST",
+      "signatures": ["Invalid request", "Parse error"],
+      "retriable": false,
+      "hint": "The client rejected the request envelope. Check the argument JSON; pass it with --args-file when it contains quotes, newlines or a URL."
+    },
+    {
+      "code": "URL_NOT_ALLOWED",
+      "signatures": ["无效的URL", "无效的 URL", "不支持的域名", "禁止编造"],
+      "retriable": false,
+      "hint": "The client only opens real Taobao/Tmall URLs. Take the URL from a search result or from the browse history rather than composing one."
+    }
+  ],
+
+  "pathologies": [
+    {
+      "code": "ANTI_BOT_BLOCK",
+      "appliesTo": ["read_page_content"],
+      "structure": { "pageLengthAtMost": 200 },
+      "signatures": ["访问被拒绝", "Access Denied", "access denied", "滑动验证", "captcha", "验证码"],
+      "requireSignature": true,
+      "retriable": false,
+      "message": "the page returned is Taobao's anti-bot block, not the page asked for",
+      "hint": "Taobao served its block page. Repeating the call does not clear it — it has been seen to hold for fifteen tries running. Ask the user to open that page in the client window and clear the check themselves, then read again."
+    },
+    {
+      "code": "PAGE_NOT_RENDERED",
+      "appliesTo": ["read_page_content"],
+      "structure": { "pageLengthAtMost": 64, "titleBlank": true },
+      "retriable": true,
+      "retryAfterMs": 5000,
+      "message": "the page has not rendered — the client returned its empty shell",
+      "hint": "Nothing has rendered yet: the text is a stub and the title is empty. Wait a few seconds and read again. A cold navigation after the client has idled takes over six seconds."
+    },
+    {
+      "code": "PAGE_CONTENT_TOO_SHORT",
+      "appliesTo": ["read_page_content"],
+      "structure": { "pageLengthAtMost": 64 },
+      "retriable": true,
+      "retryAfterMs": 5000,
+      "message": "the page carries almost no text",
+      "hint": "The whole page holds under 64 characters, which is what a page mid-render looks like. Wait a few seconds and read again; if it repeats, check with get_current_tab that the tab is where you think it is."
+    },
+    {
+      "code": "SEARCH_SILENT_THROTTLE",
+      "appliesTo": ["search_products"],
+      "structure": { "countEquals": 0, "hasArrayField": "products" },
+      "retriable": true,
+      "retryAfterMs": 300000,
+      "message": "search returned zero products and no error, which is also what a silent throttle looks like",
+      "hint": "A block and an honestly empty query are indistinguishable from one answer. Use `search --keyword` instead of calling this tool directly: it paces requests, re-runs a control keyword to tell the two apart, and backs off when it is a block."
+    },
+    {
+      "code": "SCAN_FOUND_NOTHING",
+      "appliesTo": ["scan_page_elements"],
+      "structure": { "numberFieldEquals": { "field": "totalElements", "value": 0 } },
+      "retriable": true,
+      "retryAfterMs": 5000,
+      "message": "the scan found no interactive elements at all",
+      "hint": "A rendered Taobao page always has interactive elements. Wait a few seconds and scan again, or drop the `scope` if one was passed."
+    }
+  ]
+}

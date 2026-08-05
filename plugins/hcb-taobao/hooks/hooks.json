@@ -1,0 +1,51 @@
+{
+  "description": "Taobao client lock lifecycle: preflight once per session, release the lock whenever the session stops driving the client.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs", "hook-preflight"]
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs", "hook-release", "--reason=stop"]
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs", "hook-release", "--reason=idle"]
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs", "hook-release", "--reason=session-end"],
+            "timeout": 1
+          }
+        ]
+      }
+    ]
+  }
+}
