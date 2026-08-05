@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "hcb-taobao",
+  "description": "Shopping on Taobao and Tmall through the Taobao desktop client: keyword research and supplier shortlists, reading a listing's real price, SKUs and specs, resolving a variant into the cart, and talking to sellers. Drives the client's local CLI through a bundled companion that paces requests around the anti-bot throttle, tells a genuine empty result from a silent block, and recognises the failures the vendor CLI reports as success. Stops at the cart — the client exposes no checkout and paying stays with the user.",
+  "version": "0.1.0",
+  "author": {
+    "name": "hacker-cb",
+    "email": "pavel@sokolov.me"
+  },
+  "homepage": "https://github.com/hacker-cb/claude-code-plugins",
+  "repository": "https://github.com/hacker-cb/claude-code-plugins",
+  "license": "MIT",
+  "keywords": ["taobao", "tmall", "shopping", "sourcing", "china", "desktop-client", "cli"],
+  "userConfig": {
+    "lock_mode": {
+      "type": "string",
+      "title": "Client lock mode",
+      "description": "What to do when another session is already driving the Taobao desktop client: off, warn, ask, deny.",
+      "default": "warn"
+    }
+  }
+}

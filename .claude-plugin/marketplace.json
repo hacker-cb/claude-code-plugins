@@ -17,6 +17,13 @@
       "tags": ["developer", "dependencies", "code-review", "pull-request", "issues", "backlog", "handoff", "cleanup", "workflow", "github", "gitlab"]
     },
     {
+      "name": "hcb-taobao",
+      "source": "./plugins/hcb-taobao",
+      "description": "Shopping on Taobao and Tmall through the Taobao desktop client: keyword research and supplier shortlists, reading a listing's real price, SKUs and specs, resolving a variant into the cart, and talking to sellers. Drives the client's local CLI through a bundled companion that paces requests around the anti-bot throttle, tells a genuine empty result from a silent block, and recognises the failures the vendor CLI reports as success. Stops at the cart — the client exposes no checkout and paying stays with the user.",
+      "category": "productivity",
+      "tags": ["taobao", "tmall", "shopping", "sourcing", "china", "desktop-client", "cli"]
+    },
+    {
       "name": "markdown-docs",
       "source": "./external_plugins/markdown-docs",
       "description": "MCP server for efficient navigation of large markdown documents — datasheets, standards, manuals.",
