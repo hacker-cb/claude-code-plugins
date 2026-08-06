@@ -93,15 +93,19 @@ git -C "$PROJECT" for-each-ref refs/heads/ \
 git -C "$PROJECT" branch --merged "<remote>/<default>"
 git -C "$PROJECT" rev-list --count "<remote>/<default>..<branch>"   # per branch, merged or not
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
-git -C "<each worktree path>" ls-files --stage | grep '^160000'   # gitlinks — a submodule is here
+git -C "<each worktree path>" submodule status   # a line WITHOUT a leading '-' is populated
+git -C "<worktree>/<populated submodule>" status --porcelain -unormal              # its own dirt
+git -C "<worktree>/<populated submodule>" rev-list --count --branches --not --remotes  # unpushed
 ```
 
 `for-each-ref` gives branch → worktree → upstream → `[gone]` in one pass; prefer
 it over parsing `branch -vv`. `worktree list` never mentions modified or
 untracked files, so without that per-worktree `status` there is no clean/dirty
 signal at all and step 5 cannot tell a removable worktree from one holding work.
-A gitlink in that same index is the other thing no other command reports, and it
-changes how the worktree comes off rather than whether it may.
+That `status` stops at the superproject, so a populated submodule is asked
+separately and twice: its own commits are invisible there, and so are its files
+wherever `submodule.<name>.ignore` is set. A `-` prefix means nothing is checked
+out and there is nothing to ask.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
 forge and that forge's CLI is authed, close the gap read-only:
@@ -144,7 +148,7 @@ status: surface it, never delete it.
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
 | clean, its branch merged, and **this session cut it** | `remove` (class 2) |
-| a gitlink in its index | `remove --force`, whatever the clean/dirty verdict — git refuses to remove a worktree containing a submodule even when it is spotless. The risk class does not move: `status` reports the submodule's own modified and untracked files, so a clean one still has nothing to lose |
+| a populated submodule | the class is the **submodule's** own — class 2 only where its `status` is empty and its unpushed count is 0, class 3 otherwise, whatever the superproject's `status` said. A linked worktree keeps that submodule's git dir under its own admin dir, so removal takes the submodule's history with it and nothing in the primary worktree holds a copy |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
@@ -185,23 +189,31 @@ answer; a subset means only that subset.
 
 ```bash
 git -C "$PROJECT" worktree remove "<path>"         # 1. --force for a confirmed-dirty worktree, and
-                                                   #    for one holding a submodule — git refuses
-                                                   #    those even when clean
+                                                   #    wherever remove refuses over a submodule —
+                                                   #    that refusal is git's own, not a verdict on
+                                                   #    the worktree; step 5 already priced it
 rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
+git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed squash merge
 ```
 
-`-d` re-checks against HEAD — or against the branch's own upstream where it has
-one — never against `$D`. So where the local default branch lags `$D`, `-d`
-refuses the very branches step 4 proved merged, and `-D` behind a fresh proof is
-the way through. The `-n "$D"` guard is step 1's rule, not a formality: with `$D`
-empty the range collapses to `HEAD..<branch>` and proves nothing.
+`-d` re-checks against `PROJECT`'s HEAD — or against the branch's own upstream
+where it has one — never against `$D`, and step 1 does not let you assume HEAD is
+the default branch. Where that HEAD does not contain a branch step 4 proved
+merged, re-prove it against `$D` and delete with `-D`. Spell the branch
+`refs/heads/<branch>` in the proof: a tag of the same short name wins the lookup,
+so the count would describe the tag while `-D` deletes the branch.
 
 ```bash
-[ -n "$D" ] && [ "$(git -C "$PROJECT" rev-list --count "$D".."<branch>")" = 0 ] \
-  && git -C "$PROJECT" branch -D "<branch>"        # 5. also the confirmed-squash-merge path
+if [ -z "$D" ]; then
+  echo "skipping -D — default branch unresolved"
+elif [ "$(git -C "$PROJECT" rev-list --count "$D".."refs/heads/<branch>")" = 0 ]; then
+  git -C "$PROJECT" branch -D "<branch>"
+else
+  echo "not merged into $D — surface it instead"
+fi
 ```
 
 Say so in the report wherever `-D` was used.
@@ -264,5 +276,5 @@ without asking.
 - **Detached HEAD worktree** — classify by clean/dirty only; no branch to delete.
 - **A branch checked out in a worktree of a *different* repository** — leave both
   alone; this skill stays within `PROJECT`.
-- **Submodules** — never init, deinit or update one. Removing a worktree that
-  contains one is step 7's `--force`, not a submodule operation.
+- **Submodules** — never operate on one. Removing a worktree that contains one is
+  step 7's `--force`, not a submodule operation.
