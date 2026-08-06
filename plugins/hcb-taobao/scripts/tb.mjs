@@ -44,7 +44,7 @@ const TIMEOUT_MS = { default: 60000, slow: 110000 };
 const SLOW_TOOLS = new Set(['image_search', 'search_products']);
 
 const DEFAULT_MAX_INLINE = 8192;
-const DEFAULT_SOURCE_APP = 'claude-code';
+const DEFAULT_SOURCE_APP = 'claude';
 const PING_TIMEOUT_MS = 2500;
 const STARTUP_WAIT_MS = 90000;
 const STARTUP_POLL_MS = 500;
