@@ -4,15 +4,17 @@ description: >-
   Use this skill whenever the user wants to talk to a Taobao or Tmall seller —
   "спроси продавца", "ask the shop whether it ships", "message customer
   service", "напиши в чат", chasing an order, checking stock the listing never
-  states, asking for a quantity discount, or opening 旺旺 at all. It composes the
-  question in Chinese and shows the user the exact text, a translation and the
-  shop it goes to, sending only on an explicit yes — opening the conversation is
-  itself the send, it reaches a live person under their account, and nothing can
-  be recalled. Reading a seller's answer back, translated, is the other half and
-  sends nothing at all. Ask the listing first: anything printed on the page comes
+  states, asking for a quantity discount, or opening 旺旺 at all. It fixes the
+  recipient first, by opening that seller's own listing or shop page and
+  confirming it, composes the question in Chinese, and shows the exact text, a
+  translation and the shop it reaches, sending only on an explicit yes — opening
+  the conversation is itself the send, it reaches a live person under their
+  account, and nothing can be recalled. Where no single seller is pinned down it
+  stops and asks. Reading a seller's answer back, translated, is the other half
+  and sends nothing at all. Ask the listing first: what the page prints comes
   back in the same turn from hcb-taobao:item-details, while a seller takes
-  minutes to hours. Cart and order context comes from
-  hcb-taobao:cart-and-orders. It never adds to a cart and never pays.
+  hours. Cart and order context comes from hcb-taobao:cart-and-orders. It never
+  adds to a cart and never pays.
 metadata:
   upstream-skill: taobao-native
   upstream-version: "1.0.43"
@@ -26,8 +28,10 @@ brings the answer back translated.
 
 Opening a conversation is the send: the chat tool takes a message or an image and
 refuses to open one empty, so the first chat call already reaches a person, under
-the user's account, with no way to unsend. Everything that decides what goes out,
-and to whom, happens before that call.
+the user's account, with no way to unsend. Which person it reaches is decided by
+the page the client stands on when that call runs — so the page is established
+and confirmed first, and everything that decides what goes out happens before the
+call.
 
 Every call goes through the companion, which owns the invocation, the answer
 format and the failure classes:
@@ -43,16 +47,55 @@ the page already answers spends the user's standing with that shop. Chat is for
 stock the page does not state, quantities beyond the listed ones, shipping
 arrangements, customization, and the state of a placed order.
 
-## 2. Name the shop the question goes to
+## 2. Pin the question to one listing or one shop
 
-Settle which shop before anything is composed, from the record the request came
-with — the shop field of a search result, the cart entry, the order — or by
-reading it off the listing page. Take the name as the client renders it: it goes
-into the approval, it decides which lookup selects the conversation, and it is
-what the sent conversation is checked against afterwards. Never take it from
-whatever conversation the client happens to have open.
+The recipient is a page, never a name: a name is matched by a lookup inside the
+client, and where it matches more than one seller the choice is made for you.
+Settle which listing — or which shop, where the question is about the shop rather
+than one item — the question is about, and carry its addressable key:
 
-## 3. Compose in Chinese
+- a search record — its `itemId`, or its shop link;
+- a cart line or an order line — filter the page down to that line, then take the
+  item id or the shop link off it;
+- what the user was looking at — the product or shop entry of the browse history;
+- a listing you opened earlier in this same chain of calls — the id it was opened
+  with.
+
+Where the request does not resolve to exactly one of them — several cart lines
+answer to the words the user used, the same product came back from several shops,
+the order holds items from more than one seller — stop and ask which one. An
+ambiguity settled by guessing is a message delivered to a stranger.
+
+## 3. Establish the page and confirm it
+
+Build the item or shop URL as the presentation reference specifies and open it:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call navigate_to_url --args-file /tmp/tb-seller.json
+```
+
+Confirm what the client is standing on, keying on the id and the anchors the
+translator leaves alone rather than on rendered wording:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call get_current_tab --args '{}'
+```
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" read
+```
+
+It has to be the listing or the shop pinned in step 2, and it has to name a shop.
+Take that name as the client renders it — that is the recipient, and it is what
+goes into the approval. A page carrying a different id, a page that yields no shop
+name, or a pathology verdict is a stop: report what came back and send nothing.
+
+The cart, the order list and a page of search results do not establish a
+recipient. Standing on one of them, the chat tool selects a conversation by
+product name instead of by the page, which is the ambiguity step 2 exists to
+remove. Only a listing page or a shop page fixes who receives the message.
+
+## 4. Compose in Chinese
 
 - one question per message; a seller answers the first and skips the rest;
 - name the thing concretely — the item id, the spec as the page spells it, the
@@ -62,34 +105,37 @@ whatever conversation the client happens to have open.
   and account identifiers do not go into a chat with a shop, whatever the shop
   asks for.
 
-## 4. Get approval before the first chat call
+## 5. Get approval before the first chat call
 
-Show the user the exact Chinese text, a translation into their language, the shop
-it goes to, and the lookup that will select the conversation — the source and the
-product name. Say that the next call delivers it and that it cannot be taken
-back. Send on an explicit yes. That yes covers that text: an edit needs a new one,
-and so does every follow-up message.
+Show the user the exact Chinese text, a translation into their language, and the
+shop it goes to as read off the established page, with the link to that page. Say
+that the next call delivers it and that it cannot be taken back. Send on an
+explicit yes. That yes covers that text: an edit needs a new one, and so does
+every follow-up message.
 
-## 5. Send
+## 6. Send from the established page
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call open_chat --args-file /tmp/tb-chat.json
 ```
 
-The args file carries the approved message together with the lookup that finds
-the seller: `source` says where to look them up from — the cart or the order list
-with a product name, a search with a query — and with no source the current page
-decides. Pass the source that names the shop of step 2; leave it out only when
-the page the client is on is one you established yourself, in this same chain of
-calls.
+The args file carries the approved message and nothing that names a recipient:
+with no `source`, the chat opens off the page the client is standing on. Never
+pass `source`, `productName` or `query` — each of them hands the choice of
+recipient back to a lookup by name.
+
+Run it straight after the confirming read of step 3, with no call in between: a
+call that moves the client moves the recipient with it. Where the yes arrived a
+turn later, or anything else has run since, walk step 3 again first and send only
+on the same page confirming again.
 
 An image travels the same way, as an absolute path — only a file the user pointed
 at, and under the same approval.
 
-## 6. Check where it landed
+## 7. Report where it landed
 
-The message is gone by now, so this decides what the user is told and whether
-anything further may be sent:
+The message is gone by now; this is what the user is told, and what decides
+whether anything further may be sent:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" read
@@ -101,7 +147,7 @@ pathology verdict — is reported at once, naming the conversation the message
 actually reached, and nothing more is sent until the user has approved a message
 against that shop.
 
-## 7. A second message
+## 8. A second message
 
 `send_chat_message` takes no recipient: it goes to whichever conversation the
 client has open when it runs.
@@ -115,7 +161,7 @@ and with a text approved in that same turn. Where anything else has run since, o
 the approval arrived a turn later with the client left unattended, read the page
 again first — and stop rather than send when that read is not the approved shop.
 
-## 8. Read the reply
+## 9. Read the reply
 
 This branch sends nothing, and it is the whole task when the user asks whether
 the seller has answered. The reply lands on the chat page, never in the answer of
@@ -149,13 +195,13 @@ Distinguish an automated greeting from the seller's own answer: the first is
 instant and generic, and reporting it as a reply tells the user the question was
 answered when it was not.
 
-## 9. Hand it over
+## 10. Hand it over
 
 Render per the presentation reference. Where the reply commits the shop to
 something — a price, stock, a ship date — state it as their claim rather than as
 fact, and name what they left unanswered so the user can decide whether to press.
 
-## 10. Hand on
+## 11. Hand on
 
 - what the listing says — `hcb-taobao:item-details`;
 - the cart, the order, or a review of what arrived —

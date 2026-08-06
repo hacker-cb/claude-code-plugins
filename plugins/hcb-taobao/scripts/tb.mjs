@@ -115,6 +115,26 @@ const LEASE = {
   pidGraceMs: envInt('HCB_TAOBAO_LEASE_PID_GRACE_MS', 900000),
 };
 
+/**
+ * The least a call is worth sending with. Below it the answer would be a TIMEOUT
+ * this companion invented while the tool ran on inside the client — which for a
+ * mutating tool means a change made and disowned, and for the regulator a signal
+ * of trouble taken off a healthy client. A budget that cannot pay for this buys a
+ * verdict instead of a call.
+ */
+const MIN_CALL_MS = Math.max(1000, envInt('HCB_TAOBAO_MIN_CALL_MS', 5000));
+
+/**
+ * The clock a call had to actually get for its silence to describe the client. A
+ * budget shorter than a tool's own clock trims that clock, and a trim of a
+ * moment still leaves an ordinary call's worth of time — a TIMEOUT on it is the
+ * client being slow. Cut below this the answer was taken away rather than never
+ * given, and the regulator is told nothing by it. Distinct from `MIN_CALL_MS`:
+ * that decides whether a call is worth sending, this whether its silence is
+ * worth believing.
+ */
+const INFORMATIVE_TIMEOUT_MS = Math.max(MIN_CALL_MS, envInt('HCB_TAOBAO_INFORMATIVE_TIMEOUT_MS', TIMEOUT_MS.default));
+
 const SEARCH = {
   backoffBaseMs: envInt('HCB_TAOBAO_SEARCH_BACKOFF_MS', 300000),
   backoffFactor: envNum('HCB_TAOBAO_SEARCH_BACKOFF_FACTOR', 1.5),
@@ -178,13 +198,13 @@ const PACE = {
 /**
  * Codes that mean the client is pushing back. `hard` is Taobao itself refusing —
  * the block page, the silent throttle. `soft` is the client answering late,
- * empty, half-rendered or signed out: a sign-out has never been tied to the pace
- * it was driven at, so it slows the tempo without accusing it. Any other
- * pathology counts as soft.
+ * empty or half-rendered. Any other pathology counts as soft. A sign-out is in
+ * neither: it is where the session stands, and nothing about the pace it was
+ * driven at, so it moves the tempo in no direction at all.
  */
 const PACE_HARD_SIGNALS = new Set(['ANTI_BOT_BLOCK', 'SEARCH_SILENT_THROTTLE']);
 const PACE_SOFT_SIGNALS = new Set([
-  'NOT_LOGGED_IN', 'PAGE_NOT_RENDERED', 'PAGE_CONTENT_TOO_SHORT', 'SCAN_FOUND_NOTHING',
+  'PAGE_NOT_RENDERED', 'PAGE_CONTENT_TOO_SHORT', 'SCAN_FOUND_NOTHING',
   'SERVICE_UNAVAILABLE', 'TIMEOUT', 'EMPTY_RESPONSE',
 ]);
 
@@ -216,11 +236,20 @@ const toolTimeout = (tool) => OPT.timeout ?? (SLOW_TOOLS.has(tool) ? TIMEOUT_MS.
  * The clock a call inside a budgeted run gets. A slow tool's own timeout outlasts
  * the budget of a `search`, and a call started with the budget nearly spent would
  * run past the host's call window and be killed with the command carrying it —
- * taking the verdict with it. What is left of the budget is the ceiling instead.
+ * taking the verdict with it. What is left of the budget is the ceiling instead,
+ * and `affordable` false means there is not enough of it left to send the call at
+ * all: a clock shorter than the caller asked for is a ceiling, a clock too short
+ * to answer under is a fabricated TIMEOUT.
  */
-const budgetedTimeout = (tool, leftMs) => (Number.isFinite(leftMs)
-  ? Math.max(1000, Math.min(toolTimeout(tool), leftMs))
-  : toolTimeout(tool));
+function budgetedTimeout(tool, leftMs, explicitMs) {
+  const wanted = Number.isFinite(explicitMs) ? explicitMs : toolTimeout(tool);
+  if (!Number.isFinite(leftMs)) return { affordable: true, timeout: wanted, wanted, needMs: 0 };
+  const left = Math.floor(leftMs);
+  // A clock the caller asked for outranks the floor: the floor never demands more
+  // budget than the call was going to be given anyway.
+  const needMs = Math.min(wanted, MIN_CALL_MS);
+  return { affordable: left >= needMs, timeout: Math.min(wanted, Math.max(0, left)), wanted, needMs, leftMs: left };
+}
 
 function parseArgv(argv) {
   const flags = {};
@@ -908,6 +937,13 @@ function transportFailure(res, tool) {
 }
 
 /**
+ * Verdicts this companion reached without asking the client, because what the
+ * caller had left would not pay for the call. Nothing ran, so nothing about them
+ * describes the client.
+ */
+const OUT_OF_BUDGET = new Set(['PACE_WAIT_EXCEEDS_BUDGET', 'CALL_BUDGET_EXHAUSTED']);
+
+/**
  * The one door to the client: every call goes through here, so the pace
  * regulator and the sign-out hold are applied to all of them rather than to a
  * chosen few. Returns a classification plus timing, the pace fragment and the
@@ -923,11 +959,15 @@ async function callTool(tool, args, opts = {}) {
   const klass = paceClass(tool, body.arguments);
   const st = paceState(t0);
 
-  // `_ping` is answered by the transport and never raises the login window; `up`
-  // asks for real because the user may have just signed in.
+  // `_ping` is answered by the transport before the client's own layers see it,
+  // so liveness can still be asked while a hold stands; `up` asks for real
+  // because the user may have just signed in.
   const bypassHold = Boolean(opts.bypassLoginHold) || tool === '_ping';
   if (st.hold && !bypassHold) {
-    if (t0 - st.hold.lastAskedAt < PACE.loginRecheckMs) return heldForLogin(st, klass, tool, t0);
+    // A pseudo-tool is diagnostics, so it is answered out of the hold whatever
+    // the clock says: it cannot prove the session is back, and spending the one
+    // recheck a real call is waiting for would hold that call another interval.
+    if (klass === 'probe' || t0 - st.hold.lastAskedAt < PACE.loginRecheckMs) return heldForLogin(st, klass, tool, t0);
     // The self-check is one real call, and it counts as an ask whatever comes
     // back: a process that dies mid-call must not free the next one to ask again.
     writePace({ loginHold: { ...st.hold, lastAskedAt: t0 } });
@@ -948,13 +988,29 @@ async function callTool(tool, args, opts = {}) {
       pace: { class: klass, intervalMs, factor: st.factor, pendingMs: waitMs, ...(st.raisedBy ? { raisedBy: st.raisedBy } : {}) },
     };
   }
-  if (waitMs > 0) await sleep(waitMs);
-  const waited = waitMs > 0 ? waitMs : 0;
-
   // The clock left for the call itself, so a paced wait plus a slow tool still
   // fits the host's call window and the verdict comes back rather than being
-  // killed with the command carrying it.
-  const timeout = opts.timeout ?? budgetedTimeout(tool, (Number.isFinite(opts.paceBudgetMs) ? opts.paceBudgetMs : PACE.callWindowMs) - waited);
+  // killed with the command carrying it. Decided before the wait is slept: a call
+  // the budget cannot pay for is one to hand back now, not after sleeping for it.
+  const clockBudgetMs = (Number.isFinite(opts.paceBudgetMs) ? opts.paceBudgetMs : PACE.callWindowMs) - waitMs;
+  const clock = budgetedTimeout(tool, clockBudgetMs, opts.timeout);
+  if (!clock.affordable) {
+    // Nothing is asked of the client: a call given a remainder this small comes
+    // back as a TIMEOUT this companion invented, while the tool it started runs
+    // on inside the client with nobody left to read the answer.
+    return {
+      kind: 'pathology', code: 'CALL_BUDGET_EXHAUSTED',
+      message: `the call was not sent: ${Math.max(0, clock.leftMs)} ms of this call's budget would be left for it, short of the ${clock.needMs} ms a ${tool} call needs to be worth starting`,
+      hint: 'Nothing was asked of the client, so nothing changed there. Repeat the same call with a budget of its own — a call handed the remainder of a spent one is abandoned mid-flight while the tool keeps running inside the client.',
+      retriable: true, retryAfterMs: Math.max(1000, waitMs),
+      tool, ms: Date.now() - t0, via: 'budget',
+      pace: { class: klass, intervalMs, factor: st.factor, pendingMs: waitMs, ...(st.raisedBy ? { raisedBy: st.raisedBy } : {}) },
+    };
+  }
+
+  if (waitMs > 0) await sleep(waitMs);
+  const waited = waitMs > 0 ? waitMs : 0;
+  const timeout = clock.timeout;
 
   const finish = (outcome, extra = {}) => {
     const pace = recordPace(klass, outcome, st, waited, intervalMs, tool);
@@ -987,7 +1043,27 @@ async function callTool(tool, args, opts = {}) {
   }
 
   const ms = Date.now() - t0;
-  if (res.status !== 'ok') return finish(transportFailure(res, tool), { ms, via });
+  if (res.status !== 'ok') {
+    const failure = transportFailure(res, tool);
+    // A clock this side cut to fit the caller's budget is worth saying so on. What
+    // the regulator does with the timeout turns on how deep the cut went: a slow
+    // tool trimmed by a moment still had more than an ordinary call gets and its
+    // silence is the client's, while one cut to a fraction of its clock was taken
+    // away rather than left unanswered, so the regulator is told nothing by it.
+    if (failure.code === 'TIMEOUT' && clock.timeout < clock.wanted) {
+      const informative = clock.timeout >= Math.min(clock.wanted, INFORMATIVE_TIMEOUT_MS);
+      failure.evidence = {
+        ...(failure.evidence || {}),
+        clockMs: clock.timeout, wantedMs: clock.wanted,
+        ...(informative ? {} : { budgetTruncated: true }),
+      };
+      const verdict = informative
+        ? `still past the ${INFORMATIVE_TIMEOUT_MS} ms an ordinary call gets, so the pace was raised for it`
+        : 'too little for the silence to be the client\'s, so the pace was not raised for it';
+      failure.hint = `${failure.hint} This call's clock was cut to ${clock.timeout} ms to fit the budget it was given, short of the ${clock.wanted} ms the tool would otherwise have had — ${verdict}.`;
+    }
+    return finish(failure, { ms, via });
+  }
   if (res.envelope === undefined) {
     return finish({ kind: 'unknown', code: 'EMPTY_ENVELOPE', message: 'the client answered with nothing', hint: 'Not a success. Run `doctor`.', retriable: false }, { ms, via });
   }
@@ -1396,6 +1472,18 @@ function writePace(patch) {
 const finiteOrNull = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
 const round2 = (n) => Math.round(n * 100) / 100;
 
+/** Arguments that name a search to run, whatever the tool calling for it is named. */
+const SEARCH_ARGS = ['keyword', 'imageUrl', 'imagePath'];
+
+/**
+ * Arguments that name something the client has to open before the tool can do
+ * anything: a page key, a URL, or the id of an item, shop or order. Asking for
+ * the skus of an item and putting one in the cart both carry an id and both move
+ * the shared tab to that item's page first, which is the traffic the regulator
+ * exists for.
+ */
+const NAVIGATION_ARGS = ['url', 'page', 'pageName', 'pageKey', 'itemId', 'productId', 'shopId', 'orderId'];
+
 /**
  * The class of a call, from what can be observed about it rather than from a
  * list of names: the registry is the client's to change, and a name this build
@@ -1409,9 +1497,14 @@ function paceClass(tool, args) {
   const t = String(tool ?? '');
   if (t.startsWith('_')) return 'probe';
   const a = args && typeof args === 'object' && !Array.isArray(args) ? args : {};
-  const has = (k) => typeof a[k] === 'string' && a[k].trim() !== '';
-  if (/search|query/i.test(t) || has('keyword') || has('imageUrl') || has('imagePath')) return 'search';
-  if (/navigat|open|goto|visit|jump/i.test(t) || has('url') || has('page') || has('pageName') || has('pageKey')) return 'navigate';
+  // An id arrives as a string from one caller and as a number from the next, and
+  // the page it opens is the same one either way.
+  const filled = (k) => {
+    const v = a[k];
+    return (typeof v === 'string' && v.trim() !== '') || (typeof v === 'number' && Number.isFinite(v));
+  };
+  if (/search|query/i.test(t) || SEARCH_ARGS.some(filled)) return 'search';
+  if (/navigat|open|goto|visit|jump/i.test(t) || NAVIGATION_ARGS.some(filled)) return 'navigate';
   if (!MUTATING_TOOLS.has(t) && !READ_ONLY_TOOLS.has(t)) return 'navigate';
   return mutates(t) ? 'action' : 'read';
 }
@@ -1446,18 +1539,30 @@ function paceState(now = Date.now()) {
     cleanRun: Math.max(0, Math.floor(finiteOrNull(raw.cleanRun) ?? 0)),
     lastCallAt: finiteOrNull(raw.lastCallAt),
     lastClass: typeof raw.lastClass === 'string' ? raw.lastClass : null,
+    // Idleness is measured from here rather than from the last call: while the
+    // client is signed out the recheck keeps touching the clock, and a session
+    // nobody is driving would never earn its factor back.
+    relaxFrom: finiteOrNull(raw.relaxFrom) ?? finiteOrNull(raw.lastCallAt),
     raisedBy: typeof raw.raisedBy === 'string' ? raw.raisedBy : null,
     raisedAt: finiteOrNull(raw.raisedAt),
     hold: normalizeHold(raw.loginHold, now),
     relaxedSteps: 0,
   };
-  if (st.factor > 1 && st.lastCallAt !== null && PACE.relaxMs > 0) {
-    const steps = Math.floor((now - st.lastCallAt) / PACE.relaxMs);
+  if (st.relaxFrom !== null && st.relaxFrom > now) st.relaxFrom = now;
+  // Where the idle clock stood before this read spent any of it. `relaxFrom` moves
+  // forward by the steps just credited, so reporting idleness off it would shrink
+  // the longer the run had been idle; this is the number a reader means by it.
+  st.idleFrom = st.relaxFrom;
+  if (st.factor > 1 && st.relaxFrom !== null && PACE.relaxMs > 0) {
+    const steps = Math.floor((now - st.relaxFrom) / PACE.relaxMs);
     if (steps > 0) {
       const eased = Math.max(1, round2(st.factor - steps * PACE.decay));
       if (eased < st.factor) {
         st.factor = eased;
         st.relaxedSteps = steps;
+        // The steps just spent are spent: leaving the clock where it was would
+        // ease the factor again on the next call for the same idleness.
+        st.relaxFrom += steps * PACE.relaxMs;
         if (eased === 1) { st.raisedBy = null; st.raisedAt = null; }
       }
     }
@@ -1485,7 +1590,8 @@ function paceWait(st, klass, now) {
 
 /** hard: the client refused or blocked. soft: it answered late, empty or unrendered. */
 function troubleTier(outcome) {
-  if (!outcome) return null;
+  // An answer this side stopped waiting for early is not the client being slow.
+  if (!outcome || outcome.evidence?.budgetTruncated) return null;
   if (PACE_HARD_SIGNALS.has(outcome.code)) return 'hard';
   if (PACE_SOFT_SIGNALS.has(outcome.code)) return 'soft';
   return outcome.kind === 'pathology' ? 'soft' : null;
@@ -1513,7 +1619,24 @@ function raisePace(code, tier = 'hard', base = null, st = paceState()) {
  */
 function recordPace(klass, outcome, st, waitedMs, intervalMs, tool) {
   const now = Date.now();
+
+  // A pseudo-tool is answered without a page being touched: it opens nothing for
+  // the next call to wait on, earns nothing back, and says nothing about the
+  // client. Diagnostics run between two real calls must leave no mark on either,
+  // so this one writes no state at all.
+  if (klass === 'probe') {
+    return {
+      class: klass, waitedMs, intervalMs, factor: st.factor,
+      ...(st.raisedBy ? { raisedBy: st.raisedBy } : {}),
+    };
+  }
+
   const patch = { lastCallAt: now, lastClass: klass, factor: st.factor, cleanRun: st.cleanRun };
+  // A sign-out is where the session stands, not how hard the client is being
+  // driven, so it leaves the idle clock alone as well as the factor: an hour
+  // signed out is an hour of idleness, whatever the rechecks did to lastCallAt.
+  const signedOut = outcome?.kind === 'gate' && outcome.code === 'NOT_LOGGED_IN';
+  patch.relaxFrom = signedOut ? (st.relaxFrom ?? now) : now;
   if (st.relaxedSteps && st.factor === 1) { patch.raisedBy = null; patch.raisedAt = null; }
   let change = st.relaxedSteps ? 'relaxed' : null;
 
@@ -1537,7 +1660,7 @@ function recordPace(klass, outcome, st, waitedMs, intervalMs, tool) {
     }
   }
 
-  Object.assign(patch, holdTransition(st, outcome, tool, now));
+  Object.assign(patch, holdTransition(st, outcome, klass, tool, now));
   const written = writePace(patch);
   const raisedBy = patch.raisedBy !== undefined ? patch.raisedBy : st.raisedBy;
   return {
@@ -1554,17 +1677,19 @@ function recordPace(klass, outcome, st, waitedMs, intervalMs, tool) {
 
 /**
  * The sign-out hold. It is set by the client refusing a call for being signed
- * out and lifted by confirmation — a call the client actually served — never by
- * a timer. A transport failure confirms nothing, so the hold stands through one.
+ * out, and lifted by one thing only: a real tool the client ran and answered.
+ * Every other outcome leaves it standing — a gate is another refusal, a
+ * pathology is a page that came back wrong, a transport failure never reached
+ * the client, and a pseudo-tool is answered without a session to begin with.
+ * None of them is anyone signing in, and a hold lifted without a sign-in puts
+ * the client's login window back in the user's face once per call.
  */
-function holdTransition(st, outcome, tool, now) {
-  if (!outcome) return {};
+function holdTransition(st, outcome, klass, tool, now) {
+  if (!outcome || klass === 'probe') return {};
   if (outcome.kind === 'gate' && outcome.code === 'NOT_LOGGED_IN') {
     return { loginHold: { since: st.hold?.since ?? now, lastAskedAt: now, tool: tool ?? null } };
   }
-  const served = ['ok', 'tool', 'pathology'].includes(outcome.kind)
-    || (outcome.kind === 'gate' && outcome.code !== 'NOT_LOGGED_IN');
-  return served && st.hold ? { loginHold: null } : {};
+  return st.hold && outcome.kind === 'ok' ? { loginHold: null } : {};
 }
 
 /** The whole regulator, in the shape `up` and `doctor` report it. */
@@ -1588,6 +1713,7 @@ function paceReport(now = Date.now()) {
     maxWaitMs: PACE.maxWaitMs,
     relaxMs: PACE.relaxMs,
     ...(st.lastCallAt !== null ? { lastCall: { class: st.lastClass, agoMs: Math.max(0, now - st.lastCallAt) } } : {}),
+    ...(st.idleFrom != null ? { idleForMs: Math.max(0, now - st.idleFrom) } : {}),
     loginHold: st.hold
       ? {
         waitingForLoginMs: Math.max(0, now - st.hold.since),
@@ -1655,7 +1781,7 @@ async function canaryVerdict(searchTool, baseArgs, budgetLeftMs = Infinity) {
     suppress: new Set(['SEARCH_SILENT_THROTTLE']),
     paceBudgetMs: budgetLeftMs,
   });
-  if (cls.code === 'PACE_WAIT_EXCEEDS_BUDGET') {
+  if (OUT_OF_BUDGET.has(cls.code)) {
     return { verdict: 'unknown', cached: false, outOfBudget: true, waitMs: cls.retryAfterMs, pace: cls.pace };
   }
   let verdict = 'unknown';
@@ -1800,6 +1926,12 @@ async function cmdSearch() {
     if (cls.pace) pace = cls.pace;
     if (cls.code === 'PACE_WAIT_EXCEEDS_BUDGET') {
       return throttled(cls.message, cls.retryAfterMs, { verdict: 'unattempted' });
+    }
+    // A budget too small to send a search with is the caller's turn running out,
+    // not the client throttling: it keeps its own verdict rather than being
+    // reported as a block nobody observed.
+    if (cls.code === 'CALL_BUDGET_EXHAUSTED') {
+      return emitClassified(cls, { ...lockFragment, attempts: attempt, verdict: 'unattempted' });
     }
     attempt++;
     if (cls.pace?.waitedMs) waits.push({ reason: 'pacing', ms: cls.pace.waitedMs });
@@ -2009,8 +2141,13 @@ async function cmdUp() {
       ms: Date.now() - t0, report,
     });
   }
-  report.probe.url = trunc(probe.result?.url, 120);
-  report.probe.title = trunc(probe.result?.title, 80);
+  // What the probe answered with, and nothing the probe does not return: a field
+  // read off the wrong tool comes out empty and reads as a client sitting on a
+  // blank page. An empty history is a real answer, so a count of zero is one too.
+  const entries = typeof probe.result?.count === 'number'
+    ? probe.result.count
+    : (Array.isArray(probe.result?.items) ? probe.result.items.length : null);
+  if (entries !== null) report.probe.entries = entries;
 
   if (report.gates.ordering === 'off') report.warnings.push('ordering is not authorised in the client; work stops at the cart');
   if (report.gates.chat === 'off') report.warnings.push('chatting with sellers is not authorised in the client');
@@ -2035,6 +2172,10 @@ async function cmdDoctor() {
     },
   };
   const diff = [];
+  // What could not be compared at all. It is kept apart from `diff`, which is for
+  // drift actually observed, and it is what stops a check that never ran from
+  // being reported as one that passed.
+  const unchecked = [];
 
   if (!baseline) {
     diff.push({ field: 'baseline', expected: 'protocol-baseline.json next to tb.mjs', observed: 'missing' });
@@ -2063,12 +2204,16 @@ async function cmdDoctor() {
     diff.push({ field: 'client.version', expected: baseline.client.version, observed: observed.version });
   }
 
-  if (observed.reachable) {
+  if (!observed.reachable) {
+    unchecked.push({ field: 'tools', reason: 'the client did not answer, so the registry was not read' });
+  } else {
     const help = await callTool('_help', {});
     if (help.via === 'login-hold') {
       // Held, not asked: the registry is unknown right now, and that is a state
-      // of the session rather than a drift from the baseline.
+      // of the session rather than a drift from the baseline. Unknown is what it
+      // is reported as — nothing was compared, so nothing matched either.
       observed.helpFailure = { kind: help.kind, code: help.code, message: 'held: the client is signed out' };
+      unchecked.push({ field: 'tools', reason: 'the client is signed out, so the registry was not read' });
     } else if (help.kind === 'ok' && Array.isArray(help.result?.tools)) {
       const names = help.result.tools.map((t) => t?.name).filter(Boolean).sort();
       observed.toolCount = names.length;
@@ -2103,10 +2248,13 @@ async function cmdDoctor() {
 
   // doctor reports; it never fails the run.
   finishOk('doctor', Date.now() - t0, {
-    matchesBaseline: diff.length === 0,
+    // True only where every axis was compared and every comparison held. Read
+    // `diff` for what drifted and `unchecked` for what could not be looked at.
+    matchesBaseline: diff.length === 0 && unchecked.length === 0,
     baseline: baseline ? { version: baseline.client?.version, toolCount: baseline.toolCount, baselineVersion: baseline.baselineVersion } : null,
     observed,
     diff,
+    unchecked,
     lockMode: OPT.noLock ? 'off (--no-lock)' : modeInfo.mode,
     lockModeSource: OPT.noLock ? '--no-lock' : modeInfo.source,
     callTimeoutMs: OPT.timeout

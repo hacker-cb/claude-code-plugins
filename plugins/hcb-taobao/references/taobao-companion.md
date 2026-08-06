@@ -166,16 +166,16 @@ paced as an expensive one. So never put a wait of your own between two calls,
 and never ask the user to.
 
 The pace follows the client rather than a schedule: it widens as soon as the
-answers turn bad — a block page, a silent throttle, a page that never rendered,
-a sign-out — and narrows again over a run of clean ones. Every answer says what
+answers turn bad — a block page, a silent throttle, a page that never rendered —
+and narrows again over a run of clean ones. Every answer says what
 the pace stands at and what last widened it, and `doctor` reports the same.
 Where a run has gone slow, that is the reason: read it, and tell the user that
 rather than that the client is stuck.
 
-The waiting happens inside the call, within the budget that call has. Where it
-would not fit, the companion hands the wait back instead of sleeping through it,
-and says nothing was attempted — an answer to come back to later, not one to
-retry harder.
+The waiting happens inside the call, within the budget that call has. Where the
+wait, or the call after it, would not fit that budget, the companion hands it
+back instead of sending anything, and says nothing was attempted — an answer to
+come back to later, not one to retry harder.
 
 Reading a page right after navigating to it returns a page that has not
 rendered. The companion waits for it. A client that has been idle is slow on
