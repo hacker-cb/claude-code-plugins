@@ -1,8 +1,8 @@
 # hcb-taobao
 
 Shopping and sourcing on Taobao and Tmall from inside Claude Code: keyword
-research and supplier shortlists, a listing's real price, SKUs, specs and
-reviews, resolving a variant into the cart, your orders, and talking to sellers.
+research and supplier shortlists, a listing's real price and SKUs, resolving a
+variant into the cart, your orders, and talking to sellers.
 It stops at the cart — the client exposes no checkout, and paying stays with
 you. Part of the
 [`hacker-cb-plugins`](https://github.com/hacker-cb/claude-code-plugins)
@@ -10,8 +10,9 @@ marketplace.
 
 Nothing here talks to Taobao over the web. Every call goes to the **Taobao
 desktop client** running on your machine, through a bundled companion that paces
-requests around the anti-bot throttle, tells a genuinely empty result from a
-silent block, and recognises the failures the vendor CLI reports as success.
+every call it makes to stay under the anti-bot throttle, waits for you rather
+than hammering a signed-out client, tells a genuinely empty result from a silent
+block, and recognises the failures the vendor CLI reports as success.
 
 ## Install
 
@@ -39,13 +40,16 @@ silent block, and recognises the failures the vendor CLI reports as success.
   set, groups it by seller, and hands back a shortlist with a working link per
   listing.
 - **`item-details`** — `/hcb-taobao:item-details`
-  Read one listing properly — the price that actually applies against the
-  crossed-out one, which SKU combinations exist and which are sold out, the spec
-  table, the seller, the reviews and the Q&A.
+  Read one listing properly — what a chosen variant actually costs rather than
+  the figure the listing starts at, which SKU combinations exist and which are
+  sold out, the reviews that sit behind their own tab, the seller with their
+  rating and delivery terms. A listing page carries no spec table and no Q&A;
+  what it does not print is a question for the seller.
 - **`cart-and-orders`** — `/hcb-taobao:cart-and-orders`
   Everything after the choice: resolve a variant into a concrete SKU and add it
-  to the cart, look through the cart, find an order, check what you browsed
-  recently, leave a review. Placing and paying for the order stays with you.
+  to the cart, take a line back out, look through the cart, find an order, check
+  what you browsed recently, leave a review. Placing and paying for the order
+  stays with you.
 - **`seller-chat`** — `/hcb-taobao:seller-chat`
   Ask a seller what the listing does not say — stock, lead time, bulk price,
   whether a part is the revision you need — in Chinese, with the replies
@@ -129,10 +133,11 @@ level changes that.
 
 What the plugin itself writes goes to one directory — `hcb-taobao/` inside your
 Claude Code config directory, which is `~/.claude` unless `CLAUDE_CONFIG_DIR`
-says otherwise. It holds the cross-session lock, the recorded `lock_mode`, and
-the spill files a large result is written to instead of being printed; a spill
-file keeps whatever the call returned — search results, page text — until you
-delete it. The directory is created `0700` and its files `0600`, so nothing on
+says otherwise. It holds the cross-session lock, the recorded `lock_mode`, the
+pace the companion is keeping — when it last called the client, what kind of
+call it was, and whether it is waiting for you to sign in — and the spill files
+a large result is written to instead of being printed; a spill file keeps
+whatever the call returned — search results, page text — until you delete it. The directory is created `0700` and its files `0600`, so nothing on
 the machine reads them but you. Set `HCB_TAOBAO_STATE_DIR` to put it elsewhere.
 
 ## Origin

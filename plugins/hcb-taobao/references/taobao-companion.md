@@ -18,7 +18,7 @@ can flip.
 | `tools` | the live tool registry — the only trustworthy list of what exists |
 | `call <tool> --args '<json>'` | any tool, arguments inline |
 | `call <tool> --args-file <path>` | same, arguments read from a file — use it whenever a value contains quotes, newlines or a URL |
-| `search --keyword <words>` | `search_products` with pacing, throttle detection and retry |
+| `search --keyword <words>` | `search_products` with throttle detection and retry |
 | `read [--scope <css>]` | `read_page_content` with pathology classification |
 | `lock status` / `lock release` | inspect or drop the cross-session lock |
 
@@ -57,9 +57,9 @@ A failure names its class:
 
 | `kind` | What it means | What to do |
 |---|---|---|
-| `gate` | a switch in the client is off, or a consent expired | show `hint` to the user verbatim and stop |
+| `gate` | a switch in the client is off, a session ended, or a consent expired | show `hint` to the user verbatim and stop |
 | `tool` | the tool ran and refused | read `message`; usually the arguments are wrong |
-| `pathology` | the call "succeeded" but the page is a block, a stub, or a silent throttle | follow `hint`; `retryAfterMs` says how long to wait |
+| `pathology` | the call "succeeded" but the page is a block, a stub, or a silent throttle | follow `hint`; where one comes back, `retryAfterMs` is the earliest a repeat is worth making |
 | `transport` | the client is not running or not answering | `up` first |
 | `lock` | another session is driving the client | `hint` names the holder |
 | `protocol` | the client no longer matches the recorded baseline | report it; the companion has already fallen back |
@@ -68,18 +68,86 @@ A failure names its class:
 `unknown` exists because a wrong guess is worse than an admission. Treat it as a
 failure with an open cause, never as a result.
 
+A gate can arrive at any point, not only at preflight: a signed-in client can
+sign itself out midway through a run. When one interrupts work already under
+way, report what actually landed before it — the keywords that ran, the listings
+read, whether the cart line went in — and stop there. Half a sweep reported as a
+whole one is worse than the interruption.
+
+A sign-out is that stop, and never a step to try again: the session comes back
+only when the user signs in themselves, in the client's own window. From the
+first refusal the companion holds that state and answers everything after it out
+of the gate alone — no further call reaches the client, and the login window is
+not raised again. So show the user the `hint`, ask them to sign in and to say
+when they have, and run `up` then: it asks the client afresh, and a live session
+is what lifts the state. Never walk the remaining steps to see whether one of
+them gets through — the companion itself lets a call past now and then, to catch
+a sign-in nobody told it about, and that is the whole of what trying again can
+buy.
+
 ## The language of what comes back
 
 Titles, shop names and page text arrive in whatever language the Taobao page was
 rendered in — Chinese normally, machine-translated English when the page-level
-translator is on. That state belongs to the web page and flips on its own, so
-detect it rather than assume it: measure the share of CJK characters in the text
-you got.
+translator is on. The client mounts no switch for it, and the state is per page
+rather than per session: two reads in one task come back in different languages.
+So decide it on every read, by measuring the share of CJK characters in the text
+you got, and never carry a verdict from one page to the next.
+
+Four things stay Chinese whatever the translator does, and they are what to key
+on:
+
+- the bracketed service markers the client writes into page content (`[商品id]`,
+  `[商品主图]`);
+- the `title` attribute in the DOM, which holds the original of a link whose
+  visible text has been translated;
+- the tab title;
+- browse history, which comes out of the client's own storage rather than off
+  the page.
 
 Translated titles arrive fragment-glued (`nasChassis12 hard drives4U`), so they
 are unusable for matching. Match on item ids, model numbers and figures; never on
 words. What reaches the user is your own rendering either way — see
 [`taobao-presentation.md`](taobao-presentation.md).
+
+## Reading a page
+
+`read` returns the text of the whole DOM, not the part on screen, so a page is
+read where it stands and scrolling it first adds nothing to what is already
+there. Where a panel fetches its next page of content as it is scrolled, scroll
+it — that is the one thing scrolling gets, and the read that follows is what
+carries it back.
+
+`--scope` is real CSS targeting: it narrows the read to the matching subtree, and
+a selector matching nothing comes back as an error rather than as an empty page —
+so an error there means the selector is wrong, not that the section is empty. It
+is also the language-independent way in, since a class or an attribute survives
+the translator and a caption does not.
+
+`scan_page_elements` has no scope. The argument is accepted and changes nothing,
+so every scan returns the whole page — take it whole and pick out what you need.
+Its `filter` matches the rendered label, which is the one thing the translator
+rewrites: on an English page a Chinese filter matches nothing that is there. It
+drops output lines and nothing else — an index counts from the whole scan, so it
+addresses the same element filtered or not.
+
+## Pages of the client
+
+The page keys `navigate` takes are the client's own, and `list_available_pages`
+is where they come from — a key written from memory is a guess.
+
+`close_page` closes the page the client is holding. Close it once the task that
+opened it is finished; leave it open where the answer sends the user back to it —
+a cart to check out in, a conversation to carry on — and never close one between
+two steps of your own, or one that was already open when the task began.
+
+**An id argument is a navigation.** A tool handed the id of an item, a shop or an
+order opens that page before it does anything else, whatever else the tool is
+for. So pass one only to reach a page nothing has opened yet: where the client is
+already standing on it, leave the id out and the tool works against the page in
+front of it. A chain that carries the id through every step opens the same page
+once per step, and each opening is a fresh chance for the page to come back
+something other than what was asked for.
 
 ## Search that means something
 
@@ -93,14 +161,36 @@ the companion re-runs a control keyword to tell a genuinely empty query from a
 block, and backs off when it is a block. A page caps at 50 results and there is
 no paging — breadth comes from more keywords, not from asking for more.
 
-Shop search (`--type shop`) returns nothing for every keyword tried. Enumerate
-sellers by grouping product results on their shop name instead.
+Never narrow a search to shops: it comes back empty for every keyword, the
+control keyword runs under the same narrowing and comes back empty with it, and
+the emptiness is then reported as a throttle that holds down the product searches
+after it. Enumerate sellers by grouping product results on their shop name.
 
-## Timing
+## Pace
 
-Reading a page right after navigating to it returns a page that has not rendered.
-The companion waits, but the first call after the client has idled still takes
-several seconds. Let it.
+The companion keeps a pace of its own in front of every call it makes to the
+client, whatever the tool, and it keeps it across calls and across sessions — a
+new task does not start from a clean slate. What a call waits is set by what it
+costs the session: opening a page waits longest, searching less, a read, a scan
+or a diagnostic barely at all, and a tool the companion does not recognise is
+paced as an expensive one. So never put a wait of your own between two calls,
+and never ask the user to.
+
+The pace follows the client rather than a schedule: it widens as soon as the
+answers turn bad — a block page, a silent throttle, a page that never rendered —
+and narrows again over a run of clean ones. Every answer says what
+the pace stands at and what last widened it, and `doctor` reports the same.
+Where a run has gone slow, that is the reason: read it, and tell the user that
+rather than that the client is stuck.
+
+The waiting happens inside the call, within the budget that call has. Where the
+wait, or the call after it, would not fit that budget, the companion hands it
+back instead of sending anything, and says nothing was attempted — an answer to
+come back to later, not one to retry harder.
+
+Reading a page right after navigating to it returns a page that has not
+rendered. The companion waits for it. A client that has been idle is slow on
+its first call as well, on top of whatever the pace adds. Let it.
 
 One call at a time, always — the client drives a single background tab with
 shared buffers, so overlapping calls read each other's page. That holds across
