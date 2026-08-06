@@ -97,8 +97,9 @@ git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   #
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
 # --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
-# worktree, and `ls` would resolve that against the caller's cwd.
-ls "$(git -C "<each worktree path>" rev-parse --absolute-git-dir)/modules" 2>/dev/null || echo none
+# worktree, and `ls` would resolve that against the caller's cwd. `-d` so an
+# empty modules dir still prints, instead of leaving both branches silent.
+ls -d "$(git -C "<each worktree path>" rev-parse --absolute-git-dir)/modules" 2>/dev/null || echo none
 ```
 
 `for-each-ref` gives branch → worktree → upstream → `[gone]` in one pass; prefer
@@ -201,8 +202,8 @@ rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items o
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
-git -C "$PROJECT" branch -D "<branch>"             #    -D for a confirmed squash merge, or for
-                                                   #    the re-proved case below — nothing else
+git -C "$PROJECT" branch -D "<branch>"             # 4-alt, ONLY where -d refused: a confirmed
+                                                   #    squash merge, or the re-proof below
 ```
 
 `-d` re-checks against `PROJECT`'s HEAD — or against the branch's own upstream
