@@ -4,16 +4,15 @@ description: >-
   Use this skill whenever the user wants to find something on Taobao or Tmall
   through the desktop client — sourcing a part, comparing what sellers offer,
   "what does this cost in China", "найди мне", "search Taobao for", a picture to
-  match, or any sweep across a category. It searches in Chinese, paces the runs
-  around the anti-bot throttle, tells a silent block apart from a genuinely
-  empty keyword result, merges every run into one deduplicated set, groups it by
-  seller,
-  and reports a shortlist with a working link per listing. Reach for it even
-  when the user names a single product: one keyword returns one page of at most
-  fifty results, and the sweep is what makes the answer worth trusting. Not for
-  reading one listing in depth — the price that applies, the variants and the
-  seller's terms belong to hcb-taobao:item-details, which takes the shortlist
-  from here. It adds nothing to a cart and messages no seller.
+  match, or any sweep across a category. It searches in Chinese, tells a silent
+  block apart from a genuinely empty keyword result, merges every run into one
+  deduplicated set, groups it by seller, and reports a shortlist with a working
+  link per listing. Reach for it even when the user names a single product: one
+  keyword returns one page of at most fifty results, and the sweep is what makes
+  the answer worth trusting. Not for reading one listing in depth — the price
+  that applies, the variants and the seller's terms belong to
+  hcb-taobao:item-details, which takes the shortlist from here. It adds nothing
+  to a cart and messages no seller.
 metadata:
   upstream-skill: taobao-native
   upstream-version: "1.0.43"
@@ -73,10 +72,10 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call image_search --args-file /tmp/t
 ```
 
 It answers with category groups, each carrying its own product list; merge those
-lists exactly like keyword runs. Reaching it through `call` gets it the pacing
-every search shares and not the control-keyword check, so an image search that
-comes back empty is undecided rather than negative: confirm with a keyword run
-before reporting that nothing matches the picture.
+lists exactly like keyword runs. Reaching it through `call` gets it no
+control-keyword check, so an image search that comes back empty is undecided
+rather than negative: confirm with a keyword run before reporting that nothing
+matches the picture.
 
 When a run comes back a pathology after the companion has already backed off,
 stop the sweep instead of walking the remaining keywords: from that point every

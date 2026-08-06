@@ -98,9 +98,6 @@ const READ_ONLY_TOOLS = new Set([
 
 const mutates = (tool) => MUTATING_TOOLS.has(tool) || !READ_ONLY_TOOLS.has(tool);
 
-/** Every tool that spends a search slot, so every one of them is paced. */
-const SEARCH_TOOLS = new Set(['search_products', 'image_search']);
-
 const envInt = (name, def) => {
   const raw = process.env[name];
   const n = raw == null ? NaN : Number(raw);
@@ -119,7 +116,6 @@ const LEASE = {
 };
 
 const SEARCH = {
-  minIntervalMs: envInt('HCB_TAOBAO_SEARCH_INTERVAL_MS', 25000),
   backoffBaseMs: envInt('HCB_TAOBAO_SEARCH_BACKOFF_MS', 300000),
   backoffFactor: envNum('HCB_TAOBAO_SEARCH_BACKOFF_FACTOR', 1.5),
   backoffCapMs: envInt('HCB_TAOBAO_SEARCH_BACKOFF_CAP_MS', 900000),
@@ -136,6 +132,61 @@ const SEARCH = {
   // than killed with the command that was carrying it.
   budgetMs: Math.max(1000, envInt('HCB_TAOBAO_SEARCH_BUDGET_MS', 90000)),
 };
+
+/**
+ * The pace regulator. Every call to the client is paced, not only the searches:
+ * what draws attention is how fast pages are opened and how densely the client
+ * is driven, which no single tool name owns.
+ *
+ * `classes` are the starting intervals per class of call, in milliseconds; the
+ * interval actually applied is that number times a factor the regulator moves on
+ * its own — up by multiplication when the client shows a sign of trouble, down
+ * by subtraction after a run of clean calls.
+ */
+const PACE = {
+  classes: {
+    probe: envInt('HCB_TAOBAO_PACE_PROBE_MS', 0),
+    read: envInt('HCB_TAOBAO_PACE_READ_MS', 600),
+    action: envInt('HCB_TAOBAO_PACE_ACTION_MS', 1500),
+    navigate: envInt('HCB_TAOBAO_PACE_NAV_MS', 4000),
+    // The old search-only knob still sets the search class, so a machine already
+    // tuned by hand keeps its number.
+    search: envInt('HCB_TAOBAO_PACE_SEARCH_MS', envInt('HCB_TAOBAO_SEARCH_INTERVAL_MS', 3000)),
+  },
+  growth: envNum('HCB_TAOBAO_PACE_GROWTH', 2),
+  softGrowth: envNum('HCB_TAOBAO_PACE_SOFT_GROWTH', 1.4),
+  decay: envNum('HCB_TAOBAO_PACE_DECAY', 0.5),
+  decayAfter: Math.max(1, envInt('HCB_TAOBAO_PACE_DECAY_AFTER', 3)),
+  maxFactor: Math.max(1, envNum('HCB_TAOBAO_PACE_MAX_FACTOR', 6)),
+  // How long one call will sleep for pacing when the caller sets no budget of
+  // its own. Past it the wait is handed back as retryAfterMs.
+  maxWaitMs: envInt('HCB_TAOBAO_PACE_MAX_WAIT_MS', 30000),
+  // Idleness earns back what a run of clean calls would have: nothing is learned
+  // while nothing is called, so a factor raised yesterday must not still be
+  // charged today.
+  relaxMs: envInt('HCB_TAOBAO_PACE_RELAX_MS', 900000),
+  // The ceiling for a paced wait plus the call it precedes, so both fit inside
+  // the host's own call window.
+  callWindowMs: Math.max(5000, envInt('HCB_TAOBAO_CALL_WINDOW_MS', 120000)),
+  // While the client is signed out every call is answered here instead. One call
+  // per this interval is let through for real to notice a sign-in nobody
+  // announced — long enough that the client's login window is not raised over
+  // and over, short enough that a hold cannot outlive the sign-in by much.
+  loginRecheckMs: envInt('HCB_TAOBAO_LOGIN_RECHECK_MS', 300000),
+};
+
+/**
+ * Codes that mean the client is pushing back. `hard` is Taobao itself refusing —
+ * the block page, the silent throttle. `soft` is the client answering late,
+ * empty, half-rendered or signed out: a sign-out has never been tied to the pace
+ * it was driven at, so it slows the tempo without accusing it. Any other
+ * pathology counts as soft.
+ */
+const PACE_HARD_SIGNALS = new Set(['ANTI_BOT_BLOCK', 'SEARCH_SILENT_THROTTLE']);
+const PACE_SOFT_SIGNALS = new Set([
+  'NOT_LOGGED_IN', 'PAGE_NOT_RENDERED', 'PAGE_CONTENT_TOO_SHORT', 'SCAN_FOUND_NOTHING',
+  'SERVICE_UNAVAILABLE', 'TIMEOUT', 'EMPTY_RESPONSE',
+]);
 
 // ---------------------------------------------------------------------------
 // options + output
@@ -856,47 +907,69 @@ function transportFailure(res, tool) {
   };
 }
 
-/** Returns a classification plus timing and the wire envelope. */
 /**
- * The client opens its login window on every call it refuses for being signed
- * out, so repeating a chain of calls raises that window once per call. Remember
- * the refusal and answer the next ones here instead of at the client.
+ * The one door to the client: every call goes through here, so the pace
+ * regulator and the sign-out hold are applied to all of them rather than to a
+ * chosen few. Returns a classification plus timing, the pace fragment and the
+ * wire envelope.
+ *
+ * `opts.paceBudgetMs` is what the caller can still afford to wait; without one
+ * the regulator's own ceiling applies. `opts.bypassLoginHold` is for the call
+ * that asks the client for real while a hold stands.
  */
-const SIGNED_OUT_MEMORY_MS = Math.max(0, envInt('HCB_TAOBAO_SIGNED_OUT_MEMORY_MS', 30000));
-
-function signedOutSince() {
-  const at = Number(readPace().signedOutAt);
-  if (!Number.isFinite(at)) return null;
-  return Date.now() - at < SIGNED_OUT_MEMORY_MS ? at : null;
-}
-
-function rememberSignedOut(on) {
-  writePace({ signedOutAt: on ? Date.now() : null });
-}
-
 async function callTool(tool, args, opts = {}) {
   const t0 = Date.now();
-  const timeout = opts.timeout ?? toolTimeout(tool);
   const body = { tool, arguments: args ?? {} };
+  const klass = paceClass(tool, body.arguments);
+  const st = paceState(t0);
 
-  // `up` and the probes always ask for real — the user may have just signed in.
-  if (!opts.ignoreSignedOutMemory) {
-    const since = signedOutSince();
-    if (since != null) {
-      return {
-        ...gateOutcome('NOT_LOGGED_IN'), tool, ms: 0, via: 'memory',
-        evidence: { signedOutAgoMs: Date.now() - since, askedClient: false },
-      };
-    }
+  // `_ping` is answered by the transport and never raises the login window; `up`
+  // asks for real because the user may have just signed in.
+  const bypassHold = Boolean(opts.bypassLoginHold) || tool === '_ping';
+  if (st.hold && !bypassHold) {
+    if (t0 - st.hold.lastAskedAt < PACE.loginRecheckMs) return heldForLogin(st, klass, tool, t0);
+    // The self-check is one real call, and it counts as an ask whatever comes
+    // back: a process that dies mid-call must not free the next one to ask again.
+    writePace({ loginHold: { ...st.hold, lastAskedAt: t0 } });
+    st.hold = { ...st.hold, lastAskedAt: t0 };
   }
+
+  const { intervalMs, waitMs } = paceWait(st, klass, Date.now());
+  const budgetMs = Number.isFinite(opts.paceBudgetMs) ? opts.paceBudgetMs : PACE.maxWaitMs;
+  if (waitMs > budgetMs) {
+    // One process is one call: a wait that does not fit is handed back rather
+    // than slept through past the window the caller has.
+    return {
+      kind: 'pathology', code: 'PACE_WAIT_EXCEEDS_BUDGET',
+      message: `the pace regulator holds the next ${klass} call for another ${waitMs} ms and only ${Math.max(0, Math.round(budgetMs))} ms of this call's budget is left`,
+      hint: 'Nothing was asked of the client. Wait out `retryAfterMs`, then repeat the same call. The interval grows when the client shows trouble and shrinks again after a run of clean calls — `pace.raisedBy` names what raised it.',
+      retriable: true, retryAfterMs: Math.max(1000, waitMs),
+      tool, ms: Date.now() - t0, via: 'pace',
+      pace: { class: klass, intervalMs, factor: st.factor, pendingMs: waitMs, ...(st.raisedBy ? { raisedBy: st.raisedBy } : {}) },
+    };
+  }
+  if (waitMs > 0) await sleep(waitMs);
+  const waited = waitMs > 0 ? waitMs : 0;
+
+  // The clock left for the call itself, so a paced wait plus a slow tool still
+  // fits the host's call window and the verdict comes back rather than being
+  // killed with the command carrying it.
+  const timeout = opts.timeout ?? budgetedTimeout(tool, (Number.isFinite(opts.paceBudgetMs) ? opts.paceBudgetMs : PACE.callWindowMs) - waited);
+
+  const finish = (outcome, extra = {}) => {
+    const pace = recordPace(klass, outcome, st, waited, intervalMs, tool);
+    const hold = paceState().hold;
+    return {
+      ...outcome, tool, ...extra, pace,
+      ...(hold ? { loginHold: { waitingForLoginMs: Math.max(0, Date.now() - hold.since), nextClientCheckInMs: Math.max(0, hold.lastAskedAt + PACE.loginRecheckMs - Date.now()) } } : {}),
+    };
+  };
+
   const wantCli = OPT.transport === 'cli';
   const addr = wantCli ? null : await resolveAddress();
 
   if (!wantCli && !addr) {
-    return {
-      ...transportFailure({ status: 'error', error: { code: 'ENOENT' } }, tool),
-      ms: Date.now() - t0, via: 'socket',
-    };
+    return finish(transportFailure({ status: 'error', error: { code: 'ENOENT' } }, tool), { ms: Date.now() - t0, via: 'socket' });
   }
 
   let via = wantCli ? 'cli' : 'socket';
@@ -914,16 +987,11 @@ async function callTool(tool, args, opts = {}) {
   }
 
   const ms = Date.now() - t0;
-  if (res.status !== 'ok') return { ...transportFailure(res, tool), ms, via };
-  if (res.status === 'ok' && res.envelope === undefined) {
-    return { kind: 'unknown', code: 'EMPTY_ENVELOPE', message: 'the client answered with nothing', hint: 'Not a success. Run `doctor`.', retriable: false, ms, via, tool };
+  if (res.status !== 'ok') return finish(transportFailure(res, tool), { ms, via });
+  if (res.envelope === undefined) {
+    return finish({ kind: 'unknown', code: 'EMPTY_ENVELOPE', message: 'the client answered with nothing', hint: 'Not a success. Run `doctor`.', retriable: false }, { ms, via });
   }
-  const cls = classify(res.envelope, tool, opts.suppress);
-  // Remember a sign-out so the next call answers from memory; forget it the
-  // moment the client serves anything, which means the user has signed back in.
-  if (cls.code === 'NOT_LOGGED_IN') rememberSignedOut(true);
-  else if (signedOutSince() != null) rememberSignedOut(false);
-  return { ...cls, ms, via, tool, envelope: res.envelope };
+  return finish(classify(res.envelope, tool, opts.suppress), { ms, via, envelope: res.envelope });
 }
 
 async function ping(addr, timeoutMs = PING_TIMEOUT_MS) {
@@ -1030,8 +1098,14 @@ function finishOk(tool, ms, result, extra = {}) {
 
 function emitClassified(cls, extra = {}) {
   const raw = OPT.raw && cls.envelope !== undefined ? { raw: cls.envelope } : {};
+  // The tempo travels with every answer: a caller that is being slowed down has
+  // to be able to see it, and by what.
+  const meta = {
+    ...(cls.pace ? { pace: cls.pace } : {}),
+    ...(cls.loginHold ? { loginHold: cls.loginHold } : {}),
+  };
   if (cls.kind === 'ok') {
-    return finishOk(cls.tool, cls.ms, cls.result, { ...(cls.via ? { via: cls.via } : {}), ...extra, ...raw });
+    return finishOk(cls.tool, cls.ms, cls.result, { ...(cls.via ? { via: cls.via } : {}), ...meta, ...extra, ...raw });
   }
   const { kind, code, message, hint, retriable, retryAfterMs, evidence, tool, ms, via } = cls;
   fail({
@@ -1039,7 +1113,7 @@ function emitClassified(cls, extra = {}) {
     ...(retryAfterMs !== undefined ? { retryAfterMs } : {}),
     ...(evidence ? { evidence } : {}),
     ...(tool ? { tool } : {}), ...(ms !== undefined ? { ms } : {}), ...(via ? { via } : {}),
-    ...extra, ...raw,
+    ...meta, ...extra, ...raw,
   });
 }
 
@@ -1304,14 +1378,14 @@ async function guardLock(tool) {
 }
 
 // ---------------------------------------------------------------------------
-// search pacing
+// pace regulator
 // ---------------------------------------------------------------------------
 
-const pacePath = () => path.join(stateDir(), 'search-pace.json');
+const pacePath = () => path.join(stateDir(), 'pace.json');
 
 function readPace() {
   const d = readJsonFile(pacePath());
-  return d && typeof d === 'object' ? d : {};
+  return d && typeof d === 'object' && !Array.isArray(d) ? d : {};
 }
 
 function writePace(patch) {
@@ -1319,23 +1393,236 @@ function writePace(patch) {
   return writeJsonAtomic(pacePath(), { ...readPace(), ...patch });
 }
 
-/** Pacing is per client, not per process, so the last call time lives in a file. */
-function paceWaitMs() {
-  const last = Number(readPace().lastSearchAt);
-  if (!Number.isFinite(last)) return 0;
-  return Math.max(0, last + SEARCH.minIntervalMs - Date.now());
+const finiteOrNull = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+const round2 = (n) => Math.round(n * 100) / 100;
+
+/**
+ * The class of a call, from what can be observed about it rather than from a
+ * list of names: the registry is the client's to change, and a name this build
+ * has never heard of is exactly the one to pace carefully.
+ *
+ * `probe` is a pseudo-tool answered by the transport, `search` spends a search
+ * slot, `navigate` opens a page, `read` is a name known to change nothing, and
+ * `action` is everything else known. An unknown name is paced as a navigation.
+ */
+function paceClass(tool, args) {
+  const t = String(tool ?? '');
+  if (t.startsWith('_')) return 'probe';
+  const a = args && typeof args === 'object' && !Array.isArray(args) ? args : {};
+  const has = (k) => typeof a[k] === 'string' && a[k].trim() !== '';
+  if (/search|query/i.test(t) || has('keyword') || has('imageUrl') || has('imagePath')) return 'search';
+  if (/navigat|open|goto|visit|jump/i.test(t) || has('url') || has('page') || has('pageName') || has('pageKey')) return 'navigate';
+  if (!MUTATING_TOOLS.has(t) && !READ_ONLY_TOOLS.has(t)) return 'navigate';
+  return mutates(t) ? 'action' : 'read';
 }
 
-/** Sleeps out the pacing interval; null when the wait outlasts the budget left. */
-async function respectPace(budgetLeftMs = Infinity) {
-  const wait = paceWaitMs();
-  if (wait <= 0) return 0;
-  if (wait > budgetLeftMs) return null;
-  await sleep(wait);
-  return wait;
+const classIntervalMs = (klass) => PACE.classes[klass] ?? PACE.classes.navigate;
+
+function normalizeHold(raw, now) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const since = finiteOrNull(raw.since);
+  if (since === null) return null;
+  // A stamp in the future is a clock that moved, not an ask that happened. The
+  // last ask is read as due instead, so the next call asks the client for real
+  // and writes a stamp this side of now — the hold repairs itself rather than
+  // staying shut until the clock catches up.
+  const asked = finiteOrNull(raw.lastAskedAt) ?? since;
+  return {
+    since: Math.min(since, now),
+    lastAskedAt: asked > now ? now - PACE.loginRecheckMs : asked,
+    tool: typeof raw.tool === 'string' ? raw.tool : null,
+  };
 }
 
-const markPace = () => writePace({ lastSearchAt: Date.now() });
+/**
+ * The regulator's state, normalised and with the idle relaxation applied. It is
+ * read from a file because one call is one process: a tempo nobody remembers
+ * between calls is not a tempo.
+ */
+function paceState(now = Date.now()) {
+  const raw = readPace();
+  const st = {
+    factor: Math.min(PACE.maxFactor, Math.max(1, finiteOrNull(raw.factor) ?? 1)),
+    cleanRun: Math.max(0, Math.floor(finiteOrNull(raw.cleanRun) ?? 0)),
+    lastCallAt: finiteOrNull(raw.lastCallAt),
+    lastClass: typeof raw.lastClass === 'string' ? raw.lastClass : null,
+    raisedBy: typeof raw.raisedBy === 'string' ? raw.raisedBy : null,
+    raisedAt: finiteOrNull(raw.raisedAt),
+    hold: normalizeHold(raw.loginHold, now),
+    relaxedSteps: 0,
+  };
+  if (st.factor > 1 && st.lastCallAt !== null && PACE.relaxMs > 0) {
+    const steps = Math.floor((now - st.lastCallAt) / PACE.relaxMs);
+    if (steps > 0) {
+      const eased = Math.max(1, round2(st.factor - steps * PACE.decay));
+      if (eased < st.factor) {
+        st.factor = eased;
+        st.relaxedSteps = steps;
+        if (eased === 1) { st.raisedBy = null; st.raisedAt = null; }
+      }
+    }
+  }
+  return st;
+}
+
+/**
+ * What one call owes before it may go out. The interval is the larger of the
+ * class about to run and the class that ran last: a page opened a moment ago
+ * needs settling before anything reads it, whichever tool does the reading.
+ */
+function paceWait(st, klass, now) {
+  const mine = classIntervalMs(klass);
+  // A pseudo-tool reads no page and leaves no trace, so it waits for nothing to
+  // settle — only for its own interval, which is what keeps `doctor` quick.
+  const prev = st.lastClass && klass !== 'probe' ? classIntervalMs(st.lastClass) : 0;
+  const intervalMs = Math.round(Math.max(mine, prev) * st.factor);
+  // Never longer than one interval: a wall clock that moved backwards leaves the
+  // last call in the future, and a wait taken from that would exceed every
+  // budget — refusing every call, `up` included, until the clock caught up.
+  const waitMs = st.lastCallAt === null ? 0 : Math.min(intervalMs, Math.max(0, st.lastCallAt + intervalMs - now));
+  return { intervalMs, waitMs };
+}
+
+/** hard: the client refused or blocked. soft: it answered late, empty or unrendered. */
+function troubleTier(outcome) {
+  if (!outcome) return null;
+  if (PACE_HARD_SIGNALS.has(outcome.code)) return 'hard';
+  if (PACE_SOFT_SIGNALS.has(outcome.code)) return 'soft';
+  return outcome.kind === 'pathology' ? 'soft' : null;
+}
+
+/**
+ * Multiplicative increase, from an observed signal — never from a guess. `base`
+ * is the fragment the raised call already reported, so what comes back is the
+ * same shape every other answer carries rather than a second one.
+ */
+function raisePace(code, tier = 'hard', base = null, st = paceState()) {
+  const factor = Math.min(PACE.maxFactor, round2(Math.max(1, st.factor) * (tier === 'hard' ? PACE.growth : PACE.softGrowth)));
+  const written = writePace({ factor, cleanRun: 0, raisedBy: code, raisedAt: Date.now() });
+  return {
+    ...(base && typeof base === 'object' ? base : {}),
+    factor, previousFactor: st.factor, raisedBy: code, change: 'raised',
+    ...(written ? {} : { degraded: 'the pace state could not be written, so the next call is not paced against this one' }),
+  };
+}
+
+/**
+ * Writes down what this call did to the tempo: the trouble that raised it, the
+ * run of clean answers that eases it back, and when the client was last touched
+ * — which is what the next process paces against.
+ */
+function recordPace(klass, outcome, st, waitedMs, intervalMs, tool) {
+  const now = Date.now();
+  const patch = { lastCallAt: now, lastClass: klass, factor: st.factor, cleanRun: st.cleanRun };
+  if (st.relaxedSteps && st.factor === 1) { patch.raisedBy = null; patch.raisedAt = null; }
+  let change = st.relaxedSteps ? 'relaxed' : null;
+
+  const tier = troubleTier(outcome);
+  if (tier) {
+    patch.factor = Math.min(PACE.maxFactor, round2(Math.max(1, st.factor) * (tier === 'hard' ? PACE.growth : PACE.softGrowth)));
+    patch.cleanRun = 0;
+    patch.raisedBy = outcome.code || 'TROUBLE';
+    patch.raisedAt = now;
+    change = 'raised';
+  } else if (outcome.kind === 'ok') {
+    // Nothing to earn back at the floor, so the run is not counted there.
+    const clean = st.factor > 1 ? st.cleanRun + 1 : 0;
+    if (st.factor > 1 && clean >= PACE.decayAfter) {
+      patch.factor = Math.max(1, round2(st.factor - PACE.decay));
+      patch.cleanRun = 0;
+      change = 'eased';
+      if (patch.factor === 1) { patch.raisedBy = null; patch.raisedAt = null; }
+    } else {
+      patch.cleanRun = clean;
+    }
+  }
+
+  Object.assign(patch, holdTransition(st, outcome, tool, now));
+  const written = writePace(patch);
+  const raisedBy = patch.raisedBy !== undefined ? patch.raisedBy : st.raisedBy;
+  return {
+    class: klass,
+    waitedMs,
+    intervalMs,
+    factor: patch.factor,
+    ...(patch.factor !== st.factor ? { previousFactor: st.factor } : {}),
+    ...(raisedBy ? { raisedBy } : {}),
+    ...(change ? { change } : {}),
+    ...(written ? {} : { degraded: 'the pace state could not be written, so the next call is not paced against this one' }),
+  };
+}
+
+/**
+ * The sign-out hold. It is set by the client refusing a call for being signed
+ * out and lifted by confirmation — a call the client actually served — never by
+ * a timer. A transport failure confirms nothing, so the hold stands through one.
+ */
+function holdTransition(st, outcome, tool, now) {
+  if (!outcome) return {};
+  if (outcome.kind === 'gate' && outcome.code === 'NOT_LOGGED_IN') {
+    return { loginHold: { since: st.hold?.since ?? now, lastAskedAt: now, tool: tool ?? null } };
+  }
+  const served = ['ok', 'tool', 'pathology'].includes(outcome.kind)
+    || (outcome.kind === 'gate' && outcome.code !== 'NOT_LOGGED_IN');
+  return served && st.hold ? { loginHold: null } : {};
+}
+
+/** The whole regulator, in the shape `up` and `doctor` report it. */
+function paceReport(now = Date.now()) {
+  const st = paceState(now);
+  const classes = {};
+  for (const [name, baseMs] of Object.entries(PACE.classes)) {
+    classes[name] = { baseMs, effectiveMs: Math.round(baseMs * st.factor) };
+  }
+  return {
+    factor: st.factor,
+    classes,
+    ...(st.raisedBy ? { raisedBy: st.raisedBy } : {}),
+    ...(st.raisedAt !== null ? { raisedAgoMs: Math.max(0, now - st.raisedAt) } : {}),
+    cleanRun: st.cleanRun,
+    easesAfterCleanCalls: PACE.decayAfter,
+    growth: PACE.growth,
+    softGrowth: PACE.softGrowth,
+    decay: PACE.decay,
+    maxFactor: PACE.maxFactor,
+    maxWaitMs: PACE.maxWaitMs,
+    relaxMs: PACE.relaxMs,
+    ...(st.lastCallAt !== null ? { lastCall: { class: st.lastClass, agoMs: Math.max(0, now - st.lastCallAt) } } : {}),
+    loginHold: st.hold
+      ? {
+        waitingForLoginMs: Math.max(0, now - st.hold.since),
+        nextClientCheckInMs: Math.max(0, st.hold.lastAskedAt + PACE.loginRecheckMs - now),
+        recheckMs: PACE.loginRecheckMs,
+        lastRefusedTool: st.hold.tool,
+      }
+      : null,
+    stateFile: pacePath(),
+  };
+}
+
+/** The gate raised here, without asking the client and without raising its login window. */
+function heldForLogin(st, klass, tool, now) {
+  const hold = st.hold;
+  const waitingForLoginMs = Math.max(0, now - hold.since);
+  const nextClientCheckInMs = Math.max(0, hold.lastAskedAt + PACE.loginRecheckMs - now);
+  return {
+    ...gateOutcome('NOT_LOGGED_IN'),
+    message: 'nobody is signed in to the client, so this call was not sent',
+    hint: 'The client is signed out and its login page is already open. Ask the user to sign in there and to say when they are done, then run `up` — it is what asks the client and lifts this hold. Until then every call is answered here, so the client stops raising its login window once per refused call.',
+    retriable: false,
+    tool,
+    ms: 0,
+    via: 'login-hold',
+    evidence: { askedClient: false, waitingForLoginMs, nextClientCheckInMs },
+    // Nothing was waited for, but where the tempo stands travels with this answer
+    // too: a hold is exactly when a caller asks why the run stopped moving.
+    pace: {
+      class: klass, waitedMs: 0, intervalMs: paceWait(st, klass, now).intervalMs, factor: st.factor,
+      ...(st.raisedBy ? { raisedBy: st.raisedBy } : {}),
+    },
+    loginHold: { waitingForLoginMs, nextClientCheckInMs, since: new Date(hold.since).toISOString() },
+  };
+}
 
 function backoffMs(attempt) {
   const raw = SEARCH.backoffBaseMs * Math.pow(SEARCH.backoffFactor, attempt - 1);
@@ -1361,16 +1648,16 @@ async function canaryVerdict(searchTool, baseArgs, budgetLeftMs = Infinity) {
   if (cached && cached.verdict === 'blocked' && Number.isFinite(cached.at) && Date.now() - cached.at < SEARCH.canaryTtlMs) {
     return { verdict: 'blocked', cached: true };
   }
-  const paced = await respectPace(budgetLeftMs);
-  if (paced === null) return { verdict: 'unknown', cached: false, outOfBudget: true, waitMs: paceWaitMs() };
   // `type` after the spread, so the caller's own is overwritten rather than
   // carried: what the control keyword has to prove is that the client still
   // answers searches at all.
   const cls = await callTool(searchTool, { ...baseArgs, type: SEARCH.canaryType, keyword: SEARCH.canaryKeyword }, {
     suppress: new Set(['SEARCH_SILENT_THROTTLE']),
-    timeout: budgetedTimeout(searchTool, budgetLeftMs - paced),
+    paceBudgetMs: budgetLeftMs,
   });
-  markPace();
+  if (cls.code === 'PACE_WAIT_EXCEEDS_BUDGET') {
+    return { verdict: 'unknown', cached: false, outOfBudget: true, waitMs: cls.retryAfterMs, pace: cls.pace };
+  }
   let verdict = 'unknown';
   if (cls.kind === 'ok') {
     const n = productCount(cls.result);
@@ -1378,7 +1665,10 @@ async function canaryVerdict(searchTool, baseArgs, budgetLeftMs = Infinity) {
     else verdict = n > 0 ? 'alive' : 'blocked';
   }
   writePace({ canary: verdict === 'blocked' ? { at: Date.now(), verdict, keyword: SEARCH.canaryKeyword, type: SEARCH.canaryType } : null });
-  return { verdict, cached: false, failure: cls.kind === 'ok' ? null : cls };
+  // The throttle pathology is suppressed for this call, so the block it proves
+  // has to be handed to the regulator here or the empty answer reads as clean.
+  const raised = verdict === 'blocked' ? raisePace('SEARCH_SILENT_THROTTLE', 'hard', cls.pace) : null;
+  return { verdict, cached: false, failure: cls.kind === 'ok' ? null : cls, pace: raised ?? cls.pace };
 }
 
 // ---------------------------------------------------------------------------
@@ -1438,12 +1728,10 @@ async function cmdCall() {
   if (args === null) return;
   const lockFragment = await guardLock(tool);
   if (lockFragment === null) return;
-  // Pacing is per client and per search slot, not per subcommand: a search tool
-  // reached through `call` spends the same slot `search` does.
-  const paced = SEARCH_TOOLS.has(tool) ? await respectPace() : 0;
+  // Pacing is the client's, not the subcommand's: a tool reached through `call`
+  // is paced exactly as the same tool reached through `search` or `read`.
   const cls = await callTool(tool, withSourceApp(args));
-  if (SEARCH_TOOLS.has(tool)) markPace();
-  emitClassified(cls, { ...lockFragment, ...(paced ? { waits: [{ reason: 'pacing', ms: paced }] } : {}) });
+  emitClassified(cls, lockFragment);
 }
 
 async function cmdRead() {
@@ -1463,10 +1751,11 @@ async function cmdTools() {
   const cls = await callTool('_help', {});
   if (cls.kind !== 'ok') return emitClassified(cls);
   const tools = Array.isArray(cls.result?.tools) ? cls.result.tools : [];
-  if (OPT.raw) return finishOk('tools', cls.ms, { count: tools.length, tools }, { via: cls.via });
+  const head = { via: cls.via, ...(cls.pace ? { pace: cls.pace } : {}) };
+  if (OPT.raw) return finishOk('tools', cls.ms, { count: tools.length, tools }, head);
   // Descriptions and schemas run to tens of kilobytes; the registry is about names.
   const compact = tools.map((t) => ({ name: t?.name, description: trunc(String(t?.description ?? '').replace(/\s+/g, ' ').trim(), 160) }));
-  finishOk('tools', cls.ms, { count: compact.length, tools: compact }, { via: cls.via });
+  finishOk('tools', cls.ms, { count: compact.length, tools: compact }, head);
 }
 
 async function cmdSearch() {
@@ -1489,6 +1778,7 @@ async function cmdSearch() {
   const waits = [];
   let lastZero = null;
   let attempt = 0;
+  let pace = null;
 
   /**
    * One process is one call, so a wait that does not fit the budget is handed
@@ -1501,23 +1791,18 @@ async function cmdSearch() {
     hint: 'The client is being throttled, not asked a bad question. Wait out `retryAfterMs` before searching again — the working recipe is a long pause, not a faster retry — and tell the user why the shortlist is incomplete.',
     retriable: true, retryAfterMs: Math.max(1000, Math.round(retryAfterMs)),
     tool: searchTool, ms: Date.now() - t0, attempts: attempt, budgetMs: SEARCH.budgetMs,
-    ...(waits.length ? { waits } : {}), ...lockFragment, ...extra,
+    ...(waits.length ? { waits } : {}), ...(pace ? { pace } : {}), ...lockFragment, ...extra,
     ...(OPT.raw && lastZero?.envelope !== undefined ? { raw: lastZero.envelope } : {}),
   });
 
   while (attempt < SEARCH.maxAttempts) {
-    const paced = await respectPace(budgetLeft());
-    if (paced === null) {
-      return throttled(
-        `the client's search pacing still needs ${paceWaitMs()} ms and this call's ${SEARCH.budgetMs} ms budget is spent`,
-        paceWaitMs(), { verdict: 'unattempted' },
-      );
+    const cls = await callTool(searchTool, { ...base, keyword }, { suppress, paceBudgetMs: budgetLeft() });
+    if (cls.pace) pace = cls.pace;
+    if (cls.code === 'PACE_WAIT_EXCEEDS_BUDGET') {
+      return throttled(cls.message, cls.retryAfterMs, { verdict: 'unattempted' });
     }
-    if (paced) waits.push({ reason: 'pacing', ms: paced });
     attempt++;
-
-    const cls = await callTool(searchTool, { ...base, keyword }, { suppress, timeout: budgetedTimeout(searchTool, budgetLeft()) });
-    markPace();
+    if (cls.pace?.waitedMs) waits.push({ reason: 'pacing', ms: cls.pace.waitedMs });
     if (cls.kind !== 'ok') return emitClassified(cls, { ...lockFragment, attempts: attempt });
 
     const count = productCount(cls.result);
@@ -1526,19 +1811,21 @@ async function cmdSearch() {
         kind: 'unknown', code: 'SEARCH_SHAPE_UNKNOWN',
         message: 'the search answer carried neither a count nor a products array',
         hint: 'Not a success. Run `doctor`; the client may no longer match the recorded baseline.',
-        retriable: false, tool: searchTool, ms: cls.ms, via: cls.via,
+        retriable: false, tool: searchTool, ms: cls.ms, via: cls.via, pace: cls.pace,
         evidence: { result: previewValue(cls.result) }, envelope: cls.envelope,
       }, { ...lockFragment, attempts: attempt });
     }
     if (count > 0) {
       return finishOk(searchTool, Date.now() - t0, cls.result, {
-        via: cls.via, attempts: attempt, ...(waits.length ? { waits } : {}), ...lockFragment,
+        via: cls.via, attempts: attempt, ...(waits.length ? { waits } : {}),
+        ...(pace ? { pace } : {}), ...lockFragment,
         ...(OPT.raw ? { raw: cls.envelope } : {}),
       });
     }
 
     lastZero = cls;
     const canary = await canaryVerdict(searchTool, base, budgetLeft());
+    if (canary.pace) pace = canary.pace;
     // A gate or a dead transport is not something backing off can fix.
     if (canary.failure && ['gate', 'transport', 'protocol'].includes(canary.failure.kind)) {
       return emitClassified(canary.failure, { ...lockFragment, attempts: attempt, duringCanary: true });
@@ -1553,7 +1840,7 @@ async function cmdSearch() {
       return finishOk(searchTool, Date.now() - t0, cls.result, {
         via: cls.via, attempts: attempt, verdict: 'empty-confirmed',
         note: `the control keyword "${SEARCH.canaryKeyword}" still returns products, so this query is genuinely empty rather than blocked`,
-        ...(waits.length ? { waits } : {}), ...lockFragment,
+        ...(waits.length ? { waits } : {}), ...(pace ? { pace } : {}), ...lockFragment,
       });
     }
 
@@ -1706,9 +1993,10 @@ async function cmdUp() {
   // `up` is how the user checks after signing in, so it always asks the client.
   const PROBE_TOOL = 'get_browse_history';
   const probe = await callTool(PROBE_TOOL, withSourceApp({ type: 'product' }), {
-    timeout: Math.max(toolTimeout(PROBE_TOOL), 15000), ignoreSignedOutMemory: true,
+    timeout: Math.max(toolTimeout(PROBE_TOOL), 15000), bypassLoginHold: true,
   });
   report.probe = { tool: PROBE_TOOL, ms: probe.ms, kind: probe.kind, via: probe.via };
+  report.pace = paceReport();
   if (probe.kind !== 'ok') {
     report.probe.code = probe.code;
     return fail({
@@ -1716,6 +2004,8 @@ async function cmdUp() {
       retriable: Boolean(probe.retriable),
       ...(probe.retryAfterMs !== undefined ? { retryAfterMs: probe.retryAfterMs } : {}),
       ...(probe.evidence ? { evidence: probe.evidence } : {}),
+      ...(probe.pace ? { pace: probe.pace } : {}),
+      ...(probe.loginHold ? { loginHold: probe.loginHold } : {}),
       ms: Date.now() - t0, report,
     });
   }
@@ -1775,7 +2065,11 @@ async function cmdDoctor() {
 
   if (observed.reachable) {
     const help = await callTool('_help', {});
-    if (help.kind === 'ok' && Array.isArray(help.result?.tools)) {
+    if (help.via === 'login-hold') {
+      // Held, not asked: the registry is unknown right now, and that is a state
+      // of the session rather than a drift from the baseline.
+      observed.helpFailure = { kind: help.kind, code: help.code, message: 'held: the client is signed out' };
+    } else if (help.kind === 'ok' && Array.isArray(help.result?.tools)) {
       const names = help.result.tools.map((t) => t?.name).filter(Boolean).sort();
       observed.toolCount = names.length;
       observed.tools = names;
@@ -1818,6 +2112,7 @@ async function cmdDoctor() {
     callTimeoutMs: OPT.timeout
       ? { explicit: OPT.timeout }
       : { default: TIMEOUT_MS.default, slow: TIMEOUT_MS.slow, slowTools: [...SLOW_TOOLS] },
+    pace: paceReport(),
     leaseTtlMs: LEASE.ttlMs,
     stateDir: stateDir(),
     ...(STATE.warning ? { stateWarning: STATE.warning } : {}),

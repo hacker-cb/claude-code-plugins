@@ -10,9 +10,9 @@ description: >-
   itself the send, it reaches a live person under their account, and nothing can
   be recalled. Reading a seller's answer back, translated, is the other half and
   sends nothing at all. Ask the listing first: anything printed on the page comes
-  back instantly from hcb-taobao:item-details, while a seller takes minutes to
-  hours. Cart and order context comes from hcb-taobao:cart-and-orders. It never
-  adds to a cart and never pays.
+  back in the same turn from hcb-taobao:item-details, while a seller takes
+  minutes to hours. Cart and order context comes from
+  hcb-taobao:cart-and-orders. It never adds to a cart and never pays.
 metadata:
   upstream-skill: taobao-native
   upstream-version: "1.0.43"
@@ -37,7 +37,7 @@ How the result reaches the user is
 
 ## 1. Ask the page before asking the seller
 
-Anything printed on the listing comes back in seconds from
+Anything printed on the listing comes back in the same turn from
 `hcb-taobao:item-details`; a seller answers in minutes to hours, and a question
 the page already answers spends the user's standing with that shop. Chat is for
 stock the page does not state, quantities beyond the listed ones, shipping
@@ -142,8 +142,9 @@ Where that lands on the list of conversations rather than inside one, scan the
 page, click the entry carrying that shop's name, and read again.
 
 Read once. When nothing new is there, say so and let the user decide whether to
-wait — the conversation stays open in the client, so checking again later costs
-nothing, while polling for minutes holds the client and answers nothing.
+wait — the conversation stays open in the client, so a later check picks up
+whatever arrived, while reading it over and over holds the client and answers
+nothing.
 Distinguish an automated greeting from the seller's own answer: the first is
 instant and generic, and reporting it as a reply tells the user the question was
 answered when it was not.

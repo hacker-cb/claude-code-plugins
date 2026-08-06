@@ -10,8 +10,9 @@ marketplace.
 
 Nothing here talks to Taobao over the web. Every call goes to the **Taobao
 desktop client** running on your machine, through a bundled companion that paces
-requests around the anti-bot throttle, tells a genuinely empty result from a
-silent block, and recognises the failures the vendor CLI reports as success.
+every call it makes to stay under the anti-bot throttle, waits for you rather
+than hammering a signed-out client, tells a genuinely empty result from a silent
+block, and recognises the failures the vendor CLI reports as success.
 
 ## Install
 
@@ -132,10 +133,11 @@ level changes that.
 
 What the plugin itself writes goes to one directory — `hcb-taobao/` inside your
 Claude Code config directory, which is `~/.claude` unless `CLAUDE_CONFIG_DIR`
-says otherwise. It holds the cross-session lock, the recorded `lock_mode`, and
-the spill files a large result is written to instead of being printed; a spill
-file keeps whatever the call returned — search results, page text — until you
-delete it. The directory is created `0700` and its files `0600`, so nothing on
+says otherwise. It holds the cross-session lock, the recorded `lock_mode`, the
+pace the companion is keeping — when it last called the client, what kind of
+call it was, and whether it is waiting for you to sign in — and the spill files
+a large result is written to instead of being printed; a spill file keeps
+whatever the call returned — search results, page text — until you delete it. The directory is created `0700` and its files `0600`, so nothing on
 the machine reads them but you. Set `HCB_TAOBAO_STATE_DIR` to put it elsewhere.
 
 ## Origin

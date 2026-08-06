@@ -18,7 +18,7 @@ can flip.
 | `tools` | the live tool registry — the only trustworthy list of what exists |
 | `call <tool> --args '<json>'` | any tool, arguments inline |
 | `call <tool> --args-file <path>` | same, arguments read from a file — use it whenever a value contains quotes, newlines or a URL |
-| `search --keyword <words>` | `search_products` with pacing, throttle detection and retry |
+| `search --keyword <words>` | `search_products` with throttle detection and retry |
 | `read [--scope <css>]` | `read_page_content` with pathology classification |
 | `lock status` / `lock release` | inspect or drop the cross-session lock |
 
@@ -57,9 +57,9 @@ A failure names its class:
 
 | `kind` | What it means | What to do |
 |---|---|---|
-| `gate` | a switch in the client is off, or a consent expired | show `hint` to the user verbatim and stop |
+| `gate` | a switch in the client is off, a session ended, or a consent expired | show `hint` to the user verbatim and stop |
 | `tool` | the tool ran and refused | read `message`; usually the arguments are wrong |
-| `pathology` | the call "succeeded" but the page is a block, a stub, or a silent throttle | follow `hint`; `retryAfterMs` says how long to wait |
+| `pathology` | the call "succeeded" but the page is a block, a stub, or a silent throttle | follow `hint`; where one comes back, `retryAfterMs` is the earliest a repeat is worth making |
 | `transport` | the client is not running or not answering | `up` first |
 | `lock` | another session is driving the client | `hint` names the holder |
 | `protocol` | the client no longer matches the recorded baseline | report it; the companion has already fallen back |
@@ -72,11 +72,18 @@ A gate can arrive at any point, not only at preflight: a signed-in client can
 sign itself out midway through a run. When one interrupts work already under
 way, report what actually landed before it — the keywords that ran, the listings
 read, whether the cart line went in — and stop there. Half a sweep reported as a
-whole one is worse than the interruption. The sign-out gate in particular makes
-the client raise its login window on every call it refuses, so a chain that keeps
-going raises that window once per step; the companion answers the rest from
-memory for a short while, and `up` is what asks the client again once the user
-says they are back in.
+whole one is worse than the interruption.
+
+A sign-out is that stop, and never a step to try again: the session comes back
+only when the user signs in themselves, in the client's own window. From the
+first refusal the companion holds that state and answers everything after it out
+of the gate alone — no further call reaches the client, and the login window is
+not raised again. So show the user the `hint`, ask them to sign in and to say
+when they have, and run `up` then: it asks the client afresh, and a live session
+is what lifts the state. Never walk the remaining steps to see whether one of
+them gets through — the companion itself lets a call past now and then, to catch
+a sign-in nobody told it about, and that is the whole of what trying again can
+buy.
 
 ## The language of what comes back
 
@@ -148,11 +155,31 @@ control keyword runs under the same narrowing and comes back empty with it, and
 the emptiness is then reported as a throttle that holds down the product searches
 after it. Enumerate sellers by grouping product results on their shop name.
 
-## Timing
+## Pace
 
-Reading a page right after navigating to it returns a page that has not rendered.
-The companion waits, but the first call after the client has idled still takes
-several seconds. Let it.
+The companion keeps a pace of its own in front of every call it makes to the
+client, whatever the tool, and it keeps it across calls and across sessions — a
+new task does not start from a clean slate. What a call waits is set by what it
+costs the session: opening a page waits longest, searching less, a read, a scan
+or a diagnostic barely at all, and a tool the companion does not recognise is
+paced as an expensive one. So never put a wait of your own between two calls,
+and never ask the user to.
+
+The pace follows the client rather than a schedule: it widens as soon as the
+answers turn bad — a block page, a silent throttle, a page that never rendered,
+a sign-out — and narrows again over a run of clean ones. Every answer says what
+the pace stands at and what last widened it, and `doctor` reports the same.
+Where a run has gone slow, that is the reason: read it, and tell the user that
+rather than that the client is stuck.
+
+The waiting happens inside the call, within the budget that call has. Where it
+would not fit, the companion hands the wait back instead of sleeping through it,
+and says nothing was attempted — an answer to come back to later, not one to
+retry harder.
+
+Reading a page right after navigating to it returns a page that has not
+rendered. The companion waits for it. A client that has been idle is slow on
+its first call as well, on top of whatever the pace adds. Let it.
 
 One call at a time, always — the client drives a single background tab with
 shared buffers, so overlapping calls read each other's page. That holds across
