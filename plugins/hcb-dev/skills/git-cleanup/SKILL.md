@@ -93,19 +93,19 @@ git -C "$PROJECT" for-each-ref refs/heads/ \
 git -C "$PROJECT" branch --merged "<remote>/<default>"
 git -C "$PROJECT" rev-list --count "<remote>/<default>..<branch>"   # per branch, merged or not
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
-git -C "<each worktree path>" submodule status   # a line WITHOUT a leading '-' is populated
-git -C "<worktree>/<populated submodule>" status --porcelain -unormal              # its own dirt
-git -C "<worktree>/<populated submodule>" rev-list --count --branches --not --remotes  # unpushed
+git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
+ls "$(git -C "<each worktree path>" rev-parse --git-dir)/modules" 2>/dev/null || echo none
 ```
 
 `for-each-ref` gives branch → worktree → upstream → `[gone]` in one pass; prefer
 it over parsing `branch -vv`. `worktree list` never mentions modified or
 untracked files, so without that per-worktree `status` there is no clean/dirty
 signal at all and step 5 cannot tell a removable worktree from one holding work.
-That `status` stops at the superproject, so a populated submodule is asked
-separately and twice: its own commits are invisible there, and so are its files
-wherever `submodule.<name>.ignore` is set. A `-` prefix means nothing is checked
-out and there is nothing to ask.
+That `status` stops at the superproject and settles nothing about a submodule —
+not its commits, not its files wherever `submodule.<name>.ignore` is set, not a
+nested one — which is why the two lines above ask about submodule state instead
+of about dirt. `-` on every line **and** no leftover `modules` directory is the
+only answer meaning nothing is there.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
 forge and that forge's CLI is authed, close the gap read-only:
@@ -148,7 +148,7 @@ status: surface it, never delete it.
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
 | clean, its branch merged, and **this session cut it** | `remove` (class 2) |
-| a populated submodule | the class is the **submodule's** own — class 2 only where its `status` is empty and its unpushed count is 0, class 3 otherwise, whatever the superproject's `status` said. A linked worktree keeps that submodule's git dir under its own admin dir, so removal takes the submodule's history with it and nothing in the primary worktree holds a copy |
+| a populated submodule, or a `modules` directory in its admin dir | surface (class 3), and its removal needs `--force` — a linked worktree keeps the submodule's git dir under that admin dir and nowhere else, so removal takes whatever history it holds and the primary worktree has no copy. Do not try to prove it empty: the superproject's `status` sees none of it, and neither does a probe of the submodule's branches |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
