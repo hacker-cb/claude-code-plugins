@@ -1458,15 +1458,27 @@ async function guardLock(tool) {
 // ---------------------------------------------------------------------------
 
 const pacePath = () => path.join(stateDir(), 'pace.json');
+const legacyPacePath = () => path.join(stateDir(), 'search-pace.json');
 
 function readPace() {
   const d = readJsonFile(pacePath());
-  return d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+  if (d && typeof d === 'object' && !Array.isArray(d)) return d;
+  // An older file described a pace that only guarded search, so its intervals and
+  // factor mean nothing here; only the canary verdict is about the client rather
+  // than about pacing. Take that and leave the rest behind.
+  const legacy = readJsonFile(legacyPacePath());
+  return legacy && typeof legacy === 'object' && !Array.isArray(legacy) && legacy.canary
+    ? { canary: legacy.canary }
+    : {};
 }
 
 function writePace(patch) {
   if (!ensureStateDir()) return false;
-  return writeJsonAtomic(pacePath(), { ...readPace(), ...patch });
+  const ok = writeJsonAtomic(pacePath(), { ...readPace(), ...patch });
+  // Only once the carried-over state is safely in the new file: dropping it at
+  // read time loses the verdict whenever no write follows.
+  if (ok) try { fs.unlinkSync(legacyPacePath()); } catch { /* nothing to clear */ }
+  return ok;
 }
 
 const finiteOrNull = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
