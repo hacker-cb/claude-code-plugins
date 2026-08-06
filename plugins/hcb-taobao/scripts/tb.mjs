@@ -433,6 +433,16 @@ function matchPathology(result, tool, suppress) {
   return null;
 }
 
+/** The same gate the client would have answered with, raised without asking it. */
+function gateOutcome(code) {
+  const g = DATA.gates.find((x) => x.code === code);
+  if (!g) return { kind: 'gate', code, message: code, retriable: false };
+  return {
+    kind: 'gate', code: g.code, message: g.message || g.code, hint: g.hint,
+    retriable: Boolean(g.retriable), retryAfterMs: g.retryAfterMs,
+  };
+}
+
 function fromErrorText(text, where) {
   for (const g of DATA.gates) {
     if (containsSignature(text, g.signatures)) {
@@ -847,10 +857,38 @@ function transportFailure(res, tool) {
 }
 
 /** Returns a classification plus timing and the wire envelope. */
+/**
+ * The client opens its login window on every call it refuses for being signed
+ * out, so repeating a chain of calls raises that window once per call. Remember
+ * the refusal and answer the next ones here instead of at the client.
+ */
+const SIGNED_OUT_MEMORY_MS = Math.max(0, envInt('HCB_TAOBAO_SIGNED_OUT_MEMORY_MS', 30000));
+
+function signedOutSince() {
+  const at = Number(readPace().signedOutAt);
+  if (!Number.isFinite(at)) return null;
+  return Date.now() - at < SIGNED_OUT_MEMORY_MS ? at : null;
+}
+
+function rememberSignedOut(on) {
+  writePace({ signedOutAt: on ? Date.now() : null });
+}
+
 async function callTool(tool, args, opts = {}) {
   const t0 = Date.now();
   const timeout = opts.timeout ?? toolTimeout(tool);
   const body = { tool, arguments: args ?? {} };
+
+  // `up` and the probes always ask for real — the user may have just signed in.
+  if (!opts.ignoreSignedOutMemory) {
+    const since = signedOutSince();
+    if (since != null) {
+      return {
+        ...gateOutcome('NOT_LOGGED_IN'), tool, ms: 0, via: 'memory',
+        evidence: { signedOutAgoMs: Date.now() - since, askedClient: false },
+      };
+    }
+  }
   const wantCli = OPT.transport === 'cli';
   const addr = wantCli ? null : await resolveAddress();
 
@@ -881,6 +919,10 @@ async function callTool(tool, args, opts = {}) {
     return { kind: 'unknown', code: 'EMPTY_ENVELOPE', message: 'the client answered with nothing', hint: 'Not a success. Run `doctor`.', retriable: false, ms, via, tool };
   }
   const cls = classify(res.envelope, tool, opts.suppress);
+  // Remember a sign-out so the next call answers from memory; forget it the
+  // moment the client serves anything, which means the user has signed back in.
+  if (cls.code === 'NOT_LOGGED_IN') rememberSignedOut(true);
+  else if (signedOutSince() != null) rememberSignedOut(false);
   return { ...cls, ms, via, tool, envelope: res.envelope };
 }
 
@@ -1657,7 +1699,10 @@ async function cmdUp() {
   // _ping is answered by the transport; the probe is the first thing that proves
   // a tool actually runs. Preflight that passes on a failed probe passes on
   // nothing, so the probe decides `up`.
-  const probe = await callTool('get_current_tab', withSourceApp({}), { timeout: Math.max(toolTimeout('get_current_tab'), 15000) });
+  // `up` is how the user checks after signing in, so it always asks the client.
+  const probe = await callTool('get_current_tab', withSourceApp({}), {
+    timeout: Math.max(toolTimeout('get_current_tab'), 15000), ignoreSignedOutMemory: true,
+  });
   report.probe = { tool: 'get_current_tab', ms: probe.ms, kind: probe.kind, via: probe.via };
   if (probe.kind !== 'ok') {
     report.probe.code = probe.code;

@@ -68,6 +68,16 @@ A failure names its class:
 `unknown` exists because a wrong guess is worse than an admission. Treat it as a
 failure with an open cause, never as a result.
 
+A gate can arrive at any point, not only at preflight: a signed-in client can
+sign itself out midway through a run. When one interrupts work already under
+way, report what actually landed before it — the keywords that ran, the listings
+read, whether the cart line went in — and stop there. Half a sweep reported as a
+whole one is worse than the interruption. The sign-out gate in particular makes
+the client raise its login window on every call it refuses, so a chain that keeps
+going raises that window once per step; the companion answers the rest from
+memory for a short while, and `up` is what asks the client again once the user
+says they are back in.
+
 ## The language of what comes back
 
 Titles, shop names and page text arrive in whatever language the Taobao page was
