@@ -90,10 +90,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call scan_page_elements --args '{"fi
 Where no variant has been chosen, give the range and say the low end is where the
 listing starts rather than reporting it as the price.
 
-**Variants.** Two calls, each for the part only it has.
+**Variants.** Two calls, each for the part only it has. Both work against the
+listing step 1 opened, so neither carries its id:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call get_product_skus --args '{"itemId":"673089864770"}'
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call get_product_skus --args '{}'
 ```
 
 Take from it which dimensions the listing has and which combinations come back

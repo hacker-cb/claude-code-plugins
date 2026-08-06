@@ -141,6 +141,14 @@ opened it is finished; leave it open where the answer sends the user back to it 
 a cart to check out in, a conversation to carry on — and never close one between
 two steps of your own, or one that was already open when the task began.
 
+**An id argument is a navigation.** A tool handed the id of an item, a shop or an
+order opens that page before it does anything else, whatever else the tool is
+for. So pass one only to reach a page nothing has opened yet: where the client is
+already standing on it, leave the id out and the tool works against the page in
+front of it. A chain that carries the id through every step opens the same page
+once per step, and each opening is a fresh chance for the page to come back
+something other than what was asked for.
+
 ## Search that means something
 
 Search Chinese. Chinese keywords return whole pages of results where the English

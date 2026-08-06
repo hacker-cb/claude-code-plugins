@@ -44,13 +44,23 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" tools
 
 ## 1. Resolve the variant
 
+Reached from `hcb-taobao:item-details`, the listing is open already, and the call
+is made against the page in front of the client:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call get_product_skus --args '{}'
+```
+
+The id goes in only where nothing has opened the listing yet, since passing it is
+what opens it:
+
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call get_product_skus --args '{"itemId":"673089864770"}'
 ```
 
-This gives which dimensions the listing has and how they combine. Its option
-texts are cut short, so nothing is added or matched by them. The full texts, and
-the indices that click them, come from one whole-page scan:
+Either way it gives which dimensions the listing has and how they combine. Its
+option texts are cut short, so nothing is added or matched by them. The full
+texts, and the indices that click them, come from one whole-page scan:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call scan_page_elements --args '{}'
@@ -72,7 +82,8 @@ scan and show the mapping before adding: "black" and `黑色` are one choice,
 
 ## 2. Add
 
-Ask the client's own tool first, with the item id and the full value array:
+Ask the client's own tool first, with the full value array and no id — the
+listing is the page step 1 left the client standing on:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call add_to_cart --args-file /tmp/tb-add.json
