@@ -1683,7 +1683,8 @@ async function cmdUp() {
       report.gates.chatConsentExpiresInDays = consent.expiresInDays;
       if (consent.lapsed) report.warnings.push('the Wangwang chat consent has lapsed; the user must re-authorise it before any chat tool works');
     }
-    if (config.usernick) report.client.account = String(config.usernick);
+    // From the client's stored config — the last account it knew, not proof of a live session.
+    if (config.usernick) report.client.lastKnownAccount = String(config.usernick);
     if (report.gates.aiAgent === 'off') {
       const gate = DATA.gates.find((g) => g.code === 'AI_AGENT_DISABLED');
       return fail({
@@ -1699,11 +1700,15 @@ async function cmdUp() {
   // _ping is answered by the transport; the probe is the first thing that proves
   // a tool actually runs. Preflight that passes on a failed probe passes on
   // nothing, so the probe decides `up`.
+  // The probe reads the account's own history rather than the current tab: the
+  // client serves its local home page whether or not anyone is signed in, so a
+  // tab read says nothing about the session the skills are about to rely on.
   // `up` is how the user checks after signing in, so it always asks the client.
-  const probe = await callTool('get_current_tab', withSourceApp({}), {
-    timeout: Math.max(toolTimeout('get_current_tab'), 15000), ignoreSignedOutMemory: true,
+  const PROBE_TOOL = 'get_browse_history';
+  const probe = await callTool(PROBE_TOOL, withSourceApp({ type: 'product' }), {
+    timeout: Math.max(toolTimeout(PROBE_TOOL), 15000), ignoreSignedOutMemory: true,
   });
-  report.probe = { tool: 'get_current_tab', ms: probe.ms, kind: probe.kind, via: probe.via };
+  report.probe = { tool: PROBE_TOOL, ms: probe.ms, kind: probe.kind, via: probe.via };
   if (probe.kind !== 'ok') {
     report.probe.code = probe.code;
     return fail({
