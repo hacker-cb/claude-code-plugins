@@ -72,14 +72,54 @@ failure with an open cause, never as a result.
 
 Titles, shop names and page text arrive in whatever language the Taobao page was
 rendered in — Chinese normally, machine-translated English when the page-level
-translator is on. That state belongs to the web page and flips on its own, so
-detect it rather than assume it: measure the share of CJK characters in the text
-you got.
+translator is on. The client mounts no switch for it, and the state is per page
+rather than per session: two reads in one task come back in different languages.
+So decide it on every read, by measuring the share of CJK characters in the text
+you got, and never carry a verdict from one page to the next.
+
+Four things stay Chinese whatever the translator does, and they are what to key
+on:
+
+- the bracketed service markers the client writes into page content (`[商品id]`,
+  `[商品主图]`);
+- the `title` attribute in the DOM, which holds the original of a link whose
+  visible text has been translated;
+- the tab title;
+- browse history, which comes out of the client's own storage rather than off
+  the page.
 
 Translated titles arrive fragment-glued (`nasChassis12 hard drives4U`), so they
 are unusable for matching. Match on item ids, model numbers and figures; never on
 words. What reaches the user is your own rendering either way — see
 [`taobao-presentation.md`](taobao-presentation.md).
+
+## Reading a page
+
+`read` returns the text of the whole DOM, not the part on screen, so a page is
+read where it stands and scrolling it first adds nothing.
+
+`--scope` is real CSS targeting: it narrows the read to the matching subtree, and
+a selector matching nothing comes back as an error rather than as an empty page —
+so an error there means the selector is wrong, not that the section is empty. It
+is also the language-independent way in, since a class or an attribute survives
+the translator and a caption does not.
+
+`scan_page_elements` has no scope. The argument is accepted and changes nothing,
+so every scan returns the whole page — take it whole and pick out what you need.
+Its `filter` matches the rendered label, which is the one thing the translator
+rewrites: on an English page a Chinese filter matches nothing that is there. It
+drops output lines and nothing else — an index counts from the whole scan, so it
+addresses the same element filtered or not.
+
+## Pages of the client
+
+The page keys `navigate` takes are the client's own, and `list_available_pages`
+is where they come from — a key written from memory is a guess.
+
+`close_page` closes the page the client is holding. Close it once the task that
+opened it is finished; leave it open where the answer sends the user back to it —
+a cart to check out in, a conversation to carry on — and never close one between
+two steps of your own, or one that was already open when the task began.
 
 ## Search that means something
 
@@ -93,8 +133,10 @@ the companion re-runs a control keyword to tell a genuinely empty query from a
 block, and backs off when it is a block. A page caps at 50 results and there is
 no paging — breadth comes from more keywords, not from asking for more.
 
-Shop search (`--type shop`) returns nothing for every keyword tried. Enumerate
-sellers by grouping product results on their shop name instead.
+Never narrow a search to shops: it comes back empty for every keyword, the
+control keyword runs under the same narrowing and comes back empty with it, and
+the emptiness is then reported as a throttle that holds down the product searches
+after it. Enumerate sellers by grouping product results on their shop name.
 
 ## Timing
 

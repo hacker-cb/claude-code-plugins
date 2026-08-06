@@ -36,16 +36,15 @@
     {
       "code": "TOOL_LAYER_NOT_READY",
       "signatures": ["Tool 执行层未就绪", "请确保应用已加载完成"],
-      "retriable": true,
-      "retryAfterMs": 5000,
-      "hint": "The client is running but has not finished loading its tool layer. Wait a few seconds and retry, or run `up`, which waits for the home page to finish loading."
+      "retriable": false,
+      "hint": "The client is running and answering, but the layer that executes tools never came up, and nothing from this side reaches it — retrying and `up` both run into the same wall. Ask the user to quit 淘宝桌面版 completely and start it again, then run `up`."
     },
     {
       "code": "SERVICE_UNAVAILABLE",
       "signatures": ["服务不可用"],
       "retriable": true,
       "retryAfterMs": 5000,
-      "hint": "The client answered but has no tool executor bound. Run `up`; if it keeps happening ask the user to restart the client."
+      "hint": "The client answered but has no tool executor bound. Wait a few seconds and repeat the same call; if it comes back again, ask the user to quit and restart the client, which is the only thing that rebinds it."
     }
   ],
 
@@ -119,7 +118,7 @@
       "retriable": true,
       "retryAfterMs": 300000,
       "message": "search returned zero products and no error, which is also what a silent throttle looks like",
-      "hint": "A block and an honestly empty query are indistinguishable from one answer. Use `search --keyword` instead of calling this tool directly: it paces requests, re-runs a control keyword to tell the two apart, and backs off when it is a block."
+      "hint": "A block and an honestly empty query are indistinguishable from one answer. For a keyword search use `search --keyword` instead of calling the tool directly: it paces requests, re-runs a control keyword to tell the two apart, and backs off when it is a block. An image search has no such route, so wait out `retryAfterMs` before repeating one."
     },
     {
       "code": "SCAN_FOUND_NOTHING",
@@ -128,7 +127,7 @@
       "retriable": true,
       "retryAfterMs": 5000,
       "message": "the scan found no interactive elements at all",
-      "hint": "A rendered Taobao page always has interactive elements. Wait a few seconds and scan again, or drop the `scope` if one was passed."
+      "hint": "A rendered Taobao page always has interactive elements, and a scan always covers the whole page — narrowing it is not what emptied this one. Wait a few seconds and scan again; if it repeats, check with get_current_tab that the tab is where you think it is."
     }
   ]
 }

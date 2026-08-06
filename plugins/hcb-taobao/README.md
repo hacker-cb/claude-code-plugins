@@ -1,8 +1,8 @@
 # hcb-taobao
 
 Shopping and sourcing on Taobao and Tmall from inside Claude Code: keyword
-research and supplier shortlists, a listing's real price, SKUs, specs and
-reviews, resolving a variant into the cart, your orders, and talking to sellers.
+research and supplier shortlists, a listing's real price and SKUs, resolving a
+variant into the cart, your orders, and talking to sellers.
 It stops at the cart — the client exposes no checkout, and paying stays with
 you. Part of the
 [`hacker-cb-plugins`](https://github.com/hacker-cb/claude-code-plugins)
@@ -40,12 +40,15 @@ silent block, and recognises the failures the vendor CLI reports as success.
   listing.
 - **`item-details`** — `/hcb-taobao:item-details`
   Read one listing properly — the price that actually applies against the
-  crossed-out one, which SKU combinations exist and which are sold out, the spec
-  table, the seller, the reviews and the Q&A.
+  crossed-out one, which SKU combinations exist and which are sold out, the
+  seller with their rating and delivery terms. A listing page carries no spec
+  table, no reviews and no Q&A; what it does not print is a question for the
+  seller.
 - **`cart-and-orders`** — `/hcb-taobao:cart-and-orders`
   Everything after the choice: resolve a variant into a concrete SKU and add it
-  to the cart, look through the cart, find an order, check what you browsed
-  recently, leave a review. Placing and paying for the order stays with you.
+  to the cart, take a line back out, look through the cart, find an order, check
+  what you browsed recently, leave a review. Placing and paying for the order
+  stays with you.
 - **`seller-chat`** — `/hcb-taobao:seller-chat`
   Ask a seller what the listing does not say — stock, lead time, bulk price,
   whether a part is the revision you need — in Chinese, with the replies

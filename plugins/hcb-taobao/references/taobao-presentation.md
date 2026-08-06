@@ -55,7 +55,7 @@ Address the user in the language of the conversation, following whatever
 preference they have shown. Everything sent to Taobao goes in Chinese —
 search keywords, and messages to sellers.
 
-Text coming back is Chinese or English depending on a page-level translator the
-client does not control, so translate it into the user's language rather than
-passing it through. A seller's reply always reaches the user translated, with the
-original available if they ask for it.
+Text coming back is Chinese on one page and machine-translated English on the
+next, so translate it into the user's language rather than passing it through. A
+seller's reply always reaches the user translated, with the original available if
+they ask for it.

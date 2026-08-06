@@ -27,7 +27,22 @@ const HERE = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url))
 
 const EXIT = { ok: 0, tool: 1, gate: 2, transport: 3, timeout: 4, lock: 5, pathology: 6, protocol: 7, unknown: 7 };
 
-const DEFAULT_TIMEOUT_MS = 60000;
+/**
+ * Call timeouts by tool class. The client has no timeout of its own, so this is
+ * the only clock: a tool that works for minutes inside the client needs more of
+ * it than a page read does, and both stay under the host's own call window so a
+ * stall comes back as this companion's TIMEOUT, with its hint, rather than
+ * killed together with the command carrying it. `--timeout` outranks the table.
+ */
+const TIMEOUT_MS = { default: 60000, slow: 110000 };
+
+/**
+ * Tools that keep working inside the client long after the request lands: a
+ * search drives a results page, an image search clicks through every category
+ * card on it.
+ */
+const SLOW_TOOLS = new Set(['image_search', 'search_products']);
+
 const DEFAULT_MAX_INLINE = 8192;
 const DEFAULT_SOURCE_APP = 'claude-code';
 const PING_TIMEOUT_MS = 2500;
@@ -110,6 +125,11 @@ const SEARCH = {
   backoffCapMs: envInt('HCB_TAOBAO_SEARCH_BACKOFF_CAP_MS', 900000),
   maxAttempts: Math.max(1, envInt('HCB_TAOBAO_SEARCH_ATTEMPTS', 6)),
   canaryKeyword: process.env.HCB_TAOBAO_SEARCH_CANARY || '手机',
+  // The control keyword is a control only as a product search. Asked of a slice
+  // that answers nothing for any keyword — shop search is one — it reports a
+  // block on every call, which is why the type is fixed here rather than taken
+  // from the search being checked.
+  canaryType: 'all',
   canaryTtlMs: envInt('HCB_TAOBAO_SEARCH_CANARY_TTL_MS', 60000),
   // One process is one call: waiting longer than this belongs to the caller.
   // Under the host's own call timeout, so the throttle verdict is returned rather
@@ -128,7 +148,8 @@ const OPT = {
   ascii: false,
   raw: false,
   noLock: false,
-  timeout: DEFAULT_TIMEOUT_MS,
+  // null until --timeout says otherwise: only then is one number right for every tool.
+  timeout: null,
   maxInline: DEFAULT_MAX_INLINE,
   out: null,
   sourceApp: DEFAULT_SOURCE_APP,
@@ -136,6 +157,19 @@ const OPT = {
 };
 
 const BOOLEAN_FLAGS = new Set(['no-lock', 'raw', 'ascii', 'help']);
+
+/** The clock one call gets: what the caller asked for, else what its class allows. */
+const toolTimeout = (tool) => OPT.timeout ?? (SLOW_TOOLS.has(tool) ? TIMEOUT_MS.slow : TIMEOUT_MS.default);
+
+/**
+ * The clock a call inside a budgeted run gets. A slow tool's own timeout outlasts
+ * the budget of a `search`, and a call started with the budget nearly spent would
+ * run past the host's call window and be killed with the command carrying it —
+ * taking the verdict with it. What is left of the budget is the ceiling instead.
+ */
+const budgetedTimeout = (tool, leftMs) => (Number.isFinite(leftMs)
+  ? Math.max(1000, Math.min(toolTimeout(tool), leftMs))
+  : toolTimeout(tool));
 
 function parseArgv(argv) {
   const flags = {};
@@ -766,7 +800,7 @@ function transportFailure(res, tool) {
   if (res.status === 'timeout') {
     return {
       kind: 'transport', code: 'TIMEOUT',
-      message: `the client did not answer within ${res.timeoutMs ?? OPT.timeout} ms`,
+      message: `the client did not answer within ${res.timeoutMs ?? toolTimeout(tool)} ms`,
       hint: 'The client has no timeout of its own, so the call is probably still running server-side. Wait before repeating anything that changes state; raise --timeout for a cold client, whose first call after idling takes several seconds.',
       retriable: true, tool,
     };
@@ -815,7 +849,7 @@ function transportFailure(res, tool) {
 /** Returns a classification plus timing and the wire envelope. */
 async function callTool(tool, args, opts = {}) {
   const t0 = Date.now();
-  const timeout = opts.timeout ?? OPT.timeout;
+  const timeout = opts.timeout ?? toolTimeout(tool);
   const body = { tool, arguments: args ?? {} };
   const wantCli = OPT.transport === 'cli';
   const addr = wantCli ? null : await resolveAddress();
@@ -1287,8 +1321,12 @@ async function canaryVerdict(searchTool, baseArgs, budgetLeftMs = Infinity) {
   }
   const paced = await respectPace(budgetLeftMs);
   if (paced === null) return { verdict: 'unknown', cached: false, outOfBudget: true, waitMs: paceWaitMs() };
-  const cls = await callTool(searchTool, { ...baseArgs, keyword: SEARCH.canaryKeyword }, {
+  // `type` after the spread, so the caller's own is overwritten rather than
+  // carried: what the control keyword has to prove is that the client still
+  // answers searches at all.
+  const cls = await callTool(searchTool, { ...baseArgs, type: SEARCH.canaryType, keyword: SEARCH.canaryKeyword }, {
     suppress: new Set(['SEARCH_SILENT_THROTTLE']),
+    timeout: budgetedTimeout(searchTool, budgetLeftMs - paced),
   });
   markPace();
   let verdict = 'unknown';
@@ -1297,7 +1335,7 @@ async function canaryVerdict(searchTool, baseArgs, budgetLeftMs = Infinity) {
     if (n === null) verdict = 'unknown';
     else verdict = n > 0 ? 'alive' : 'blocked';
   }
-  writePace({ canary: verdict === 'blocked' ? { at: Date.now(), verdict, keyword: SEARCH.canaryKeyword } : null });
+  writePace({ canary: verdict === 'blocked' ? { at: Date.now(), verdict, keyword: SEARCH.canaryKeyword, type: SEARCH.canaryType } : null });
   return { verdict, cached: false, failure: cls.kind === 'ok' ? null : cls };
 }
 
@@ -1436,7 +1474,7 @@ async function cmdSearch() {
     if (paced) waits.push({ reason: 'pacing', ms: paced });
     attempt++;
 
-    const cls = await callTool(searchTool, { ...base, keyword }, { suppress });
+    const cls = await callTool(searchTool, { ...base, keyword }, { suppress, timeout: budgetedTimeout(searchTool, budgetLeft()) });
     markPace();
     if (cls.kind !== 'ok') return emitClassified(cls, { ...lockFragment, attempts: attempt });
 
@@ -1472,7 +1510,7 @@ async function cmdSearch() {
     if (canary.verdict === 'alive') {
       return finishOk(searchTool, Date.now() - t0, cls.result, {
         via: cls.via, attempts: attempt, verdict: 'empty-confirmed',
-        note: `the control keyword "${SEARCH.canaryKeyword}" still returns results, so this keyword is genuinely empty rather than blocked`,
+        note: `the control keyword "${SEARCH.canaryKeyword}" still returns products, so this query is genuinely empty rather than blocked`,
         ...(waits.length ? { waits } : {}), ...lockFragment,
       });
     }
@@ -1619,7 +1657,7 @@ async function cmdUp() {
   // _ping is answered by the transport; the probe is the first thing that proves
   // a tool actually runs. Preflight that passes on a failed probe passes on
   // nothing, so the probe decides `up`.
-  const probe = await callTool('get_current_tab', withSourceApp({}), { timeout: Math.max(OPT.timeout, 15000) });
+  const probe = await callTool('get_current_tab', withSourceApp({}), { timeout: Math.max(toolTimeout('get_current_tab'), 15000) });
   report.probe = { tool: 'get_current_tab', ms: probe.ms, kind: probe.kind, via: probe.via };
   if (probe.kind !== 'ok') {
     report.probe.code = probe.code;
@@ -1666,7 +1704,7 @@ async function cmdDoctor() {
   }
 
   if (addr) {
-    const p = await ping(addr, Math.min(OPT.timeout, 8000));
+    const p = await ping(addr, Math.min(toolTimeout('_ping'), 8000));
     observed.reachable = p.alive;
     if (p.alive) {
       observed.pingEnvelope = p.envelope;
@@ -1727,6 +1765,9 @@ async function cmdDoctor() {
     diff,
     lockMode: OPT.noLock ? 'off (--no-lock)' : modeInfo.mode,
     lockModeSource: OPT.noLock ? '--no-lock' : modeInfo.source,
+    callTimeoutMs: OPT.timeout
+      ? { explicit: OPT.timeout }
+      : { default: TIMEOUT_MS.default, slow: TIMEOUT_MS.slow, slowTools: [...SLOW_TOOLS] },
     leaseTtlMs: LEASE.ttlMs,
     stateDir: stateDir(),
     ...(STATE.warning ? { stateWarning: STATE.warning } : {}),
@@ -1894,7 +1935,7 @@ const USAGE = {
     'hook-preflight': 'session hook: record lock_mode and clear a client lease whose holder is gone (no stdout)',
     'hook-release': 'session hook: end the client lease this session holds (no stdout)',
   },
-  flags: ['--timeout <ms>', '--out <path>', '--max-inline <bytes>', '--no-lock', '--source-app <name>', '--raw', '--ascii', '--transport socket|cli|auto'],
+  flags: ['--timeout <ms> (overrides the per-tool default; a search tool already gets a longer one)', '--out <path>', '--max-inline <bytes>', '--no-lock', '--source-app <name>', '--raw', '--ascii', '--transport socket|cli|auto'],
 };
 
 async function main() {
