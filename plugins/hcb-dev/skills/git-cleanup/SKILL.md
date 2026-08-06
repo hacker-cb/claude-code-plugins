@@ -88,8 +88,10 @@ step 6 puts the whole list in front of the user before a single deletion.
 
 ```bash
 git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, with reasons
+# lstrip=2, NOT refname:short — the latter shortens to `heads/<branch>` wherever a
+# tag shares the name, and every use below re-prefixes `refs/heads/`.
 git -C "$PROJECT" for-each-ref refs/heads/ \
-    --format='%(refname:short) | %(worktreepath) | %(upstream:short) %(upstream:track)'
+    --format='%(refname:lstrip=2) | %(worktreepath) | %(upstream:short) %(upstream:track)'
 git -C "$PROJECT" branch --merged "<remote>/<default>"
 git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # merged or not
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
