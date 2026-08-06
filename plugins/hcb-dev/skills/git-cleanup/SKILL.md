@@ -93,12 +93,15 @@ git -C "$PROJECT" for-each-ref refs/heads/ \
 git -C "$PROJECT" branch --merged "<remote>/<default>"
 git -C "$PROJECT" rev-list --count "<remote>/<default>..<branch>"   # per branch, merged or not
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
+git -C "<each worktree path>" ls-files --stage | grep '^160000'   # gitlinks — a submodule is here
 ```
 
 `for-each-ref` gives branch → worktree → upstream → `[gone]` in one pass; prefer
 it over parsing `branch -vv`. `worktree list` never mentions modified or
 untracked files, so without that per-worktree `status` there is no clean/dirty
 signal at all and step 5 cannot tell a removable worktree from one holding work.
+A gitlink in that same index is the other thing no other command reports, and it
+changes how the worktree comes off rather than whether it may.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
 forge and that forge's CLI is authed, close the gap read-only:
@@ -141,6 +144,7 @@ status: surface it, never delete it.
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
 | clean, its branch merged, and **this session cut it** | `remove` (class 2) |
+| a gitlink in its index | `remove --force`, whatever the clean/dirty verdict — git refuses to remove a worktree containing a submodule even when it is spotless. The risk class does not move: `status` reports the submodule's own modified and untracked files, so a clean one still has nothing to lose |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
@@ -180,12 +184,24 @@ answer; a subset means only that subset.
 ## Step 7 — Execute, in this order
 
 ```bash
-git -C "$PROJECT" worktree remove "<path>"         # 1. --force only if confirmed dirty
+git -C "$PROJECT" worktree remove "<path>"         # 1. --force for a confirmed-dirty worktree, and
+                                                   #    for one holding a submodule — git refuses
+                                                   #    those even when clean
 rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
-git -C "$PROJECT" branch -D "<branch>"             #    -D only for a confirmed squash merge
+```
+
+`-d` re-checks against HEAD — or against the branch's own upstream where it has
+one — never against `$D`. So where the local default branch lags `$D`, `-d`
+refuses the very branches step 4 proved merged, and `-D` behind a fresh proof is
+the way through. The `-n "$D"` guard is step 1's rule, not a formality: with `$D`
+empty the range collapses to `HEAD..<branch>` and proves nothing.
+
+```bash
+[ -n "$D" ] && [ "$(git -C "$PROJECT" rev-list --count "$D".."<branch>")" = 0 ] \
+  && git -C "$PROJECT" branch -D "<branch>"        # 5. also the confirmed-squash-merge path
 ```
 
 Say so in the report wherever `-D` was used.
@@ -234,6 +250,7 @@ without asking.
 | remove a worktree Claude Code created, however idle it looks | report it — the lease outlives the process and is unreadable from here |
 | read "no live session" as "nobody needs it" | the probe proves presence only; absence is not an answer |
 | `git worktree unlock` something Claude Code locked | leave it; the periodic sweep releases stale locks itself |
+| `git submodule deinit` to get past `worktree remove`'s refusal | `--force` — a linked worktree shares `.git/config`, so the deinit unregisters the submodule for the **primary** worktree too, and the removal refuses all the same |
 | `rm -rf` a path outside this repository's worktree directories | resolve it from `worktree list` / the git dir, never from a name |
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
@@ -247,4 +264,5 @@ without asking.
 - **Detached HEAD worktree** — classify by clean/dirty only; no branch to delete.
 - **A branch checked out in a worktree of a *different* repository** — leave both
   alone; this skill stays within `PROJECT`.
-- **Submodules** — leave them alone entirely.
+- **Submodules** — never init, deinit or update one. Removing a worktree that
+  contains one is step 7's `--force`, not a submodule operation.
