@@ -96,7 +96,9 @@ git -C "$PROJECT" branch --merged "<remote>/<default>"
 git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # merged or not
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
-ls "$(git -C "<each worktree path>" rev-parse --git-dir)/modules" 2>/dev/null || echo none
+# --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
+# worktree, and `ls` would resolve that against the caller's cwd.
+ls "$(git -C "<each worktree path>" rev-parse --absolute-git-dir)/modules" 2>/dev/null || echo none
 ```
 
 `for-each-ref` gives branch → worktree → upstream → `[gone]` in one pass; prefer
