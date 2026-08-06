@@ -106,8 +106,9 @@ ls -d "$(git -C "<each worktree path>" rev-parse --absolute-git-dir)/modules" 2>
 it over parsing `branch -vv`. `worktree list` never mentions modified or
 untracked files, so without that per-worktree `status` there is no clean/dirty
 signal at all and step 5 cannot tell a removable worktree from one holding work.
-Read the two submodule lines for state, not for dirt: `-` on every line **and**
-no leftover `modules` directory is the only answer meaning nothing is there.
+Read the two submodule commands for state, not for dirt: no line at all, or `-`
+on every line, **and** `none` for the directory — that combination is the only
+answer meaning nothing is there.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
 forge and that forge's CLI is authed, close the gap read-only:
