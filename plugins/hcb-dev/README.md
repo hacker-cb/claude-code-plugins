@@ -118,7 +118,9 @@ handoff by hand, so the prompt text is the whole channel.
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
   clean, then — only on your explicit go-ahead — merge, monitor, and report.
-  Discovers the repo's actual merge gates instead of assuming them. See
+  Discovers the repo's actual merge gates instead of assuming them, and parks the
+  run on a platform outage — checking the status feed every half hour — instead of
+  fixing a red check the diff never caused. See
   [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md) and
   [`skills/github-pr-workflow/references/copilot.md`](skills/github-pr-workflow/references/copilot.md).
 

@@ -47,6 +47,8 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 - Committing and pushing fixes during the review loop
 - Replying to Copilot review comments
 - Reading CI status and review findings
+- Parking the run on a platform outage and resuming when it clears (see *When the
+  platform is down* below)
 
 **Merging is the one action that is NOT autonomous.** Merge only when the user has
 explicitly authorized it — either their request itself asked to merge/ship (e.g.
@@ -172,6 +174,54 @@ Then supply the gates yourself — the Step 4 loop's bar becomes the authoritati
 one — and be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
 irreversible force-pushes, and tell the user their judgment is the only safety net
 here.
+
+## When the platform is down, the red check is not yours
+
+A degraded forge fails the way a broken diff does: jobs queue and never start, a
+runner dies mid-job, a check reports an internal error, the API answers 5xx. No
+code change repairs any of it, and each attempt burns a Step 4 iteration on a
+failure the diff never caused. The tell is that the failure touches nothing you
+changed, or that it lands on runs and repositories your branch never went near.
+
+So read the status feed before you read the diff, and read the **component**
+covering whatever is blocked — CI, the API you are calling, the pull requests
+themselves. The SaaS instance publishes it as a Statuspage:
+
+```bash
+curl -fsS https://www.githubstatus.com/api/v2/summary.json | jq -r '
+  (.components[] | select(.status != "operational") | "component  \(.name): \(.status)"),
+  (.incidents[]  | "incident   \(.name) — \(.status)")'
+```
+
+A self-hosted instance is **not** on that page — it is a separate deployment, and
+its health lives wherever its operator publishes it. Where nothing publishes it,
+say the failure could not be attributed and put the wait to the user rather than
+reading a verdict off the failure's shape.
+
+While a component this run depends on is not `operational`:
+
+- **Change nothing** — no speculative fix, no push, and no Step 4 iteration spent;
+  that budget is for failures the diff caused.
+- **Never merge past it.** A check red because the platform is red is not a
+  non-required check you may deem irrelevant (`UNSTABLE`), and a check that never
+  started is not a check that passed.
+- **Say in one line** which component is down and which step is parked on it.
+- **Wait in the background, re-checking every half hour**, so the session stays
+  usable meanwhile:
+
+```bash
+COMPONENT="<the component that is down>"
+until [ "$(curl -fsS https://www.githubstatus.com/api/v2/components.json \
+    | jq -r --arg c "$COMPONENT" '.components[] | select(.name==$c) | .status')" = operational ]; do
+  sleep 1800
+done
+echo "$COMPONENT is back — resume the parked step"
+```
+
+Once it clears, re-run what the outage took down — `gh run rerun --failed <run-id>`
+for a run that failed, a re-poll for one that never started — and resume at the
+step you parked on. A check still red on a healthy platform is yours again, and
+Step 4 handles it as usual.
 
 ## Step 1 — Branch naming
 
@@ -320,8 +370,9 @@ severity classification only decides what you *fix*, never when you're *done*.
 2. **If a required check is red:** read the failing job's logs, fix the root
    cause, commit, push. Don't guess — read the actual failure. Not every red check
    wants a code change: one that stands in for a review is typically waiting on the
-   review itself or on unresolved threads, so read what it reports before touching
-   code.
+   review itself or on unresolved threads, and one that is red — or stuck unstarted —
+   because the platform is (*When the platform is down*) wants no change at all, so
+   read what it reports before touching code.
 3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
    them — see `references/copilot.md`.
 4. **Fix Critical and Important findings.** Batch fixes into as few pushes as is
