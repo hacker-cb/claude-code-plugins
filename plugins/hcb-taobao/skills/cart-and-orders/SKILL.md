@@ -56,6 +56,15 @@ the indices that click them, come from one whole-page scan:
 node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call scan_page_elements --args '{}'
 ```
 
+Two of the SKU call's answers make the value array unnecessary: every dimension
+already resolved on the page, and a listing with no dimensions at all. The second
+is also what that call answers for a page that is not the listing, so confirm
+what the client is standing on before adding against it:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call get_current_tab --args '{}'
+```
+
 An add takes one value per dimension, spelled as the page spells it. Where the
 user named a colour or a size in their own language, map it to a value off the
 scan and show the mapping before adding: "black" and `黑色` are one choice,
@@ -115,7 +124,9 @@ scoped for what is actually on it.
 
 Filter the cart down to the line with `searchKey`, then scan the page whole.
 Every row carries a delete control of its own and they all share one label, so a
-row is addressed by the index the scan gave it and never by text.
+row is addressed by the index the scan gave it and never by text. That control is
+the whole of the removal — the row's checkbox plays no part in it, and ticking
+one selects a line for an order instead.
 
 Show the user the item and the price of that row, and take an explicit yes for
 that row before any click:
@@ -157,10 +168,11 @@ Navigate to the rating entry from the order, then drive the form with one tool
 only. Do not scan, click or type on that page: the form is not what those tools
 reach, and a half-filled rating is visible to the seller.
 
-The first call reports the items on the order without posting anything:
+The first call reports the items on the order. It carries no text and turns the
+tool's own submission off, so nothing is posted by it:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call submit_product_rating --args '{}'
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call submit_product_rating --args '{"submit":false}'
 ```
 
 Write one review per item, in Chinese, each one different and each built from

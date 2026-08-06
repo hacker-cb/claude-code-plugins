@@ -167,7 +167,9 @@ const PACE = {
   classes: {
     probe: envInt('HCB_TAOBAO_PACE_PROBE_MS', 0),
     read: envInt('HCB_TAOBAO_PACE_READ_MS', 600),
-    action: envInt('HCB_TAOBAO_PACE_ACTION_MS', 1500),
+    // Not only what a click costs: a click that resolves a variant repaints the
+    // price, and a read taken sooner than this returns the figure from before it.
+    action: envInt('HCB_TAOBAO_PACE_ACTION_MS', 3000),
     navigate: envInt('HCB_TAOBAO_PACE_NAV_MS', 4000),
     // The old search-only knob still sets the search class, so a machine already
     // tuned by hand keeps its number.
@@ -1105,6 +1107,19 @@ function summarise(tool, r) {
       itemId: p?.itemId, title: trunc(p?.title, 70), price: p?.price, shopName: trunc(p?.shopName, 40),
     }));
     return s;
+  }
+  // An image search groups its products under categories instead of returning
+  // them flat, so the count the caller is asking about is one level down.
+  if (Array.isArray(r.categories)) {
+    const ps = r.categories.flatMap((c) => (Array.isArray(c?.products) ? c.products : []));
+    return {
+      count: typeof r.totalProducts === 'number' ? r.totalProducts : ps.length,
+      categories: r.categories.length,
+      shops: new Set(ps.map((p) => p?.shopName).filter(Boolean)).size,
+      samples: ps.slice(0, 3).map((p) => ({
+        itemId: p?.itemId, title: trunc(p?.title, 70), price: p?.price, shopName: trunc(p?.shopName, 40),
+      })),
+    };
   }
   if (typeof r.content === 'string') {
     return {

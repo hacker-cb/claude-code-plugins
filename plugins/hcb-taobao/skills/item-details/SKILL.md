@@ -7,14 +7,14 @@ description: >-
   and delivery terms say. Trigger it on a pasted item link or item id, on
   "открой карточку", "сколько это стоит", "is the black one in stock", "какие
   есть цвета", and whenever a comparison needs figures a search result never
-  carries. It opens the listing in the client, addresses every section by CSS so
-  the page translator cannot move it, and refuses to report a number off a block
-  page or a shell that never loaded. A listing page prints no parameter table,
-  no reviews and no Q&A — what it does not carry is a question for
-  hcb-taobao:seller-chat. Use hcb-taobao:product-search first where there is no
-  candidate yet — this skill reads listings, it does not find them — and
-  hcb-taobao:cart-and-orders once a variant is chosen. It puts nothing in a
-  cart.
+  carries. It opens the listing in the client, addresses sections by CSS so the
+  translator cannot move them, resolves what a chosen variant costs rather than
+  the figure the listing starts at, opens the reviews behind their own tab, and
+  reports no number off a block page or a shell that never loaded. What the page
+  answers nowhere goes to hcb-taobao:seller-chat. Use hcb-taobao:product-search
+  first where there is no candidate yet — this skill reads listings, it does not
+  find them — and hcb-taobao:cart-and-orders once a variant is chosen. It puts
+  nothing in a cart.
 metadata:
   upstream-skill: taobao-native
   upstream-version: "1.0.43"
@@ -74,9 +74,21 @@ themselves.
 
 **Price.** Two figures sit together: what it costs now, and a struck-through
 figure that is the price before the discount. Report the first as the price and
-the second only as a marked "before". Where a figure appears only after a variant
-is picked, there is no single price — give the range and resolve it in the next
-step.
+the second only as a marked "before".
+
+Until a variant is picked, that figure is where the listing starts — an
+accessory, or its smallest size — and not what the thing the user asked about
+costs. A variant's own price appears only once its option has been clicked, so
+click the option by the index the whole-page scan below gives it, then take the
+figure back off the page, filtering the scan on the currency mark, which is the
+one label the translator leaves alone:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call scan_page_elements --args '{"filter":"￥"}'
+```
+
+Where no variant has been chosen, give the range and say the low end is where the
+listing starts rather than reporting it as the price.
 
 **Variants.** Two calls, each for the part only it has.
 
@@ -89,6 +101,10 @@ unavailable — a sold-out colour answers half the questions asked here before a
 figure does. Its option texts are cut short and repeated, so they identify
 nothing: never match, add or report a variant off them.
 
+An answer that the listing has no dimensions at all is the answer this call also
+gives for a page that is not the listing. Confirm the tab is that listing before
+reporting it, and never report it off a page that has not been confirmed.
+
 The full text of every option is on the page, and one scan carries all of it:
 
 ```bash
@@ -100,15 +116,42 @@ and "Color classification" are one dimension under two renderings — so key on 
 dimension's position and on its values, never on its name. Carry the value
 strings through unchanged; they are what a later add matches against.
 
+**Reviews.** The listing shows none until the tab holding them is opened, and the
+click that opens it brings them back in `pageChanges.added` of that same answer.
+Take the tab off the whole-page scan and click it by index — its label is
+rewritten with the rest of the page:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call click_element --args '{"index":64}'
+```
+
+Only a couple of them sit on the listing itself. The control beside them opens
+the rest in a drawer — a panel on the page rather than another page, so it is
+read by scope:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" read --scope "[class*=Drawer]"
+```
+
+The drawer loads a page of the most recent as it goes, so scrolling inside it is
+what fetches the next one:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/tb.mjs" call scroll_page --args '{"direction":"down"}'
+```
+
+Report what buyers wrote as their claims, and say how many were read — never as
+the listing's record entire.
+
 **Seller.** The shop name and its link, the rating and the delivery terms the
 page states, plus which marketplace the listing sits on, per the presentation
 reference.
 
-**What no listing page carries.** There is no parameter table, no review section
-and no Q&A on it — those are not sections you failed to find. Where the user's
-question turns on one of them, a material, a measurement, what buyers thought,
-say the page does not carry it and take the question to `hcb-taobao:seller-chat`,
-rather than reporting an absent section as a finding of "none".
+**What no listing page carries.** There is no parameter table and no Q&A on it —
+those are not sections you failed to find. Where the user's question turns on
+one of them, a material or a measurement, say the page does not carry it and take
+the question to `hcb-taobao:seller-chat`, rather than reporting an absent section
+as a finding of "none".
 
 ## 4. Several listings
 

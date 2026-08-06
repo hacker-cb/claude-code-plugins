@@ -40,11 +40,11 @@ block, and recognises the failures the vendor CLI reports as success.
   set, groups it by seller, and hands back a shortlist with a working link per
   listing.
 - **`item-details`** — `/hcb-taobao:item-details`
-  Read one listing properly — the price that actually applies against the
-  crossed-out one, which SKU combinations exist and which are sold out, the
-  seller with their rating and delivery terms. A listing page carries no spec
-  table, no reviews and no Q&A; what it does not print is a question for the
-  seller.
+  Read one listing properly — what a chosen variant actually costs rather than
+  the figure the listing starts at, which SKU combinations exist and which are
+  sold out, the reviews that sit behind their own tab, the seller with their
+  rating and delivery terms. A listing page carries no spec table and no Q&A;
+  what it does not print is a question for the seller.
 - **`cart-and-orders`** — `/hcb-taobao:cart-and-orders`
   Everything after the choice: resolve a variant into a concrete SKU and add it
   to the cart, take a line back out, look through the cart, find an order, check

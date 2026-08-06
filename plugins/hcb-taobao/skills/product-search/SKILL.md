@@ -96,8 +96,14 @@ is what tells a real manufacturer from a page of resellers.
 shop, an image and the ids — nothing about sales volume, ratings, location or
 delivery. When the user asks for the best-selling or best-reviewed option, say
 the client does not return it and offer to read candidates instead of inventing
-an order. Compare prices numerically, and keep the string that came back for
-display.
+an order.
+
+**The price on a record is where that listing starts** — an accessory, or its
+smallest variant — and not what the thing costs. Two records set side by side are
+therefore two starting points, which orders candidates and answers nothing about
+which is cheaper. Compare them numerically for that ordering alone, keep the
+string that came back for display, mark every figure as a starting price, and
+send the survivors to `hcb-taobao:item-details` for the one that applies.
 
 ## 4. Report
 
@@ -110,7 +116,7 @@ Render per the presentation reference. Two things a sweep owes on top of it:
 
 ## 5. Hand on
 
-A shortlist is not an answer: a search record has no specs, and its price is the
-display price rather than what a variant costs. Take the two or three listings
-that survive to `hcb-taobao:item-details`. Where one seller carries most of the
-shortlist, `hcb-taobao:seller-chat` asks them directly.
+A shortlist is not an answer: a search record has no specs, and its price is
+where the listing starts rather than what a variant costs. Take the two or three
+listings that survive to `hcb-taobao:item-details`. Where one seller carries most
+of the shortlist, `hcb-taobao:seller-chat` asks them directly.

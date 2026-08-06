@@ -113,7 +113,10 @@ words. What reaches the user is your own rendering either way — see
 ## Reading a page
 
 `read` returns the text of the whole DOM, not the part on screen, so a page is
-read where it stands and scrolling it first adds nothing.
+read where it stands and scrolling it first adds nothing to what is already
+there. Where a panel fetches its next page of content as it is scrolled, scroll
+it — that is the one thing scrolling gets, and the read that follows is what
+carries it back.
 
 `--scope` is real CSS targeting: it narrows the read to the matching subtree, and
 a selector matching nothing comes back as an error rather than as an empty page —
