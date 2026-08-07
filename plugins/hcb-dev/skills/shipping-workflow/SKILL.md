@@ -62,10 +62,10 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
 
    **Sweep what the change orphaned.** Take every path the branch deletes or
    renames — the whole range and not only this commit, with step 1's `diff-base`:
-   `git log --name-status --diff-filter=DR --diff-merges=first-parent --format= <diff-base>..HEAD`,
-   then `git diff --name-status --diff-filter=DR --cached` and
-   `git diff --name-status --diff-filter=DR` for what is not committed — a merge's
-   own resolution needs the first-parent diff, and one call against `HEAD`
+   `git log --name-status --diff-filter=DR -m --format= <diff-base>..HEAD`, then
+   `git diff --name-status --diff-filter=DR --cached` and
+   `git diff --name-status --diff-filter=DR` for what is not committed — a merge
+   resolution shows up only in the per-parent diffs, and one call against `HEAD`
    collapses a rename staged and then renamed again — and search the worktree for
    each old name.
    Search every file type, not the ones you edited: what stays behind otherwise is
