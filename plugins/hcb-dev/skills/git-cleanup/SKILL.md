@@ -30,8 +30,7 @@ values into the rest of the sweep:
 
 ```bash
 D="<the remote-tracking ref, per base-resolution.md — EMPTY unless it resolved AND
-    that reference's refresh verified it: a ref left unverified is a ref the remote
-    may have force-updated past, and every proof below reads it as current>"
+    that reference's refresh verified it>"
 DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
 [ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
 ```
@@ -113,35 +112,23 @@ on every line, **and** `none` for the directory — that combination is the only
 answer meaning nothing is there.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
-forge and that forge's CLI is authed, close the gap read-only — asking the merged
-list for two commits per request, the **head it recorded** and the **commit its
-merge produced**, never for branch names alone:
+forge and that forge's CLI is authed, close the gap read-only. Ask **per branch**,
+not for a list of every request the project ever merged: a list stops at a limit,
+where absence and a busy repository look the same, and one branch's requests are
+two cheap queries. Each merged one answers with the **head it recorded** and the
+**commit its merge produced**:
 
 ```bash
 # GitHub
-gh pr list --state merged --limit 200 --json headRefName,headRefOid,mergeCommit \
-  --jq '.[] | [.headRefName, .headRefOid, (.mergeCommit.oid // "")] | @tsv'
-gh pr list --state open   --limit 200 --json headRefName --jq '.[].headRefName'   # -> keep, in flight
-# GitLab — `api --paginate`, not `mr list`, whose --per-page returns that one page
-# and leaves everything past it out of the proof. Two columns can carry the merged
-# commit; @tsv so an empty one keeps its column instead of sliding the next field
-# into its place.
-glab api --paginate "projects/:id/merge_requests?state=merged&per_page=100" \
-  | jq -r '.[] | [.source_branch, .sha, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv'
-glab api --paginate "projects/:id/merge_requests?state=opened&per_page=100" \
-  | jq -r '.[].source_branch'   # -> keep, in flight
-```
-
-**Ask about the branch itself before deleting it**, rather than reading its
-absence off the open list above — both lists stop at a limit, so absence there is
-also what a repository busy enough to fill one looks like:
-
-```bash
-# GitHub
-gh pr list --state open --head "<branch>" --json number --jq 'length'
-# GitLab — the porcelain flag, not the branch name pasted into a URL, where a `#`
-# or a `&` in it would end the query and the answer would come back zero
-glab mr list --source-branch "<branch>" --output json | jq length
+gh pr list --head "<branch>" --state merged --json number,headRefOid,mergeCommit \
+  --jq '.[] | [.number, .headRefOid, (.mergeCommit.oid // "")] | @tsv'
+gh pr list --head "<branch>" --state open --json number --jq 'length'   # above 0 -> keep, in flight
+# GitLab — the porcelain flag, never the branch name pasted into a URL query, which
+# a `#` or an `&` in it would end. @tsv so an empty column keeps its place instead
+# of sliding the next field into it.
+glab mr list --source-branch "<branch>" --merged --output json \
+  | jq -r '.[] | [.iid, .sha, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv'
+glab mr list --source-branch "<branch>" --output json | jq length          # above 0 -> keep
 ```
 
 A name is not an identity: a merged `fix/login` may have come from a fork, or the
@@ -209,10 +196,12 @@ status: surface it, never delete it.
 | no upstream, `rev-list --count <remote>/<default>..refs/heads/<b>` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
 
-**Rows overlap, and the safer one wins**: a branch matching both a delete row and
-a surface row is surfaced, and one an open request points at is kept whatever else
-matched. A branch reaching a delete row by no row of its own — the worktree row
-above is the case — is deleted only by what step 7 will still prove.
+**Rows overlap.** An open request keeps the branch whatever else matched. A
+surface row beats a delete row **within the same proof** — the forge's unknown row
+stops the forge's own delete, and says nothing about a branch git itself proved
+merged, which `branch --merged` settles without the forge answering at all. A
+branch reaching a delete row by no row of its own — the worktree row above is the
+case — is deleted only by what step 7 will still prove.
 
 **Risk classes** decide the gate, whatever the mode:
 
@@ -245,47 +234,36 @@ git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's
                                                    #    below — nothing else authorizes a delete
 ```
 
-**`-d` is not a lighter `-D` here, and it is not the proof.** It re-checks against
-`PROJECT`'s HEAD, or against the branch's own upstream where it has one — never
-against `$D`, and step 1 does not let you assume HEAD is the default branch. So a
-branch pushed at any earlier point passes it with an upstream, and one merged into
-whatever HEAD sits on passes it without: it deletes what these rows would keep,
-and refuses what they proved. What authorizes a deletion is the re-proof the
-branch's own row calls for, **run here and not read off step 4** — step 6 waits on
-a human, and both what the branch carries and what the forge says about it can move
-while it waits. A branch with no proof of its own is not deleted at all: report it
-instead.
+**`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks
+against `PROJECT`'s HEAD, or the branch's own upstream where it has one — never
+against `$D` — so it deletes what these rows keep and refuses what they proved.
+What authorizes a deletion is the re-proof the branch's own row calls for, **run
+here and not read off step 4**: step 6 waits on a human, and both what the branch
+carries and what the forge says about it can move while it waits. A branch with no
+proof of its own is not deleted at all — report it instead.
 
-Two things come before **either** proof, on **every** branch reaching this step.
-Step 4's per-branch open query, run again — an answer above zero keeps the branch,
-whatever any proof says. And a refresh of `$D` through `base-resolution.md`, since
-the gate waited and the base can be force-updated in that window; one that does not
-verify leaves `$D` empty, exactly as step 1 has it.
+Two things come first, in this order, on every branch reaching this step:
 
-A branch the forge routed here then re-runs the two checks, against the same
-recorded commits:
+- **Re-resolve `$D` and `$DEF` together**, through `base-resolution.md`. The
+  repair block at the end of this step reads `$DEF`, so a `$D` emptied here and a
+  `$DEF` left standing sends every surviving branch through `--unset-upstream`.
+- **Re-ask step 4's per-branch open query**, wherever a forge CLI answered it
+  there — above zero keeps the branch, whatever any proof says.
+
+Then the branch's own proof, whichever routed it:
 
 ```bash
 if [ -z "$D" ]; then
   echo "skipping -D — default branch unresolved"
+# the forge's row: the two containment checks, against the same recorded commits
 elif git -C "$PROJECT" merge-base --is-ancestor "refs/heads/<branch>" "<recorded head>" \
   && git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
   git -C "$PROJECT" branch -D "<branch>"
-else
-  echo "not proved merged here — surface it, saying which: unproved, or unknown"
-fi
-```
-
-A branch `branch --merged` routed here re-runs the count, which is that row's own
-proof:
-
-```bash
-if [ -z "$D" ]; then
-  echo "skipping -D — default branch unresolved"
+# git's own rows: the count that routed it
 elif [ "$(git -C "$PROJECT" rev-list --count "$D".."refs/heads/<branch>")" = 0 ]; then
   git -C "$PROJECT" branch -D "<branch>"
 else
-  echo "not merged into $D — surface it instead"
+  echo "the proof no longer holds — surface it, saying whether it failed or could not run"
 fi
 ```
 
