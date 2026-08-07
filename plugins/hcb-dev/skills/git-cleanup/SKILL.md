@@ -124,8 +124,10 @@ TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
 # --paginate on both: these endpoints page, and an open request on page two is an
 # open request the sweep would delete over.
 # GitHub — `api` resolves :owner/:repo from the checkout but not its host, so a
-# self-hosted instance is asked of github.com unless --hostname says otherwise. A
-# merged request comes back state `closed` carrying a merged_at.
+# self-hosted instance is asked of github.com unless --hostname says otherwise. The
+# endpoint answers with merged AND open requests for a commit outside the default
+# branch, which every squash merge leaves its tip; merged reads as state `closed`
+# carrying a merged_at.
 HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
 gh api --hostname "$HOST" --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
   --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv'
