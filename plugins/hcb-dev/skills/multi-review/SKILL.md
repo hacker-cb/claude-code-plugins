@@ -151,10 +151,9 @@ Start the detachable reviewers first so they overlap with the inline one.
   rather than diffed from: a bare commit-ish selects *that commit*, so a base
   passed as a SHA comes back as a review of the one commit it names. Spell the
   range out, and name the uncommitted changes after it when the change has any —
-  then confirm in §4 what the run actually diffed. Given no target it diffs
-  `@{upstream}...HEAD`, which on an already-pushed branch is empty, and it would
-  review nothing while the other two review the change. This skill is the
-  explicit instruction authorizing that call.
+  then confirm in §4 what the run actually diffed. Never leave it to pick its own
+  scope — §2's Reads cell says what it does then, and on an already-pushed branch
+  that is nothing. This skill is the explicit instruction authorizing that call.
 - **security-review** — invoke the skill inline, last. Do not delegate it to a
   subagent to save context: subagents have neither the `Agent` nor the `Task`
   tool, so the skill's own filtering pass — parallel sub-tasks dropping every
@@ -186,10 +185,12 @@ counts as a gap — say what it missed.
 handed, never the range built from it nor the files read — those live in the run's
 journal (`journal.jsonl`, in the agent-transcript directory the finished run
 names), as the scope step's `diffCommand` and `files`. Take both from there and
-check the command against the range §3 asked for: a run that diffed anything else
-is `partial`, however plausible its count. Where the journal cannot be read, the
-row's "Covered" cell says the range is unconfirmed rather than repeating the one
-you asked for.
+read the command for what it covers, not for how it is written: another rendering
+of the same ground is the range §3 asked for, and `partial` is a run that read
+*different* ground — one commit, another base, the committed half of a change
+whose target named the working tree — however plausible its count. Where the
+journal cannot be read the range is unconfirmed, and unconfirmed is `partial`
+too: a re-run whose journal is readable is what closes it.
 
 **A nonzero count can still mean the commits went unread.** `codex-review` prints
 a `coverage-warning:` line when it reviewed the working tree alone; the count is
@@ -215,14 +216,16 @@ verdict:
 | `code-review` | `<base>`, 3 files | high | no findings |
 | `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
 
-Keep the cells short. "Covered" is always `<base>, N files`, effort gets its own
+Keep the cells short. "Covered" is `<base>, N files`, or an unconfirmed range
+where the run's own record of what it read was unreadable; effort gets its own
 column so a level is never left implied, and "Result" is a verdict — never the
 description of a finding, which belongs below the table where it can wrap freely.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not
 run; `n/a` — it was deliberately not run, and why; `nothing to review` — it ran
-and covered zero files; `partial` — it ran but covered less than the change, or
-the wrong range. Everything except `n/a` is a gap in coverage — with one
+and covered zero files; `partial` — it ran but covered less than the change, the
+wrong range, or a range that could not be confirmed. Everything except `n/a` is a
+gap in coverage — with one
 distinction the caller needs: a `partial` forced by a reviewer's **own structural
 limit**, rather than by anything about this change, is not something anyone can
 act on. The security review is the standing example: its base is pinned to the
