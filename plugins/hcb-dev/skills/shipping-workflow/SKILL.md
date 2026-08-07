@@ -48,6 +48,25 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect that reviewer to come back short.
+
+   **Sweep what the change orphaned.** Take every path the branch deletes or
+   renames — the whole range, `git diff --name-status <base>...HEAD` plus what is
+   staged now, not only this commit — and search the worktree for each old name.
+   Search every file type, not the ones you edited: what stays behind otherwise is
+   the citation in a config comment, the sentence in the docs, the stale header
+   inside the renamed file. Vendored trees are out, and so is any other worktree's
+   checkout — those are someone else's tree, not yours to edit.
+
+   Rule on each hit before touching it: a migration path, a compatibility alias, a
+   test asserting the old name and a changelog entry are all still true. A tracked
+   generated file is fixed by re-running its generator. Run this again whenever a
+   later step deletes or renames something of its own.
+
+   Where the change alters a process the repository *documents*, there is no name
+   to search for: re-read the files describing how the repository works rather
+   than what its code does, and correct what the change made false — under
+   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+   §4, which governs any sentence reporting how something is configured.
 2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
    base so the review covers *this* slice's range, not the cumulative feature
@@ -57,7 +76,9 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    outside the diff, or the finding is plainly wrong. A skipped one is then
    *surfaced*, not merely noted —
    [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-   owns what that means. Do not complete with findings left unresolved — and do not leave the
+   owns what that means. A reported stale reference is step 1's sweep over again,
+   not a list of lines to edit — the finding is what one reviewer happened to see.
+   Do not complete with findings left unresolved — and do not leave the
    fixes sitting uncommitted: step 5 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).

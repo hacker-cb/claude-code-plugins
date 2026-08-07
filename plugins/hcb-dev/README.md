@@ -195,9 +195,11 @@ saying something else.
   a slice.
 - [`references/architecture-decisions.md`](references/architecture-decisions.md) —
   the decision protocol: ask about architecture / act on mechanics, always show a
-  recommendation (never a bare question), and flag a project rule that fights good
-  architecture as possible drift. Read at every planning gate and every
-  stop-and-ask.
+  recommendation (never a bare question), flag a project rule that fights good
+  architecture as possible drift, and treat the artifact that enforces a setting —
+  not the file describing it — as the authority on what that setting is. Read at
+  every planning gate and every stop-and-ask, and before any sentence that reports
+  how something is configured, wherever it lands.
 - [`references/claude-worktrees.md`](references/claude-worktrees.md) — Claude Code's
   own worktrees and sessions: which of them the host removes by itself and which it
   leaves behind, and how to tell whether a worktree still has a live session in it.

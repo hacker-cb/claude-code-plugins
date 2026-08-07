@@ -347,7 +347,12 @@ severity classification only decides what you *fix*, never when you're *done*.
    them — see `references/copilot.md`.
 4. **Fix Critical and Important findings.** Batch fixes into as few pushes as is
    reasonable — under `review_on_push` every push re-requests Copilot and costs
-   another wait at step 6, whether or not a new review actually follows.
+   another wait at step 6, whether or not a new review actually follows. A push
+   that deletes or renames a path also dates the PR body, written once at
+   creation: re-read it and correct what it now describes wrongly
+   (`gh pr edit <pr> --body`), on the terms in
+   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+   §4.
 5. **Reply to every Copilot comment; resolve every thread the repo requires
    resolved** — `references/copilot.md` owns the reply + resolve protocol.
 6. **After pushing, wait for Copilot's review of the new head** — never evaluate
