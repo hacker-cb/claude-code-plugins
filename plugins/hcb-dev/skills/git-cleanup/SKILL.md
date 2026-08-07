@@ -121,11 +121,13 @@ identity, and a request carrying it carries every commit under it.
 
 ```bash
 TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
+# --paginate on both: these endpoints page, and an open request on page two is an
+# open request the sweep would delete over.
 # GitHub — a merged request is state `closed` carrying a merged_at
-gh api "repos/:owner/:repo/commits/$TIP/pulls" \
+gh api --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
   --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv'
 # GitLab — @tsv so an empty column keeps its place; either one can hold the commit
-glab api "projects/:id/repository/commits/$TIP/merge_requests" \
+glab api --paginate "projects/:id/repository/commits/$TIP/merge_requests" \
   | jq -r '.[] | [.iid, .state, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv'
 ```
 
