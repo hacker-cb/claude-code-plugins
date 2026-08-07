@@ -202,7 +202,7 @@ status: surface it, never delete it.
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
-| no upstream, `$D` non-empty, and `rev-list --count "$D..refs/heads/<b>"` = 0 | delete (class 2) — nothing to lose |
+| no upstream, `$D` non-empty, and `rev-list --count "$D..refs/heads/<branch>"` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
 
 **Rows overlap.** An open request keeps the branch whatever else matched. A
@@ -264,7 +264,12 @@ Two things come first, in this order, on every branch reaching this step:
 Then the branch's own proof, whichever routed it:
 
 ```bash
-if [ -z "$D" ]; then
+# EMPTY where no forge CLI answered — which is "not asked", not "none open", so the
+# git rows below still stand on their own proof.
+OPEN="<step 4's open count for this tip, re-asked now — EMPTY without a forge CLI>"
+if [ -n "$OPEN" ] && [ "$OPEN" != 0 ]; then
+  echo "a request on this tip is open — keep the branch"
+elif [ -z "$D" ]; then
   echo "skipping -D — default branch unresolved"
 # the forge's row: where the merge of the request carrying this tip landed
 elif git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
