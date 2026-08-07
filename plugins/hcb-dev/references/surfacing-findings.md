@@ -26,10 +26,18 @@ it:
   what it would be opened with. Where a role has no vocabulary here, name the role
   and offer nothing for it.
 
+Where there is no tracker to reach — no remote at all, or none a forge answers
+for — neither is possible, and the finding still surfaces: as an observation with
+no proposal attached, saying there is nowhere to file it. A local completion is
+built to run without a remote, so this is an ordinary case and not a failure.
+
 ## The form
 
 Under `## Drive-by observations`, at the end of the response that decided not to
-fix it — not held until the work finishes. One line each:
+fix it, wherever that response reaches the user. Under an orchestrator it does
+not: the finding rides its slice's `incidental` output
+([`slice-completion.md`](slice-completion.md)) to the run's own report, and an
+autonomous run is never interrupted to ask. One line each:
 
 - **untracked** → what it is and where, the classification it would carry, and the
   rating it arrived with where a review gave it one
