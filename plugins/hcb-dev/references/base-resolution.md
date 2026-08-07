@@ -158,28 +158,36 @@ against it and a merge landing on it can all be built on a base the remote moved
 past days ago. Refresh it before any consumer reads it:
 
 ```bash
-git fetch --prune <remote> <base>
+# The explicit refspec, not a bare `<base>`: where the remote's configured refspec
+# does not cover it — a `--single-branch` clone, the CI checkout shape above — the
+# bare form updates FETCH_HEAD alone and `<remote>/<base>`, which is what every
+# consumer reads, is never written.
+git fetch <remote> "+refs/heads/<base>:refs/remotes/<remote>/<base>"
 ```
 
-`--prune` is what retires the ref the forge already deleted — the
-stale-but-present pointer rung 4 warns about.
+Three outcomes, and only one of them means current:
 
-**A fetch that failed is not "no new commits", it is "the age is unknown".** The
-local ref stays standing and every consumer reads it without complaint, so the
-run reports a branch current with a base nothing checked. Say the base is
-unverified and treat what depended on its freshness as unknown.
+- **It updated.** The ref is the remote's tip.
+- **The remote did not answer.** That is "the age is unknown", not "no new
+  commits": the local ref stays standing and every consumer reads it without
+  complaint, so a run treating this as success reports a branch current with a base
+  nothing checked. Say the base is unverified and treat what depended on its
+  freshness as unknown.
+- **`couldn't find remote ref`.** Where the base was resolved *from* that remote,
+  the branch has been renamed or deleted since: re-resolve it by the ladder — rung
+  4's `git remote set-head <remote> --auto` is what retires the pointer, and a
+  refspec-restricted fetch prunes nothing — rather than carrying one at a branch
+  nobody has. Where the base never had a remote counterpart — a local-only parent,
+  a repo with no remote — nothing is missing: it is as current as it can be, and
+  saying so once is the whole step.
 
-Then bring the local side to what arrived, in the form the consumer wants:
+Then bring the local side to what arrived:
 
 | the consumer | what refreshing means |
 |---|---|
-| cutting a new branch | cut from the **ref**, `<remote>/<base>` — the new branch starts current whatever the local `<base>` says |
-| landing a merge on the base | fast-forward the local branch, `git merge --ff-only <remote>/<base>`; a refusal means it carries commits the remote does not — that is work to report, never something to reset away |
+| cutting a new branch | cut from the **ref**, `<remote>/<base>` — unless the local branch is *ahead* of it, which is exactly what a local completion leaves behind (it merges and never pushes): that work is the parent, so cut from the branch and say the remote does not carry it |
+| landing a merge on the base | `git merge --ff-only <remote>/<base>` **where the base itself is checked out** — from the branch you happen to stand on it fast-forwards *that* instead, quietly, and which worktree holds the base is [`slice-completion.md`](slice-completion.md)'s. A refusal means the base carries commits the remote does not — work to report, never something to reset away |
 | a branch already cut | a rebase or a merge, and which one depends on what is built on its tip — the skill doing it owns that call |
-
-A base with **no remote counterpart** — a local-only parent, a repo with no
-remote — has nothing to refresh and is as current as it can be: say so once and
-go on.
 
 ## A base with no shared history is not a base
 

@@ -43,8 +43,10 @@ mode once, at the gate, and threads it down; the mechanics live in
   changes the slicing.
 - **Refresh the base before reading the code against it** — resolve it and fetch,
   per [`../../references/base-resolution.md`](../../references/base-resolution.md).
-  A deep-read of a clone the remote moved past describes code that is already
-  gone, and the slicing is then cut to fit it.
+  The fetch moves the remote-tracking ref and nothing else, so the deep-read is
+  still on what is checked out: read against the refreshed ref, and where the
+  checkout cannot move onto it, say the tree is older and treat what the base moved
+  past as unread.
 - **Deep-read the codebase against the tasks** — what is affected, what is risky,
   where the genuinely-open questions are.
 - **Draft a slicing.** Split the work into **independently reviewable slices** — a
@@ -112,17 +114,18 @@ other):
 1. **Cut the slice branch from the current tip of its parent** (the feature
    branch, or the base for a single slice) — not all up front, so a later slice
    sees the ones below it and conflicts less. Where that parent is the base,
-   refresh it and cut from the remote-tracking ref (`base-resolution.md`) — Phase
-   0's fetch is old by the time a later slice starts, and a set can run for hours.
-   The feature branch is cut the same way, once, before the first slice; keeping
-   it current after that is `slice-completion.md`'s. Cut it under the name the gate
-   showed (`branch-naming.md`).
+   refresh it again here and take the cut point from `base-resolution.md`'s table
+   — Phase 0's fetch does not still hold. The feature branch is cut the same way,
+   once, before the first slice; keeping it current after that is
+   `slice-completion.md`'s. Cut it under the name the gate showed
+   (`branch-naming.md`).
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
-   slice's parent tip, so the review covers this slice and not the cumulative
-   feature diff), `merge-strategy` and `merge-auth`. The coverage *policy* is not
+   commit the slice was cut from — after a refresh that is the ref, not the local
+   parent it may now be behind — so the review covers this slice and not the
+   cumulative feature diff), `merge-strategy` and `merge-auth`. The coverage *policy* is not
    threaded — an actionable gap always stops (Phase 1), a fixed invariant every
    completion honors.
 

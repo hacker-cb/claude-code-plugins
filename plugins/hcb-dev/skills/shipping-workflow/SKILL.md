@@ -44,7 +44,15 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    **first and in both modes**. That reference defines what counts as
    auto-generated, leaves a name that already describes the change alone, and
    lists the cases where the rename is off the table.
-1. **Commit the change first**, new files included — one reviewer reads only
+1. **Refresh the base** — the branch this work is ranged against and lands on: the
+   threaded `parent` / `diff-base` where a caller handed them down, otherwise what
+   the ladder in
+   [`../../references/base-resolution.md`](../../references/base-resolution.md)
+   resolves. Fetch it here, per that reference, because the sweep below is already
+   a consumer of it and every step after that one is too. **Both modes** — it is a
+   read, so local mode's no-network property is untouched; that is about what
+   completion *writes*.
+2. **Commit the change first**, new files included — one reviewer reads only
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect that reviewer to come back short.
@@ -67,15 +75,6 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    than what its code does, and correct what the change made false — under
    [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
    §4, which governs any sentence reporting how something is configured.
-2. **Refresh the base** — the branch this work is ranged against and lands on: the
-   threaded `parent` / `diff-base` where a caller handed them down, otherwise what
-   the ladder in
-   [`../../references/base-resolution.md`](../../references/base-resolution.md)
-   resolves. Fetch it before either happens, per that reference. **Both modes** — a
-   stale base costs the same either way: the review below reads a range the base
-   has already moved past, and the fixes get written against it. It is a read, so
-   local mode's no-network property is untouched — that is about what completion
-   *writes*.
 3. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
    base so the review covers *this* slice's range, not the cumulative feature
@@ -85,7 +84,7 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    outside the diff, or the finding is plainly wrong. A skipped one is then
    *surfaced*, not merely noted —
    [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-   owns what that means. A reported stale reference is step 1's sweep over again,
+   owns what that means. A reported stale reference is step 2's sweep over again,
    not a list of lines to edit — the finding is what one reviewer happened to see.
    Do not complete with findings left unresolved — and do not leave the
    fixes sitting uncommitted: step 6 lands *commits* (a local merge takes what is
