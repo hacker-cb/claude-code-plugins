@@ -82,10 +82,12 @@ reason. An explicit instruction from the caller wins.
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
 offer a commit before starting, and name the price of declining: Codex reads the
-working tree and sees the edits either way, code-review and the security review
-read the commits they are given and do not, and files that are not tracked at all
-are invisible to every reviewer. Offer — never commit anything yourself. A
-refusal is a fine answer; it just goes into the report.
+working tree and sees the edits either way, code-review reads whatever §3's target
+names and a range target leaves them out, the security review reads a commit range
+and does not, and files that are not tracked at all are invisible to every
+reviewer. Offer — never commit anything yourself. A refusal is a fine answer; it
+just goes into the report. Make no offer at all where the scope *is* the working
+tree: committing there empties the very diff that was asked for.
 
 ## 2. Pick
 
@@ -147,15 +149,14 @@ Start the detachable reviewers first so they overlap with the inline one.
   returns immediately and runs detached. The first argument is a rung off that
   ladder — `high`, or the `xhigh` / `max` Scope allowed — and nothing else ever
   goes in that position. What follows it is a **target**, read as scope guidance
-  rather than diffed from: a bare commit-ish selects *that commit*, so a base
-  passed as a SHA comes back as a review of the one commit it names. Put the scope
-  §1 fixed there, spelled out — the range as `<base>...HEAD`, carrying whatever
+  rather than diffed from: a bare SHA selects *that commit*, so a base handed over
+  as one comes back as a review of the single commit it names. Put the scope §1
+  fixed there, spelled out — the range as `<base>...HEAD`, carrying whatever
   narrowed it, or the working tree alone where that is the scope — then confirm in
-  §4 what the run actually diffed. A target buys the range at the price of the
-  working tree: uncommitted work declined in §1 is coverage this reviewer does not
-  have. Never leave it to pick its own scope — §2's Reads cell says what it falls
-  back to, which on an already-pushed branch leaves the commits unread. This skill
-  is the explicit instruction authorizing that call.
+  §4 what the run actually diffed. Never leave it to pick its own scope — §2's
+  Reads cell says what it falls back to, which on an already-pushed branch leaves
+  the commits unread. This skill is the explicit instruction authorizing that
+  call.
 - **security-review** — invoke the skill inline, last. Do not delegate it to a
   subagent to save context: subagents have neither the `Agent` nor the `Task`
   tool, so the skill's own filtering pass — parallel sub-tasks dropping every
@@ -184,13 +185,13 @@ tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
 
 **Ask the code-review run what it diffed.** What it returns is the target it was
-handed, never the range built from it nor the files read — those live in the run's
-journal (`journal.jsonl`, in the agent-transcript directory the finished run
-names), as the scope step's `diffCommand` and `files`. Take both from there and
-read the command for the ground it covers rather than its spelling: `partial` is a
-run that read *different* ground — one commit, another base, a two-dot range
-against a base that has moved past the fork point — however plausible its count,
-and a corrected target is what closes it.
+handed, never the range built from it nor the files read. Both are in the output
+file the finished run names: the `scope` entry's `resultPreview` carries
+`diffCommand` and `files`, and the first log line carries the count. Read that
+command for the ground it covers rather than its spelling: `partial` is a run that
+read *different* ground — one commit, another base, a two-dot range against a base
+that has moved past the fork point — however plausible its count, and a corrected
+target is what closes it.
 
 **A nonzero count can still mean the commits went unread.** `codex-review` prints
 a `coverage-warning:` line when it reviewed the working tree alone; the count is
