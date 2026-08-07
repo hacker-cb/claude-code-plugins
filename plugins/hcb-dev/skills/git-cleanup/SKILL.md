@@ -93,10 +93,12 @@ git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, 
 # tag shares the name, and every use below re-prefixes `refs/heads/`.
 git -C "$PROJECT" for-each-ref refs/heads/ \
     --format='%(refname:lstrip=2) | %(worktreepath) | %(upstream:short) %(upstream:track)'
-# Both read $D, so neither runs where step 1 left it empty: their answer is unknown,
-# and it is these two whose failure shapes read as success.
-git -C "$PROJECT" branch --merged "$D"
-git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>"   # 0 -> carries nothing of its own
+# Guarded, not merely described: with an empty $D the range reads `..refs/heads/<b>`,
+# which git resolves against HEAD and answers as confidently as ever.
+if [ -n "$D" ]; then
+  git -C "$PROJECT" branch --merged "$D"
+  git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>"   # 0 -> carries nothing of its own
+fi
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
 # --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
@@ -264,10 +266,11 @@ Two things come first, in this order, on every branch reaching this step:
 Then the branch's own proof, whichever routed it:
 
 ```bash
-# EMPTY where no forge CLI answered — which is "not asked", not "none open", so the
-# git rows below still stand on their own proof.
-OPEN="<step 4's open count for this tip, re-asked now — EMPTY without a forge CLI>"
-if [ -n "$OPEN" ] && [ "$OPEN" != 0 ]; then
+# The open rows step 4's query returns for this tip, re-asked now — empty when none
+# are open and empty again where no forge CLI answered, which take the same path:
+# on to the proofs below.
+OPEN="<those rows, or empty>"
+if [ -n "$OPEN" ]; then
   echo "a request on this tip is open — keep the branch"
 elif [ -z "$D" ]; then
   echo "skipping -D — default branch unresolved"
