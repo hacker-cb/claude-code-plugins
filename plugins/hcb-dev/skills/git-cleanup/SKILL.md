@@ -93,8 +93,10 @@ git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, 
 # tag shares the name, and every use below re-prefixes `refs/heads/`.
 git -C "$PROJECT" for-each-ref refs/heads/ \
     --format='%(refname:lstrip=2) | %(worktreepath) | %(upstream:short) %(upstream:track)'
-git -C "$PROJECT" branch --merged "<remote>/<default>"
-git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # 0 -> carries nothing of its own
+# Both read $D, so neither runs where step 1 left it empty: their answer is unknown,
+# and it is these two whose failure shapes read as success.
+git -C "$PROJECT" branch --merged "$D"
+git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>"   # 0 -> carries nothing of its own
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
 # --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
@@ -121,20 +123,24 @@ identity, and a request carrying it carries every commit under it.
 
 ```bash
 TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
-# --paginate on both: these endpoints page, and an open request on page two is an
-# open request the sweep would delete over.
+# Both CLIs read the repository from the directory they run in, and neither takes
+# git's -C, so they run from $PROJECT: cwd may be another checkout entirely.
+# --paginate on both, since these endpoints page and an open request on page two is
+# an open request the sweep would delete over.
 # GitHub — `api` resolves :owner/:repo from the checkout but not its host, so a
 # self-hosted instance is asked of github.com unless --hostname says otherwise. The
 # endpoint answers with merged AND open requests for a commit outside the default
 # branch, which every squash merge leaves its tip; merged reads as state `closed`
 # carrying a merged_at.
-HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
-gh api --hostname "$HOST" --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
-  --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv'
-# GitLab — `api` takes the host from the checkout itself. @tsv so an empty column
+( cd "$PROJECT" || exit
+  HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
+  gh api --hostname "$HOST" --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
+    --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv' )
+# GitLab — `api` takes the host from that checkout itself. @tsv so an empty column
 # keeps its place; either one can hold the commit
-glab api --paginate "projects/:id/repository/commits/$TIP/merge_requests" \
-  | jq -r '.[] | [.iid, .state, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv'
+( cd "$PROJECT" || exit
+  glab api --paginate "projects/:id/repository/commits/$TIP/merge_requests" \
+    | jq -r '.[] | [.iid, .state, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv' )
 ```
 
 **An open request in that answer keeps the branch**, whatever else it says. A
@@ -160,7 +166,7 @@ behind wherever the base did not verify.
 the same short name wins the lookup, so the bare form measures the tag and routes
 the branch to deletion on a proof that never described it.
 
-Without a forge CLI, a branch outside `--merged <remote>/<default>` has **unknown** merge
+Without a forge CLI, a branch outside `--merged "$D"` has **unknown** merge
 status: surface it, never delete it.
 
 ## Step 5 — Classification
@@ -188,7 +194,7 @@ status: surface it, never delete it.
 |---|---|
 | the default branch, or checked out in a worktree you are keeping | never delete |
 | checked out in a worktree being removed in this same run | delete after that worktree is gone — this is the common case, not an exception |
-| in `branch --merged <remote>/<default>` | delete (class 2) |
+| in `branch --merged "$D"` | delete (class 2) |
 | a merged request carries the branch tip, its merge commit is in `$D`, and no request on that tip is open | delete (class 2) — only the forge knows about a squash merge |
 | a merged request carries the tip, and its merge commit is not in `$D` | surface (class 3) — it landed somewhere the base does not carry |
 | no merged request carries the tip | surface (class 3) — the branch moved past every request, or the forge never had it |
@@ -196,7 +202,7 @@ status: surface it, never delete it.
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
-| no upstream, `rev-list --count <remote>/<default>..refs/heads/<b>` = 0 | delete (class 2) — nothing to lose |
+| no upstream, `rev-list --count "$D..refs/heads/<b>"` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
 
 **Rows overlap.** An open request keeps the branch whatever else matched. A
