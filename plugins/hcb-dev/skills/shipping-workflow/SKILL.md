@@ -73,11 +73,11 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    inside the renamed file. Vendored trees are out, and so is any other worktree's
    checkout — those are someone else's tree, not yours to edit.
 
-   Rule on each hit before touching it: a path that still exists, a migration
-   path, a compatibility alias, a test asserting the old name and a changelog
-   entry are all still true. A tracked generated file is fixed by re-running its
-   generator. Run this again whenever a later step deletes or renames something of
-   its own.
+   Rule on each hit before touching it. A path that still exists is not orphaned
+   at all; where it is gone, a migration path, a compatibility alias, a test
+   asserting the old name and a changelog entry are all still true. A tracked
+   generated file is fixed by re-running its generator. Run this again whenever a
+   later step deletes or renames something of its own.
 
    Where the change alters a process the repository *documents*, there is no name
    to search for: re-read the files describing how the repository works rather
