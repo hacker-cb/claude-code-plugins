@@ -151,8 +151,8 @@ Don't <what would duplicate or undo it, and the tracks that are not yours to tou
 
 ## Afterwards
 
-After the closing fence, offer `/hcb-dev:git-cleanup session` for the branches
-and worktrees this session leaves behind — offer it, never run it.
+Offer `/hcb-dev:git-cleanup session` for the branches and worktrees this session
+leaves behind — offer it, never run it.
 
 ## Reference files
 

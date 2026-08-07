@@ -58,12 +58,10 @@ Write the prompt in the language this session is conducted in, leaving
 identifiers, paths and commands as they are. A slot with nothing in it says so
 in a word rather than being dropped — a missing line reads as an omission.
 
-The prompt is emitted whole, as one fenced block of plain text, in a single
-message, and none of its content is restated outside it. Everything addressed to
-this session instead of to the reader — what this session now waits on, what it
-offers to do next — goes after the closing fence. Nothing follows it but that.
+Each prompt is emitted whole, inside a fenced block of plain text, and never
+paraphrased into prose around it. What is addressed to this session instead of
+to the reader — what it now waits on, what it offers to do next — goes after the
+closing fence, and it may name the prompt's tag.
 
-Fence with three backticks — the form the reader's client offers a copy control
-for. Go longer only where the text inside carries a run of three or more, and
-then one longer than the longest run in it: a copy takes the whole block and
-nothing else only while the fence outruns everything it contains.
+Fence with three backticks; where the text inside carries a run of three or
+more, use one backtick more than the longest run.
