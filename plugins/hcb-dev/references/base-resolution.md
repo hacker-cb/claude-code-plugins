@@ -167,7 +167,8 @@ git fetch <remote> "+refs/heads/<base>:refs/remotes/<remote>/<base>"
 
 Three outcomes, and only one of them means current:
 
-- **It updated.** The ref is the remote's tip.
+- **The fetch succeeded.** The ref is the remote's tip — whether or not it moved;
+  "already up to date" is this outcome, not a separate one.
 - **The remote did not answer.** That is "the age is unknown", not "no new
   commits": the local ref stays standing and every consumer reads it without
   complaint, so a run treating this as success reports a branch current with a base

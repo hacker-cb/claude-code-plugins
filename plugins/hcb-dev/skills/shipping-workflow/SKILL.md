@@ -95,7 +95,8 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
 5. **Check the coverage** — the gate below.
 6. **Complete the slice by mode** — hand off to the completion contract in
    `slice-completion.md`, which owns every mechanic of both backends. `local`
-   merges the slice into its `parent` with git alone, no forge and no network;
+   merges the slice into its `parent` with git alone, no forge and no network
+   write;
    `request` hands to the forge's change-request driver
    (`hcb-dev:github-pr-workflow` on GitHub), passing `parent` as the base plus
    `merge-strategy` and `merge-auth`. Nothing in steps 0–5 changes with the mode.

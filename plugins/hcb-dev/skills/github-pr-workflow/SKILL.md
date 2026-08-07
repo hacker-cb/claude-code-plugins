@@ -270,8 +270,9 @@ Whichever remote you picked, you picked it *because* `<base-remote>/<base>` is
 already there — so an existence test passes just as happily against a week-old
 copy, and a rebase onto that copy has this step report "up to date" while GitHub
 reports `BEHIND` at merge time. What the fetch's outcomes mean is
-`base-resolution.md`'s; here, anything short of an update stops this step — a base
-whose age is unknown is not one to rebase onto.
+`base-resolution.md`'s; here, a fetch that did not succeed stops this step — a
+base whose age is unknown is not one to rebase onto, while one the fetch confirms
+is already current is exactly what this step wants.
 
 Fill the two values at the top; everything under them is live.
 
