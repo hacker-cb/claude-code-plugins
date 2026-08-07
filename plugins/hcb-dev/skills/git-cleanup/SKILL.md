@@ -123,10 +123,14 @@ identity, and a request carrying it carries every commit under it.
 TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
 # --paginate on both: these endpoints page, and an open request on page two is an
 # open request the sweep would delete over.
-# GitHub — a merged request is state `closed` carrying a merged_at
-gh api --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
+# GitHub — `api` resolves :owner/:repo from the checkout but not its host, so a
+# self-hosted instance is asked of github.com unless --hostname says otherwise. A
+# merged request comes back state `closed` carrying a merged_at.
+HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
+gh api --hostname "$HOST" --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
   --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv'
-# GitLab — @tsv so an empty column keeps its place; either one can hold the commit
+# GitLab — `api` takes the host from the checkout itself. @tsv so an empty column
+# keeps its place; either one can hold the commit
 glab api --paginate "projects/:id/repository/commits/$TIP/merge_requests" \
   | jq -r '.[] | [.iid, .state, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv'
 ```
