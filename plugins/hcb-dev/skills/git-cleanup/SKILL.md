@@ -241,19 +241,20 @@ git -C "$PROJECT" worktree remove "<path>"         # 1. --force ONLY on a confir
 rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
-git -C "$PROJECT" branch -d "<branch>"             # 4. git's own containment check
-git -C "$PROJECT" branch -D "<branch>"             # 4-alt, behind one of the re-proofs below
+git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's own re-proof
+                                                   #    below — nothing else authorizes a delete
 ```
 
-`-d` re-checks against `PROJECT`'s HEAD, or against the branch's own upstream
-where it has one — never against `$D`, and step 1 does not let you assume HEAD is
-the default branch. Against an upstream it is no merge proof at all: a branch
-pushed at any earlier point passes it. So it settles only a branch with no
-upstream whose HEAD holds it, and everything else reaches `-D` through the
-re-proof its own row called for, **run here and not read off step 4** — step 6
-waits on a human, and both what the branch carries and what the forge says about
-it can move while it waits. A branch with no proof of its own is not deleted at
-all: report it instead.
+**`-d` is not a lighter `-D` here, and it is not the proof.** It re-checks against
+`PROJECT`'s HEAD, or against the branch's own upstream where it has one — never
+against `$D`, and step 1 does not let you assume HEAD is the default branch. So a
+branch pushed at any earlier point passes it with an upstream, and one merged into
+whatever HEAD sits on passes it without: it deletes what these rows would keep,
+and refuses what they proved. What authorizes a deletion is the re-proof the
+branch's own row calls for, **run here and not read off step 4** — step 6 waits on
+a human, and both what the branch carries and what the forge says about it can move
+while it waits. A branch with no proof of its own is not deleted at all: report it
+instead.
 
 Two things come before **either** proof, on **every** branch reaching this step.
 Step 4's per-branch open query, run again — an answer above zero keeps the branch,
@@ -288,7 +289,7 @@ else
 fi
 ```
 
-Say so in the report wherever `-D` was used.
+Name in the report which proof each deletion stood on.
 
 To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
