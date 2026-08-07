@@ -140,12 +140,20 @@ clock. After each push:
    whose `commit_id == $head`, or a request that was there and is gone with no such
    review — a decline, which the report says out loud rather than implying it
    reviewed. **An empty list is never a decline by itself**: a poll that missed the
-   window between the request and its review reads exactly the same. Whether the
-   request existed at all is the timeline's answer, and it keeps every one:
+   window between the request and its review reads exactly the same. Whether one was
+   ever registered for *this* head is the timeline's answer — but its review-request
+   events carry no SHA, so every earlier round left one that reads identically, and
+   an unbounded query hands you a stale event as proof. Take the time before you
+   push, and count only what came after it:
    ```bash
+   # `--jq` is gh's own filter and takes no `--arg`; a variable reaches it through
+   # the environment.
+   SINCE="<taken immediately before the push>" \
    gh api --paginate repos/<owner>/<repo>/issues/<pr>/timeline \
      --jq '.[] | select(.event | test("^review_request"))
-           | {event, at: .created_at, who: .requested_reviewer.login} | @json' | tail -5
+           | select(.created_at > env.SINCE)
+           | select((.requested_reviewer.login? // "") | test("^copilot"; "i"))
+           | {event, at: .created_at} | @json'
    ```
 4. **A review of an earlier commit is not a decline.** It consumes the request and
    leaves the head unreviewed, so re-request and keep waiting. For the same reason
