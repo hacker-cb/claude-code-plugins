@@ -29,7 +29,8 @@ and re-verified before anything consumes it. Resolve it there, then carry two
 values into the rest of the sweep:
 
 ```bash
-D="<the remote-tracking ref, per base-resolution.md — EMPTY if it did not resolve>"
+D="<the remote-tracking ref, per base-resolution.md — EMPTY unless it resolved AND
+    that reference's refresh verified it>"
 DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
 [ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
 ```
@@ -92,8 +93,12 @@ git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, 
 # tag shares the name, and every use below re-prefixes `refs/heads/`.
 git -C "$PROJECT" for-each-ref refs/heads/ \
     --format='%(refname:lstrip=2) | %(worktreepath) | %(upstream:short) %(upstream:track)'
-git -C "$PROJECT" branch --merged "<remote>/<default>"
-git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # merged or not
+# Guarded, not merely described: with an empty $D the range reads `..refs/heads/<b>`,
+# which git resolves against HEAD and answers as confidently as ever.
+if [ -n "$D" ]; then
+  git -C "$PROJECT" branch --merged "$D"
+  git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>"   # 0 -> carries nothing of its own
+fi
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
 # --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
@@ -111,34 +116,59 @@ on every line, **and** `none` for the directory — that combination is the only
 answer meaning nothing is there.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
-forge and that forge's CLI is authed, close the gap read-only:
+forge and that forge's CLI is authed, close the gap read-only — asking, per
+branch, **which requests carry its tip commit**. A branch name is the wrong
+question: a merged `fix/login` may have come from a fork, or the local branch of
+that name may have been recreated since, and a list of requests filtered by name
+stops at a page where absence and a busy project look alike. The tip is the
+identity, and a request carrying it carries every commit under it.
 
 ```bash
-# GitHub
-gh pr list --state merged --json headRefName --limit 200   # -> safe to delete
-gh pr list --state open   --json headRefName --limit 200   # -> keep, in flight
-# GitLab — no built-in --jq, and `mr list` already defaults to open
-glab mr list --merged --output json --per-page 100 | jq -r '.[].source_branch'   # -> safe to delete
-glab mr list          --output json --per-page 100 | jq -r '.[].source_branch'   # -> keep, in flight
+TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
+# Both CLIs read the repository from the directory they run in, and neither takes
+# git's -C, so they run from $PROJECT: cwd may be another checkout entirely.
+# --paginate on both, since these endpoints page and an open request on page two is
+# an open request the sweep would delete over.
+# GitHub — `api` resolves :owner/:repo from the checkout but not its host, so a
+# self-hosted instance is asked of github.com unless --hostname says otherwise. The
+# endpoint answers with merged AND open requests for a commit outside the default
+# branch, which every squash merge leaves its tip; merged reads as state `closed`
+# carrying a merged_at.
+( cd "$PROJECT" || exit
+  HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
+  gh api --hostname "$HOST" --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
+    --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv' )
+# GitLab — `api` takes the host from that checkout itself. @tsv so an empty column
+# keeps its place; either one can hold the commit
+( cd "$PROJECT" || exit
+  glab api --paginate "projects/:id/repository/commits/$TIP/merge_requests" \
+    | jq -r '.[] | [.iid, .state, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv' )
 ```
 
-Both CLIs answer with **branch names only**, and a name is not an identity: a
-merged `fix/login` may have come from a fork, or the local branch of that name
-may have been recreated since with fresh commits. So a forge "merged" is a
-candidate, not a verdict — confirm the local branch carries nothing of its own:
+**An open request in that answer keeps the branch**, whatever else it says. A
+merged one is a candidate, and where its merge landed settles it:
 
 ```bash
-git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # 0 -> nothing to lose
+git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"
 ```
 
-Non-zero means the local branch has commits the merge does not contain: surface
-it as class 3 instead of deleting it.
+On GitLab that commit is **the first of the two columns that is non-empty**;
+whichever is set is a commit on the target branch, and both empty leaves nothing
+to check against. An answer naming no merged request at all is the same nothing:
+the tip reached no request the forge merged.
 
-**Spell every branch in a count `refs/heads/<branch>`**, here and in step 5's
-rows. A tag of the same short name wins the lookup, so the bare form measures the
-tag and routes the branch to deletion on a count that never described it.
+Exit 1 leaves the branch standing — the request landed somewhere `$D` does not
+carry. An object this repository does not have makes the check die instead
+(`fatal`, not exit 1), and that is **unknown**: the branch stands too, and the
+report says unknown rather than somebody else's work. An empty `$D` is unknown
+for every branch — the check cannot run at all, which is what step 1 leaves
+behind wherever the base did not verify.
 
-Without a forge CLI, a branch outside `--merged <remote>/<default>` has **unknown** merge
+**Spell every branch `refs/heads/<branch>`**, here and in step 5's rows. A tag of
+the same short name wins the lookup, so the bare form measures the tag and routes
+the branch to deletion on a proof that never described it.
+
+Without a forge CLI, a branch outside `--merged "$D"` has **unknown** merge
 status: surface it, never delete it.
 
 ## Step 5 — Classification
@@ -166,14 +196,23 @@ status: surface it, never delete it.
 |---|---|
 | the default branch, or checked out in a worktree you are keeping | never delete |
 | checked out in a worktree being removed in this same run | delete after that worktree is gone — this is the common case, not an exception |
-| in `branch --merged <remote>/<default>` | delete (class 2) |
-| the forge says `MERGED` **and** `rev-list --count <remote>/<default>..refs/heads/<b>` = 0 | delete (class 2) — only the forge knows about a squash merge |
-| the forge says `MERGED` but the branch has its own commits | surface (class 3) — same name, different work |
+| in `branch --merged "$D"` | delete (class 2) |
+| a merged request carries the branch tip, its merge commit is in `$D`, and no request on that tip is open | delete (class 2) — only the forge knows about a squash merge |
+| a merged request carries the tip, and its merge commit is not in `$D` | surface (class 3) — it landed somewhere the base does not carry |
+| no merged request carries the tip | surface (class 3) — the branch moved past every request, or the forge never had it |
+| the merge commit is a commit this repository does not have, or `$D` is empty | surface (class 3) — unknown, which is not "not merged" |
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
-| no upstream, `rev-list --count <remote>/<default>..refs/heads/<b>` = 0 | delete (class 2) — nothing to lose |
+| no upstream, `$D` non-empty, and `rev-list --count "$D..refs/heads/<branch>"` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
+
+**Rows overlap.** An open request keeps the branch whatever else matched. A
+surface row beats a delete row **within the same proof** — the forge's unknown row
+stops the forge's own delete, and says nothing about a branch git itself proved
+merged, which `branch --merged` settles without the forge answering at all. A
+branch reaching a delete row by no row of its own — the worktree row above is the
+case — is deleted only by what step 7 will still prove.
 
 **Risk classes** decide the gate, whatever the mode:
 
@@ -202,27 +241,51 @@ git -C "$PROJECT" worktree remove "<path>"         # 1. --force ONLY on a confir
 rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
-git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
-git -C "$PROJECT" branch -D "<branch>"             # 4-alt, ONLY where -d refused: a confirmed
-                                                   #    squash merge, or the re-proof below
+git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's own re-proof
+                                                   #    below — nothing else authorizes a delete
 ```
 
-`-d` re-checks against `PROJECT`'s HEAD — or against the branch's own upstream
-where it has one — never against `$D`, and step 1 does not let you assume HEAD is
-the default branch. Where that HEAD does not contain a branch step 4 proved
-merged, re-prove it against `$D` and delete with `-D`.
+**`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks
+against `PROJECT`'s HEAD, or the branch's own upstream where it has one — never
+against `$D` — so it deletes what these rows keep and refuses what they proved.
+What authorizes a deletion is the re-proof the branch's own row calls for, **run
+here and not read off step 4**: step 6 waits on a human, and both what the branch
+carries and what the forge says about it can move while it waits. A branch with no
+proof of its own is not deleted at all — report it instead.
+
+Two things come first, in this order, on every branch reaching this step:
+
+- **Re-resolve `$D` and `$DEF` together**, through `base-resolution.md`. The
+  repair block at the end of this step reads `$DEF`, so a `$D` emptied here and a
+  `$DEF` left standing sends every surviving branch through `--unset-upstream`.
+- **Re-ask step 4's query on the tip as it stands now**, wherever a forge CLI
+  answered it there. A tip that moved while the gate waited belongs to no merged
+  request, so the answer that authorized the deletion is simply gone; an open
+  request in it keeps the branch whatever any proof says.
+
+Then the branch's own proof, whichever routed it:
 
 ```bash
-if [ -z "$D" ]; then
+# The open rows step 4's query returns for this tip, re-asked now — empty when none
+# are open and empty again where no forge CLI answered, which take the same path:
+# on to the proofs below.
+OPEN="<those rows, or empty>"
+if [ -n "$OPEN" ]; then
+  echo "a request on this tip is open — keep the branch"
+elif [ -z "$D" ]; then
   echo "skipping -D — default branch unresolved"
-elif [ "$(git -C "$PROJECT" rev-list --count "$D".."refs/heads/<branch>")" = 0 ]; then
+# the forge's row: where the merge of the request carrying this tip landed
+elif git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
+  git -C "$PROJECT" branch -D "<branch>"
+# git's own rows: the count that routed it
+elif [ "$(git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>")" = 0 ]; then
   git -C "$PROJECT" branch -D "<branch>"
 else
-  echo "not merged into $D — surface it instead"
+  echo "the proof no longer holds — surface it, saying whether it failed or could not run"
 fi
 ```
 
-Say so in the report wherever `-D` was used.
+Name in the report which proof each deletion stood on.
 
 To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
