@@ -93,7 +93,7 @@ git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, 
 git -C "$PROJECT" for-each-ref refs/heads/ \
     --format='%(refname:lstrip=2) | %(worktreepath) | %(upstream:short) %(upstream:track)'
 git -C "$PROJECT" branch --merged "<remote>/<default>"
-git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # merged or not
+git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # 0 -> carries nothing of its own
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
 # --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
@@ -111,32 +111,37 @@ on every line, **and** `none` for the directory — that combination is the only
 answer meaning nothing is there.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
-forge and that forge's CLI is authed, close the gap read-only:
+forge and that forge's CLI is authed, close the gap read-only — asking the merged
+list for the **head each request recorded**, never for its branch name alone:
 
 ```bash
 # GitHub
-gh pr list --state merged --json headRefName --limit 200   # -> safe to delete
-gh pr list --state open   --json headRefName --limit 200   # -> keep, in flight
+gh pr list --state merged --json headRefName,headRefOid --limit 200   # -> candidates, with the head
+gh pr list --state open   --json headRefName --limit 200              # -> keep, in flight
 # GitLab — no built-in --jq, and `mr list` already defaults to open
-glab mr list --merged --output json --per-page 100 | jq -r '.[].source_branch'   # -> safe to delete
-glab mr list          --output json --per-page 100 | jq -r '.[].source_branch'   # -> keep, in flight
+glab mr list --merged --output json --per-page 100 | jq -r '.[] | "\(.source_branch) \(.sha)"'   # -> candidates, with the head
+glab mr list          --output json --per-page 100 | jq -r '.[].source_branch'                   # -> keep, in flight
 ```
 
-Both CLIs answer with **branch names only**, and a name is not an identity: a
-merged `fix/login` may have come from a fork, or the local branch of that name
-may have been recreated since with fresh commits. So a forge "merged" is a
-candidate, not a verdict — confirm the local branch carries nothing of its own:
+A name is not an identity: a merged `fix/login` may have come from a fork, or the
+local branch of that name may have been recreated since with fresh commits. The
+recorded head is the identity, and the proof it carries the local branch is
+[`../../references/branch-retirement.md`](../../references/branch-retirement.md)'s:
 
 ```bash
-git -C "$PROJECT" rev-list --count "<remote>/<default>..refs/heads/<branch>"   # 0 -> nothing to lose
+git -C "$PROJECT" merge-base --is-ancestor "refs/heads/<branch>" "<recorded head>"
 ```
 
-Non-zero means the local branch has commits the merge does not contain: surface
-it as class 3 instead of deleting it.
+Exit 0 is the verdict, and **anything else leaves the branch standing** — a tip
+carrying commits the request never took, and a head this repository does not
+have, are both class 3. Never re-ask this with a count against
+`<remote>/<default>`: a squash merge puts none of the branch's commits in the
+base, so the count is the branch's own length and the branch that really landed
+reads as unmerged.
 
-**Spell every branch in a count `refs/heads/<branch>`**, here and in step 5's
-rows. A tag of the same short name wins the lookup, so the bare form measures the
-tag and routes the branch to deletion on a count that never described it.
+**Spell every branch `refs/heads/<branch>`**, here and in step 5's rows. A tag of
+the same short name wins the lookup, so the bare form measures the tag and routes
+the branch to deletion on a proof that never described it.
 
 Without a forge CLI, a branch outside `--merged <remote>/<default>` has **unknown** merge
 status: surface it, never delete it.
@@ -167,8 +172,8 @@ status: surface it, never delete it.
 | the default branch, or checked out in a worktree you are keeping | never delete |
 | checked out in a worktree being removed in this same run | delete after that worktree is gone — this is the common case, not an exception |
 | in `branch --merged <remote>/<default>` | delete (class 2) |
-| the forge says `MERGED` **and** `rev-list --count <remote>/<default>..refs/heads/<b>` = 0 | delete (class 2) — only the forge knows about a squash merge |
-| the forge says `MERGED` but the branch has its own commits | surface (class 3) — same name, different work |
+| the forge says `MERGED` **and** the head it recorded contains `refs/heads/<b>` | delete (class 2) — only the forge knows about a squash merge |
+| the forge says `MERGED`, and that head does not contain the branch — or this repository does not carry the head at all | surface (class 3) — same name, different work |
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
@@ -203,14 +208,19 @@ rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items o
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
-git -C "$PROJECT" branch -D "<branch>"             # 4-alt, ONLY where -d refused: a confirmed
-                                                   #    squash merge, or the re-proof below
+git -C "$PROJECT" branch -D "<branch>"             # 4-alt, ONLY where -d refused: a branch the
+                                                   #    forge proved merged, or the re-proof below
 ```
 
 `-d` re-checks against `PROJECT`'s HEAD — or against the branch's own upstream
 where it has one — never against `$D`, and step 1 does not let you assume HEAD is
-the default branch. Where that HEAD does not contain a branch step 4 proved
-merged, re-prove it against `$D` and delete with `-D`.
+the default branch. Where that HEAD does not contain a branch an earlier step
+proved merged, re-prove it with **the proof that routed it here**.
+
+A branch the forge proved merged already has one — step 4's ancestor check
+against the recorded head — and `-D` follows it directly, whatever `PROJECT`'s
+HEAD contains. The count below re-proves the branches `branch --merged` routed
+here, and it belongs to those alone.
 
 ```bash
 if [ -z "$D" ]; then
