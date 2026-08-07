@@ -206,8 +206,8 @@ While a component this run depends on is not `operational`:
   non-required check you may deem irrelevant (`UNSTABLE`), and a check that never
   started is not a check that passed.
 - **Say in one line** which component is down and which step is parked on it.
-- **Re-check every half hour from a detached job**, never in the foreground: the
-  wait below sleeps for half an hour at a time, and run in front it parks the very
+- **Re-check every half hour from a detached job**, never in the foreground — the
+  wait below sleeps half an hour per pass, and running it in front parks the very
   session it exists to keep usable.
 
 ```bash
