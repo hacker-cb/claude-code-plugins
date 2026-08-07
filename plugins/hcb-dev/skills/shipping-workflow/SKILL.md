@@ -61,8 +61,10 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    committing yet, say so and expect the range-fed reviewers to come back short.
 
    **Sweep what the change orphaned.** Take every path the branch deletes or
-   renames — the whole range, `git diff --name-status <base>...HEAD` plus what is
-   staged now, not only this commit — and search the worktree for each old name.
+   renames — the whole range and not only this commit, with step 1's `diff-base`:
+   `git log --name-status --diff-filter=DR --format= <diff-base>..HEAD` plus
+   `git diff --name-status HEAD` for what is not committed yet — and search the
+   worktree for each old name.
    Search every file type, not the ones you edited: what stays behind otherwise is
    the citation in a config comment, the sentence in the docs, the stale header
    inside the renamed file. Vendored trees are out, and so is any other worktree's
