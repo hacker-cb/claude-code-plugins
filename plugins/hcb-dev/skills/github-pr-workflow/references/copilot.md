@@ -147,8 +147,9 @@ clock. After each push:
    push, and count only what came after it:
    ```bash
    # `--jq` is gh's own filter and takes no `--arg`; a variable reaches it through
-   # the environment.
-   SINCE="<taken immediately before the push>" \
+   # the environment. The comparison is lexicographic, so the value has to be in
+   # the API's own form — `date -u +%Y-%m-%dT%H:%M:%SZ` — or it matches by accident.
+   SINCE="<that timestamp, snapped before the push>" \
    gh api --paginate repos/<owner>/<repo>/issues/<pr>/timeline \
      --jq '.[] | select(.event | test("^review_request"))
            | select(.created_at > env.SINCE)
