@@ -28,7 +28,7 @@ and what answers there, never from the hostname.
   request and `git log` already record it.
 - **Open-ended architectural direction** belongs to the project's roadmap.
 
-## Search before opening
+## Searching the tracker
 
 Closed ones too — a finding already decided against must not return under a new
 number, with the decision left behind on the old one.
@@ -50,17 +50,9 @@ finding adds something** (new facts, wider scope, a changed trigger) → update 
 
 ## Surfacing a finding
 
-A finding surfaces at the end of the response, under `## Drive-by observations`,
-as the user's decision rather than yours:
-
-- **untracked** → `<component> — one line`, and ask **OPEN / DEFER / DISMISS**;
-- **tracked, and the finding adds something** → `#N — what changes`, and ask
-  **UPDATE #N / DEFER / DISMISS**;
-- **tracked as it stands** → no entry; say so where it came up.
-
-Their answer is what opens or updates anything. At the natural end of a session —
-the primary work done — re-surface whatever stayed undecided, or it goes with the
-session.
+Something this work will not fix goes to the user as a proposal, and only their
+answer writes to the tracker:
+[`../../references/surfacing-findings.md`](../../references/surfacing-findings.md).
 
 ## What goes in the issue
 
@@ -112,7 +104,10 @@ work raised become issues opened in the same effort.
 - [`references/classification.md`](references/classification.md) — the label
   families as roles and the cardinality between them, which mechanism carries the
   kind of work in this repository, and milestones where a project uses them. Read
-  it before applying anything to an issue.
+  it before applying anything to an issue, and before proposing one.
+- [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
+  — what reaches the user when work will not fix something, in what form, and what
+  their answer authorizes. Read it before writing that proposal.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
   flag, an endpoint or a concept name gets resolved on either forge, and which
   hierarchy and dependency mechanism each one has. Read it before writing an

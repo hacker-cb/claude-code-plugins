@@ -218,6 +218,13 @@ saying something else.
   findings rated by importance, an explicit "none"). Read where a whole run is
   reported. That is a different altitude from a driver's report on one merged
   change request, and the two do not replace each other.
+- [`references/surfacing-findings.md`](references/surfacing-findings.md) — what
+  happens between noticing something this work will not fix and the tracker: the
+  search and the classification read *before* the proposal is made, the form it
+  takes under `## Drive-by observations`, and the rule that only the user's answer
+  writes to the tracker — a standing instruction to work autonomously is not that
+  answer. Read wherever a review, a completion or a report leaves a finding
+  unfixed; the tracker operations themselves stay with `issue-tracking`.
 - [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
   endpoint or a concept name gets resolved on either forge: the installed CLI's
   `--help` for what exists in this build, the docs sites for what things mean and
