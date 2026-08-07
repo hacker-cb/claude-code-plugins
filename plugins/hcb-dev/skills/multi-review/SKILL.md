@@ -82,11 +82,10 @@ reason. An explicit instruction from the caller wins.
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
 offer a commit before starting, and name the price of declining: Codex reads the
-working tree and sees the edits either way, code-review sees them only where §3's
-target names them, the security review reads a commit range and does not, and
-files that are not tracked at all are invisible to every reviewer. Offer — never
-commit anything yourself. A refusal is a fine answer; it just goes into the
-report.
+working tree and sees the edits either way, code-review and the security review
+read the commits they are given and do not, and files that are not tracked at all
+are invisible to every reviewer. Offer — never commit anything yourself. A
+refusal is a fine answer; it just goes into the report.
 
 ## 2. Pick
 
@@ -144,18 +143,19 @@ Start the detachable reviewers first so they overlap with the inline one.
 
 - **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base and
   the effort level.
-- **code-review** — `Workflow({ name: "code-review", args: "high <range>" })`
+- **code-review** — `Workflow({ name: "code-review", args: "high <target>" })`
   returns immediately and runs detached. The first argument is a rung off that
   ladder — `high`, or the `xhigh` / `max` Scope allowed — and nothing else ever
   goes in that position. What follows it is a **target**, read as scope guidance
   rather than diffed from: a bare commit-ish selects *that commit*, so a base
-  passed as a SHA comes back as a review of the one commit it names. Spell the
-  range out — `<base>...HEAD` where the change is committed, and
-  `<base>...HEAD plus the uncommitted changes` where it is not — then confirm in
-  §4 what the run actually diffed. Never leave it to pick its own scope — §2's
-  Reads cell says what it falls back to, which on an already-pushed branch leaves
-  the commits unread. This skill is the explicit instruction authorizing that
-  call.
+  passed as a SHA comes back as a review of the one commit it names. Put the scope
+  §1 fixed there, spelled out — the range as `<base>...HEAD`, carrying whatever
+  narrowed it, or the working tree alone where that is the scope — then confirm in
+  §4 what the run actually diffed. A target buys the range at the price of the
+  working tree: uncommitted work declined in §1 is coverage this reviewer does not
+  have. Never leave it to pick its own scope — §2's Reads cell says what it falls
+  back to, which on an already-pushed branch leaves the commits unread. This skill
+  is the explicit instruction authorizing that call.
 - **security-review** — invoke the skill inline, last. Do not delegate it to a
   subagent to save context: subagents have neither the `Agent` nor the `Task`
   tool, so the skill's own filtering pass — parallel sub-tasks dropping every
@@ -188,12 +188,9 @@ handed, never the range built from it nor the files read — those live in the r
 journal (`journal.jsonl`, in the agent-transcript directory the finished run
 names), as the scope step's `diffCommand` and `files`. Take both from there and
 read the command for the ground it covers rather than its spelling: `partial` is a
-run that read *different* ground — one commit, another base, a two-dot range where
-a three-dot was asked for (the two part company as soon as the base moves), the
-committed half of a change whose target named the working tree — however plausible
-its count. A corrected target closes that. Where the journal cannot be read the
-range is unconfirmed, which is the reviewer's own limit and nothing about this
-change: `partial (structural)`, with that as the reason.
+run that read *different* ground — one commit, another base, a two-dot range
+against a base that has moved past the fork point — however plausible its count,
+and a corrected target is what closes it.
 
 **A nonzero count can still mean the commits went unread.** `codex-review` prints
 a `coverage-warning:` line when it reviewed the working tree alone; the count is
@@ -219,16 +216,14 @@ verdict:
 | `code-review` | `<base>`, 3 files | high | no findings |
 | `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
 
-Keep the cells short. "Covered" is `<base>, N files`, or an unconfirmed range
-where the run's own record of what it read was unreadable; effort gets its own
+Keep the cells short. "Covered" is always `<base>, N files`, effort gets its own
 column so a level is never left implied, and "Result" is a verdict — never the
 description of a finding, which belongs below the table where it can wrap freely.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not
 run; `n/a` — it was deliberately not run, and why; `nothing to review` — it ran
-and covered zero files; `partial` — it ran but covered less than the change, the
-wrong range, or a range that could not be confirmed. Everything except `n/a` is a
-gap in coverage — with one
+and covered zero files; `partial` — it ran but covered less than the change, or
+the wrong range. Everything except `n/a` is a gap in coverage — with one
 distinction the caller needs: a `partial` forced by a reviewer's **own structural
 limit**, rather than by anything about this change, is not something anyone can
 act on. The security review is the standing example: its base is pinned to the
