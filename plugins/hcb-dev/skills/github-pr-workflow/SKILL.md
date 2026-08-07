@@ -47,6 +47,8 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 - Committing and pushing fixes during the review loop
 - Replying to Copilot review comments
 - Reading CI status and review findings
+- Parking the run on a platform outage and resuming when it clears (see *When the
+  platform is down, the red check is not yours* below)
 
 **Merging is the one action that is NOT autonomous.** Merge only when the user has
 explicitly authorized it — either their request itself asked to merge/ship (e.g.
@@ -172,6 +174,23 @@ Then supply the gates yourself — the Step 4 loop's bar becomes the authoritati
 one — and be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
 irreversible force-pushes, and tell the user their judgment is the only safety net
 here.
+
+## When the platform is down, the red check is not yours
+
+A degraded forge fails the way a broken diff does: jobs queue and never start, a
+runner dies mid-job, a check reports an internal error, the API answers 5xx. No
+code change repairs any of it. So attribute a red or stuck check before fixing it,
+and once the platform owns the failure, park the run on it — attribution, the wait
+and the resume are
+[`references/platform-status.md`](references/platform-status.md).
+
+What that costs the steps below, for as long as the outage is what blocks the run:
+
+- **Change nothing** — no speculative fix, no push, and no Step 4 iteration spent;
+  that budget is for failures the diff caused.
+- **Never merge past it.** A check red because the platform is red is not a
+  non-required check you may deem irrelevant (`UNSTABLE`), and a check that never
+  started is not a check that passed.
 
 ## Step 1 — Branch naming
 
@@ -320,8 +339,10 @@ severity classification only decides what you *fix*, never when you're *done*.
 2. **If a required check is red:** read the failing job's logs, fix the root
    cause, commit, push. Don't guess — read the actual failure. Not every red check
    wants a code change: one that stands in for a review is typically waiting on the
-   review itself or on unresolved threads, so read what it reports before touching
-   code.
+   review itself or on unresolved threads, and one that is red — or stuck without
+   ever starting — because the forge is degraded wants no change at all, so read
+   what it reports before touching code and attribute it per
+   *When the platform is down, the red check is not yours*.
 3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
    them — see `references/copilot.md`.
 4. **Fix Critical and Important findings.** Batch fixes into as few pushes as is
@@ -401,6 +422,10 @@ Keep it scannable: short grouped bullets, not an essay.
 
 - [`references/copilot.md`](references/copilot.md) — How to find, classify (Critical/Important vs skip),
   fix, and reply to Copilot review findings. Read it before Step 4.
+- [`references/platform-status.md`](references/platform-status.md) — whether a red,
+  stuck or missing check belongs to the platform rather than to the diff, how to
+  wait an outage out, and what to re-trigger once it clears. Read it the moment a
+  failure does not look like the diff's.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
   flag, an endpoint or a ruleset field gets resolved: the installed CLI's
   `--help` for what this build accepts, the docs sites for what a field means.
