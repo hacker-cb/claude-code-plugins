@@ -54,10 +54,11 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    a consumer of it and every step after that one is too. **Both modes** — what
    local completion promises is that it writes to no network (`slice-completion.md`),
    and a read leaves that promise intact.
-2. **Commit the change first**, new files included — one reviewer reads only
-   committed work, so a review launched over a dirty tree covers less than the
+2. **Commit the change first**, new files included — a reviewer handed a commit
+   range reads only committed work, and only the one reading the working tree
+   directly is exempt, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
-   committing yet, say so and expect that reviewer to come back short.
+   committing yet, say so and expect the range-fed reviewers to come back short.
 
    **Sweep what the change orphaned.** Take every path the branch deletes or
    renames — the whole range, `git diff --name-status <base>...HEAD` plus what is
