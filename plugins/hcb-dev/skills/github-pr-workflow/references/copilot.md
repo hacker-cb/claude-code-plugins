@@ -151,8 +151,8 @@ clock. After each push:
    # the API's own form — `date -u +%Y-%m-%dT%H:%M:%SZ` — or it matches by accident.
    SINCE="<that timestamp, snapped before the push>" \
    gh api --paginate repos/<owner>/<repo>/issues/<pr>/timeline \
-     --jq '.[] | select(.event | test("^review_request"))
-           | select(.created_at > env.SINCE)
+     --jq '.[] | select((.event? // "") | test("^review_request"))
+           | select((.created_at? // "") > env.SINCE)
            | select((.requested_reviewer.login? // "") | test("^copilot"; "i"))
            | {event, at: .created_at} | @json'
    ```
