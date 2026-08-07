@@ -151,10 +151,8 @@ Don't <what would duplicate or undo it, and the tracks that are not yours to tou
 
 ## Afterwards
 
-Then offer `/hcb-dev:git-cleanup session` for the branches and worktrees this
-session leaves behind — offer it, never run it. Keep the offer out of the
-prompt: the sweep belongs to this session, and the next one inherits a
-repository to work in.
+Offer `/hcb-dev:git-cleanup session` for the branches and worktrees this session
+leaves behind — offer it, never run it.
 
 ## Reference files
 
