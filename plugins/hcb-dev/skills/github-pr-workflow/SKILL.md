@@ -265,7 +265,7 @@ says which remote actually holds that branch — `upstream` can exist while *thi
 base lives only on `origin`, in a fork whose PR targets the fork itself. Then
 rebase onto it; rebase is the default (cleaner history, plays well with squash).
 
-One thing this step must not take on trust: **the fetch, not just the ref.**
+One thing this step must not take on trust: **check the fetch, not just the ref.**
 Whichever remote you picked, you picked it *because* `<base-remote>/<base>` is
 already there — so an existence test passes just as happily against a week-old
 copy, and a rebase onto that copy has this step report "up to date" while GitHub

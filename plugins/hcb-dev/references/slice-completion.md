@@ -88,9 +88,10 @@ mode-blind.
 
 ## Backend: local — merge into the parent, no forge
 
-Pure git; works with **no remote at all**. It touches the network for *nothing* —
-that is the whole point of local mode. Publishing is the escalation offer below,
-and only by consent.
+Pure git; works with **no remote at all**. It *writes* to the network for
+*nothing* — no push, no forge call — and that is the whole point of local mode;
+the read that refreshes the base is the front half's, upstream of here.
+Publishing is the escalation offer below, and only by consent.
 
 - **The name lands with the merge.** `--no-ff` writes the branch name into the
   parent's history (`Merge branch 'claude/…' into …`) — and unlike a change
@@ -134,7 +135,7 @@ and only by consent.
   publishes nothing, so this gate is about the *default* branch; a protected
   non-default branch is a request-mode concern, and merging one locally is still
   just a reversible local commit.)
-- **No push during the merge itself** — the local backend touches no network. The
+- **No push during the merge itself** — the local backend writes to no network. The
   *only* push is when the consented escalation offer below is accepted, and that is
   by definition a hand-off **out** of the local backend into the request one, not
   the local merge reaching for the network.

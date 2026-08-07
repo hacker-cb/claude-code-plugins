@@ -49,9 +49,9 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    the ladder in
    [`../../references/base-resolution.md`](../../references/base-resolution.md)
    resolves. Fetch it here, per that reference, because the sweep below is already
-   a consumer of it and every step after that one is too. **Both modes** — it is a
-   read, so local mode's no-network property is untouched; that is about what
-   completion *writes*.
+   a consumer of it and every step after that one is too. **Both modes** — what
+   local completion promises is that it writes to no network (`slice-completion.md`),
+   and a read leaves that promise intact.
 2. **Commit the change first**, new files included — one reviewer reads only
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
