@@ -62,18 +62,22 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
 
    **Sweep what the change orphaned.** Take every path the branch deletes or
    renames — the whole range and not only this commit, with step 1's `diff-base`:
-   `git log --name-status --diff-filter=DR --format= <diff-base>..HEAD` plus
-   `git diff --name-status HEAD` for what is not committed yet — and search the
-   worktree for each old name.
+   `git log --name-status --diff-filter=DR --diff-merges=first-parent --format= <diff-base>..HEAD`,
+   then `git diff --name-status --diff-filter=DR --cached` and
+   `git diff --name-status --diff-filter=DR` for what is not committed — a merge's
+   own resolution needs the first-parent diff, and one call against `HEAD`
+   collapses a rename staged and then renamed again — and search the worktree for
+   each old name.
    Search every file type, not the ones you edited: what stays behind otherwise is
    the citation in a config comment, the sentence in the docs, the stale header
    inside the renamed file. Vendored trees are out, and so is any other worktree's
    checkout — those are someone else's tree, not yours to edit.
 
-   Rule on each hit before touching it: a migration path, a compatibility alias, a
-   test asserting the old name and a changelog entry are all still true. A tracked
-   generated file is fixed by re-running its generator. Run this again whenever a
-   later step deletes or renames something of its own.
+   Rule on each hit before touching it: a path that still exists, a migration
+   path, a compatibility alias, a test asserting the old name and a changelog
+   entry are all still true. A tracked generated file is fixed by re-running its
+   generator. Run this again whenever a later step deletes or renames something of
+   its own.
 
    Where the change alters a process the repository *documents*, there is no name
    to search for: re-read the files describing how the repository works rather
