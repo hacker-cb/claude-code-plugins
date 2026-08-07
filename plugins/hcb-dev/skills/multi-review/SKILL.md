@@ -81,11 +81,12 @@ reason. An explicit instruction from the caller wins.
 
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
-offer a commit before starting, and name the price of declining: Codex and
-code-review read the working tree and see the edits either way, the security
-review reads a commit range and does not, and files that are not tracked at all
-are invisible to every reviewer. Offer — never commit anything yourself. A refusal
-is a fine answer; it just goes into the report.
+offer a commit before starting, and name the price of declining: Codex reads the
+working tree and sees the edits either way, code-review sees them only where §3's
+target names them, the security review reads a commit range and does not, and
+files that are not tracked at all are invisible to every reviewer. Offer — never
+commit anything yourself. A refusal is a fine answer; it just goes into the
+report.
 
 ## 2. Pick
 
@@ -104,7 +105,7 @@ Four questions per reviewer, in order:
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
 | `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
-| `code-review` workflow | the `Workflow` tool exists | `@{upstream}...HEAD` plus `git diff HEAD` unless given a target | yes, as a target argument | `high` — `xhigh` / `max` only where the user names one |
+| `code-review` workflow | the `Workflow` tool exists | whatever its target names — `@{upstream}...HEAD` plus `git diff HEAD` when given none | yes, as a target argument | `high` — `xhigh` / `max` only where the user names one |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 What that decides in practice: the security review goes `n/a` on a narrowed or
@@ -143,13 +144,17 @@ Start the detachable reviewers first so they overlap with the inline one.
 
 - **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base and
   the effort level.
-- **code-review** — `Workflow({ name: "code-review", args: "high <base>" })`
+- **code-review** — `Workflow({ name: "code-review", args: "high <base>...HEAD" })`
   returns immediately and runs detached. The first argument is a rung off that
   ladder — `high`, or the `xhigh` / `max` Scope allowed — and nothing else ever
-  goes in that position. Hand it the resolved base: left to
-  itself it diffs `@{upstream}...HEAD`, which on an already-pushed branch is
-  empty, and it would review nothing while the other two review the change. This
-  skill is the explicit instruction authorizing that call.
+  goes in that position. What follows it is a **target**, read as scope guidance
+  rather than diffed from: a bare commit-ish selects *that commit*, so a base
+  passed as a SHA comes back as a review of the one commit it names. Spell the
+  range out, and name the uncommitted changes after it when the change has any —
+  then confirm in §4 what the run actually diffed. Given no target it diffs
+  `@{upstream}...HEAD`, which on an already-pushed branch is empty, and it would
+  review nothing while the other two review the change. This skill is the
+  explicit instruction authorizing that call.
 - **security-review** — invoke the skill inline, last. Do not delegate it to a
   subagent to save context: subagents have neither the `Agent` nor the `Task`
   tool, so the skill's own filtering pass — parallel sub-tasks dropping every
@@ -176,6 +181,15 @@ differently again between `--base` and `--uncommitted`.
 wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
+
+**Ask the code-review run what it diffed.** What it returns is the target it was
+handed, never the range built from it nor the files read — those live in the run's
+journal (`journal.jsonl`, in the agent-transcript directory the finished run
+names), as the scope step's `diffCommand` and `files`. Take both from there and
+check the command against the range §3 asked for: a run that diffed anything else
+is `partial`, however plausible its count. Where the journal cannot be read, the
+row's "Covered" cell says the range is unconfirmed rather than repeating the one
+you asked for.
 
 **A nonzero count can still mean the commits went unread.** `codex-review` prints
 a `coverage-warning:` line when it reviewed the working tree alone; the count is
