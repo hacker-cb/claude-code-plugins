@@ -44,11 +44,13 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    **first and in both modes**. That reference defines what counts as
    auto-generated, leaves a name that already describes the change alone, and
    lists the cases where the rename is off the table.
-1. **Refresh the base** — the branch this work is ranged against and lands on: the
-   threaded `parent` / `diff-base` where a caller handed them down, otherwise what
-   the ladder in
+1. **Refresh the base** — what this work is ranged against and lands on: the
+   threaded `diff-base` and `parent` where a caller handed them down, otherwise
+   what the ladder in
    [`../../references/base-resolution.md`](../../references/base-resolution.md)
-   resolves. Fetch it here, per that reference, because the sweep below is already
+   resolves. Fetch whichever of them a remote actually carries — an orchestrated
+   slice's `parent` is often a feature branch that exists nowhere else, and that
+   reference says what refreshing means for one. Fetch here, because the sweep below is already
    a consumer of it and every step after that one is too. **Both modes** — what
    local completion promises is that it writes to no network (`slice-completion.md`),
    and a read leaves that promise intact.
