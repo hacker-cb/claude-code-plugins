@@ -206,19 +206,24 @@ While a component this run depends on is not `operational`:
   non-required check you may deem irrelevant (`UNSTABLE`), and a check that never
   started is not a check that passed.
 - **Say in one line** which component is down and which step is parked on it.
-- **Wait in the background, re-checking every half hour**, so the session stays
-  usable meanwhile:
+- **Re-check every half hour from a detached job**, never in the foreground: the
+  wait below sleeps for half an hour at a time, and run in front it parks the very
+  session it exists to keep usable.
 
 ```bash
 COMPONENT="<the component that is down, spelled as the feed spells it>"
 while :; do
-  status="$(curl -fsS https://www.githubstatus.com/api/v2/components.json \
-    | jq -r --arg c "$COMPONENT" '.components[] | select(.name==$c) | .status')"
-  # An empty status is a name matching no component — a typo, or one the feed has
-  # since renamed. Sleeping on it is an unbounded wait for a value that can never
-  # arrive, and it reads exactly like an outage that never ends.
-  [ -n "$status" ] || { echo "NO COMPONENT NAMED $COMPONENT — take the name from the feed"; exit 1; }
-  [ "$status" = operational ] && break
+  # Three outcomes, not two. A fetch that failed and a name matching no component
+  # both leave $status empty, and neither means "still down": one is the feed being
+  # unreachable, the other a typo or a component the feed has since renamed —
+  # sleeping on that second one waits forever for a value that cannot arrive.
+  if ! feed="$(curl -fsS https://www.githubstatus.com/api/v2/components.json)"; then
+    echo "FEED UNREACHABLE — cannot attribute anything; retrying"
+  else
+    status="$(jq -r --arg c "$COMPONENT" '.components[] | select(.name==$c) | .status' <<<"$feed")"
+    [ -n "$status" ] || { echo "NO COMPONENT NAMED $COMPONENT — take the name from the feed"; exit 1; }
+    [ "$status" = operational ] && break
+  fi
   sleep 1800
 done
 echo "$COMPONENT is back — resume the parked step"
