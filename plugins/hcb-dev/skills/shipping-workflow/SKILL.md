@@ -20,15 +20,15 @@ description: >-
 
 Finished work completes automatically. Do not ask for confirmation; the coverage
 gate below is the one exception in the shared front half — local completion
-(step 5) adds its own, mode-specific: a stop before merging into the default
+(step 6) adds its own, mode-specific: a stop before merging into the default
 branch, and the consent-gated post-merge offer. Work counts as ready once the
 change is complete and verified — tests pass, or the behavior is confirmed — and
 the tree is committable.
 
 This skill runs either standalone (a bare "ship this" on finished work) or as the
-per-slice step `hcb-dev:implementation-workflow` calls. Steps 0–4 are identical in
+per-slice step `hcb-dev:implementation-workflow` calls. Steps 0–5 are identical in
 both **completion modes** — `local` (merge into the parent, no forge) and
-`request` (a change request) — because the mode is read only at step 5. When
+`request` (a change request) — because the mode is read only at step 6. When
 driven by the orchestrator, the caller threads the completion signals as
 invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`
 (the coverage *policy* is not one of them — an actionable gap always stops, a
@@ -36,7 +36,7 @@ fixed invariant, not a threaded value). Standalone, they default — mode and
 `parent` by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md),
 mode ending at `request`. That reference owns the mechanics of completion; steps
-0–4 below are the mode-blind front half.
+0–5 below are the mode-blind front half.
 
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
    (a host session's `claude/…`, a `wip`) to the shape in
@@ -67,11 +67,20 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    than what its code does, and correct what the change made false — under
    [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
    §4, which governs any sentence reporting how something is configured.
-2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
+2. **Refresh the base** — the branch this work is ranged against and lands on: the
+   threaded `parent` / `diff-base` where a caller handed them down, otherwise what
+   the ladder in
+   [`../../references/base-resolution.md`](../../references/base-resolution.md)
+   resolves. Fetch it before either happens, per that reference. **Both modes** — a
+   stale base costs the same either way: the review below reads a range the base
+   has already moved past, and the fixes get written against it. It is a read, so
+   local mode's no-network property is untouched — that is about what completion
+   *writes*.
+3. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
    base so the review covers *this* slice's range, not the cumulative feature
    diff. Standalone, `multi-review` resolves its own base.
-3. **Apply the fixes, then commit them** — that skill reports, it does not fix.
+4. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    Skip a finding only if the fix would change intended behavior, reach well
    outside the diff, or the finding is plainly wrong. A skipped one is then
    *surfaced*, not merely noted —
@@ -79,16 +88,16 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    owns what that means. A reported stale reference is step 1's sweep over again,
    not a list of lines to edit — the finding is what one reviewer happened to see.
    Do not complete with findings left unresolved — and do not leave the
-   fixes sitting uncommitted: step 5 lands *commits* (a local merge takes what is
+   fixes sitting uncommitted: step 6 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).
-4. **Check the coverage** — the gate below.
-5. **Complete the slice by mode** — hand off to the completion contract in
+5. **Check the coverage** — the gate below.
+6. **Complete the slice by mode** — hand off to the completion contract in
    `slice-completion.md`, which owns every mechanic of both backends. `local`
    merges the slice into its `parent` with git alone, no forge and no network;
    `request` hands to the forge's change-request driver
    (`hcb-dev:github-pr-workflow` on GitHub), passing `parent` as the base plus
-   `merge-strategy` and `merge-auth`. Nothing in steps 0–4 changes with the mode.
+   `merge-strategy` and `merge-auth`. Nothing in steps 0–5 changes with the mode.
 
 ## The coverage gate
 
@@ -106,7 +115,7 @@ unreviewed as a change request would be — the gate is mode-blind because the
 danger is. When `implementation-workflow` drives the run autonomously, this stop
 is one of its legitimate interrupts, not something the autonomy waives.
 
-Every stop this skill takes — this gate, step 5's default-branch merge, several
+Every stop this skill takes — this gate, step 6's default-branch merge, several
 remotes with none preferred — carries your recommended option **first**, per
 [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md),
 which also draws the line the autonomy above follows: act on what is mechanical

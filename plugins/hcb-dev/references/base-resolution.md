@@ -150,6 +150,37 @@ unreachable remote returns nothing, and `<remote>/` is a bogus ref that makes
 every consumer fatal. An unresolved default is "the question cannot be answered",
 not "nothing matched": say so and treat what depended on it as unknown.
 
+## A resolved name is not a current ref
+
+The ladder answers *which* base; it says nothing about *when*. `<remote>/<base>`
+holds whatever the last fetch left there, so a branch cut from it, a range diffed
+against it and a merge landing on it can all be built on a base the remote moved
+past days ago. Refresh it before any consumer reads it:
+
+```bash
+git fetch --prune <remote> <base>
+```
+
+`--prune` is what retires the ref the forge already deleted — the
+stale-but-present pointer rung 4 warns about.
+
+**A fetch that failed is not "no new commits", it is "the age is unknown".** The
+local ref stays standing and every consumer reads it without complaint, so the
+run reports a branch current with a base nothing checked. Say the base is
+unverified and treat what depended on its freshness as unknown.
+
+Then bring the local side to what arrived, in the form the consumer wants:
+
+| the consumer | what refreshing means |
+|---|---|
+| cutting a new branch | cut from the **ref**, `<remote>/<base>` — the new branch starts current whatever the local `<base>` says |
+| landing a merge on the base | fast-forward the local branch, `git merge --ff-only <remote>/<base>`; a refusal means it carries commits the remote does not — that is work to report, never something to reset away |
+| a branch already cut | a rebase or a merge, and which one depends on what is built on its tip — the skill doing it owns that call |
+
+A base with **no remote counterpart** — a local-only parent, a repo with no
+remote — has nothing to refresh and is as current as it can be: say so once and
+go on.
+
 ## A base with no shared history is not a base
 
 Confirm `git merge-base <base> HEAD` is non-empty before using it. Empty means a

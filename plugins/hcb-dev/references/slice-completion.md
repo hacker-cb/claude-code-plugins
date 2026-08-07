@@ -44,7 +44,7 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
 
 Completion is **not** handed a `coverage` signal — it runs only *after* the
 coverage gate has passed (an actionable gap already stopped the run upstream, at
-step 4), so it never re-checks coverage; it simply carries whatever noted
+step 5), so it never re-checks coverage; it simply carries whatever noted
 (structural) gaps the gate reported into the `uncovered` output below.
 
 **Outputs every backend returns** (for [`report-format.md`](report-format.md)):

@@ -108,10 +108,10 @@ handoff by hand, so the prompt text is the whole channel.
 
 - **`shipping-workflow`** — `/hcb-dev:shipping-workflow`
   Take one finished, verified slice to completion: normalize the branch name,
-  commit, hand off to `multi-review`, apply the fixes, check coverage, then
-  complete **by mode** — merged locally into its parent branch, or an open change
-  request (handed to a PR/MR driver below). Steps 0–4 are identical in both modes;
-  the mode is read only at the last step.
+  commit, refresh the base, hand off to `multi-review`, apply the fixes, check
+  coverage, then complete **by mode** — merged locally into its parent branch, or
+  an open change request (handed to a PR/MR driver below). Steps 0–5 are identical
+  in both modes; the mode is read only at the last step.
 - **`github-pr-workflow`** — `/hcb-dev:github-pr-workflow`
   Drive a GitHub pull request from a finished branch to a merged PR: rename an
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
@@ -175,8 +175,9 @@ saying something else.
   resolve a base branch and its remote without guessing either name: the rung
   ladder, remote ranking (`upstream` before `origin`, a lone remote whatever it is
   called), why a read symref goes stale, why only the remote-tracking form is safe
-  to carry forward, and why a base sharing no history with `HEAD` is worse than
-  no base at all. Read wherever a base or a remote is resolved.
+  to carry forward, how a resolved base is brought up to date before anything is
+  cut from it or diffed against it, and why a base sharing no history with `HEAD`
+  is worse than no base at all. Read wherever a base or a remote is resolved.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name takes (`<type>/[<issue>-]<name>`), the same Conventional Commits
   type carried into the commit subject and the change-request title, how a
