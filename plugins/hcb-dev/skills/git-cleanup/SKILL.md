@@ -202,7 +202,7 @@ status: surface it, never delete it.
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
-| no upstream, `rev-list --count "$D..refs/heads/<b>"` = 0 | delete (class 2) — nothing to lose |
+| no upstream, `$D` non-empty, and `rev-list --count "$D..refs/heads/<b>"` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
 
 **Rows overlap.** An open request keeps the branch whatever else matched. A
@@ -270,7 +270,7 @@ if [ -z "$D" ]; then
 elif git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
   git -C "$PROJECT" branch -D "<branch>"
 # git's own rows: the count that routed it
-elif [ "$(git -C "$PROJECT" rev-list --count "$D".."refs/heads/<branch>")" = 0 ]; then
+elif [ "$(git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>")" = 0 ]; then
   git -C "$PROJECT" branch -D "<branch>"
 else
   echo "the proof no longer holds — surface it, saying whether it failed or could not run"
