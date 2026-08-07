@@ -51,7 +51,9 @@ step 5), so it never re-checks coverage; it simply carries whatever noted
 
 **Outputs every backend returns** (for [`report-format.md`](report-format.md)):
 `landed_at` (local: the merge commit on `parent`; request: the change-request URL,
-plus a merge commit if it was driven to merge), `mode_used`, `uncovered` (coverage
+plus a merge commit if it was driven to merge), `mode_used`, `retired` (what became
+of the branch — gone, or standing with the reason `branch-retirement.md` names),
+`uncovered` (coverage
 gaps carried into the report), `incidental` (surfaced-not-fixed findings, severity
 rated), `declined_offer` (local only — a change request the run could have opened
 and the user turned down, recorded so it is not silently dropped), `follow_ups`.
@@ -69,7 +71,9 @@ and both backends here are what make it permanent, but where
 [`branch-naming.md`](branch-naming.md) forbids the rename outright (a shared
 branch others have pulled, an open change request, a branch checked out in another
 worktree) that prohibition wins: land the work under the name it has and say so in
-the report, rather than deadlocking two absolutes against each other; leave the
+the report, rather than deadlocking two absolutes against each other; retire the
+branch the merge landed, per
+[`branch-retirement.md`](branch-retirement.md); leave the
 tree in a known state; emit a completion record.
 
 ## Mode — resolve, don't assume

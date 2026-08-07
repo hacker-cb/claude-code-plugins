@@ -394,7 +394,9 @@ strategy, pick from the allowed set:
   genuinely ambiguous, ask.
 
 Delete the source branch on merge (`--delete-branch`) unless told otherwise; if a
-deletion-protection rule rejects it, leave the branch and note it.
+deletion-protection rule rejects it, leave the remote branch and note it. Where
+the merge lands synchronously that flag takes the local ref along with it; Step 6
+is what confirms the outcome either way.
 
 ## Step 6 — Monitor the merge
 
@@ -403,6 +405,10 @@ After issuing the merge, confirm it actually landed:
 - Under a strict policy the base may have moved, flipping the PR to `BEHIND` — run
   `gh pr update-branch <pr>`, let the required checks re-pass, then merge again.
 - Poll until the PR shows `MERGED`, or report what's blocking it.
+- On `MERGED`, confirm the local branch is gone and retire it where it is not —
+  [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
+  A queued merge lands after the merge command returns, so Step 5's flag does not
+  stand in for this.
 
 ## Step 7 — Report and suggest next steps
 
@@ -449,6 +455,10 @@ Keep it scannable: short grouped bullets, not an essay.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
   auto-generated, and when a rename is off the table. Read it before Step 1; the
   push mechanics stay in that step.
+- [`../../references/branch-retirement.md`](../../references/branch-retirement.md)
+  — what becomes of the branch once the merge is confirmed: the tip HEAD moves
+  onto, freeing the worktree that holds it, and the proof a deletion needs where a
+  squash merge left git unable to see the merge. Read it before Step 6.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) — which remote to push to, which one carries
   the base, and the ref-versus-name split. Steps 1 and 2 both resolve through it
   and fill the result in; read it before either.
