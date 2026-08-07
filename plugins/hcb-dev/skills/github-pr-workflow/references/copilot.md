@@ -11,7 +11,8 @@ One actor, a different login on **every** surface:
 | REST `…/pulls/<pr>/reviews` | `copilot-pull-request-reviewer[bot]` | `.user.type` |
 | REST `…/pulls/<pr>/comments` | `Copilot` | `.user.type` |
 | REST `…/pulls/<pr>` → `requested_reviewers` | `Copilot` | `.type` |
-| GraphQL — `author`, `reviewRequests` | `copilot-pull-request-reviewer` | `__typename` |
+| GraphQL `author` — reviews, comments | `copilot-pull-request-reviewer` | `__typename` |
+| GraphQL `reviewRequests` → `requestedReviewer`, a union whose `login` needs a `... on Bot` fragment | `copilot-pull-request-reviewer` | `__typename` |
 
 So a filter pinned to any one spelling matches nothing on the other three, and the
 failure is **silent**: the inline comments are exactly what a `/comments` filter
@@ -120,17 +121,41 @@ clock. After each push:
    gh pr edit <pr> --add-reviewer "@copilot"
    ```
    Not a REST `requested_reviewers` POST — that endpoint takes ordinary logins,
-   while `@copilot` is a value `gh` case-handles. Unsupported on GitHub Enterprise
-   Server; there, rely on the rule instead.
-2. **See Copilot in `gh pr view <pr> --json reviewRequests` before reading that
-   list for anything else.** Under `review_on_push` the request is registered
-   asynchronously, so right after a push the list is briefly empty — absence there
-   is "not yet", and only becomes an answer once you have watched the request
-   appear for this head.
+   while `@copilot` is a value `gh` case-handles. *Reading* that list is a
+   different matter, and step 2 does exactly that. Unsupported on GitHub
+   Enterprise Server; there, rely on the rule instead.
+2. **See Copilot in the PR's `requested_reviewers` before reading that list for
+   anything else.** `gh pr view --json reviewRequests` is the wrong surface — it
+   drops the bot, so a live request reads there as an empty list for as long as it
+   is pending, and a wait built on it never arms. Read the list over REST, matching
+   the pair from *Identifying Copilot*:
+   ```bash
+   gh api repos/<owner>/<repo>/pulls/<pr> \
+     --jq '[ .requested_reviewers[]? | select((.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i"))) ] | length'
+   ```
+   Under `review_on_push` the request is registered asynchronously, so right after
+   a push the list is briefly empty — absence there is "not yet", and only becomes
+   an answer once you have watched the request appear for this head.
 3. **Wait until it settles**, which is one of exactly two things: a Copilot review
-   whose `commit_id == $head`, or a request you *saw* arrive and then leave with no
-   such review — a decline, which the report says out loud rather than implying it
-   reviewed.
+   whose `commit_id == $head`, or a request that was there and is gone with no such
+   review — a decline, which the report says out loud rather than implying it
+   reviewed. **An empty list is never a decline by itself**: a poll that missed the
+   window between the request and its review reads exactly the same. Whether one was
+   ever registered for *this* head is the timeline's answer — but its review-request
+   events carry no SHA, so every earlier round left one that reads identically, and
+   an unbounded query hands you a stale event as proof. Take the time before you
+   push, and count only what came after it:
+   ```bash
+   # `--jq` is gh's own filter and takes no `--arg`; a variable reaches it through
+   # the environment. The comparison is lexicographic, so the value has to be in
+   # the API's own form — `date -u +%Y-%m-%dT%H:%M:%SZ` — or it matches by accident.
+   SINCE="<that timestamp, snapped before the push>" \
+   gh api --paginate repos/<owner>/<repo>/issues/<pr>/timeline \
+     --jq '.[] | select((.event? // "") | test("^review_request"))
+           | select((.created_at? // "") > env.SINCE)
+           | select((.requested_reviewer.login? // "") | test("^copilot"; "i"))
+           | {event, at: .created_at} | @json'
+   ```
 4. **A review of an earlier commit is not a decline.** It consumes the request and
    leaves the head unreviewed, so re-request and keep waiting. For the same reason
    no elapsed time settles anything: while Copilot is still a requested reviewer,
