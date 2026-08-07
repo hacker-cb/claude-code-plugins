@@ -48,12 +48,6 @@ Three outcomes — **covered** → cite it and open nothing; **covered, but the
 finding adds something** (new facts, wider scope, a changed trigger) → update it;
 **not covered** → open one.
 
-## Surfacing a finding
-
-Something this work will not fix goes to the user as a proposal, and only their
-answer writes to the tracker:
-[`../../references/surfacing-findings.md`](../../references/surfacing-findings.md).
-
 ## What goes in the issue
 
 Body: **what is deferred**, identifiers and paths verbatim · **the trigger** that

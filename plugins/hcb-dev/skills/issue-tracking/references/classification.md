@@ -20,11 +20,9 @@ parked reason.
 ## Read the set before proposing or applying anything
 
 Read it whole — both CLIs stop at a small default page, and a short read is
-indistinguishable from a missing family. A proposal carries what the issue would
-be opened with
-([`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)),
-so this read comes before the user sees it — once for the run, not once per
-finding.
+indistinguishable from a missing family. When this read happens relative to a
+proposal, and how often, is
+[`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)'s.
 
 ```bash
 # GitHub

@@ -404,8 +404,9 @@ merged head can post *after* the merge, orphaning its findings on the now-closed
 PR — behind a signal that read as a decline, or behind a merge taken outside this
 skill. If one appears, don't drop it: surface its findings in the report below and
 recommend a follow-up (issue or change request) as a next step; creating it is an
-outward action the user authorises, not one you take autonomously — the surfacing
-protocol and the classification are `hcb-dev:issue-tracking`'s.
+outward action the user authorises, not one you take autonomously —
+[`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
+owns that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 
 Then give the user a short report:
 
@@ -414,10 +415,9 @@ Then give the user a short report:
    lower-severity items you deliberately skipped during the loop. Each goes
    through
    [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md),
-   as the late review's findings above do: this list records what was decided and
-   never stands in for the decision. Anything surfaced earlier in the session and
-   still unanswered is re-surfaced here — that reference asks for it at the
-   session's natural end, and for a driven change request this is that end.
+   as the late review's findings above do. Where nothing called this driver, this
+   report ends the session and that reference says what ends there; under an
+   orchestrator it ends a slice, and the run's own report is the end.
 2. **Suggested next steps** — tech debt to track, tests to add, or related work
    that surfaced.
 

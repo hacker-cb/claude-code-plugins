@@ -63,10 +63,9 @@ handoff by hand, so the prompt text is the whole channel.
 
 - **`issue-tracking`** — `/hcb-dev:issue-tracking`
   The backlog side of the pipeline, on GitHub and GitLab alike: what earns an
-  issue and what does not, the search that comes before opening one, the
-  `## Drive-by observations` protocol that puts a finding to you as
-  OPEN / DEFER / DISMISS, the shape of the issue body, and the three moments worth
-  consulting open issues at. Which mechanism carries the kind of work in a given
+  issue and what does not, searching the tracker, the shape of the issue body,
+  and the three moments worth consulting open issues at. Which mechanism carries
+  the kind of work in a given
   repository — native issue types, a label family, or neither — the cardinality
   between the families and who holds it when the platform will not, how a set gets
   proposed and created where the repository has none, and the two milestone
