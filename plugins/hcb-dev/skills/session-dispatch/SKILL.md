@@ -135,7 +135,8 @@ it.>
 
 ## Afterwards
 
-Say what this session is now waiting on, and do not begin the dispatched work.
+After the closing fence, say what this session is now waiting on, and do not
+begin the dispatched work.
 
 ## Reference files
 

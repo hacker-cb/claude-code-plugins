@@ -55,9 +55,15 @@ and it is never optional.
 ## Delivery
 
 Write the prompt in the language this session is conducted in, leaving
-identifiers, paths and commands as they are.
+identifiers, paths and commands as they are. A slot with nothing in it says so
+in a word rather than being dropped — a missing line reads as an omission.
 
-One fenced block, plain text, fenced with more backticks than anything inside
-it, so a copy takes the whole thing and nothing else. A slot with nothing in it
-says so in a word rather than being dropped — a missing line reads as an
-omission.
+The prompt is emitted whole, as one fenced block of plain text, in a single
+message, and none of its content is restated outside it. Everything addressed to
+this session instead of to the reader — what this session now waits on, what it
+offers to do next — goes after the closing fence. Nothing follows it but that.
+
+Fence with three backticks — the form the reader's client offers a copy control
+for. Go longer only where the text inside carries a run of three or more, and
+then one longer than the longest run in it: a copy takes the whole block and
+nothing else only while the fence outruns everything it contains.
