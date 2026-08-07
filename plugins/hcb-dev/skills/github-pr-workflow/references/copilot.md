@@ -12,7 +12,7 @@ One actor, a different login on **every** surface:
 | REST `…/pulls/<pr>/comments` | `Copilot` | `.user.type` |
 | REST `…/pulls/<pr>` → `requested_reviewers` | `Copilot` | `.type` |
 | GraphQL `author` — reviews, comments | `copilot-pull-request-reviewer` | `__typename` |
-| GraphQL `reviewRequests` → `requestedReviewer`, reachable only through a `... on Bot` fragment | `copilot-pull-request-reviewer` | `__typename` |
+| GraphQL `reviewRequests` → `requestedReviewer`, a union whose `login` needs a `... on Bot` fragment | `copilot-pull-request-reviewer` | `__typename` |
 
 So a filter pinned to any one spelling matches nothing on the other three, and the
 failure is **silent**: the inline comments are exactly what a `/comments` filter
