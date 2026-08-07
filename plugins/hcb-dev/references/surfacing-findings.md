@@ -18,8 +18,8 @@ Both of these happen before the finding reaches the user, not after they accept
 it:
 
 - **Search the tracker**, closed entries included
-  ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) —
-  which of the three states below applies is its answer.
+  ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — its
+  result decides which of the three states below applies.
 - **Read the repository's own classification**
   ([`../skills/issue-tracking/references/classification.md`](../skills/issue-tracking/references/classification.md)),
   once for the run rather than once per finding, so the proposal already carries

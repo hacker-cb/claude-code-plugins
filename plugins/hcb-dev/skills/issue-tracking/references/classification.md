@@ -20,9 +20,9 @@ parked reason.
 ## Read the set before proposing or applying anything
 
 Read it whole — both CLIs stop at a small default page, and a short read is
-indistinguishable from a missing family. When this read happens relative to a
-proposal, and how often, is
-[`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)'s.
+indistinguishable from a missing family.
+[`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)
+sets when this read happens relative to a proposal, and how often.
 
 ```bash
 # GitHub
