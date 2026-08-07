@@ -120,12 +120,14 @@ merge produced**, never for branch names alone:
 gh pr list --state merged --limit 200 --json headRefName,headRefOid,mergeCommit \
   --jq '.[] | [.headRefName, .headRefOid, (.mergeCommit.oid // "")] | @tsv'
 gh pr list --state open   --limit 200 --json headRefName --jq '.[].headRefName'   # -> keep, in flight
-# GitLab — no built-in --jq, and `mr list` already defaults to open. Two columns can
-# carry that commit; @tsv so an empty one keeps its column instead of sliding the
-# next field into its place.
-glab mr list --merged --output json --per-page 100 \
+# GitLab — `api --paginate`, not `mr list`, whose --per-page returns that one page
+# and leaves everything past it out of the proof. Two columns can carry the merged
+# commit; @tsv so an empty one keeps its column instead of sliding the next field
+# into its place.
+glab api --paginate "projects/:id/merge_requests?state=merged&per_page=100" \
   | jq -r '.[] | [.source_branch, .sha, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv'
-glab mr list          --output json --per-page 100 | jq -r '.[].source_branch'    # -> keep, in flight
+glab api --paginate "projects/:id/merge_requests?state=opened&per_page=100" \
+  | jq -r '.[].source_branch'   # -> keep, in flight
 ```
 
 A name is not an identity: a merged `fix/login` may have come from a fork, or the
@@ -139,17 +141,18 @@ git -C "$PROJECT" merge-base --is-ancestor "refs/heads/<branch>" "<recorded head
 git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"
 ```
 
-On GitLab that merge commit is **the first of the two columns that is non-empty** —
-whichever one is set is a commit on the target branch.
+On GitLab that merge commit is **the first of the two columns that is non-empty**
+— whichever one is set is a commit on the target branch. Both empty is no merge
+commit to check against, which is the unknown below, not a failed check.
 
 Exit 1 on either leaves the branch standing — it carries work the request never
 took, or the request landed somewhere `$D` does not carry. An object this
 repository does not have makes the check die instead (`fatal`, not exit 1), and
 that is **unknown**: the branch stands too, and the report says unknown rather
-than somebody else's work. Two states of `$D` are that same unknown for every
-branch it touches — empty, where the second check cannot run at all, and resolved
-but **unverified**, where it runs against a ref old enough that a merge landing
-since reads as exit 1. Neither lets the forge settle anything here.
+than somebody else's work. An empty `$D` is unknown for every branch — the second
+check cannot run at all. A `$D` that resolved but went **unverified** still
+proves a merge where the check passes, since an older ref is a subset of the
+current one; what it cannot do is refuse one, so a refusal there is unknown too.
 
 **Spell every branch `refs/heads/<branch>`**, here and in step 5's rows. A tag of
 the same short name wins the lookup, so the bare form measures the tag and routes
@@ -193,6 +196,11 @@ status: surface it, never delete it.
 | no upstream, `rev-list --count <remote>/<default>..refs/heads/<b>` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
 
+**Rows overlap, and the safer one wins**: a branch matching both a delete row and
+a surface row is surfaced, and one an open request points at is kept whatever else
+matched. A branch reaching a delete row by no row of its own — the worktree row
+above is the case — is deleted only by what step 7 will still prove.
+
 **Risk classes** decide the gate, whatever the mode:
 
 | Class | Meaning | Gate |
@@ -220,19 +228,19 @@ git -C "$PROJECT" worktree remove "<path>"         # 1. --force ONLY on a confir
 rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
-git -C "$PROJECT" branch -d "<branch>"             # 4. ONLY where the branch has no upstream:
-                                                   #    with one, -d tests containment in that
-                                                   #    upstream, which a branch pushed at any
-                                                   #    earlier point passes, merge or no merge
+git -C "$PROJECT" branch -d "<branch>"             # 4. git's own containment check
 git -C "$PROJECT" branch -D "<branch>"             # 4-alt, behind one of the re-proofs below
 ```
 
 `-d` re-checks against `PROJECT`'s HEAD, or against the branch's own upstream
 where it has one — never against `$D`, and step 1 does not let you assume HEAD is
-the default branch. So it settles only a branch with no upstream whose HEAD holds
-it; everything else reaches `-D` through the re-proof its own row calls for, **run
-here and not read off step 4** — step 6 waits on a human, and both what the branch
-carries and what the forge says about it can move while it waits.
+the default branch. Against an upstream it is no merge proof at all: a branch
+pushed at any earlier point passes it. So it settles only a branch with no
+upstream whose HEAD holds it, and everything else reaches `-D` through the
+re-proof its own row called for, **run here and not read off step 4** — step 6
+waits on a human, and both what the branch carries and what the forge says about
+it can move while it waits. A branch with no proof of its own is not deleted at
+all: report it instead.
 
 A branch the forge routed here re-reads the open list first: one it now names is
 kept, whatever the checks say. Then the two checks, against the same recorded
@@ -245,7 +253,7 @@ elif git -C "$PROJECT" merge-base --is-ancestor "refs/heads/<branch>" "<recorded
   && git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
   git -C "$PROJECT" branch -D "<branch>"
 else
-  echo "the proof does not hold now — surface it instead"
+  echo "not proved merged here — surface it, saying which: unproved, or unknown"
 fi
 ```
 
