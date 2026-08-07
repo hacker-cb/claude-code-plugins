@@ -124,8 +124,8 @@ other):
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
    commit the slice was cut from — after a refresh that is the ref, not the local
-   parent it may now be behind — so the review covers this slice and not the
-   cumulative feature diff), `merge-strategy` and `merge-auth`. The coverage *policy* is not
+   parent it may now be behind — so the sweep and the review cover this slice and
+   not the cumulative feature diff), `merge-strategy` and `merge-auth`. The coverage *policy* is not
    threaded — an actionable gap always stops (Phase 1), a fixed invariant every
    completion honors.
 

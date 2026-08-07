@@ -32,10 +32,9 @@ exactly as `multi-review` already hands base + effort down to `codex-review`.
   Multi-slice: the shared feature branch (known to the orchestrator — it created
   it). Single slice: the base, resolved by that ladder, handed on as an explicit
   base — the ladder's rung 1 — in both forms.
-- `diff-base` — the range the reviewers already covered: the commit the slice was
-  cut from, which after a refresh is the remote-tracking ref rather than the local
-  `parent` behind it,
-  threaded to `multi-review` as its **explicit** base so per-slice coverage is
+- `diff-base` — the commit the slice was cut from, which after a refresh is the
+  remote-tracking ref rather than the local `parent` behind it. It is what every
+  per-slice range is taken against, as an **explicit** base, so coverage is
   *this* slice, not the cumulative feature diff (which would re-read slice 1 while
   auditing slice 2, and the coverage gate would record no gap over the wrong
   range).
