@@ -82,12 +82,13 @@ reason. An explicit instruction from the caller wins.
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
 offer a commit before starting, and name the price of declining: Codex reads the
-working tree and sees the edits either way, code-review reads whatever §3's target
-names and a range target leaves them out, the security review reads a commit range
-and does not, and files that are not tracked at all are invisible to every
+working tree and sees the edits either way, code-review is handed a range and
+leaves those edits out, the security review reads a commit range and does not see
+them either, and files that are not tracked at all are invisible to every
 reviewer. Offer — never commit anything yourself. A refusal is a fine answer; it
-just goes into the report. Make no offer at all where the scope *is* the working
-tree: committing there empties the very diff that was asked for.
+just goes into the report. Where the scope *is* the working tree, the commit offer
+alone drops — it would empty the very diff that was asked for — while the price of
+what is untracked still gets named.
 
 ## 2. Pick
 
@@ -144,7 +145,8 @@ one pass; breadth is what the fan-out is for, so give it something wide.
 Start the detachable reviewers first so they overlap with the inline one.
 
 - **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base and
-  the effort level.
+  the effort level — and no base at all where the scope is the working tree alone,
+  which is how that skill is told to review one.
 - **code-review** — `Workflow({ name: "code-review", args: "high <target>" })`
   returns immediately and runs detached. The first argument is a rung off that
   ladder — `high`, or the `xhigh` / `max` Scope allowed — and nothing else ever
@@ -185,13 +187,15 @@ tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed.
 
 **Ask the code-review run what it diffed.** What it returns is the target it was
-handed, never the range built from it nor the files read. Both are in the output
-file the finished run names: the `scope` entry's `resultPreview` carries
-`diffCommand` and `files`, and the first log line carries the count. Read that
-command for the ground it covers rather than its spelling: `partial` is a run that
-read *different* ground — one commit, another base, a two-dot range against a base
-that has moved past the fork point — however plausible its count, and a corrected
-target is what closes it.
+handed, never the range built from it nor the files read. Those are in the run's
+own record of its scope step, which the finished run names twice over — an output
+file and a per-agent journal, either carrying that step's `diffCommand` and
+`files`. Read the command for the ground it covers rather than its spelling:
+`partial` is a run that read *different* ground — one commit, another base, a
+two-dot range against a base that has moved past the fork point — however
+plausible its count, and a corrected target is what closes it. Where the target
+narrowed the review, that count is the range's and not the narrowing's: say what
+was left unread rather than letting it stand as full coverage.
 
 **A nonzero count can still mean the commits went unread.** `codex-review` prints
 a `coverage-warning:` line when it reviewed the working tree alone; the count is
