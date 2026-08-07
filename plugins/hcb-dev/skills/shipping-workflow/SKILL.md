@@ -62,20 +62,17 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
 
    **Sweep what the change orphaned.** Take every path the branch deletes or
    renames — the whole range and not only this commit, with step 1's `diff-base`:
-   `git log --name-status --diff-filter=DR -m --format= <diff-base>..HEAD`, then
-   `git diff --name-status --diff-filter=DR --cached` and
-   `git diff --name-status --diff-filter=DR` for what is not committed — a merge
-   resolution shows up only in the per-parent diffs, and one call against `HEAD`
-   collapses a rename staged and then renamed again — and search the worktree for
-   each old name.
+   `git diff --name-status <diff-base>...HEAD`, plus what is not committed —
+   `git diff --name-status --cached` and `git diff --name-status`, two calls
+   because one against `HEAD` collapses a rename staged and then renamed again —
+   and search the worktree for each old name.
    Search every file type, not the ones you edited: what stays behind otherwise is
    the citation in a config comment, the sentence in the docs, the stale header
    inside the renamed file. Vendored trees are out, and so is any other worktree's
    checkout — those are someone else's tree, not yours to edit.
 
-   Rule on each hit before touching it. A path that still exists is not orphaned
-   at all; where it is gone, a migration path, a compatibility alias, a test
-   asserting the old name and a changelog entry are all still true. A tracked
+   Rule on each hit before touching it: a migration path, a compatibility alias, a
+   test asserting the old name and a changelog entry are all still true. A tracked
    generated file is fixed by re-running its generator. Run this again whenever a
    later step deletes or renames something of its own.
 
