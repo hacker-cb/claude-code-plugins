@@ -178,8 +178,11 @@ completed straight onto the base in Phase 2.
   `hcb-dev:issue-tracking` owns the tracker operations their answer authorizes. In
   local mode no change request closes the intake issue, so closing or linking it
   rides with that handoff or the issue is left stale.
-- **Cleanup** — after a local set that left merged-but-unpushed slice branches,
-  point at `/hcb-dev:git-cleanup` (it is manual-only; suggest, don't run it).
+- **Cleanup** — a branch retires with the merge that landed it
+  ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)),
+  so what a run leaves is the worktrees, the older residue, and any branch no merge
+  took or retirement kept standing: point at `/hcb-dev:git-cleanup` (it is
+  manual-only; suggest, don't run it).
 
 ## Reference files
 

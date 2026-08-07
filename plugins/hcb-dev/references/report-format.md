@@ -37,8 +37,9 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 4. **Open offers and next steps** — a `declined_offer` (a change request the local
    run *could* have opened and the user turned down), follow-up
-   issues worth filing, and — after a local set that left merged-but-unpushed
-   branches — a pointer to `/hcb-dev:git-cleanup` for the residue.
+   issues worth filing, any branch a completion could not retire and why
+   ([`branch-retirement.md`](branch-retirement.md)), and a pointer to
+   `/hcb-dev:git-cleanup` for the worktrees and the older residue.
 
 ## Template
 
@@ -53,7 +54,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 **Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above; or "none">
 
-**Offers & next steps** — <open change-request offers, follow-ups, cleanup pointer; or "none">
+**Offers & next steps** — <open change-request offers, follow-ups, any branch left standing, cleanup pointer; or "none">
 ```
 
 A reader glancing at the `State` column must be able to tell a clean, complete set
