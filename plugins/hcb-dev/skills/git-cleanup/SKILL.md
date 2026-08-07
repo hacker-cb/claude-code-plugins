@@ -29,7 +29,9 @@ and re-verified before anything consumes it. Resolve it there, then carry two
 values into the rest of the sweep:
 
 ```bash
-D="<the remote-tracking ref, per base-resolution.md — EMPTY if it did not resolve>"
+D="<the remote-tracking ref, per base-resolution.md — EMPTY unless it resolved AND
+    that reference's refresh verified it: a ref left unverified is a ref the remote
+    may have force-updated past, and every proof below reads it as current>"
 DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
 [ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
 ```
@@ -130,6 +132,17 @@ glab api --paginate "projects/:id/merge_requests?state=opened&per_page=100" \
   | jq -r '.[].source_branch'   # -> keep, in flight
 ```
 
+**Ask about the branch itself before deleting it**, rather than reading its
+absence off the open list above — both lists stop at a limit, so absence there is
+also what a repository busy enough to fill one looks like:
+
+```bash
+# GitHub
+gh pr list --state open --head "<branch>" --json number --jq 'length'
+# GitLab
+glab api "projects/:id/merge_requests?state=opened&source_branch=<branch>" | jq length
+```
+
 A name is not an identity: a merged `fix/login` may have come from a fork, or the
 local branch of that name may have been recreated since with fresh commits. Two
 containment checks answer what a name cannot, and a delete needs **both**:
@@ -150,9 +163,8 @@ took, or the request landed somewhere `$D` does not carry. An object this
 repository does not have makes the check die instead (`fatal`, not exit 1), and
 that is **unknown**: the branch stands too, and the report says unknown rather
 than somebody else's work. An empty `$D` is unknown for every branch — the second
-check cannot run at all. A `$D` that resolved but went **unverified** still
-proves a merge where the check passes, since an older ref is a subset of the
-current one; what it cannot do is refuse one, so a refusal there is unknown too.
+check cannot run at all, which is what step 1 leaves behind wherever the base did
+not verify.
 
 **Spell every branch `refs/heads/<branch>`**, here and in step 5's rows. A tag of
 the same short name wins the lookup, so the bare form measures the tag and routes
@@ -242,9 +254,9 @@ waits on a human, and both what the branch carries and what the forge says about
 it can move while it waits. A branch with no proof of its own is not deleted at
 all: report it instead.
 
-A branch the forge routed here re-reads the open list first: one it now names is
-kept, whatever the checks say. Then the two checks, against the same recorded
-commits:
+A branch the forge routed here asks the forge about itself first — step 4's
+per-branch open query, run again: an answer above zero keeps it, whatever the
+checks say. Then the two checks, against the same recorded commits:
 
 ```bash
 if [ -z "$D" ]; then
