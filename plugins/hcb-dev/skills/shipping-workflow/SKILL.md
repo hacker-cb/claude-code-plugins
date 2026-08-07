@@ -48,6 +48,15 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    committed work, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect that reviewer to come back short.
+
+   **Sweep what the change orphaned, before that commit.** For every path it
+   deletes or renames, search the whole worktree for the old name and fix every
+   hit — **unfiltered**, since scoping the search to the languages you edited is
+   what leaves the citation inside a config comment, the sentence in the docs and
+   the stale header in the renamed file itself; only vendored and generated trees
+   are out. Where the change alters a process the repository *documents*, there is
+   no name to search for: re-read the files describing how the repository works
+   rather than what its code does, and correct what the change made false.
 2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
    base so the review covers *this* slice's range, not the cumulative feature
@@ -57,7 +66,10 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    outside the diff, or the finding is plainly wrong. A skipped one is then
    *surfaced*, not merely noted —
    [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-   owns what that means. Do not complete with findings left unresolved — and do not leave the
+   owns what that means. Where a reviewer reports a stale reference to a name this
+   change removed or renamed, search the tree for that name and fix every
+   instance: the finding lists what one reviewer happened to see, never what is
+   there. Do not complete with findings left unresolved — and do not leave the
    fixes sitting uncommitted: step 5 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).

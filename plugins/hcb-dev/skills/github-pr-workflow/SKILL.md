@@ -317,7 +317,9 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
   settles. GitHub acts on that keyword only for a PR whose base is the default
   branch, so on any other base — a slice PR onto its feature branch, a repo whose
   PRs target another trunk — the issue is closed explicitly after the merge lands
-  (`hcb-dev:issue-tracking`).
+  (`hcb-dev:issue-tracking`). Written once, the body then goes stale as the branch
+  moves: after a push that deletes or renames a path, re-read it and correct what
+  it now describes wrongly.
 - If a PR already exists, skip creation and move to the loop.
 
 ## Step 4 — The fix loop (until GitHub says mergeable)
