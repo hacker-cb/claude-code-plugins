@@ -112,32 +112,40 @@ answer meaning nothing is there.
 
 **Squash-merged branches look unmerged to git.** When the repo is on a hosted
 forge and that forge's CLI is authed, close the gap read-only — asking the merged
-list for the **head each request recorded**, never for its branch name alone:
+list for two commits per request, the **head it recorded** and the **commit its
+merge produced**, never for branch names alone:
 
 ```bash
 # GitHub
-gh pr list --state merged --json headRefName,headRefOid --limit 200   # -> candidates, with the head
-gh pr list --state open   --json headRefName --limit 200              # -> keep, in flight
-# GitLab — no built-in --jq, and `mr list` already defaults to open
-glab mr list --merged --output json --per-page 100 | jq -r '.[] | "\(.source_branch) \(.sha)"'   # -> candidates, with the head
-glab mr list          --output json --per-page 100 | jq -r '.[].source_branch'                   # -> keep, in flight
+gh pr list --state merged --limit 200 --json headRefName,headRefOid,mergeCommit \
+  --jq '.[] | [.headRefName, .headRefOid, (.mergeCommit.oid // "")] | @tsv'
+gh pr list --state open   --limit 200 --json headRefName --jq '.[].headRefName'   # -> keep, in flight
+# GitLab — no built-in --jq, and `mr list` already defaults to open. A squash lands
+# under squash_commit_sha, where merge_commit_sha stays empty; @tsv so an empty one
+# keeps its column instead of sliding the next field into its place.
+glab mr list --merged --output json --per-page 100 \
+  | jq -r '.[] | [.source_branch, .sha, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv'
+glab mr list          --output json --per-page 100 | jq -r '.[].source_branch'    # -> keep, in flight
 ```
 
 A name is not an identity: a merged `fix/login` may have come from a fork, or the
-local branch of that name may have been recreated since with fresh commits. The
-recorded head is the identity, and the proof it carries the local branch is
-[`../../references/branch-retirement.md`](../../references/branch-retirement.md)'s:
+local branch of that name may have been recreated since with fresh commits. Two
+containment checks answer what a name cannot, and a delete needs **both**:
 
 ```bash
+# nothing of the branch is unlanded — it got no further than the request
 git -C "$PROJECT" merge-base --is-ancestor "refs/heads/<branch>" "<recorded head>"
+# and what the request produced is in the base. A count cannot ask this: a squash
+# puts none of the branch's own commits there, so it measures the branch's length
+git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"
 ```
 
-Exit 0 is the verdict, and **anything else leaves the branch standing** — a tip
-carrying commits the request never took, and a head this repository does not
-have, are both class 3. Never re-ask this with a count against
-`<remote>/<default>`: a squash merge puts none of the branch's commits in the
-base, so the count is the branch's own length and the branch that really landed
-reads as unmerged.
+Exit 1 on either leaves the branch standing — it carries work the request never
+took, or the request landed somewhere `$D` does not carry. An object this
+repository does not have makes the check die instead (`fatal`, not exit 1), and
+that is **unknown**: the branch stands too, and the report says unknown rather
+than somebody else's work. An empty `$D` is that same unknown for every branch —
+the second check cannot run, so the forge settles nothing here.
 
 **Spell every branch `refs/heads/<branch>`**, here and in step 5's rows. A tag of
 the same short name wins the lookup, so the bare form measures the tag and routes
@@ -172,8 +180,9 @@ status: surface it, never delete it.
 | the default branch, or checked out in a worktree you are keeping | never delete |
 | checked out in a worktree being removed in this same run | delete after that worktree is gone — this is the common case, not an exception |
 | in `branch --merged <remote>/<default>` | delete (class 2) |
-| the forge says `MERGED` **and** the head it recorded contains `refs/heads/<b>` | delete (class 2) — only the forge knows about a squash merge |
-| the forge says `MERGED`, and that head does not contain the branch — or this repository does not carry the head at all | surface (class 3) — same name, different work |
+| the forge says `MERGED`, **both** containment checks pass, and no open request has this branch as its head | delete (class 2) — only the forge knows about a squash merge |
+| the forge says `MERGED`, a containment check comes back false | surface (class 3) — same name and different work, or a request that landed off the base |
+| the forge says `MERGED`, and a commit either check needs is one this repository does not have | surface (class 3) — unknown, which is not "not merged" |
 | `[gone]` upstream **and** merged | delete (class 2) |
 | `[gone]` upstream, **not** merged | surface (class 3) — may hold the only copy |
 | the forge CLI says its PR/MR is `OPEN` | keep |
@@ -208,19 +217,32 @@ rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items o
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -d "<branch>"             # 4. -d, so git re-checks "fully merged"
-git -C "$PROJECT" branch -D "<branch>"             # 4-alt, ONLY where -d refused: a branch the
-                                                   #    forge proved merged, or the re-proof below
+git -C "$PROJECT" branch -D "<branch>"             # 4-alt, ONLY where -d refused, and ONLY
+                                                   #    behind one of the re-proofs below
 ```
 
 `-d` re-checks against `PROJECT`'s HEAD — or against the branch's own upstream
 where it has one — never against `$D`, and step 1 does not let you assume HEAD is
 the default branch. Where that HEAD does not contain a branch an earlier step
-proved merged, re-prove it with **the proof that routed it here**.
+proved merged, re-prove it with **the proof that routed it here, re-run now** —
+step 6 waits on a human, and a branch can take a commit while it waits, which is
+itself what makes `-d` refuse.
 
-A branch the forge proved merged already has one — step 4's ancestor check
-against the recorded head — and `-D` follows it directly, whatever `PROJECT`'s
-HEAD contains. The count below re-proves the branches `branch --merged` routed
-here, and it belongs to those alone.
+A branch the forge routed here re-runs step 4's two checks against the same
+recorded commits:
+
+```bash
+if [ -n "$D" ] \
+   && git -C "$PROJECT" merge-base --is-ancestor "refs/heads/<branch>" "<recorded head>" \
+   && git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
+  git -C "$PROJECT" branch -D "<branch>"
+else
+  echo "no longer proved merged — surface it instead"
+fi
+```
+
+A branch `branch --merged` routed here re-runs the count, which is that row's own
+proof:
 
 ```bash
 if [ -z "$D" ]; then
