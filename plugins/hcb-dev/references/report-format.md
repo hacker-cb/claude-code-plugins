@@ -31,9 +31,9 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    defines those two — or `Minor`, this report's own tier for the below-Important
    items that guidance lumps under `Skip` (its don't-fix-in-the-loop bucket).
    **If there are none, say so explicitly** — "no incidental findings" is a real
-   result, and its absence must not read as an omission. Each item that is worth
-   tracking goes to the user for a decision rather than being listed and left —
-   `hcb-dev:issue-tracking` owns that protocol.
+   result, and its absence must not read as an omission. Each item worth tracking
+   reaches the user as a proposal rather than being listed and left —
+   [`surfacing-findings.md`](surfacing-findings.md).
 
 4. **Open offers and next steps** — a `declined_offer` (a change request the local
    run *could* have opened and the user turned down), follow-up

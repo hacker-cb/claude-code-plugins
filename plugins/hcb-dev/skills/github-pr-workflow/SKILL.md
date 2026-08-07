@@ -404,17 +404,22 @@ merged head can post *after* the merge, orphaning its findings on the now-closed
 PR — behind a signal that read as a decline, or behind a merge taken outside this
 skill. If one appears, don't drop it: surface its findings in the report below and
 recommend a follow-up (issue or change request) as a next step; creating it is an
-outward action the user authorises, not one you take autonomously — the surfacing
-protocol and the classification are `hcb-dev:issue-tracking`'s.
+outward action the user authorises, not one you take autonomously —
+[`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
+owns that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 
 Then give the user a short report:
 
 1. **Additional findings from this session**, grouped by category (e.g.
-   Security, Correctness, Performance, Maintainability, Tests) — including
-   lower-severity items you deliberately skipped during the loop, so nothing is
-   silently dropped.
-2. **Suggested next steps** — follow-up issues to file, tech debt to track,
-   tests to add, or related work that surfaced.
+   Security, Correctness, Performance, Maintainability, Tests) — the
+   lower-severity items you deliberately skipped during the loop. Each goes
+   through
+   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md),
+   as the late review's findings above do. Where nothing called this driver, this
+   report ends the session and that reference says what ends there; under an
+   orchestrator it ends a slice, and the run's own report is the end.
+2. **Suggested next steps** — tech debt to track, tests to add, or related work
+   that surfaced.
 
 Keep it scannable: short grouped bullets, not an essay.
 
@@ -426,6 +431,10 @@ Keep it scannable: short grouped bullets, not an essay.
   stuck or missing check belongs to the platform rather than to the diff, how to
   wait an outage out, and what to re-trigger once it clears. Read it the moment a
   failure does not look like the diff's.
+- [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
+  — what a finding this PR will not fix costs before it can be proposed, the form
+  the proposal takes, and what the user's answer authorizes. Read it before
+  Step 7, and before recommending a follow-up on a late review.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
   flag, an endpoint or a ruleset field gets resolved: the installed CLI's
   `--help` for what this build accepts, the docs sites for what a field means.

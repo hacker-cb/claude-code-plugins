@@ -17,10 +17,12 @@ travels between repositories; every literal is read from the repository at hand.
 A deliberately deferred defect keeps its kind of work — the deferral lives in the
 parked reason.
 
-## Read the set before applying anything
+## Read the set before proposing or applying anything
 
 Read it whole — both CLIs stop at a small default page, and a short read is
 indistinguishable from a missing family.
+[`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)
+sets when this read happens relative to a proposal, and how often.
 
 ```bash
 # GitHub

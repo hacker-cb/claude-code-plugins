@@ -54,6 +54,11 @@ gaps carried into the report), `incidental` (surfaced-not-fixed findings, severi
 rated), `declined_offer` (local only — a change request the run could have opened
 and the user turned down, recorded so it is not silently dropped), `follow_ups`.
 
+Where no run report follows — a standalone ship, with no orchestrator above this
+slice — `incidental` and `follow_ups` still have a consumer:
+[`surfacing-findings.md`](surfacing-findings.md). Handed to nobody, they end with
+the response.
+
 **Invariants both backends honor:** never complete on an unresolved *actionable*
 coverage gap without explicit clearance (a structural gap is noted, never
 blocking — see `multi-review`); never guess a base or a remote

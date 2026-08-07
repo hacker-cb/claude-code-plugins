@@ -161,10 +161,12 @@ completed straight onto the base in Phase 2.
 - **After a local set** — offer, never force, **one** whole-feature
   `feature → base` change request on the feature branch. This is the consented
   exit from local mode.
-- **Issues output** — hand the incidental findings and the follow-ups to
-  `hcb-dev:issue-tracking`, which owns the surfacing protocol and the
-  classification. In local mode no change request closes the intake issue, so
-  closing or linking it rides with that handoff or the issue is left stale.
+- **Issues output** — the incidental findings and the follow-ups reach the user as
+  proposals, per
+  [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md);
+  `hcb-dev:issue-tracking` owns the tracker operations their answer authorizes. In
+  local mode no change request closes the intake issue, so closing or linking it
+  rides with that handoff or the issue is left stale.
 - **Cleanup** — after a local set that left merged-but-unpushed slice branches,
   point at `/hcb-dev:git-cleanup` (it is manual-only; suggest, don't run it).
 
@@ -175,6 +177,9 @@ completed straight onto the base in Phase 2.
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — when to ask, always with a
   recommendation, and flagging rule-vs-architecture drift; read before Phase 1.
 - [`../../references/report-format.md`](../../references/report-format.md) — the Phase 3 report shape.
+- [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md) — what the run's
+  incidental findings and follow-ups cost before they can be proposed, and what
+  the user's answer authorizes; read before Phase 3's issues output.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) — resolving a base and a remote without
   guessing either name; the slice parent is handed to the reviewers and to
   completion as an explicit base.

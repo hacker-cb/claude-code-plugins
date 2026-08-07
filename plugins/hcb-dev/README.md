@@ -63,10 +63,9 @@ handoff by hand, so the prompt text is the whole channel.
 
 - **`issue-tracking`** — `/hcb-dev:issue-tracking`
   The backlog side of the pipeline, on GitHub and GitLab alike: what earns an
-  issue and what does not, the search that comes before opening one, the
-  `## Drive-by observations` protocol that puts a finding to you as
-  OPEN / DEFER / DISMISS, the shape of the issue body, and the three moments worth
-  consulting open issues at. Which mechanism carries the kind of work in a given
+  issue and what does not, searching the tracker, the shape of the issue body,
+  and the three moments worth consulting open issues at. Which mechanism carries
+  the kind of work in a given
   repository — native issue types, a label family, or neither — the cardinality
   between the families and who holds it when the platform will not, how a set gets
   proposed and created where the repository has none, and the two milestone
@@ -218,6 +217,13 @@ saying something else.
   findings rated by importance, an explicit "none"). Read where a whole run is
   reported. That is a different altitude from a driver's report on one merged
   change request, and the two do not replace each other.
+- [`references/surfacing-findings.md`](references/surfacing-findings.md) — what
+  happens between noticing something this work will not fix and the tracker: the
+  search and the classification read *before* the proposal is made, the form it
+  takes under `## Drive-by observations`, and the rule that only the user's answer
+  writes to the tracker — a standing instruction to work autonomously is not that
+  answer. Read wherever a review, a completion or a report leaves a finding
+  unfixed; the tracker operations themselves stay with `issue-tracking`.
 - [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
   endpoint or a concept name gets resolved on either forge: the installed CLI's
   `--help` for what exists in this build, the docs sites for what things mean and
