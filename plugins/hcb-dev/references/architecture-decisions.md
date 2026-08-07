@@ -78,5 +78,6 @@ have skipped — and assert nothing the read did not show. The same bar holds fo
 the commit message and the change-request body, where the claim gets restated as
 fact.
 
-Not being able to read it is a third answer, not a "no": say which of the two you
-could not check, rather than writing the sentence from memory.
+Not being able to read the artifact is a third answer, not a "no": name the
+artifact you could not open, rather than writing the sentence from memory. A read
+that came back truncated is one of those — it is not a read in full.

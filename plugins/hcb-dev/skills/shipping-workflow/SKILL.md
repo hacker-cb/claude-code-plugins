@@ -49,17 +49,18 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect that reviewer to come back short.
 
-   **Sweep what the change orphaned, before that commit.** For every path it
-   deletes or renames, search the whole worktree for the old name —
-   **unfiltered**, since scoping the search to the languages you edited is what
-   leaves the citation inside a config comment, the sentence in the docs and the
-   stale header in the renamed file itself; vendored trees are out.
+   **Sweep what the change orphaned.** Take every path the branch deletes or
+   renames — the whole range, `git diff --name-status <base>...HEAD` plus what is
+   staged now, not only this commit — and search the worktree for each old name.
+   Search every file type, not the ones you edited: what stays behind otherwise is
+   the citation in a config comment, the sentence in the docs, the stale header
+   inside the renamed file. Vendored trees are out, and so is any other worktree's
+   checkout — those are someone else's tree, not yours to edit.
 
-   Then rule on each hit before touching it, because not every one is stale: a
-   migration path, a compatibility alias, a test asserting the old name and a
-   changelog entry are all still true, and rewriting them breaks what they hold.
-   A tracked generated file is stale like any other, and it is fixed by re-running
-   its generator.
+   Rule on each hit before touching it: a migration path, a compatibility alias, a
+   test asserting the old name and a changelog entry are all still true. A tracked
+   generated file is fixed by re-running its generator. Run this again whenever a
+   later step deletes or renames something of its own.
 
    Where the change alters a process the repository *documents*, there is no name
    to search for: re-read the files describing how the repository works rather
@@ -75,10 +76,9 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    outside the diff, or the finding is plainly wrong. A skipped one is then
    *surfaced*, not merely noted —
    [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-   owns what that means. Where a reviewer reports a stale reference to a name this
-   change removed or renamed, search the tree for that name and fix every
-   instance: the finding lists what one reviewer happened to see, never what is
-   there. Do not complete with findings left unresolved — and do not leave the
+   owns what that means. A reported stale reference is step 1's sweep over again,
+   not a list of lines to edit — the finding is what one reviewer happened to see.
+   Do not complete with findings left unresolved — and do not leave the
    fixes sitting uncommitted: step 5 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).
