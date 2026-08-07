@@ -54,8 +54,10 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    diff. Standalone, `multi-review` resolves its own base.
 3. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    Skip a finding only if the fix would change intended behavior, reach well
-   outside the diff, or the finding is plainly wrong, and note the skip in one
-   line. Do not complete with findings left unresolved — and do not leave the
+   outside the diff, or the finding is plainly wrong. A skipped one is then
+   *surfaced*, not merely noted —
+   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
+   owns what that means. Do not complete with findings left unresolved — and do not leave the
    fixes sitting uncommitted: step 5 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).

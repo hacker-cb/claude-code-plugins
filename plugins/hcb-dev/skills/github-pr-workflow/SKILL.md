@@ -410,11 +410,16 @@ protocol and the classification are `hcb-dev:issue-tracking`'s.
 Then give the user a short report:
 
 1. **Additional findings from this session**, grouped by category (e.g.
-   Security, Correctness, Performance, Maintainability, Tests) — including
-   lower-severity items you deliberately skipped during the loop, so nothing is
-   silently dropped.
-2. **Suggested next steps** — follow-up issues to file, tech debt to track,
-   tests to add, or related work that surfaced.
+   Security, Correctness, Performance, Maintainability, Tests) — the
+   lower-severity items you deliberately skipped during the loop. Each goes
+   through
+   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md),
+   as the late review's findings above do: this list records what was decided and
+   never stands in for the decision. Anything surfaced earlier in the session and
+   still unanswered is re-surfaced here — that reference asks for it at the
+   session's natural end, and for a driven change request this is that end.
+2. **Suggested next steps** — tech debt to track, tests to add, or related work
+   that surfaced.
 
 Keep it scannable: short grouped bullets, not an essay.
 
@@ -426,6 +431,10 @@ Keep it scannable: short grouped bullets, not an essay.
   stuck or missing check belongs to the platform rather than to the diff, how to
   wait an outage out, and what to re-trigger once it clears. Read it the moment a
   failure does not look like the diff's.
+- [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
+  — what a finding this PR will not fix costs before it can be proposed, the form
+  the proposal takes, and what the user's answer authorizes. Read it before
+  Step 7, and before recommending a follow-up on a late review.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
   flag, an endpoint or a ruleset field gets resolved: the installed CLI's
   `--help` for what this build accepts, the docs sites for what a field means.
