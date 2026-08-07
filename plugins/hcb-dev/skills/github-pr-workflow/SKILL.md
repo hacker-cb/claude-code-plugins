@@ -48,7 +48,7 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 - Replying to Copilot review comments
 - Reading CI status and review findings
 - Parking the run on a platform outage and resuming when it clears (see *When the
-  platform is down* below)
+  platform is down, the red check is not yours* below)
 
 **Merging is the one action that is NOT autonomous.** Merge only when the user has
 explicitly authorized it — either their request itself asked to merge/ship (e.g.
@@ -210,18 +210,27 @@ While a component this run depends on is not `operational`:
   usable meanwhile:
 
 ```bash
-COMPONENT="<the component that is down>"
-until [ "$(curl -fsS https://www.githubstatus.com/api/v2/components.json \
-    | jq -r --arg c "$COMPONENT" '.components[] | select(.name==$c) | .status')" = operational ]; do
+COMPONENT="<the component that is down, spelled as the feed spells it>"
+while :; do
+  status="$(curl -fsS https://www.githubstatus.com/api/v2/components.json \
+    | jq -r --arg c "$COMPONENT" '.components[] | select(.name==$c) | .status')"
+  # An empty status is a name matching no component — a typo, or one the feed has
+  # since renamed. Sleeping on it is an unbounded wait for a value that can never
+  # arrive, and it reads exactly like an outage that never ends.
+  [ -n "$status" ] || { echo "NO COMPONENT NAMED $COMPONENT — take the name from the feed"; exit 1; }
+  [ "$status" = operational ] && break
   sleep 1800
 done
 echo "$COMPONENT is back — resume the parked step"
 ```
 
-Once it clears, re-run what the outage took down — `gh run rerun --failed <run-id>`
-for a run that failed, a re-poll for one that never started — and resume at the
-step you parked on. A check still red on a healthy platform is yours again, and
-Step 4 handles it as usual.
+Once it clears, put back what the outage took, then resume at the step you parked
+on. A run that *failed* reruns — `gh run rerun --failed <run-id>`. A run that
+**never started** has no event left to replay and no amount of polling produces
+one: trigger it again (`gh workflow run` where the workflow is dispatchable, a
+push, or reopening the PR), and confirm the check reports against the current
+head. A check still red on a healthy platform is yours again, and Step 4 handles
+it as usual.
 
 ## Step 1 — Branch naming
 
@@ -370,9 +379,10 @@ severity classification only decides what you *fix*, never when you're *done*.
 2. **If a required check is red:** read the failing job's logs, fix the root
    cause, commit, push. Don't guess — read the actual failure. Not every red check
    wants a code change: one that stands in for a review is typically waiting on the
-   review itself or on unresolved threads, and one that is red — or stuck unstarted —
-   because the platform is (*When the platform is down*) wants no change at all, so
-   read what it reports before touching code.
+   review itself or on unresolved threads, and one that is red — or stuck without
+   ever starting — because the forge is degraded wants no change at all, so read
+   what it reports before touching code and attribute it per
+   *When the platform is down, the red check is not yours*.
 3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
    them — see `references/copilot.md`.
 4. **Fix Critical and Important findings.** Batch fixes into as few pushes as is
