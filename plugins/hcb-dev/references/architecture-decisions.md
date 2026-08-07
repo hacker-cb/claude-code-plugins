@@ -1,7 +1,9 @@
 # Deciding with the user — when to ask, how to ask, when to flag
 
 Read wherever a decision is made *with* a person rather than for them — a
-planning gate, a stop-and-ask point. Four rules, each with the test that applies
+planning gate, a stop-and-ask point — and, for rule 4, before writing any sentence
+that reports how something is configured, wherever that sentence lands and whether
+or not anyone is being asked anything. Four rules, each with the test that applies
 it to a case this file never named.
 
 ## 1. Ask about architecture; act on mechanics

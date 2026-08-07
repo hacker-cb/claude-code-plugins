@@ -50,13 +50,22 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    committing yet, say so and expect that reviewer to come back short.
 
    **Sweep what the change orphaned, before that commit.** For every path it
-   deletes or renames, search the whole worktree for the old name and fix every
-   hit — **unfiltered**, since scoping the search to the languages you edited is
-   what leaves the citation inside a config comment, the sentence in the docs and
-   the stale header in the renamed file itself; only vendored and generated trees
-   are out. Where the change alters a process the repository *documents*, there is
-   no name to search for: re-read the files describing how the repository works
-   rather than what its code does, and correct what the change made false.
+   deletes or renames, search the whole worktree for the old name —
+   **unfiltered**, since scoping the search to the languages you edited is what
+   leaves the citation inside a config comment, the sentence in the docs and the
+   stale header in the renamed file itself; vendored trees are out.
+
+   Then rule on each hit before touching it, because not every one is stale: a
+   migration path, a compatibility alias, a test asserting the old name and a
+   changelog entry are all still true, and rewriting them breaks what they hold.
+   A tracked generated file is stale like any other, and it is fixed by re-running
+   its generator.
+
+   Where the change alters a process the repository *documents*, there is no name
+   to search for: re-read the files describing how the repository works rather
+   than what its code does, and correct what the change made false — under
+   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+   §4, which governs any sentence reporting how something is configured.
 2. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
    base so the review covers *this* slice's range, not the cumulative feature
