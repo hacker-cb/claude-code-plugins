@@ -139,8 +139,9 @@ also what a repository busy enough to fill one looks like:
 ```bash
 # GitHub
 gh pr list --state open --head "<branch>" --json number --jq 'length'
-# GitLab
-glab api "projects/:id/merge_requests?state=opened&source_branch=<branch>" | jq length
+# GitLab — the porcelain flag, not the branch name pasted into a URL, where a `#`
+# or a `&` in it would end the query and the answer would come back zero
+glab mr list --source-branch "<branch>" --output json | jq length
 ```
 
 A name is not an identity: a merged `fix/login` may have come from a fork, or the
@@ -254,9 +255,14 @@ waits on a human, and both what the branch carries and what the forge says about
 it can move while it waits. A branch with no proof of its own is not deleted at
 all: report it instead.
 
-A branch the forge routed here asks the forge about itself first — step 4's
-per-branch open query, run again: an answer above zero keeps it, whatever the
-checks say. Then the two checks, against the same recorded commits:
+Two things come before **either** proof, on **every** branch reaching this step.
+Step 4's per-branch open query, run again — an answer above zero keeps the branch,
+whatever any proof says. And a refresh of `$D` through `base-resolution.md`, since
+the gate waited and the base can be force-updated in that window; one that does not
+verify leaves `$D` empty, exactly as step 1 has it.
+
+A branch the forge routed here then re-runs the two checks, against the same
+recorded commits:
 
 ```bash
 if [ -z "$D" ]; then
