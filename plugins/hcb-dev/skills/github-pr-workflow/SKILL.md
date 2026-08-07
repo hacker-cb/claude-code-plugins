@@ -188,7 +188,10 @@ covering whatever is blocked — CI, the API you are calling, the pull requests
 themselves. The SaaS instance publishes it as a Statuspage:
 
 ```bash
-curl -fsS https://www.githubstatus.com/api/v2/summary.json | jq -r '
+# Timeouts on every fetch of this feed: the network is part of what an outage
+# takes down, and a hung curl is a stall where a verdict was the whole point.
+curl -fsS --connect-timeout 10 --max-time 30 \
+    https://www.githubstatus.com/api/v2/summary.json | jq -r '
   (.components[] | select(.status != "operational") | "component  \(.name): \(.status)"),
   (.incidents[]  | "incident   \(.name) — \(.status)")'
 ```
@@ -213,14 +216,18 @@ While a component this run depends on is not `operational`:
 ```bash
 COMPONENT="<the component that is down, spelled as the feed spells it>"
 while :; do
-  # Three outcomes, not two. A fetch that failed and a name matching no component
-  # both leave $status empty, and neither means "still down": one is the feed being
-  # unreachable, the other a typo or a component the feed has since renamed —
-  # sleeping on that second one waits forever for a value that cannot arrive.
-  if ! feed="$(curl -fsS https://www.githubstatus.com/api/v2/components.json)"; then
-    echo "FEED UNREACHABLE — cannot attribute anything; retrying"
+  # Three outcomes, not two. Only a feed that answered AND parsed says anything
+  # about the component; a fetch that failed and a body that is not JSON (a CDN
+  # error page is what a struggling status site serves) are both "could not
+  # determine", which retries. An empty status out of a feed that DID parse is a
+  # name matching no component — a typo, or one the feed has since renamed — and
+  # sleeping on that waits forever for a value that cannot arrive.
+  if ! feed="$(curl -fsS --connect-timeout 10 --max-time 30 \
+        https://www.githubstatus.com/api/v2/components.json)" \
+     || ! status="$(jq -r --arg c "$COMPONENT" \
+        '.components[] | select(.name==$c) | .status' <<<"$feed" 2>/dev/null)"; then
+    echo "FEED UNREADABLE — cannot attribute anything; retrying"
   else
-    status="$(jq -r --arg c "$COMPONENT" '.components[] | select(.name==$c) | .status' <<<"$feed")"
     [ -n "$status" ] || { echo "NO COMPONENT NAMED $COMPONENT — take the name from the feed"; exit 1; }
     [ "$status" = operational ] && break
   fi
