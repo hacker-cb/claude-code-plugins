@@ -41,6 +41,12 @@ mode once, at the gate, and threads it down; the mechanics live in
 - **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue
   already covering these tasks changes the scope; one covering part of them
   changes the slicing.
+- **Refresh the base before reading the code against it** — resolve it and fetch,
+  per [`../../references/base-resolution.md`](../../references/base-resolution.md).
+  The fetch moves the remote-tracking ref and nothing else, so the deep-read is
+  still on what is checked out: read against the refreshed ref, and where the
+  checkout cannot move onto it, say the tree is older and treat what the base moved
+  past as unread.
 - **Deep-read the codebase against the tasks** — what is affected, what is risky,
   where the genuinely-open questions are.
 - **Draft a slicing.** Split the work into **independently reviewable slices** — a
@@ -107,14 +113,19 @@ other):
 
 1. **Cut the slice branch from the current tip of its parent** (the feature
    branch, or the base for a single slice) — not all up front, so a later slice
-   sees the ones below it and conflicts less. Cut it under the name the gate
-   showed (`branch-naming.md`).
+   sees the ones below it and conflicts less. Where that parent is the base,
+   refresh it again here and take the cut point from `base-resolution.md`'s table
+   — Phase 0's fetch does not still hold. The feature branch is cut the same way,
+   once, before the first slice; keeping it current after that is
+   `slice-completion.md`'s. Cut it under the name the gate showed
+   (`branch-naming.md`).
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
-   slice's parent tip, so the review covers this slice and not the cumulative
-   feature diff), `merge-strategy` and `merge-auth`. The coverage *policy* is not
+   commit the slice was cut from — after a refresh that is the ref, not the local
+   parent it may now be behind — so the review covers this slice and not the
+   cumulative feature diff), `merge-strategy` and `merge-auth`. The coverage *policy* is not
    threaded — an actionable gap always stops (Phase 1), a fixed invariant every
    completion honors.
 
@@ -181,8 +192,9 @@ completed straight onto the base in Phase 2.
   incidental findings and follow-ups cost before they can be proposed, and what
   the user's answer authorizes; read before Phase 3's issues output.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) — resolving a base and a remote without
-  guessing either name; the slice parent is handed to the reviewers and to
-  completion as an explicit base.
+  guessing either name, and refreshing one before anything is read against it or
+  cut from it; the slice parent is handed to the reviewers and to completion as an
+  explicit base.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name and the
   feature/slice layout; read before Phase 1's branch layout and Phase 2's cut.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a

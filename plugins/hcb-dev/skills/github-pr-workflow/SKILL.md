@@ -268,9 +268,11 @@ rebase onto it; rebase is the default (cleaner history, plays well with squash).
 One thing this step must not take on trust: **check the fetch, not just the ref.**
 Whichever remote you picked, you picked it *because* `<base-remote>/<base>` is
 already there — so an existence test passes just as happily against a week-old
-copy. A fetch that failed (VPN down, the remote gone) then rebases onto a stale
-base, this step reports "up to date", and GitHub reports `BEHIND` at merge time.
-"Did not update" is the only failure this step actually has.
+copy, and a rebase onto that copy has this step report "up to date" while GitHub
+reports `BEHIND` at merge time. What the fetch's outcomes mean is
+`base-resolution.md`'s; here, a fetch that did not succeed stops this step — a
+base whose age is unknown is not one to rebase onto, while one the fetch confirms
+is already current is exactly what this step wants.
 
 Fill the two values at the top; everything under them is live.
 
@@ -278,7 +280,7 @@ Fill the two values at the top; everything under them is live.
 BASE_REMOTE="<resolved per base-resolution.md>"
 BASE="<the PR's base branch, bare name>"
 
-if ! git fetch "$BASE_REMOTE" "$BASE"; then
+if ! git fetch "$BASE_REMOTE" "+refs/heads/$BASE:refs/remotes/$BASE_REMOTE/$BASE"; then
   echo "FETCH FAILED from $BASE_REMOTE — not rebasing onto a possibly stale base"; exit 1
 fi
 # And the ref must exist at all: the branch may simply not be on that remote.
