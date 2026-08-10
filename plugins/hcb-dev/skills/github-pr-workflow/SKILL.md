@@ -146,7 +146,7 @@ none of them are present until you've read them:
 | `required_status_checks` | `required_status_checks[].context`, `strict_required_status_checks_policy` | every listed context must go green. Treat the names as **opaque** — the repo chooses them, and what any one check stands for is its own business. `strict` additionally means the branch must be current with base (Step 2). |
 | `pull_request` | `required_review_thread_resolution`, `allowed_merge_methods`, `required_approving_review_count`, `dismiss_stale_reviews_on_push` | thread resolution `true` means *every* thread must end resolved, not just the severe ones. Merge methods: pick from the allowed set only (Step 5). Approvals are often 0; if >0, `reviewDecision` reads `REVIEW_REQUIRED` and merge waits on a human. |
 | `copilot_code_review` | `review_on_push`, `review_draft_pull_requests` | Copilot review is part of this repo's flow — automatically **requested**, but gating nothing on its own (it lands as a `COMMENTED` review), so its findings are your bar rather than GitHub's. `review_on_push` re-*requests* Copilot on every push — usually, but not always, producing a new review, so confirm one landed for the current head instead of assuming it. Drafts are skipped unless `review_draft_pull_requests`. See `references/copilot.md`. |
-| `deletion`, `non_fast_forward` | — | the matched branches can't be deleted or force-pushed. Affects Step 1's rename and Step 5's `--delete-branch` when they touch a protected ref. |
+| `deletion`, `non_fast_forward` | — | the matched branches can't be deleted or force-pushed. Affects Step 1's rename and Step 6's retirement when they touch a protected ref. |
 
 Anything the rules don't cover, the live signals still do: `gh pr checks` is the
 final word on which contexts are required, whatever produced them.
@@ -250,10 +250,12 @@ fi
 git push "$PUSH_REMOTE" -u "$NEW"
 # Delete the stale remote ref ONLY when the name actually changed. With
 # $cur == $NEW this deletes the ref the line above just pushed — unpublishing the
-# branch and closing any PR whose head it is — and `2>/dev/null || true` would
-# swallow every trace, leaving Step 2 to proceed as if the branch were pushed.
+# branch and closing any PR whose head it is — and a swallowed error would leave
+# no trace, letting Step 2 proceed as if the branch were pushed.
 if [ "$cur" != "$NEW" ]; then
-  git push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
+  # The full refname: a bare one is ambiguous where a tag shares the name, and
+  # reaches that tag where the branch was never pushed under the old name at all.
+  git push "$PUSH_REMOTE" --delete "refs/heads/$cur" || true
 fi
 ```
 
@@ -393,22 +395,19 @@ strategy, pick from the allowed set:
 - If rebase-merge is the only fit but the repo disallows it, or the choice is
   genuinely ambiguous, ask.
 
-Delete the source branch on merge (`--delete-branch`) unless told otherwise; if a
-deletion-protection rule rejects it, leave the remote branch and note it. Where
-the merge lands synchronously that flag takes the local ref along with it; Step 6
-is what confirms the outcome either way.
+**Merge, and nothing else** — never `--delete-branch`. Both refs retire in Step 6,
+on the confirmed merge.
 
 ## Step 6 — Monitor the merge
 
-After issuing the merge, confirm it actually landed:
+After issuing the merge, confirm it actually landed — what the PR reports decides
+that, never the merge command's exit status:
 - Merge can be queued (merge queue) or blocked by a last-second protection rule.
 - Under a strict policy the base may have moved, flipping the PR to `BEHIND` — run
   `gh pr update-branch <pr>`, let the required checks re-pass, then merge again.
 - Poll until the PR shows `MERGED`, or report what's blocking it.
-- On `MERGED`, confirm the local branch is gone and retire it where it is not —
+- On `MERGED`, retire the branch — both the local ref and the one on the remote —
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
-  A queued merge lands after the merge command returns, so Step 5's flag does not
-  stand in for this.
 
 ## Step 7 — Report and suggest next steps
 
@@ -457,8 +456,9 @@ Keep it scannable: short grouped bullets, not an essay.
   push mechanics stay in that step.
 - [`../../references/branch-retirement.md`](../../references/branch-retirement.md)
   — what becomes of the branch once the merge is confirmed: the tip HEAD moves
-  onto, freeing the worktree that holds it, and the proof a deletion needs where a
-  squash merge left git unable to see the merge. Read it before Step 6.
+  onto, freeing the worktree that holds it, the proof a deletion needs where a
+  squash merge left git unable to see the merge, and the deletion of the ref the
+  push published. Read it before Step 6.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) — which remote to push to, which one carries
   the base, and the ref-versus-name split. Steps 1 and 2 both resolve through it
   and fill the result in; read it before either.

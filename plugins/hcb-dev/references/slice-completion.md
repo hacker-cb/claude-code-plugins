@@ -51,7 +51,8 @@ step 5), so it never re-checks coverage; it simply carries whatever noted
 **Outputs every backend returns** (for [`report-format.md`](report-format.md)):
 `landed_at` (local: the merge commit on `parent`; request: the change-request URL,
 plus a merge commit if it was driven to merge), `mode_used`, `retired` (what became
-of the branch — gone, or standing with the reason `branch-retirement.md` names),
+of the branch, on each side it stood — gone, or standing with the reason
+`branch-retirement.md` names),
 `uncovered` (coverage
 gaps carried into the report), `incidental` (surfaced-not-fixed findings, severity
 rated), `declined_offer` (local only — a change request the run could have opened
@@ -98,7 +99,7 @@ Publishing is the escalation offer below, and only by consent.
 
 - **The name lands with the merge.** `--no-ff` writes the branch name into the
   parent's history (`Merge branch 'claude/…' into …`) — and unlike a change
-  request's branch, which dies at merge, that line stays for good. A slice
+  request's branch, which does not outlive the merge, that line stays for good. A slice
   arriving here still carrying an auto-generated name means step 0 was skipped:
   rename it before merging (`branch-naming.md`) — the local
   half of that reference and nothing more: a bare `git branch -m`, no network. If
