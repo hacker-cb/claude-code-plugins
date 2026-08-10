@@ -250,10 +250,12 @@ fi
 git push "$PUSH_REMOTE" -u "$NEW"
 # Delete the stale remote ref ONLY when the name actually changed. With
 # $cur == $NEW this deletes the ref the line above just pushed — unpublishing the
-# branch and closing any PR whose head it is — and `2>/dev/null || true` would
-# swallow every trace, leaving Step 2 to proceed as if the branch were pushed.
+# branch and closing any PR whose head it is — and a swallowed error would leave
+# no trace, letting Step 2 proceed as if the branch were pushed.
 if [ "$cur" != "$NEW" ]; then
-  git push "$PUSH_REMOTE" --delete "$cur" 2>/dev/null || true
+  # The full refname: a bare one is ambiguous where a tag shares the name, and
+  # reaches that tag where the branch was never pushed under the old name at all.
+  git push "$PUSH_REMOTE" --delete "refs/heads/$cur" || true
 fi
 ```
 

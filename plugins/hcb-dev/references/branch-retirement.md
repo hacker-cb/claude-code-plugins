@@ -20,19 +20,45 @@ Everything below measures against one commit — the state the merge produced.
 **Request** — the merge happened on the forge, so this repository does not carry
 the commit yet. Refresh `<remote>/<base>` through
 [`base-resolution.md`](base-resolution.md), which owns that fetch and what each of
-its outcomes means; a base it leaves unverified stops what measures against the tip
-— the HEAD move and the local deletion — rather than seeding the next branch from a
-stale tip. The published ref measures against nothing here and retires anyway
-(*On the remote*). The refreshed ref is the tip, carrying
-the merge plus whatever else landed while the request was open, so work continued
-from it starts current instead of a rebase behind.
+its outcomes means; a base it leaves unverified stops what measures against the
+tip — the HEAD move and the local deletion — rather than seeding the next branch
+from a stale tip. The published ref measures against nothing here and retires
+anyway (*On the remote*). The refreshed ref is the tip, carrying the merge plus
+whatever else landed while the request was open, so work continued from it starts
+current instead of a rebase behind.
 
 The remote the branch was **pushed** to is pruned in a call of its own, because in
 a fork it is not the one carrying the base (`base-resolution.md`, *Pushing is a
-different question*), so that a tracking ref does not outlive the branch it names:
+different question*), so that a tracking ref of a branch the forge already deleted
+does not outlive it:
 
 ```bash
 git fetch --prune <push-remote>
+```
+
+## What the request recorded
+
+Request mode, and before either half below: both read these, and neither half's
+own blockers stop this one.
+
+```bash
+# GitHub
+gh pr view <n> --json state,headRefOid --jq '"\(.state) \(.headRefOid)"'
+# GitLab
+glab mr view <n> --output json | jq -r '"\(.state) \(.sha)"'
+```
+
+Merged is what every deletion here rests on. The head is what the local proof
+measures against and what the remote deletion leases — a run that could not read
+either retires nothing and says so.
+
+A head that advanced on the forge alone — a base update taken there, a review
+suggestion committed through the web UI — is not an object this repository carries,
+and the local proof reads it as unknown rather than as unmerged. Fetch it by its id
+first, from the remote the branch was pushed to:
+
+```bash
+git fetch <push-remote> <head>
 ```
 
 ## Free the branch
@@ -58,8 +84,6 @@ First hit wins:
 
 ## Delete it
 
-Both refs are still standing: the merge landed the work and retired nothing.
-
 A branch under a change request that is still open stays: that request's head is
 this ref, and what a reviewer asks for next has nowhere to land without it. So
 does one the user asked to keep — both refs, and the report says so. A ref that is
@@ -81,23 +105,7 @@ them: the confirmed merge this step follows is what landed them, and that is the
 proof.
 
 **Request** — the forge holds it: the request is merged, and the head it recorded
-contains the local tip.
-
-```bash
-# GitHub
-gh pr view <n> --json state,headRefOid --jq '"\(.state) \(.headRefOid)"'
-# GitLab
-glab mr view <n> --output json | jq -r '"\(.state) \(.sha)"'
-```
-
-A head that advanced on the forge alone — a base update taken there, a review
-suggestion committed through the web UI — is not an object this repository carries,
-and the check below reads it as unknown rather than as unmerged. Fetch it by its id
-first, from the remote the branch was pushed to:
-
-```bash
-git fetch <push-remote> <head>
-```
+(*What the request recorded*) contains the local tip.
 
 Merged, with `git merge-base --is-ancestor refs/heads/<branch> <head>` true, means
 every local commit reached the request: `git branch -D <branch>`. Equality is one
@@ -129,17 +137,17 @@ fi
 Gone, and the report says which. Unanswered is neither: leave the ref standing and
 report it as unknown.
 
-**It stands on its own.** Whatever kept the local ref — a dirty tree, a worktree
-holding it, a tip carrying commits that never reached the request — says nothing
-about the published one, and this is the ref nothing else can clear afterwards.
-Only what stops a retirement outright stops it here too: another request open on
-this ref, or the user asking to keep the branch.
+**It stands on its own.** A dirty tree, or a local tip carrying commits that never
+reached the request, says nothing about the published ref — and this is the ref
+nothing else can clear afterwards. What does stop it: another request open on this
+ref, the user asking to keep the branch, or **another worktree holding it**, whose
+session can push to that ref and would only recreate what this step removed.
 
 The containment proof above measures *local* commits, so a repository with no such
-branch has none to strand and needs none. What the deletion does need is the head
-the request recorded, as a lease: the branch can have moved past it since — a push
-while the merge sat queued lands there and nowhere else — and the remote refuses
-the deletion where the two disagree.
+branch has none to strand and needs none. What the deletion does need is the
+recorded head, as a lease: the branch can have moved since — a push while the merge
+sat queued lands on the remote and nowhere else — and the remote refuses the
+deletion where the two disagree.
 
 ```bash
 # The full refname on both halves, never the bare one: it is ambiguous where a tag
@@ -148,8 +156,10 @@ git push --force-with-lease="refs/heads/<branch>:<head>" <push-remote> \
   --delete "refs/heads/<branch>"
 ```
 
-A refused lease means the remote carries commits the request never took: keep the
-branch and say what sits on it. A deletion rule refusing the push leaves it
+A refused lease means the published ref is not what the request recorded — ahead of
+it, or rewritten behind it, and the refusal does not say which. Keep the branch,
+read what the remote actually carries, and report that rather than a guess. A
+deletion rule refusing the push leaves it
 published, and the report is the end of that — `/hcb-dev:git-cleanup` writes to no
 remote, so nothing sweeps it afterwards.
 
@@ -159,7 +169,7 @@ One line, always: which branch went, on each side it stood, and where HEAD
 stands now — naming the commit wherever it is detached, so a later commit
 does not land unreachable. Where a ref stayed, name the reason: another worktree
 holds it, the tree is dirty, a change request on it is still open, its tip carries
-commits the merge never took, the remote ref moved past the head the request
+commits the merge never took, the remote ref is no longer the head the request
 recorded, the remote did not answer, or a deletion rule refused the push.
 
 ## Never
