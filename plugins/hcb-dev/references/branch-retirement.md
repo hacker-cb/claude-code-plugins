@@ -124,22 +124,20 @@ still published: a tracking ref answers only for what the checkout's refspec cov
 which in a single-branch or CI clone is not this branch.
 
 ```bash
-# Ask the URL that RECEIVES pushes, not the remote by name: with a `pushurl` set —
-# fetching from upstream, pushing to a fork — the name resolves to the fetch URL,
-# where this branch was never published and reads as already deleted.
-# And keep the exit status, not just the output: a remote that did not answer
-# prints nothing either, and reading that as "no branch" reports a still-published
-# ref as one the merge cleaned up.
-if published="$(git ls-remote --heads \
-    "$(git remote get-url --push <push-remote>)" refs/heads/<branch>)"; then
-  [ -n "$published" ] || echo "ALREADY GONE — the merge took it"
-else
-  echo "REMOTE DID NOT ANSWER — what is published here is unknown"
-fi
+# The URLs that RECEIVE pushes, not the remote by name: the name resolves to the
+# FETCH url, and where a `pushurl` sends pushes elsewhere — fetching from upstream,
+# pushing to a fork — the branch was never published there at all. `--all` because
+# a push reaches every configured endpoint, so one surviving copy is still
+# published. Keep each exit status: an endpoint that did not answer prints nothing
+# either, and reading that as "no branch" calls a live ref one the merge took.
+git remote get-url --push --all <push-remote> | while read -r url; do
+  git ls-remote --heads "$url" refs/heads/<branch> || echo "NO ANSWER: $url"
+done
 ```
 
-Gone, and the report says which. Unanswered is neither: leave the ref standing and
-report it as unknown.
+A ref line means still published. Nothing at all means the merge already took it,
+and the report says so. `NO ANSWER` is neither: leave the branch standing and
+report that endpoint as unknown.
 
 **It stands on its own.** A dirty tree, or a local tip carrying commits that never
 reached the request, says nothing about the published ref — and this is the ref
