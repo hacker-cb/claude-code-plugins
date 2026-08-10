@@ -20,8 +20,10 @@ Everything below measures against one commit — the state the merge produced.
 **Request** — the merge happened on the forge, so this repository does not carry
 the commit yet. Refresh `<remote>/<base>` through
 [`base-resolution.md`](base-resolution.md), which owns that fetch and what each of
-its outcomes means; a base it leaves unverified stops this step rather than
-seeding the next branch from a stale tip. The refreshed ref is the tip, carrying
+its outcomes means; a base it leaves unverified stops what measures against the tip
+— the HEAD move and the local deletion — rather than seeding the next branch from a
+stale tip. The published ref measures against nothing here and retires anyway
+(*On the remote*). The refreshed ref is the tip, carrying
 the merge plus whatever else landed while the request was open, so work continued
 from it starts current instead of a rebase behind.
 
@@ -114,10 +116,18 @@ still published: a tracking ref answers only for what the checkout's refspec cov
 which in a single-branch or CI clone is not this branch.
 
 ```bash
-git ls-remote --heads <push-remote> refs/heads/<branch>
+# Keep the exit status, not just the output: a remote that did not answer prints
+# nothing either, and reading that as "no branch" reports a still-published ref as
+# one the merge cleaned up.
+if published="$(git ls-remote --heads <push-remote> refs/heads/<branch>)"; then
+  [ -n "$published" ] || echo "ALREADY GONE — the merge took it"
+else
+  echo "REMOTE DID NOT ANSWER — what is published here is unknown"
+fi
 ```
 
-Empty means the merge already took it, and the report says which.
+Gone, and the report says which. Unanswered is neither: leave the ref standing and
+report it as unknown.
 
 **It stands on its own.** Whatever kept the local ref — a dirty tree, a worktree
 holding it, a tip carrying commits that never reached the request — says nothing
@@ -150,7 +160,7 @@ stands now — naming the commit wherever it is detached, so a later commit
 does not land unreachable. Where a ref stayed, name the reason: another worktree
 holds it, the tree is dirty, a change request on it is still open, its tip carries
 commits the merge never took, the remote ref moved past the head the request
-recorded, or a deletion rule refused the push.
+recorded, the remote did not answer, or a deletion rule refused the push.
 
 ## Never
 
