@@ -54,7 +54,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 **Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above; or "none">
 
-**Offers & next steps** — <open change-request offers, follow-ups, any branch left standing, cleanup pointer; or "none">
+**Offers & next steps** — <open change-request offers, follow-ups, any ref left standing (local or on the remote), cleanup pointer; or "none">
 ```
 
 A reader glancing at the `State` column must be able to tell a clean, complete set

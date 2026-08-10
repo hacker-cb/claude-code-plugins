@@ -130,9 +130,15 @@ which in a single-branch or CI clone is not this branch.
 # a push reaches every configured endpoint, so one surviving copy is still
 # published. Keep each exit status: an endpoint that did not answer prints nothing
 # either, and reading that as "no branch" calls a live ref one the merge took.
-git remote get-url --push --all <push-remote> | while read -r url; do
-  git ls-remote --heads "$url" refs/heads/<branch> || echo "NO ANSWER: $url"
-done
+# The resolution itself can fail — a remote missing or misnamed exits non-zero
+# with no output, which is the same silence as a branch that is gone.
+if urls="$(git remote get-url --push --all <push-remote>)"; then
+  printf '%s\n' "$urls" | while read -r url; do
+    git ls-remote --heads "$url" refs/heads/<branch> || echo "NO ANSWER: $url"
+  done
+else
+  echo "NO ANSWER: <push-remote> does not resolve"
+fi
 ```
 
 A ref line means still published. Nothing at all means the merge already took it,
