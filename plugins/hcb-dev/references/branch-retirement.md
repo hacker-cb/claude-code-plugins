@@ -25,24 +25,22 @@ seeding the next branch from a stale tip. The refreshed ref is the tip, carrying
 the merge plus whatever else landed while the request was open, so work continued
 from it starts current instead of a rebase behind.
 
-The remote the branch was **pushed** to answers the other question — what is still
-published — and is refreshed in a call of its own, because in a fork it is not the
-one carrying the base (`base-resolution.md`, *Pushing is a different question*):
+The remote the branch was **pushed** to is pruned in a call of its own, because in
+a fork it is not the one carrying the base (`base-resolution.md`, *Pushing is a
+different question*), so that a tracking ref does not outlive the branch it names:
 
 ```bash
 git fetch --prune <push-remote>
 ```
-
-A surviving `<push-remote>/<branch>` is the branch still standing there; where the
-prune took it, the merge did, and only the local half is left to retire.
 
 ## Free the branch
 
 Git refuses to delete a branch that is checked out, so HEAD moves off it first —
 and only where **this** worktree is the one holding it. Another worktree's branch
 is not yours to move ([`claude-worktrees.md`](claude-worktrees.md)): report it and
-leave it standing. An uncommitted change stops both halves — do not switch, do not
-delete, and say the branch is still there.
+leave it standing. An uncommitted change stops both halves of this section and the
+next — do not switch, do not delete, and say the local branch is still there. What
+is published is a separate question, and *On the remote* answers it either way.
 
 First hit wins:
 
@@ -111,8 +109,15 @@ stays.
 ## On the remote
 
 Request mode only — local mode publishes nothing, and a ref an earlier push left
-there is not this step's to remove. Where the fetch above found no
-`<push-remote>/<branch>`, this half is already done and the report says which.
+there is not this step's to remove. Ask the remote itself whether the branch is
+still published: a tracking ref answers only for what the checkout's refspec covers,
+which in a single-branch or CI clone is not this branch.
+
+```bash
+git ls-remote --heads <push-remote> refs/heads/<branch>
+```
+
+Empty means the merge already took it, and the report says which.
 
 **It stands on its own.** Whatever kept the local ref — a dirty tree, a worktree
 holding it, a tip carrying commits that never reached the request — says nothing
