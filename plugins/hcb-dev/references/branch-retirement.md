@@ -124,10 +124,14 @@ still published: a tracking ref answers only for what the checkout's refspec cov
 which in a single-branch or CI clone is not this branch.
 
 ```bash
-# Keep the exit status, not just the output: a remote that did not answer prints
-# nothing either, and reading that as "no branch" reports a still-published ref as
-# one the merge cleaned up.
-if published="$(git ls-remote --heads <push-remote> refs/heads/<branch>)"; then
+# Ask the URL that RECEIVES pushes, not the remote by name: with a `pushurl` set —
+# fetching from upstream, pushing to a fork — the name resolves to the fetch URL,
+# where this branch was never published and reads as already deleted.
+# And keep the exit status, not just the output: a remote that did not answer
+# prints nothing either, and reading that as "no branch" reports a still-published
+# ref as one the merge cleaned up.
+if published="$(git ls-remote --heads \
+    "$(git remote get-url --push <push-remote>)" refs/heads/<branch>)"; then
   [ -n "$published" ] || echo "ALREADY GONE — the merge took it"
 else
   echo "REMOTE DID NOT ANSWER — what is published here is unknown"
