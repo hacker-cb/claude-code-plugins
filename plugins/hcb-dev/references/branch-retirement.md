@@ -25,6 +25,17 @@ seeding the next branch from a stale tip. The refreshed ref is the tip, carrying
 the merge plus whatever else landed while the request was open, so work continued
 from it starts current instead of a rebase behind.
 
+The remote the branch was **pushed** to answers the other question — what is still
+published — and is refreshed in a call of its own, because in a fork it is not the
+one carrying the base (`base-resolution.md`, *Pushing is a different question*):
+
+```bash
+git fetch --prune <push-remote>
+```
+
+A surviving `<push-remote>/<branch>` is the branch still standing there; where the
+prune took it, the merge did, and only the local half is left to retire.
+
 ## Free the branch
 
 Git refuses to delete a branch that is checked out, so HEAD moves off it first —
@@ -37,18 +48,17 @@ First hit wins:
 
 1. **The parent is available here** — it exists locally, no *other* worktree holds
    it, and it fast-forwards to the tip. `git switch <parent>` unless HEAD already
-   stands on it, which is where a synchronous merge command leaves this worktree;
-   then `git merge --ff-only <tip>` where it trails. Anything else about it — no
-   local branch of that name, a name that resolves ambiguously, commits of its own
-   the tip does not carry — falls to 2 rather than stopping the retirement.
+   stands on it; then `git merge --ff-only <tip>` where it trails. Anything else
+   about it — no local branch of that name, a name that resolves ambiguously,
+   commits of its own the tip does not carry — falls to 2 rather than stopping the
+   retirement.
 2. **Otherwise** — `git switch --detach <tip>`. Detached is the ordinary state
    between tasks, and the next task leaves it the way every task starts: a fresh
    branch cut from that tip, by whoever cuts branches in that flow.
 
 ## Delete it
 
-Both refs are still standing: the merge landed the work and retired nothing. Each
-goes on the proof below, and not before.
+Both refs are still standing: the merge landed the work and retired nothing.
 
 A branch under a change request that is still open stays: that request's head is
 this ref, and what a reviewer asks for next has nowhere to land without it. So
@@ -95,35 +105,38 @@ way that holds, and a head built *on* the local tip is another. A tip carrying
 commits that head does not is work which never got there: keep the branch and say
 what sits on it.
 
-Either proof is a **precondition**, not a formality: without one, the branch
+Either proof is a **precondition**, not a formality: without one, the local branch
 stays.
 
 ## On the remote
 
 Request mode only — local mode publishes nothing, and a ref an earlier push left
-there is not this step's to remove.
+there is not this step's to remove. Where the fetch above found no
+`<push-remote>/<branch>`, this half is already done and the report says which.
 
-The request proof above gates this half too, and gates it harder: the ref is a
-head, so deleting it unpublishes whatever never reached the request and closes any
-request still pointing at it. Delete it against the remote the branch was
-**pushed** to — in a fork, not the one carrying the base (`base-resolution.md`,
-*Pushing is a different question*):
+**It stands on its own.** Whatever kept the local ref — a dirty tree, a worktree
+holding it, a tip carrying commits that never reached the request — says nothing
+about the published one, and this is the ref nothing else can clear afterwards.
+Only what stops a retirement outright stops it here too: another request open on
+this ref, or the user asking to keep the branch.
+
+The containment proof above measures *local* commits, so a repository with no such
+branch has none to strand and needs none. What the deletion does need is the head
+the request recorded, as a lease: the branch can have moved past it since — a push
+while the merge sat queued lands there and nowhere else — and the remote refuses
+the deletion where the two disagree.
 
 ```bash
-git push <push-remote> --delete <branch>
+# The full refname on both halves, never the bare one: it is ambiguous where a tag
+# shares the name, and reaches that tag where the branch is already gone.
+git push --force-with-lease="refs/heads/<branch>:<head>" <push-remote> \
+  --delete "refs/heads/<branch>"
 ```
 
-The tracking ref goes with it. Where the remote no longer carries the branch — the
-repository deletes a head ref of its own at merge — the tracking ref is all that is
-left to clear:
-
-```bash
-git fetch --prune <push-remote>
-```
-
-A deletion rule refusing the push leaves the branch published, and the report is
-the end of it: `/hcb-dev:git-cleanup` writes to no remote, so nothing sweeps it
-afterwards.
+A refused lease means the remote carries commits the request never took: keep the
+branch and say what sits on it. A deletion rule refusing the push leaves it
+published, and the report is the end of that — `/hcb-dev:git-cleanup` writes to no
+remote, so nothing sweeps it afterwards.
 
 ## The report
 
@@ -131,7 +144,8 @@ One line, always: which branch went, on each side it stood, and where HEAD
 stands now — naming the commit wherever it is detached, so a later commit
 does not land unreachable. Where a ref stayed, name the reason: another worktree
 holds it, the tree is dirty, a change request on it is still open, its tip carries
-commits the merge never took, or a deletion rule refused the push.
+commits the merge never took, the remote ref moved past the head the request
+recorded, or a deletion rule refused the push.
 
 ## Never
 

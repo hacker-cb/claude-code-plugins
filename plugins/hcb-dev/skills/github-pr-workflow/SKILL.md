@@ -393,11 +393,8 @@ strategy, pick from the allowed set:
 - If rebase-merge is the only fit but the repo disallows it, or the choice is
   genuinely ambiguous, ask.
 
-**Merge, and nothing else.** Never fold the branch deletion into the merge command
-(`--delete-branch`): it retires the local ref before the remote one and stops at
-the first refusal — a base branch another worktree holds is enough — and a merge
-queue rejects the flag outright, before the merge runs at all. Both refs retire in
-Step 6, on the confirmed merge.
+**Merge, and nothing else** — never `--delete-branch`. Both refs retire in Step 6,
+on the confirmed merge.
 
 ## Step 6 — Monitor the merge
 
@@ -409,8 +406,6 @@ that, never the merge command's exit status:
 - Poll until the PR shows `MERGED`, or report what's blocking it.
 - On `MERGED`, retire the branch — both the local ref and the one on the remote —
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
-  Nothing upstream of here deleted either, and a queued merge lands after the merge
-  command has already returned.
 
 ## Step 7 — Report and suggest next steps
 
