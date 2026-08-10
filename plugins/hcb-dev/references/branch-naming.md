@@ -138,8 +138,8 @@ over a name that is already fine.
 **Normalization is mode-blind.** A local completion needs it as much as a change
 request does — arguably more: `git merge --no-ff` writes the branch name into the
 merge commit (`Merge branch 'claude/…' into …`), where it stays in the parent's
-history permanently. In request mode the name dies with the branch at merge; in
-local mode it is the part that survives.
+history permanently. In request mode the name dies with the branch; in local mode
+it is the part that survives.
 
 **Do it before the first push, and always before a change request opens.** Both
 are one-way doors: a pushed name needs a remote deletion to undo, and a name

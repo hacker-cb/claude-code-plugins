@@ -37,7 +37,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 4. **Open offers and next steps** — a `declined_offer` (a change request the local
    run *could* have opened and the user turned down), follow-up
-   issues worth filing, any branch a completion could not retire and why
+   issues worth filing, any ref a completion could not retire and why
    ([`branch-retirement.md`](branch-retirement.md)), and a pointer to
    `/hcb-dev:git-cleanup` for the worktrees and the older residue.
 

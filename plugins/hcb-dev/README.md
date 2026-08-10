@@ -192,8 +192,9 @@ saying something else.
   becomes of a branch once its merge is confirmed: the tip everything measures
   against (the parent locally, the fetched base after a change request), the
   ladder that frees the worktree holding it, the proof a deletion needs where a
-  squash merge left git unable to see the merge, and the line the report carries
-  either way. Read by whatever lands work.
+  squash merge left git unable to see the merge, the deletion of the ref a change
+  request published, and the line the report carries either way. Read by whatever
+  lands work.
 - [`references/slice-completion.md`](references/slice-completion.md) — how a slice
   *ends*: the completion contract (the signals a backend receives and returns),
   the two backends (`local` git-merge into the parent, and the forge-detected

@@ -2,9 +2,10 @@
 
 Read by whatever *lands* work — a local merge into a parent, or a change request
 the forge reports merged. It owns what follows that merge: freeing the worktree
-holding the branch, deleting the branch, and what the report says about both. It
-sits outside either backend because the step is the same whoever drove the merge,
-and prose copies drift.
+holding the branch, deleting it — locally, and on the remote a change request
+published it to — and what the report says about each. It sits outside either
+backend because the step is the same whoever drove the merge, and prose copies
+drift.
 
 It runs **as soon as the merge is confirmed**, never deferred to
 `/hcb-dev:git-cleanup`: that skill is manual-only and sweeps a whole repository, so
@@ -23,14 +24,6 @@ its outcomes means; a base it leaves unverified stops this step rather than
 seeding the next branch from a stale tip. The refreshed ref is the tip, carrying
 the merge plus whatever else landed while the request was open, so work continued
 from it starts current instead of a rebase behind.
-
-The tracking ref of the branch the forge deleted at merge goes in a call of its
-own, against the remote the branch was **pushed** to — in a fork, not the one
-carrying the base (`base-resolution.md`, *Pushing is a different question*):
-
-```bash
-git fetch --prune <push-remote>
-```
 
 ## Free the branch
 
@@ -54,10 +47,13 @@ First hit wins:
 
 ## Delete it
 
-A ref that is already gone — the merge command took the local one along with the
-remote — leaves only the HEAD question above and the line in the report. A branch
-under a change request that is still open stays too: that request's head is this
-ref, and what a reviewer asks for next has nowhere to land without it.
+Both refs are still standing: the merge landed the work and retired nothing. Each
+goes on the proof below, and not before.
+
+A branch under a change request that is still open stays: that request's head is
+this ref, and what a reviewer asks for next has nowhere to land without it. So
+does one the user asked to keep — both refs, and the report says so. A ref that is
+already gone leaves only the HEAD question above and the line in the report.
 
 **`git branch -d` is not the proof.** With an upstream set, git tests containment
 against that upstream instead of HEAD, so a branch pushed at some earlier point
@@ -102,22 +98,48 @@ what sits on it.
 Either proof is a **precondition**, not a formality: without one, the branch
 stays.
 
-The branch on the remote is a separate question: the change-request driver asks for
-its deletion at merge, and local mode writes to no remote at all.
+## On the remote
+
+Request mode only — local mode publishes nothing, and a ref an earlier push left
+there is not this step's to remove.
+
+The request proof above gates this half too, and gates it harder: the ref is a
+head, so deleting it unpublishes whatever never reached the request and closes any
+request still pointing at it. Delete it against the remote the branch was
+**pushed** to — in a fork, not the one carrying the base (`base-resolution.md`,
+*Pushing is a different question*):
+
+```bash
+git push <push-remote> --delete <branch>
+```
+
+The tracking ref goes with it. Where the remote no longer carries the branch — the
+repository deletes a head ref of its own at merge — the tracking ref is all that is
+left to clear:
+
+```bash
+git fetch --prune <push-remote>
+```
+
+A deletion rule refusing the push leaves the branch published, and the report is
+the end of it: `/hcb-dev:git-cleanup` writes to no remote, so nothing sweeps it
+afterwards.
 
 ## The report
 
-One line, always: which branch went, and where HEAD stands now — naming the commit
-wherever it is detached, so a later commit does not land unreachable. Where the
-branch stayed, name the reason: another worktree holds it, the tree is dirty, a
-change request on it is still open, or its tip carries commits the merge never
-took.
+One line, always: which branch went, on each side it stood, and where HEAD
+stands now — naming the commit wherever it is detached, so a later commit
+does not land unreachable. Where a ref stayed, name the reason: another worktree
+holds it, the tree is dirty, a change request on it is still open, its tip carries
+commits the merge never took, or a deletion rule refused the push.
 
 ## Never
 
 | ❌ | ✅ |
 |---|---|
 | leave a landed branch to `/hcb-dev:git-cleanup` | retire it here; the manual sweep is for what earlier work left behind |
+| hand a refused remote deletion to that sweep instead | say it in the report — it writes to no remote, so nothing picks that branch up afterwards |
+| ask the merge command to retire a ref for you | merge, confirm, then retire — a deletion folded into the merge runs before the confirmation, and what it reports is not what it did |
 | let a deletion command decide whether the work landed | prove containment first — against the tip locally, against the recorded head on a request; no proof, no deletion |
 | move the HEAD of a worktree you do not hold | report it; that worktree belongs to another session |
 | retire the branch that was merged **into** | a parent, and the default branch, are never the branch being retired |
