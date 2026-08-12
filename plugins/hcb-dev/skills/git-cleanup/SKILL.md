@@ -249,8 +249,9 @@ worktree alone:
 | Item | State | What disappears |
 |---|---|---|
 
-Then ask once, over the third section. Wait for an explicit answer; a subset
-means only that subset.
+Then ask once, over the second and third sections together — the plan being
+confirmed is both, and only the first proceeds unasked. Wait for an explicit
+answer; a subset means only that subset.
 
 ## Step 7 — Execute, in this order
 
