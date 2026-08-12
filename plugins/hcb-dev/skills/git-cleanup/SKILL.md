@@ -296,9 +296,10 @@ is not deleted at all — report it instead.
 Three things come first, in this order, on every branch reaching this step:
 
 - **Read the tip once, and carry that object through everything below**, the
-  deletion included: `OID="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>")"`
-  — `--verify -q` so a branch deleted or renamed while the gate waited answers
-  empty rather than a fatal every later proof would then measure against. Empty,
+  deletion included: `OID="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>" || true)"`
+  — `--verify -q` for the empty answer and `|| true` for the exit status, so a
+  branch deleted or renamed while the gate waited leaves a value to test rather
+  than a fatal or a shell that stops on it. Empty,
   or differing from the one the gate's row named, it is a branch that moved while
   the gate waited: the row's restore command describes an object the deletion
   would no longer take, so surface it and ask again over the tip as it stands.
@@ -335,10 +336,11 @@ else
   echo "the proof no longer holds — surface it, saying whether it failed or could not run"
 fi
 # The delete, once, behind a re-read of the ref: a mismatch is an outcome to
-# report, never a silent no-op, and `--verify -q` makes a ref that vanished
-# answer empty — a mismatch like any other — instead of a fatal.
+# report, never a silent no-op. Same `--verify -q` plus `|| true` as above, so a
+# ref that vanished is a mismatch to report and not a fatal or an exit.
 if [ -n "$PROVEN" ]; then
-  if [ "$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>")" = "$OID" ]; then
+  NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>" || true)"
+  if [ "$NOW" = "$OID" ]; then
     git -C "$PROJECT" branch -D "<branch>"
   else
     echo "the branch moved or went away while the gate waited — surface it, and ask again over the tip as it stands"
