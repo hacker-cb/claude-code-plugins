@@ -349,9 +349,9 @@ severity classification only decides what you *fix*, never when you're *done*.
    *When the platform is down, the red check is not yours*.
 3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
    them — see `references/copilot.md`.
-4. **Fix everything step 3's classification marked for fixing** —
-   `references/copilot.md` owns which those are. Batch fixes into as few pushes as
-   is reasonable — under `review_on_push` every push re-requests Copilot and costs
+4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
+   as few pushes as is reasonable — under `review_on_push` every push re-requests
+   Copilot and costs
    another wait at step 6, whether or not a new review actually follows. A push
    that deletes or renames a path also dates the PR body, written once at
    creation: re-read it and correct what it now describes wrongly
