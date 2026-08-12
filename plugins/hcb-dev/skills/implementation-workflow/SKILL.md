@@ -122,9 +122,9 @@ other):
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do. What the work turns up
    along the way — a defect beside the one being fixed, a case the change forgot —
-   is put through the test in
-   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-   here, as it is noticed, and not saved for Phase 3.
+   goes through the test in
+   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) here,
+   as it is noticed, and is not saved for Phase 3.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
    commit the slice was cut from — after a refresh that is the ref, not the local
@@ -177,7 +177,7 @@ completed straight onto the base in Phase 2.
   `feature → base` change request on the feature branch. This is the consented
   exit from local mode.
 - **Issues output** — the incidental findings and the follow-ups reach the user as
-  proposals, per `surfacing-findings.md`; `hcb-dev:issue-tracking` owns the
+  proposals, per `fix-or-surface.md`; `hcb-dev:issue-tracking` owns the
   tracker operations their answer authorizes. In local mode no change request
   closes the intake issue, so closing or linking it rides with that handoff or the
   issue is left stale.
@@ -194,7 +194,7 @@ completed straight onto the base in Phase 2.
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — when to ask, always with a
   recommendation, and flagging rule-vs-architecture drift; read before Phase 1.
 - [`../../references/report-format.md`](../../references/report-format.md) — the Phase 3 report shape.
-- [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md) — the test that decides
+- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — the test that decides
   whether something noticed in passing is fixed in the slice that found it or left
   for the report, what the run's incidental findings and follow-ups cost before
   they can be proposed, and what the user's answer authorizes; read before Phase

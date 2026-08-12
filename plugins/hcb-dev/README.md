@@ -227,10 +227,10 @@ saying something else.
   findings rated by importance, an explicit "none"). Read where a whole run is
   reported. That is a different altitude from a driver's report on one merged
   change request, and the two do not replace each other.
-- [`references/surfacing-findings.md`](references/surfacing-findings.md) — what to
-  do with something the work noticed but never set out to do: the test that
-  decides between fixing it in the change that found it — its own commit, its own
-  type — and leaving it, then, for what is left, the search and the classification
+- [`references/fix-or-surface.md`](references/fix-or-surface.md) — what to do with
+  something the work noticed but never set out to do: the test that decides
+  between fixing it in the change that found it — its own commit, its own type —
+  and leaving it, then, for what is left, the search and the classification
   read *before* the proposal is made, the form it takes under
   `## Out-of-scope observations`, and the rule that only the user's answer writes
   to the tracker — a standing instruction to work autonomously is not that answer.

@@ -33,7 +33,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    **If there are none, say so explicitly** — "no incidental findings" is a real
    result, and its absence must not read as an omission. Each item worth tracking
    reaches the user as a proposal rather than being listed and left —
-   [`surfacing-findings.md`](surfacing-findings.md).
+   [`fix-or-surface.md`](fix-or-surface.md).
 
 4. **Open offers and next steps** — a `declined_offer` (a change request the local
    run *could* have opened and the user turned down), follow-up

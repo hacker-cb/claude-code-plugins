@@ -87,7 +87,7 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    diff. Standalone, `multi-review` resolves its own base.
 4. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    Which findings get fixed here and which are *surfaced* instead is the test in
-   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md),
+   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md),
    which also owns the commit a fix outside this change's own scope takes. A
    reported stale reference is step 2's sweep over again, not a list of lines to
    edit — the finding is what one reviewer happened to see.

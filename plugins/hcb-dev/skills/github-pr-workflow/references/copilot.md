@@ -216,7 +216,7 @@ Copilot does not always tag severity consistently. Rule:
 
 **Critical** and **Important** are fixed in the loop unconditionally. A `Skip` is
 not left alone by its severity either — put it through the test in
-[`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)
+[`../../../references/fix-or-surface.md`](../../../references/fix-or-surface.md)
 and fix here whatever passes. Only what that test turns down goes into the
 end-of-session report (Step 7), under its category so the user sees it.
 

@@ -60,7 +60,7 @@ and the user turned down, recorded so it is not silently dropped), `follow_ups`.
 
 Where no run report follows — a standalone ship, with no orchestrator above this
 slice — `incidental` and `follow_ups` still have a consumer:
-[`surfacing-findings.md`](surfacing-findings.md). Handed to nobody, they end with
+[`fix-or-surface.md`](fix-or-surface.md). Handed to nobody, they end with
 the response.
 
 **Invariants both backends honor:** never complete on an unresolved *actionable*

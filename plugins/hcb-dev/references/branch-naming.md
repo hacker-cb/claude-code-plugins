@@ -43,9 +43,9 @@ history ends up carrying: where a change request is squashed, its title becomes
 the commit's subject on the base.
 
 That covers the work the branch is *for*. A commit riding along with it — a fix
-the work made in passing ([`surfacing-findings.md`](surfacing-findings.md)) —
-takes the type of that fix instead, so the history says which commit is the change
-and which is the passenger.
+the work made in passing ([`fix-or-surface.md`](fix-or-surface.md)) — takes the
+type of that fix instead, so the history says which commit is the change and which
+is the passenger.
 
 Never write the change-request number into the title. Whether a number reaches
 that subject at all is the forge's own merge setting, and where it does, a
