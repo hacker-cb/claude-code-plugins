@@ -121,10 +121,10 @@ other):
    (`branch-naming.md`).
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do. What the work turns up
-   along the way — a defect beside the one being fixed, a case the change forgot —
-   goes through the test in
-   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) here,
-   as it is noticed, and is not saved for Phase 3.
+   along the way goes through the test in
+   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) as it
+   is noticed, here rather than at Phase 3 — what that test turns down still rides
+   the slice's `incidental` output onward to the Phase 3 report.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
    commit the slice was cut from — after a refresh that is the ref, not the local

@@ -29,7 +29,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    nits, follow-ups), grouped by category and rated `Critical` / `Important` — as
    [`../skills/github-pr-workflow/references/copilot.md`](../skills/github-pr-workflow/references/copilot.md)
    defines those two — or `Minor`, this report's own tier for the below-Important
-   items that guidance lumps under `Skip` (its don't-fix-in-the-loop bucket).
+   items that guidance labels `Skip`.
    **If there are none, say so explicitly** — "no incidental findings" is a real
    result, and its absence must not read as an omission. Each item worth tracking
    reaches the user as a proposal rather than being listed and left —

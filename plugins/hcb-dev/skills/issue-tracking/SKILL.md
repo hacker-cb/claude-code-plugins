@@ -26,8 +26,8 @@ and what answers there, never from the hostname.
   later, or found in passing and left alone on the test in
   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md).
 - **Work conceived and finished in the same effort earns none** — the change
-  request and `git log` already record it. So does something found in passing and
-  fixed under that same test.
+  request and `git log` already record it. So does one found in passing and fixed
+  there.
 - **Open-ended architectural direction** belongs to the project's roadmap.
 
 ## Searching the tracker

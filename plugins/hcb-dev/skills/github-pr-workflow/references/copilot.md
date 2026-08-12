@@ -217,14 +217,16 @@ Copilot does not always tag severity consistently. Rule:
 **Critical** and **Important** are fixed in the loop unconditionally. A `Skip` is
 not left alone by its severity either — put it through the test in
 [`../../../references/fix-or-surface.md`](../../../references/fix-or-surface.md)
-and fix here whatever passes. Only what that test turns down goes into the
-end-of-session report (Step 7), under its category so the user sees it.
+and fix here whatever passes, riding a round the Critical/Important fixes were
+making anyway and never starting one of its own: the iteration budget is for what
+blocks the exit, and a `Skip` never does. Only what that test turns down goes into
+the end-of-session report (Step 7), under its category so the user sees it.
 
-**Severity decides what you *fix*, not what you *resolve*.** When the repo requires
-all threads resolved (`required_review_thread_resolution`), every thread must end
-resolved regardless of severity — you *fix* Critical/Important and *acknowledge*
-the rest, but both paths end in a reply + resolve. A left-open nit blocks the
-merge just as hard as a Critical one there.
+**What you *fix* and what you *resolve* are different questions.** When the repo
+requires all threads resolved (`required_review_thread_resolution`), every thread
+must end resolved whatever was decided above — a fix and an acknowledgement both
+end in a reply + resolve. A left-open nit blocks the merge just as hard as a
+Critical one there.
 
 ## Fixing
 
