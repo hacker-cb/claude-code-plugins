@@ -185,7 +185,7 @@ status: surface it, never delete it.
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
 | clean, its branch merged, and **this session cut it** | `remove` (class 2) |
-| a populated submodule, or a `modules` directory in its admin dir | surface (class 3), and name that git dir at the gate: it lives in this worktree alone, so the removal takes whatever history it holds. Do not try to prove it empty — nothing here does |
+| a populated submodule, or a `modules` directory in its admin dir | surface (class 3) — the removal takes whatever history that git dir holds, and nothing here proves it empty |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
@@ -227,9 +227,44 @@ table routed it there. An `rm -rf` is never class 1.
 
 ## Step 6 — The gate
 
-Present one table: item, what it is, age or state, verdict, risk class. Then ask
-once, naming what is irreversible and what it would destroy. Wait for an explicit
-answer; a subset means only that subset.
+Present four sections in this order, each a table, and never a single table with
+a class column — the class is routing, and the number names no consequence the
+user can weigh. Skip a section that would be empty. Every item **the mode listed**
+appears in exactly one of them, a kept one included: the gate is the whole plan,
+not the part that deletes. Mode still decides what is listed — step 3 — so a
+`session` sweep does not gain rows here for what other sessions left behind.
+
+**Proceeding without asking — nothing is lost** (class 1)
+
+| Item | What it is | Action |
+|---|---|---|
+
+**Deleting — recoverable** (class 2). The restore column carries the command with
+the tip as it stands now, so the row is enough to undo the deletion:
+
+| Item | State | How to get it back |
+|---|---|---|
+
+**Needs an explicit yes — irreversible** (class 3). What disappears is named per
+row — the files, the branch's only copy, the submodule git dir that lives in that
+worktree alone:
+
+| Item | State | What disappears |
+|---|---|---|
+
+**Kept — nothing is deleted** (every `keep` and `never touch` verdict: the default
+branch, a live or locked worktree, an open change request, a worktree the host
+made for another session). A kept branch step 7 will still repair — a `[gone]`
+upstream it drops — says so in its own row; a keep promises the item survives,
+not that nothing touches it:
+
+| Item | What it is | Why it stays | Repair, if any |
+|---|---|---|---|
+
+Then ask once, over both deleting sections and every `Repair` cell in the kept
+one — everything class 2 or class 3, tracking repair being class 2 like the
+recoverable deletions. The first section is the only one that proceeds unasked.
+Wait for an explicit answer; a subset means only that subset.
 
 ## Step 7 — Execute, in this order
 
@@ -242,19 +277,32 @@ rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items o
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
 git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's own re-proof
-                                                   #    below — nothing else authorizes a delete
+                                                   #    below, and chained to the $OID re-read
+                                                   #    there — nothing else authorizes a delete
 ```
 
 **`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks
 against `PROJECT`'s HEAD, or the branch's own upstream where it has one — never
 against `$D` — so it deletes what these rows keep and refuses what they proved.
-What authorizes a deletion is the re-proof the branch's own row calls for, **run
-here and not read off step 4**: step 6 waits on a human, and both what the branch
-carries and what the forge says about it can move while it waits. A branch with no
-proof of its own is not deleted at all — report it instead.
+What `-D` does carry is what no plumbing deletion has: it refuses a branch checked
+out in another worktree, resolves the branch ref rather than a symref's target,
+and drops `branch.<name>.*` with it — so the deletion stays `-D`, and the object
+it takes is pinned by re-reading `$OID` in the same chain. What authorizes a
+deletion is the re-proof the branch's own row calls for, **run here and not read
+off step 4**: step 6 waits on a human, and both what the branch carries and what
+the forge says about it can move while it waits. A branch with no proof of its own
+is not deleted at all — report it instead.
 
-Two things come first, in this order, on every branch reaching this step:
+Three things come first, in this order, on every branch reaching this step:
 
+- **Read the tip once, and carry that object through everything below**, the
+  deletion included: `OID="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>" || true)"`
+  — `--verify -q` for the empty answer and `|| true` for the exit status, so a
+  branch deleted or renamed while the gate waited leaves a value to test rather
+  than a fatal or a shell that stops on it. Empty,
+  or differing from the one the gate's row named, it is a branch that moved while
+  the gate waited: the row's restore command describes an object the deletion
+  would no longer take, so surface it and ask again over the tip as it stands.
 - **Re-resolve `$D` and `$DEF` together**, through `base-resolution.md`. The
   repair block at the end of this step reads `$DEF`, so a `$D` emptied here and a
   `$DEF` left standing sends every surviving branch through `--unset-upstream`.
@@ -270,18 +318,33 @@ Then the branch's own proof, whichever routed it:
 # are open and empty again where no forge CLI answered, which take the same path:
 # on to the proofs below.
 OPEN="<those rows, or empty>"
+# $OID — the tip read above; every proof measures that object rather than the ref.
+PROVEN=""
 if [ -n "$OPEN" ]; then
   echo "a request on this tip is open — keep the branch"
 elif [ -z "$D" ]; then
-  echo "skipping -D — default branch unresolved"
+  echo "skipping the delete — default branch unresolved"
+elif [ -z "$OID" ]; then
+  echo "the branch went away while the gate waited — surface it, nothing here to delete"
 # the forge's row: where the merge of the request carrying this tip landed
 elif git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
-  git -C "$PROJECT" branch -D "<branch>"
+  PROVEN=forge
 # git's own rows: the count that routed it
-elif [ "$(git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>")" = 0 ]; then
-  git -C "$PROJECT" branch -D "<branch>"
+elif [ "$(git -C "$PROJECT" rev-list --count "$D..$OID")" = 0 ]; then
+  PROVEN=git
 else
   echo "the proof no longer holds — surface it, saying whether it failed or could not run"
+fi
+# The delete, once, behind a re-read of the ref: a mismatch is an outcome to
+# report, never a silent no-op. Same `--verify -q` plus `|| true` as above, so a
+# ref that vanished is a mismatch to report and not a fatal or an exit.
+if [ -n "$PROVEN" ]; then
+  NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>" || true)"
+  if [ "$NOW" = "$OID" ]; then
+    git -C "$PROJECT" branch -D "<branch>"
+  else
+    echo "the branch moved or went away while the gate waited — surface it, and ask again over the tip as it stands"
+  fi
 fi
 ```
 
