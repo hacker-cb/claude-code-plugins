@@ -227,16 +227,18 @@ table routed it there. An `rm -rf` is never class 1.
 
 ## Step 6 — The gate
 
-Present three sections in this order, each a table, and never a single table with
+Present four sections in this order, each a table, and never a single table with
 a class column — the class is routing, and the number names no consequence the
-user can weigh. Skip a section that would be empty.
+user can weigh. Skip a section that would be empty. Every item discovery
+classified appears in exactly one of them, a kept one included: the gate is the
+whole plan, not the part that deletes.
 
 **Proceeding without asking — nothing is lost** (class 1)
 
 | Item | What it is | Action |
 |---|---|---|
 
-**Deleting — recoverable** (class 2). The restore column carries the command and
+**Deleting — recoverable** (class 2). The restore column carries the command with
 the tip as it stands now, so the row is enough to undo the deletion:
 
 | Item | State | How to get it back |
@@ -249,9 +251,16 @@ worktree alone:
 | Item | State | What disappears |
 |---|---|---|
 
-Then ask once, over the second and third sections together — the plan being
-confirmed is both, and only the first proceeds unasked. Wait for an explicit
-answer; a subset means only that subset.
+**Kept — nothing happens to these** (every `keep` and `never touch` verdict: the
+default branch, a live or locked worktree, an open change request, a worktree the
+host made for another session)
+
+| Item | What it is | Why it stays |
+|---|---|---|
+
+Then ask once, over the two deleting sections together — the plan being confirmed
+is both of them, recoverable and irreversible alike. Wait for an explicit answer;
+a subset means only that subset.
 
 ## Step 7 — Execute, in this order
 
@@ -275,8 +284,11 @@ here and not read off step 4**: step 6 waits on a human, and both what the branc
 carries and what the forge says about it can move while it waits. A branch with no
 proof of its own is not deleted at all — report it instead.
 
-Two things come first, in this order, on every branch reaching this step:
+Three things come first, in this order, on every branch reaching this step:
 
+- **Compare the tip against the one the gate's row named.** Moved, and that row's
+  restore command no longer describes what the deletion would take: surface the
+  branch and ask again over the tip as it stands.
 - **Re-resolve `$D` and `$DEF` together**, through `base-resolution.md`. The
   repair block at the end of this step reads `$DEF`, so a `$D` emptied here and a
   `$DEF` left standing sends every surviving branch through `--unset-upstream`.
