@@ -261,10 +261,10 @@ not that nothing touches it:
 | Item | What it is | Why it stays | Repair, if any |
 |---|---|---|---|
 
-Then ask once, over everything that changes something — the two deleting sections
-and every `Repair` cell in the kept one, tracking repair being class 2 like the
-recoverable deletions. Wait for an explicit answer; a subset means only that
-subset.
+Then ask once, over both deleting sections and every `Repair` cell in the kept
+one — everything class 2 or class 3, tracking repair being class 2 like the
+recoverable deletions. The first section is the only one that proceeds unasked.
+Wait for an explicit answer; a subset means only that subset.
 
 ## Step 7 — Execute, in this order
 
