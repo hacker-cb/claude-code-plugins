@@ -261,9 +261,10 @@ not that nothing touches it:
 | Item | What it is | Why it stays | Repair, if any |
 |---|---|---|---|
 
-Then ask once, over the two deleting sections together — the plan being confirmed
-is both of them, recoverable and irreversible alike. Wait for an explicit answer;
-a subset means only that subset.
+Then ask once, over everything that changes something — the two deleting sections
+and every `Repair` cell in the kept one, tracking repair being class 2 like the
+recoverable deletions. Wait for an explicit answer; a subset means only that
+subset.
 
 ## Step 7 — Execute, in this order
 
@@ -275,21 +276,22 @@ git -C "$PROJECT" worktree remove "<path>"         # 1. --force ONLY on a confir
 rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
-git -C "$PROJECT" update-ref -d \
-    "refs/heads/<branch>" "$OID"                   # 4. ONLY behind the branch's own re-proof
-                                                   #    below — nothing else authorizes a delete
+git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's own re-proof
+                                                   #    below, and chained to the $OID re-read
+                                                   #    there — nothing else authorizes a delete
 ```
 
-**Neither `-d` nor `-D` is the proof, and neither deletes what was approved.**
-`-d` re-checks against `PROJECT`'s HEAD, or the branch's own upstream where it has
-one — never against `$D` — so it deletes what these rows keep and refuses what
-they proved; `-D` checks nothing at all, and takes whatever the ref points to by
-the time it runs. `update-ref -d <ref> <oid>` takes the object the gate showed and
-the proofs below were run against, and fails instead where the branch moved under
-them. What authorizes a deletion is the re-proof the branch's own row calls for,
-**run here and not read off step 4**: step 6 waits on a human, and both what the
-branch carries and what the forge says about it can move while it waits. A branch
-with no proof of its own is not deleted at all — report it instead.
+**`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks
+against `PROJECT`'s HEAD, or the branch's own upstream where it has one — never
+against `$D` — so it deletes what these rows keep and refuses what they proved.
+What `-D` does carry is what no plumbing deletion has: it refuses a branch checked
+out in another worktree, resolves the branch ref rather than a symref's target,
+and drops `branch.<name>.*` with it — so the deletion stays `-D`, and the object
+it takes is pinned by re-reading `$OID` in the same chain. What authorizes a
+deletion is the re-proof the branch's own row calls for, **run here and not read
+off step 4**: step 6 waits on a human, and both what the branch carries and what
+the forge says about it can move while it waits. A branch with no proof of its own
+is not deleted at all — report it instead.
 
 Three things come first, in this order, on every branch reaching this step:
 
@@ -313,18 +315,20 @@ Then the branch's own proof, whichever routed it:
 # are open and empty again where no forge CLI answered, which take the same path:
 # on to the proofs below.
 OPEN="<those rows, or empty>"
-# $OID — the tip read above. Every proof below measures that object, so the ref
-# moving mid-run fails the deletion rather than redirecting it onto new commits.
+# $OID — the tip read above. Every proof measures that object, and each delete is
+# chained to a re-read of the ref, so a branch that moved mid-run is not deleted.
 if [ -n "$OPEN" ]; then
   echo "a request on this tip is open — keep the branch"
 elif [ -z "$D" ]; then
   echo "skipping the delete — default branch unresolved"
 # the forge's row: where the merge of the request carrying this tip landed
 elif git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
-  git -C "$PROJECT" update-ref -d "refs/heads/<branch>" "$OID"
+  [ "$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")" = "$OID" ] \
+    && git -C "$PROJECT" branch -D "<branch>"
 # git's own rows: the count that routed it
 elif [ "$(git -C "$PROJECT" rev-list --count "$D..$OID")" = 0 ]; then
-  git -C "$PROJECT" update-ref -d "refs/heads/<branch>" "$OID"
+  [ "$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")" = "$OID" ] \
+    && git -C "$PROJECT" branch -D "<branch>"
 else
   echo "the proof no longer holds — surface it, saying whether it failed or could not run"
 fi
