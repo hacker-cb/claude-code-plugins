@@ -22,10 +22,12 @@ and what answers there, never from the hostname.
 
 ## What earns an issue
 
-- **Deferred work** — a defect, a follow-up, tech debt: found in passing, or
-  consciously left for later.
+- **Deferred work** — a defect, a follow-up, tech debt: consciously left for
+  later, or found in passing and left alone by the test in
+  [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md).
 - **Work conceived and finished in the same effort earns none** — the change
-  request and `git log` already record it.
+  request and `git log` already record it. A finding fixed where it was found is
+  the same case.
 - **Open-ended architectural direction** belongs to the project's roadmap.
 
 ## Searching the tracker
@@ -99,9 +101,10 @@ work raised become issues opened in the same effort.
   families as roles and the cardinality between them, which mechanism carries the
   kind of work in this repository, and milestones where a project uses them. Read
   it before applying anything to an issue, and before proposing one.
-- [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-  — what reaches the user when work will not fix something, in what form, and what
-  their answer authorizes. Read it before writing that proposal.
+- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — the
+  test deciding whether something found in passing is fixed where it was found or
+  left, and, for a left one, what reaches the user, in what form, and what their
+  answer authorizes. Read it before writing that proposal.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
   flag, an endpoint or a concept name gets resolved on either forge, and which
   hierarchy and dependency mechanism each one has. Read it before writing an

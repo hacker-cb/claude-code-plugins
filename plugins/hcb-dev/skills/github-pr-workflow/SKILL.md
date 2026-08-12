@@ -349,8 +349,9 @@ severity classification only decides what you *fix*, never when you're *done*.
    *When the platform is down, the red check is not yours*.
 3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
    them — see `references/copilot.md`.
-4. **Fix Critical and Important findings.** Batch fixes into as few pushes as is
-   reasonable — under `review_on_push` every push re-requests Copilot and costs
+4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
+   as few pushes as is reasonable — under `review_on_push` every push re-requests
+   Copilot and costs
    another wait at step 6, whether or not a new review actually follows. A push
    that deletes or renames a path also dates the PR body, written once at
    creation: re-read it and correct what it now describes wrongly
@@ -417,17 +418,16 @@ PR — behind a signal that read as a decline, or behind a merge taken outside t
 skill. If one appears, don't drop it: surface its findings in the report below and
 recommend a follow-up (issue or change request) as a next step; creating it is an
 outward action the user authorises, not one you take autonomously —
-[`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-owns that protocol, and the classification is `hcb-dev:issue-tracking`'s.
+[`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) owns
+that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 
 Then give the user a short report:
 
 1. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
-   lower-severity items you deliberately skipped during the loop. Each goes
-   through
-   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md),
-   as the late review's findings above do. Where nothing called this driver, this
+   lower-severity items you deliberately skipped during the loop. Each goes through
+   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md), as
+   the late review's findings above do. Where nothing called this driver, this
    report ends the session and that reference says what ends there; under an
    orchestrator it ends a slice, and the run's own report is the end.
 2. **Suggested next steps** — tech debt to track, tests to add, or related work
@@ -443,10 +443,11 @@ Keep it scannable: short grouped bullets, not an essay.
   stuck or missing check belongs to the platform rather than to the diff, how to
   wait an outage out, and what to re-trigger once it clears. Read it the moment a
   failure does not look like the diff's.
-- [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-  — what a finding this PR will not fix costs before it can be proposed, the form
-  the proposal takes, and what the user's answer authorizes. Read it before
-  Step 7, and before recommending a follow-up on a late review.
+- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — the
+  test deciding whether a finding is fixed in this PR or left, what a left one
+  costs before it can be proposed, the form the proposal takes, and what the
+  user's answer authorizes. Read it before Step 4, before Step 7, and before
+  recommending a follow-up on a late review.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
   flag, an endpoint or a ruleset field gets resolved: the installed CLI's
   `--help` for what this build accepts, the docs sites for what a field means.

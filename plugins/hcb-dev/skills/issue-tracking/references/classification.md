@@ -21,7 +21,7 @@ parked reason.
 
 Read it whole — both CLIs stop at a small default page, and a short read is
 indistinguishable from a missing family.
-[`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)
+[`../../../references/fix-or-surface.md`](../../../references/fix-or-surface.md)
 sets when this read happens relative to a proposal, and how often.
 
 ```bash
