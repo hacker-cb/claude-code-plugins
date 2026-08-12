@@ -217,11 +217,11 @@ Copilot does not always tag severity consistently. Rule:
 **Critical** and **Important** are fixed in the loop unconditionally. A `Skip` is
 not left alone by its severity either — put it through the test in
 [`../../../references/fix-or-surface.md`](../../../references/fix-or-surface.md)
-and fix here whatever passes. Such a fix goes up with the next push this loop
-makes, whether or not anything else is going with it, and it never earns an
-iteration of its own: the budget is for what blocks the exit, and a `Skip` never
-does. Only what that test turns down goes into the end-of-session report (Step 7),
-under its category so the user sees it.
+and fix here whatever passes. Push it like any other fix — where it is the only
+thing to go up, it still goes up — and take the re-review wait that push costs.
+What it never does is spend the loop's iteration budget: that is there for what
+blocks the exit, and a `Skip` never does. Only what that test turns down goes into
+the end-of-session report (Step 7), under its category so the user sees it.
 
 **What you *fix* and what you *resolve* are different questions.** When the repo
 requires all threads resolved (`required_review_thread_resolution`), every thread
