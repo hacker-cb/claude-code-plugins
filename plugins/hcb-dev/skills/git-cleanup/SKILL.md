@@ -185,7 +185,7 @@ status: surface it, never delete it.
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
 | clean, its branch merged, and **this session cut it** | `remove` (class 2) |
-| a populated submodule, or a `modules` directory in its admin dir | surface (class 3), and name that git dir at the gate: it lives in this worktree alone, so the removal takes whatever history it holds. Do not try to prove it empty — nothing here does |
+| a populated submodule, or a `modules` directory in its admin dir | surface (class 3) — the removal takes whatever history that git dir holds, and nothing here proves it empty |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
 | its branch has an open change request | keep |
@@ -227,9 +227,30 @@ table routed it there. An `rm -rf` is never class 1.
 
 ## Step 6 — The gate
 
-Present one table: item, what it is, age or state, verdict, risk class. Then ask
-once, naming what is irreversible and what it would destroy. Wait for an explicit
-answer; a subset means only that subset.
+Present three sections in this order, each a table, and never a single table with
+a class column — the class is routing, and the number names no consequence the
+user can weigh. Skip a section that would be empty.
+
+**Proceeding without asking — nothing is lost** (class 1)
+
+| Item | What it is | Action |
+|---|---|---|
+
+**Deleting — recoverable** (class 2). The restore column carries the command and
+the tip as it stands now, so the row is enough to undo the deletion:
+
+| Item | State | How to get it back |
+|---|---|---|
+
+**Needs an explicit yes — irreversible** (class 3). What disappears is named per
+row — the files, the branch's only copy, the submodule git dir that lives in that
+worktree alone:
+
+| Item | State | What disappears |
+|---|---|---|
+
+Then ask once, over the third section. Wait for an explicit answer; a subset
+means only that subset.
 
 ## Step 7 — Execute, in this order
 
