@@ -93,9 +93,8 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    settles that one, carries the exits a finding of either kind can take, and owns
    the commit a fix outside this change's own scope takes. One exit is this skill's
    own: where the fix is a product or design call, stop and ask rather than
-   deciding it here. A
-   reported stale reference is step 2's sweep over again, not a list of lines to
-   edit — the finding is what one reviewer happened to see.
+   deciding it here. A reported stale reference is step 2's sweep over again, not
+   a list of lines to edit — the finding is what one reviewer happened to see.
    Do not complete with findings left unresolved — and do not leave the
    fixes sitting uncommitted: step 6 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
