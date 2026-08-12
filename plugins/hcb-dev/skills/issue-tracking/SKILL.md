@@ -23,7 +23,7 @@ and what answers there, never from the hostname.
 ## What earns an issue
 
 - **Deferred work** — a defect, a follow-up, tech debt: consciously left for
-  later, or found in passing and left alone on the test in
+  later, or found in passing and left alone by the test in
   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md).
 - **Work conceived and finished in the same effort earns none** — the change
   request and `git log` already record it. A finding fixed where it was found is
