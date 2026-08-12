@@ -86,12 +86,11 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    base so the review covers *this* slice's range, not the cumulative feature
    diff. Standalone, `multi-review` resolves its own base.
 4. **Apply the fixes, then commit them** — that skill reports, it does not fix.
-   Skip a finding only if the fix would change intended behavior, reach well
-   outside the diff, or the finding is plainly wrong. A skipped one is then
-   *surfaced*, not merely noted —
-   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md)
-   owns what that means. A reported stale reference is step 2's sweep over again,
-   not a list of lines to edit — the finding is what one reviewer happened to see.
+   Which findings get fixed here and which are *surfaced* instead is the test in
+   [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md),
+   which also owns the commit a fix outside this change's own scope takes. A
+   reported stale reference is step 2's sweep over again, not a list of lines to
+   edit — the finding is what one reviewer happened to see.
    Do not complete with findings left unresolved — and do not leave the
    fixes sitting uncommitted: step 6 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an

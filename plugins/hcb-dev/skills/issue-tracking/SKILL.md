@@ -22,10 +22,12 @@ and what answers there, never from the hostname.
 
 ## What earns an issue
 
-- **Deferred work** — a defect, a follow-up, tech debt: found in passing, or
-  consciously left for later.
+- **Deferred work** — a defect, a follow-up, tech debt: consciously left for
+  later, or found in passing and left alone on the test in
+  [`../../references/surfacing-findings.md`](../../references/surfacing-findings.md).
 - **Work conceived and finished in the same effort earns none** — the change
-  request and `git log` already record it.
+  request and `git log` already record it. So does something found in passing and
+  fixed under that same test.
 - **Open-ended architectural direction** belongs to the project's roadmap.
 
 ## Searching the tracker

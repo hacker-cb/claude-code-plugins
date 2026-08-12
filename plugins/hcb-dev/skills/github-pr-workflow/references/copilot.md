@@ -209,14 +209,16 @@ Copilot does not always tag severity consistently. Rule:
   - **Important** — real logic bugs, incorrect results in plausible cases,
     significant performance problems, resource leaks, missing error handling on
     a likely path, API/contract mistakes.
-  - **Skip** (do not fix in this loop) — style, naming nits, formatting,
-    subjective readability, "consider" suggestions with no concrete defect,
-    speculative edge cases that can't occur.
+  - **Skip** — style, naming nits, formatting, subjective readability,
+    "consider" suggestions with no concrete defect, speculative edge cases that
+    can't occur.
 - **When in doubt between Important and Skip, treat it as Important.**
 
-Only **Critical** and **Important** get fixed in the loop. Skipped items are NOT
-ignored — they go into the end-of-session report (Step 7) under their category so
-the user sees them.
+**Critical** and **Important** are fixed in the loop unconditionally. A `Skip` is
+not left alone by its severity either — put it through the test in
+[`../../../references/surfacing-findings.md`](../../../references/surfacing-findings.md)
+and fix here whatever passes. Only what that test turns down goes into the
+end-of-session report (Step 7), under its category so the user sees it.
 
 **Severity decides what you *fix*, not what you *resolve*.** When the repo requires
 all threads resolved (`required_review_thread_resolution`), every thread must end
