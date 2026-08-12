@@ -229,9 +229,10 @@ table routed it there. An `rm -rf` is never class 1.
 
 Present four sections in this order, each a table, and never a single table with
 a class column — the class is routing, and the number names no consequence the
-user can weigh. Skip a section that would be empty. Every item discovery
-classified appears in exactly one of them, a kept one included: the gate is the
-whole plan, not the part that deletes.
+user can weigh. Skip a section that would be empty. Every item **the mode listed**
+appears in exactly one of them, a kept one included: the gate is the whole plan,
+not the part that deletes. Mode still decides what is listed — step 3 — so a
+`session` sweep does not gain rows here for what other sessions left behind.
 
 **Proceeding without asking — nothing is lost** (class 1)
 
@@ -251,12 +252,14 @@ worktree alone:
 | Item | State | What disappears |
 |---|---|---|
 
-**Kept — nothing happens to these** (every `keep` and `never touch` verdict: the
-default branch, a live or locked worktree, an open change request, a worktree the
-host made for another session)
+**Kept — nothing is deleted** (every `keep` and `never touch` verdict: the default
+branch, a live or locked worktree, an open change request, a worktree the host
+made for another session). A kept branch step 7 will still repair — a `[gone]`
+upstream it drops — says so in its own row; a keep promises the item survives,
+not that nothing touches it:
 
-| Item | What it is | Why it stays |
-|---|---|---|
+| Item | What it is | Why it stays | Repair, if any |
+|---|---|---|---|
 
 Then ask once, over the two deleting sections together — the plan being confirmed
 is both of them, recoverable and irreversible alike. Wait for an explicit answer;
@@ -272,23 +275,29 @@ git -C "$PROJECT" worktree remove "<path>"         # 1. --force ONLY on a confir
 rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
                                                    #    orphaned still blocks its branch
-git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's own re-proof
+git -C "$PROJECT" update-ref -d \
+    "refs/heads/<branch>" "$OID"                   # 4. ONLY behind the branch's own re-proof
                                                    #    below — nothing else authorizes a delete
 ```
 
-**`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks
-against `PROJECT`'s HEAD, or the branch's own upstream where it has one — never
-against `$D` — so it deletes what these rows keep and refuses what they proved.
-What authorizes a deletion is the re-proof the branch's own row calls for, **run
-here and not read off step 4**: step 6 waits on a human, and both what the branch
-carries and what the forge says about it can move while it waits. A branch with no
-proof of its own is not deleted at all — report it instead.
+**Neither `-d` nor `-D` is the proof, and neither deletes what was approved.**
+`-d` re-checks against `PROJECT`'s HEAD, or the branch's own upstream where it has
+one — never against `$D` — so it deletes what these rows keep and refuses what
+they proved; `-D` checks nothing at all, and takes whatever the ref points to by
+the time it runs. `update-ref -d <ref> <oid>` takes the object the gate showed and
+the proofs below were run against, and fails instead where the branch moved under
+them. What authorizes a deletion is the re-proof the branch's own row calls for,
+**run here and not read off step 4**: step 6 waits on a human, and both what the
+branch carries and what the forge says about it can move while it waits. A branch
+with no proof of its own is not deleted at all — report it instead.
 
 Three things come first, in this order, on every branch reaching this step:
 
-- **Compare the tip against the one the gate's row named.** Moved, and that row's
-  restore command no longer describes what the deletion would take: surface the
-  branch and ask again over the tip as it stands.
+- **Read the tip once, and carry that object through everything below**, the
+  deletion included: `OID="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"`.
+  Differing from the one the gate's row named, it is a branch that moved while the
+  gate waited — the row's restore command describes an object the deletion would
+  no longer take, so surface it and ask again over the tip as it stands.
 - **Re-resolve `$D` and `$DEF` together**, through `base-resolution.md`. The
   repair block at the end of this step reads `$DEF`, so a `$D` emptied here and a
   `$DEF` left standing sends every surviving branch through `--unset-upstream`.
@@ -304,16 +313,18 @@ Then the branch's own proof, whichever routed it:
 # are open and empty again where no forge CLI answered, which take the same path:
 # on to the proofs below.
 OPEN="<those rows, or empty>"
+# $OID — the tip read above. Every proof below measures that object, so the ref
+# moving mid-run fails the deletion rather than redirecting it onto new commits.
 if [ -n "$OPEN" ]; then
   echo "a request on this tip is open — keep the branch"
 elif [ -z "$D" ]; then
-  echo "skipping -D — default branch unresolved"
+  echo "skipping the delete — default branch unresolved"
 # the forge's row: where the merge of the request carrying this tip landed
 elif git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
-  git -C "$PROJECT" branch -D "<branch>"
+  git -C "$PROJECT" update-ref -d "refs/heads/<branch>" "$OID"
 # git's own rows: the count that routed it
-elif [ "$(git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>")" = 0 ]; then
-  git -C "$PROJECT" branch -D "<branch>"
+elif [ "$(git -C "$PROJECT" rev-list --count "$D..$OID")" = 0 ]; then
+  git -C "$PROJECT" update-ref -d "refs/heads/<branch>" "$OID"
 else
   echo "the proof no longer holds — surface it, saying whether it failed or could not run"
 fi
