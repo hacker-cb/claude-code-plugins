@@ -37,10 +37,10 @@ git-cleanup ──────────────────────�
 
 `implementation-workflow` is the front door when you start from tasks or issues;
 `shipping-workflow` is where you enter with finished work in hand. Each skill is
-also useful on its own and triggers from its own `description` — except the three
-that set `disable-model-invocation: true`, `session-dispatch`, `session-handoff`
-and `git-cleanup`: Claude never reaches for any of them on its own, so none is an
-automatic post-completion step. Run them yourself when you want them.
+also useful on its own and triggers from its own `description` — except
+`git-cleanup`, which sets `disable-model-invocation: true`: Claude never reaches
+for it on its own, so it is not an automatic post-completion step. Run it
+yourself when you want it.
 
 Nothing crosses between sessions on its own — you carry every dispatch and every
 handoff by hand, so the prompt text is the whole channel.
@@ -129,7 +129,7 @@ handoff by hand, so the prompt text is the whole channel.
 Two directions of one channel. The discriminator between them is whether the
 work is **done** — not how the ask is worded.
 
-- **`session-dispatch`** — `/hcb-dev:session-dispatch` (manual-only)
+- **`session-dispatch`** — `/hcb-dev:session-dispatch`
   Work this session will **not** do, turned into an order for another session to
   **implement**, run through `implementation-workflow`. This session's numbers,
   coordinates and settled decisions are the payload, and what it did *not* check
@@ -137,11 +137,11 @@ work is **done** — not how the ask is worded.
   methodology, the checks, the terminal deliverable, the completion mode (so the
   planning gate does not ask for it), which forks come back to you, and the
   negative constraint. Ends in a closing act that is never empty: either the
-  shape of the answer to return — carried inline, because a sub-session cannot
-  invoke a manual-only skill on its own — or an end state with nothing coming
-  back. Tags each order so its answer can be matched to it. A question is not
-  dispatched at all: that is a subagent or a workflow in the session that has it.
-- **`session-handoff`** — `/hcb-dev:session-handoff` (manual-only)
+  shape of the answer to return, carried inline, or an end state with nothing
+  coming back. Tags each order so its answer can be matched to it. A question is
+  not dispatched at all: that is a subagent or a workflow in the session that
+  has it.
+- **`session-handoff`** — `/hcb-dev:session-handoff`
   What this session **finished**, in whatever form the result took — code on a
   branch or in a change request, an investigation that changed no files, issues
   rewritten or reclassified, a documentation change. Carries the result, the
