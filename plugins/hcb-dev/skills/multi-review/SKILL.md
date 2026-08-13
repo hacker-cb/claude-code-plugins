@@ -78,10 +78,11 @@ explicit instruction from the caller wins.
 
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
-offer a commit before starting, and name the price of declining: both engines read
-the working tree and see the edits either way, the security review reads a commit
-range and does not see them, and files that are not tracked at all are invisible
-to every reviewer. Offer — never commit anything yourself. A refusal is a fine answer; it
+offer a commit before starting, and name the price of declining: Codex reads the
+working tree and sees the edits either way, `claude-review` is handed a commit
+range and leaves them out, the security review reads a commit range and does not
+see them either, and files that are not tracked at all are invisible to every
+reviewer. Offer — never commit anything yourself. A refusal is a fine answer; it
 just goes into the report. Where the scope *is* the working tree, the commit offer
 alone drops — it would empty the very diff that was asked for — while the price of
 what is untracked still gets named.
@@ -103,7 +104,7 @@ Four questions per reviewer, in order:
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
 | `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
-| `hcb-dev:claude-review` skill | `command -v claude` | base → working tree | yes, expressed in prose | every rung its own `--effort` accepts |
+| `hcb-dev:claude-review` skill | `command -v claude` and `command -v jq` — its report is built by parsing the run's JSON | base → `HEAD`, committed work only; the working tree instead when handed no base | yes, passed as a narrowing beside the range | every rung its own `--effort` accepts |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 What that decides in practice: the security review goes `n/a` on a narrowed or
@@ -149,11 +150,11 @@ Start the detachable reviewers first so they overlap with the inline one.
   and the rung Scope fixed — and no base at all where the scope is the working
   tree alone, which is how that skill is told to review one. Whatever narrowed the
   review goes down with it, in the same prose.
-- **security-review** — invoke the skill inline, last. Do not delegate it to a
-  subagent to save context: the `Agent` tool is withheld from a subagent at the
-  default nesting depth, so the skill's own filtering pass — parallel sub-tasks
-  dropping every candidate below confidence 8 — silently does not run, and what
-  comes back is unfiltered.
+- **security-review** — invoke the skill inline, last. Never delegate it to a
+  subagent to save context, whatever your own tools look like: the skill's
+  filtering pass is parallel sub-tasks dropping every candidate below confidence
+  8, and where that pass cannot run it does not fail — it silently returns the
+  unfiltered candidates as if they had been filtered.
 
 ## 4. Collect
 
@@ -221,10 +222,16 @@ Then the findings, and nothing else: no fixes, no patches, no offer to apply the
 
 **Where the report reads thin for the breadth it covered** — the engines agreed
 on little, or the change reaches across far more ground than the findings touch —
-say so, and name the reviewer this skill cannot reach on its own: `/code-review`
-at `xhigh` or `max`, typed by the user, which fans out across the diff and puts
-an independent verifier on each candidate. Recommend it as the next step and let
-the user decide; never launch it yourself.
+say so, and offer the one thing neither engine here does: `/code-review` typed by
+the user, whose workflow route puts an **independent verifier on every candidate**
+rather than letting the finder judge itself. The rungs are reachable from this
+skill; that verify pass is not, and it is the whole of what the recommendation
+buys.
+
+Hand it over ready to run — the rung, then the base and narrowing §1 resolved,
+spelled out as `<base>...HEAD`. Left off, it falls back to its own default range,
+which on an already-pushed branch is near-empty and reviews almost nothing.
+Recommend, and let the user decide; never launch it yourself.
 
 When the change is about to be completed — merged locally or handed to a change
 request — say the gaps out loud before the handoff rather than burying them under
