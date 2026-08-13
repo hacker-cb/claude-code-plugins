@@ -1,16 +1,15 @@
 ---
 name: session-handoff
 description: >-
-  Manual-only. What this session FINISHED, turned into a prompt to paste into
-  another session — in whatever form the result took: code on a branch or in a
-  change request, an investigation that changed no files, issues rewritten or
+  What this session FINISHED, turned into a prompt to paste into another
+  session — in whatever form the result took: code on a branch or in a change
+  request, an investigation that changed no files, issues rewritten or
   reclassified, a documentation change. Carries the result, the complete list of
   change requests and issues it touched, and what to do next, starting with how
   to reach the work from the reader's own checkout. Also how a session returns
   its answer to an order from `hcb-dev:session-dispatch`. For work NOT done,
   that another session is to implement, use `hcb-dev:session-dispatch` — the
   discriminator is whether the work is done, not how the ask is worded.
-disable-model-invocation: true
 ---
 
 # Session handoff

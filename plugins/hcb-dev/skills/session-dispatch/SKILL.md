@@ -1,8 +1,8 @@
 ---
 name: session-dispatch
 description: >-
-  Manual-only. Work this session is NOT going to do, turned into an order to
-  paste into another session: a task to implement there, run through
+  Work this session is NOT going to do, turned into an order to paste into
+  another session: a task to implement there, run through
   `hcb-dev:implementation-workflow`. Use when the user wants a prompt for a new
   session, hands fixes or a build out to run elsewhere, or runs a master session
   writing orders for sub-sessions. This session's numbers, coordinates and
@@ -12,7 +12,6 @@ description: >-
   `hcb-dev:session-handoff` — the discriminator is whether the work is done.
   Investigating something is not dispatched at all: that is a subagent or a
   workflow in this session.
-disable-model-invocation: true
 ---
 
 # Session dispatch
@@ -29,9 +28,8 @@ The subject comes from the invocation prose, or from what this session has been
 working on. Where more than one piece of work could be meant, ask which one
 before writing anything.
 
-The receiving session has nothing of its own in flight and no view of this one.
-It cannot invoke a manual-only skill by itself, so whatever it must produce
-travels as text inside the order.
+The receiving session has nothing of its own in flight and no view of this one,
+so whatever it must produce travels as text inside the order.
 
 ## The payload
 
