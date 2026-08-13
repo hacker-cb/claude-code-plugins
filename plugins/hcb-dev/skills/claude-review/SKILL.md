@@ -111,7 +111,8 @@ OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")"
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --effort "$LEVEL" --output-format json \
   --setting-sources user --permission-mode manual \
-  --tools "Bash,Read,Grep,Glob,Agent" --allowedTools "Bash(git *)" \
+  --tools "Bash,Read,Grep,Glob,Agent" \
+  --allowedTools "Read,Grep,Glob,Agent,Bash(git *)" \
   < /dev/null > "$OUT" 2> "$OUT.log"
 
 # The coverage record the caller compares against: the range HANDED to the run.
