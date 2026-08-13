@@ -17,47 +17,27 @@ read-only sandbox. It needs `codex` on `PATH` and a live `codex login`.
 This skill is **review-only**. Never fix what it reports — return the findings
 and let the caller decide.
 
-## 1. Pick the base
+## 1. Before launching
 
-Review against a base ref. `--base` diffs `merge-base(base, HEAD)` against the
+[`../../references/review-runs.md`](../../references/review-runs.md) owns what
+every detached review shares: resolving the base, the untracked files no diff
+shows, launching in the background, and the coverage record the run hands back.
+Read it first — the sections below carry only what is this engine's own.
+
+What that base buys here: `--base` diffs `merge-base(base, HEAD)` against the
 **working tree**, so a single pass covers the branch's commits *and* uncommitted
-edits to tracked files.
+edits to tracked files. Handed no base, §2 reviews `--uncommitted` instead —
+staged, unstaged and untracked — which is the one mode that does see untracked
+files, and covers no committed work.
 
-**Resolve it by the shared ladder** —
-[`../../references/base-resolution.md`](../../references/base-resolution.md) owns
-all of it: the rungs, which remote answers which question, and the rule that a
-base sharing no history with `HEAD` is not a base.
-Resolve first, then hand the result to §3.
-
-Being on the default branch is fine: the merge-base collapses to `HEAD`, and the
-review becomes the working-tree diff.
-
-**Handed no base, §3 reviews `--uncommitted`** — staged, unstaged and untracked —
-and prints a `coverage-warning:` line; no committed work is reviewed. §4 reports
-that as partial coverage.
-
-## 2. Check for untracked files first
-
-`--base` reviews `git diff`, and `git diff` never shows untracked files, so
-brand-new files are silently invisible to the review:
-
-```bash
-git ls-files --others --exclude-standard
-```
-
-If that lists anything belonging to the change, say so up front and offer
-`git add -N <file>`, which makes them visible without staging their contents.
-Don't run it yourself — touching the index is the user's call.
-
-## 3. Run it
-
-Write the report **outside the repository under review**: a file left inside
-becomes an untracked file that Codex then reads as part of the change.
+## 2. Run it
 
 `codex exec review --base <ref>` takes a plain git ref and is forge-agnostic.
 
 Use `codex exec review`, not the top-level `codex review`: the latter has no `-o`,
 and the block below splits the verdict from the transcript with it.
+
+Write the report **outside the repository under review**, per §1's reference.
 
 Fill the three values at the top of the block — the base from §1, the model and
 level from the catalog note below. Everything under them is live.
@@ -92,15 +72,6 @@ if [ -s "$OUT" ]; then cat "$OUT"; else echo "codex review failed:"; tail -20 "$
 the report and nothing else. Pass `description: "Codex review"` on the `Bash`
 call so the run is recognizable in the task list.
 
-Run it with `Bash(run_in_background: true)`, whoever asked and however small the
-diff looks — read inline, the call is killed on the tool's own limit, and the kill
-takes the block's `scope:` line and its `codex review failed:` branch with it, so
-the run comes back as neither a review nor a named failure.
-
-The finished task's output is the report: collect it when the task completes and
-take it through §4 before answering. Detached is how it runs, not permission to
-answer without it.
-
 A caller — a person or another skill — may hand you the base, the model or the
 effort level; each is meant to be passed in, and an explicit one wins over the
 resolution here.
@@ -119,29 +90,16 @@ LEVELS="$(printf '%s' "$CAT" | jq -r --arg m "$MODEL" '.models[] | select(.slug=
 one to review with. Take `xhigh` when `$LEVELS` offers it, otherwise that model's
 highest.
 
-## 4. Hand back the findings
+## 3. Hand back the findings
 
-The block prints a `scope:` line — base, file count, model and level — and then Codex's
-report. Pass the scope line on as the coverage record; it is the only statement
-of what this run actually looked at. Return the report itself **verbatim** — no
-paraphrase, no summary, no commentary around it. Its shape is a one-paragraph
-verdict followed by findings:
+The block prints its `scope:` line, any `coverage-warning:` line, and then Codex's
+report — §1's reference owns how all three are read back. The report's shape is a
+one-paragraph verdict followed by findings:
 
 ```text
 - [P1] Short title — /abs/path/file.js:12-14
   Why it breaks, in concrete terms.
 ```
 
-Check the scope line before passing either on:
-
-- `0 files` means nothing was reviewed. Report that as coverage of zero, never as a
-  clean review.
-- A `coverage-warning:` line means the count is over the working tree alone. The
-  number and the findings are real; the commits are not among them. Report it as
-  partial coverage, name which case it was — nothing resolved, or a base refused
-  for sharing no history — and go back to §1 for a base.
-
 A missing CLI, an expired login and a non-repository all leave `-o` empty and land
-in the `codex review failed:` branch, where the log tail names which it was. Pass
-that line through as the result, the same as anything else Codex refuses on,
-rather than working around it.
+in the `codex review failed:` branch, where the log tail names which it was.
