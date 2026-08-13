@@ -17,13 +17,13 @@ marketplace.
 ## How the skills fit together
 
 Most of these skills call each other, so installing the plugin gives you the
-whole pipeline rather than eleven disconnected commands:
+whole pipeline rather than twelve disconnected commands:
 
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
                                            │
               (or finished work) ──────────┴─▶ shipping-workflow ─▶ multi-review ─▶ codex-review
-                                                     │                              code-review (built-in)
+                                                     │                              claude-review
                                                      │                              security-review (built-in)
                                                      └─▶ complete by mode:
                                                            local   ─▶ git merge into parent  (then offer a PR/MR)
@@ -98,11 +98,16 @@ handoff by hand, so the prompt text is the whole channel.
   Run a code review with Codex (`codex exec review`) over the current branch in a
   read-only sandbox. Review-only: returns Codex's findings verbatim and fixes
   nothing.
+- **`claude-review`** — `/hcb-dev:claude-review`
+  The same shape with Claude's own reviewer: `claude -p "/code-review …"` in a
+  separate headless session, at a rung the caller picks — which is what makes it
+  reachable from a pipeline, a batch worker or a subagent, where the interactive
+  command is not. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  Run several independent reviewers over one change at once — `codex-review`, the
-  built-in code-review workflow, the built-in security review — then consolidate
-  the findings and report what each reviewer actually covered (the coverage gate
-  most of the skill exists to keep honest). Report-only.
+  Run several independent reviewers over one change at once — `codex-review`,
+  `claude-review`, the built-in security review — then consolidate the findings
+  and report what each reviewer actually covered (the coverage gate most of the
+  skill exists to keep honest). Report-only.
 
 ### Completing it
 
@@ -279,6 +284,9 @@ Per skill, on top of those:
   commands wrap, so those go through its `api` subcommand.
 - **`dependency-versions`**: the relevant package manager on `PATH`.
 - **`codex-review`**: the `codex` CLI installed and `codex login` live.
+- **`claude-review`**: the `claude` CLI on `PATH` and authenticated, plus `jq` to
+  read the run's JSON envelope. The review runs as its own session, so it spends
+  its own budget rather than the calling session's context.
 - **`multi-review`**: nothing of its own — it picks up whichever reviewers are
   present and records a missing one as a row in the report rather than stopping.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver

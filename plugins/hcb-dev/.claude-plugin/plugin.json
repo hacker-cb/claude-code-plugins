@@ -1,7 +1,7 @@
 {
   "name": "hcb-dev",
-  "description": "Personal developer baseline: a connected set of skills — turn tasks or issues into sliced, reviewed work; keep deferred work in the forge's issue tracker, with the classification resolved from the repository rather than assumed; resolve dependency versions from the registry (Dependabot in sync); seed .gitignore; review a change locally (Codex + multi-reviewer consolidation); complete finished work by mode — merged locally into its parent, or an open change request (PR/MR), with the full review-and-merge drive on GitHub; hand work across sessions as a pasteable prompt in either direction — an order for another session to implement, or what this one finished, in code or in the tracker alone; and sweep a repository's git residue (merged branches, stale worktrees).",
-  "version": "0.21.0",
+  "description": "Personal developer baseline: a connected set of skills — turn tasks or issues into sliced, reviewed work; keep deferred work in the forge's issue tracker, with the classification resolved from the repository rather than assumed; resolve dependency versions from the registry (Dependabot in sync); seed .gitignore; review a change locally with two independent engines (Codex and Claude) consolidated into one coverage-checked report; complete finished work by mode — merged locally into its parent, or an open change request (PR/MR), with the full review-and-merge drive on GitHub; hand work across sessions as a pasteable prompt in either direction — an order for another session to implement, or what this one finished, in code or in the tracker alone; and sweep a repository's git residue (merged branches, stale worktrees).",
+  "version": "0.22.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"

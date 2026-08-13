@@ -2,8 +2,8 @@
 name: multi-review
 description: >-
   Review one change with several independent reviewers at once — the Codex CLI,
-  the built-in code-review workflow, the built-in security review — then
-  consolidate their findings and report what each one actually covered. Use when
+  Claude's own reviewer, the built-in security review — then consolidate their
+  findings and report what each one actually covered. Use when
   the user asks for a review of the current change ("прогони ревью", "review
   this", "second opinion on this diff"), and before finished work is completed —
   merged locally or handed to a change request — unless
@@ -59,14 +59,11 @@ middle", which lands on a different rung per reviewer.
 `codex-review` starts at **`xhigh`** — it resolves its own model and ladder, so
 pass a level and let it place that level; risk mostly moves it *down*.
 
-`code-review` gets **`high`** every time this skill picks the level, because it
-never picks another one: risk does not move it. `xhigh` and `max` arrive only
-from outside — named in this run by the user, or threaded down by a caller —
-never off your own reading of the change. Pass the rung
-itself, never the wording it arrived in: "maximum effort" maps onto `max`, and a
-word off the ladder is not a level at all (step 2 says what one does to the
-target). What risk decides for this reviewer is whether it runs at all, in the
-next step.
+`claude-review` starts at **`medium`**, and risk moves it in both directions:
+this is the reviewer whose breadth *and* cost the level actually controls, so a
+change that reaches past itself earns a rung up and a mechanical one a rung down.
+Pass the rung itself, never the wording it arrived in — "maximum effort" maps
+onto `max`, and a word off the ladder is not a level at all.
 
 Treat the change as high-risk when it reaches past itself (public interface,
 shared helper, config, schema, wire format), cannot be walked back (it writes,
@@ -74,17 +71,17 @@ migrates, publishes, or persists a format someone else reads), meets input whose
 shape you do not control, has nothing else checking it (no tests that run, no
 types, no compiler), removes a guard, an error path or a test, or touches paths
 the project marks sensitive (`CLAUDE.md`, `CODEOWNERS`, `SECURITY.md`). High risk
-holds `codex-review` at its start and argues for the fan-out; mechanics with no
-behavior change lower `codex-review`, and leave the fan-out to the cost question
-in the next step — which is where a skip is decided, and recorded with its
-reason. An explicit instruction from the caller wins.
+holds both engines at or above their start; mechanics with no behavior change
+lower both, and leave whether either runs at all to the cost question in the next
+step — which is where a skip is decided, and recorded with its reason. An
+explicit instruction from the caller wins.
 
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
 offer a commit before starting, and name the price of declining: Codex reads the
-working tree and sees the edits either way, code-review is handed a range and
-leaves those edits out, the security review reads a commit range and does not see
-them either, and files that are not tracked at all are invisible to every
+working tree and sees the edits either way, `claude-review` is handed a commit
+range and leaves them out, the security review reads a commit range and does not
+see them either, and files that are not tracked at all are invisible to every
 reviewer. Offer — never commit anything yourself. A refusal is a fine answer; it
 just goes into the report. Where the scope *is* the working tree, the commit offer
 alone drops — it would empty the very diff that was asked for — while the price of
@@ -107,15 +104,12 @@ Four questions per reviewer, in order:
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
 | `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
-| `code-review` workflow | the `Workflow` tool exists | whatever its target names — `@{upstream}...HEAD` plus `git diff HEAD` when given none | yes, as a target argument | `high` — `xhigh` / `max` only where the user names one |
+| `hcb-dev:claude-review` skill | `command -v claude` and `command -v jq` — its report is built by parsing the run's JSON | base → `HEAD`, committed work only; the working tree instead when handed no base | yes, passed as a narrowing beside the range | every rung its own `--effort` accepts |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 What that decides in practice: the security review goes `n/a` on a narrowed or
 working-tree-only scope, and `n/a` again where the change alters nothing that
-anything executes. The code-review workflow's cheap levels are out of reach:
-`low` and `medium` belong to the `/code-review` slash command, which only the
-user can invoke, and an unknown level is not rejected — it silently becomes
-`high`, with the word forwarded as the review target.
+anything executes.
 
 **That last one is your judgement about behaviour, never a list of extensions.**
 Ask what now runs differently, not what the files are called. A `SKILL.md`, a
@@ -131,14 +125,19 @@ is the one status the coverage gate does not treat as a gap.
 | Reviewer | A run costs | Earns it when |
 |---|---|---|
 | `codex-review` | one pass by one reviewer, long — but detached, so it overlaps the others | always, while it is installed — it is the floor the other two build on |
-| `code-review` | a fan-out of agents, and by far the longest of the three | the change has more than one place to be wrong — it spans files that interact, or moves a convention others follow. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
+| `claude-review` | what its rung buys, detached like the one above: a single pass at the bottom, a fan-out of angles further up | always, while it is installed — and the rung is where the change's breadth gets paid for. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
 | `security-review` | inline, plus its own filtering pass | something now executes differently (above) |
+
+The two engines are independent: a finding both reach on their own is stronger
+evidence than either one restating itself, which is what a run of both buys over
+a deeper run of one.
 
 **Size is a signal, not a threshold.** Two thousand lines of regenerated fixture
 hide less than twenty inside an auth check. Ask what the change could be
 concealing, never how much of it there is — no line counts, no file counts. A
-single self-contained edit whose whole surface fits in one reading is covered by
-one pass; breadth is what the fan-out is for, so give it something wide.
+single self-contained edit whose whole surface fits in one reading is covered at
+the bottom rung; breadth is what the upper ones buy, so save them for something
+wide.
 
 ## 3. Run
 
@@ -147,23 +146,15 @@ Start the detachable reviewers first so they overlap with the inline one.
 - **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base and
   the effort level — and no base at all where the scope is the working tree alone,
   which is how that skill is told to review one.
-- **code-review** — `Workflow({ name: "code-review", args: "high <target>" })`
-  returns immediately and runs detached. The first argument is a rung off that
-  ladder — `high`, or the `xhigh` / `max` Scope allowed — and nothing else ever
-  goes in that position. What follows it is a **target**, read as scope guidance
-  rather than diffed from: a bare SHA selects *that commit*, so a base handed over
-  as one comes back as a review of the single commit it names. Put the scope §1
-  fixed there, spelled out — the range as `<base>...HEAD`, carrying whatever
-  narrowed it, or the working tree alone where that is the scope — then confirm in
-  §4 what the run actually diffed. Never leave it to pick its own scope — §2's
-  Reads cell says what it falls back to, which on an already-pushed branch leaves
-  the commits unread. This skill is the explicit instruction authorizing that
-  call.
-- **security-review** — invoke the skill inline, last. Do not delegate it to a
-  subagent to save context: subagents have neither the `Agent` nor the `Task`
-  tool, so the skill's own filtering pass — parallel sub-tasks dropping every
-  candidate below confidence 8 — silently does not run, and what comes back is
-  unfiltered.
+- **claude-review** — invoke the `hcb-dev:claude-review` skill, passing the base
+  together with the rung §1 fixed — and no base at all where the scope is the
+  working tree alone, which is how that skill is told to review one. Whatever narrowed the
+  review goes down with it, in the same prose.
+- **security-review** — invoke the skill inline, last. Never delegate it to a
+  subagent to save context, whatever your own tools look like: the skill's
+  filtering pass is parallel sub-tasks dropping every candidate below confidence
+  8, and where that pass cannot run it does not fail — it silently returns the
+  unfiltered candidates as if they had been filtered.
 
 ## 4. Collect
 
@@ -178,27 +169,18 @@ about a run that has not finished — and the one status that fits an empty cell
 `n/a`, is the one the coverage gate treats as closed.
 
 **Zero files covered is not a pass.** Decide it by the count, never by matching a
-reviewer's wording: each phrases an empty review differently, and Codex phrases it
-differently again between `--base` and `--uncommitted`.
+reviewer's wording: each phrases an empty review differently, and one engine
+phrases it differently again between a based and a working-tree run.
 
 **Less than the change is not a pass either.** A reviewer that ran against the
 wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it
-counts as a gap — say what it missed.
+counts as a gap — say what it missed. Where the scope was narrowed, the count is
+the range's and not the narrowing's: say what was left unread rather than letting
+it stand as full coverage.
 
-**Ask the code-review run what it diffed.** What it returns is the target it was
-handed, never the range built from it nor the files read. Those are in the run's
-own record of its scope step, which the finished run names twice over — an output
-file and a per-agent journal, either carrying that step's `diffCommand` and
-`files`. Read the command for the ground it covers rather than its spelling:
-`partial` is a run that read *different* ground — one commit, another base, a
-two-dot range against a base that has moved past the fork point — however
-plausible its count, and a corrected target is what closes it. Where the target
-narrowed the review, that count is the range's and not the narrowing's: say what
-was left unread rather than letting it stand as full coverage.
-
-**A nonzero count can still mean the commits went unread.** `codex-review` prints
-a `coverage-warning:` line when it reviewed the working tree alone; the count is
+**A nonzero count can still mean the commits went unread.** Both engines print a
+`coverage-warning:` line when they reviewed the working tree alone; the count is
 then of *those* files. Read that line as well as the number — a count that passes
 the zero check under such a warning is `partial`, and a base is what closes it.
 
@@ -218,7 +200,7 @@ verdict:
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
 | `codex-review` | `<base>`, 3 files | xhigh | 2 findings |
-| `code-review` | `<base>`, 3 files | high | no findings |
+| `claude-review` | `<base>`, 3 files | medium | no findings |
 | `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
 
 Keep the cells short. "Covered" is always `<base>, N files`, effort gets its own
@@ -237,6 +219,19 @@ default branch, so it is mis-scoped in every repo whose changes target `dev` or
 flow can tell it apart from a gap that is still worth closing.
 
 Then the findings, and nothing else: no fixes, no patches, no offer to apply them.
+
+**Where the report reads thin for the breadth it covered** — the engines agreed
+on little, or the change reaches across far more ground than the findings touch —
+say so, and offer the one thing neither engine here does: `/code-review` typed by
+the user, whose workflow route puts an **independent verifier on every candidate**
+rather than letting the finder judge itself. The rungs are reachable from this
+skill; that verify pass is not, and it is the whole of what the recommendation
+buys.
+
+Hand it over ready to run — the rung, then the base and narrowing §1 resolved,
+spelled out as `<base>...HEAD`. Left off, it falls back to its own default range,
+which on an already-pushed branch is near-empty and reviews almost nothing.
+Recommend, and let the user decide; never launch it yourself.
 
 When the change is about to be completed — merged locally or handed to a change
 request — say the gaps out loud before the handoff rather than burying them under
