@@ -76,11 +76,13 @@ NARROW="<what narrows the review — a path, or a focus such as 'only error hand
 # Both values reach an argument string the command parses for flags — `--fix` alone
 # turns a review that promises to change nothing into one that edits the tree, and
 # `--comment` into one that writes to a change request. The level is checked against
-# the ladder; the narrowing is prose, so only a `--`-leading word is refused, which
-# covers every option the command takes without rejecting an ordinary hyphen.
+# the ladder; the narrowing is prose, so `--` is refused wherever it appears, which
+# covers every option the command takes without rejecting an ordinary hyphen — and
+# anywhere rather than after a space, since a tab or a newline separates a word just
+# as well, and a guard keyed to one separator is one the others walk past.
 case "$LEVEL" in low|medium|high|xhigh|max) ;;
   *) echo "claude review failed: '$LEVEL' is not a rung"; exit 1 ;; esac
-case " $NARROW " in *" --"*)
+case "$NARROW" in *--*)
   echo "claude review failed: the narrowing may not contain an option"; exit 1 ;; esac
 
 if [ -n "$BASE" ]; then
