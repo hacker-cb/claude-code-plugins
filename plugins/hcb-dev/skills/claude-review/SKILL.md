@@ -114,7 +114,7 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --effort "$LEVEL" --output-format json \
   --setting-sources user --permission-mode manual \
   --tools "Bash,Read,Grep,Glob,Agent" \
-  --allowedTools "Read,Grep,Glob,Agent,Bash(git *)" \
+  --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
   < /dev/null > "$OUT" 2> "$OUT.log"
 
 # The coverage record the caller compares against: the range HANDED to the run.
@@ -139,11 +139,14 @@ if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/nu
 else
   # Three places the diagnosis can be, and the run picks which: the envelope when
   # it failed inside a successful process, stdout when what came back was not an
-  # envelope at all, stderr when the process itself failed. Print all three, or a
-  # non-JSON stdout leaves `jq` silent under its own redirect and nothing is said.
+  # envelope at all, stderr when the process itself failed. Capture the first and
+  # fall back on emptiness, not on `jq`'s exit status — valid JSON missing every
+  # field exits 0 printing nothing, and that silence is the case worth catching.
   echo "claude review failed:"
-  jq -r '[.subtype, .result, (.permission_denials | tostring)] | map(select(. != null and . != "")) | .[]' \
-    "$OUT" 2>/dev/null || head -c 500 "$OUT"
+  DIAG=$(jq -r '[.subtype, .result,
+                 ((.permission_denials // []) | if length > 0 then tostring else empty end)]
+                | map(select(. != null and . != "")) | .[]' "$OUT" 2>/dev/null)
+  if [ -n "$DIAG" ]; then printf '%s\n' "$DIAG"; else head -c 500 "$OUT"; fi
   tail -20 "$OUT.log"
 fi
 ```
