@@ -65,11 +65,11 @@ case "$NARROW" in *--*)
   echo "claude review failed: the narrowing may not contain an option"; exit 1 ;; esac
 
 if [ -n "$BASE" ]; then
-  # Empty means no shared history, which §1's reference refuses as a base —
-  # unguarded it would reach both the count and the target as a blank.
+  # Empty covers both an unknown ref and no shared history, and the two are not
+  # told apart here — unguarded either reaches the count and the target as a blank.
   MERGE_BASE="$(git merge-base "$BASE" HEAD)" || MERGE_BASE=""
   [ -n "$MERGE_BASE" ] \
-    || { echo "claude review failed: $BASE shares no history with HEAD"; exit 1; }
+    || { echo "claude review failed: $BASE is unusable as a base — unknown ref, or no history shared with HEAD"; exit 1; }
   TARGET="$MERGE_BASE...HEAD"
   COVERED=$(git diff --name-only "$MERGE_BASE...HEAD" | wc -l | tr -d ' ')
   OUTSIDE=$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')

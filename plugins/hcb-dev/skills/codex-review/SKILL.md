@@ -51,11 +51,12 @@ EFFORT="<xhigh, or that model's highest when it offers no xhigh>"
 # or one, and an unquoted expansion would leave that to word-splitting.
 if [ -n "$BASE" ]; then
   set -- --base "$BASE"
-  # Empty means no shared history, which §1's reference refuses as a base —
-  # unguarded it would reach the count as a blank and die there instead of here.
+  # Empty covers both an unknown ref and no shared history, and the two are not
+  # told apart here — unguarded either reaches the count as a blank and dies
+  # there, past the point where the block could name what went wrong.
   MERGE_BASE="$(git merge-base "$BASE" HEAD)" || MERGE_BASE=""
   [ -n "$MERGE_BASE" ] \
-    || { echo "codex review failed: $BASE shares no history with HEAD"; exit 1; }
+    || { echo "codex review failed: $BASE is unusable as a base — unknown ref, or no history shared with HEAD"; exit 1; }
   COVERED=$(git diff --name-only "$MERGE_BASE" | wc -l | tr -d ' ')
   # `--base` diffs, and a diff never shows untracked files — so in THIS mode they
   # are outside both the count and the review. `--uncommitted` genuinely covers
@@ -110,7 +111,7 @@ highest.
 
 ## 3. Hand back the findings
 
-The block prints its `scope:` line, any `coverage-warning:` line, and then Codex's
+The block prints its `scope:` line, any `coverage-warning:` lines, and then Codex's
 report — §1's reference owns how all three are read back. The report's shape is a
 one-paragraph verdict followed by findings:
 
