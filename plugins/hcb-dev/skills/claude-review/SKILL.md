@@ -123,7 +123,7 @@ echo "scope: ${BASE:-working tree}, $COVERED files, $LEVEL"
 [ -n "$BASE" ] \
   || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
 [ "$OUTSIDE" = 0 ] \
-  || echo "coverage-warning: $OUTSIDE path(s) outside the range are NOT reviewed"
+  || echo "coverage-warning: $OUTSIDE uncommitted path(s) are NOT reviewed — the range covers commits only"
 # A successful envelope does not prove a review happened: a run killed mid-flight
 # still reports success with an EMPTY result, which would print as a clean review.
 if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then

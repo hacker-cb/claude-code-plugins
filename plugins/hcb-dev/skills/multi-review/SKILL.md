@@ -147,8 +147,8 @@ Start the detachable reviewers first so they overlap with the inline one.
   the effort level — and no base at all where the scope is the working tree alone,
   which is how that skill is told to review one.
 - **claude-review** — invoke the `hcb-dev:claude-review` skill, passing the base
-  and the rung Scope fixed — and no base at all where the scope is the working
-  tree alone, which is how that skill is told to review one. Whatever narrowed the
+  together with the rung §1 fixed — and no base at all where the scope is the
+  working tree alone, which is how that skill is told to review one. Whatever narrowed the
   review goes down with it, in the same prose.
 - **security-review** — invoke the skill inline, last. Never delegate it to a
   subagent to save context, whatever your own tools look like: the skill's
