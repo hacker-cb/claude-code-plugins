@@ -51,10 +51,20 @@ EFFORT="<xhigh, or that model's highest when it offers no xhigh>"
 # or one, and an unquoted expansion would leave that to word-splitting.
 if [ -n "$BASE" ]; then
   set -- --base "$BASE"
-  COVERED=$(git diff --name-only "$(git merge-base "$BASE" HEAD)" | wc -l | tr -d ' ')
+  MERGE_BASE="$(git merge-base "$BASE" HEAD)"
+  COVERED=$(git diff --name-only "$MERGE_BASE" | wc -l | tr -d ' ')
+  # `--base` diffs, and a diff never shows untracked files — so in THIS mode they
+  # are outside both the count and the review. `--uncommitted` genuinely covers
+  # them, which is why the count there comes from `git status` instead.
+  UNTRACKED=$(git ls-files --others --exclude-standard | wc -l | tr -d ' ')
+  # Standing on the base collapses the merge-base onto HEAD: the run is then a
+  # working-tree review wearing a base's scope line.
+  [ "$MERGE_BASE" = "$(git rev-parse HEAD)" ] && ON_BASE=1 || ON_BASE=0
 else
   set -- --uncommitted
   COVERED=$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')
+  UNTRACKED=0
+  ON_BASE=0
 fi
 
 OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")"
@@ -62,9 +72,13 @@ codex exec review "$@" -c model="$MODEL" -c model_reasoning_effort="$EFFORT" \
   -o "$OUT" > "$OUT.log" 2>&1
 # The coverage record the caller compares against.
 echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $EFFORT"
-# A SEPARATE line, never appended to the scope one.
+# SEPARATE lines, never appended to the scope one.
 [ -n "$BASE" ] \
   || echo "coverage-warning: no base — the commits on this branch are NOT reviewed"
+[ "${UNTRACKED:-0}" = 0 ] \
+  || echo "coverage-warning: $UNTRACKED untracked path(s) are NOT reviewed — a diff does not show them"
+[ "${ON_BASE:-0}" = 0 ] \
+  || echo "coverage-warning: HEAD is at the base — this covered the working tree, not any commit"
 if [ -s "$OUT" ]; then cat "$OUT"; else echo "codex review failed:"; tail -20 "$OUT.log"; fi
 ```
 

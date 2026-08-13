@@ -65,7 +65,7 @@ case "$NARROW" in *--*)
   echo "claude review failed: the narrowing may not contain an option"; exit 1 ;; esac
 
 if [ -n "$BASE" ]; then
-  # Empty means no shared history, which base-resolution.md refuses as a base —
+  # Empty means no shared history, which §1's reference refuses as a base —
   # unguarded it would reach both the count and the target as a blank.
   MERGE_BASE="$(git merge-base "$BASE" HEAD)" || MERGE_BASE=""
   [ -n "$MERGE_BASE" ] \
@@ -133,8 +133,8 @@ fi
 Where there is a base the target is a **ref range**, which fixes what the run
 diffs; prose is read as advice it may set aside. The narrowing rides after the
 range, separated, so it cannot be mistaken for the target. A working-tree review
-has no range to give, so its scope stays advisory — §3 says what that costs the
-coverage record.
+has no range to give, so its scope stays advisory, and §1's reference says what an
+advisory scope costs the coverage record.
 
 Pass `description: "Claude review"` on the `Bash` call so the run is recognizable
 in the task list.

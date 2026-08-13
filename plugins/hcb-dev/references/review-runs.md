@@ -28,20 +28,24 @@ engine reads the tree, an empty range where it reads commits. Report what it
 actually covered either way.
 
 **With no base at all**, a run reviews the working tree alone and covers no
-committed work. That is a `coverage-warning:` below, not a failure.
+committed work. That is a `coverage-warning:` below rather than a failure — and it
+is also unfinished business: resolve a base and run again, because nothing
+downstream turns those commits into reviewed ones.
 
 ## What the diff cannot see
 
-`git diff` never shows untracked files, so a brand-new file is invisible to any
-engine reading a diff — including one that reads the working tree:
+`git diff` never shows untracked files, so a brand-new file is invisible to a run
+scoped by a diff — which is most of them. The exception is an engine mode that
+reads the working tree through `git status` rather than a diff; where a skill says
+its mode does that, this section does not apply to it.
 
 ```bash
 git ls-files --others --exclude-standard
 ```
 
-If that lists anything belonging to the change, say so **before launching**, and
-offer `git add -N <file>`, which makes the paths visible without staging their
-contents. Never run it yourself: the index is the user's.
+Where it applies and that lists anything belonging to the change, say so **before
+launching**, and offer `git add -N <file>`, which makes the paths visible without
+staging their contents. Never run it yourself: the index is the user's.
 
 Write the run's report **outside the repository under review**. A file left inside
 becomes an untracked file the next run reads as part of the change.
