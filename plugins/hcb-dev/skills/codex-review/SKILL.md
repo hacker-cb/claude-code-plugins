@@ -51,7 +51,11 @@ EFFORT="<xhigh, or that model's highest when it offers no xhigh>"
 # or one, and an unquoted expansion would leave that to word-splitting.
 if [ -n "$BASE" ]; then
   set -- --base "$BASE"
-  MERGE_BASE="$(git merge-base "$BASE" HEAD)"
+  # Empty means no shared history, which §1's reference refuses as a base —
+  # unguarded it would reach the count as a blank and die there instead of here.
+  MERGE_BASE="$(git merge-base "$BASE" HEAD)" || MERGE_BASE=""
+  [ -n "$MERGE_BASE" ] \
+    || { echo "codex review failed: $BASE shares no history with HEAD"; exit 1; }
   COVERED=$(git diff --name-only "$MERGE_BASE" | wc -l | tr -d ' ')
   # `--base` diffs, and a diff never shows untracked files — so in THIS mode they
   # are outside both the count and the review. `--uncommitted` genuinely covers
