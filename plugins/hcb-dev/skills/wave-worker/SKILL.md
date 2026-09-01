@@ -22,7 +22,10 @@ The order this session started with is the contract: its slots are
 master (the session running `hcb-dev:master-session`) is reached per
 [`../../references/session-comms.md`](../../references/session-comms.md), and
 the return takes the shape of
-[`../../references/order-return.md`](../../references/order-return.md).
+[`../../references/order-return.md`](../../references/order-return.md). The
+workflow the order names runs with the order's settlements threaded in — the
+`Completion:` and `Merge authority:` slots are the invocation's completion
+mode and merge authority, and no gate inside re-defaults them.
 
 ## On arrival — before the named workflow starts
 
@@ -66,8 +69,9 @@ the return takes the shape of
 - **Statuses at the order's milestones** — a change request opened, merged,
   the session stuck — one line each, the first line self-contained. Boundary
   changes agreed with the master mid-flight count as milestones too. Where the
-  order gives the merge to the queue, the merge itself waits for the master's
-  go — green is readiness, not the slot.
+  order gives the merge to the queue, "green, waiting for the slot" is itself
+  a milestone to report, and the merge then waits for the master's go — green
+  is readiness, not the slot.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
   lost goes to the tracker, what blocks goes to this session's user, and work
   that depends on neither continues.

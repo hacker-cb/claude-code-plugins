@@ -88,8 +88,9 @@ Run this through <the process — /hcb-dev:implementation-workflow where there i
 something to build; a tracker-only batch names what runs instead>. <Plus
 <domain methodology> — mandatory.> <checks> must pass.
 Completion: <mode> — settled here, so don't ask.
-Merge authority: <on green | the master's go — the queue decides your turn;
-green is readiness, not the slot> — settled here too.
+Merge authority: <on green | the master's go — the queue decides your turn:
+report "green, waiting for the slot" and hold; green is readiness, not the
+slot> — settled here too.
 Decide yourself: <forks>. Agree with the master BEFORE building: <forks>.
 Through the master to the user: <forks>.
 
@@ -101,7 +102,8 @@ are not yours>
 Master: <its title>, session id <id>. The wave ledger — standing constraints
 included — is <its coordinate; or: local to the master>. On start, confirm
 your composition to it and name your own title and session id. Report status
-when <the milestones — a change request opens, merges, you are stuck>.
+when <the milestones — a change request opens, merges, you are green and
+waiting for the slot, you are stuck>.
 Questions go to the master; master unreachable — to your user in chat, and
 keep working on what does not depend on the answer.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker

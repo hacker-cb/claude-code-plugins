@@ -46,7 +46,9 @@ master, and recovery ends at this machine's config directory.
    change request that must not merge, a foreign stash, a pinned version. A
    return whose claims touch one of these is checked against it before either
    is believed.
-5. **Merge queue and gates** — the order inside the current wave, and what
+5. **Merge queue and gates** — the order inside the current wave, which batch
+   stands at "green, waiting for the slot" (written the moment the report
+   arrives — a restart must not lose a batch holding on the queue), and what
    opens each later wave.
 6. **Expectations** — what is awaited from whom: unconfirmed batches, answers
    owed, mandates given with the order's authorization and not yet met.
