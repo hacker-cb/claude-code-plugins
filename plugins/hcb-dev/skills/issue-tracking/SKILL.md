@@ -6,7 +6,8 @@ description: >-
   an issue, ticket, bug or piece of tech debt; when something surfaces outside the
   current task that will not be fixed now — a defect, a missing test, a
   duplication, a TODO left behind; before substantive work, to find the issue that
-  already covers it; when the user asks what to pick up next; and when a
+  already covers it; when the user asks what to pick up next — though a survey
+  of the whole backlog is `hcb-dev:backlog-survey`; and when a
   discussion lands on a topic whose earlier decisions may sit in an issue. GitHub
   and GitLab alike. Not for implementing an issue
   (`hcb-dev:implementation-workflow`), not for completing finished work
@@ -79,7 +80,9 @@ mechanisms on both forges — the entry points are in
 - **When a discussion lands on a topic** — search that area and bring what you
   find into the conversation; issues carry prior decisions and deferred scope.
 - **When asked what to pick up** — surface the candidates with reasoning instead
-  of choosing one. An issue whose parked reason still holds is waiting, not ready.
+  of choosing one. An issue whose parked reason still holds is waiting, not
+  ready. This is the single-pick question; laying out a whole slice is
+  `hcb-dev:backlog-survey`.
 
 ## Citing and closing
 
