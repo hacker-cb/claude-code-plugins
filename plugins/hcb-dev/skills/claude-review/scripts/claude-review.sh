@@ -64,7 +64,8 @@ else
   OUTSIDE_NOTE="untracked path(s) are NOT reviewed — a diff does not show them"
 fi
 
-OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")"
+OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")" && [ -n "$OUT" ] \
+  || { echo "claude review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }
 # Armed before the guard below, or that guard's exit leaves the file it just made.
 trap 'rm -f "$OUT" "$OUT.log"' EXIT
 # The report lives outside the repository under review; inside, it becomes an
@@ -82,9 +83,16 @@ fi
 # temp directory is writable from inside the sandbox wherever `TMPDIR` is unset or
 # points at a shared one, and a verdict a reviewed repository can overwrite is a
 # verdict it can forge. Built with `jq`, so the paths are escaped rather than pasted.
-SANDBOX="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" '{sandbox:{
+# `info/` in both git directories rides along: `info/exclude` decides what `git
+# status` shows, so a run able to write it can hide its own changes from the check
+# below. The index is deliberately not denied — git rewrites it while merely reading.
+GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
+GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
+SANDBOX="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{sandbox:{
   enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
-  network:{strictAllowlist:true}, filesystem:{denyWrite:[$out,$log]}}}')" \
+  network:{strictAllowlist:true},
+  filesystem:{denyWrite:([$out,$log]
+    + ([$gc,$gd] | map(select(. != "") | . + "/info") | unique))}}}')" \
   || { echo "claude review failed: could not build the sandbox settings"; exit 1; }
 # What the run leaves behind, to compare against below: this pass promises to
 # change nothing, and the sandbox permits writes inside the working directory.
@@ -100,7 +108,7 @@ tree_state() {
   git for-each-ref --format='%(refname) %(objectname)'
   git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD
   git ls-files --others --exclude-standard -z \
-    | while IFS= read -r -d "" f; do git hash-object -- "$f"; done
+    | while IFS= read -r -d "" f; do printf '%s ' "$f"; git hash-object -- "$f"; done
 }
 BEFORE="$(tree_state)"
 # --setting-sources user: the repository under review is untrusted input, and its
@@ -122,6 +130,10 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
   < /dev/null > "$OUT" 2> "$OUT.log"
 
+# Before the branch below, not inside it: a run that edited the tree and then died
+# still edited the tree, and that is the case the warning exists for.
+[ "$BEFORE" = "$(tree_state)" ] \
+  || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
 # A successful envelope does not prove a review happened: a run killed mid-flight
 # still reports success with an EMPTY result, which would print as a clean review.
 if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then
@@ -135,8 +147,6 @@ if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/nu
     || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
   # Its own line too, and not a coverage one: this says what the run DID, not what it
   # read. The count above was taken before the run and stops describing the tree here.
-  [ "$BEFORE" = "$(tree_state)" ] \
-    || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
   # A denial does not void the run — it narrows it, and a narrowed run is partial.
   # The fallback keeps a failed count from printing a warning with a blank number.
   DENIED=$(jq -r '(.permission_denials // []) | length' "$OUT" 2>/dev/null) || DENIED=0

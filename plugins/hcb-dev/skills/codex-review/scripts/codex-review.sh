@@ -28,36 +28,44 @@ while [ $# -gt 0 ]; do
 done
 
 # The catalog is the only authority on both — never memory, and never
-# ~/.codex/config.toml, which differs from machine to machine. One offline call
-# prints the model list and each model's ladder.
-# Its own error, not a guess at one: an old CLI without the subcommand, a broken
-# config and a permissions failure are three different diagnoses, and swallowing
-# stderr turns all three into whichever one was guessed here.
-CATLOG="$(mktemp "${TMPDIR:-/tmp}/codex-catalog.XXXXXX")"
-trap 'rm -f "$CATLOG"' EXIT
-CAT="$(codex debug models 2>"$CATLOG")" \
-  || { echo "codex review failed: the model catalog is unreadable"; tail -5 "$CATLOG"; exit 1; }
-# `priority` ascends from the newest frontier model, so entry 0 is the one to
-# review with.
-[ -n "$MODEL" ] || MODEL="$(printf '%s' "$CAT" \
-  | jq -r '[.models[] | select(.visibility=="list")] | sort_by(.priority)[0].slug')"
-LEVELS="$(printf '%s' "$CAT" \
-  | jq -r --arg m "$MODEL" '.models[] | select(.slug==$m) | [.supported_reasoning_levels[].effort] | join(" ")')"
-[ -n "$LEVELS" ] \
-  || { echo "codex review failed: '$MODEL' is not a model this catalog lists"; exit 1; }
-if [ -z "$EFFORT" ]; then
-  case " $LEVELS " in
-    *" xhigh "*) EFFORT="xhigh" ;;
-    # The ladder ascends, so the last entry is that model's highest.
-    *) EFFORT="${LEVELS##* }" ;;
-  esac
-else
-  # Word-by-word, not `case " $LEVELS " in *" $EFFORT "*`: the value lands inside the
-  # pattern there, so a level of `*` matches every ladder and passes validation.
-  ok=0
-  for l in $LEVELS; do [ "$l" = "$EFFORT" ] && ok=1; done
-  [ "$ok" = 1 ] \
-    || { echo "codex review failed: '$EFFORT' is not a level $MODEL offers — it has: $LEVELS"; exit 1; }
+# ~/.codex/config.toml, which differs from machine to machine. Read only when
+# something is left to resolve: a caller who named both has said what to run, and a
+# catalog that cannot be read is then not this run's problem.
+if [ -z "$MODEL" ] || [ -z "$EFFORT" ]; then
+  CATLOG="$(mktemp "${TMPDIR:-/tmp}/codex-catalog.XXXXXX")" && [ -n "$CATLOG" ] \
+    || { echo "codex review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }
+  trap 'rm -f "$CATLOG"' EXIT
+  # Its own error, not a guess at one: an old CLI without the subcommand, a broken
+  # config and a permissions failure are three different diagnoses, and swallowing
+  # stderr turns all three into whichever one was guessed here.
+  CAT="$(codex debug models 2>"$CATLOG")" \
+    || { echo "codex review failed: the model catalog is unreadable"; tail -5 "$CATLOG"; exit 1; }
+  printf '%s' "$CAT" | jq -e . >/dev/null 2>&1 \
+    || { echo "codex review failed: the model catalog is not the JSON this expects"; exit 1; }
+  # `priority` ascends from the newest frontier model, so entry 0 is the one to
+  # review with. Each failure below names its own cause: they take different fixes.
+  [ -n "$MODEL" ] || MODEL="$(printf '%s' "$CAT" \
+    | jq -r '[.models[] | select(.visibility=="list")] | sort_by(.priority)[0].slug // empty')"
+  [ -n "$MODEL" ] \
+    || { echo "codex review failed: the catalog lists no model to review with"; exit 1; }
+  LEVELS="$(printf '%s' "$CAT" \
+    | jq -r --arg m "$MODEL" '.models[] | select(.slug==$m) | [.supported_reasoning_levels[].effort] | join(" ")')"
+  [ -n "$LEVELS" ] \
+    || { echo "codex review failed: '$MODEL' has no reasoning ladder in this catalog"; exit 1; }
+  if [ -z "$EFFORT" ]; then
+    case " $LEVELS " in
+      *" xhigh "*) EFFORT="xhigh" ;;
+      # The ladder ascends, so the last entry is that model's highest.
+      *) EFFORT="${LEVELS##* }" ;;
+    esac
+  else
+    # Word-by-word, not `case " $LEVELS " in *" $EFFORT "*`: the value lands inside the
+    # pattern there, so a level of `*` matches every ladder and passes validation.
+    ok=0
+    for l in $LEVELS; do [ "$l" = "$EFFORT" ] && ok=1; done
+    [ "$ok" = 1 ] \
+      || { echo "codex review failed: '$EFFORT' is not a level $MODEL offers — it has: $LEVELS"; exit 1; }
+  fi
 fi
 
 # Positional parameters, not an interpolated string: the scope is two arguments
@@ -87,9 +95,10 @@ fi
 
 # Written outside the repository under review: a report left inside becomes an
 # untracked file the next run reads as part of the change.
-OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")"
+OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")" && [ -n "$OUT" ] \
+  || { echo "codex review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }
 # Widened before the guard below, or that guard's exit leaves the file it just made.
-trap 'rm -f "$OUT" "$OUT.log" "$CATLOG"' EXIT
+trap 'rm -f "$OUT" "$OUT.log" "${CATLOG:-}"' EXIT
 # Through a variable: an empty expansion inline would leave the pattern `/*`, which
 # matches every absolute path and fails every run outside a repository.
 TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
@@ -99,7 +108,11 @@ if [ -n "$TOP" ]; then
 fi
 # `codex exec review`, not the top-level `codex review`: the latter has no `-o`,
 # which is what splits the verdict from the transcript.
-codex exec review "$@" -c model="$MODEL" -c model_reasoning_effort="$EFFORT" \
+# `-s read-only` states the write policy here rather than inheriting it from the
+# machine's own config, which this script already refuses to trust for the model:
+# a review that can edit the tree it reviews is not the review this skill promises.
+# It belongs to `codex exec`, before the subcommand — `review` itself refuses it.
+codex exec -s read-only review "$@" -c model="$MODEL" -c model_reasoning_effort="$EFFORT" \
   -o "$OUT" > "$OUT.log" 2>&1
 if [ -s "$OUT" ]; then
   # The coverage record belongs to a run that happened. Printed before this branch,
