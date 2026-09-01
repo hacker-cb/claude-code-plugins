@@ -48,6 +48,7 @@ if [ -n "$BASE" ]; then
   TARGET="$MERGE_BASE...HEAD"
   COVERED=$(git diff --name-only "$MERGE_BASE...HEAD" | wc -l | tr -d ' ')
   OUTSIDE=$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')
+  OUTSIDE_NOTE="uncommitted path(s) are NOT reviewed — the range covers commits only"
 else
   # No range exists for "the working tree", so this one target IS prose — and the
   # run may set prose aside and diff its own default range instead, which is why
@@ -57,48 +58,85 @@ else
   # which counts untracked files no diff shows.
   COVERED=$(git diff --name-only HEAD | wc -l | tr -d ' ')
   OUTSIDE=$(git ls-files --others --exclude-standard | wc -l | tr -d ' ')
+  # What is uncovered here is the opposite of the based case: this mode reviews the
+  # working tree, so the commits are what it misses (said below) and untracked files
+  # are what the diff behind it cannot show.
+  OUTSIDE_NOTE="untracked path(s) are NOT reviewed — a diff does not show them"
 fi
 
 OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")"
+# Armed before the guard below, or that guard's exit leaves the file it just made.
+trap 'rm -f "$OUT" "$OUT.log"' EXIT
+# The report lives outside the repository under review; inside, it becomes an
+# untracked file the next run reads as part of the change. Through a variable: an
+# empty expansion inline would leave the pattern `/*`, matching every absolute path.
+TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
+if [ -n "$TOP" ]; then
+  case "$OUT" in "$TOP"/*)
+    echo "claude review failed: TMPDIR is inside the repository under review"; exit 1 ;; esac
+fi
+
+# Where the sandbox cannot start, the CLI warns and runs unsandboxed unless
+# `failIfUnavailable` says otherwise — the boundary this run promises would then be
+# gone behind a warning nobody reads. `denyWrite` covers this run's own output: the
+# temp directory is writable from inside the sandbox wherever `TMPDIR` is unset or
+# points at a shared one, and a verdict a reviewed repository can overwrite is a
+# verdict it can forge. Built with `jq`, so the paths are escaped rather than pasted.
+SANDBOX="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" '{sandbox:{
+  enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
+  network:{strictAllowlist:true}, filesystem:{denyWrite:[$out,$log]}}}')" \
+  || { echo "claude review failed: could not build the sandbox settings"; exit 1; }
 # What the run leaves behind, to compare against below: this pass promises to
 # change nothing, and the sandbox permits writes inside the working directory.
 # Content, not status codes: a file already listed as modified stays listed as
 # modified however many times the run rewrites it, and a working-tree review is
 # exactly where every covered file is already in that state.
-tree_state() { git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD; }
+# A loop, not `xargs`: an empty list must run nothing, and `git hash-object` with no
+# paths reads stdin instead of exiting. Untracked content is here because neither the
+# status line nor the diff carries it — the path appears identical however it changes.
+tree_state() {
+  # `for-each-ref`, not HEAD alone: in a linked worktree the sandbox may write to the
+  # main repository's shared .git, and a moved ref there shows up nowhere else here.
+  git for-each-ref --format='%(refname) %(objectname)'
+  git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD
+  git ls-files --others --exclude-standard -z \
+    | while IFS= read -r -d "" f; do git hash-object -- "$f"; done
+}
 BEFORE="$(tree_state)"
 # --setting-sources user: the repository under review is untrusted input, and its
 # own settings file carries hooks that would otherwise run as you at session start.
 # The sandbox is what buys the permission mode back: sandboxed commands are approved
 # by the boundary rather than by a person, and there is no person here — without it
 # this mode denies every build, test and probe the reviewer reaches for, and the
-# review degrades to reading. Both edges of that boundary are then held shut: no host
-# outside the allowlist, and no retry outside the sandbox for what failed inside it.
+# review degrades to reading. What the boundary holds shut is the network and the
+# escape hatch; reading outside the tree and the environment it inherits are open
+# unless the user's own settings narrow them, which is where such rules belong.
 # stdin is closed because the run waits on it otherwise;
 # stdout carries the JSON envelope, stderr its own file so a warning cannot corrupt
 # the JSON read below.
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --effort "$LEVEL" --output-format json \
   --setting-sources user --permission-mode manual \
-  --settings '{"sandbox":{"enabled":true,"allowUnsandboxedCommands":false,"network":{"strictAllowlist":true}}}' \
+  --settings "$SANDBOX" \
   --tools "Bash,Read,Grep,Glob,Agent" \
   --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
   < /dev/null > "$OUT" 2> "$OUT.log"
 
-# The coverage record the caller compares against: the range HANDED to the run.
-echo "scope: ${BASE:-working tree}, $COVERED files, $LEVEL"
-# SEPARATE lines, never appended to the scope one.
-[ -n "$BASE" ] \
-  || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
-[ "$OUTSIDE" = 0 ] \
-  || echo "coverage-warning: $OUTSIDE uncommitted path(s) are NOT reviewed — the range covers commits only"
-# Its own line too, and not a coverage one: this says what the run DID, not what it
-# read. The count above was taken before the run and stops describing the tree here.
-[ "$BEFORE" = "$(tree_state)" ] \
-  || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
 # A successful envelope does not prove a review happened: a run killed mid-flight
 # still reports success with an EMPTY result, which would print as a clean review.
 if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then
+  # The coverage record belongs to a run that happened. Printed before the branch
+  # below, it would put a file count against a run that read nothing.
+  echo "scope: ${BASE:-working tree}, $COVERED files, $LEVEL"
+  # SEPARATE lines, never appended to the scope one.
+  [ -n "$BASE" ] \
+    || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
+  [ "$OUTSIDE" = 0 ] \
+    || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
+  # Its own line too, and not a coverage one: this says what the run DID, not what it
+  # read. The count above was taken before the run and stops describing the tree here.
+  [ "$BEFORE" = "$(tree_state)" ] \
+    || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
   # A denial does not void the run — it narrows it, and a narrowed run is partial.
   # The fallback keeps a failed count from printing a warning with a blank number.
   DENIED=$(jq -r '(.permission_denials // []) | length' "$OUT" 2>/dev/null) || DENIED=0
@@ -120,4 +158,7 @@ else
                 | map(select(. != null and . != "")) | .[]' "$OUT" 2>/dev/null)
   if [ -n "$DIAG" ]; then printf '%s\n' "$DIAG"; else head -c 500 "$OUT"; fi
   tail -20 "$OUT.log"
+  # Non-zero, so a detached run reads as failed rather than as a review with nothing
+  # in it — the argument guards above exit non-zero for the same reason.
+  exit 1
 fi

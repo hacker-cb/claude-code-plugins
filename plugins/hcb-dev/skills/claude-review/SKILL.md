@@ -50,7 +50,10 @@ the level or a narrowing; an explicit one wins over anything resolved here.
 Inside the sandbox the run executes the reviewed repository's own code — its build,
 its tests, the probe that settles a finding — which is what a review at this rung is
 worth and also what makes that repository's contents something you are choosing to
-trust. Weigh it before pointing this at a repository nobody here wrote.
+trust. The boundary shuts the network and the writes; what it leaves open is reading
+outside the tree and the environment the run inherits, and only the user's own
+settings close those. Weigh both before pointing this at a repository nobody here
+wrote.
 
 Where there is a base the script targets a **ref range**, which fixes what the run
 diffs; a working-tree review has no range to give, so its scope stays prose the run

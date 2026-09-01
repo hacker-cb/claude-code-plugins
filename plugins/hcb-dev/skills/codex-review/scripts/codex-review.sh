@@ -34,6 +34,7 @@ done
 # config and a permissions failure are three different diagnoses, and swallowing
 # stderr turns all three into whichever one was guessed here.
 CATLOG="$(mktemp "${TMPDIR:-/tmp}/codex-catalog.XXXXXX")"
+trap 'rm -f "$CATLOG"' EXIT
 CAT="$(codex debug models 2>"$CATLOG")" \
   || { echo "codex review failed: the model catalog is unreadable"; tail -5 "$CATLOG"; exit 1; }
 # `priority` ascends from the newest frontier model, so entry 0 is the one to
@@ -51,8 +52,12 @@ if [ -z "$EFFORT" ]; then
     *) EFFORT="${LEVELS##* }" ;;
   esac
 else
-  case " $LEVELS " in *" $EFFORT "*) ;;
-    *) echo "codex review failed: '$EFFORT' is not a level $MODEL offers — it has: $LEVELS"; exit 1 ;; esac
+  # Word-by-word, not `case " $LEVELS " in *" $EFFORT "*`: the value lands inside the
+  # pattern there, so a level of `*` matches every ladder and passes validation.
+  ok=0
+  for l in $LEVELS; do [ "$l" = "$EFFORT" ] && ok=1; done
+  [ "$ok" = 1 ] \
+    || { echo "codex review failed: '$EFFORT' is not a level $MODEL offers — it has: $LEVELS"; exit 1; }
 fi
 
 # Positional parameters, not an interpolated string: the scope is two arguments
@@ -83,17 +88,36 @@ fi
 # Written outside the repository under review: a report left inside becomes an
 # untracked file the next run reads as part of the change.
 OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")"
+# Widened before the guard below, or that guard's exit leaves the file it just made.
+trap 'rm -f "$OUT" "$OUT.log" "$CATLOG"' EXIT
+# Through a variable: an empty expansion inline would leave the pattern `/*`, which
+# matches every absolute path and fails every run outside a repository.
+TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
+if [ -n "$TOP" ]; then
+  case "$OUT" in "$TOP"/*)
+    echo "codex review failed: TMPDIR is inside the repository under review"; exit 1 ;; esac
+fi
 # `codex exec review`, not the top-level `codex review`: the latter has no `-o`,
 # which is what splits the verdict from the transcript.
 codex exec review "$@" -c model="$MODEL" -c model_reasoning_effort="$EFFORT" \
   -o "$OUT" > "$OUT.log" 2>&1
-# The coverage record the caller compares against.
-echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $EFFORT"
-# SEPARATE lines, never appended to the scope one.
-[ -n "$BASE" ] \
-  || echo "coverage-warning: no base — the commits on this branch are NOT reviewed"
-[ "${UNTRACKED:-0}" = 0 ] \
-  || echo "coverage-warning: $UNTRACKED untracked path(s) are NOT reviewed — a diff does not show them"
-[ "${ON_BASE:-0}" = 0 ] \
-  || echo "coverage-warning: HEAD is at the base — this covered the working tree, not any commit"
-if [ -s "$OUT" ]; then cat "$OUT"; else echo "codex review failed:"; tail -20 "$OUT.log"; fi
+if [ -s "$OUT" ]; then
+  # The coverage record belongs to a run that happened. Printed before this branch,
+  # it would put a file count against a run that read nothing — an expired login
+  # prints the same count as a finished review.
+  echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $EFFORT"
+  # SEPARATE lines, never appended to the scope one.
+  [ -n "$BASE" ] \
+    || echo "coverage-warning: no base — the commits on this branch are NOT reviewed"
+  [ "${UNTRACKED:-0}" = 0 ] \
+    || echo "coverage-warning: $UNTRACKED untracked path(s) are NOT reviewed — a diff does not show them"
+  [ "${ON_BASE:-0}" = 0 ] \
+    || echo "coverage-warning: HEAD is at the base — this covered the working tree, not any commit"
+  cat "$OUT"
+else
+  echo "codex review failed:"
+  tail -20 "$OUT.log"
+  # Non-zero, so a detached run reads as failed rather than as a review with nothing
+  # in it — the argument guards above exit non-zero for the same reason.
+  exit 1
+fi

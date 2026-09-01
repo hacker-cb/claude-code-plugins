@@ -108,7 +108,7 @@ Four questions per reviewer, in order:
 
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
-| `hcb-dev:codex-review` skill | `command -v codex` | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
+| `hcb-dev:codex-review` skill | `command -v codex` and `command -v jq` — it resolves its model from the catalog's JSON | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
 | `hcb-dev:claude-review` skill | `command -v claude` and `command -v jq` — its report is built by parsing the run's JSON | base → `HEAD`, committed work only; the working tree instead when handed no base | yes, passed as a narrowing beside the range | every rung its own `--effort` accepts |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 

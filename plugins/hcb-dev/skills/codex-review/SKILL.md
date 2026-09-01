@@ -58,6 +58,8 @@ one-paragraph verdict followed by findings:
   Why it breaks, in concrete terms.
 ```
 
-Every failure lands in a `codex review failed:` branch carrying the engine's own
-error — the catalog's when the run never reached the reviewer, the log tail when
-it did and came back with nothing.
+Every failure lands in a `codex review failed:` branch and exits non-zero, so a
+detached run reads as failed rather than as a review with nothing in it. What the
+branch carries depends on how far the run got: the engine's own error once it was
+reached — the catalog's, or the log tail — and the script's own where the call
+itself was wrong, before any engine ran.
