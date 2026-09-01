@@ -7,9 +7,11 @@ description: >-
   reclassified, a documentation change. Carries the result, the complete list of
   change requests and issues it touched, and what to do next, starting with how
   to reach the work from the reader's own checkout. Also how a session returns
-  its answer to an order from `hcb-dev:session-dispatch`. For work NOT done,
-  that another session is to implement, use `hcb-dev:session-dispatch` — the
-  discriminator is whether the work is done, not how the ask is worded.
+  its answer to an order from `hcb-dev:session-dispatch` when the user carries
+  it; a batch answering its master session returns per `hcb-dev:wave-worker`
+  instead. For work NOT done, that another session is to implement, use
+  `hcb-dev:session-dispatch` — the discriminator is whether the work is done,
+  not how the ask is worded.
 ---
 
 # Session handoff

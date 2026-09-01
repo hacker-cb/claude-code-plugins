@@ -5,14 +5,15 @@ description: >-
   another session: a build to run there through
   `hcb-dev:implementation-workflow`, or an investigation whose deliverable is
   recorded tracker state. Use when the user wants a prompt for a new
-  session, hands fixes or a build out to run elsewhere, or runs a master session
-  writing orders for sub-sessions. This session's numbers, coordinates and
+  session, hands fixes or a build out to run elsewhere, or writes one
+  standalone order outside any wave. This session's numbers, coordinates and
   settled decisions are the payload; the order ends either in the shape of the
   answer to send back or in an end state with nothing returning. For work
   already FINISHED that another session only has to receive, use
-  `hcb-dev:session-handoff` — the discriminator is whether the work is done. A
-  question is never dispatched — a subagent or a workflow answers it here and
-  returns prose, where an order returns a change.
+  `hcb-dev:session-handoff` — the discriminator is whether the work is done.
+  For a batch fanned out of a coordinating session — by chip or pasted wave
+  order — use `hcb-dev:wave-dispatch`. A question is never dispatched — a subagent or a
+  workflow answers it here and returns prose, where an order returns a change.
 ---
 
 # Session dispatch
