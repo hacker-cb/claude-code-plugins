@@ -12,9 +12,9 @@
     {
       "name": "hcb-dev",
       "source": "./plugins/hcb-dev",
-      "description": "Personal developer baseline — a connected pipeline of skills: turning tasks or issues into sliced, reviewed work behind one planning gate; keeping deferred work in the forge's issue tracker, classified against what the repository actually defines; dependency versioning (with Dependabot sync); .gitignore seeding; local code review by two independent engines (Codex and Claude) consolidated into one coverage-checked report; completing work by mode (a local merge into the parent, or a change request (PR/MR), with the full review-and-merge drive on GitHub); handing work across sessions as a pasteable prompt in either direction (an order for another session to implement, or what this one finished, in code or in the tracker alone); and git cleanup of merged branches and stale worktrees.",
+      "description": "Personal developer baseline — a connected pipeline of skills: turning tasks or issues into sliced, reviewed work behind one planning gate; keeping deferred work in the forge's issue tracker, classified against what the repository actually defines; dependency versioning (with Dependabot sync); .gitignore seeding; local code review by two independent engines (Codex and Claude) consolidated into one coverage-checked report; completing work by mode (a local merge into the parent, or a change request (PR/MR), with the full review-and-merge drive on GitHub); handing work across sessions as a pasteable prompt in either direction; surveying a whole backlog slice against the code (tiers, the critical path, parallel lanes, what to take next); fanning an epic out in waves — a master session plans batches, launches them as chips into parallel sessions, coordinates over cross-session messaging with a durable wave ledger, and accepts each batch's return; and git cleanup of merged branches and stale worktrees.",
       "category": "productivity",
-      "tags": ["developer", "dependencies", "code-review", "pull-request", "issues", "backlog", "handoff", "cleanup", "workflow", "github", "gitlab"]
+      "tags": ["developer", "dependencies", "code-review", "pull-request", "issues", "backlog", "handoff", "orchestration", "sessions", "waves", "cleanup", "workflow", "github", "gitlab"]
     },
     {
       "name": "markdown-docs",

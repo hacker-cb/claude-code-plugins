@@ -17,7 +17,7 @@ marketplace.
 ## How the skills fit together
 
 Most of these skills call each other, so installing the plugin gives you the
-whole pipeline rather than fourteen disconnected commands:
+whole pipeline rather than sixteen disconnected commands:
 
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
@@ -32,6 +32,7 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
 issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
+backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
 master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
@@ -163,6 +164,20 @@ work is **done** — not how the ask is worded.
   where it weighs the work against what the reader already has in flight,
   summarizes that for you and raises the non-obvious consequences before acting.
   Ends by offering `git-cleanup` for the residue.
+
+### Surveying the backlog
+
+- **`backlog-survey`** — `/hcb-dev:backlog-survey`
+  A whole slice of the backlog — a milestone, a label, everything open — read
+  issue by issue and verified against the code, not against the tracker: each
+  issue ruled current, stale or needing a rewrite, with the coordinate that
+  shows it. Reports the picture, tiers of importance (blocks others / fires
+  today / catches regressions), the dependency graph and critical path,
+  parallel lanes per `references/wave-planning.md`, one recommendation for
+  what to take next, and incidental findings with a hygiene plan — which
+  executes only on your word, item by item through `issue-tracking`. Scales by
+  fanning readers out as subagents when the slice runs to hundreds. Its lanes
+  are the wave plan's input.
 
 ### Fanning work out in waves
 
@@ -384,6 +399,9 @@ Per skill, on top of those:
   the repository or the forge; the verification they call for happens on the
   receiving side. A dispatched order does name `implementation-workflow`, so the
   session that receives one needs this plugin installed.
+- **`backlog-survey`**: the forge CLI (`gh` / `glab`) to list and read the
+  slice's issues; nothing else — the hygiene it proposes runs through
+  `issue-tracking` on your word.
 - **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
   Code's own cross-session tools — the chip tool for launching
   (`spawn_task`/`dismiss_task`, the desktop app's) and the live registry and

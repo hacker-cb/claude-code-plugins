@@ -40,10 +40,11 @@ it accepts their returns per
 
 ## Planning
 
-Draw the split per `wave-planning.md` and hand the user its closing table. The
-launch waits for their word on the table; the click that starts each chip is a
-second, separate gate — approval of the plan is not permission to hang chips
-for gated waves early.
+Draw the split per `wave-planning.md` — where no survey of the slice exists
+yet, `hcb-dev:backlog-survey` produces its input first — and hand the user its
+closing table. The launch waits for their word on the table; the click that
+starts each chip is a second, separate gate — approval of the plan is not
+permission to hang chips for gated waves early.
 
 A fork too heavy for the plan — a design question whose answer rewrites the
 work — does not stall the planning session: dispatch it as its own
