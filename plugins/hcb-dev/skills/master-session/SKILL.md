@@ -77,12 +77,14 @@ is part of this role's loop, not a one-time launch step.
 - **New issues born mid-epic are classified by this session itself**
   (`hcb-dev:issue-tracking`) — a worker's proposed milestone or label is a
   claim to verify, not a decision to adopt.
-- **The merge queue is managed out loud**: who lands next, who is BEHIND after
-  each landing, which seam owes a rebase — and each landing checked against
-  the gates: a wave whose gate just cleared goes back to Launching. Where the
-  plan fixes a landing order, the orders themselves withhold merge-on-green —
-  their `Merge authority:` slot says the queue decides, and the go is given
-  per slot as it advances.
+- **The merge queue is spoken to the batches it moves**: the go to the batch
+  whose slot arrived, BEHIND — with the seam owing a rebase — to the batch a
+  landing displaced. A queue whose go never reaches its batch is a deadlock,
+  not an order. Each landing is checked against the gates: a wave whose gate
+  just cleared goes back to Launching. Where the plan fixes a landing order,
+  the orders themselves withhold merge-on-green — their `Merge authority:`
+  slot says the queue decides, and a batch's "green, waiting for the slot" is
+  what advances it.
 - **A wave opened or closed advances the epic's human half too** — the wave
   table in its body, not only the ledger comment.
 - **A lesson one batch paid for is told to the batches it can still bite**,
