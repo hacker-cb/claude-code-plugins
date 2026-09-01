@@ -17,7 +17,7 @@ marketplace.
 ## How the skills fit together
 
 Most of these skills call each other, so installing the plugin gives you the
-whole pipeline rather than twelve disconnected commands:
+whole pipeline rather than sixteen disconnected commands:
 
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
@@ -32,6 +32,9 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
 issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
+backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
+master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
+                                    + implementation-workflow) ─▶ returns ─▶ accepted by the master
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
 
@@ -42,8 +45,9 @@ also useful on its own and triggers from its own `description` — except
 for it on its own, so it is not an automatic post-completion step. Run it
 yourself when you want it.
 
-Nothing crosses between sessions on its own — you carry every dispatch and every
-handoff by hand, so the prompt text is the whole channel.
+The prompt text is the whole channel between sessions — what is not written in
+it does not arrive. `session-dispatch` and `session-handoff` are its hand-carried
+form: you paste every one of them yourself.
 
 ## Skills
 
@@ -136,16 +140,18 @@ work is **done** — not how the ask is worded.
 
 - **`session-dispatch`** — `/hcb-dev:session-dispatch`
   Work this session will **not** do, turned into an order for another session to
-  **implement**, run through `implementation-workflow`. This session's numbers,
-  coordinates and settled decisions are the payload, and what it did *not* check
-  is named beside them. Settles the ask, where to work, any mandatory domain
-  methodology, the checks, the terminal deliverable, the completion mode (so the
-  planning gate does not ask for it), which forks come back to you, and the
-  negative constraint. Ends in a closing act that is never empty: either the
-  shape of the answer to return, carried inline, or an end state with nothing
-  coming back. Tags each order so its answer can be matched to it. A question is
-  not dispatched at all: that is a subagent or a workflow in the session that
-  has it.
+  **execute** — a build run through `implementation-workflow`, or an
+  investigation whose deliverable is recorded tracker state. This session's
+  numbers, coordinates and settled decisions are the payload, and what it did
+  *not* check is named beside them. Settles every slot of
+  [`references/order-anatomy.md`](references/order-anatomy.md) — the ask, where
+  to work, the base pin that dates the facts, the process and the checks, the
+  terminal deliverable, the completion mode (so the planning gate does not ask
+  for it), the forks with their addressees, and the negative constraint — and
+  ends in a closing act that is never empty: either the answer's shape, carried
+  inline, or an end state with nothing coming back. Tags each order so its
+  answer can be matched to it. A question is not dispatched at all: that is a
+  subagent or a workflow in the session that has it.
 - **`session-handoff`** — `/hcb-dev:session-handoff`
   What this session **finished**, in whatever form the result took — code on a
   branch or in a change request, an investigation that changed no files, issues
@@ -158,6 +164,59 @@ work is **done** — not how the ask is worded.
   where it weighs the work against what the reader already has in flight,
   summarizes that for you and raises the non-obvious consequences before acting.
   Ends by offering `git-cleanup` for the residue.
+
+### Surveying the backlog
+
+- **`backlog-survey`** — `/hcb-dev:backlog-survey`
+  A whole slice of the backlog — a milestone, a label, everything open — read
+  issue by issue and verified against the code, not against the tracker: each
+  issue ruled current, stale or needing a rewrite, with the coordinate that
+  shows it. Reports the picture, tiers of importance (blocks others / fires
+  today / catches regressions), the dependency graph and critical path,
+  parallel lanes per `references/wave-planning.md`, one recommendation for
+  what to take next, and incidental findings with a hygiene plan — which
+  executes only on your word, item by item through `issue-tracking`. Scales by
+  fanning readers out as subagents when the slice runs to hundreds. Its lanes
+  are the wave plan's input.
+
+### Fanning work out in waves
+
+A coordinating (master) session that split an epic into batches launches and
+collects them with a dedicated pair. A batch is one session's worth of work; a
+wave is the set of batches launched together once its gate clears.
+
+- **`master-session`** — `/hcb-dev:master-session`
+  The coordinating role itself: assume it on assignment (title the session
+  `<epic> — master`, file the umbrella where none exists, open the wave ledger
+  on the epic), draw the split per `references/wave-planning.md` and get the
+  user's word on the table, launch through `wave-dispatch`, then run the loop —
+  answer batch questions only after re-verifying against the tree, accept
+  returns against the ledger's standing constraints, classify mid-epic issues
+  itself, manage the merge queue and the gates, broadcast paid-for lessons —
+  and recover after a restart from the ledger before the live registry. Heavy
+  design forks go out as their own investigation sessions with the decision
+  recorded in the issue. Closes the epic by verifying it against the ledger and
+  offering one sweep of the residue.
+- **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
+  One chip per batch — title `<epic>/<id> — <topic>` (it becomes the launched
+  session's title, the name every later message matches on), the wave order as
+  the prompt: the slots of `references/order-anatomy.md` plus boundaries (which
+  files this batch owns, where it touches another batch's), three-way fork
+  routing (decide yourself / agree with the master first / through the master
+  to the user), the master's own title and session id, the status milestones,
+  and the return protocol. Pins one base per wave, reports blocked batches
+  instead of hanging them, withdraws chips the plan obsoleted, and falls back
+  to pasteable fenced orders where chips are unavailable. The click stays with
+  you — how many batches run in parallel is your call.
+- **`wave-worker`** — `/hcb-dev:wave-worker`
+  The receiving side, governing the engagement around the build: title the
+  session with the batch id, verify the order's premises against the refreshed
+  base, confirm composition to the master, route "agree first" forks there
+  before building, push one-line statuses at the named milestones, and close
+  with the full report to the tracker plus a notice to the master — staying
+  engaged until acceptance, follow-up mandates included. The building itself
+  runs through whatever workflow the order names, usually
+  `implementation-workflow`.
 
 ### Cleaning up
 
@@ -229,11 +288,45 @@ saying something else.
   what another session is doing.
 - [`references/session-prompts.md`](references/session-prompts.md) — the envelope
   shared by every prompt that crosses between sessions, whichever direction it
-  travels: the reader is elsewhere and no path may be named, it is a task rather
-  than a document, pointers instead of retelling, every assertion carrying where
-  to re-check it, the origin line and its tag, the mandatory negative part, a
-  closing act that is never empty, and delivery as one fenced block. Read by
-  whatever produces such a prompt; what fills the slots stays with the skill.
+  travels and whichever of its three carriers moves it (a paste block carried by
+  hand, a chip prompt, a message): the reader is elsewhere and no path may be
+  named, it is a task rather than a document, pointers instead of retelling,
+  every assertion carrying where to re-check it, the origin line and its tag, the
+  mandatory negative part, a closing act that is never empty, and delivery per
+  carrier. Read by whatever produces such a prompt; what fills the slots stays
+  with the skill.
+- [`references/order-anatomy.md`](references/order-anatomy.md) — what an order
+  for another session settles, whatever carries it: the payload with how each
+  fact was verified and what was never checked, the slot list from the ask to
+  the closing act, the base pin that dates the facts, the tag, and one order per
+  receiving session. Read by whatever writes such an order.
+- [`references/order-return.md`](references/order-return.md) — the shape of the
+  answer an order asks for (the tag on the first line, then four parts in
+  order, with every change request at the state it stopped at, every issue at
+  what became of it, and what a review left uncovered), and the acceptance on
+  the way back: verify rather than adopt, then close or reopen the order. Read
+  by whatever answers an order and whatever receives that answer.
+- [`references/session-comms.md`](references/session-comms.md) — how one
+  session reaches another and stays reachable itself: what survives a restart
+  (titles, session ids, worktree paths, the forge) and what does not (live
+  names, sockets), the title-first convention, the four-rung sending ladder
+  from a freshly resolved live name down to a block the user carries, contact
+  hygiene (identity both ways, the challenge line on a guessed address,
+  self-contained first lines, questions that wait without blocking), and the
+  rule that a peer session is not the user. Read by whatever contacts another
+  session or expects to be contacted.
+- [`references/wave-planning.md`](references/wave-planning.md) — splitting an
+  epic into batches and waves: the vocabulary (batch, wave, gate), the two
+  axes every split is drawn on (file zones and dependency edges), how a batch
+  is composed and ordered inside, wave gating (guards on a clean tree go
+  early; the merge order is part of the plan), and the table the plan hands
+  the user. Read by whatever partitions work into parallel sessions.
+- [`references/wave-ledger.md`](references/wave-ledger.md) — the master's
+  durable state: one marked comment on the epic (found by content, editable in
+  place, readable by the batches), its seven sections from the header to the
+  journal, the batch state vocabulary, and the discipline — written on every
+  event, read first after any restart or compaction. With no tracker, a file
+  under the user's Claude config directory instead.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
   findings rated by importance, an explicit "none"). Read where a whole run is
@@ -306,6 +399,19 @@ Per skill, on top of those:
   the repository or the forge; the verification they call for happens on the
   receiving side. A dispatched order does name `implementation-workflow`, so the
   session that receives one needs this plugin installed.
+- **`backlog-survey`**: the forge CLI (`gh` / `glab`) to list and read the
+  slice's issues; nothing else — the hygiene it proposes runs through
+  `issue-tracking` on your word.
+- **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
+  Code's own cross-session tools — the chip tool for launching
+  (`spawn_task`/`dismiss_task`, the desktop app's) and the live registry and
+  messaging (`ListAgents`/`SendMessage`) for coordination; each degrades along
+  its own ladder where a tool is absent (fenced orders instead of chips, the
+  tracker and the user instead of messages). The master additionally uses
+  whatever edits an issue comment on the repository's forge — the wave ledger
+  lives in one; without a tracker it falls back to a machine-local file under
+  the user's Claude config directory. All sides need this plugin installed —
+  the orders name `wave-worker` and `implementation-workflow` by identifier.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
   are occupied it also reads Claude Code's live-session registry under
