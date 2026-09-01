@@ -42,8 +42,9 @@ also useful on its own and triggers from its own `description` — except
 for it on its own, so it is not an automatic post-completion step. Run it
 yourself when you want it.
 
-Nothing crosses between sessions on its own — you carry every dispatch and every
-handoff by hand, so the prompt text is the whole channel.
+The prompt text is the whole channel between sessions — what is not written in
+it does not arrive. `session-dispatch` and `session-handoff` are its hand-carried
+form: you paste every one of them yourself.
 
 ## Skills
 
@@ -136,16 +137,18 @@ work is **done** — not how the ask is worded.
 
 - **`session-dispatch`** — `/hcb-dev:session-dispatch`
   Work this session will **not** do, turned into an order for another session to
-  **implement**, run through `implementation-workflow`. This session's numbers,
-  coordinates and settled decisions are the payload, and what it did *not* check
-  is named beside them. Settles the ask, where to work, any mandatory domain
-  methodology, the checks, the terminal deliverable, the completion mode (so the
-  planning gate does not ask for it), which forks come back to you, and the
-  negative constraint. Ends in a closing act that is never empty: either the
-  shape of the answer to return, carried inline, or an end state with nothing
-  coming back. Tags each order so its answer can be matched to it. A question is
-  not dispatched at all: that is a subagent or a workflow in the session that
-  has it.
+  **execute** — a build run through `implementation-workflow`, or an
+  investigation whose deliverable is recorded tracker state. This session's
+  numbers, coordinates and settled decisions are the payload, and what it did
+  *not* check is named beside them. Settles every slot of
+  [`references/order-anatomy.md`](references/order-anatomy.md) — the ask, where
+  to work, the base pin that dates the facts, the process and the checks, the
+  terminal deliverable, the completion mode (so the planning gate does not ask
+  for it), the forks with their addressees, and the negative constraint — and
+  ends in a closing act that is never empty: either the answer's shape, carried
+  inline, or an end state with nothing coming back. Tags each order so its
+  answer can be matched to it. A question is not dispatched at all: that is a
+  subagent or a workflow in the session that has it.
 - **`session-handoff`** — `/hcb-dev:session-handoff`
   What this session **finished**, in whatever form the result took — code on a
   branch or in a change request, an investigation that changed no files, issues
@@ -229,11 +232,24 @@ saying something else.
   what another session is doing.
 - [`references/session-prompts.md`](references/session-prompts.md) — the envelope
   shared by every prompt that crosses between sessions, whichever direction it
-  travels: the reader is elsewhere and no path may be named, it is a task rather
-  than a document, pointers instead of retelling, every assertion carrying where
-  to re-check it, the origin line and its tag, the mandatory negative part, a
-  closing act that is never empty, and delivery as one fenced block. Read by
-  whatever produces such a prompt; what fills the slots stays with the skill.
+  travels and whichever of its three carriers moves it (a paste block carried by
+  hand, a chip prompt, a message): the reader is elsewhere and no path may be
+  named, it is a task rather than a document, pointers instead of retelling,
+  every assertion carrying where to re-check it, the origin line and its tag, the
+  mandatory negative part, a closing act that is never empty, and delivery per
+  carrier. Read by whatever produces such a prompt; what fills the slots stays
+  with the skill.
+- [`references/order-anatomy.md`](references/order-anatomy.md) — what an order
+  for another session settles, whatever carries it: the payload with how each
+  fact was verified and what was never checked, the slot list from the ask to
+  the closing act, the base pin that dates the facts, the tag, and one order per
+  receiving session. Read by whatever writes such an order.
+- [`references/order-return.md`](references/order-return.md) — the shape of the
+  answer an order asks for (the tag on the first line, then four parts in
+  order, with every change request at the state it stopped at, every issue at
+  what became of it, and what a review left uncovered), and the acceptance on
+  the way back: verify rather than adopt, then close or reopen the order. Read
+  by whatever answers an order and whatever receives that answer.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
   findings rated by importance, an explicit "none"). Read where a whole run is
