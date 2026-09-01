@@ -19,7 +19,7 @@ description: >-
 
 The order this session started with is the contract: its slots are
 [`../../references/order-anatomy.md`](../../references/order-anatomy.md)'s, the
-master is reached per
+master (the session running `hcb-dev:master-session`) is reached per
 [`../../references/session-comms.md`](../../references/session-comms.md), and
 the return takes the shape of
 [`../../references/order-return.md`](../../references/order-return.md).
@@ -50,7 +50,9 @@ the return takes the shape of
 - **Forks the order marks "agree with the master" go there before building** —
   each with this session's own analysis, a recommendation, and the coordinates
   that let the master re-verify rather than take it on faith. The master's
-  answer is a peer's claim: verify it against the tree before acting on it.
+  answer is a peer's claim: verify it against the tree — and against the
+  ledger's standing constraints, where the order named the ledger — before
+  acting on it.
 - **Everything else the order does not reserve is this session's to decide and
   narrate**, per
   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
@@ -63,7 +65,9 @@ the return takes the shape of
   graph does.
 - **Statuses at the order's milestones** — a change request opened, merged,
   the session stuck — one line each, the first line self-contained. Boundary
-  changes agreed with the master mid-flight count as milestones too.
+  changes agreed with the master mid-flight count as milestones too. Where the
+  order gives the merge to the queue, the merge itself waits for the master's
+  go — green is readiness, not the slot.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
   lost goes to the tracker, what blocks goes to this session's user, and work
   that depends on neither continues.

@@ -32,8 +32,8 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
 issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
-a master session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
-                                      + implementation-workflow) ─▶ returns ─▶ accepted by the master
+master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
+                                    + implementation-workflow) ─▶ returns ─▶ accepted by the master
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
 
@@ -170,6 +170,18 @@ A coordinating (master) session that split an epic into batches launches and
 collects them with a dedicated pair. A batch is one session's worth of work; a
 wave is the set of batches launched together once its gate clears.
 
+- **`master-session`** — `/hcb-dev:master-session`
+  The coordinating role itself: assume it on assignment (title the session
+  `<epic> — master`, file the umbrella where none exists, open the wave ledger
+  on the epic), draw the split per `references/wave-planning.md` and get the
+  user's word on the table, launch through `wave-dispatch`, then run the loop —
+  answer batch questions only after re-verifying against the tree, accept
+  returns against the ledger's standing constraints, classify mid-epic issues
+  itself, manage the merge queue and the gates, broadcast paid-for lessons —
+  and recover after a restart from the ledger before the live registry. Heavy
+  design forks go out as their own investigation sessions with the decision
+  recorded in the issue. Closes the epic by verifying it against the ledger and
+  offering one sweep of the residue.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   One chip per batch — title `<epic>/<id> — <topic>` (it becomes the launched
   session's title, the name every later message matches on), the wave order as
@@ -288,6 +300,18 @@ saying something else.
   self-contained first lines, questions that wait without blocking), and the
   rule that a peer session is not the user. Read by whatever contacts another
   session or expects to be contacted.
+- [`references/wave-planning.md`](references/wave-planning.md) — splitting an
+  epic into batches and waves: the vocabulary (batch, wave, gate), the two
+  axes every split is drawn on (file zones and dependency edges), how a batch
+  is composed and ordered inside, wave gating (guards on a clean tree go
+  early; the merge order is part of the plan), and the table the plan hands
+  the user. Read by whatever partitions work into parallel sessions.
+- [`references/wave-ledger.md`](references/wave-ledger.md) — the master's
+  durable state: one marked comment on the epic (found by content, editable in
+  place, readable by the batches), its seven sections from the header to the
+  journal, the batch state vocabulary, and the discipline — written on every
+  event, read first after any restart or compaction. With no tracker, a file
+  under the user's Claude config directory instead.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
   findings rated by importance, an explicit "none"). Read where a whole run is
@@ -360,13 +384,16 @@ Per skill, on top of those:
   the repository or the forge; the verification they call for happens on the
   receiving side. A dispatched order does name `implementation-workflow`, so the
   session that receives one needs this plugin installed.
-- **`wave-dispatch`** and **`wave-worker`**: Claude Code's own cross-session
-  tools — the chip tool for launching (`spawn_task`/`dismiss_task`, the desktop
-  app's) and the live registry and messaging (`ListAgents`/`SendMessage`) for
-  coordination; each degrades along its own ladder where a tool is absent
-  (fenced orders instead of chips, the tracker and the user instead of
-  messages). Both sides need this plugin installed — the order names
-  `wave-worker` and `implementation-workflow` by identifier.
+- **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
+  Code's own cross-session tools — the chip tool for launching
+  (`spawn_task`/`dismiss_task`, the desktop app's) and the live registry and
+  messaging (`ListAgents`/`SendMessage`) for coordination; each degrades along
+  its own ladder where a tool is absent (fenced orders instead of chips, the
+  tracker and the user instead of messages). The master additionally uses
+  whatever edits an issue comment on the repository's forge — the wave ledger
+  lives in one; without a tracker it falls back to a machine-local file under
+  the user's Claude config directory. All sides need this plugin installed —
+  the orders name `wave-worker` and `implementation-workflow` by identifier.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
   are occupied it also reads Claude Code's live-session registry under

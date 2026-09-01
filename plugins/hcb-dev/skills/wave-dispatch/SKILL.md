@@ -8,10 +8,10 @@ description: >-
   "раздай работу по сессиям"), and when a hung chip goes stale and needs
   re-issuing or withdrawing. Preflight pins the base and checks each batch's
   environment blockers; a blocked batch is reported with its unblock condition,
-  never hung. The receiving side of every order it writes is
-  `hcb-dev:wave-worker`. For one ad-hoc order pasted by hand use
-  `hcb-dev:session-dispatch`; for work already finished that another session
-  receives, `hcb-dev:session-handoff`.
+  never hung. The coordinating role around it is `hcb-dev:master-session`; the
+  receiving side of every order it writes is `hcb-dev:wave-worker`. For one
+  ad-hoc order pasted by hand use `hcb-dev:session-dispatch`; for work already
+  finished that another session receives, `hcb-dev:session-handoff`.
 ---
 
 # Wave dispatch
@@ -89,6 +89,8 @@ Run this through <the process — /hcb-dev:implementation-workflow where there i
 something to build; a tracker-only batch names what runs instead><, and <domain
 methodology>, which is mandatory>. <checks> must pass.
 Completion: <mode> — settled here, so don't ask.
+Merge authority: <on green | the master's go — the queue decides your turn;
+green is readiness, not the slot> — settled here too.
 Decide yourself: <forks>. Agree with the master BEFORE building: <forks>.
 Through the master to the user: <forks>.
 
@@ -97,11 +99,12 @@ Done means: <the terminal deliverable>
 Don't <what would duplicate or undo another batch's work, and the tracks that
 are not yours>
 
-Master: <its title>, session id <id>. On start, confirm your composition to it
-and name your own title and session id. Report status when <the milestones — a
-change request opens, merges, you are stuck>. Questions go to the master;
-master unreachable — to your user in chat, and keep working on what does not
-depend on the answer.
+Master: <its title>, session id <id>. The wave ledger — standing constraints
+included — is <its coordinate; or: local to the master>. On start, confirm
+your composition to it and name your own title and session id. Report status
+when <the milestones — a change request opens, merges, you are stuck>.
+Questions go to the master; master unreachable — to your user in chat, and
+keep working on what does not depend on the answer.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker
 coordinate — the epic, the batch's issues; or: no tracker here — return in
 full to the master>, a short notice to the master. Filing the follow-up issues
