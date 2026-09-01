@@ -67,8 +67,8 @@ mode and merge authority, and no gate inside re-defaults them.
   needs no answer first; the order says which one that is, or the dependency
   graph does.
 - **Statuses at the order's milestones** — a change request opened; "green,
-  waiting for the slot", where the order gives the merge to the queue, the
-  merge then waiting for the master's go (green is readiness, not the slot);
+  waiting for the slot" where the order gives the merge to the queue (the
+  merge then waits for the master's go — green is readiness, not the slot);
   merged; the session stuck; a boundary change agreed with the master
   mid-flight — one line each, the first line self-contained.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
