@@ -47,6 +47,11 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/claude-review/scripts/claude-review.sh" \
 Start at `medium`. A caller — a person or another skill — may hand you the base,
 the level or a narrowing; an explicit one wins over anything resolved here.
 
+Inside the sandbox the run executes the reviewed repository's own code — its build,
+its tests, the probe that settles a finding — which is what a review at this rung is
+worth and also what makes that repository's contents something you are choosing to
+trust. Weigh it before pointing this at a repository nobody here wrote.
+
 Where there is a base the script targets a **ref range**, which fixes what the run
 diffs; a working-tree review has no range to give, so its scope stays prose the run
 may set aside, and §1's reference says what an advisory scope costs the coverage

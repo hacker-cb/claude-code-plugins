@@ -72,13 +72,15 @@ BEFORE="$(tree_state)"
 # The sandbox is what buys the permission mode back: sandboxed commands are approved
 # by the boundary rather than by a person, and there is no person here — without it
 # this mode denies every build, test and probe the reviewer reaches for, and the
-# review degrades to reading. stdin is closed because the run waits on it otherwise;
+# review degrades to reading. Both edges of that boundary are then held shut: no host
+# outside the allowlist, and no retry outside the sandbox for what failed inside it.
+# stdin is closed because the run waits on it otherwise;
 # stdout carries the JSON envelope, stderr its own file so a warning cannot corrupt
 # the JSON read below.
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --effort "$LEVEL" --output-format json \
   --setting-sources user --permission-mode manual \
-  --settings '{"sandbox":{"enabled":true}}' \
+  --settings '{"sandbox":{"enabled":true,"allowUnsandboxedCommands":false,"network":{"strictAllowlist":true}}}' \
   --tools "Bash,Read,Grep,Glob,Agent" \
   --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
   < /dev/null > "$OUT" 2> "$OUT.log"
