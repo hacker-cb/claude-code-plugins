@@ -63,10 +63,12 @@ task's output and read it back before answering.
 
 **Collect it yourself.** A finished background task reaches a turn that is still
 running, so ending the turn is what forfeits it. Waiting is polling the output file
-until it carries the coverage record — never a turn closed on "the reviewers are
-still out", which in a subagent ends the work entirely and answers the caller with
-whatever the last reviewer said. Spend the wait on what does not depend on the
-answer.
+until it carries the coverage record **or the task itself has ended** — a run that
+failed before it could launch prints its failure instead of a record, and polling
+for one it will never print does not stop. What never waits is a turn closed on
+"the reviewers are still out", which in a subagent ends the work entirely and
+answers the caller with whatever the last reviewer said. Spend the wait on what
+does not depend on the answer.
 
 **The command lives in the engine's script, and its skill names it.** Run that
 script as it stands, one plain command — an agent isolated in its own worktree has

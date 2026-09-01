@@ -36,7 +36,7 @@ which owns all of it — the rungs and their order, remote ranking, the
 remote-tracking-ref form, the stale-pointer trap. Read it; don't re-derive any of
 it here.
 
-Two things this skill must not let the reference's authority hide:
+Three things this skill must not let the reference's authority hide:
 
 - **Whatever resolves is handed to the reviewers explicitly**, and an explicit
   base wins over any resolution they would do themselves — so a lossy answer here
@@ -180,6 +180,11 @@ one reviewer's report in place of this skill's own — and where this skill runs
 inside a subagent, that also ends the work the review was gating. Poll each
 detached run until its coverage record is there; if one never returns, that is a
 row and a reason, not a reason to stall.
+
+**A reviewer that edited the tree says so, and that line is not coverage.** It
+belongs above the table with the findings, in the caller's own words: what a
+reviewer changed is not what a reviewer read, and the completion about to happen
+is the reason anyone needs to know before it does.
 
 **Zero files covered is not a pass.** Decide it by the count, never by matching a
 reviewer's wording: each phrases an empty review differently, and one engine

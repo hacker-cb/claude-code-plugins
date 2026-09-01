@@ -14,11 +14,15 @@ BASE=""
 LEVEL="medium"
 NARROW=""
 
+# A flag with no value exits like any other refusal — saying so. Silent here means a
+# detached run whose output file holds nothing at all, which reads as a run that
+# never answered rather than one that was called wrong.
+need() { [ "$2" -ge 2 ] || { echo "claude review failed: $1 needs a value"; exit 2; }; }
 while [ $# -gt 0 ]; do
   case "$1" in
-    --base)   BASE="${2-}";   shift 2 || exit 2 ;;
-    --level)  LEVEL="${2-}";  shift 2 || exit 2 ;;
-    --narrow) NARROW="${2-}"; shift 2 || exit 2 ;;
+    --base)   need --base "$#";   BASE="$2";   shift 2 ;;
+    --level)  need --level "$#";  LEVEL="$2";  shift 2 ;;
+    --narrow) need --narrow "$#"; NARROW="$2"; shift 2 ;;
     *) echo "claude review failed: unknown argument '$1'"; exit 2 ;;
   esac
 done
@@ -58,7 +62,11 @@ fi
 OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")"
 # What the run leaves behind, to compare against below: this pass promises to
 # change nothing, and the sandbox permits writes inside the working directory.
-BEFORE="$(git status --porcelain --untracked-files=all)"
+# Content, not status codes: a file already listed as modified stays listed as
+# modified however many times the run rewrites it, and a working-tree review is
+# exactly where every covered file is already in that state.
+tree_state() { git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD; }
+BEFORE="$(tree_state)"
 # --setting-sources user: the repository under review is untrusted input, and its
 # own settings file carries hooks that would otherwise run as you at session start.
 # The sandbox is what buys the permission mode back: sandboxed commands are approved
@@ -84,7 +92,7 @@ echo "scope: ${BASE:-working tree}, $COVERED files, $LEVEL"
   || echo "coverage-warning: $OUTSIDE uncommitted path(s) are NOT reviewed — the range covers commits only"
 # Its own line too, and not a coverage one: this says what the run DID, not what it
 # read. The count above was taken before the run and stops describing the tree here.
-[ "$BEFORE" = "$(git status --porcelain --untracked-files=all)" ] \
+[ "$BEFORE" = "$(tree_state)" ] \
   || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
 # A successful envelope does not prove a review happened: a run killed mid-flight
 # still reports success with an EMPTY result, which would print as a clean review.

@@ -58,5 +58,6 @@ one-paragraph verdict followed by findings:
   Why it breaks, in concrete terms.
 ```
 
-A missing CLI, an expired login and a non-repository all leave `-o` empty and land
-in the `codex review failed:` branch, where the log tail names which it was.
+Every failure lands in a `codex review failed:` branch carrying the engine's own
+error — the catalog's when the run never reached the reviewer, the log tail when
+it did and came back with nothing.

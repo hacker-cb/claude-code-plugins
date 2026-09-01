@@ -63,6 +63,8 @@ Three things are this engine's own:
   left standing, or a fix applied against this skill's promise. The findings still
   hold; what stops holding is that the change about to be shipped is the change that
   was reviewed. Hand the line to the caller with them, and undo nothing yourself.
+  Its absence proves less than its presence: what the repository ignores is outside
+  the comparison, so a build directory rewritten under it stays unreported.
 - A `run warnings:` block means the run printed to stderr while still succeeding —
   a degradation rather than a failure, so read it before trusting what the scope
   line claims.

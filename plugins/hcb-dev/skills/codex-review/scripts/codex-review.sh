@@ -14,11 +14,15 @@ BASE=""
 MODEL=""
 EFFORT=""
 
+# A flag with no value exits like any other refusal — saying so. Silent here means a
+# detached run whose output file holds nothing at all, which reads as a run that
+# never answered rather than one that was called wrong.
+need() { [ "$2" -ge 2 ] || { echo "codex review failed: $1 needs a value"; exit 2; }; }
 while [ $# -gt 0 ]; do
   case "$1" in
-    --base)   BASE="${2-}";   shift 2 || exit 2 ;;
-    --model)  MODEL="${2-}";  shift 2 || exit 2 ;;
-    --effort) EFFORT="${2-}"; shift 2 || exit 2 ;;
+    --base)   need --base "$#";   BASE="$2";   shift 2 ;;
+    --model)  need --model "$#";  MODEL="$2";  shift 2 ;;
+    --effort) need --effort "$#"; EFFORT="$2"; shift 2 ;;
     *) echo "codex review failed: unknown argument '$1'"; exit 2 ;;
   esac
 done
@@ -26,8 +30,12 @@ done
 # The catalog is the only authority on both — never memory, and never
 # ~/.codex/config.toml, which differs from machine to machine. One offline call
 # prints the model list and each model's ladder.
-CAT="$(codex debug models 2>/dev/null)" \
-  || { echo "codex review failed: the model catalog is unreadable — is codex installed and logged in?"; exit 1; }
+# Its own error, not a guess at one: an old CLI without the subcommand, a broken
+# config and a permissions failure are three different diagnoses, and swallowing
+# stderr turns all three into whichever one was guessed here.
+CATLOG="$(mktemp "${TMPDIR:-/tmp}/codex-catalog.XXXXXX")"
+CAT="$(codex debug models 2>"$CATLOG")" \
+  || { echo "codex review failed: the model catalog is unreadable"; tail -5 "$CATLOG"; exit 1; }
 # `priority` ascends from the newest frontier model, so entry 0 is the one to
 # review with.
 [ -n "$MODEL" ] || MODEL="$(printf '%s' "$CAT" \
