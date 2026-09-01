@@ -75,7 +75,7 @@ Not checked: <what the master left open, so you do not read it as known>
 Start: <now | after <gate> — do not begin before it>
 Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. Verify you are in a worktree of your own before the first
-write; where you are not, cut one (EnterWorktree) from <the base | batch
+write; where you are not, cut your own worktree from <the base | batch
 <id>'s branch, where this batch stacks on it>. <Or: no checkout is touched.>
 Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on.
 Your workflow refreshes the base; the delta from the pin to the refreshed tip
