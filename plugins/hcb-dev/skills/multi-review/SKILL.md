@@ -41,6 +41,11 @@ Two things this skill must not let the reference's authority hide:
 - **Whatever resolves is handed to the reviewers explicitly**, and an explicit
   base wins over any resolution they would do themselves — so a lossy answer here
   is the last word, with nothing downstream to catch it.
+- **A base a caller hands down is a name, and a name is not a ref.** A bare branch
+  name resolves against a local copy that a worktree may have left behind days ago;
+  the range then opens before commits the parent already carries, and the review
+  reads someone else's landed work as part of this change. Refresh it through the
+  reference before passing it on, same as one you resolved yourself.
 - **Confirm the base shares history with `HEAD` before passing it on** —
   `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
   base is worse than none). Empty → don't pass it, and **don't quietly fall to
@@ -154,7 +159,9 @@ Start the detachable reviewers first so they overlap with the inline one.
   subagent to save context, whatever your own tools look like: the skill's
   filtering pass is parallel sub-tasks dropping every candidate below confidence
   8, and where that pass cannot run it does not fail — it silently returns the
-  unfiltered candidates as if they had been filtered.
+  unfiltered candidates as if they had been filtered. Its write-up ends *its* run,
+  not yours: carry it into §4 as one reviewer's row, and never let it stand as the
+  answer.
 
 ## 4. Collect
 
@@ -167,6 +174,12 @@ gets recorded as having read the change.
 "still running", so a row filled before its reviewer returns asserts something
 about a run that has not finished — and the one status that fits an empty cell,
 `n/a`, is the one the coverage gate treats as closed.
+
+**Waiting is polling, not stopping.** Ending the turn here answers the caller with
+one reviewer's report in place of this skill's own — and where this skill runs
+inside a subagent, that also ends the work the review was gating. Poll each
+detached run until its coverage record is there; if one never returns, that is a
+row and a reason, not a reason to stall.
 
 **Zero files covered is not a pass.** Decide it by the count, never by matching a
 reviewer's wording: each phrases an empty review differently, and one engine

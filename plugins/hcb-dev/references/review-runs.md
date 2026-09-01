@@ -61,6 +61,21 @@ naming the engine, so the run is recognizable in the task list.
 Detached is how it runs, not permission to answer without it: collect the finished
 task's output and read it back before answering.
 
+**Collect it yourself.** A finished background task reaches a turn that is still
+running, so ending the turn is what forfeits it. Waiting is polling the output file
+until it carries the coverage record — never a turn closed on "the reviewers are
+still out", which in a subagent ends the work entirely and answers the caller with
+whatever the last reviewer said. Spend the wait on what does not depend on the
+answer.
+
+**The command lives in the engine's script, and its skill names it.** Run that
+script as it stands, one plain command — an agent isolated in its own worktree has
+anything more complicated refused as unverifiable, and a round hours into the work
+is where a command gets rebuilt from memory rather than read. What a rebuild drops
+is never the engine call, which is the memorable part: it is the flags that make a
+headless run reviewable, the redirect, and the coverage record — leaving a run that
+reports as a review nobody measured.
+
 ## The coverage record
 
 Every run prints one line, before its findings and never merged into them:
