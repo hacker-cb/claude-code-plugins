@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Runs Codex's own reviewer over a range, and prints the coverage record the caller
+# compares against, then Codex's report. Invoked by the codex-review skill; every
+# value it needs arrives as a flag, so the call site stays one plain command.
+#
+# Usage: codex-review.sh [--base <ref>] [--model <slug>] [--effort <level>]
+#   --base    the ref the range starts at; omitted reviews the working tree alone
+#   --model   the model to review with; omitted resolves it from the catalog
+#   --effort  that model's reasoning level; omitted takes xhigh, or its highest
+
+set -u
+
+BASE=""
+MODEL=""
+EFFORT=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --base)   BASE="${2-}";   shift 2 || exit 2 ;;
+    --model)  MODEL="${2-}";  shift 2 || exit 2 ;;
+    --effort) EFFORT="${2-}"; shift 2 || exit 2 ;;
+    *) echo "codex review failed: unknown argument '$1'"; exit 2 ;;
+  esac
+done
+
+# The catalog is the only authority on both — never memory, and never
+# ~/.codex/config.toml, which differs from machine to machine. One offline call
+# prints the model list and each model's ladder.
+CAT="$(codex debug models 2>/dev/null)" \
+  || { echo "codex review failed: the model catalog is unreadable — is codex installed and logged in?"; exit 1; }
+# `priority` ascends from the newest frontier model, so entry 0 is the one to
+# review with.
+[ -n "$MODEL" ] || MODEL="$(printf '%s' "$CAT" \
+  | jq -r '[.models[] | select(.visibility=="list")] | sort_by(.priority)[0].slug')"
+LEVELS="$(printf '%s' "$CAT" \
+  | jq -r --arg m "$MODEL" '.models[] | select(.slug==$m) | [.supported_reasoning_levels[].effort] | join(" ")')"
+[ -n "$LEVELS" ] \
+  || { echo "codex review failed: '$MODEL' is not a model this catalog lists"; exit 1; }
+if [ -z "$EFFORT" ]; then
+  case " $LEVELS " in
+    *" xhigh "*) EFFORT="xhigh" ;;
+    # The ladder ascends, so the last entry is that model's highest.
+    *) EFFORT="${LEVELS##* }" ;;
+  esac
+else
+  case " $LEVELS " in *" $EFFORT "*) ;;
+    *) echo "codex review failed: '$EFFORT' is not a level $MODEL offers — it has: $LEVELS"; exit 1 ;; esac
+fi
+
+# Positional parameters, not an interpolated string: the scope is two arguments
+# or one, and an unquoted expansion would leave that to word-splitting.
+if [ -n "$BASE" ]; then
+  set -- --base "$BASE"
+  # Empty covers both an unknown ref and no shared history, and the two are not
+  # told apart here — unguarded either reaches the count as a blank and dies
+  # there, past the point where this could name what went wrong.
+  MERGE_BASE="$(git merge-base "$BASE" HEAD)" || MERGE_BASE=""
+  [ -n "$MERGE_BASE" ] \
+    || { echo "codex review failed: $BASE is unusable as a base — unknown ref, or no history shared with HEAD"; exit 1; }
+  COVERED=$(git diff --name-only "$MERGE_BASE" | wc -l | tr -d ' ')
+  # `--base` diffs, and a diff never shows untracked files — so in THIS mode they
+  # are outside both the count and the review. `--uncommitted` genuinely covers
+  # them, which is why the count there comes from `git status` instead.
+  UNTRACKED=$(git ls-files --others --exclude-standard | wc -l | tr -d ' ')
+  # Standing on the base collapses the merge-base onto HEAD: the run is then a
+  # working-tree review wearing a base's scope line.
+  [ "$MERGE_BASE" = "$(git rev-parse HEAD)" ] && ON_BASE=1 || ON_BASE=0
+else
+  set -- --uncommitted
+  COVERED=$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')
+  UNTRACKED=0
+  ON_BASE=0
+fi
+
+# Written outside the repository under review: a report left inside becomes an
+# untracked file the next run reads as part of the change.
+OUT="$(mktemp "${TMPDIR:-/tmp}/codex-review.XXXXXX")"
+# `codex exec review`, not the top-level `codex review`: the latter has no `-o`,
+# which is what splits the verdict from the transcript.
+codex exec review "$@" -c model="$MODEL" -c model_reasoning_effort="$EFFORT" \
+  -o "$OUT" > "$OUT.log" 2>&1
+# The coverage record the caller compares against.
+echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $EFFORT"
+# SEPARATE lines, never appended to the scope one.
+[ -n "$BASE" ] \
+  || echo "coverage-warning: no base — the commits on this branch are NOT reviewed"
+[ "${UNTRACKED:-0}" = 0 ] \
+  || echo "coverage-warning: $UNTRACKED untracked path(s) are NOT reviewed — a diff does not show them"
+[ "${ON_BASE:-0}" = 0 ] \
+  || echo "coverage-warning: HEAD is at the base — this covered the working tree, not any commit"
+if [ -s "$OUT" ]; then cat "$OUT"; else echo "codex review failed:"; tail -20 "$OUT.log"; fi

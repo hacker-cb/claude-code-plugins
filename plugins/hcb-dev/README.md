@@ -100,9 +100,9 @@ handoff by hand, so the prompt text is the whole channel.
   nothing.
 - **`claude-review`** — `/hcb-dev:claude-review`
   The same shape with Claude's own reviewer: `claude -p "/code-review …"` in a
-  separate headless session, at a rung the caller picks — which is what makes it
-  reachable from a pipeline, a batch worker or a subagent, where the interactive
-  command is not. Review-only.
+  separate headless session, over a range and at a rung the caller fixes — which is
+  what a pipeline, a batch worker or a subagent needs from a review: a known range
+  in, a coverage record back. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
   Run several independent reviewers over one change at once — `codex-review`,
   `claude-review`, the built-in security review — then consolidate the findings
