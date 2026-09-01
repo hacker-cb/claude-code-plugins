@@ -102,8 +102,8 @@ are not yours>
 Master: <its title>, session id <id>. The wave ledger — standing constraints
 included — is <its coordinate; or: local to the master>. On start, confirm
 your composition to it and name your own title and session id. Report status
-when <the milestones — a change request opens, merges, you are green and
-waiting for the slot, you are stuck>.
+when <the milestones — a change request opens, merges, "green, waiting for the
+slot", you are stuck>.
 Questions go to the master; master unreachable — to your user in chat, and
 keep working on what does not depend on the answer.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker

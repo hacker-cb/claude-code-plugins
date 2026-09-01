@@ -66,12 +66,11 @@ mode and merge authority, and no gate inside re-defaults them.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first; the order says which one that is, or the dependency
   graph does.
-- **Statuses at the order's milestones** — a change request opened, merged,
-  the session stuck — one line each, the first line self-contained. Boundary
-  changes agreed with the master mid-flight count as milestones too. Where the
-  order gives the merge to the queue, "green, waiting for the slot" is itself
-  a milestone to report, and the merge then waits for the master's go — green
-  is readiness, not the slot.
+- **Statuses at the order's milestones** — a change request opened; "green,
+  waiting for the slot", where the order gives the merge to the queue, the
+  merge then waiting for the master's go (green is readiness, not the slot);
+  merged; the session stuck; a boundary change agreed with the master
+  mid-flight — one line each, the first line self-contained.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
   lost goes to the tracker, what blocks goes to this session's user, and work
   that depends on neither continues.
