@@ -76,8 +76,7 @@ Start: <now | after <gate> — do not begin before it>
 Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. Verify you are in a worktree of your own before the first
 write; where you are not, cut one (EnterWorktree) from <the base | batch
-<id>'s branch, where this batch stacks on it><; or that no checkout is
-touched>
+<id>'s branch, where this batch stacks on it>. <Or: no checkout is touched.>
 Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on.
 Your workflow refreshes the base; the delta from the pin to the refreshed tip
 is the list of facts to re-verify. Do not build on the pin.
@@ -86,8 +85,8 @@ Boundaries: <the files this batch owns; each component shared with another
 batch and how the files split; what is not yours to touch>
 
 Run this through <the process — /hcb-dev:implementation-workflow where there is
-something to build; a tracker-only batch names what runs instead><, and <domain
-methodology>, which is mandatory>. <checks> must pass.
+something to build; a tracker-only batch names what runs instead>. <Plus
+<domain methodology> — mandatory.> <checks> must pass.
 Completion: <mode> — settled here, so don't ask.
 Merge authority: <on green | the master's go — the queue decides your turn;
 green is readiness, not the slot> — settled here too.
