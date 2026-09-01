@@ -1,12 +1,17 @@
 # Prompts that cross between sessions
 
-Read by whatever produces a block of text for the user to paste into another
-session. It owns the envelope — what holds for any such prompt, whichever
-direction it travels — so the directions do not drift apart. What fills the
-slots belongs to the skill that produces the prompt.
+Read by whatever produces a prompt that crosses into another session. It owns
+the envelope — what holds for any such prompt, whichever direction it travels —
+so the directions do not drift apart. What fills the slots belongs to the skill
+that produces the prompt.
 
-Nothing crosses on its own. The user carries every one of these by hand, so the
-text is the whole channel: what is not written in it does not arrive.
+## Three carriers, one envelope
+
+A prompt crosses as a paste block the user carries by hand, as the starting
+prompt of a chip-spawned session, or as a message sent between live sessions.
+Everything in this file holds for all three: the text is the whole channel, and
+what is not written in it does not arrive. Which carrier moves a given prompt
+is chosen where the prompt is produced.
 
 ## The reader is elsewhere
 
@@ -58,10 +63,13 @@ Write the prompt in the language this session is conducted in, leaving
 identifiers, paths and commands as they are. A slot with nothing in it says so
 in a word rather than being dropped — a missing line reads as an omission.
 
-Each prompt is emitted whole, inside a fenced block of plain text, and never
-paraphrased into prose around it. What is addressed to this session instead of
-to the reader — what it now waits on, what it offers to do next — goes after the
-closing fence, and it may name the prompt's tag.
+A pasteable prompt is emitted whole, inside a fenced block of plain text, and
+never paraphrased into prose around it. What is addressed to this session
+instead of to the reader — what it now waits on, what it offers to do next —
+goes after the closing fence, and it may name the prompt's tag. A chip carries
+the same text as the new session's first prompt; a message carries it as the
+message body, its first line self-contained because the recipient's human
+previews only that line.
 
-Fence with three backticks; where the text inside carries a run of three or
-more, use one backtick more than the longest run.
+A pasteable prompt's fence is three backticks; where the text inside carries a
+run of three or more, use one backtick more than the longest run.

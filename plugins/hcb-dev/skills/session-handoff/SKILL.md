@@ -82,11 +82,10 @@ its ask is unbidden.
    places.
 
    **Answering an order** — this *is* the answer, so it goes in the body of the
-   prompt, never among the reader's steps: the premises of the order that did
-   not survive, first; then the deliverable, answered in the terms it was asked
-   for; then the decision taken at each fork the order named; then what is left
-   undone and why. Only this session knows these four. The tag rides on the
-   first line.
+   prompt, never among the reader's steps. Its shape — the tag on the first
+   line, then the four parts in order — is
+   [`../../references/order-return.md`](../../references/order-return.md); only
+   this session knows what fills them.
 
    **Unbidden** — these are the reader's steps: work out what this changes for
    what it is already doing — what it overlaps, what it conflicts with, what
@@ -156,4 +155,5 @@ leaves behind — offer it, never run it.
 ## Reference files
 
 - [`../../references/session-prompts.md`](../../references/session-prompts.md)
+- [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
