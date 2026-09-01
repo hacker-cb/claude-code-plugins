@@ -10,6 +10,11 @@
 
 set -u
 
+# Named here, or its absence arrives later wearing another failure's name: the
+# catalog reads as malformed, or the run envelope as an empty review.
+command -v jq >/dev/null 2>&1 \
+  || { echo "codex review failed: jq is not on PATH"; exit 1; }
+
 BASE=""
 MODEL=""
 EFFORT=""
