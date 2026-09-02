@@ -43,10 +43,12 @@ it again — from the epic the ledger hangs on, or from the name of the ledger
 file where there is no tracker.
 
 The value is unique inside its repository and nowhere else: two repositories
-can each hold an issue 841, while the live registry spans the machine. So a
-title matched there is only a candidate — the checkout it stands in decides,
-and a first contact on a matched title opens with the challenge line
-(`session-comms.md`) before anything is acted on.
+can each hold an issue 841, while the live registry spans the machine. A title
+matched there is therefore a candidate, not a destination. What addresses a
+session is its session id, and both sides hand one over early — the order
+carries the master's, the confirmation that opens a batch carries the batch's.
+Until one is in hand, a message on a matched title leads with the challenge
+line (`session-comms.md`) and waits for its answer.
 
 ## `<id>`
 
@@ -122,9 +124,10 @@ that. What gives way, in this order:
   batch shape into the chip has titled the receiver, and every later message
   matches on it.
 - **A worktree a session cuts for itself leads with the identifier its title
-  leads with** — `<epic>-<id>` for a batch, `<epic>` for a master; a hyphen
-  where the title has a slash, since a ref is a path, and a prefix match reads
-  the two spellings as one name. One the host generated is left alone —
+  leads with** — `<epic>-<id>` for a batch, `<epic>-master` for a master,
+  whose bare number would otherwise prefix every batch's name; a hyphen where
+  the title has a slash, since a ref is a path, and a prefix match reads the
+  two spellings as one name. One the host generated is left alone —
   renaming a live session's directory is not a naming decision — so there the
   title carries the address by itself.
 - **In a wave, the order's tag is `<epic>/<id>`** — no separate tag is coined
