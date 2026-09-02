@@ -66,8 +66,20 @@ those minutes are spent differs by two orders of magnitude in what it costs.
 
 **Wait on blocking windows.** One `TaskOutput` call with `block: true` and
 `timeout: 600000` holds a single turn for ten minutes; repeat it, window after
-window, until the run answers or the ceiling below is reached. Six windows are the
-hour. Nothing is checked between them — the window *is* the wait.
+window, until the run answers or the ceiling below is reached. Nothing is checked
+between them — the window *is* the wait.
+
+**With several runs out, a window is spent on one of them.** Collect the ones that
+have already answered before opening any window, and open the next window on the run
+most likely to return — never on the same silent one over and over while finished
+records sit unread. The ceiling below is wall-clock across the whole wait, not six
+windows per run: three reviewers do not buy three hours.
+
+**Where no blocking wait is available** — the mechanism is deprecated in the harness
+and may go — fall back to reading the output file on a slow cadence, one look per
+ten minutes and no faster, and read it by what the run prints rather than by whether
+it is empty. That is a degraded wait, not a licence to spin: a look every few seconds
+is the pattern below, whatever it is spelled with.
 
 **Ending the turn instead is for one case only**: an interactive session, with a
 person present, where nothing downstream is blocked on the answer. There the
@@ -90,7 +102,7 @@ starve the very runs they are waiting for.
 **A wait ends, but not soon.** These engines take minutes, and the upper rungs take
 tens of them — half an hour of silence is a run reading, not a run lost, and a
 window that expires is one window, not a verdict — open the next one. What ends a
-wait is the sixth: an hour with nothing back. Before that hour, waiting is the
+wait is an hour of it, counted on the clock rather than per run. Before that hour, waiting is the
 whole of the job; at it, stop and
 record what actually happened — a run that never returned is a row and a reason in
 the caller's report, not a reason to stall, and not a review to claim. Spend the
@@ -163,9 +175,12 @@ engine phrases it differently again between its own modes.
 When a run fails, pass its own error through rather than guessing a cause.
 
 **A spent quota is not one of those failures, and not a review either.** Where the
-engine's account has hit its limit, the run comes back at once saying so, on its own
-line — `unavailable:` rather than `failed:` — carrying the engine's notice. Nothing
-about the change is wrong, and no coverage was lost to anything the caller controls.
+engine's account has hit its limit, the run comes back at once saying so, carrying
+the engine's notice. Nothing about the change is wrong, and no coverage was lost to
+anything the caller controls. **How it says so is the engine's own**, and its skill
+names the shape: one engine has a line of its own for this — `unavailable:` rather
+than `failed:` — and another, whose CLI hands back an empty file rather than an
+envelope, can only report it among its failures. Read the notice, not the prefix.
 **Read which limit it names.** One is the account's, and only its reset time closes
 it: report the reviewer as unavailable, in the engine's own words, and let whoever
 is completing the work decide whether to wait or proceed a reviewer short. The other

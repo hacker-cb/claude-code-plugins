@@ -60,6 +60,12 @@ one-paragraph verdict followed by findings:
   Why it breaks, in concrete terms.
 ```
 
+**A spent quota lands there too, and does not announce itself.** This CLI writes its
+verdict to a file rather than an envelope, so a limit leaves that file empty and the
+notice in the log tail — indistinguishable in shape from a crash, and told apart only
+by reading what the tail says. §1's reference says why that distinction matters to
+the caller: a quota is not a gap anyone closes by fixing the change.
+
 Every failure lands in a `codex review failed:` branch and exits non-zero, so a
 detached run reads as failed rather than as a review with nothing in it. What the
 branch carries depends on how far the run got: the engine's own error once it was

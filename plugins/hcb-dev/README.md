@@ -245,8 +245,8 @@ saying something else.
 - [`references/review-runs.md`](references/review-runs.md) — what a review engine
   launched outside the current session owes whoever launched it: the base it is
   handed rather than left to guess, the untracked files no diff shows, the
-  background launch a review always takes, how to wait for one (a notification or a
-  single blocking call — never a loop that sleeps and re-checks), and the two lines
+  background launch a review always takes, how to wait for one (repeated blocking
+  windows, never a loop that sleeps and re-checks), and the two lines
   it prints: the `started:` line that says only that it launched, and the coverage
   record that says it finished — the `scope:` line, the separate `coverage-warning:`
   lines, and the rules for reading them (zero files is not a pass; a count is what

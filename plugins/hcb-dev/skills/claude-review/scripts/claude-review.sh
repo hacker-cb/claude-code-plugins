@@ -25,8 +25,14 @@ NARROW=""
 # because a run inheriting a person's own model inherits that model's quota too:
 # a session working on `fable` spends the quota its own review then needs, and the
 # review fails on a limit that has nothing to do with the change. A caller who wants
-# another model says so.
+# another model says so, and a deployment that does not carry this family falls back
+# rather than failing every run — the fallback is passed below, and the scope line
+# reports whichever model actually answered, so a fallback is never silent.
 MODEL="opus"
+# A family, like the one above, not a version: the CLI resolves it, and a run on a
+# deployment entitled to neither still fails — visibly, in the branch that names the
+# engine's own words.
+FALLBACK="sonnet"
 
 # A flag with no value exits like any other refusal — saying so. Silent here means a
 # detached run whose output file holds nothing at all, which reads as a run that
@@ -178,7 +184,7 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # the JSON read below.
 CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
-  --model "$MODEL" --effort "$LEVEL" --output-format json \
+  --model "$MODEL" --fallback-model "$FALLBACK" --effort "$LEVEL" --output-format json \
   --permission-mode auto \
   --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
@@ -205,6 +211,14 @@ TERMINAL=$(jq -r '.terminal_reason // ""' "$OUT" 2>/dev/null) || TERMINAL=""
 if [ "$PRODUCED" = 0 ] || [ "$TERMINAL" = "api_error" ]; then
   RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
   case "$RESULT" in
+    # A per-minute rate limit wears the word "limit" and is nothing like a spent
+    # quota: it clears in seconds, and a caller told the reviewer is unavailable
+    # completes a reviewer short where re-running would have worked. Checked first,
+    # since the broad arm below would otherwise swallow it.
+    *"rate limit"*|*rate_limit*|*"per-minute"*|*"try again"*)
+      echo "claude review failed: $RESULT"
+      echo "(a transient limit — re-running the same command is the fix)"
+      exit 1 ;;
     # Broad on purpose, and safe here: nothing inside this branch is a review, so the
     # only question left is which sentence to lead with. A quota is not a failure of
     # the engine — the notice names either a reset time or another model to switch
@@ -224,7 +238,12 @@ fi
 if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then
   # The coverage record belongs to a run that happened. Printed before the branch
   # below, it would put a file count against a run that read nothing.
-  echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $LEVEL"
+  # Whichever model answered, not whichever was asked for: with a fallback in play
+  # those differ, and a scope line naming the request would report a review that did
+  # not happen on the model it claims. Falls back to the request only where the
+  # envelope carries no usage to read.
+  RAN=$(jq -r '(.modelUsage // {}) | keys | join("+")' "$OUT" 2>/dev/null) || RAN=""
+  echo "scope: ${BASE:-working tree}, $COVERED files, ${RAN:-$MODEL} at $LEVEL"
   # SEPARATE lines, never appended to the scope one.
   [ -n "$BASE" ] \
     || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"

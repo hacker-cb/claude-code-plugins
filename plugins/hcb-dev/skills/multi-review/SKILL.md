@@ -188,8 +188,10 @@ about a run that has not finished — and the one status that fits an empty cell
 
 **How to wait belongs to §3's reference, and it is not a loop.**
 [`../../references/review-runs.md`](../../references/review-runs.md) owns it:
-repeated blocking `TaskOutput` windows, six of them the hour, and never a command
-that sleeps and re-checks. **This skill always waits that way** — it runs inside
+repeated blocking windows, an hour of them on the clock, spent on the run most
+likely to answer — and never a command that sleeps and re-checks. This skill has
+several runs out at once, so the reference's rule about draining the ones that have
+already answered is the one that bites here. **This skill always waits that way** — it runs inside
 subagents and dispatched sessions, where ending the turn ends the work the review
 was gating, and where a hung run sends no notification to end the wait with. Ending
 the turn never answers the caller either: a reviewer's own report is not this
