@@ -42,6 +42,12 @@ name from the same value. Resuming an epic reads it back rather than coining
 it again — from the epic the ledger hangs on, or from the name of the ledger
 file where there is no tracker.
 
+The value is unique inside its repository and nowhere else: two repositories
+can each hold an issue 841, while the live registry spans the machine. So a
+title matched there is only a candidate — the checkout it stands in decides,
+and a first contact on a matched title opens with the challenge line
+(`session-comms.md`) before anything is acted on.
+
 ## `<id>`
 
 Capital ASCII letters in planning order — `A`, `B`, … `Z`, then `AA`, `AB`.
@@ -103,6 +109,9 @@ that. What gives way, in this order:
    it carries both halves, and the title is rewritten to the shape they make
    unless it already stands in it. A resume is the case that needs this: the
    number was right from the first line and the topic was the missing half.
+   Where the ledger already records a title, that string is the address every
+   order already out is carrying: wear it as recorded, and leave restyling to
+   the epics opened under this shape.
 3. **Before the first outgoing mention** — the final title stands before the
    first chip, order or message leaves, because an order carries the master's
    title as the address its batch resolves.
