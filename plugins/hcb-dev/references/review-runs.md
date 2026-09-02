@@ -61,17 +61,24 @@ naming the engine, so the run is recognizable in the task list.
 Detached is how it runs, not permission to answer without it: collect the finished
 task's output and read it back before answering.
 
-**Waiting is one blocking call, never a loop.** The engine takes minutes, and the
-two ways of spending them differ by two orders of magnitude in what they cost.
+**Waiting is a blocking call, never a loop.** The engine takes minutes, and how
+those minutes are spent differs by two orders of magnitude in what it costs.
 
-- **A session of its own** ends the turn and waits for the notification the harness
-  delivers when the task finishes; it names the output file, which is what to read
-  back then. Ending the turn is not answering: say which reviewers are still out,
-  and say nothing about what they found until their records are in hand.
-- **A subagent** cannot end the turn — doing so ends the work the review was gating
-  and answers the caller with whatever the last reviewer said. It waits inside one
-  turn instead, on a single blocking `TaskOutput` call: `block: true`,
-  `timeout: 600000`, which holds that turn for ten minutes.
+**Wait on blocking windows.** One `TaskOutput` call with `block: true` and
+`timeout: 600000` holds a single turn for ten minutes; repeat it, window after
+window, until the run answers or the ceiling below is reached. Six windows are the
+hour. Nothing is checked between them — the window *is* the wait.
+
+**Ending the turn instead is for one case only**: an interactive session, with a
+person present, where nothing downstream is blocked on the answer. There the
+harness's completion notification is what brings the run back, and it names the
+output file to read. Two things make that case narrow. A run that hangs sends no
+notification at all, so the ceiling below never arrives and the wait is silent
+forever. And a subagent that ends its turn ends the work the review was gating,
+answering its caller with whatever the last reviewer said. **Anything autonomous —
+a subagent, a dispatched batch, an orchestrated slice — waits on the windows**, and
+whoever ends a turn while reviewers are out says which ones, and says nothing about
+what they found until their records are in hand.
 
 **Never wait by running commands in a loop** — a `sleep`, a `seq` loop, a
 background "watcher" that sleeps and re-checks. A backgrounded call returns
@@ -82,8 +89,9 @@ starve the very runs they are waiting for.
 
 **A wait ends, but not soon.** These engines take minutes, and the upper rungs take
 tens of them — half an hour of silence is a run reading, not a run lost, and a
-window that expires is one window, not a verdict. What ends a wait is an hour with
-nothing back. Before that hour, waiting is the whole of the job; at it, stop and
+window that expires is one window, not a verdict — open the next one. What ends a
+wait is the sixth: an hour with nothing back. Before that hour, waiting is the
+whole of the job; at it, stop and
 record what actually happened — a run that never returned is a row and a reason in
 the caller's report, not a reason to stall, and not a review to claim. Spend the
 wait itself on what does not depend on the answer.

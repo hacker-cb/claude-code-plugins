@@ -98,6 +98,7 @@ GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
 GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
 SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
   disableAllHooks:true,
+  env:{CLAUDE_CODE_RETRY_WATCHDOG:"0"},
   sandbox:{
     enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
     network:{strictAllowlist:true},
@@ -152,8 +153,12 @@ echo "started: claude at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # on this run, and hours of silence reach it as an output file that never fills,
 # which reads as a hang rather than as a quota to come back to. Switched off, the
 # same case arrives as the envelope below, carrying the reset time the caller can
-# act on. A variable set here wins over the settings key, so what the user set for
-# their own sessions is untouched.
+# act on. It is set twice, in the environment and in the settings above, because
+# the two are applied in an order this cannot see: measured here the environment
+# wins — a run launched with the prefix reports `0` while the same run without it
+# reports the settings' `1` — but a settings block applied afterwards would undo
+# exactly that, and the value belongs to this run either way. Neither copy reaches
+# the user's own sessions.
 # stdin is closed because the run waits on it otherwise;
 # stdout carries the JSON envelope, stderr its own file so a warning cannot corrupt
 # the JSON read below.
