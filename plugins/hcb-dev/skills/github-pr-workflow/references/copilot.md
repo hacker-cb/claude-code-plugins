@@ -120,11 +120,11 @@ no review of the head is the normal state right after a push, not a lost request
 After each push:
 
 1. **Watch the request appear for this head — do not place one.** Under
-   `review_on_push` the rule registers the request itself, asynchronously: it lands
-   within about a minute of the push *landing* (a pre-push hook delays the landing,
-   not the request), and until then the list is empty. Read it over REST, matching
-   the pair from *Identifying Copilot* — `gh pr view --json reviewRequests` drops the
-   bot, so a wait built on it never arms:
+   `review_on_push` the rule registers the request itself, asynchronously, some time
+   after the push has *landed* (a pre-push hook delays the landing, not the request),
+   and until it has the list is empty — absence there is "not yet", never "not
+   requested". Read it over REST, matching the pair from *Identifying Copilot* —
+   `gh pr view --json reviewRequests` drops the bot, so a wait built on it never arms:
    ```bash
    gh api repos/<owner>/<repo>/pulls/<pr> \
      --jq '[ .requested_reviewers[]? | select((.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i"))) ] | length'
@@ -146,10 +146,11 @@ After each push:
            | {event, at: .created_at} | @json'
    ```
 2. **Request one yourself only when the rule did not.** That is the one legitimate
-   use of `gh pr edit <pr> --add-reviewer "@copilot"`: a head that, a couple of
-   minutes after the push landed, has no `review_requested` event of its own — a
-   force-push after a review has already posted is the known case — or a repository
-   without the rule. Not a REST `requested_reviewers` POST — that endpoint takes
+   use of `gh pr edit <pr> --add-reviewer "@copilot"`: a head whose timeline still
+   shows no `review_requested` event of its own once the checks on that head have all
+   reported — the rule registers its request well before CI finishes, so a head with
+   settled checks and no request is one the rule skipped; a force-push after a review
+   has already posted is the known case — or a repository without the rule. Not a REST `requested_reviewers` POST — that endpoint takes
    ordinary logins, while `@copilot` is a value `gh` case-handles. Unsupported on
    GitHub Enterprise Server; there, rely on the rule. **A request placed while one is
    pending, or after the head's review has posted, buys a second review of the same
