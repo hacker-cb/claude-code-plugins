@@ -82,6 +82,9 @@ if [ -n "$TOP" ]; then
     echo "claude review failed: TMPDIR is inside the repository under review"; exit 1 ;; esac
 fi
 
+# `disableAllHooks` is what a detached run needs from this file: a `PermissionRequest`
+# hook — which any enabled plugin may install, and which blocks for as long as its
+# own timeout allows — meets a run with nobody to answer it, and hangs it.
 # Where the sandbox cannot start, the CLI warns and runs unsandboxed unless
 # `failIfUnavailable` says otherwise — the boundary this run promises would then be
 # gone behind a warning nobody reads. `denyWrite` covers this run's own output: the
@@ -93,12 +96,14 @@ fi
 # below. The index is deliberately not denied — git rewrites it while merely reading.
 GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
 GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
-SANDBOX="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{sandbox:{
-  enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
-  network:{strictAllowlist:true},
-  filesystem:{denyWrite:([$out,$log]
-    + ([$gc,$gd] | map(select(. != "") | . + "/info") | unique))}}}')" \
-  || { echo "claude review failed: could not build the sandbox settings"; exit 1; }
+SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
+  disableAllHooks:true,
+  sandbox:{
+    enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
+    network:{strictAllowlist:true},
+    filesystem:{denyWrite:([$out,$log]
+      + ([$gc,$gd] | map(select(. != "") | . + "/info") | unique))}}}')" \
+  || { echo "claude review failed: could not build the run settings"; exit 1; }
 # What the run leaves behind, to compare against below: this pass promises to
 # change nothing, and the sandbox permits writes inside the working directory.
 # Content, not status codes: a file already listed as modified stays listed as
@@ -116,23 +121,34 @@ tree_state() {
     | while IFS= read -r -d "" f; do printf '%s ' "$f"; git hash-object -- "$f"; done
 }
 BEFORE="$(tree_state)"
-# --setting-sources user: the repository under review is untrusted input, and its
-# own settings file carries hooks that would otherwise run as you at session start.
-# The sandbox is what buys the permission mode back: sandboxed commands are approved
-# by the boundary rather than by a person, and there is no person here — without it
-# this mode denies every build, test and probe the reviewer reaches for, and the
-# review degrades to reading. What the boundary holds shut is the network and the
-# escape hatch; reading outside the tree and the environment it inherits are open
-# unless the user's own settings narrow them, which is where such rules belong.
+# Settings load as they do in any session — the hooks among them switched off above,
+# and everything the reviewed repository sets arriving with them, this run's own
+# sandbox block included: list keys merge across sources, so what is set there is a
+# floor and not a ceiling.
+# What decides a call is the boundary rather than a prompt, because a prompt here has
+# nobody to answer it: the sandbox runs bash inside it and approves it there, which
+# is what lets the reviewer build, test and probe rather than only read; the git
+# allowlist rides ahead of the classifier for the reads every review makes; and
+# `auto` weighs the rest. A denial narrows the run — the coverage warning below
+# reports that — and enough of them end it, which lands in the failure branch.
+# The deny list is what holds this pass to reading. `--tools` reaches neither far
+# enough nor deep enough on its own: it selects among the built-in tools, so the MCP
+# tools of whoever runs the review stay reachable — theirs is the change request this
+# run promises not to write to — and it does not reach a subagent, which carries its
+# own tool set and edits the working directory under `auto` without asking. A deny
+# rule holds in both places. `--strict-mcp-config` would cover the first half more
+# cheaply, by starting no servers at all, but the CLI refuses it wherever an
+# enterprise MCP config is present, and refuses the whole run with it.
 # stdin is closed because the run waits on it otherwise;
 # stdout carries the JSON envelope, stderr its own file so a warning cannot corrupt
 # the JSON read below.
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --effort "$LEVEL" --output-format json \
-  --setting-sources user --permission-mode manual \
-  --settings "$SANDBOX" \
+  --permission-mode auto \
+  --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
   --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
+  --disallowedTools "mcp__*,Edit,Write,NotebookEdit" \
   < /dev/null > "$OUT" 2> "$OUT.log"
 
 # Before the branch below, not inside it: a run that edited the tree and then died

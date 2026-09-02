@@ -50,11 +50,16 @@ the level or a narrowing; an explicit one wins over anything resolved here.
 Inside the sandbox the run executes the reviewed repository's own code — its build,
 its tests, the probe that settles a finding — which is what a review at this rung is
 worth and also what makes that repository's contents something you are choosing to
-trust. What the boundary shuts is the network and the retry outside it; writes land
-inside the working directory — §3's `tree-warning:` is what that costs — while
-reading outside the tree and the environment the run inherits stay open unless the
-user's own settings narrow them. Weigh all three before pointing this at a
-repository nobody here wrote.
+trust. That choice reaches past the code: settings load the way they do in any
+session, the repository's own among them, so its `.mcp.json`, its `env` block and
+its `sandbox` entries reach the run as well — what the run sets for itself is a
+floor those entries widen, network and filesystem alike, and a settings key whose
+value is a shell command runs where the sandbox does not reach. Hooks are the
+exception, switched off whatever source they come from. Writes land inside the working
+directory, and §3's `tree-warning:` is what that costs; reading outside the tree
+and the environment the run inherits stay open unless something among those same
+settings narrows them. Weigh all of it before pointing this at a repository
+nobody here wrote.
 
 Where there is a base the script targets a **ref range**, which fixes what the run
 diffs; a working-tree review has no range to give, so its scope stays prose the run
