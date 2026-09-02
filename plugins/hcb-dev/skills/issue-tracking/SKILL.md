@@ -57,8 +57,10 @@ Body: **what is deferred**, identifiers and paths verbatim · **the trigger** th
 should reopen attention · **the source** (`<file>:<line>`, a change request, an
 audit date).
 
-Language follows the project; where nothing states one, match the most recent
-issue. Identifiers and paths stay verbatim whatever the language.
+Language follows the project; where nothing states one, the **newest** issues
+carry the convention — read the top of a list ordered by creation date, never the
+lowest numbers and never a relevance-ranked search hit. Identifiers and paths stay
+verbatim whatever the language.
 
 Labels, native types and milestones — `references/classification.md`, before
 applying any of them and before proposing one the repository lacks.
