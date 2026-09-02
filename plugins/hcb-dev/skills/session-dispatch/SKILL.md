@@ -66,6 +66,11 @@ Done means: <the terminal deliverable>
 
 Don't <what not to touch, duplicate, or unwind>
 
+Answering by message rather than by hand: the session that wrote this order is
+<its title>, session id <session-id>. Title yourself `<issue | nickname> —
+<topic>` before you start, so it can find you. <Or: the answer travels by hand;
+nothing to title.>
+
 Last: <returns — answer with these headings, carrying `<tag>` on the first line:
 premises of this order that did not survive; the deliverable in the terms asked;
 the decision at each fork above; what is left undone and why. Name the branch —
@@ -93,6 +98,7 @@ this session is now waiting on, and do not begin the dispatched work.
 - [`../../references/session-prompts.md`](../../references/session-prompts.md)
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
+- [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/slice-completion.md`](../../references/slice-completion.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

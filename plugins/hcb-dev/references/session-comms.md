@@ -19,14 +19,10 @@ not at the moment of sending.
 
 ## Be findable: title first
 
-A session that expects to be contacted titles itself before anything else, and
-the title leads with the identifier the counterparty will match — the epic or
-subject first (`<epic> — master`, `<epic>/<batch> — <topic>`), never a generic
-word alone: a stranger matching on "master" finds the wrong session. A
-chip-started session is born titled with its chip's title, so a dispatcher that
-puts the identifier into the chip title has titled the receiver already. Where
-no title tool exists, the worktree name is the stable half of the live name —
-coin it meaningfully.
+A session that expects to be contacted titles itself before anything else, in
+the shape and at the moment [`session-naming.md`](session-naming.md) gives.
+Where no title tool exists and this session cut its own worktree, that name is
+the stable half of the live one — coin it by the same reference.
 
 ## The ladder — send by the highest rung that answers
 

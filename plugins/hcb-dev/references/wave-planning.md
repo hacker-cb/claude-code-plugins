@@ -53,7 +53,8 @@ each:
 
 ## What the plan hands over
 
-A table the user approves before anything launches: batch id, topic, issues in
+A table the user approves before anything launches: batch id
+([`session-naming.md`](session-naming.md)), topic, issues in
 order, file zone, what it shares with whom, its wave and gate — plus what was
 deliberately left out (blocked batches with conditions, work that belongs to
 no wave) and the forks only the user can settle.
