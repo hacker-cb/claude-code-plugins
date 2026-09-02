@@ -1,7 +1,7 @@
 {
   "name": "hcb-dev",
   "description": "Personal developer baseline: a connected set of skills — turn tasks or issues into sliced, reviewed work; keep deferred work in the forge's issue tracker, with the classification resolved from the repository rather than assumed; resolve dependency versions from the registry (Dependabot in sync); seed .gitignore; review a change locally with two independent engines (Codex and Claude) consolidated into one coverage-checked report; complete finished work by mode — merged locally into its parent, or an open change request (PR/MR), with the full review-and-merge drive on GitHub; hand work across sessions as a pasteable prompt in either direction — an order for another session to implement, or what this one finished, in code or in the tracker alone; survey a whole backlog slice against the code — tiers of importance, the critical path, parallel lanes, what to take next; fan an epic out in waves — a master session plans batches by file zones and dependencies, launches them as chips into parallel sessions, coordinates questions, boundaries and the merge queue over cross-session messaging with a durable wave ledger on the epic, and accepts each batch's return; and sweep a repository's git residue (merged branches, stale worktrees).",
-  "version": "0.26.1",
+  "version": "0.26.2",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
