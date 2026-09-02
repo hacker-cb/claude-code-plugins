@@ -261,16 +261,24 @@ if [ "$PRODUCED" = 0 ] || [ "$TERMINAL" = "api_error" ]; then
       tail -20 "$OUT.log"; exit 1 ;;
   esac
 fi
+# What separates a report from a notice, used twice below. A review at any rung comes
+# back long and in several lines; every notice these engines emit is a sentence or
+# two, whatever it happens to say. Shape, not wording — the wording is what keeps
+# slipping, since each notice is phrased by whoever wrote that code path.
+looks_like_a_report() {
+  [ "${#RESULT_ALL}" -ge 400 ] || return 1
+  [ "$(printf '%s\n' "$RESULT_ALL" | wc -l | tr -d ' ')" -ge 5 ]
+}
 # A notice can also arrive after the model has written something — tokens spent,
-# terminal clean, and the notice still standing where the report belongs. Anchored to
-# the start, and only for a result short enough to be a notice rather than a report:
-# a review that merely mentions a limit says other things first and at length.
-case "$LOWER_ALL" in
-  "you've hit your"*|"you've reached your"*|"api error: credit balance"*)
-    if [ "${#RESULT_ALL}" -lt 400 ]; then
-      echo "claude review unavailable: $RESULT_ALL"; exit 3
-    fi ;;
-esac
+# terminal clean, and the notice still standing where the report belongs. The same
+# substrings the branch above uses, since a notice reaching here is the same notice;
+# what keeps a review that merely discusses a limit out of this arm is its shape.
+if ! looks_like_a_report; then
+  case "$LOWER_ALL" in
+    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credits"*|*"credit balance"*|*quota*|*"switch to another model"*)
+      echo "claude review unavailable: $RESULT_ALL"; exit 3 ;;
+  esac
+fi
 # A successful envelope does not prove a review happened: a run killed mid-flight
 # still reports success with an EMPTY result, which would print as a clean review.
 # `is_error` is not the last word in either direction. It does not prove a review
@@ -279,8 +287,20 @@ esac
 # and reporting that as a failure throws the review away along with the coverage
 # record. Tokens written plus a result to show is what a review looks like; the
 # envelope's own verdict rides along as a warning below.
+# Tokens alone do not make a review: an interrupted run bills them and comes back
+# with one sentence. Where the envelope itself says the run failed, only something
+# shaped like a report overrides it — otherwise the failure branch keeps the case it
+# had before this override existed.
 REVIEWED=0
-case "$PRODUCED" in ''|unknown|0) ;; *) [ -n "$RESULT_ALL" ] && REVIEWED=1 ;; esac
+case "$PRODUCED" in ''|unknown|0) ;; *)
+  if [ -n "$RESULT_ALL" ]; then
+    if jq -e '.is_error == true' "$OUT" >/dev/null 2>&1; then
+      looks_like_a_report && REVIEWED=1
+    else
+      REVIEWED=1
+    fi
+  fi ;;
+esac
 if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1 \
    || [ "$REVIEWED" = 1 ]; then
   # The coverage record belongs to a run that happened. Printed before the branch
