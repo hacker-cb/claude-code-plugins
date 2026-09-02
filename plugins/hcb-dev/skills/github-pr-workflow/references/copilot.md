@@ -116,7 +116,7 @@ often earns none — so the wait ends on the **requested-reviewer state**, never
 clock, and never on the repository's checks: a status check that stands in for
 Copilot's review is satisfied by *a* review of the pull request, not by one of the
 current head, and CI is usually green before Copilot has posted. **Green checks with
-no review of the head is the normal state right after a push, not a lost request.**
+no review of the head are the normal state right after a push, not a lost request.**
 After each push:
 
 1. **Watch the request appear for this head — do not place one.** Under
@@ -131,8 +131,10 @@ After each push:
    ```
    Whether one was registered for *this* head is the timeline's answer: its
    `review_requested` event, and the `copilot_work_started` event that follows once
-   the review is being written. Those events carry no SHA, so bound the query by the
-   time you pushed, or an earlier round's event reads as this one's:
+   the review is being written. The query below also returns a
+   `review_request_removed`, on purpose — that is the decline step 3 reads. Those
+   events carry no SHA, so bound the query by the time you pushed, or an earlier
+   round's event reads as this one's:
    ```bash
    # `--jq` is gh's own filter and takes no `--arg`; a variable reaches it through
    # the environment. The comparison is lexicographic, so the value has to be in
@@ -147,16 +149,17 @@ After each push:
    ```
 2. **Request one yourself only when the rule did not.** That is the one legitimate
    use of `gh pr edit <pr> --add-reviewer "@copilot"`: a head whose timeline still
-   shows no `review_requested` event of its own once the checks on that head have all
-   reported — the rule registers its request well before CI finishes, so a head with
-   settled checks and no request is one the rule skipped; a force-push after a review
-   has already posted is the known case — or a repository without the rule. Not a REST `requested_reviewers` POST — that endpoint takes
-   ordinary logins, while `@copilot` is a value `gh` case-handles. Unsupported on
-   GitHub Enterprise Server; there, rely on the rule. **A request placed while one is
-   pending, or after the head's review has posted, buys a second review of the same
-   commit** — one more set of threads to answer, and, placed late enough, a review
-   that lands after the merge with its findings orphaned on a closed pull request. It
-   never buys a faster one.
+   shows no `review_requested` event of its own once the checks on that head have
+   all reported — the rule registers its request well before CI finishes, so a head
+   with settled checks and no request is one the rule skipped; a force-push after a
+   review has already posted is the known case — or a repository without the rule.
+   Not a REST `requested_reviewers` POST — that endpoint takes ordinary logins,
+   while `@copilot` is a value `gh` case-handles. Unsupported on GitHub Enterprise
+   Server; there, rely on the rule. **A request placed while one is pending, or
+   after the head's review has posted, buys a second review of the same commit** —
+   one more set of threads to answer, and, placed late enough, a review that lands
+   after the merge with its findings orphaned on a closed pull request. It never
+   buys a faster one.
 3. **Wait until it settles**, which is one of exactly two things: a Copilot review
    whose `commit_id == $head`, or a request that was there and is gone with no such
    review — a decline, which the report says out loud rather than implying it
