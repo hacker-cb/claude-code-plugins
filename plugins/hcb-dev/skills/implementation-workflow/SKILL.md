@@ -25,8 +25,7 @@ the other skills assume has already happened — it owns the whole-set concerns
 completion to `hcb-dev:shipping-workflow`. It runs in the **main conversation**,
 and it is a skill, not the host's workflow tool: a rule that limits workflows or
 subagents to what the user or a skill asks for is met by the invocation that
-started it and by the skills it calls — the reviewers of `hcb-dev:multi-review`
-included — and skips nothing here.
+started it and by the skills it calls, and skips nothing here.
 
 The completion **mode** — `local` (merge each slice into its parent, no forge) or
 `request` (a change request per slice) — changes only how a slice *ends*. Analysis,

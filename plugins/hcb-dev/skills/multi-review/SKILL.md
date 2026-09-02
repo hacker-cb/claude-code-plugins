@@ -161,14 +161,16 @@ fans out into subagents is the security review, and it asks for them below.
 - **security-review** — invoke the skill inline, last, and run it as written:
   the sub-tasks it asks for are launched as subagents of this session — the
   finder first, then the filtering pass as parallel sub-tasks. The skill asking
-  for them is the ask a rule about delegating to subagents waits for, and so is
-  the caller that invoked this skill: launch them without asking. Never delegate
-  the skill itself to a subagent to save context, whatever your own tools look
-  like: the filtering pass is what drops every candidate below confidence 8, and
-  where that pass cannot run the skill does not fail — it silently returns the
-  unfiltered candidates as if they had been filtered. Nor is a filtering pass
-  done in this session by the finder the skill's pass: record such a run as
-  `partial (structural)` with the reason, never as a clean result. Its write-up
+  for them is the ask a rule that admits subagents only on the user's or a
+  skill's ask waits for, and so is the caller that invoked this skill: launch
+  them without asking. Never delegate the skill itself to a subagent to save
+  context, whatever your own tools look like: the filtering pass is what drops
+  every candidate below confidence 8, and where that pass cannot run the skill
+  does not fail — it silently returns the unfiltered candidates as if they had
+  been filtered. Nor is a filtering pass this session does itself — over
+  candidates it found, or the finder returned — the skill's pass: record such a
+  run as `partial`, with what stopped the sub-tasks as the reason, never as a
+  clean result — a gap the caller can close, not a structural one. Its write-up
   ends *its* run, not yours: carry it into §4 as one reviewer's row, and never
   let it stand as the answer.
 
