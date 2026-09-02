@@ -203,6 +203,14 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
 # still edited the tree, and that is the case the warning exists for.
 [ "$BEFORE" = "$(tree_state)" ] \
   || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
+# An envelope that was never written is its own case, and reaches none of the checks
+# below: every one of them reads a field, and a file with no fields answers each the
+# same way a healthy run would. Whatever the engine managed to say went to stderr.
+[ -s "$OUT" ] || {
+  echo "claude review failed: the run wrote no envelope"
+  tail -20 "$OUT.log"; exit 1; }
+RESULT_ALL=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT_ALL=""
+LOWER_ALL=$(printf '%s' "$RESULT_ALL" | tr '[:upper:]' '[:lower:]')
 # A run that produced no tokens did not review anything, whatever sits in `.result`
 # — and a spent quota is exactly that: the notice arrives where the report would be,
 # sometimes inside a SUCCESSFUL envelope, which clears the check below and prints as
@@ -212,7 +220,11 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
 # nothing is a review — and the four kinds below take four different next moves.
 # `"unknown"` rather than `0` as the fallback: a missing field must not read as a
 # run that produced nothing.
-PRODUCED=$(jq -r '.usage.output_tokens // "unknown"' "$OUT" 2>/dev/null) || PRODUCED="unknown"
+PRODUCED=$(jq -r '.usage.output_tokens // "unknown"' "$OUT" 2>/dev/null) || PRODUCED=""
+# Empty rather than failed is the case that needs saying: `jq` on an empty file exits
+# 0 printing nothing, so the `||` above never fires and an unset count would compare
+# equal to nothing at all.
+[ -n "$PRODUCED" ] || PRODUCED="unknown"
 TERMINAL=$(jq -r '.terminal_reason // ""' "$OUT" 2>/dev/null) || TERMINAL=""
 if [ "$PRODUCED" = 0 ] || [ "$TERMINAL" = "api_error" ]; then
   RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
@@ -227,13 +239,13 @@ if [ "$PRODUCED" = 0 ] || [ "$TERMINAL" = "api_error" ]; then
     *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*)
       echo "claude review failed: $RESULT"
       echo "(transient — re-running the same command is the fix)"
-      exit 1 ;;
+      tail -20 "$OUT.log"; exit 1 ;;
     # The range was too big for the model, not the account out of room for it: a
     # smaller range or another model closes this, and waiting never does.
     *"too large"*|*exceeds*|*"context window"*|*"token limit"*)
       echo "claude review failed: $RESULT"
       echo "(the range does not fit — narrow it, or review it in parts)"
-      exit 1 ;;
+      tail -20 "$OUT.log"; exit 1 ;;
     # Named phrases, never a bare "limit": every notice above carries that word too.
     # A quota is not a failure of the engine — the notice names a reset time or
     # another model, and both are things a caller can act on.
@@ -249,22 +261,48 @@ if [ "$PRODUCED" = 0 ] || [ "$TERMINAL" = "api_error" ]; then
       tail -20 "$OUT.log"; exit 1 ;;
   esac
 fi
+# A notice can also arrive after the model has written something — tokens spent,
+# terminal clean, and the notice still standing where the report belongs. Anchored to
+# the start, and only for a result short enough to be a notice rather than a report:
+# a review that merely mentions a limit says other things first and at length.
+case "$LOWER_ALL" in
+  "you've hit your"*|"you've reached your"*|"api error: credit balance"*)
+    if [ "${#RESULT_ALL}" -lt 400 ]; then
+      echo "claude review unavailable: $RESULT_ALL"; exit 3
+    fi ;;
+esac
 # A successful envelope does not prove a review happened: a run killed mid-flight
 # still reports success with an EMPTY result, which would print as a clean review.
-if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then
+# `is_error` is not the last word in either direction. It does not prove a review
+# happened — the case above — and it does not disprove one either: a run whose model
+# wrote a full report can still end its turn on something the harness calls an error,
+# and reporting that as a failure throws the review away along with the coverage
+# record. Tokens written plus a result to show is what a review looks like; the
+# envelope's own verdict rides along as a warning below.
+REVIEWED=0
+case "$PRODUCED" in ''|unknown|0) ;; *) [ -n "$RESULT_ALL" ] && REVIEWED=1 ;; esac
+if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1 \
+   || [ "$REVIEWED" = 1 ]; then
   # The coverage record belongs to a run that happened. Printed before the branch
   # below, it would put a file count against a run that read nothing.
   # Whichever model answered, not whichever was asked for: with a fallback in play
   # those differ, and a scope line naming the request would report a review that did
-  # not happen on the model it claims. Falls back to the request only where the
-  # envelope carries no usage to read.
-  RAN=$(jq -r '(.modelUsage // {}) | keys | join("+")' "$OUT" 2>/dev/null) || RAN=""
+  # not happen on the model it claims. The one that wrote the most, not every model
+  # billed — subagents and the CLI's own helper model are on that bill too, and a
+  # list of them says nothing about which one reviewed. Falls back to the request
+  # where the envelope carries no usage to read.
+  RAN=$(jq -r '(.modelUsage // {}) | to_entries
+               | max_by(.value.outputTokens // 0) | .key // empty' "$OUT" 2>/dev/null) || RAN=""
   echo "scope: ${BASE:-working tree}, $COVERED files, ${RAN:-$MODEL} at $LEVEL"
   # SEPARATE lines, never appended to the scope one.
   [ -n "$BASE" ] \
     || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
   [ "$OUTSIDE" = 0 ] \
     || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
+  # Its own line, and not a coverage one: the envelope called this run an error while
+  # its model wrote a report, so the report stands and the verdict is worth knowing.
+  jq -e '.is_error == true' "$OUT" >/dev/null 2>&1 \
+    && echo "run-warning: the envelope reports an error — the findings below are what the run wrote anyway"
   # Its own line too, and not a coverage one: this says what the run DID, not what it
   # read. The count above was taken before the run and stops describing the tree here.
   # A denial does not void the run — it narrows it, and a narrowed run is partial.
