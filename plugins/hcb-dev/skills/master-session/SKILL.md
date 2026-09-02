@@ -28,8 +28,9 @@ it accepts their returns per
 
 ## Assuming the role
 
-1. **Title first**: `<epic> — master`, the identifier leading — this is the
-   name every batch will match on.
+1. **Title first**: the shape and its timing are
+   [`../../references/session-naming.md`](../../references/session-naming.md)'s
+   — this is the name every batch will match on.
 2. **The epic**: where the repository has a tracker and no umbrella exists
    yet, file it now (`hcb-dev:issue-tracking`), on the assignment's own
    authorization. Without a tracker, the assignment itself is the epic and the
@@ -118,6 +119,7 @@ is that session's to sweep. Write the ledger's closing line.
 - [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)
+- [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

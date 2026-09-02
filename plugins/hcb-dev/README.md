@@ -186,10 +186,10 @@ collects them with a dedicated pair. A batch is one session's worth of work; a
 wave is the set of batches launched together once its gate clears.
 
 - **`master-session`** — `/hcb-dev:master-session`
-  The coordinating role itself: assume it on assignment (title the session
-  `<epic> — master`, file the umbrella where none exists, open the wave ledger
-  on the epic), draw the split per `references/wave-planning.md` and get the
-  user's word on the table, launch through `wave-dispatch`, then run the loop —
+  The coordinating role itself: assume it on assignment (title the session per
+  `references/session-naming.md`, file the umbrella where none exists, open the
+  wave ledger on the epic), draw the split per `references/wave-planning.md`
+  and get the user's word on the table, launch through `wave-dispatch`, then run the loop —
   answer batch questions only after re-verifying against the tree, accept
   returns against the ledger's standing constraints, classify mid-epic issues
   itself, manage the merge queue and the gates, broadcast paid-for lessons —
@@ -198,9 +198,9 @@ wave is the set of batches launched together once its gate clears.
   recorded in the issue. Closes the epic by verifying it against the ledger and
   offering one sweep of the residue.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
-  One chip per batch — title `<epic>/<id> — <topic>` (it becomes the launched
-  session's title, the name every later message matches on), the wave order as
-  the prompt: the slots of `references/order-anatomy.md` plus boundaries (which
+  One chip per batch — title per `references/session-naming.md` (it becomes
+  the launched session's title, the name every later message matches on), the
+  wave order as the prompt: the slots of `references/order-anatomy.md` plus boundaries (which
   files this batch owns, where it touches another batch's), three-way fork
   routing (decide yourself / agree with the master first / through the master
   to the user), the master's own title and session id, the status milestones,
@@ -315,6 +315,14 @@ saying something else.
   self-contained first lines, questions that wait without blocking), and the
   rule that a peer session is not the user. Read by whatever contacts another
   session or expects to be contacted.
+- [`references/session-naming.md`](references/session-naming.md) — the names
+  sessions are found by: the three title shapes (master, batch, standalone),
+  the epic identifier and where else it is spent, the batch letter and the two
+  rules that keep it stable, the topic, the issue tail and its cap, what gets
+  trimmed first when a title does not fit, the three moments a master titles
+  itself, and where these names travel — into a chip, a worktree, an order's
+  tag, but never into a branch name. Read by whatever titles a session or coins
+  a batch id.
 - [`references/wave-planning.md`](references/wave-planning.md) — splitting an
   epic into batches and waves: the vocabulary (batch, wave, gate), the two
   axes every split is drawn on (file zones and dependency edges), how a batch

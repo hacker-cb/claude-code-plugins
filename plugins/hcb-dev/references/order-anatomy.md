@@ -61,8 +61,10 @@ a receiver told only what is known treats the rest as known.
 ## The tag
 
 Coin one naming the subject, unique among the orders the writing session has
-out. It goes in the first line beside the ask in prose, and into the writing
-session's own record together with the ask and the deliverable expected back.
+out — except in a wave, where the tag is the batch id
+([`session-naming.md`](session-naming.md)) and none is coined. It goes in the
+first line beside the ask in prose, and into the writing session's own record
+together with the ask and the deliverable expected back.
 
 ## More than one order
 

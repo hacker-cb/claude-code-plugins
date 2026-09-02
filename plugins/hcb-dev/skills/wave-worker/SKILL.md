@@ -33,9 +33,10 @@ holds, and what it stops is named in the return as the gap it is.
 
 ## On arrival — before the named workflow starts
 
-1. **Be findable.** The session's title must lead with the batch id
-   (`<epic>/<id> — <topic>`); a chip-born session already carries it — verify
-   rather than assume, and set it where it is missing.
+1. **Be findable.** The title is the batch shape of
+   [`../../references/session-naming.md`](../../references/session-naming.md);
+   a chip-born session already carries it — verify rather than assume, and set
+   it where it is missing.
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip

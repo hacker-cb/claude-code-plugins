@@ -44,9 +44,10 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 
 One chip per batch, through the host's chip tool (`spawn_task`):
 
-- **title** — `<epic>/<id> — <topic>`. The chip's title becomes the launched
-  session's title, which is the rendezvous name every later message matches on
-  — the identifier goes first.
+- **title** — the batch shape of
+  [`../../references/session-naming.md`](../../references/session-naming.md).
+  The chip's title becomes the launched session's title, which is the
+  rendezvous name every later message matches on.
 - **tldr** — why this batch exists, one sentence for the human deciding to
   click.
 - **cwd** — the repository's main checkout. The host is expected to start the
@@ -153,4 +154,5 @@ plan changes, withdraw the chips it obsoleted (`dismiss_task`) and say so.
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)
+- [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
