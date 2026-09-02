@@ -46,8 +46,6 @@ One chip per batch, through the host's chip tool (`spawn_task`):
 
 - **title** — the batch shape of
   [`../../references/session-naming.md`](../../references/session-naming.md).
-  The chip's title becomes the launched session's title, which is the
-  rendezvous name every later message matches on.
 - **tldr** — why this batch exists, one sentence for the human deciding to
   click.
 - **cwd** — the repository's main checkout. The host is expected to start the
@@ -65,7 +63,8 @@ contact, and the reporting protocol. The receiver reads this text, not the
 references — the closing steps spell themselves out.
 
 ```text
-Batch `<epic>/<id> — <topic>`, wave <n>, dispatched from its master session —
+Batch `<epic>/<id> — <topic> (<issues>)`, wave <n>, dispatched from its master
+session —
 you did not do this work; this is your task: <the ask, in one line>. Act per
 hcb-dev:wave-worker.
 
@@ -76,8 +75,9 @@ Not checked: <what the master left open, so you do not read it as known>
 Start: <now | after <gate> — do not begin before it>
 Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. Verify you are in a worktree of your own before the first
-write; where you are not, cut your own worktree from <the base | batch
-<id>'s branch, where this batch stacks on it>. <Or: no checkout is touched.>
+write; where you are not, cut your own worktree from <the base | the branch
+batch `<epic>/<id>` is building on, where this batch stacks on it>. <Or: no
+checkout is touched.>
 Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on.
 Your workflow refreshes the base; the delta from the pin to the refreshed tip
 is the list of facts to re-verify. Do not build on the pin.
@@ -101,8 +101,8 @@ Done means: <the terminal deliverable>
 Don't <what would duplicate or undo another batch's work, and the tracks that
 are not yours>
 
-Master: <its title>, session id <id>. The wave ledger — standing constraints
-included — is <its coordinate; or: local to the master>. On start, confirm
+Master: <its title>, session id <session-id>. The wave ledger — standing
+constraints included — is <its coordinate; or: local to the master>. On start, confirm
 your composition to it and name your own title and session id. Report status
 when <the milestones — a change request opens, merges, "green, waiting for the
 slot", you are stuck>.

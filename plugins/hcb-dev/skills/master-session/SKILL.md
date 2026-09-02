@@ -29,8 +29,7 @@ it accepts their returns per
 ## Assuming the role
 
 1. **Title first**: the shape and its timing are
-   [`../../references/session-naming.md`](../../references/session-naming.md)'s
-   — this is the name every batch will match on.
+   [`../../references/session-naming.md`](../../references/session-naming.md)'s.
 2. **The epic**: where the repository has a tracker and no umbrella exists
    yet, file it now (`hcb-dev:issue-tracking`), on the assignment's own
    authorization. Without a tracker, the assignment itself is the epic and the
@@ -97,7 +96,9 @@ is part of this role's loop, not a one-time launch step.
 ## After a restart or compaction
 
 The ledger first — the title names the epic, and the epic (or the file
-fallback) holds the ledger — then the live registry, then a re-introduction to
+fallback) holds the ledger. What it records as the master's title is this
+session's own: wear it before anything is sent, since the batches' orders
+address that name. Then the live registry, then a re-introduction to
 every batch still engaged, carrying what first contact carries: the title and
 this session's id, the standing plan, and a status request. Where a new
 session took over the role, the ledger header's master id is corrected before

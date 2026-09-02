@@ -64,7 +64,7 @@ a receiver told only what is known treats the rest as known.
 
 Coin one naming the subject, unique among the orders the writing session has
 out — except in a wave, where the tag is the batch's own `<epic>/<id>`
-([`session-naming.md`](session-naming.md)) and none is coined. It goes in the
+(`session-naming.md`) and none is coined. It goes in the
 first line beside the ask in prose, and into the writing session's own record
 together with the ask and the deliverable expected back.
 
