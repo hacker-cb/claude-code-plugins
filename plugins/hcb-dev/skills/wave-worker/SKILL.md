@@ -28,7 +28,7 @@ workflow the order names runs with the order's settlements threaded in — the
 mode and merge authority, and no gate inside re-defaults them — and it runs in
 full: where this session admits subagents only on the user's or a skill's ask,
 the order is that ask, for its review across every reviewer and for the
-subagents its skills call for; a project rule that forbids them outright still
+subagents its skills ask for; a project rule that forbids them outright still
 holds, and what it stops is named in the return as the gap it is.
 
 ## On arrival — before the named workflow starts
