@@ -190,24 +190,35 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
 # still edited the tree, and that is the case the warning exists for.
 [ "$BEFORE" = "$(tree_state)" ] \
   || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
-# A spent quota does not always arrive as an error. One class of limit comes back
-# with `is_error:false` and the limit notice sitting in `.result`, which clears the
-# success check below and prints as a finished review — a coverage record with a
-# full file count against a run that read nothing, which is the one failure this
-# whole file exists to prevent. Caught here, before that check, because everything
-# after it treats the envelope as a review. Matched on the URL the CLI appends to
-# these notices and on the two sentences that carry them: a bare "limit" would also
-# match a review discussing one.
-RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
-case "$RESULT" in
-  *cc_cli_limit_message*|*"You've hit your"*|*"You've reached your"*)
-    # Not a failure of the engine, and not a review: the reset time in the notice is
-    # the whole of what a caller can act on. Non-zero, so a detached run reads as
-    # something other than a review — an empty verdict here is what gets mistaken
-    # for a clean one.
-    echo "claude review unavailable: $RESULT"
-    exit 3 ;;
-esac
+# A run that produced no tokens did not review anything, whatever sits in `.result`
+# — and a spent quota is exactly that: the notice arrives where the report would be,
+# sometimes inside a SUCCESSFUL envelope, which clears the check below and prints as
+# a finished review with a full file count against it. The signal is the envelope,
+# not the wording: no output tokens, or an `api_error` terminal, means no review
+# happened. Wording could not carry this on its own in either direction — a notice
+# phrased some other way ("out of usage credits") would slip through, and a real
+# review quoting one of these sentences would be thrown away.
+# `"unknown"` rather than `0` as the fallback: a missing field must not read as a
+# run that produced nothing.
+PRODUCED=$(jq -r '.usage.output_tokens // "unknown"' "$OUT" 2>/dev/null) || PRODUCED="unknown"
+TERMINAL=$(jq -r '.terminal_reason // ""' "$OUT" 2>/dev/null) || TERMINAL=""
+if [ "$PRODUCED" = 0 ] || [ "$TERMINAL" = "api_error" ]; then
+  RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
+  case "$RESULT" in
+    # Broad on purpose, and safe here: nothing inside this branch is a review, so the
+    # only question left is which sentence to lead with. A quota is not a failure of
+    # the engine — the notice names either a reset time or another model to switch
+    # to, and both are things a caller can act on.
+    *limit*|*credit*|*quota*)
+      echo "claude review unavailable: $RESULT"; exit 3 ;;
+    "")
+      echo "claude review failed: the run ended without producing anything"
+      tail -20 "$OUT.log"; exit 1 ;;
+    *)
+      echo "claude review failed:"; printf '%s\n' "$RESULT"
+      tail -20 "$OUT.log"; exit 1 ;;
+  esac
+fi
 # A successful envelope does not prove a review happened: a run killed mid-flight
 # still reports success with an EMPTY result, which would print as a clean review.
 if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then

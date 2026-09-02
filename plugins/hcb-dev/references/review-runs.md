@@ -164,12 +164,14 @@ When a run fails, pass its own error through rather than guessing a cause.
 
 **A spent quota is not one of those failures, and not a review either.** Where the
 engine's account has hit its limit, the run comes back at once saying so, on its own
-line — `unavailable:` rather than `failed:` — carrying the engine's notice, whose
-reset time or "switch to another model" is the whole of what a caller can act on.
-Nothing about the change is wrong, no coverage was lost to anything the caller
-controls, and a repeat before then buys another copy of the same notice. Report the
-reviewer as unavailable, in the engine's own words, and let whoever is completing
-the work decide whether to wait or to proceed a reviewer short.
+line — `unavailable:` rather than `failed:` — carrying the engine's notice. Nothing
+about the change is wrong, and no coverage was lost to anything the caller controls.
+**Read which limit it names.** One is the account's, and only its reset time closes
+it: report the reviewer as unavailable, in the engine's own words, and let whoever
+is completing the work decide whether to wait or proceed a reviewer short. The other
+is a single model's, and says so — where the engine takes a model, rerunning on
+another family closes the gap now, and a reviewer recorded as unavailable without
+that attempt is a gap nobody needed to accept.
 
 **Never read such a notice as a review.** A limit can arrive inside a *successful*
 envelope, with the notice where the report would be, so a run that read nothing

@@ -187,21 +187,26 @@ about a run that has not finished — and the one status that fits an empty cell
 `n/a`, is the one the coverage gate treats as closed.
 
 **How to wait belongs to §3's reference, and it is not a loop.**
-[`../../references/review-runs.md`](../../references/review-runs.md) owns it: a
-session of its own ends the turn and waits for the notification, a subagent holds
-one blocking `TaskOutput` window, and neither waits by running commands that sleep
-and re-check. Two things are this skill's own. Ending the turn never answers the
-caller — a reviewer's own report is not this skill's, and where this skill runs
-inside a subagent, ending the turn also ends the work the review was gating. And
-the wait ends: a reviewer that has not returned by then is a row and a reason,
-never an empty cell and never a stall.
+[`../../references/review-runs.md`](../../references/review-runs.md) owns it:
+repeated blocking `TaskOutput` windows, six of them the hour, and never a command
+that sleeps and re-checks. **This skill always waits that way** — it runs inside
+subagents and dispatched sessions, where ending the turn ends the work the review
+was gating, and where a hung run sends no notification to end the wait with. Ending
+the turn never answers the caller either: a reviewer's own report is not this
+skill's. What is this skill's own is where the waiting stops — a reviewer that has
+not returned by the ceiling is a row and a reason, never an empty cell and never a
+stall.
 
-**A spent quota is `UNAVAILABLE`, never `n/a`.** An engine whose account has hit
-its limit did not run, and cannot be made to before the reset — which is exactly
-the reviewer §6 keeps `UNAVAILABLE` for. `n/a` is the status the coverage gate
-treats as closed, so recording it there passes a completion with a reviewer
-missing. The engine's own sentence, reset time included, goes below the table; the
-cell stays short.
+**A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage
+gate treats as closed, so recording a reviewer that did not run passes a completion
+with it missing — which is what `UNAVAILABLE` exists for. The engine's own notice
+goes below the table; the cell stays short.
+
+**Read the notice before recording it, because one kind is recoverable now.** An
+account limit names a reset time and nothing else closes it. A *model* limit says
+to switch models — and `claude-review` takes `--model`, so rerunning it on another
+family costs one command and turns the gap into coverage. Try that before recording
+`UNAVAILABLE`, and record it with which model was tried.
 
 **A reviewer that edited the tree says so, and that line is not coverage.** It
 belongs above the table with the findings, in the caller's own words: what a

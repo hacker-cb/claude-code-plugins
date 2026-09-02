@@ -107,11 +107,11 @@ Three things are this engine's own:
   stdout or stderr carried it.
 - **A spent quota gets its own line**, `claude review unavailable:`, and exits 3 —
   it is neither a failure of the engine nor a review. The line carries the engine's
-  own notice, whose reset time or "switch to another model" is the whole of what a
-  caller can act on; a repeat before then returns the same notice. Hand it over as
-  it stands and record the reviewer as unavailable; §1's reference says what that
-  costs the coverage, and it is not a gap anyone closes by running this again now.
-  The separate line exists because one class of limit arrives with `is_error:false`
-  and the notice in `result` — indistinguishable, until it is checked for, from a
-  review that finished with nothing to say, and printed with a full file count
-  against it.
+  own notice, and **which limit it names decides what to do next**: an account limit
+  gives a reset time and nothing else closes it before then, while a *model* limit
+  says to switch models — and §2 takes `--model`, so rerunning on another family
+  closes the gap now rather than recording one. The separate line exists because
+  such a notice can arrive inside a *successful* envelope, where it is
+  indistinguishable — until the run's own token count is checked — from a review
+  that finished with nothing to say, and would print with a full file count beside
+  it.
