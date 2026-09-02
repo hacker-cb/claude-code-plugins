@@ -121,6 +121,12 @@ tree_state() {
     | while IFS= read -r -d "" f; do printf '%s ' "$f"; git hash-object -- "$f"; done
 }
 BEFORE="$(tree_state)"
+# Printed before the engine starts, and this run's only output until it finishes: the
+# report below is buffered to the end, so an empty output file otherwise says both
+# "never launched" and "still reading", and the caller cannot tell those apart. What
+# ends the caller's wait is the record below or a failure line — never a file that
+# merely stopped being empty.
+echo "started: claude at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%M:%S)"
 # Settings load as they do in any session — the hooks among them switched off above,
 # and everything the reviewed repository sets arriving with them, this run's own
 # sandbox block included: list keys merge across sources, so what is set there is a
@@ -139,9 +145,19 @@ BEFORE="$(tree_state)"
 # rule holds in both places. `--strict-mcp-config` would cover the first half more
 # cheaply, by starting no servers at all, but the CLI refuses it wherever an
 # enterprise MCP config is present, and refuses the whole run with it.
+# `CLAUDE_CODE_RETRY_WATCHDOG` is off for this run alone, whatever the settings that
+# reach it say. Where the account's quota is spent, that watchdog holds the process
+# until the limit resets instead of returning — which is right for an interactive
+# session, whose person comes back to it, and wrong here: another session is waiting
+# on this run, and hours of silence reach it as an output file that never fills,
+# which reads as a hang rather than as a quota to come back to. Switched off, the
+# same case arrives as the envelope below, carrying the reset time the caller can
+# act on. A variable set here wins over the settings key, so what the user set for
+# their own sessions is untouched.
 # stdin is closed because the run waits on it otherwise;
 # stdout carries the JSON envelope, stderr its own file so a warning cannot corrupt
 # the JSON read below.
+CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --effort "$LEVEL" --output-format json \
   --permission-mode auto \
@@ -183,8 +199,11 @@ else
   # envelope at all, stderr when the process itself failed. Capture the first and
   # fall back on emptiness, not on `jq`'s exit status — valid JSON missing every
   # field exits 0 printing nothing, and that silence is the case worth catching.
+  # `.result` leads inside the envelope, because it is the sentence a reader acts on:
+  # a spent quota puts its own there while leaving `subtype` reading `success`, and
+  # that word under a failure line reads as a contradiction rather than as a detail.
   echo "claude review failed:"
-  DIAG=$(jq -r '[.subtype, .result,
+  DIAG=$(jq -r '[.result, .subtype,
                  ((.permission_denials // []) | if length > 0 then tostring else empty end)]
                 | map(select(. != null and . != "")) | .[]' "$OUT" 2>/dev/null)
   if [ -n "$DIAG" ]; then printf '%s\n' "$DIAG"; else head -c 500 "$OUT"; fi

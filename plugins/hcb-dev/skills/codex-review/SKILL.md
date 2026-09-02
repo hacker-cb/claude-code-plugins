@@ -49,8 +49,10 @@ machine to machine.
 
 ## 3. Hand back the findings
 
-The script prints its `scope:` line, any `coverage-warning:` lines, and then Codex's
-report — §1's reference owns how all three are read back. The report's shape is a
+The script prints a `started:` line as it launches the engine, and then nothing
+until the run is done — §1's reference says why that line is there and what it does
+not mean. What a finished run prints is the `scope:` line, any `coverage-warning:`
+lines, and then Codex's report — §1's reference owns how all three are read back. The report's shape is a
 one-paragraph verdict followed by findings:
 
 ```text

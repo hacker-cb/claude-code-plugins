@@ -186,11 +186,22 @@ gets recorded as having read the change.
 about a run that has not finished — and the one status that fits an empty cell,
 `n/a`, is the one the coverage gate treats as closed.
 
-**Waiting is polling, not stopping.** Ending the turn here answers the caller with
-one reviewer's report in place of this skill's own — and where this skill runs
-inside a subagent, that also ends the work the review was gating. Poll each
-detached run until its coverage record is there; if one never returns, that is a
-row and a reason, not a reason to stall.
+**How to wait belongs to §3's reference, and it is not a loop.**
+[`../../references/review-runs.md`](../../references/review-runs.md) owns it: a
+session of its own ends the turn and waits for the notification, a subagent holds
+one blocking `TaskOutput` window, and neither waits by running commands that sleep
+and re-check. Two things are this skill's own. Ending the turn never answers the
+caller — a reviewer's own report is not this skill's, and where this skill runs
+inside a subagent, ending the turn also ends the work the review was gating. And
+the wait ends: a reviewer that has not returned by then is a row and a reason,
+never an empty cell and never a stall.
+
+**A spent quota is `UNAVAILABLE`, never `n/a`.** An engine whose account has hit
+its limit did not run, and cannot be made to before the reset — which is exactly
+the reviewer §6 keeps `UNAVAILABLE` for. `n/a` is the status the coverage gate
+treats as closed, so recording it there passes a completion with a reviewer
+missing. The engine's own sentence, reset time included, goes below the table; the
+cell stays short.
 
 **A reviewer that edited the tree says so, and that line is not coverage.** It
 belongs above the table with the findings, in the caller's own words: what a

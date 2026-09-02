@@ -61,14 +61,37 @@ naming the engine, so the run is recognizable in the task list.
 Detached is how it runs, not permission to answer without it: collect the finished
 task's output and read it back before answering.
 
-**Collect it yourself.** A finished background task reaches a turn that is still
-running, so ending the turn is what forfeits it. Waiting is polling the output file
-until it carries the coverage record **or the task itself has ended** — a run that
-failed before it could launch prints its failure instead of a record, and polling
-for one it will never print does not stop. What never waits is a turn closed on
-"the reviewers are still out", which in a subagent ends the work entirely and
-answers the caller with whatever the last reviewer said. Spend the wait on what
-does not depend on the answer.
+**Waiting is one blocking call, never a loop.** The engine takes minutes, and the
+two ways of spending them differ by two orders of magnitude in what they cost.
+
+- **A session of its own** ends the turn and waits for the notification the harness
+  delivers when the task finishes; it names the output file, which is what to read
+  back then. Ending the turn is not answering: say which reviewers are still out,
+  and say nothing about what they found until their records are in hand.
+- **A subagent** cannot end the turn — doing so ends the work the review was gating
+  and answers the caller with whatever the last reviewer said. It waits inside one
+  turn instead, on a single blocking `TaskOutput` call: `block: true`,
+  `timeout: 600000`, which holds that turn for ten minutes.
+
+**Never wait by running commands in a loop** — a `sleep`, a `seq` loop, a
+background "watcher" that sleeps and re-checks. A backgrounded call returns
+instantly, so the wait becomes a spin that bills a whole turn, with the whole
+context behind it, every few seconds; sessions doing this have spent a fifth of
+their turns and a quarter of their context on nothing, and on a shared quota they
+starve the very runs they are waiting for.
+
+**A wait ends, but not soon.** These engines take minutes, and the upper rungs take
+tens of them — half an hour of silence is a run reading, not a run lost, and a
+window that expires is one window, not a verdict. What ends a wait is an hour with
+nothing back. Before that hour, waiting is the whole of the job; at it, stop and
+record what actually happened — a run that never returned is a row and a reason in
+the caller's report, not a reason to stall, and not a review to claim. Spend the
+wait itself on what does not depend on the answer.
+
+The hour is a ceiling on waiting, not a claim about how long a review may take: it
+is there because the failures that leave nothing in the output file at all —
+against which no amount of further waiting helps — now return at once, so silence
+that outlasts an hour is worth reporting rather than sitting through.
 
 **The command lives in the engine's script, and its skill names it.** Run that
 script as it stands, one plain command — an agent isolated in its own worktree has
@@ -78,9 +101,25 @@ is never the engine call, which is the memorable part: it is the flags that make
 headless run reviewable, the redirect, and the coverage record — leaving a run that
 reports as a review nobody measured.
 
+## The two lines a run prints
+
+A run prints a `started:` line the moment it launches its engine, and then nothing
+until it is done — the report is buffered to the end. So an output file that has
+stopped being empty says only that the run started:
+
+```text
+started: <engine and what fixed the run>, pid <n>, <time>
+```
+
+**What says a run finished is the record below, or a failure line** — never a file
+that is merely non-empty. A wait keyed to emptiness ends at the wrong moment in
+both directions: at once for a run still reading, and never for one that died
+before it could print anything.
+
 ## The coverage record
 
-Every run prints one line, before its findings and never merged into them:
+Every finished run prints one record, before its findings and never merged into
+them:
 
 ```text
 scope: <base or "working tree">, <N> files, <the level and whatever else fixed the run>
@@ -114,3 +153,11 @@ engine phrases it differently again between its own modes.
   actually spoke about.
 
 When a run fails, pass its own error through rather than guessing a cause.
+
+**A spent quota is not one of those failures.** Where the engine's account has hit
+its limit, the run comes back at once saying so, and its sentence carries the time
+the limit resets. Nothing about the change is wrong, no coverage was lost to
+anything the caller controls, and a repeat before that time buys another copy of the
+same sentence. The reviewer is unavailable until then: report it as one, with the
+engine's own words and the reset time, and let whoever is completing the work decide
+whether to wait for it or to proceed a reviewer short.

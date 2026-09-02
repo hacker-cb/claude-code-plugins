@@ -61,6 +61,14 @@ and the environment the run inherits stay open unless something among those same
 settings narrows them. Weigh all of it before pointing this at a repository
 nobody here wrote.
 
+The script also switches Claude Code's retry watchdog off for the run it launches.
+That watchdog is what lets an interactive session pick itself up after a quota
+resets; here it would hold the run silently until then, while whoever launched it
+waits on an output file that never fills — a hang, for a reviewer that had a plain
+answer to give. Off, a spent quota comes back at once, as §3's unavailable
+reviewer. It is set for this run alone, so nothing about the settings a person
+works under changes.
+
 Where there is a base the script targets a **ref range**, which fixes what the run
 diffs; a working-tree review has no range to give, so its scope stays prose the run
 may set aside, and §1's reference says what an advisory scope costs the coverage
@@ -68,8 +76,10 @@ record.
 
 ## 3. Hand back the findings
 
-The script prints its `scope:` line, any `coverage-warning:` lines, and then the
-review — §1's reference owns how all three are read back.
+The script prints a `started:` line as it launches the engine, and then nothing
+until the run is done — §1's reference says why that line is there and what it does
+not mean. What a finished run prints is the `scope:` line, any `coverage-warning:`
+lines, and then the review — §1's reference owns how all three are read back.
 
 Three things are this engine's own:
 
@@ -85,3 +95,9 @@ Three things are this engine's own:
 - A missing CLI, an expired login and a non-repository all land in the
   `claude review failed:` branch, where the diagnosis is whichever of the envelope,
   stdout or stderr carried it.
+- **A spent quota lands there too, and is not a failure of anything.** The envelope
+  carries the engine's own sentence with the time the limit resets, and that time is
+  the whole of what a caller can act on — a repeat before it returns the same
+  sentence. Hand the sentence over as it stands and record the reviewer as
+  unavailable until then; §1's reference says what that costs the coverage, and it
+  is not a gap anyone can close by running the reviewer again now.
