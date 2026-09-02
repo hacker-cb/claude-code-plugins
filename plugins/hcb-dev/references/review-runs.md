@@ -76,10 +76,11 @@ records sit unread. The ceiling below is wall-clock across the whole wait, not s
 windows per run: three reviewers do not buy three hours.
 
 **Where no blocking wait is available** — the mechanism is deprecated in the harness
-and may go — fall back to reading the output file on a slow cadence, one look per
-ten minutes and no faster, and read it by what the run prints rather than by whether
-it is empty. That is a degraded wait, not a licence to spin: a look every few seconds
-is the pattern below, whatever it is spelled with.
+and may go — wait inside a single command instead: one call that blocks until the
+run prints a terminal line or the window is up, and reads the file by what it says
+rather than by whether it is empty. What the rule below forbids is a turn per check,
+not a second of waiting: one turn per window is the same wait however it is
+spelled.
 
 **Ending the turn instead is for one case only**: an interactive session, with a
 person present, where nothing downstream is blocked on the answer. There the

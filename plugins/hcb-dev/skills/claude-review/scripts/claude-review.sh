@@ -3,7 +3,7 @@
 # caller compares against, then the review. Invoked by the claude-review skill;
 # every value it needs arrives as a flag, so the call site stays one plain command.
 #
-# Usage: claude-review.sh [--base <ref>] [--level <rung>] [--narrow <prose>]
+# Usage: claude-review.sh [--base <ref>] [--level <rung>] [--model <name>] [--narrow <prose>]
 #   --base    the ref the range starts at; omitted reviews the working tree alone
 #   --level   low|medium|high|xhigh|max (default medium)
 #   --model   the model to review with; omitted takes the newest Opus
@@ -59,8 +59,10 @@ case "$LEVEL" in low|medium|high|xhigh|max) ;;
   *) echo "claude review failed: '$LEVEL' is not a rung"; exit 1 ;; esac
 case "$NARROW" in *--*)
   echo "claude review failed: the narrowing may not contain an option"; exit 1 ;; esac
-# The model reaches the same argument string, so it takes the same guard: an alias or
-# a model name carries no `--`, and anything that does is an option in disguise.
+# The model reaches an argv slot of its own rather than that string, so nothing it
+# holds is parsed as a flag — the guard is here because a value that looks like one
+# is a caller error worth naming rather than passing on, and because the slot it
+# lands in is one flag away from the ones above.
 case "$MODEL" in *--*|"")
   echo "claude review failed: '$MODEL' is not a model"; exit 1 ;; esac
 
@@ -141,6 +143,11 @@ tree_state() {
   git ls-files --others --exclude-standard -z \
     | while IFS= read -r -d "" f; do printf '%s ' "$f"; git hash-object -- "$f"; done
 }
+# Positional parameters, not an interpolated string: a fallback naming the family
+# already requested is not a fallback, and dropping the flag is what says so.
+# Everything the flag parsing above read is consumed by now, so `$@` is free.
+set -- --model "$MODEL"
+[ "$FALLBACK" = "$MODEL" ] || set -- "$@" --fallback-model "$FALLBACK"
 BEFORE="$(tree_state)"
 # Printed before the engine starts, and this run's only output until it finishes: the
 # report below is buffered to the end, so an empty output file otherwise says both
@@ -184,7 +191,7 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # the JSON read below.
 CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
-  --model "$MODEL" --fallback-model "$FALLBACK" --effort "$LEVEL" --output-format json \
+  "$@" --effort "$LEVEL" --output-format json \
   --permission-mode auto \
   --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
@@ -201,33 +208,42 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
 # sometimes inside a SUCCESSFUL envelope, which clears the check below and prints as
 # a finished review with a full file count against it. The signal is the envelope,
 # not the wording: no output tokens, or an `api_error` terminal, means no review
-# happened. Wording could not carry this on its own in either direction — a notice
-# phrased some other way ("out of usage credits") would slip through, and a real
-# review quoting one of these sentences would be thrown away.
+# happened. Wording only sorts what kind of non-review it was, inside a branch where
+# nothing is a review — and the four kinds below take four different next moves.
 # `"unknown"` rather than `0` as the fallback: a missing field must not read as a
 # run that produced nothing.
 PRODUCED=$(jq -r '.usage.output_tokens // "unknown"' "$OUT" 2>/dev/null) || PRODUCED="unknown"
 TERMINAL=$(jq -r '.terminal_reason // ""' "$OUT" 2>/dev/null) || TERMINAL=""
 if [ "$PRODUCED" = 0 ] || [ "$TERMINAL" = "api_error" ]; then
   RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
-  case "$RESULT" in
-    # A per-minute rate limit wears the word "limit" and is nothing like a spent
-    # quota: it clears in seconds, and a caller told the reviewer is unavailable
-    # completes a reviewer short where re-running would have worked. Checked first,
-    # since the broad arm below would otherwise swallow it.
-    *"rate limit"*|*rate_limit*|*"per-minute"*|*"try again"*)
+  # Lowercased for matching only — `$RESULT` prints as the engine wrote it. The same
+  # notice arrives capitalised in one message and not in another, and a pattern that
+  # tracks case decides the caller's next move on a capital letter.
+  LOWER=$(printf '%s' "$RESULT" | tr '[:upper:]' '[:lower:]')
+  case "$LOWER" in
+    # Transient, and clears on its own: re-running is the whole fix. First, because
+    # one of these notices denies being a usage limit in a sentence containing the
+    # words — the quota arm would take it and send the caller to wait for a reset.
+    *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*)
       echo "claude review failed: $RESULT"
-      echo "(a transient limit — re-running the same command is the fix)"
+      echo "(transient — re-running the same command is the fix)"
       exit 1 ;;
-    # Broad on purpose, and safe here: nothing inside this branch is a review, so the
-    # only question left is which sentence to lead with. A quota is not a failure of
-    # the engine — the notice names either a reset time or another model to switch
-    # to, and both are things a caller can act on.
-    *limit*|*credit*|*quota*)
+    # The range was too big for the model, not the account out of room for it: a
+    # smaller range or another model closes this, and waiting never does.
+    *"too large"*|*exceeds*|*"context window"*|*"token limit"*)
+      echo "claude review failed: $RESULT"
+      echo "(the range does not fit — narrow it, or review it in parts)"
+      exit 1 ;;
+    # Named phrases, never a bare "limit": every notice above carries that word too.
+    # A quota is not a failure of the engine — the notice names a reset time or
+    # another model, and both are things a caller can act on.
+    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credits"*|*"credit balance"*|*quota*|*"switch to another model"*)
       echo "claude review unavailable: $RESULT"; exit 3 ;;
     "")
+      # Nothing to quote, so the envelope is the only diagnosis there is — stderr is
+      # routinely empty in exactly this case.
       echo "claude review failed: the run ended without producing anything"
-      tail -20 "$OUT.log"; exit 1 ;;
+      head -c 500 "$OUT"; tail -20 "$OUT.log"; exit 1 ;;
     *)
       echo "claude review failed:"; printf '%s\n' "$RESULT"
       tail -20 "$OUT.log"; exit 1 ;;

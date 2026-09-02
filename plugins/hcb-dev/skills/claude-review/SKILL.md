@@ -49,14 +49,6 @@ Start at `medium`. A caller — a person or another skill — may hand you the b
 the level, the model or a narrowing; an explicit one wins over anything resolved
 here.
 
-**The model is an alias, and the default is deliberate.** `opus` names the newest
-model of that family, resolved by the CLI, so nothing here carries a version to go
-stale — and the CLI publishes no catalog to read one from, unlike the other engine.
-It is not the model the machine is set to, because a run that inherits a person's
-model inherits that model's quota: a session working on one family spends what its
-own review then needs, and the review fails on a limit that has nothing to do with
-the change under it.
-
 Inside the sandbox the run executes the reviewed repository's own code — its build,
 its tests, the probe that settles a finding — which is what a review at this rung is
 worth and also what makes that repository's contents something you are choosing to
@@ -70,14 +62,6 @@ directory, and §3's `tree-warning:` is what that costs; reading outside the tre
 and the environment the run inherits stay open unless something among those same
 settings narrows them. Weigh all of it before pointing this at a repository
 nobody here wrote.
-
-The script also switches Claude Code's retry watchdog off for the run it launches.
-That watchdog is what lets an interactive session pick itself up after a quota
-resets; here it would hold the run silently until then, while whoever launched it
-waits on an output file that never fills — a hang, for a reviewer that had a plain
-answer to give. Off, a spent quota comes back at once, as §3's unavailable
-reviewer. It is set for this run alone, so nothing about the settings a person
-works under changes.
 
 Where there is a base the script targets a **ref range**, which fixes what the run
 diffs; a working-tree review has no range to give, so its scope stays prose the run
