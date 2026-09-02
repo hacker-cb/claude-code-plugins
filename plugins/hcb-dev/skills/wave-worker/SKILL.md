@@ -25,7 +25,10 @@ the return takes the shape of
 [`../../references/order-return.md`](../../references/order-return.md). The
 workflow the order names runs with the order's settlements threaded in — the
 `Completion:` and `Merge authority:` slots are the invocation's completion
-mode and merge authority, and no gate inside re-defaults them.
+mode and merge authority, and no gate inside re-defaults them — and it runs in
+full: the order is the ask for its review across every reviewer and for the
+subagents its skills call for, whatever this session's own rules say about
+delegating.
 
 ## On arrival — before the named workflow starts
 
