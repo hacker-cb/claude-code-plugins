@@ -6,6 +6,7 @@
 # Usage: claude-review.sh [--base <ref>] [--level <rung>] [--narrow <prose>]
 #   --base    the ref the range starts at; omitted reviews the working tree alone
 #   --level   low|medium|high|xhigh|max (default medium)
+#   --model   the model to review with; omitted takes the newest Opus
 #   --narrow  what narrows the review — a path, or a focus such as "only error handling"
 
 set -u
@@ -18,6 +19,14 @@ command -v jq >/dev/null 2>&1 \
 BASE=""
 LEVEL="medium"
 NARROW=""
+# An alias, not a version: the CLI resolves `opus` to the newest model of that
+# family, so this neither ages nor needs a catalog to read — and the CLI has no
+# catalog command to read one from. Opus rather than whatever the machine is set to,
+# because a run inheriting a person's own model inherits that model's quota too:
+# a session working on `fable` spends the quota its own review then needs, and the
+# review fails on a limit that has nothing to do with the change. A caller who wants
+# another model says so.
+MODEL="opus"
 
 # A flag with no value exits like any other refusal — saying so. Silent here means a
 # detached run whose output file holds nothing at all, which reads as a run that
@@ -27,6 +36,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --base)   need --base "$#";   BASE="$2";   shift 2 ;;
     --level)  need --level "$#";  LEVEL="$2";  shift 2 ;;
+    --model)  need --model "$#";  MODEL="$2";  shift 2 ;;
     --narrow) need --narrow "$#"; NARROW="$2"; shift 2 ;;
     *) echo "claude review failed: unknown argument '$1'"; exit 2 ;;
   esac
@@ -43,6 +53,10 @@ case "$LEVEL" in low|medium|high|xhigh|max) ;;
   *) echo "claude review failed: '$LEVEL' is not a rung"; exit 1 ;; esac
 case "$NARROW" in *--*)
   echo "claude review failed: the narrowing may not contain an option"; exit 1 ;; esac
+# The model reaches the same argument string, so it takes the same guard: an alias or
+# a model name carries no `--`, and anything that does is an option in disguise.
+case "$MODEL" in *--*|"")
+  echo "claude review failed: '$MODEL' is not a model"; exit 1 ;; esac
 
 if [ -n "$BASE" ]; then
   # Empty covers both an unknown ref and no shared history, and the two are not
@@ -127,7 +141,7 @@ BEFORE="$(tree_state)"
 # "never launched" and "still reading", and the caller cannot tell those apart. What
 # ends the caller's wait is the record below or a failure line — never a file that
 # merely stopped being empty.
-echo "started: claude at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%M:%S)"
+echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%M:%S)"
 # Settings load as they do in any session — the hooks among them switched off above,
 # and everything the reviewed repository sets arriving with them, this run's own
 # sandbox block included: list keys merge across sources, so what is set there is a
@@ -164,7 +178,7 @@ echo "started: claude at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # the JSON read below.
 CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
-  --effort "$LEVEL" --output-format json \
+  --model "$MODEL" --effort "$LEVEL" --output-format json \
   --permission-mode auto \
   --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
@@ -199,7 +213,7 @@ esac
 if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then
   # The coverage record belongs to a run that happened. Printed before the branch
   # below, it would put a file count against a run that read nothing.
-  echo "scope: ${BASE:-working tree}, $COVERED files, $LEVEL"
+  echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $LEVEL"
   # SEPARATE lines, never appended to the scope one.
   [ -n "$BASE" ] \
     || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"

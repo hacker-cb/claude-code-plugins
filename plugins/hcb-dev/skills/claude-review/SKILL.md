@@ -41,11 +41,21 @@ The run is one command, and everything it needs arrives as a flag:
 bash "${CLAUDE_PLUGIN_ROOT}/skills/claude-review/scripts/claude-review.sh" \
   --base "<the ref resolved in §1 — drop the flag entirely for a working-tree review>" \
   --level "<the rung the caller named, or medium>" \
+  --model "<the model the caller named — drop the flag to take the newest Opus>" \
   --narrow "<a path, or a focus such as 'only error handling' — drop the flag for none>"
 ```
 
 Start at `medium`. A caller — a person or another skill — may hand you the base,
-the level or a narrowing; an explicit one wins over anything resolved here.
+the level, the model or a narrowing; an explicit one wins over anything resolved
+here.
+
+**The model is an alias, and the default is deliberate.** `opus` names the newest
+model of that family, resolved by the CLI, so nothing here carries a version to go
+stale — and the CLI publishes no catalog to read one from, unlike the other engine.
+It is not the model the machine is set to, because a run that inherits a person's
+model inherits that model's quota: a session working on one family spends what its
+own review then needs, and the review fails on a limit that has nothing to do with
+the change under it.
 
 Inside the sandbox the run executes the reviewed repository's own code — its build,
 its tests, the probe that settles a finding — which is what a review at this rung is
