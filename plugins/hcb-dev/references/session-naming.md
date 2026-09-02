@@ -23,7 +23,10 @@ Separator ` — ` throughout, em dash. `master` is the role marker and keeps
 that spelling whatever language the topic is in; a batch needs no marker,
 since the `/` is one. The standalone shape titles a session that belongs to no
 epic and still expects to be contacted — an investigation dispatched on its
-own, a session whose answer someone will come back for.
+own, a session someone will come back to by message. A session whose only
+return travels by hand needs no title from anyone; where an order expects its
+answer to come back over the wire, the order says which title to answer
+([`order-anatomy.md`](order-anatomy.md)).
 
 Examples: `841 — UI widgets (master)`,
 `841/P — DX odds and ends (#896, #881)`, `514 — OCC acceptance`.
@@ -43,6 +46,10 @@ the same value.
 Capital ASCII letters in planning order — `A`, `B`, … `Z`, then `AA`, `AB`.
 Never a digit: a digit collides with the wave number and with the issue
 numbers standing beside it.
+
+A batch is addressed by `<epic>/<id>`, never by the letter alone — the letter
+repeats in every other epic, so anything recording or matching a batch records
+the pair.
 
 - **Assigned once at planning, never re-assigned.** A batch that moves to
   another wave, gets re-chipped or is restarted keeps its letter.
@@ -82,7 +89,10 @@ that. Trim right to left:
 
 1. **On assuming the role** — before anything else, with whatever identifier
    is already in hand: the epic's number where the assignment named one,
-   otherwise the nickname. A session that was doing something else until now
+   otherwise the nickname. Where it carries no topic — a resume naming the
+   number and nothing else — the provisional title is the identifier and the
+   marker, `<epic> — master`, and the topic arrives with step 2 rather than
+   holding the title back. A session that was doing something else until now
    renames itself here, the assignment being the authorization; it renames
    only itself, as batches are titled by their chip or by themselves.
 2. **When the ledger is opened** — `<epic>` is fixed there, and the title is

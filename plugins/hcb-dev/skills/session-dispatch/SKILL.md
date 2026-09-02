@@ -93,6 +93,7 @@ this session is now waiting on, and do not begin the dispatched work.
 - [`../../references/session-prompts.md`](../../references/session-prompts.md)
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
+- [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/slice-completion.md`](../../references/slice-completion.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

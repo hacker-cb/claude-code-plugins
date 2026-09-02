@@ -56,12 +56,14 @@ a receiver told only what is known treats the rest as known.
   deliberately left in place elsewhere.
 - **The closing act** — never empty: the return of
   [`order-return.md`](order-return.md), or a named end state with nothing
-  coming back.
+  coming back. Where the return travels by message rather than by hand, it
+  also carries the address to answer — the writing session's title and session
+  id, that title being [`session-naming.md`](session-naming.md)'s.
 
 ## The tag
 
 Coin one naming the subject, unique among the orders the writing session has
-out — except in a wave, where the tag is the batch id
+out — except in a wave, where the tag is the batch's own `<epic>/<id>`
 ([`session-naming.md`](session-naming.md)) and none is coined. It goes in the
 first line beside the ask in prose, and into the writing session's own record
 together with the ask and the deliverable expected back.

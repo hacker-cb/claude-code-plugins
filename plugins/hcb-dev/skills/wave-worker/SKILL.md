@@ -82,7 +82,8 @@ holds, and what it stops is named in the return as the gap it is.
 
 ## The return
 
-The full report — the shape of `order-return.md`, the batch id as its tag —
+The full report — the shape of `order-return.md`, the batch's `<epic>/<id>`
+as its tag —
 goes **to the tracker coordinate the order names** (the epic, the batch's
 issues), so no restart can lose it; the master gets a short notice pointing at
 it. Where the order names none — a tracker-less repository — the full report
