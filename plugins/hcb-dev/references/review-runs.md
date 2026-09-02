@@ -162,10 +162,17 @@ engine phrases it differently again between its own modes.
 
 When a run fails, pass its own error through rather than guessing a cause.
 
-**A spent quota is not one of those failures.** Where the engine's account has hit
-its limit, the run comes back at once saying so, and its sentence carries the time
-the limit resets. Nothing about the change is wrong, no coverage was lost to
-anything the caller controls, and a repeat before that time buys another copy of the
-same sentence. The reviewer is unavailable until then: report it as one, with the
-engine's own words and the reset time, and let whoever is completing the work decide
-whether to wait for it or to proceed a reviewer short.
+**A spent quota is not one of those failures, and not a review either.** Where the
+engine's account has hit its limit, the run comes back at once saying so, on its own
+line — `unavailable:` rather than `failed:` — carrying the engine's notice, whose
+reset time or "switch to another model" is the whole of what a caller can act on.
+Nothing about the change is wrong, no coverage was lost to anything the caller
+controls, and a repeat before then buys another copy of the same notice. Report the
+reviewer as unavailable, in the engine's own words, and let whoever is completing
+the work decide whether to wait or to proceed a reviewer short.
+
+**Never read such a notice as a review.** A limit can arrive inside a *successful*
+envelope, with the notice where the report would be, so a run that read nothing
+prints a full file count beside it unless something checks. That is the shape of
+every fail-open here: the count is what the run was handed, and the words beside it
+are what it actually did.

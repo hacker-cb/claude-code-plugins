@@ -95,9 +95,13 @@ Three things are this engine's own:
 - A missing CLI, an expired login and a non-repository all land in the
   `claude review failed:` branch, where the diagnosis is whichever of the envelope,
   stdout or stderr carried it.
-- **A spent quota lands there too, and is not a failure of anything.** The envelope
-  carries the engine's own sentence with the time the limit resets, and that time is
-  the whole of what a caller can act on — a repeat before it returns the same
-  sentence. Hand the sentence over as it stands and record the reviewer as
-  unavailable until then; §1's reference says what that costs the coverage, and it
-  is not a gap anyone can close by running the reviewer again now.
+- **A spent quota gets its own line**, `claude review unavailable:`, and exits 3 —
+  it is neither a failure of the engine nor a review. The line carries the engine's
+  own notice, whose reset time or "switch to another model" is the whole of what a
+  caller can act on; a repeat before then returns the same notice. Hand it over as
+  it stands and record the reviewer as unavailable; §1's reference says what that
+  costs the coverage, and it is not a gap anyone closes by running this again now.
+  The separate line exists because one class of limit arrives with `is_error:false`
+  and the notice in `result` — indistinguishable, until it is checked for, from a
+  review that finished with nothing to say, and printed with a full file count
+  against it.
