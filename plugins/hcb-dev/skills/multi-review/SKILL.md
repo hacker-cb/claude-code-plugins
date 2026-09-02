@@ -146,7 +146,10 @@ wide.
 
 ## 3. Run
 
-Start the detachable reviewers first so they overlap with the inline one.
+Start the detachable reviewers first so they overlap with the inline one. Both
+run as background shell commands of this session, not as subagents — no rule
+about delegating to subagents or workflows reaches them. The one reviewer that
+fans out into subagents is the security review, and it asks for them below.
 
 - **codex-review** — invoke the `hcb-dev:codex-review` skill, passing the base and
   the effort level — and no base at all where the scope is the working tree alone,
@@ -155,13 +158,21 @@ Start the detachable reviewers first so they overlap with the inline one.
   together with the rung §1 fixed — and no base at all where the scope is the
   working tree alone, which is how that skill is told to review one. Whatever narrowed the
   review goes down with it, in the same prose.
-- **security-review** — invoke the skill inline, last. Never delegate it to a
-  subagent to save context, whatever your own tools look like: the skill's
-  filtering pass is parallel sub-tasks dropping every candidate below confidence
-  8, and where that pass cannot run it does not fail — it silently returns the
-  unfiltered candidates as if they had been filtered. Its write-up ends *its* run,
-  not yours: carry it into §4 as one reviewer's row, and never let it stand as the
-  answer.
+- **security-review** — invoke the skill inline, last, and run it as written:
+  the sub-tasks it asks for are launched as subagents of this session — the
+  finder first, then the filtering pass as parallel sub-tasks. The skill asking
+  for them is the ask a rule that admits subagents only on the user's or a
+  skill's ask waits for, and so is the caller that invoked this skill: launch
+  them without asking. Never delegate the skill itself to a subagent to save
+  context, whatever your own tools look like: the filtering pass is what drops
+  every candidate below confidence 8, and where that pass cannot run the skill
+  does not fail — it silently returns the unfiltered candidates as if they had
+  been filtered. Nor is a filtering pass this session does itself — over
+  candidates it found, or the finder returned — the skill's pass: record such a
+  run as `partial`, with what stopped the sub-tasks as the reason, never as a
+  clean result — a gap the caller can close, not a structural one. Its write-up
+  ends *its* run, not yours: carry it into §4 as one reviewer's row, and never
+  let it stand as the answer.
 
 ## 4. Collect
 

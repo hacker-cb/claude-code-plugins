@@ -54,8 +54,9 @@ dates them: your workflow refreshes the base, and the delta from the pin to the
 refreshed tip is the list of facts to re-verify. Do not build on the pin.
 
 Run this through <the process — `/hcb-dev:implementation-workflow` where there
-is something to build; a tracker-only order names what runs instead>. <Plus
-<domain methodology> — mandatory.> <checks> must pass.
+is something to build, in full: its local review across every reviewer and the
+subagents its skills ask for are part of the ask; a tracker-only order names
+what runs instead>. <Plus <domain methodology> — mandatory.> <checks> must pass.
 Completion: <mode — for work that lands in the repository; a tracker-only order
 has none> — settled here, so don't ask.
 Decide yourself: <forks>. Bring to your user: <forks>. Bring back to the

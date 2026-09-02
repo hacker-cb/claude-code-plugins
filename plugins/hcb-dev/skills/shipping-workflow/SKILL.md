@@ -26,7 +26,10 @@ change is complete and verified — tests pass, or the behavior is confirmed —
 the tree is committable.
 
 This skill runs either standalone (a bare "ship this" on finished work) or as the
-per-slice step `hcb-dev:implementation-workflow` calls. Steps 0–5 are identical in
+per-slice step `hcb-dev:implementation-workflow` calls. Either way it is a skill,
+not the host's workflow tool: a rule that limits workflows or subagents to what
+the user or a skill asks for is met by the invocation and by the skills this one
+calls, and skips nothing below. Steps 0–5 are identical in
 both **completion modes** — `local` (merge into the parent, no forge) and
 `request` (a change request) — because the mode is read only at step 6. When
 driven by the orchestrator, the caller threads the completion signals as
@@ -84,7 +87,10 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
 3. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
    base so the review covers *this* slice's range, not the cumulative feature
-   diff. Standalone, `multi-review` resolves its own base.
+   diff. Standalone, `multi-review` resolves its own base. Every reviewer
+   `multi-review` picks runs, the security review's sub-tasks included; a
+   reviewer left out on account of a rule about subagents is a row in the gate
+   below, never a judgement call made here.
 4. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    A finding on the code this change wrote is not weighed against scope: it is
    in-scope work. Scope is the question only for one about anything else the

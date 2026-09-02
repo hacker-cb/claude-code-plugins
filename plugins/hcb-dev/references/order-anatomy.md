@@ -31,9 +31,12 @@ a receiver told only what is known treats the rest as known.
   tip as the list of facts to re-verify before relying on them.
 - **The process** — the workflow that runs the work:
   `hcb-dev:implementation-workflow` where there is something to build, and it
-  brings its own slicing, review and completion; an order whose deliverable is
-  tracker state alone names what runs it instead — `hcb-dev:issue-tracking`
-  where classification and bodies are the work. Past that, name only a domain
+  brings its own slicing, review and completion — write that it runs in full,
+  its review across every reviewer and the subagents its skills ask for being
+  part of the ask, so a receiver that admits subagents only on the user's or a
+  skill's ask has the ask in hand; an order whose deliverable is tracker state
+  alone names what runs it instead — `hcb-dev:issue-tracking` where
+  classification and bodies are the work. Past that, name only a domain
   methodology the receiving session's own rules do not already carry, and mark
   it mandatory.
 - **The checks** that have to pass before it is complete.
