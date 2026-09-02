@@ -85,8 +85,8 @@ Boundaries: <the files this batch owns; each component shared with another
 batch and how the files split; what is not yours to touch>
 
 Run this through <the process — /hcb-dev:implementation-workflow where there is
-something to build, in full: its local review across every reviewer, and the
-subagents its skills ask for, are part of the ask; a tracker-only batch names
+something to build, in full: its local review across every reviewer and the
+subagents its skills ask for are part of the ask; a tracker-only batch names
 what runs instead>. <Plus <domain methodology> — mandatory.> <checks> must pass.
 Completion: <mode> — settled here, so don't ask.
 Merge authority: <on green | the master's go — the queue decides your turn:

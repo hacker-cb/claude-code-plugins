@@ -87,8 +87,8 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
 3. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
    base so the review covers *this* slice's range, not the cumulative feature
-   diff. Standalone, `multi-review` resolves its own base. Every reviewer that
-   skill picks runs, the sub-tasks the security review asks for included — a
+   diff. Standalone, `multi-review` resolves its own base. Every reviewer
+   `multi-review` picks runs, the security review's sub-tasks included; a
    reviewer left out on account of a rule about subagents is a row in the gate
    below, never a judgement call made here.
 4. **Apply the fixes, then commit them** — that skill reports, it does not fix.
