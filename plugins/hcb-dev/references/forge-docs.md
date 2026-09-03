@@ -98,7 +98,7 @@ endpoint where the schema carries what REST does not.
 ## Closing an issue from a change request
 
 Both forges close an issue by matching a keyword in the request body, and the two
-patterns are not the same one:
+patterns differ:
 [GitHub's](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue.md)
 is fixed, while
 [GitLab's](https://docs.gitlab.com/user/project/issues/managing_issues/index.md)
