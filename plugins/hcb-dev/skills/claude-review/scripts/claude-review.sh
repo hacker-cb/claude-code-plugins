@@ -210,9 +210,6 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   echo "claude review failed: the run wrote no envelope"
   tail -20 "$OUT.log"; exit 1; }
 
-# `.result` for the ordinary envelope, `.errors` for the four error subtypes, whose
-# schema has no `result` field at all — without the second, every run that ends on a
-# turn limit or a budget prints its failure line above an empty quotation.
 RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
 # The error subtypes have no `result` field at all — their schema carries `errors`
 # instead — so without this a run that ended on its turn limit or its budget prints
@@ -274,9 +271,28 @@ ERRORED=0; jq -e '.is_error == true' "$OUT" >/dev/null 2>&1 && ERRORED=1
 # "Switch to another model" is deliberately absent — a review recommending a larger
 # model writes exactly that sentence, and this repository's own script advises it.
 says_cli_notice() {
+  # A review that quotes one of these fragments marks the quotation — backticks for a
+  # literal, quotation marks around a sentence — and reviews of THIS file quote them
+  # constantly, since the fragments are written a few lines below. The CLI's own
+  # notices carry neither mark, so their presence is what separates the two.
+  case "$RESULT" in *'`'*|*'"'*) return 1 ;; esac
   case "$LOWER" in
     *"requires usage credits"*|*"/model to switch models"*|*"switch models with /model"*|\
     *"run /usage-credits"*|*"required for long context"*) return 0 ;;
+  esac
+  return 1
+}
+# The openings, in one place because they are asked about from two. A notice opens
+# with itself; a verdict opens with the verdict, whatever it goes on to discuss. Both
+# spellings of the org one: the CLI writes "your org is out of usage" in one message
+# and "your organization is out of usage credits" in another, and both are live.
+says_notice_opening() {
+  case "$RESULT" in *'`'*) return 1 ;; esac
+  case "$LOWER" in
+    "you've hit your"*|"you've reached your"*|"you're out of"*|\
+    "your org is out"*|"your organization is out"*|"your organization's usage"*|\
+    "your usage allocation"*|"your seat type"*|"your group's usage limit"*|\
+    "this service is disabled for"*|"claude ai usage limit"*) return 0 ;;
   esac
   return 1
 }
@@ -297,10 +313,11 @@ looks_like_a_report() {
 REVIEWED=0
 if [ "$SPOKE" = 1 ] && [ "$LOOP_FAILED" = 0 ] && [ "$ERRORED" = 0 ] && [ -n "$SAID" ]; then
   REVIEWED=1
-elif [ "$FROM_ERRORS" = 0 ] && looks_like_a_report; then
-  # Shape rescues a report from a run that ended badly after writing it. It cannot
-  # rescue a diagnosis: a crash whose accumulated errors run long has the length and
-  # the lines of a review and none of its content.
+elif [ "$FROM_ERRORS" = 0 ] && [ "$SPOKE" = 1 ] && looks_like_a_report; then
+  # Shape rescues a report from a run that ended badly after writing it — a run whose
+  # model spoke, which is every run that wrote one. It cannot rescue what no model
+  # produced: a multi-line auth error has the length and the lines of a review and
+  # none of its content, and neither has a crash's accumulated stack.
   REVIEWED=1
 fi
 
@@ -320,15 +337,13 @@ fi
 # an error line out of it, and a miss here is the last fail-open left — narrow, and
 # named in the skill rather than papered over with a wider match.
 if [ "$REVIEWED" = 1 ] && [ "${#RESULT}" -lt 400 ]; then
-  if says_cli_notice; then REVIEWED=0; else
-    case "$LOWER" in
-      "you've hit your"*|"you've reached your"*|"you're out of"*|\
-      "your organization is out of"*|"your organization's usage"*|\
-      "your usage allocation"*|"your seat type"*|"this service is disabled for"*|\
-      "claude ai usage limit"*|"api error"*|"error: api error"*)
-        REVIEWED=0 ;;
-    esac
-  fi
+  if says_cli_notice || says_notice_opening; then REVIEWED=0; fi
+  # An error the CLI announces as one is not a report either — and unlike the two
+  # predicates above it says nothing about a limit, so it stays here rather than
+  # joining a list the exit-code branch reads.
+  # The colon is required: `--narrow "only error handling"` is the skill's own worked
+  # example, and the verdict it earns opens "API error handling is correct".
+  case "$LOWER" in "api error:"*|"error: api error"*) REVIEWED=0 ;; esac
 fi
 
 # Everything below decides what a caller should DO about a run that did not review.
@@ -365,14 +380,10 @@ says_transient() {
 }
 says_quota() {
   says_cli_notice && return 0
+  says_notice_opening && return 0
+  case "$RESULT" in *'`'*) return 1 ;; esac
   case "$LOWER" in
-    # Openings, because a notice opens with itself and a verdict opens with the
-    # verdict; the same anchors the guard above uses.
-    "you've hit your"*|"you've reached your"*|"you're out of"*|\
-    "your organization is out of"*|"your organization's usage"*|\
-    "your usage allocation"*|"your seat type"*|"this service is disabled for"*|\
-    "claude ai usage limit"*) return 0 ;;
-    # And the few phrases specific enough to match anywhere. A bare "quota" is not
+    # The few phrases specific enough to match anywhere. A bare "quota" is not
     # among them, nor "usage limit" alone: a review of THIS repository writes both,
     # and a run whose `modelUsage` came back zeroed — which the schema allows on a
     # crash and on a resumed session — would have its verdict thrown away as a notice.
