@@ -248,9 +248,15 @@ looks_like_a_report() {
 # successful review into the failure branch — which is why the comparison below is
 # against `0` rather than for a positive number.
 REVIEWED=0
-if [ "$ERRORED" = 1 ] || [ "$TERMINAL" = "api_error" ]; then
-  looks_like_a_report && REVIEWED=1
-elif [ -n "$RESULT" ] && [ "$PRODUCED" != 0 ]; then
+if looks_like_a_report; then
+  # Something shaped like a report is a report, whatever the counters say. They can
+  # say nothing useful: `/code-review` finishing as a local slash command leaves the
+  # top-level token counter at zero while its own reviewers ran, so requiring tokens
+  # here discarded a complete review and its coverage record.
+  REVIEWED=1
+elif [ "$ERRORED" = 0 ] && [ "$TERMINAL" != "api_error" ] && [ -n "$RESULT" ] && [ "$PRODUCED" != 0 ]; then
+  # Not report-shaped, so the envelope has to vouch for it: a clean run that spent
+  # tokens and has something to show. A short verdict lands here.
   REVIEWED=1
 fi
 # A notice can stand in a clean envelope with tokens already spent, so wording is the
