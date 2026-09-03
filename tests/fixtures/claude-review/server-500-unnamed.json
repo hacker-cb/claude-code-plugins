@@ -1,0 +1,8 @@
+{
+  "result": "",
+  "is_error": true,
+  "terminal_reason": "api_error",
+  "api_error_status": 500,
+  "modelUsage": {},
+  "permission_denials": []
+}

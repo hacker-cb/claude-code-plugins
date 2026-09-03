@@ -1,0 +1,6 @@
+{
+  "result": "Failed to authenticate with the Anthropic API after ten attempts.\nThe credentials this run inherited were rejected at the first call.\nStatus: 401 Unauthorized on POST /v1/messages\nHint: the OAuth token in the inherited settings has expired.\nHint: run the CLI once interactively to refresh it.\nNo request was billed and no model was reached during this run at all.",
+  "is_error": false,
+  "modelUsage": {},
+  "permission_denials": []
+}

@@ -1,0 +1,10 @@
+{
+  "result": "Fable 5.1 limit reached. Run /usage-credits to continue or switch models with /model.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

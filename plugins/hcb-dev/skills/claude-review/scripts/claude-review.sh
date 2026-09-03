@@ -283,16 +283,21 @@ says_cli_notice() {
   return 1
 }
 # The openings, in one place because they are asked about from two. A notice opens
-# with itself; a verdict opens with the verdict, whatever it goes on to discuss. Both
-# spellings of the org one: the CLI writes "your org is out of usage" in one message
-# and "your organization is out of usage credits" in another, and both are live.
+# with itself; a verdict opens with the verdict, whatever it goes on to discuss. Each
+# is the notice as far as it is fixed, never the words it starts with: a review of the
+# seat-type branch opens "your seat type validation is correct", and an anchor stopping
+# at "your seat type" would file that as an allowance. Both spellings of the org one,
+# because the CLI writes "your org is out of usage" in one message and "your
+# organization is out of usage credits" in another.
 says_notice_opening() {
   case "$RESULT" in *'`'*) return 1 ;; esac
   case "$LOWER" in
     "you've hit your"*|"you've reached your"*|"you're out of"*|\
-    "your org is out"*|"your organization is out"*|"your organization's usage"*|\
-    "your usage allocation"*|"your seat type"*|"your group's usage limit"*|\
-    "this service is disabled for"*|"claude ai usage limit"*) return 0 ;;
+    "your org is out of usage"*|"your organization is out of usage"*|\
+    "your organization's usage credit cap"*|\
+    "your usage allocation has been disabled"*|"your seat type doesn't include"*|\
+    "your group's usage limit is set to"*|\
+    "this service is disabled for your org"*|"claude ai usage limit"*) return 0 ;;
   esac
   return 1
 }
@@ -321,29 +326,31 @@ elif [ "$FROM_ERRORS" = 0 ] && [ "$SPOKE" = 1 ] && looks_like_a_report; then
   REVIEWED=1
 fi
 
-# The one gap the structure above cannot close, held shut by shape. A quota that runs
-# out MID-RUN leaves every structural fact reading healthy — models were billed, the
-# loop is intact, `is_error` is false — while `.result` carries the notice instead of
-# the report. So a short result is checked against the shape a notice takes: it opens
-# by addressing the person, or ends with the CLI's own instruction to switch models.
-# Anchored at an end, never matched anywhere inside, because the sentence a short
-# review writes about THIS repository — "no issues found, the quota handling looks
-# correct" — carries every word such a list would hold. Anchored on the whole notice
-# too, rather than the words it opens with: a review addresses its reader as "your",
-# so "your usage of jq" and "your organization's conventions" are verdicts, and half
-# a prefix throws them away. What no anchor can reach — a notice opening with the
-# model's own name — is the predicate above, which the exit-code branch consults too,
-# so the two cannot drift into disagreeing about the same sentence. The length bound keeps a report that opens with
-# an error line out of it, and a miss here is the last fail-open left — narrow, and
-# named in the skill rather than papered over with a wider match.
-if [ "$REVIEWED" = 1 ] && [ "${#RESULT}" -lt 400 ]; then
+# The one gap the structure above cannot close, held shut by the text itself. A quota
+# that runs out MID-RUN leaves every structural fact reading healthy — models were
+# billed, the loop is intact, `is_error` is false — while `.result` carries the notice
+# where the report belongs. The two predicates above are what catches it, and they
+# match differently on purpose: an opening is anchored, because a review addresses its
+# reader as "your" and "your usage of jq" is a finding, while a machine fragment is
+# matched anywhere, because a notice can open with the model's own name and reach no
+# anchor at all. Both are vetoed by a marked citation, which is the other half of the
+# same problem: reviews of this file quote these very phrases. A miss here is the last
+# fail-open left — narrow, and named in the skill rather than papered over with a
+# wider match.
+if [ "$REVIEWED" = 1 ]; then
+  # No length bound on these two: what they match is the vendor's own text, and a
+  # review that cites any of it marks the citation, which both predicates veto. A
+  # notice that grows past any threshold is still a notice.
   if says_cli_notice || says_notice_opening; then REVIEWED=0; fi
   # An error the CLI announces as one is not a report either — and unlike the two
   # predicates above it says nothing about a limit, so it stays here rather than
-  # joining a list the exit-code branch reads.
-  # The colon is required: `--narrow "only error handling"` is the skill's own worked
-  # example, and the verdict it earns opens "API error handling is correct".
-  case "$LOWER" in "api error:"*|"error: api error"*) REVIEWED=0 ;; esac
+  # joining a list the exit-code branch reads. It keeps the length bound, being a
+  # prefix rather than a whole notice, and the colon is required: `--narrow "only
+  # error handling"` is the skill's own worked example, and the verdict it earns
+  # opens "API error handling is correct".
+  if [ "${#RESULT}" -lt 400 ]; then
+    case "$LOWER" in "api error:"*|"error: api error"*) REVIEWED=0 ;; esac
+  fi
 fi
 
 # Everything below decides what a caller should DO about a run that did not review.
@@ -378,15 +385,30 @@ says_transient() {
   esac
   return 1
 }
+# A text that CITES a notice rather than being one: the citation is marked, and the
+# CLI's own notices carry no marks. An API error is the exception — its body is JSON,
+# so its quotation marks belong to the payload rather than to a reviewer.
+cites_a_notice() {
+  case "$LOWER" in "api error"*|"error: api error"*) return 1 ;; esac
+  case "$RESULT" in *'`'*|*'"'*) return 0 ;; esac
+  return 1
+}
+# Certain: the notice named itself, by an opening the CLI writes or a fragment only it
+# writes. Kept apart from the phrases below because this answer outranks a transient
+# reading — an account limit whose sentence happens to carry "rate limit" is still an
+# account limit, and running it again walks into the same wall.
+says_quota_certainly() {
+  says_cli_notice || says_notice_opening
+}
 says_quota() {
-  says_cli_notice && return 0
-  says_notice_opening && return 0
-  case "$RESULT" in *'`'*) return 1 ;; esac
+  says_quota_certainly && return 0
+  cites_a_notice && return 1
   case "$LOWER" in
-    # The few phrases specific enough to match anywhere. A bare "quota" is not
-    # among them, nor "usage limit" alone: a review of THIS repository writes both,
-    # and a run whose `modelUsage` came back zeroed — which the schema allows on a
-    # crash and on a resumed session — would have its verdict thrown away as a notice.
+    # The few phrases specific enough to match anywhere. A bare "quota" is not among
+    # them, nor "usage limit" alone: a review of THIS repository writes both, and
+    # anything reaching this point has already failed to be a review, so a verdict
+    # arriving here by some other route is quoted back rather than filed as a limit
+    # nobody hit.
     *"out of usage credits"*|*"out of extra usage"*|*"usage limit reached"*|\
     *"usage limit has been reached"*|*"spend limit"*|*"credit balance"*|\
     *"usage credit cap"*|*"add funds"*|*"disabled by your admin"*) return 0 ;;
@@ -399,8 +421,12 @@ says_quota() {
 # thing left, and they are reached only here — under a verdict already made, where
 # the worst a miss costs is `failed:` in place of `unavailable:`.
 diagnose_by_words() {
-  # Transient first: one of these notices denies being a usage limit in a sentence
-  # that contains the words, and the quota test would take it.
+  # A notice that named itself comes first of all, outranking a transient reading of
+  # words it happens to contain.
+  says_quota_certainly && unavailable
+  # Then transient, ahead of the looser quota phrases: one of these notices denies
+  # being a usage limit in a sentence that contains the words, and the phrase list
+  # would take it.
   says_transient && fail "(transient — re-running the same command is the fix)"
   case "$LOWER" in
     *"too large"*|*exceeds*|*"context window"*|*"token limit"*)
@@ -420,13 +446,20 @@ if [ "$REVIEWED" = 0 ]; then
     # like any other rejected request, so the notice is read first and the status
     # only advises where it said nothing about a limit.
     api_error)
-      # Transient first, here as in the words-only path: one of these notices denies
-      # being a usage limit in a sentence that contains the words, and asking about
-      # the quota first sends the caller to wait out a limit that was never reached.
+      # Same order as the words-only path: a notice that named itself, then transient,
+      # then the looser phrases. Transient first would send a real account limit —
+      # whose sentence often carries "rate limit" — back into the same wall, and the
+      # loose phrases first would take a throttle that denies being a limit in words
+      # containing one.
+      says_quota_certainly && unavailable
       says_transient && fail "(transient — re-running the same command is the fix)"
       says_quota && unavailable
       case "$STATUS" in
-        429) unavailable ;;
+        # A 429 the notice did not explain is ordinary throttling as readily as a
+        # spent allowance — "Too Many Requests" and an empty body reach here — and
+        # the two errors are not equally cheap: a caller told to retry loses a
+        # minute, one told the reviewer is gone drops it from the coverage.
+        429) fail "(transient — re-running the same command is the fix)" ;;
         401|403) fail "(the login this run inherited is not usable — check the CLI's own auth)" ;;
         400) fail "(the request was rejected — a range too large for the model is the usual cause)" ;;
         5??) fail "(the API was unavailable — re-running the same command is the fix)" ;;

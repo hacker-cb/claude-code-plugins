@@ -1,0 +1,12 @@
+{
+  "result": "Server is temporarily limiting requests (not your usage limit)",
+  "is_error": true,
+  "terminal_reason": "api_error",
+  "api_error_status": 429,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

@@ -1,0 +1,8 @@
+{
+  "result": "Opus 4.5 requires usage credits. /model to switch models.",
+  "is_error": true,
+  "terminal_reason": "api_error",
+  "api_error_status": 429,
+  "modelUsage": {},
+  "permission_denials": []
+}

@@ -1,0 +1,20 @@
+{
+  "errors": [
+    "Session crashed while writing the report.",
+    "Stack: at query (cli.js:1:1)",
+    "Stack: at loop (cli.js:2:2)",
+    "Stack: at main (cli.js:3:3)",
+    "Stack: at run (cli.js:4:4)",
+    "Context: the transcript was 180000 tokens and the compaction step failed twice.",
+    "Context: retries exhausted after ten attempts against the streaming endpoint.",
+    "Diagnostic: see ~/.claude/logs for the full trace of this session and its subagents."
+  ],
+  "is_error": true,
+  "terminal_reason": "api_error",
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

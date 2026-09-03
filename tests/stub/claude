@@ -1,0 +1,5 @@
+#!/bin/sh
+# Stands in for the `claude` CLI: prints the envelope the case names and nothing
+# else, so the script under test parses a real result message without an engine,
+# a network or an account behind it.
+cat "$STUB_ENVELOPE"

@@ -28,6 +28,12 @@ jobs:
       - name: Structural validation
         run: bash scripts/validate.sh
 
+      # The review scripts, against saved envelopes. A stub plays the CLI, so this
+      # needs no engine, no account and no network — and no history either: the runs
+      # are pinned to an empty range, which a shallow checkout satisfies.
+      - name: Script tests
+        run: bash tests/run.sh
+
       # Internal paths only: `--offline` skips every http(s) URL in the repo, so
       # no link in this repo is resolved over the network and a docs host having
       # a bad day cannot fail a PR. The action itself still downloads the lychee

@@ -1,0 +1,8 @@
+{
+  "result": "Too Many Requests",
+  "is_error": true,
+  "modelUsage": {},
+  "permission_denials": [],
+  "terminal_reason": "api_error",
+  "api_error_status": 429
+}

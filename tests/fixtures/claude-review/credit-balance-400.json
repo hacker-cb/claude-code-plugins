@@ -1,0 +1,8 @@
+{
+  "result": "API Error: 400 {\"type\":\"error\",\"error\":{\"message\":\"Your credit balance is too low to access the Anthropic API.\"}}",
+  "is_error": true,
+  "terminal_reason": "api_error",
+  "api_error_status": 400,
+  "modelUsage": {},
+  "permission_denials": []
+}

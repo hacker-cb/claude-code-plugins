@@ -1,0 +1,66 @@
+# One row per envelope: the fixture's name, the exit status the run must end on,
+# and what the case is there to hold. Exit 0 is a review (a `scope:` record), 1 a
+# failure, 3 a reviewer that could not run. The runner checks the line as well as
+# the number, so a case cannot pass by ending on the right status for a wrong reason.
+#
+# fixture	exit	what it holds
+report	0	a full report prints its coverage record
+nothing-to-review	0	a working tree with no changes is an answer, not a failure
+no-findings	0	a run that read the range and found nothing is a review
+verdict-mentions-quota	0	a short verdict discussing quota handling is not a quota notice
+verdict-opens-your-usage	0	a verdict may open by addressing the reader as "your usage"
+verdict-opens-your-organization	0	and as "your organization"
+verdict-opens-your-usage-of	0	"Your usage of `jq -e` …" is a finding, not an allowance
+verdict-recommends-another-model	0	advising a larger model is advice, not a limit notice
+verdict-on-error-handling	0	"API error handling is correct" opens a verdict, not an error
+verdict-on-seat-type	0	so does "Your seat type validation is correct"
+verdict-on-allocation	0	and "Your usage allocation handling reads the right field"
+verdict-on-group-limit	0	and a verdict about the group-limit branch
+finding-quotes-fragment	0	a finding may quote the notice fragments this script matches
+finding-quotes-in-quotes	0	including inside quotation marks rather than backticks
+finding-quotes-model-switch	0	and may quote the machine suffix as well
+report-cut-off	0	a report written before the run broke is kept, under a warning
+report-backgrounded	0	a turn sent to the background costs the report nothing
+short-verdict-backgrounded	0	nor does it cost a short one its coverage record
+connection-refused	1	an error inside the local command is not a review
+auth-403	1	nor is a refused login
+not-logged-in	1	nor is a missing one
+long-auth-error	1	a multi-line auth failure has a report's shape and no model behind it
+long-errors-no-result	1	neither has a crash's accumulated stack
+error-subtype-errors-only	1	an envelope with no `.result` still quotes what it does carry
+cut-off-no-report	1	a run cut off before writing anything names what cut it
+empty-result	1	a run that produced nothing quotes the envelope
+whitespace-only-result	1	a result of blanks is not a review with an empty body
+fieldless-envelope	1	an envelope with no fields answers nothing
+unknown-notice	1	a wording nobody anticipated is quoted, not classified
+prompt-too-long	1	a filled context asks for a narrower range
+rate-limit-429	1	a throttled request asks to be run again
+transient-denying-limit	1	even when it denies being a limit in words containing "usage limit"
+transient-without-status	1	and when the envelope carries no status at all
+server-500	1	an unavailable API asks to be run again
+server-500-unnamed	1	with the envelope quoted where the run said nothing
+zeroed-usage-real-verdict	1	a verdict whose usage came back zeroed is quoted, never filed as a limit
+verdict-quotes-limit-phrase	1	a verdict quoting a limit phrase is quoted back, not filed as one
+quota-session-limit	3	a session limit is a reviewer to wait for
+quota-credits-wording	3	so is one worded as required credits
+quota-429	3	and one the status alone identifies
+quota-midrun	3	a limit reached after the models were billed is still a limit
+long-notice-midrun	3	a notice that outgrew a report's length is still a notice
+account-limit-mentions-rate-limit	3	an account limit naming a rate window is not a throttle
+credit-balance-400	3	a spent balance arrives as a 400, not a 429
+refusal-429-unnamed	1	a 429 the notice did not explain stays retryable
+throttled-429-unnamed	1	and so does plain throttling under the same status
+org-out-of-credits	3	an organization out of credits
+org-credit-cap	3	an organization's credit cap
+org-is-out-midrun	3	the CLI's short spelling of the same, mid-run
+org-is-out-bypassed	3	and before a single model call
+admin-disabled-allocation	3	an allocation an admin turned off
+seat-type-without-usage	3	a seat type that does not include usage
+service-disabled-for-org	3	a service disabled for the organization
+group-zero-limit	3	a group allowance set to zero
+model-limit-midrun	3	a model limit reached mid-run
+model-notice-midrun	3	a notice opening with the model's own name
+model-prefixed-notice	3	including the variant that tells the reader to switch
+switch-models-with-model	3	and the one that names the command instead
+credits-notice-midrun	3	credits exhausted after the models were billed
+long-context-credits	3	credits a long context needs and does not have
