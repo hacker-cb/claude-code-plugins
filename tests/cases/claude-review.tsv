@@ -5,7 +5,8 @@
 #   args      what this case adds to `--base HEAD --level low`; a NAME=value word is
 #             put in the run's environment instead (that is how a case reaches the
 #             stub's stderr, its touch, or a non-zero exit). `-` for none
-#   exit      0 a review, 1 a failure, 3 a reviewer that could not run
+#   exit      0 a review, 1 a failure, 3 a reviewer that could not run, and 2 for a
+#             call the script refused before reaching an engine at all
 #   expect    fragments that must appear in the output, separated by `|`. Written out
 #             per case on purpose: every failure prints the same first line, so a
 #             status implies its line and checking one against the other asserts

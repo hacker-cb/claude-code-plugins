@@ -31,11 +31,17 @@ Three files meet for each one:
   it returned.
 
 The exit statuses are the contract callers read: **0** a review, with a `scope:`
-record; **1** a failure, quoted; **3** a reviewer that could not run. What each case
-must *print* is written out per row rather than derived from the status, because
-every failure opens with the same line: the status implies its line, and checking one
-against the other asserts nothing. The advice underneath is what separates the
-branches, so that is what the fragments hold.
+record; **1** a failure, quoted; **3** a reviewer that could not run. A fourth, **2**,
+sits outside that contract on purpose — it means the script was *called* wrong (a flag
+without its value, an argument it does not know) and never reached an engine at all,
+which is a different thing from a run that reached one and failed. Cases pin it too,
+since an argument guard is the only thing standing between `--narrow` and a flag that
+would let the run write.
+
+What each case must *print* is written out per row rather than derived from the
+status, because every failure opens with the same line: the status implies its line,
+and checking one against the other asserts nothing. The advice underneath is what
+separates the branches, so that is what the fragments hold.
 
 ## Where the envelopes come from
 
