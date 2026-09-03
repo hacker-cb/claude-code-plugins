@@ -75,7 +75,7 @@ until the run is done — §1's reference says why that line is there and what i
 not mean. What a finished run prints is the `scope:` line, any `coverage-warning:`
 lines, and then the review — §1's reference owns how all three are read back.
 
-Three things are this engine's own:
+What is this engine's own:
 
 - A `tree-warning:` line means the run edited the tree it was reviewing — a probe
   left standing, or a fix applied against this skill's promise. The findings still
