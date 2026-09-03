@@ -210,11 +210,18 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   echo "claude review failed: the run wrote no envelope"
   tail -20 "$OUT.log"; exit 1; }
 
-RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
+# `.result` for the ordinary envelope, `.errors` for the four error subtypes, whose
+# schema has no `result` field at all — without the second, every run that ends on a
+# turn limit or a budget prints its failure line above an empty quotation.
+RESULT=$(jq -r 'if (.result // "") != "" then .result else ((.errors // []) | join("\n")) end' "$OUT" 2>/dev/null) || RESULT=""
 # Lowercased for matching only — `$RESULT` prints as the engine wrote it. The same
 # notice arrives capitalised in one message and not in another, and a pattern that
 # tracks case would decide a caller's next move on a capital letter.
 LOWER=$(printf '%s' "$RESULT" | tr '[:upper:]' '[:lower:]')
+# The same text with every space gone, for the emptiness tests alone: a result of
+# blanks and newlines is a run that said nothing, and `-n` on the raw string would
+# call it a review with an empty body.
+SAID=$(printf '%s' "$RESULT" | tr -d '[:space:]')
 
 # Did a model say anything at all? `modelUsage` bills every call the run made — the
 # main loop, each subagent, each helper — while `usage` is documented as the main
@@ -227,11 +234,23 @@ SPOKE=0
 jq -e '[(.modelUsage // {})[] | .outputTokens // 0] | add // 0 | . > 0' "$OUT" >/dev/null 2>&1 && SPOKE=1
 # Why the query loop ended, taken from the CLI's own closed set of reasons rather
 # than from anything phrased at the point of failure. Unset is not a missing field:
-# the schema states the loop was bypassed, which is what a local slash command does —
-# so unset and `completed` are the two ways of finishing intact.
+# the schema states the loop was bypassed, which is what a local slash command does.
 TERMINAL=$(jq -r '.terminal_reason // ""' "$OUT" 2>/dev/null) || TERMINAL=""
-LOOP_INTACT=0
-case "$TERMINAL" in ""|completed) LOOP_INTACT=1 ;; esac
+# The CLI sorts those reasons into failures and endings, and the split is followed
+# rather than re-invented: a run stopped at its turn limit, by a hook, or by an abort
+# has whatever it wrote, while a run that hit an API error or filled its context has
+# nothing to stand on. Cut short is not the same as broken — the first still reports,
+# under the warning below. The reasons in neither list — a deferred tool, a turn sent
+# to the background, a clean finish — are endings that cost the report nothing, and
+# they earn no warning.
+LOOP_FAILED=0
+LOOP_CUT=0
+case "$TERMINAL" in
+  blocking_limit|rapid_refill_breaker|prompt_too_long|image_error|model_error|api_error|\
+  malformed_tool_use_exhausted|budget_exhausted|structured_output_retry_exhausted|\
+  tool_deferred_unavailable|turn_setup_failed) LOOP_FAILED=1 ;;
+  aborted_streaming|aborted_tools|stop_hook_prevented|hook_stopped|max_turns) LOOP_CUT=1 ;;
+esac
 # The HTTP status behind an API error, where the envelope carries one: a spent quota
 # is 429, an unusable login 401 or 403, a rejected request 400.
 STATUS=$(jq -r '.api_error_status // ""' "$OUT" 2>/dev/null) || STATUS=""
@@ -246,12 +265,12 @@ looks_like_a_report() {
 }
 
 # Did a review happen? Three facts the envelope states outright — a model spoke, the
-# loop ended intact, `.result` is not empty — and none of them is a phrase anyone has
+# loop did not fail, the result is not blank — and none of them is a phrase anyone has
 # to keep in step with the CLI. A run that ended badly can still have written its
 # report before it did, and that report is worth keeping, so shape overrides the
 # verdict in the one direction where nothing is lost by it.
 REVIEWED=0
-if [ "$SPOKE" = 1 ] && [ "$LOOP_INTACT" = 1 ] && [ "$ERRORED" = 0 ] && [ -n "$RESULT" ]; then
+if [ "$SPOKE" = 1 ] && [ "$LOOP_FAILED" = 0 ] && [ "$ERRORED" = 0 ] && [ -n "$SAID" ]; then
   REVIEWED=1
 elif looks_like_a_report; then
   REVIEWED=1
@@ -261,18 +280,22 @@ fi
 # out MID-RUN leaves every structural fact reading healthy — models were billed, the
 # loop is intact, `is_error` is false — while `.result` carries the notice instead of
 # the report. So a short result is checked against the shape a notice takes: it opens
-# by addressing the person, or ends by telling them to switch models. Anchored at an
-# end, never matched anywhere inside, because the sentence a short review writes about
-# THIS repository — "no issues found, the quota handling looks correct" — contains
-# every word such a list would carry. The length bound keeps a report that opens with
+# by addressing the person, or ends with the CLI's own instruction to switch models.
+# Anchored at an end, never matched anywhere inside, because the sentence a short
+# review writes about THIS repository — "no issues found, the quota handling looks
+# correct" — carries every word such a list would hold. Anchored on the whole notice
+# too, rather than the words it opens with: a review addresses its reader as "your",
+# so "your usage of jq" and "your organization's conventions" are verdicts, and half
+# a prefix throws them away. The length bound keeps a report that opens with
 # an error line out of it, and a miss here is the last fail-open left — narrow, and
 # named in the skill rather than papered over with a wider match.
 if [ "$REVIEWED" = 1 ] && [ "${#RESULT}" -lt 400 ]; then
   case "$LOWER" in
-    "you've hit your"*|"you've reached your"*|"you're out of"*|"your org"*|\
-    "your usage"*|"your seat"*|"this service is disabled"*|\
+    "you've hit your"*|"you've reached your"*|"you're out of"*|\
+    "your organization is out of"*|"your organization's usage"*|\
+    "your usage allocation"*|"your seat type"*|"this service is disabled for"*|\
     "claude ai usage limit"*|"api error"*|"error: api error"*|\
-    *"/model to switch models."|*"switch to another model.")
+    *"/model to switch models.")
       REVIEWED=0 ;;
   esac
 fi
@@ -286,18 +309,32 @@ fail() {
   tail -20 "$OUT.log"
   exit 1
 }
-# A spent quota and a per-minute rate limit are the same 429 and differ only in the
-# sentence, so here a phrase still picks between two answers. What it picks is the
-# ADVICE — wait for a reset, or run the same command again — and the default is the
-# quota, so a wording nobody anticipated costs a caller the transient hint rather
-# than the reviewer.
-quota_or_transient() {
+# A refusal that named nothing still refused: the caller is told which limit it was
+# where the engine said so, and told that it did not where the engine kept silent —
+# never handed a bare colon beneath a line that asks them to read the notice.
+unavailable() {
+  if [ -n "$SAID" ]
+    then echo "claude review unavailable: $RESULT"
+    else echo "claude review unavailable: the run was refused for a limit it did not name"; fi
+  exit 3
+}
+# The two phrase sets, as predicates rather than branches, because the same question
+# is asked from two places and a list that exists twice drifts apart. Neither decides
+# whether a review happened — that is settled — only what the caller is told to do.
+says_transient() {
   case "$LOWER" in
-    *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*)
-      fail "(transient — re-running the same command is the fix)" ;;
-    *)
-      echo "claude review unavailable: $RESULT"; exit 3 ;;
+    *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*) return 0 ;;
   esac
+  return 1
+}
+says_quota() {
+  case "$LOWER" in
+    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credit"*|\
+    *"credit balance"*|*"out of usage"*|*"out of extra usage"*|*"add funds"*|*quota*|\
+    *"switch to another model"*|*"/model to switch models"*|*"usage allocation"*|\
+    *"seat type"*|*"disabled for your org"*|*"disabled by your admin"*) return 0 ;;
+  esac
+  return 1
 }
 # Where the loop never ran, the envelope has no reason to give and no status to read:
 # an error raised inside a local slash command leaves `is_error` false and
@@ -305,30 +342,35 @@ quota_or_transient() {
 # thing left, and they are reached only here — under a verdict already made, where
 # the worst a miss costs is `failed:` in place of `unavailable:`.
 diagnose_by_words() {
+  # Transient first: one of these notices denies being a usage limit in a sentence
+  # that contains the words, and the quota test would take it.
+  says_transient && fail "(transient — re-running the same command is the fix)"
   case "$LOWER" in
-    *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*)
-      fail "(transient — re-running the same command is the fix)" ;;
     *"too large"*|*exceeds*|*"context window"*|*"token limit"*)
       fail "(the range does not fit — narrow it, or review it in parts)" ;;
-    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credit"*|*"credit balance"*|*"out of usage"*|*"out of extra usage"*|*"add funds"*|*quota*|*"switch to another model"*|*"usage allocation"*|*"seat type"*|*"disabled for your org"*|*"disabled by your admin"*)
-      echo "claude review unavailable: $RESULT"; exit 3 ;;
-    "")
-      # Nothing to quote, so the envelope is the only diagnosis there is — stderr is
-      # routinely empty in exactly this case.
-      echo "claude review failed: the run ended without producing anything"
-      head -c 500 "$OUT"; tail -20 "$OUT.log"; exit 1 ;;
-    *) fail ;;
   esac
+  says_quota && unavailable
+  # Nothing to quote, so the envelope is the only diagnosis there is — stderr is
+  # routinely empty in exactly this case.
+  [ -n "$SAID" ] || {
+    echo "claude review failed: the run ended without producing anything"
+    head -c 500 "$OUT"; tail -20 "$OUT.log"; exit 1; }
+  if [ -n "$TERMINAL" ] && [ "$TERMINAL" != completed ]
+    then fail "(the run ended on $TERMINAL before it could report)"
+    else fail; fi
 }
 
 if [ "$REVIEWED" = 0 ]; then
   case "$TERMINAL" in
-    # The loop ran and the API refused it. The status says which refusal, and each
-    # one has a different next move — a reset to wait for, a login to fix, a range
-    # to narrow, an outage to sit out.
+    # The loop ran and the API refused it. The status narrows what kind of refusal
+    # that was, but it does not name it on its own: a spent balance arrives as a 400
+    # like any other rejected request, so the notice is read first and the status
+    # only advises where it said nothing about a limit.
     api_error)
+      says_quota && unavailable
       case "$STATUS" in
-        429) quota_or_transient ;;
+        429) says_transient && fail "(transient — re-running the same command is the fix)"
+             unavailable ;;
         401|403) fail "(the login this run inherited is not usable — check the CLI's own auth)" ;;
         400) fail "(the request was rejected — a range too large for the model is the usual cause)" ;;
         5??) fail "(the API was unavailable — re-running the same command is the fix)" ;;
@@ -338,12 +380,9 @@ if [ "$REVIEWED" = 0 ]; then
     # closes this one.
     blocking_limit|prompt_too_long|rapid_refill_breaker)
       fail "(the range does not fit the context — narrow it, or review it in parts)" ;;
-    # Intact, and still nothing to show: either the loop was bypassed and whatever
-    # broke did so inside the command, or it finished without a model ever answering.
-    ""|completed) diagnose_by_words ;;
-    # Every remaining reason names itself well enough to pass on: the run was cut
-    # off, and the name says by what.
-    *) fail "(the run ended on $TERMINAL before it could report)" ;;
+    # Everything else: the loop was bypassed, ended clean, or stopped short without
+    # failing, and in each case the notice is all there is to go on.
+    *) diagnose_by_words ;;
   esac
 fi
 
@@ -367,11 +406,11 @@ esac
 # A coverage line, not a run one: a report salvaged from a run that ended badly can be
 # cut off mid-finding, and nothing in it says where it stopped — a review has no syntax
 # to check completeness against. What the caller can act on is knowing the count above
-# describes the range handed in rather than how far the report got. Any broken loop
-# qualifies, not the API errors alone: a run cut off at its turn limit or by a hook
-# stops just as mid-sentence.
-if [ "$ERRORED" = 1 ] || [ "$LOOP_INTACT" = 0 ]; then
-  echo "coverage-warning: the run ended on an error and its report may be cut short — the findings stand, the count may not"
+# describes the range handed in rather than how far the report got. A failed loop is
+# not the only way to get here: a run cut off at its turn limit or by a hook stops
+# just as mid-sentence, and a run that merely deferred a tool did not stop at all.
+if [ "$ERRORED" = 1 ] || [ "$LOOP_FAILED" = 1 ] || [ "$LOOP_CUT" = 1 ]; then
+  echo "coverage-warning: the run did not finish cleanly and its report may be cut short — the findings stand, the count may not"
 fi
 # Its own line too, and not a coverage one: this says what the run DID, not what it
 # read. The count above was taken before the run and stops describing the tree here.
