@@ -94,8 +94,13 @@ Three things are this engine's own:
   own notice, and **which limit it names decides what to do next**: an account limit
   gives a reset time and nothing else closes it before then, while a *model* limit
   says to switch models — and §2 takes `--model`, so rerunning on another family
-  closes the gap now rather than recording one. The separate line exists because
-  such a notice can arrive inside a *successful* envelope, where it is
-  indistinguishable — until the run's own token count is checked — from a review
-  that finished with nothing to say, and would print with a full file count beside
-  it.
+  closes the gap now rather than recording one.
+- **A verdict with nothing in it is still a review.** A run that read the range and
+  found nothing prints its `scope:` line like any other, with a verdict of a line or
+  two beneath it, and so does one handed a working tree with nothing changed in it.
+  Pass the coverage it states; what a count of zero costs that coverage is §1's
+  reference's to say.
+- **One case the run cannot flag for you**: a limit reached partway through comes
+  back where the report belongs, under a scope line that looks complete. A review
+  whose entire body is a sentence about a limit or about switching models is that
+  case — record the reviewer as unavailable, whatever the line above it claims.

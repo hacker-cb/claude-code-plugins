@@ -191,8 +191,9 @@ is a single model's, and says so — where the engine takes a model, rerunning o
 another family closes the gap now, and a reviewer recorded as unavailable without
 that attempt is a gap nobody needed to accept.
 
-**Never read such a notice as a review.** A limit can arrive inside a *successful*
-envelope, with the notice where the report would be, so a run that read nothing
-prints a full file count beside it unless something checks. That is the shape of
-every fail-open here: the count is what the run was handed, and the words beside it
-are what it actually did.
+**Never read such a notice as a review.** A limit can arrive where the report
+belongs, under a record that looks complete, so the count states a range that was
+handed over while the words beneath it say nothing was read. That is the shape of
+every fail-open here, and reading the write-up rather than the number above it is
+what catches it: a review whose whole body is one sentence — about a limit, about
+switching models — is a reviewer to record as unavailable.
