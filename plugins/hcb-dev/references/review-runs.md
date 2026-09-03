@@ -77,7 +77,8 @@ windows per run: three reviewers do not buy three hours.
 
 **Where no blocking wait is available** — the mechanism is deprecated in the harness
 and may go — wait inside a single command instead: one call that blocks until the
-run prints a terminal line or the window is up, and reads the file by what it says
+run prints one of those three lines or the window is up, and reads the file by what
+it says
 rather than by whether it is empty. What the rule below forbids is a turn per check,
 not a second of waiting: one turn per window is the same wait however it is
 spelled.
@@ -132,8 +133,9 @@ stopped being empty says only that the run started:
 started: <engine and what fixed the run>, pid <n>, <time>
 ```
 
-**What says a run finished is the record below, or a failure line** — never a file
-that is merely non-empty. A wait keyed to emptiness ends at the wrong moment in
+**What says a run finished is the record below, a failure line, or a line saying the
+reviewer was unavailable** — never a file that is merely non-empty. All three are
+answers; waiting past any of them waits for something that already came. A wait keyed to emptiness ends at the wrong moment in
 both directions: at once for a run still reading, and never for one that died
 before it could print anything.
 

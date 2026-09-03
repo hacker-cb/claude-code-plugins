@@ -260,7 +260,7 @@ esac
 # keeps a report that happens to open with an error line out of it.
 if [ "$REVIEWED" = 1 ] && [ "${#RESULT}" -lt 400 ]; then
   case "$LOWER" in
-    "you've hit your"*|"you've reached your"*|"claude ai usage limit"*|"api error"*|"error: api error"*)
+    "you've hit your"*|"you've reached your"*|"you're out of"*|"your org is out"*|"claude ai usage limit"*|"api error"*|"error: api error"*)
       REVIEWED=0 ;;
   esac
 fi
@@ -283,7 +283,7 @@ if [ "$REVIEWED" = 0 ]; then
     # Named phrases, never a bare "limit": every notice above carries that word too.
     # A quota is not a failure of the engine — the notice names a reset time or
     # another model, and both are things a caller can act on.
-    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credits"*|*"credit balance"*|*quota*|*"switch to another model"*)
+    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credits"*|*"credit balance"*|*"out of usage"*|*"out of extra usage"*|*"add funds"*|*quota*|*"switch to another model"*)
       echo "claude review unavailable: $RESULT"; exit 3 ;;
     "")
       # Nothing to quote, so the envelope is the only diagnosis there is — stderr is
@@ -315,8 +315,13 @@ esac
   || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
 # Its own line, and not a coverage one: the envelope called this run an error while
 # its model wrote a report, so the report stands and the verdict is worth knowing.
-[ "$ERRORED" = 0 ] \
-  || echo "run-warning: the envelope reports an error — the findings below are what the run wrote anyway"
+# A coverage line, not a run one: a report salvaged from a run that ended badly can be
+# cut off mid-finding, and nothing in it says where it stopped — a review has no syntax
+# to check completeness against. What the caller can act on is knowing the count above
+# describes the range handed in rather than how far the report got.
+if [ "$ERRORED" = 1 ] || [ "$TERMINAL" = "api_error" ]; then
+  echo "coverage-warning: the run ended on an error and its report may be cut short — the findings stand, the count may not"
+fi
 # Its own line too, and not a coverage one: this says what the run DID, not what it
 # read. The count above was taken before the run and stops describing the tree here.
 # A denial does not void the run — it narrows it, and a narrowed run is partial.
