@@ -118,7 +118,7 @@ work raised become issues opened in the same effort.
   left, and, for a left one, what reaches the user, in what form, and what their
   answer authorizes. Read it before writing that proposal.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
-  flag, an endpoint or a concept name gets resolved on either forge, which
-  hierarchy and dependency mechanism each one has, and what each one matches to
-  close an issue. Read it before writing an invocation this skill does not spell
+  flag, an endpoint or a concept name gets resolved on either forge, what each
+  one matches to close an issue, and which hierarchy and dependency mechanism
+  each one has. Read it before writing an invocation this skill does not spell
   out.
