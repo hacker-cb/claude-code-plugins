@@ -91,6 +91,12 @@ mechanisms on both forges — the entry points are in
 Where a bare `#N` would not autolink — documentation, code comments, anything read
 outside its own issue or change request — write `[#N](<url>)`.
 
+The closing keyword is the forge's own: the English word its pattern matches,
+verbatim, whatever language the body around it is written in. A translated one
+matches nothing and reports nothing — the issue is simply still open once the
+merge lands. What each forge matches, and where an instance may have redefined
+it, is `../../references/forge-docs.md`.
+
 A closing keyword in the change request body closes the issue **only where the
 forge acts on it** — which it does for a request targeting the default branch, and
 not for one targeting a feature branch or any other trunk the repository merges
@@ -111,6 +117,7 @@ work raised become issues opened in the same effort.
   left, and, for a left one, what reaches the user, in what form, and what their
   answer authorizes. Read it before writing that proposal.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
-  flag, an endpoint or a concept name gets resolved on either forge, and which
-  hierarchy and dependency mechanism each one has. Read it before writing an
-  invocation this skill does not spell out.
+  flag, an endpoint or a concept name gets resolved on either forge, which
+  hierarchy and dependency mechanism each one has, and what each one matches to
+  close an issue. Read it before writing an invocation this skill does not spell
+  out.

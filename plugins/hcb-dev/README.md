@@ -356,8 +356,8 @@ saying something else.
   endpoint or a concept name gets resolved on either forge: the installed CLI's
   `--help` for what exists in this build, the docs sites for what things mean and
   for everything the porcelain never wrapped, plus the term-for-term mirror
-  between the two forges. Read before writing an invocation or naming a concept
-  in prose.
+  between the two forges and what each one matches to close an issue. Read
+  before writing an invocation or naming a concept in prose.
 
 ## Forge neutrality
 
