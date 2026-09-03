@@ -149,13 +149,22 @@ tree_state() {
   # main repository's shared .git, and a moved ref there shows up nowhere else here.
   git for-each-ref --format='%(refname) %(objectname)'
   git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD
-  # One `hash-object` for every untracked file, not one process per file: this runs
-  # twice per review, and spawning it per path put minutes into a tree that merely
-  # has an un-ignored build directory in it.
-  git ls-files --others --exclude-standard -z \
-    | tr '\0' '\n' \
-    | { paths=$(cat); [ -z "$paths" ] || { printf '%s\n' "$paths"
-        printf '%s\n' "$paths" | git hash-object --stdin-paths; }; }
+  # The names are already listed by `git status` above, so what is needed here is a
+  # snapshot of untracked CONTENT. One pass over the list and one `hash-object` for
+  # the batch, rather than a process per file: this runs twice per review, and
+  # spawning it per path put minutes into a tree that merely has an un-ignored build
+  # directory in it. Reading stays NUL-delimited, so a path with a newline in it is
+  # still seen — it just cannot travel in a batch `--stdin-paths` splits on newlines,
+  # so it gets a call of its own, and being vanishingly rare it costs nothing.
+  newline=$(printf '\n')
+  batched=""
+  while IFS= read -r -d "" f; do
+    case "$f" in
+      *"$newline"*) printf '%s ' "$f"; git hash-object -- "$f" ;;
+      *) batched="$batched$f$newline" ;;
+    esac
+  done < <(git ls-files --others --exclude-standard -z)
+  [ -z "$batched" ] || printf '%s' "$batched" | git hash-object --stdin-paths 2>/dev/null || true
 }
 # Positional parameters, not an interpolated string: a fallback naming the family
 # already requested is not a fallback, and dropping the flag is what says so.
@@ -560,7 +569,8 @@ echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $LEVEL"
 BILLED=$(jq -r '(.modelUsage // {}) | keys | join("+")' "$OUT" 2>/dev/null) || BILLED=""
 case "${BILLED:-none}" in
   none|*"$MODEL"*) ;;
-  *) echo "run-warning: no $MODEL among the models billed ($BILLED) — the fallback may have answered" ;;
+  *) printf 'run-warning: no %s among the models billed (%s) — the fallback may have answered\n' \
+       "$MODEL" "$BILLED" ;;
 esac
 # SEPARATE lines, never appended to the scope one.
 [ -n "$BASE" ] \

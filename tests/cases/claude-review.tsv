@@ -15,7 +15,7 @@
 # fixture	args	exit	expect	note
 report	-	0	scope:|Findings	a full report prints its coverage record
 nothing-to-review	-	0	scope:|нечего	a working tree with no changes is an answer, not a failure
-no-findings	-	0	scope:|(none)	a run that read the range and found nothing is a review
+no-findings	-	0	scope:|(none)|run-warning: no opus among the models billed	a run that found nothing is a review, and a fallback that answered is named
 verdict-mentions-quota	-	0	scope:|quota handling	a short verdict discussing quota handling is not a quota notice
 verdict-opens-your-usage	-	0	scope:|accounting is correct	a verdict may open by addressing the reader as "your usage"
 verdict-opens-your-organization	-	0	scope:|conventions are followed	and as "your organization"
@@ -86,7 +86,6 @@ denied-tool-calls	-	0	scope:|2 tool call(s) were denied	denied tool calls narrow
 # stderr, an edited tree, and a model that answered other than the one asked for.
 report	STUB_STDERR=deprecation:_flag_renamed	0	scope:|run warnings:|deprecation	a degraded run still reports, with its stderr attached
 report	STUB_TOUCH=repo	0	tree-warning:|read git status	a run that edited the tree says so before its findings
-no-findings	-	0	run-warning: no opus among the models billed	a fallback that answered is named, never silent
 #
 # The argument guards, which no envelope can reach: the run is refused before the
 # engine is launched, and `-` is how a case says so.
@@ -105,7 +104,6 @@ errors-with-report-shape	-	1	claude review failed:|Session crashed	a crash long 
 notice-with-leading-space	-	3	claude review unavailable:|Fable limit	whitespace in front of a notice does not make it a review
 loose-phrase-only-notice	-	3	claude review unavailable:|spend limit	a notice only the looser phrases catch is caught before the record
 context-words-without-reason	-	1	the range does not fit	an overflow named in words needs no reason code
-errors-with-report-shape	-	1	claude review failed:|Session crashed	past the shape threshold too, a crash is still a crash
 cyrillic-report-at-threshold	LC_ALL=en_US.UTF-8	0	scope:|Замечаний	a report is measured in bytes, so a UTF-8 one keeps its record
 api-error-clean-envelope	-	1	claude review failed:|upstream refused	an error the CLI announces is not a review, whatever the fields say
 blank-result-over-errors	-	3	claude review unavailable:|session limit	a blank result does not hide the errors underneath it
