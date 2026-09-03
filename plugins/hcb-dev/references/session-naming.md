@@ -6,29 +6,37 @@ worktree. It lives here rather than in any one skill because the same name is
 written by the coordinating session, by the dispatcher and by the receiver,
 and prose copies drift.
 
-The rule everything below serves: **the identifier leads, and it does not
+The rule everything below serves: **the address leads, and it does not
 change.** A title is an address — sessions resolve each other by it across
 restarts ([`session-comms.md`](session-comms.md)) — so what stands first is
-what a stranger matches on, and a name already sent out is not re-coined.
+what a stranger matches on, and a name already sent out is not re-coined. The
+address is the identifier, preceded by the role marker where the role has one.
 
 ## The shapes
 
 ```text
-master      <epic> — <topic> (master)
+master      [master] <epic> — <topic>
 batch       <epic>/<id> — <topic> (<issues>)
 standalone  <issue | nickname> — <topic>
 ```
 
-Separator ` — ` throughout, em dash. `master` is the role marker and keeps
-that spelling whatever language the topic is in; a batch needs no marker,
-since the `/` is one. The standalone shape titles a session that belongs to no
-epic and still expects to be contacted — an investigation dispatched on its
-own, a session someone will come back to by message. A session whose only
-return travels by hand needs no title from anyone; where an order expects its
-answer to come back over the wire, the order says which title to answer
+Separator ` — ` throughout, em dash. `[master]` is the role marker: it stands
+first, ahead of the identifier, and keeps that spelling and those brackets
+whatever language the topic is in. Leading is what makes it survive — a list
+of sessions truncates from the right, so a marker parked at the end is the
+first thing lost, exactly where someone is scanning for which session
+coordinates. What follows the marker is the name a session without one wears,
+so anything matching on `<epic>` matches a master exactly as it does a batch.
+A batch needs no marker, since the `/` is one.
+
+The standalone shape titles a session that belongs to no epic and still
+expects to be contacted — an investigation dispatched on its own, a session
+someone will come back to by message. A session whose only return travels by
+hand needs no title from anyone; where an order expects its answer to come
+back over the wire, the order says which title to answer
 ([`order-anatomy.md`](order-anatomy.md)).
 
-Examples: `841 — UI widgets (master)`,
+Examples: `[master] 841 — UI widgets`,
 `841/P — DX odds and ends (#896, #881)`, `514 — OCC acceptance`.
 
 ## `<epic>`
@@ -102,8 +110,8 @@ that. What gives way, in this order:
 1. **On assuming the role** — before anything else, with whatever identifier
    is already in hand: the epic's number where the assignment named one,
    otherwise the nickname. Where it carries no topic — a resume naming the
-   number and nothing else — the provisional title is the identifier and the
-   marker, `<epic> — master`, and the topic arrives with step 2 rather than
+   number and nothing else — the provisional title is the marker and the
+   identifier, `[master] <epic>`, and the topic arrives with step 2 rather than
    holding the title back. A session that was doing something else until now
    renames itself here, the assignment being the authorization; it renames
    only itself, as batches are titled by their chip or by themselves.
@@ -123,13 +131,14 @@ that. What gives way, in this order:
 - **The chip's title is the batch session's title**: a dispatcher writing the
   batch shape into the chip has titled the receiver, and every later message
   matches on it.
-- **A worktree a session cuts for itself leads with the identifier its title
-  leads with** — `<epic>-<id>` for a batch, `<epic>-master` for a master,
-  whose bare number would otherwise prefix every batch's name; a hyphen where
-  the title has a slash, since a ref is a path, and a prefix match reads the
-  two spellings as one name. One the host generated is left alone —
-  renaming a live session's directory is not a naming decision — so there the
-  title carries the address by itself.
+- **A worktree a session cuts for itself leads with its title's identifier**
+  — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
+  would otherwise prefix every batch's name; a hyphen where the title has a
+  slash, since a ref is a path, and a prefix match reads the two spellings as
+  one name. The role marker's brackets stay out of a ref, where they are shell
+  glob characters and buy nothing the trailing `-master` does not. One the
+  host generated is left alone — renaming a live session's directory is not a
+  naming decision — so there the title carries the address by itself.
 - **In a wave, the order's tag is `<epic>/<id>`** — no separate tag is coined
   (`order-anatomy.md`).
 - **A branch takes none of this.** It is named for the change it carries
