@@ -91,11 +91,12 @@ mechanisms on both forges — the entry points are in
 Where a bare `#N` would not autolink — documentation, code comments, anything read
 outside its own issue or change request — write `[#N](<url>)`.
 
-The closing keyword is the forge's own: the English word its pattern matches,
-verbatim, whatever language the body around it is written in. A translated one
-matches nothing and reports nothing — the issue is simply still open once the
-merge lands. What each forge matches, and where an instance may have redefined
-it, is `../../references/forge-docs.md`.
+The closing keyword is the forge's own — the word its pattern matches, verbatim,
+never translated to match the prose around it. Both forges match English by
+default, and only a self-managed instance can be configured to match anything
+else; a word outside the pattern matches nothing and reports nothing, so the
+issue is simply still open once the merge lands. What each forge matches is
+`../../references/forge-docs.md`.
 
 A closing keyword in the change request body closes the issue **only where the
 forge acts on it** — which it does for a request targeting the default branch, and
