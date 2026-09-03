@@ -243,14 +243,16 @@ looks_like_a_report() {
 # something the harness calls an error, and reporting that as a failure throws the
 # review away along with its coverage record. So a flagged envelope is overridden
 # only by something shaped like a report, and a clean one only needs a result.
+# A count that could not be read is not a count of zero: the CLI omits `usage` from
+# some envelopes, and treating its absence as "produced nothing" would send every
+# successful review into the failure branch — which is why the comparison below is
+# against `0` rather than for a positive number.
 REVIEWED=0
-case "$PRODUCED" in ''|unknown|0) ;; *)
-  if [ "$ERRORED" = 1 ] || [ "$TERMINAL" = "api_error" ]; then
-    looks_like_a_report && REVIEWED=1
-  elif [ -n "$RESULT" ]; then
-    REVIEWED=1
-  fi ;;
-esac
+if [ "$ERRORED" = 1 ] || [ "$TERMINAL" = "api_error" ]; then
+  looks_like_a_report && REVIEWED=1
+elif [ -n "$RESULT" ] && [ "$PRODUCED" != 0 ]; then
+  REVIEWED=1
+fi
 # A notice can stand in a clean envelope with tokens already spent, so wording is the
 # only signal left — but matched at the START of the result, never anywhere in it. A
 # notice opens with itself; a verdict opens with the verdict, whatever it goes on to
