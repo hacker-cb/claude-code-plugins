@@ -251,12 +251,16 @@ case "$PRODUCED" in ''|unknown|0) ;; *)
     REVIEWED=1
   fi ;;
 esac
-# A notice can also stand inside a clean envelope, after the model has written
-# something — tokens spent, terminal fine, and the notice still where the report
-# belongs. Shape is what keeps a review that merely discusses a limit out of this.
-if [ "$REVIEWED" = 1 ] && ! looks_like_a_report; then
+# A notice can stand in a clean envelope with tokens already spent, so wording is the
+# only signal left — but matched at the START of the result, never anywhere in it. A
+# notice opens with itself; a verdict opens with the verdict, whatever it goes on to
+# discuss. Matching anywhere cost the opposite mistake and cost it for real: a short
+# honest "no issues found — the quota handling looks correct", which is exactly what a
+# review of THIS repository writes, was thrown away as a notice. The length bound
+# keeps a report that happens to open with an error line out of it.
+if [ "$REVIEWED" = 1 ] && [ "${#RESULT}" -lt 400 ]; then
   case "$LOWER" in
-    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credits"*|*"credit balance"*|*quota*|*"switch to another model"*)
+    "you've hit your"*|"you've reached your"*|"claude ai usage limit"*|"api error"*|"error: api error"*)
       REVIEWED=0 ;;
   esac
 fi
