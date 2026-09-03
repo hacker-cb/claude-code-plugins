@@ -1,5 +1,5 @@
 {
-  "result": "Your org is out of usage · contact your admin to add credits.",
+  "result": "Your org is out of usage · contact your admin",
   "is_error": false,
   "modelUsage": {
     "claude-opus-5": {

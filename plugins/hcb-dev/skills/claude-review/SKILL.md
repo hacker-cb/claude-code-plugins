@@ -95,13 +95,12 @@ What is this engine's own:
   gives a reset time and nothing else closes it before then, while a *model* limit
   says to switch models — and §2 takes `--model`, so rerunning on another family
   closes the gap now rather than recording one.
-- **A verdict with nothing in it is still a review**, where the run itself finished:
-  one that read the range and found nothing prints its `scope:` line like any other,
-  with a verdict of a line or two beneath it, and so does one handed a working tree
-  with nothing changed in it. Pass the coverage it states; what a count of zero costs
-  that coverage is §1's reference's to say. A run that broke before it could finish is
-  the other case, and a short verdict does not survive it — the record says `failed:`
-  and quotes whatever was written.
+- **A verdict with nothing in it is still a review.** A run that read the range and
+  found nothing prints its `scope:` line like any other, with a verdict of a line or
+  two beneath it, and so does one handed a working tree with nothing changed in it —
+  and so does one cut short after writing it, under a warning that it may be
+  incomplete. Pass the coverage it states; what a count of zero costs that coverage is
+  §1's reference's to say.
 - **One case the run cannot flag for you**: a limit reached partway through comes
   back where the report belongs, under a scope line that looks complete. A review
   whose entire body is a sentence about a limit or about switching models is that

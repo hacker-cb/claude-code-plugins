@@ -1,0 +1,31 @@
+{
+  "errors": [
+    "Session crashed while writing the report.",
+    "Stack: at query (cli.js:1:1)",
+    "Stack: at loop (cli.js:2:2)",
+    "Stack: at main (cli.js:3:3)",
+    "Stack: at run (cli.js:4:4)",
+    "Context: the transcript was 180000 tokens and compaction failed twice over.",
+    "Context: retries exhausted after ten attempts against the streaming endpoint.",
+    "Diagnostic: the subagents it spawned were killed with it and left no output of their own.",
+    "Diagnostic: see the CLI's own log directory for the full trace of this session."
+  ],
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "inputTokens": 8,
+      "outputTokens": 2439,
+      "cacheReadInputTokens": 62335,
+      "cacheCreationInputTokens": 34247,
+      "webSearchRequests": 0,
+      "costUSD": 0.30622625000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "thinkingTokens": 1580,
+      "canonicalModel": "claude-opus-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": []
+}

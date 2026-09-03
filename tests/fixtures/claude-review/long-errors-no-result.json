@@ -7,7 +7,8 @@
     "Stack: at run (cli.js:4:4)",
     "Context: the transcript was 180000 tokens and the compaction step failed twice.",
     "Context: retries exhausted after ten attempts against the streaming endpoint.",
-    "Diagnostic: see ~/.claude/logs for the full trace of this session and its subagents."
+    "Diagnostic: see the CLI's own log directory for the full trace of this session.",
+    "Diagnostic: the subagents it spawned were killed with it and left no output."
   ],
   "is_error": true,
   "terminal_reason": "api_error",

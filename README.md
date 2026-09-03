@@ -43,6 +43,7 @@ external_plugins/<name>/          # thin wrapper around an external npm MCP serv
   .claude-plugin/plugin.json      #   upstream name, no version
   .mcp.json                       #   npx <pkg>@latest
 scripts/validate.sh               # structural validation (CI + local)
+tests/                            # the review scripts against saved envelopes (CI + local)
 .github/workflows/                # validate (PR/push), link-check (weekly)
 ```
 
@@ -50,6 +51,7 @@ scripts/validate.sh               # structural validation (CI + local)
 
 ```bash
 bash scripts/validate.sh         # validate marketplace, plugins, skills
+bash tests/run.sh                # run the review-script tests
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add a skill, plugin or rule, plus the naming convention.

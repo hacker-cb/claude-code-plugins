@@ -1,0 +1,21 @@
+{
+  "result": "You've reached your weekly limit. Requests are temporarily refused until Monday.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "inputTokens": 8,
+      "outputTokens": 2439,
+      "cacheReadInputTokens": 62335,
+      "cacheCreationInputTokens": 34247,
+      "webSearchRequests": 0,
+      "costUSD": 0.30622625000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "thinkingTokens": 1580,
+      "canonicalModel": "claude-opus-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": []
+}

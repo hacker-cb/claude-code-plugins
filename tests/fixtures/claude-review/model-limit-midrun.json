@@ -1,5 +1,5 @@
 {
-  "result": "Opus limit reached. Use /model to switch models.",
+  "result": "You're out of extra usage",
   "is_error": false,
   "modelUsage": {
     "claude-opus-5": {

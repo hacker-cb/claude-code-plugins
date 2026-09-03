@@ -1,5 +1,5 @@
 {
-  "result": "Opus 4.5 requires usage credits. /model to switch models.",
+  "result": "Fable 5 requires usage credits",
   "is_error": false,
   "modelUsage": {
     "claude-opus-5": {
