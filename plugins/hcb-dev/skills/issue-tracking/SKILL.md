@@ -93,9 +93,9 @@ outside its own issue or change request — write `[#N](<url>)`.
 
 The closing keyword is the forge's own — the word its pattern matches, verbatim,
 never translated to match the prose around it. That word is English on both
-forges, and one outside the pattern matches nothing and reports nothing, so the
-issue is simply still open once the merge lands. Which words a forge matches,
-and whether its pattern can be reconfigured at all, is
+forges by default, and one outside the pattern matches nothing and reports
+nothing, so the issue is simply still open once the merge lands. Which words a
+forge matches, and whether its pattern can be reconfigured at all, is
 `../../references/forge-docs.md`.
 
 A closing keyword in the change request body closes the issue **only where the
