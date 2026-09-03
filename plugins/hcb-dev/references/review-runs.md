@@ -61,14 +61,59 @@ naming the engine, so the run is recognizable in the task list.
 Detached is how it runs, not permission to answer without it: collect the finished
 task's output and read it back before answering.
 
-**Collect it yourself.** A finished background task reaches a turn that is still
-running, so ending the turn is what forfeits it. Waiting is polling the output file
-until it carries the coverage record **or the task itself has ended** — a run that
-failed before it could launch prints its failure instead of a record, and polling
-for one it will never print does not stop. What never waits is a turn closed on
-"the reviewers are still out", which in a subagent ends the work entirely and
-answers the caller with whatever the last reviewer said. Spend the wait on what
-does not depend on the answer.
+**Waiting is a blocking call, never a loop.** The engine takes minutes, and how
+those minutes are spent differs by two orders of magnitude in what it costs.
+
+**Wait on blocking windows.** One `TaskOutput` call with `block: true` and
+`timeout: 600000` holds a single turn for ten minutes; repeat it, window after
+window, until the run answers or the ceiling below is reached. Nothing is checked
+between them — the window *is* the wait.
+
+**With several runs out, a window is spent on one of them.** Collect the ones that
+have already answered before opening any window, and open the next window on the run
+most likely to return — never on the same silent one over and over while finished
+records sit unread. The ceiling below is wall-clock across the whole wait, not six
+windows per run: three reviewers do not buy three hours.
+
+**Where no blocking wait is available** — the mechanism is deprecated in the harness
+and may go — wait inside a single command instead: one call that blocks until the
+run prints one of those three lines or the window is up, and reads the file by what
+it says
+rather than by whether it is empty. What the rule below forbids is a turn per check,
+not a second of waiting: one turn per window is the same wait however it is
+spelled.
+
+**Ending the turn instead is for one case only**: an interactive session, with a
+person present, where nothing downstream is blocked on the answer. There the
+harness's completion notification is what brings the run back, and it names the
+output file to read. Two things make that case narrow. A run that hangs sends no
+notification at all, so the ceiling below never arrives and the wait is silent
+forever. And a subagent that ends its turn ends the work the review was gating,
+answering its caller with whatever the last reviewer said. **Anything autonomous —
+a subagent, a dispatched batch, an orchestrated slice — waits on the windows**, and
+whoever ends a turn while reviewers are out says which ones, and says nothing about
+what they found until their records are in hand.
+
+**Never wait by running commands in a loop** — a `sleep`, a `seq` loop, a
+background "watcher" that sleeps and re-checks. A backgrounded call returns
+instantly, so the wait becomes a spin that bills a whole turn, with the whole
+context behind it, every few seconds; sessions doing this have spent a fifth of
+their turns and a quarter of their context on nothing, and on a shared quota they
+starve the very runs they are waiting for.
+
+**A wait ends, but not soon.** These engines take minutes, and the upper rungs take
+tens of them — half an hour of silence is a run reading, not a run lost, and a
+window that expires is one window, not a verdict — open the next one. What ends a
+wait is an hour of it, counted on the clock rather than per run. Before that hour, waiting is the
+whole of the job; at it, stop and
+record what actually happened — a run that never returned is a row and a reason in
+the caller's report, not a reason to stall, and not a review to claim. Spend the
+wait itself on what does not depend on the answer.
+
+The hour is a ceiling on waiting, not a claim about how long a review may take: it
+is there because the failures that leave nothing in the output file at all —
+against which no amount of further waiting helps — now return at once, so silence
+that outlasts an hour is worth reporting rather than sitting through.
 
 **The command lives in the engine's script, and its skill names it.** Run that
 script as it stands, one plain command — an agent isolated in its own worktree has
@@ -78,9 +123,26 @@ is never the engine call, which is the memorable part: it is the flags that make
 headless run reviewable, the redirect, and the coverage record — leaving a run that
 reports as a review nobody measured.
 
+## The two lines a run prints
+
+A run prints a `started:` line the moment it launches its engine, and then nothing
+until it is done — the report is buffered to the end. So an output file that has
+stopped being empty says only that the run started:
+
+```text
+started: <engine and what fixed the run>, pid <n>, <time>
+```
+
+**What says a run finished is the record below, a failure line, or a line saying the
+reviewer was unavailable** — never a file that is merely non-empty. All three are
+answers; waiting past any of them waits for something that already came. A wait keyed to emptiness ends at the wrong moment in
+both directions: at once for a run still reading, and never for one that died
+before it could print anything.
+
 ## The coverage record
 
-Every run prints one line, before its findings and never merged into them:
+Every finished run prints one record, before its findings and never merged into
+them:
 
 ```text
 scope: <base or "working tree">, <N> files, <the level and whatever else fixed the run>
@@ -114,3 +176,23 @@ engine phrases it differently again between its own modes.
   actually spoke about.
 
 When a run fails, pass its own error through rather than guessing a cause.
+
+**A spent quota is not one of those failures, and not a review either.** Where the
+engine's account has hit its limit, the run comes back at once saying so, carrying
+the engine's notice. Nothing about the change is wrong, and no coverage was lost to
+anything the caller controls. **How it says so is the engine's own**, and its skill
+names the shape: one engine has a line of its own for this — `unavailable:` rather
+than `failed:` — and another, whose CLI hands back an empty file rather than an
+envelope, can only report it among its failures. Read the notice, not the prefix.
+**Read which limit it names.** One is the account's, and only its reset time closes
+it: report the reviewer as unavailable, in the engine's own words, and let whoever
+is completing the work decide whether to wait or proceed a reviewer short. The other
+is a single model's, and says so — where the engine takes a model, rerunning on
+another family closes the gap now, and a reviewer recorded as unavailable without
+that attempt is a gap nobody needed to accept.
+
+**Never read such a notice as a review.** A limit can arrive inside a *successful*
+envelope, with the notice where the report would be, so a run that read nothing
+prints a full file count beside it unless something checks. That is the shape of
+every fail-open here: the count is what the run was handed, and the words beside it
+are what it actually did.

@@ -245,10 +245,13 @@ saying something else.
 - [`references/review-runs.md`](references/review-runs.md) — what a review engine
   launched outside the current session owes whoever launched it: the base it is
   handed rather than left to guess, the untracked files no diff shows, the
-  background launch a review always takes, and the coverage record it hands back —
-  the `scope:` line, the separate `coverage-warning:` lines, and the rules for
-  reading them (zero files is not a pass; a count is what the run was *given*, not
-  what it read). Read wherever a review runs as its own process.
+  background launch a review always takes, how to wait for one (repeated blocking
+  windows, never a loop that sleeps and re-checks), and the two lines
+  it prints: the `started:` line that says only that it launched, and the coverage
+  record that says it finished — the `scope:` line, the separate `coverage-warning:`
+  lines, and the rules for reading them (zero files is not a pass; a count is what
+  the run was *given*, not what it read; a spent quota is not a failure of the
+  engine). Read wherever a review runs as its own process.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name takes (`<type>/[<issue>-]<name>`), the same Conventional Commits
   type carried into the commit subject and the change-request title, how a

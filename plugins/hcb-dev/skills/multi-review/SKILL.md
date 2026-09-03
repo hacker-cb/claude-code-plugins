@@ -186,11 +186,24 @@ gets recorded as having read the change.
 about a run that has not finished — and the one status that fits an empty cell,
 `n/a`, is the one the coverage gate treats as closed.
 
-**Waiting is polling, not stopping.** Ending the turn here answers the caller with
-one reviewer's report in place of this skill's own — and where this skill runs
-inside a subagent, that also ends the work the review was gating. Poll each
-detached run until its coverage record is there; if one never returns, that is a
-row and a reason, not a reason to stall.
+**How to wait is [`../../references/review-runs.md`](../../references/review-runs.md)'s,
+and this skill is the caller it was written for** — several runs out at once, and
+never a session that may end its turn: it runs inside subagents and dispatched
+sessions, where doing so ends the work the review was gating. Ending the turn would
+not answer the caller anyway, since a reviewer's own report is not this skill's. And
+a reviewer that has not returned by the ceiling is a row and a reason, never an
+empty cell and never a stall.
+
+**A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage
+gate treats as closed, so recording a reviewer that did not run passes a completion
+with it missing — which is what `UNAVAILABLE` exists for. The engine's own notice
+goes below the table; the cell stays short.
+
+**Read the notice before recording it, because one kind is recoverable now.** An
+account limit names a reset time and nothing else closes it. A *model* limit says
+to switch models — and `claude-review` takes `--model`, so rerunning it on another
+family costs one command and turns the gap into coverage. Try that before recording
+`UNAVAILABLE`, and record it with which model was tried.
 
 **A reviewer that edited the tree says so, and that line is not coverage.** It
 belongs above the table with the findings, in the caller's own words: what a

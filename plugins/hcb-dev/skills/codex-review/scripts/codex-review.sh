@@ -111,6 +111,12 @@ if [ -n "$TOP" ]; then
   case "$OUT" in "$TOP"/*)
     echo "codex review failed: TMPDIR is inside the repository under review"; exit 1 ;; esac
 fi
+# Printed before the engine starts, and this run's only output until it finishes: the
+# report below is buffered to the end, so an empty output file otherwise says both
+# "never launched" and "still reading", and the caller cannot tell those apart. What
+# ends the caller's wait is the record below or a failure line — never a file that
+# merely stopped being empty.
+echo "started: codex $MODEL at $EFFORT over ${BASE:-working tree}, pid $$, $(date +%H:%M:%S)"
 # `codex exec review`, not the top-level `codex review`: the latter has no `-o`,
 # which is what splits the verdict from the transcript.
 # `-s read-only` states the write policy here rather than inheriting it from the

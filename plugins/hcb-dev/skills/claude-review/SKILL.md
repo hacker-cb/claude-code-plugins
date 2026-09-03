@@ -41,11 +41,13 @@ The run is one command, and everything it needs arrives as a flag:
 bash "${CLAUDE_PLUGIN_ROOT}/skills/claude-review/scripts/claude-review.sh" \
   --base "<the ref resolved in §1 — drop the flag entirely for a working-tree review>" \
   --level "<the rung the caller named, or medium>" \
+  --model "<the model the caller named — drop the flag to take the newest Opus>" \
   --narrow "<a path, or a focus such as 'only error handling' — drop the flag for none>"
 ```
 
 Start at `medium`. A caller — a person or another skill — may hand you the base,
-the level or a narrowing; an explicit one wins over anything resolved here.
+the level, the model or a narrowing; an explicit one wins over anything resolved
+here.
 
 Inside the sandbox the run executes the reviewed repository's own code — its build,
 its tests, the probe that settles a finding — which is what a review at this rung is
@@ -68,8 +70,10 @@ record.
 
 ## 3. Hand back the findings
 
-The script prints its `scope:` line, any `coverage-warning:` lines, and then the
-review — §1's reference owns how all three are read back.
+The script prints a `started:` line as it launches the engine, and then nothing
+until the run is done — §1's reference says why that line is there and what it does
+not mean. What a finished run prints is the `scope:` line, any `coverage-warning:`
+lines, and then the review — §1's reference owns how all three are read back.
 
 Three things are this engine's own:
 
@@ -85,3 +89,13 @@ Three things are this engine's own:
 - A missing CLI, an expired login and a non-repository all land in the
   `claude review failed:` branch, where the diagnosis is whichever of the envelope,
   stdout or stderr carried it.
+- **A spent quota gets its own line**, `claude review unavailable:`, and exits 3 —
+  it is neither a failure of the engine nor a review. The line carries the engine's
+  own notice, and **which limit it names decides what to do next**: an account limit
+  gives a reset time and nothing else closes it before then, while a *model* limit
+  says to switch models — and §2 takes `--model`, so rerunning on another family
+  closes the gap now rather than recording one. The separate line exists because
+  such a notice can arrive inside a *successful* envelope, where it is
+  indistinguishable — until the run's own token count is checked — from a review
+  that finished with nothing to say, and would print with a full file count beside
+  it.

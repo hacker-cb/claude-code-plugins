@@ -3,9 +3,10 @@
 # caller compares against, then the review. Invoked by the claude-review skill;
 # every value it needs arrives as a flag, so the call site stays one plain command.
 #
-# Usage: claude-review.sh [--base <ref>] [--level <rung>] [--narrow <prose>]
+# Usage: claude-review.sh [--base <ref>] [--level <rung>] [--model <name>] [--narrow <prose>]
 #   --base    the ref the range starts at; omitted reviews the working tree alone
 #   --level   low|medium|high|xhigh|max (default medium)
+#   --model   the model to review with; omitted takes the newest Opus
 #   --narrow  what narrows the review — a path, or a focus such as "only error handling"
 
 set -u
@@ -18,6 +19,20 @@ command -v jq >/dev/null 2>&1 \
 BASE=""
 LEVEL="medium"
 NARROW=""
+# An alias, not a version: the CLI resolves `opus` to the newest model of that
+# family, so this neither ages nor needs a catalog to read — and the CLI has no
+# catalog command to read one from. Opus rather than whatever the machine is set to,
+# because a run inheriting a person's own model inherits that model's quota too:
+# a session working on `fable` spends the quota its own review then needs, and the
+# review fails on a limit that has nothing to do with the change. A caller who wants
+# another model says so, and a deployment that does not carry this family falls back
+# rather than failing every run — the fallback is passed below, and the scope line
+# reports whichever model actually answered, so a fallback is never silent.
+MODEL="opus"
+# A family, like the one above, not a version: the CLI resolves it, and a run on a
+# deployment entitled to neither still fails — visibly, in the branch that names the
+# engine's own words.
+FALLBACK="sonnet"
 
 # A flag with no value exits like any other refusal — saying so. Silent here means a
 # detached run whose output file holds nothing at all, which reads as a run that
@@ -27,6 +42,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --base)   need --base "$#";   BASE="$2";   shift 2 ;;
     --level)  need --level "$#";  LEVEL="$2";  shift 2 ;;
+    --model)  need --model "$#";  MODEL="$2";  shift 2 ;;
     --narrow) need --narrow "$#"; NARROW="$2"; shift 2 ;;
     *) echo "claude review failed: unknown argument '$1'"; exit 2 ;;
   esac
@@ -43,6 +59,12 @@ case "$LEVEL" in low|medium|high|xhigh|max) ;;
   *) echo "claude review failed: '$LEVEL' is not a rung"; exit 1 ;; esac
 case "$NARROW" in *--*)
   echo "claude review failed: the narrowing may not contain an option"; exit 1 ;; esac
+# The model reaches an argv slot of its own rather than that string, so nothing it
+# holds is parsed as a flag — the guard is here because a value that looks like one
+# is a caller error worth naming rather than passing on, and because the slot it
+# lands in is one flag away from the ones above.
+case "$MODEL" in *--*|"")
+  echo "claude review failed: '$MODEL' is not a model"; exit 1 ;; esac
 
 if [ -n "$BASE" ]; then
   # Empty covers both an unknown ref and no shared history, and the two are not
@@ -98,6 +120,7 @@ GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
 GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
 SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
   disableAllHooks:true,
+  env:{CLAUDE_CODE_RETRY_WATCHDOG:"0"},
   sandbox:{
     enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
     network:{strictAllowlist:true},
@@ -120,7 +143,18 @@ tree_state() {
   git ls-files --others --exclude-standard -z \
     | while IFS= read -r -d "" f; do printf '%s ' "$f"; git hash-object -- "$f"; done
 }
+# Positional parameters, not an interpolated string: a fallback naming the family
+# already requested is not a fallback, and dropping the flag is what says so.
+# Everything the flag parsing above read is consumed by now, so `$@` is free.
+set -- --model "$MODEL"
+[ "$FALLBACK" = "$MODEL" ] || set -- "$@" --fallback-model "$FALLBACK"
 BEFORE="$(tree_state)"
+# Printed before the engine starts, and this run's only output until it finishes: the
+# report below is buffered to the end, so an empty output file otherwise says both
+# "never launched" and "still reading", and the caller cannot tell those apart. What
+# ends the caller's wait is the record below or a failure line — never a file that
+# merely stopped being empty.
+echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%M:%S)"
 # Settings load as they do in any session — the hooks among them switched off above,
 # and everything the reviewed repository sets arriving with them, this run's own
 # sandbox block included: list keys merge across sources, so what is set there is a
@@ -139,11 +173,25 @@ BEFORE="$(tree_state)"
 # rule holds in both places. `--strict-mcp-config` would cover the first half more
 # cheaply, by starting no servers at all, but the CLI refuses it wherever an
 # enterprise MCP config is present, and refuses the whole run with it.
+# `CLAUDE_CODE_RETRY_WATCHDOG` is off for this run alone, whatever the settings that
+# reach it say. Where the account's quota is spent, that watchdog holds the process
+# until the limit resets instead of returning — which is right for an interactive
+# session, whose person comes back to it, and wrong here: another session is waiting
+# on this run, and hours of silence reach it as an output file that never fills,
+# which reads as a hang rather than as a quota to come back to. Switched off, the
+# same case arrives as the envelope below, carrying the reset time the caller can
+# act on. It is set twice, in the environment and in the settings above, because
+# the two are applied in an order this cannot see: measured here the environment
+# wins — a run launched with the prefix reports `0` while the same run without it
+# reports the settings' `1` — but a settings block applied afterwards would undo
+# exactly that, and the value belongs to this run either way. Neither copy reaches
+# the user's own sessions.
 # stdin is closed because the run waits on it otherwise;
 # stdout carries the JSON envelope, stderr its own file so a warning cannot corrupt
 # the JSON read below.
+CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
-  --effort "$LEVEL" --output-format json \
+  "$@" --effort "$LEVEL" --output-format json \
   --permission-mode auto \
   --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
@@ -155,41 +203,145 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
 # still edited the tree, and that is the case the warning exists for.
 [ "$BEFORE" = "$(tree_state)" ] \
   || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
-# A successful envelope does not prove a review happened: a run killed mid-flight
-# still reports success with an EMPTY result, which would print as a clean review.
-if jq -e '.is_error == false and ((.result // "") | length) > 0' "$OUT" >/dev/null 2>&1; then
-  # The coverage record belongs to a run that happened. Printed before the branch
-  # below, it would put a file count against a run that read nothing.
-  echo "scope: ${BASE:-working tree}, $COVERED files, $LEVEL"
-  # SEPARATE lines, never appended to the scope one.
-  [ -n "$BASE" ] \
-    || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
-  [ "$OUTSIDE" = 0 ] \
-    || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
-  # Its own line too, and not a coverage one: this says what the run DID, not what it
-  # read. The count above was taken before the run and stops describing the tree here.
-  # A denial does not void the run — it narrows it, and a narrowed run is partial.
-  # The fallback keeps a failed count from printing a warning with a blank number.
-  DENIED=$(jq -r '(.permission_denials // []) | length' "$OUT" 2>/dev/null) || DENIED=0
-  [ "${DENIED:-0}" = 0 ] \
-    || echo "coverage-warning: $DENIED tool call(s) were denied — the run read less than the range"
-  jq -r '.result' "$OUT"
-  # `if`, not `[ … ] && { … }`: as the last command of the branch that form exits
-  # non-zero whenever stderr was empty, marking every clean review as a failure.
-  if [ -s "$OUT.log" ]; then echo "run warnings:"; cat "$OUT.log"; fi
-else
-  # Three places the diagnosis can be, and the run picks which: the envelope when
-  # it failed inside a successful process, stdout when what came back was not an
-  # envelope at all, stderr when the process itself failed. Capture the first and
-  # fall back on emptiness, not on `jq`'s exit status — valid JSON missing every
-  # field exits 0 printing nothing, and that silence is the case worth catching.
-  echo "claude review failed:"
-  DIAG=$(jq -r '[.subtype, .result,
-                 ((.permission_denials // []) | if length > 0 then tostring else empty end)]
-                | map(select(. != null and . != "")) | .[]' "$OUT" 2>/dev/null)
-  if [ -n "$DIAG" ]; then printf '%s\n' "$DIAG"; else head -c 500 "$OUT"; fi
-  tail -20 "$OUT.log"
-  # Non-zero, so a detached run reads as failed rather than as a review with nothing
-  # in it — the argument guards above exit non-zero for the same reason.
-  exit 1
+# An envelope that was never written is its own case, and reaches none of the checks
+# below: every one of them reads a field, and a file with no fields answers each the
+# same way a healthy run would. Whatever the engine managed to say went to stderr.
+[ -s "$OUT" ] || {
+  # An envelope that was never written reaches none of the checks below: each reads a
+  # field, and a file with no fields answers every one the way a healthy run would.
+  # Whatever the engine managed to say went to stderr.
+  echo "claude review failed: the run wrote no envelope"
+  tail -20 "$OUT.log"; exit 1; }
+
+RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
+# Lowercased for matching only — `$RESULT` prints as the engine wrote it. The same
+# notice arrives capitalised in one message and not in another, and a pattern that
+# tracks case would decide a caller's next move on a capital letter.
+LOWER=$(printf '%s' "$RESULT" | tr '[:upper:]' '[:lower:]')
+# `"unknown"`, never `0`, for a count that could not be read: a missing field must
+# not read as a run that produced nothing. `jq` on an empty file exits 0 printing
+# nothing, so the assignment's own failure branch never fires — hence the second
+# check.
+PRODUCED=$(jq -r '.usage.output_tokens // "unknown"' "$OUT" 2>/dev/null) || PRODUCED=""
+[ -n "$PRODUCED" ] || PRODUCED="unknown"
+TERMINAL=$(jq -r '.terminal_reason // ""' "$OUT" 2>/dev/null) || TERMINAL=""
+ERRORED=0; jq -e '.is_error == true' "$OUT" >/dev/null 2>&1 && ERRORED=1
+
+# What separates a report from a notice. A review at any rung comes back long and in
+# several lines; every notice these engines emit is a sentence or two, whatever it
+# says. Shape, not wording — wording is what kept slipping, since each notice is
+# phrased by whoever wrote that code path.
+looks_like_a_report() {
+  [ "${#RESULT}" -ge 400 ] || return 1
+  [ "$(printf '%s\n' "$RESULT" | wc -l | tr -d ' ')" -ge 5 ]
+}
+
+# Did a review happen? Neither `is_error` nor the terminal reason settles it alone.
+# They do not prove one: a run killed mid-flight reports success with an empty result,
+# and a spent quota arrives with its notice where the report belongs. They do not
+# disprove one either: a model can write a full report and the turn still end on
+# something the harness calls an error, and reporting that as a failure throws the
+# review away along with its coverage record. So a flagged envelope is overridden
+# only by something shaped like a report, and a clean one only needs a result.
+# A count that could not be read is not a count of zero: the CLI omits `usage` from
+# some envelopes, and treating its absence as "produced nothing" would send every
+# successful review into the failure branch — which is why the comparison below is
+# against `0` rather than for a positive number.
+REVIEWED=0
+if looks_like_a_report; then
+  # Something shaped like a report is a report, whatever the counters say. They can
+  # say nothing useful: `/code-review` finishing as a local slash command leaves the
+  # top-level token counter at zero while its own reviewers ran, so requiring tokens
+  # here discarded a complete review and its coverage record.
+  REVIEWED=1
+elif [ "$ERRORED" = 0 ] && [ "$TERMINAL" != "api_error" ] && [ -n "$RESULT" ] && [ "$PRODUCED" != 0 ]; then
+  # Not report-shaped, so the envelope has to vouch for it: a clean run that spent
+  # tokens and has something to show. A short verdict lands here.
+  REVIEWED=1
 fi
+# A notice can stand in a clean envelope with tokens already spent, so wording is the
+# only signal left — but matched at the START of the result, never anywhere in it. A
+# notice opens with itself; a verdict opens with the verdict, whatever it goes on to
+# discuss. Matching anywhere cost the opposite mistake and cost it for real: a short
+# honest "no issues found — the quota handling looks correct", which is exactly what a
+# review of THIS repository writes, was thrown away as a notice. The length bound
+# keeps a report that happens to open with an error line out of it.
+if [ "$REVIEWED" = 1 ] && [ "${#RESULT}" -lt 400 ]; then
+  case "$LOWER" in
+    "you've hit your"*|"you've reached your"*|"you're out of"*|"your org is out"*|"claude ai usage limit"*|"api error"*|"error: api error"*)
+      REVIEWED=0 ;;
+  esac
+fi
+
+if [ "$REVIEWED" = 0 ]; then
+  case "$LOWER" in
+    # Transient, and clears on its own: re-running is the whole fix. First, because
+    # one of these notices denies being a usage limit in a sentence containing the
+    # words — the quota arm would take it and send the caller to wait for a reset.
+    *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*)
+      echo "claude review failed: $RESULT"
+      echo "(transient — re-running the same command is the fix)"
+      tail -20 "$OUT.log"; exit 1 ;;
+    # The range was too big for the model, not the account out of room for it: a
+    # smaller range or another model closes this, and waiting never does.
+    *"too large"*|*exceeds*|*"context window"*|*"token limit"*)
+      echo "claude review failed: $RESULT"
+      echo "(the range does not fit — narrow it, or review it in parts)"
+      tail -20 "$OUT.log"; exit 1 ;;
+    # Named phrases, never a bare "limit": every notice above carries that word too.
+    # A quota is not a failure of the engine — the notice names a reset time or
+    # another model, and both are things a caller can act on.
+    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credits"*|*"credit balance"*|*"out of usage"*|*"out of extra usage"*|*"add funds"*|*quota*|*"switch to another model"*)
+      echo "claude review unavailable: $RESULT"; exit 3 ;;
+    "")
+      # Nothing to quote, so the envelope is the only diagnosis there is — stderr is
+      # routinely empty in exactly this case.
+      echo "claude review failed: the run ended without producing anything"
+      head -c 500 "$OUT"; tail -20 "$OUT.log"; exit 1 ;;
+    *)
+      echo "claude review failed:"; printf '%s\n' "$RESULT"
+      tail -20 "$OUT.log"; exit 1 ;;
+  esac
+fi
+
+# Past the branch above, a review happened.
+# The model asked for, not one picked out of the bill: `modelUsage` aggregates the
+# main loop with every subagent and helper call, and nothing in the envelope ties a
+# model to the result — so naming the biggest spender would assert what cannot be
+# read. What the bill can say is that the family asked for is not on it, which is
+# the case worth a line.
+echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $LEVEL"
+BILLED=$(jq -r '(.modelUsage // {}) | keys | join("+")' "$OUT" 2>/dev/null) || BILLED=""
+case "${BILLED:-none}" in
+  none|*"$MODEL"*) ;;
+  *) echo "run-warning: no $MODEL among the models billed ($BILLED) — the fallback may have answered" ;;
+esac
+# SEPARATE lines, never appended to the scope one.
+[ -n "$BASE" ] \
+  || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
+[ "$OUTSIDE" = 0 ] \
+  || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
+# Its own line, and not a coverage one: the envelope called this run an error while
+# its model wrote a report, so the report stands and the verdict is worth knowing.
+# A coverage line, not a run one: a report salvaged from a run that ended badly can be
+# cut off mid-finding, and nothing in it says where it stopped — a review has no syntax
+# to check completeness against. What the caller can act on is knowing the count above
+# describes the range handed in rather than how far the report got.
+if [ "$ERRORED" = 1 ] || [ "$TERMINAL" = "api_error" ]; then
+  echo "coverage-warning: the run ended on an error and its report may be cut short — the findings stand, the count may not"
+fi
+# Its own line too, and not a coverage one: this says what the run DID, not what it
+# read. The count above was taken before the run and stops describing the tree here.
+# A denial does not void the run — it narrows it, and a narrowed run is partial.
+# The fallback keeps a failed count from printing a warning with a blank number.
+DENIED=$(jq -r '(.permission_denials // []) | length' "$OUT" 2>/dev/null) || DENIED=0
+[ "${DENIED:-0}" = 0 ] \
+  || echo "coverage-warning: $DENIED tool call(s) were denied — the run read less than the range"
+jq -r '.result' "$OUT"
+# `if`, not `[ … ] && { … }`: as the last command of the branch that form exits
+# non-zero whenever stderr was empty, marking every clean review as a failure.
+if [ -s "$OUT.log" ]; then echo "run warnings:"; cat "$OUT.log"; fi
+# The generic failure branch is gone: every path that is not a review now exits above,
+# under the reason it exits for. What used to reach here without one — an envelope
+# with no fields, a body that was not an envelope at all — is the "" arm and the
+# no-envelope guard.
