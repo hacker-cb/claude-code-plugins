@@ -98,9 +98,17 @@ Unlike `plugins/hcb-*`, wrappers use the **upstream package name** (no `hcb-` pr
 
 ```bash
 bash scripts/validate.sh         # must pass (0 errors)
+bash tests/run.sh                # must pass (0 failed)
 ```
 
-CI runs the same structural validation plus the official `claude plugin validate`.
+CI runs the same structural validation and the same tests, plus the official
+`claude plugin validate`.
+
+The tests cover the review scripts' classification of an engine's result envelope —
+review, failure, or reviewer that could not run — against saved envelopes, with a stub
+standing in for the CLI. They need `jq` and a git checkout, and nothing else: no
+engine, no account, no network. What each case holds is in
+[`tests/README.md`](tests/README.md), which is also where the rule for adding one is.
 
 A pointer to another file in this repo is a markdown link whose path is
 **relative to the file it is written in**. `scripts/validate.sh` takes that as

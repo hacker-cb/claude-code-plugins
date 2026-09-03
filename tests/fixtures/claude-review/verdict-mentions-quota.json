@@ -1,0 +1,10 @@
+{
+  "result": "No issues found — the quota handling looks correct and the usage limit path is covered.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

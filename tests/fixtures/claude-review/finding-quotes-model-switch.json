@@ -1,0 +1,10 @@
+{
+  "result": "The suffix `/model to switch models.` is machine text, so anchoring on it is sound.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

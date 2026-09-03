@@ -1,0 +1,12 @@
+{
+  "result": "You've reached your weekly limit — the rate limit window resets on Monday at 09:00.",
+  "is_error": true,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "api_error",
+  "api_error_status": 429
+}

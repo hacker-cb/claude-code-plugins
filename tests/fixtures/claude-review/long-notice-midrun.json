@@ -1,0 +1,10 @@
+{
+  "result": "You've hit your session limit for Opus. Usage resets at 11:20pm Europe/Moscow, and until then this account cannot start another run on this model. To keep working before the reset, switch to another family with /model, or ask an administrator to raise the allowance for the organization. Progress on the current session has been saved and will be restored when the limit lifts. See claude.ai/admin-settings/usage for the current utilization of every window.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

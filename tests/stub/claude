@@ -1,0 +1,20 @@
+#!/bin/sh
+# Stands in for the `claude` CLI: prints the envelope the case names and nothing
+# else, so the script under test parses a real result message without an engine, a
+# network or an account behind it.
+#
+# Everything below is optional and driven by the case, so that a run's observable
+# surface — the flags it was launched with, what it wrote to stderr, whether it
+# touched the tree, how it exited — can be asserted instead of assumed.
+
+# Proof that THIS answered, rather than some `claude` further down PATH.
+[ -z "${STUB_MARKER_FILE:-}" ] || : > "$STUB_MARKER_FILE"
+# The argv the script built, one argument per line, for cases that pin the flags.
+[ -z "${STUB_ARGV_FILE:-}" ] || printf '%s\n' "$@" > "$STUB_ARGV_FILE"
+# A warning on stderr, which the script collects into its `run warnings:` block.
+[ -z "${STUB_STDERR:-}" ] || printf '%s\n' "$STUB_STDERR" >&2
+# A file written inside the reviewed tree, which is what `tree-warning:` detects.
+[ -z "${STUB_TOUCH:-}" ] || : > "$STUB_TOUCH"
+
+[ -z "${STUB_ENVELOPE:-}" ] || cat "$STUB_ENVELOPE"
+exit "${STUB_EXIT:-0}"

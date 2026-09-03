@@ -1,0 +1,6 @@
+{
+  "result": "API Error: 401 {\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"invalid bearer token\"}}\nThe credentials this run inherited were rejected at the first call.\nRetried ten times against the streaming endpoint, each attempt refused identically.\nNo request was billed and no model was reached during this run at all.\nHint: the OAuth token in the inherited settings has expired.\nHint: run the CLI once interactively to refresh it, then launch this script again.\nHint: a settings file further up the tree may be supplying a stale key.",
+  "is_error": false,
+  "modelUsage": {},
+  "permission_denials": []
+}

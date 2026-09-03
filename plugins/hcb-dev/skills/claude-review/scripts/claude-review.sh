@@ -94,7 +94,16 @@ fi
 OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")" && [ -n "$OUT" ] \
   || { echo "claude review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }
 # Armed before the guard below, or that guard's exit leaves the file it just made.
-trap 'rm -f "$OUT" "$OUT.log"' EXIT
+# The run publishes its own pid below, so a caller can stop it — and stopping it must
+# stop the engine too. On EXIT alone the temp files went and the child lived on,
+# spending an account's quota on a review whose output nobody could read any more.
+ENGINE_PID=""
+stop_engine() {
+  [ -z "$ENGINE_PID" ] || kill "$ENGINE_PID" 2>/dev/null || true
+}
+trap 'stop_engine; rm -f "$OUT" "$OUT.log"' EXIT
+trap 'stop_engine; rm -f "$OUT" "$OUT.log"; exit 130' INT
+trap 'stop_engine; rm -f "$OUT" "$OUT.log"; exit 143' TERM
 # The report lives outside the repository under review; inside, it becomes an
 # untracked file the next run reads as part of the change. Through a variable: an
 # empty expansion inline would leave the pattern `/*`, matching every absolute path.
@@ -140,8 +149,22 @@ tree_state() {
   # main repository's shared .git, and a moved ref there shows up nowhere else here.
   git for-each-ref --format='%(refname) %(objectname)'
   git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD
-  git ls-files --others --exclude-standard -z \
-    | while IFS= read -r -d "" f; do printf '%s ' "$f"; git hash-object -- "$f"; done
+  # The names are already listed by `git status` above, so what is needed here is a
+  # snapshot of untracked CONTENT. One pass over the list and one `hash-object` for
+  # the batch, rather than a process per file: this runs twice per review, and
+  # spawning it per path put minutes into a tree that merely has an un-ignored build
+  # directory in it. Reading stays NUL-delimited, so a path with a newline in it is
+  # still seen — it just cannot travel in a batch `--stdin-paths` splits on newlines,
+  # so it gets a call of its own, and being vanishingly rare it costs nothing.
+  newline=$(printf '\n')
+  batched=""
+  while IFS= read -r -d "" f; do
+    case "$f" in
+      *"$newline"*) printf '%s ' "$f"; git hash-object -- "$f" ;;
+      *) batched="$batched$f$newline" ;;
+    esac
+  done < <(git ls-files --others --exclude-standard -z)
+  [ -z "$batched" ] || printf '%s' "$batched" | git hash-object --stdin-paths 2>/dev/null || true
 }
 # Positional parameters, not an interpolated string: a fallback naming the family
 # already requested is not a fallback, and dropping the flag is what says so.
@@ -197,7 +220,10 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   --tools "Bash,Read,Grep,Glob,Agent" \
   --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
   --disallowedTools "mcp__*,Edit,Write,NotebookEdit" \
-  < /dev/null > "$OUT" 2> "$OUT.log"
+  < /dev/null > "$OUT" 2> "$OUT.log" &
+ENGINE_PID=$!
+wait "$ENGINE_PID"
+ENGINE_PID=""
 
 # Before the branch below, not inside it: a run that edited the tree and then died
 # still edited the tree, and that is the case the warning exists for.
@@ -207,100 +233,329 @@ claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
 # below: every one of them reads a field, and a file with no fields answers each the
 # same way a healthy run would. Whatever the engine managed to say went to stderr.
 [ -s "$OUT" ] || {
-  # An envelope that was never written reaches none of the checks below: each reads a
-  # field, and a file with no fields answers every one the way a healthy run would.
-  # Whatever the engine managed to say went to stderr.
   echo "claude review failed: the run wrote no envelope"
   tail -20 "$OUT.log"; exit 1; }
 
 RESULT=$(jq -r '.result // ""' "$OUT" 2>/dev/null) || RESULT=""
+# The error subtypes have no `result` field at all — their schema carries `errors`
+# instead — so without this a run that ended on its turn limit or its budget prints
+# its failure line above an empty quotation. What comes from there is a diagnosis and
+# never a report, which the flag below keeps the shape test from forgetting.
+FROM_ERRORS=0
+if [ -z "$(printf '%s' "$RESULT" | tr -d '[:space:]')" ]; then
+  RESULT=$(jq -r '(.errors // []) | join("\n")' "$OUT" 2>/dev/null) || RESULT=""
+  [ -z "$RESULT" ] || FROM_ERRORS=1
+fi
 # Lowercased for matching only — `$RESULT` prints as the engine wrote it. The same
 # notice arrives capitalised in one message and not in another, and a pattern that
 # tracks case would decide a caller's next move on a capital letter.
 LOWER=$(printf '%s' "$RESULT" | tr '[:upper:]' '[:lower:]')
-# `"unknown"`, never `0`, for a count that could not be read: a missing field must
-# not read as a run that produced nothing. `jq` on an empty file exits 0 printing
-# nothing, so the assignment's own failure branch never fires — hence the second
-# check.
-PRODUCED=$(jq -r '.usage.output_tokens // "unknown"' "$OUT" 2>/dev/null) || PRODUCED=""
-[ -n "$PRODUCED" ] || PRODUCED="unknown"
+# And the same text with everything that moves a notice off its own first character
+# taken off the front, because an anchor is worthless against a start that shifts.
+# Three things do that, and all three are the CLI's own doing rather than the
+# notice's: leading whitespace, the `API Error:` preamble it puts in front of a
+# relayed refusal, and the JSON body it relays that refusal inside. The repository's
+# own captured envelopes carry the second (`Failed to authenticate. API Error: 403`)
+# and the third, so neither is hypothetical.
+NOTICE=$RESULT
+case "$LOWER" in
+  *"api error:"*)
+    NOTICE=$(printf '%s' "$NOTICE" | sed -e 's/.*[Aa][Pp][Ii] [Ee]rror:[[:space:]]*//') ;;
+esac
+case "$NOTICE" in
+  *'{'*'"message"'*)
+    unwrapped=$(printf '%s' "$NOTICE" \
+      | sed -n 's/.*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    [ -z "$unwrapped" ] || NOTICE=$unwrapped ;;
+esac
+# The status code the preamble leaves behind, then the whitespace in front of the
+# sentence itself.
+NOTICE=$(printf '%s' "$NOTICE" | sed -e 's/^[0-9][0-9][0-9][[:space:]]*//' \
+                                    -e 's/^[[:space:]]*//' -e 's/^[·:-][[:space:]]*//')
+LOWER_NOTICE=$(printf '%s' "$NOTICE" | tr '[:upper:]' '[:lower:]')
+# The same text with every space gone, for the emptiness tests alone: a result of
+# blanks and newlines is a run that said nothing, and `-n` on the raw string would
+# call it a review with an empty body.
+SAID=$(printf '%s' "$RESULT" | tr -d '[:space:]')
+
+# Did a model say anything at all? `modelUsage` bills every call the run made — the
+# main loop, each subagent, each helper — while `usage` is documented as the main
+# agent loop alone. `/code-review` runs as a local slash command whose own reviewers
+# work outside that loop, so `usage.output_tokens` reads 0 on every run of this
+# script, a full report and a dead engine alike, and only `modelUsage` tells those
+# apart. Empty means no model produced a word, which makes everything in `.result`
+# the CLI's own writing: a notice, an error, never a review.
+SPOKE=0
+jq -e '[(.modelUsage // {})[] | .outputTokens // 0] | add // 0 | . > 0' "$OUT" >/dev/null 2>&1 && SPOKE=1
+# Why the query loop ended, taken from the CLI's own closed set of reasons rather
+# than from anything phrased at the point of failure. Unset is not a missing field:
+# the schema states the loop was bypassed, which is what a local slash command does.
 TERMINAL=$(jq -r '.terminal_reason // ""' "$OUT" 2>/dev/null) || TERMINAL=""
+# The CLI sorts those reasons into failures and endings, and the split is followed
+# rather than re-invented: a run stopped at its turn limit, by a hook, or by an abort
+# has whatever it wrote, while a run that hit an API error or filled its context has
+# nothing to stand on. Cut short is not the same as broken — the first still reports,
+# under the warning below. The reasons in neither list — a deferred tool, a turn sent
+# to the background, a clean finish — are endings that cost the report nothing, and
+# they earn no warning.
+LOOP_FAILED=0
+LOOP_CUT=0
+case "$TERMINAL" in
+  blocking_limit|rapid_refill_breaker|prompt_too_long|image_error|model_error|api_error|\
+  malformed_tool_use_exhausted|budget_exhausted|structured_output_retry_exhausted|\
+  tool_deferred_unavailable|turn_setup_failed) LOOP_FAILED=1 ;;
+  aborted_streaming|aborted_tools|stop_hook_prevented|hook_stopped|max_turns) LOOP_CUT=1 ;;
+esac
+# The HTTP status behind an API error, where the envelope carries one. It narrows
+# what kind of refusal it was and never names it on its own: a rate limit is a 429
+# and so is a spent allowance, while a spent balance is rejected as a plain 400, and
+# an unusable login is a 401 or a 403. Which is why the branch below reads the notice
+# first and falls back on the status only where the notice named no limit.
+STATUS=$(jq -r '.api_error_status // ""' "$OUT" 2>/dev/null) || STATUS=""
 ERRORED=0; jq -e '.is_error == true' "$OUT" >/dev/null 2>&1 && ERRORED=1
 
-# What separates a report from a notice. A review at any rung comes back long and in
-# several lines; every notice these engines emit is a sentence or two, whatever it
-# says. Shape, not wording — wording is what kept slipping, since each notice is
-# phrased by whoever wrote that code path.
+# A text that CITES a notice rather than being one: the citation is marked, and the
+# CLI's own notices carry no marks. The comparison is against `$NOTICE`, after the
+# JSON body has been unwrapped — a payload's own quotation marks are the CLI's, not a
+# reviewer's, and reading them as a citation is what let a wrapped limit notice pass
+# for a throttle.
+cites_a_notice() {
+  case "$NOTICE" in *'`'*|*'"'*) return 0 ;; esac
+  return 1
+}
+# The fragments the CLI writes into its own notices and a review never writes: an
+# instruction to run a command, or the phrase that precedes one. Matched anywhere,
+# because a notice can open with the model's name and so reach no anchor at all.
+# "Switch to another model" is deliberately absent — a review recommending a larger
+# model writes exactly that sentence, and this repository's own script advises it.
+says_cli_notice() {
+  # A review that quotes one of these fragments marks the quotation — backticks for a
+  # literal, quotation marks around a sentence — and reviews of THIS file quote them
+  # constantly, since the fragments are written a few lines below. The CLI's own
+  # notices carry neither mark, so their presence is what separates the two. The test
+  # is against `$NOTICE`, whose JSON unwrapping has already removed the payload's own
+  # quotation marks: those belong to the CLI, not to a reviewer citing it.
+  cites_a_notice && return 1
+  case "$LOWER_NOTICE" in
+    *"requires usage credits"*|*"/model to switch models"*|*"switch models with /model"*|\
+    *"run /usage-credits"*|*"required for long context"*) return 0 ;;
+  esac
+  return 1
+}
+# The openings, in one place because they are asked about from two. A notice opens
+# with itself; a verdict opens with the verdict, whatever it goes on to discuss. Each
+# is the notice as far as it is fixed, never the words it starts with: a review of the
+# seat-type branch opens "your seat type validation is correct", and an anchor stopping
+# at "your seat type" would file that as an allowance. Both spellings of the org one,
+# because the CLI writes "your org is out of usage" in one message and "your
+# organization is out of usage credits" in another.
+says_notice_opening() {
+  # Same veto as the fragments above — asymmetry between the two would mean one
+  # predicate reading a citation as a notice while its neighbour reads it correctly.
+  cites_a_notice && return 1
+  case "$LOWER_NOTICE" in
+    "you've hit your"*|"you've reached your"*|"you're out of"*|\
+    "you have hit your"*|"you have reached your"*|"you are out of"*|\
+    "your org is out of usage"*|"your organization is out of usage"*|\
+    "your organization's usage credit cap"*|\
+    "your usage allocation has been disabled"*|"your seat type doesn't include"*|\
+    "your group's usage limit is set to"*|\
+    "this service is disabled for your org"*|\
+    "usage limit reached"*|"usage limits reached"*) return 0 ;;
+  esac
+  return 1
+}
+# The CLI announcing an error of its own, which is not a report however long it runs.
+# Read off the normalised text, so the preamble it is looking for cannot be pushed
+# out of reach by another preamble in front of it.
+announces_an_api_error() {
+  cites_a_notice && return 1
+  case "$LOWER" in "api error:"*|"error: api error"*|*". api error:"*) return 0 ;; esac
+  case "$LOWER_NOTICE" in "connection refused"*|"failed to authenticate"*) return 0 ;; esac
+  return 1
+}
+
+# What separates a report from a notice where the fields cannot: a review at any rung
+# comes back long and in several lines, and every notice these engines emit is a
+# sentence or two, whatever it says. Shape, not wording.
 looks_like_a_report() {
-  [ "${#RESULT}" -ge 400 ] || return 1
+  # Bytes via `wc -c`, never `${#RESULT}`: the latter counts bytes under a C locale
+  # and characters under a UTF-8 one, so the same envelope crossed the threshold on
+  # one machine and not on another. And measured on the text with its whitespace
+  # removed, so a wall of blank lines cannot reach the length of a report.
+  [ "$(printf '%s' "$SAID" | wc -c | tr -d ' ')" -ge 400 ] || return 1
   [ "$(printf '%s\n' "$RESULT" | wc -l | tr -d ' ')" -ge 5 ]
 }
 
-# Did a review happen? Neither `is_error` nor the terminal reason settles it alone.
-# They do not prove one: a run killed mid-flight reports success with an empty result,
-# and a spent quota arrives with its notice where the report belongs. They do not
-# disprove one either: a model can write a full report and the turn still end on
-# something the harness calls an error, and reporting that as a failure throws the
-# review away along with its coverage record. So a flagged envelope is overridden
-# only by something shaped like a report, and a clean one only needs a result.
-# A count that could not be read is not a count of zero: the CLI omits `usage` from
-# some envelopes, and treating its absence as "produced nothing" would send every
-# successful review into the failure branch — which is why the comparison below is
-# against `0` rather than for a positive number.
-REVIEWED=0
-if looks_like_a_report; then
-  # Something shaped like a report is a report, whatever the counters say. They can
-  # say nothing useful: `/code-review` finishing as a local slash command leaves the
-  # top-level token counter at zero while its own reviewers ran, so requiring tokens
-  # here discarded a complete review and its coverage record.
-  REVIEWED=1
-elif [ "$ERRORED" = 0 ] && [ "$TERMINAL" != "api_error" ] && [ -n "$RESULT" ] && [ "$PRODUCED" != 0 ]; then
-  # Not report-shaped, so the envelope has to vouch for it: a clean run that spent
-  # tokens and has something to show. A short verdict lands here.
-  REVIEWED=1
-fi
-# A notice can stand in a clean envelope with tokens already spent, so wording is the
-# only signal left — but matched at the START of the result, never anywhere in it. A
-# notice opens with itself; a verdict opens with the verdict, whatever it goes on to
-# discuss. Matching anywhere cost the opposite mistake and cost it for real: a short
-# honest "no issues found — the quota handling looks correct", which is exactly what a
-# review of THIS repository writes, was thrown away as a notice. The length bound
-# keeps a report that happens to open with an error line out of it.
-if [ "$REVIEWED" = 1 ] && [ "${#RESULT}" -lt 400 ]; then
+# The two phrase sets, as predicates rather than branches, because the same question
+# is asked from two places and a list that exists twice drifts apart. They are read
+# after the verdict above, so what they pick is the answer a caller acts on — wait for
+# a reset, run it again, or treat the engine as broken — and each stays narrow enough
+# that a verdict reaching them by mistake is quoted rather than recorded as a limit.
+says_transient() {
   case "$LOWER" in
-    "you've hit your"*|"you've reached your"*|"you're out of"*|"your org is out"*|"claude ai usage limit"*|"api error"*|"error: api error"*)
-      REVIEWED=0 ;;
+    *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*) return 0 ;;
   esac
+  return 1
+}
+# Certain: the notice named itself, by an opening the CLI writes or a fragment only it
+# writes. Kept apart from the phrases below because this answer outranks a transient
+# reading — an account limit whose sentence happens to carry "rate limit" is still an
+# account limit, and running it again walks into the same wall.
+says_quota_certainly() {
+  says_cli_notice || says_notice_opening
+}
+says_quota() {
+  says_quota_certainly && return 0
+  cites_a_notice && return 1
+  case "$LOWER" in
+    # The few phrases specific enough to match anywhere. A bare "quota" is not among
+    # them, nor "usage limit" alone: a review of THIS repository writes both, and
+    # anything reaching this point has already failed to be a review, so a verdict
+    # arriving here by some other route is quoted back rather than filed as a limit
+    # nobody hit.
+    *"out of usage credits"*|*"out of extra usage"*|*"usage limit reached"*|\
+    *"usage limit has been reached"*|*"spend limit"*|*"credit balance"*|\
+    *"usage credit cap"*|*"add funds"*|*"disabled by your admin"*|\
+    *"reached your specified"*|*"usage limits"*|*"quota exceeded"*|\
+    *"quota has been exceeded"*) return 0 ;;
+  esac
+  return 1
+}
+
+# The context filled, said in words rather than by a reason code. Read from both
+# branches: an overflow that arrives as an API error is the same overflow, and the
+# advice that closes it — a narrower range — is the same advice.
+says_context_full() {
+  cites_a_notice && return 1
+  case "$LOWER_NOTICE" in
+    *"too large"*|*exceeds*|*"context window"*|*"token limit"*|*"prompt is too long"*) return 0 ;;
+  esac
+  return 1
+}
+# Did a review happen? Three facts the envelope states outright — a model spoke, the
+# loop did not fail, the result is not blank — and none of them is a phrase anyone has
+# to keep in step with the CLI. A run that ended badly can still have written its
+# report before it did, and that report is worth keeping, so shape overrides the
+# verdict in the one direction where nothing is lost by it.
+REVIEWED=0
+if [ "$SPOKE" = 1 ] && [ "$LOOP_FAILED" = 0 ] && [ "$ERRORED" = 0 ] && [ -n "$SAID" ] \
+   && [ "$FROM_ERRORS" = 0 ]; then
+  REVIEWED=1
+elif [ "$FROM_ERRORS" = 0 ] && looks_like_a_report; then
+  # Shape rescues two runs the fields above throw away: one that wrote its report and
+  # then ended badly, and one whose counters say nothing useful — the schema allows a
+  # zeroed `modelUsage` on a crash and after a mid-session clear, and a report is
+  # worth more than the counter that failed to record it. What it must not rescue is
+  # text no model wrote — and a diagnosis out of `.errors` is exactly that, so it is
+  # excluded here. An error the CLI announces, and a notice of any length, are caught
+  # by the demotion below instead: one place, read by both branches.
+  REVIEWED=1
 fi
 
+# The one gap the structure above cannot close, held shut by the text itself. A quota
+# that runs out MID-RUN leaves every structural fact reading healthy — models were
+# billed, the loop is intact, `is_error` is false — while `.result` carries the notice
+# where the report belongs. The two predicates above are what catches it, and they
+# match differently on purpose: an opening is anchored, because a review addresses its
+# reader as "your" and "your usage of jq" is a finding, while a machine fragment is
+# matched anywhere, because a notice can open with the model's own name and reach no
+# anchor at all. Both are vetoed by a marked citation, which is the other half of the
+# same problem: reviews of this file quote these very phrases. A miss here is the last
+# fail-open left — narrow, and named in the skill rather than papered over with a
+# wider match.
+if [ "$REVIEWED" = 1 ]; then
+  # No length bound here: what these match is the vendor's own text, and a review
+  # that cites any of it marks the citation, which every predicate vetoes. A notice
+  # that grows past any threshold is still a notice.
+  # `says_quota` and not merely its certain half: the looser phrases are the ones an
+  # org, seat or group notice arrives under, and reading them only in the exit-code
+  # block left every one of those printing as a review. The other two say the same
+  # thing about a different refusal — a filled context, an error the CLI announces —
+  # and a refusal is not a report whichever of the three names it.
+  if says_quota || says_context_full || announces_an_api_error; then REVIEWED=0; fi
+fi
+
+# Everything below decides what a caller should DO about a run that did not review.
+# Whether coverage happened is settled above and never revisited here.
+fail() {
+  echo "claude review failed:"
+  # Nothing to quote means the envelope is the only diagnosis there is, and stderr is
+  # routinely empty in exactly that case. Here rather than in one branch of one
+  # helper: every path that reports a failure can arrive with an empty result.
+  if [ -n "$SAID" ]; then printf '%s\n' "$RESULT"; else head -c 500 "$OUT"; echo; fi
+  [ "$#" -eq 0 ] || printf '%s\n' "$1"
+  tail -20 "$OUT.log"
+  exit 1
+}
+# A refusal that named nothing still refused: the caller is told which limit it was
+# where the engine said so, and told that it did not where the engine kept silent —
+# never handed a bare colon beneath a line that asks them to read the notice.
+unavailable() {
+  if [ -n "$SAID" ]
+    then printf 'claude review unavailable: %s\n' "$RESULT"
+    else printf '%s\n' "claude review unavailable: the run was refused for a limit it did not name"; fi
+  exit 3
+}
+# Where the loop never ran, the envelope has no reason to give and no status to read:
+# an error raised inside a local slash command leaves `is_error` false and
+# `terminal_reason` unset, exactly as a healthy review does. Phrases are the last
+# thing left, and they are reached only here — under a verdict already made, where
+# the worst a miss costs is `failed:` in place of `unavailable:`.
+diagnose_by_words() {
+  # A notice that named itself comes first of all, outranking a transient reading of
+  # words it happens to contain.
+  says_quota_certainly && unavailable
+  # Then transient, ahead of the looser quota phrases: one of these notices denies
+  # being a usage limit in a sentence that contains the words, and the phrase list
+  # would take it.
+  says_transient && fail "(transient — re-running the same command is the fix)"
+  says_context_full && fail "(the range does not fit — narrow it, or review it in parts)"
+  says_quota && unavailable
+  [ -n "$SAID" ] || fail "(the run ended without producing anything)"
+  if [ -n "$TERMINAL" ] && [ "$TERMINAL" != completed ]
+    then fail "(the run ended on $TERMINAL before it could report)"
+    else fail; fi
+}
+
 if [ "$REVIEWED" = 0 ]; then
-  case "$LOWER" in
-    # Transient, and clears on its own: re-running is the whole fix. First, because
-    # one of these notices denies being a usage limit in a sentence containing the
-    # words — the quota arm would take it and send the caller to wait for a reset.
-    *"rate limit"*|*rate_limit*|*"per-minute"*|*temporarily*|*overloaded*)
-      echo "claude review failed: $RESULT"
-      echo "(transient — re-running the same command is the fix)"
-      tail -20 "$OUT.log"; exit 1 ;;
-    # The range was too big for the model, not the account out of room for it: a
-    # smaller range or another model closes this, and waiting never does.
-    *"too large"*|*exceeds*|*"context window"*|*"token limit"*)
-      echo "claude review failed: $RESULT"
-      echo "(the range does not fit — narrow it, or review it in parts)"
-      tail -20 "$OUT.log"; exit 1 ;;
-    # Named phrases, never a bare "limit": every notice above carries that word too.
-    # A quota is not a failure of the engine — the notice names a reset time or
-    # another model, and both are things a caller can act on.
-    *"hit your"*|*"reached your"*|*"usage limit"*|*"spend limit"*|*"usage credits"*|*"credit balance"*|*"out of usage"*|*"out of extra usage"*|*"add funds"*|*quota*|*"switch to another model"*)
-      echo "claude review unavailable: $RESULT"; exit 3 ;;
-    "")
-      # Nothing to quote, so the envelope is the only diagnosis there is — stderr is
-      # routinely empty in exactly this case.
-      echo "claude review failed: the run ended without producing anything"
-      head -c 500 "$OUT"; tail -20 "$OUT.log"; exit 1 ;;
-    *)
-      echo "claude review failed:"; printf '%s\n' "$RESULT"
-      tail -20 "$OUT.log"; exit 1 ;;
+  case "$TERMINAL" in
+    # The loop ran and the API refused it. The status narrows what kind of refusal
+    # that was, but it does not name it on its own: a spent balance arrives as a 400
+    # like any other rejected request, so the notice is read first and the status
+    # only advises where it said nothing about a limit.
+    api_error)
+      # Same order as the words-only path: a notice that named itself, then transient,
+      # then the looser phrases. Transient first would send a real account limit —
+      # whose sentence often carries "rate limit" — back into the same wall, and the
+      # loose phrases first would take a throttle that denies being a limit in words
+      # containing one.
+      says_quota_certainly && unavailable
+      says_transient && fail "(transient — re-running the same command is the fix)"
+      says_quota && unavailable
+      says_context_full && fail "(the range does not fit — narrow it, or review it in parts)"
+      case "$STATUS" in
+        # A 429 the notice did not explain is ordinary throttling as readily as a
+        # spent allowance — "Too Many Requests" and an empty body reach here — and
+        # the two errors are not equally cheap: a caller told to retry loses a
+        # minute, one told the reviewer is gone drops it from the coverage.
+        429) fail "(transient — re-running the same command is the fix)" ;;
+        401|403) fail "(the login this run inherited is not usable — check the CLI's own auth)" ;;
+        400) fail "(the request was rejected — a range too large for the model is the usual cause)" ;;
+        5??) fail "(the API was unavailable — re-running the same command is the fix)" ;;
+        *) fail ;;
+      esac ;;
+    # The context filled, by any of the three names the CLI has for it. Waiting never
+    # closes this one — but the notice is read first all the same: the CLI files a
+    # spent allowance under `blocking_limit` too, and telling its caller to narrow the
+    # range is both wrong and unactionable.
+    blocking_limit|prompt_too_long|rapid_refill_breaker)
+      says_quota && unavailable
+      says_transient && fail "(transient — re-running the same command is the fix)"
+      fail "(the range does not fit the context — narrow it, or review it in parts)" ;;
+    # Everything else: the loop was bypassed, ended clean, or stopped short without
+    # failing, and in each case the notice is all there is to go on.
+    *) diagnose_by_words ;;
   esac
 fi
 
@@ -314,21 +569,22 @@ echo "scope: ${BASE:-working tree}, $COVERED files, $MODEL at $LEVEL"
 BILLED=$(jq -r '(.modelUsage // {}) | keys | join("+")' "$OUT" 2>/dev/null) || BILLED=""
 case "${BILLED:-none}" in
   none|*"$MODEL"*) ;;
-  *) echo "run-warning: no $MODEL among the models billed ($BILLED) — the fallback may have answered" ;;
+  *) printf 'run-warning: no %s among the models billed (%s) — the fallback may have answered\n' \
+       "$MODEL" "$BILLED" ;;
 esac
 # SEPARATE lines, never appended to the scope one.
 [ -n "$BASE" ] \
   || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
 [ "$OUTSIDE" = 0 ] \
   || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
-# Its own line, and not a coverage one: the envelope called this run an error while
-# its model wrote a report, so the report stands and the verdict is worth knowing.
 # A coverage line, not a run one: a report salvaged from a run that ended badly can be
 # cut off mid-finding, and nothing in it says where it stopped — a review has no syntax
 # to check completeness against. What the caller can act on is knowing the count above
-# describes the range handed in rather than how far the report got.
-if [ "$ERRORED" = 1 ] || [ "$TERMINAL" = "api_error" ]; then
-  echo "coverage-warning: the run ended on an error and its report may be cut short — the findings stand, the count may not"
+# describes the range handed in rather than how far the report got. A failed loop is
+# not the only way to get here: a run cut off at its turn limit or by a hook stops
+# just as mid-sentence, and a run that merely deferred a tool did not stop at all.
+if [ "$ERRORED" = 1 ] || [ "$LOOP_FAILED" = 1 ] || [ "$LOOP_CUT" = 1 ]; then
+  echo "coverage-warning: the run did not finish cleanly and its report may be cut short — the findings stand, the count may not"
 fi
 # Its own line too, and not a coverage one: this says what the run DID, not what it
 # read. The count above was taken before the run and stops describing the tree here.
@@ -337,7 +593,7 @@ fi
 DENIED=$(jq -r '(.permission_denials // []) | length' "$OUT" 2>/dev/null) || DENIED=0
 [ "${DENIED:-0}" = 0 ] \
   || echo "coverage-warning: $DENIED tool call(s) were denied — the run read less than the range"
-jq -r '.result' "$OUT"
+printf '%s\n' "$RESULT"
 # `if`, not `[ … ] && { … }`: as the last command of the branch that form exits
 # non-zero whenever stderr was empty, marking every clean review as a failure.
 if [ -s "$OUT.log" ]; then echo "run warnings:"; cat "$OUT.log"; fi

@@ -1,0 +1,78 @@
+{
+  "is_error": false,
+  "duration_api_ms": 0,
+  "num_turns": 0,
+  "stop_reason": null,
+  "session_id": "0dc07e72-9cb9-4696-8037-f857b6bc2843",
+  "total_cost_usd": 0.30622625000000003,
+  "usage": {
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "input_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "output_tokens": 0,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "",
+    "iterations": [],
+    "speed": "standard"
+  },
+  "modelUsage": {
+    "claude-opus-5": {
+      "inputTokens": 8,
+      "outputTokens": 2439,
+      "cacheReadInputTokens": 62335,
+      "cacheCreationInputTokens": 34247,
+      "webSearchRequests": 0,
+      "costUSD": 0.30622625000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "thinkingTokens": 1580,
+      "canonicalModel": "claude-opus-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": {
+      "background": 0,
+      "foreground": 0,
+      "unset": 0
+    },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": {
+      "parent": 0,
+      "user": 0,
+      "system": 0
+    },
+    "refused": {
+      "depth_limit": 0,
+      "concurrency_limit": 0,
+      "budget": 0
+    },
+    "by_type": {}
+  },
+  "subtype": "success",
+  "result": "Прошёл один проход по диффу `f6c1e88...HEAD` (изменения только в `hcb-dev`: скрипты ревью, SKILL.md, references).\n\nFindings:\n\n- `/Users/pavel/projects/claude-code-plugins/.claude/worktrees/review-waiting-hangs-1013a7/plugins/hcb-dev/skills/claude-review/scripts/claude-review.sh:359` — комментарий про «envelope that was never written» продублирован дословно: три строки перед `[ -s \"$OUT\" ] || {` и те же три сразу внутри блока. Одну копию надо убрать.\n\nБольше ничего, что подпадает под критерии (runtime-корректность, дублирование хелпера, мёртвый код), в хунках не видно: ветки `REVIEWED`, обработка `PRODUCED=\"unknown\"`, `set -- --model` до вызова `claude \"$@\"`, `${BILLED:-none}` и `started:`-строка в обоих скриптах (в codex-версии `$MODEL`/`$EFFORT` уже разрешены к строке 119) выглядят согласованно.",
+  "type": "result",
+  "duration_ms": 48138,
+  "uuid": "aa54c215-f74e-4e2c-8c9d-d562550e0251",
+  "queued_turn_count": 0
+}

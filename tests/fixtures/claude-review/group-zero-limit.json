@@ -1,0 +1,10 @@
+{
+  "result": "Your group's usage limit is set to $0",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

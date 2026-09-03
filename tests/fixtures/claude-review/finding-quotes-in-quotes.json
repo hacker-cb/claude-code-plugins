@@ -1,0 +1,10 @@
+{
+  "result": "No issues found. The guard correctly matches the CLI's \"Run /usage-credits\" notice.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

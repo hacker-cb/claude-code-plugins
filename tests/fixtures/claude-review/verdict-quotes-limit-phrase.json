@@ -1,0 +1,12 @@
+{
+  "result": "No issues found. The \"usage limit reached\" branch is correct and the \"credit balance\" one matches too.",
+  "is_error": true,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "api_error",
+  "api_error_status": 500
+}

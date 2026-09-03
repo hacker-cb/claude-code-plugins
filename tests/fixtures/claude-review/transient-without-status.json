@@ -1,0 +1,7 @@
+{
+  "result": "API Error: the service is temporarily overloaded",
+  "is_error": true,
+  "terminal_reason": "api_error",
+  "modelUsage": {},
+  "permission_denials": []
+}

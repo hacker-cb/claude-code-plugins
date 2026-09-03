@@ -1,0 +1,13 @@
+{
+  "errors": [
+    "Reached maximum number of turns (40)"
+  ],
+  "is_error": true,
+  "terminal_reason": "max_turns",
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

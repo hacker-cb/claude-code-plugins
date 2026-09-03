@@ -1,0 +1,22 @@
+{
+  "result": "Прошёл один проход по диффу. Замечаний по существу нет.\nПроверены ветки классификации, обработка пустого результата и порядок предикатов.\nОтдельно сверены имена причин с закрытым списком CLI.\nПокрытие диапазона подтверждено записью выше.\nНичего, что требовало бы правки, не найдено.",
+  "is_error": true,
+  "modelUsage": {
+    "claude-opus-5": {
+      "inputTokens": 8,
+      "outputTokens": 2439,
+      "cacheReadInputTokens": 62335,
+      "cacheCreationInputTokens": 34247,
+      "webSearchRequests": 0,
+      "costUSD": 0.30622625000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "thinkingTokens": 1580,
+      "canonicalModel": "claude-opus-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "max_turns"
+}

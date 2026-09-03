@@ -1,0 +1,10 @@
+{
+  "result": "API error handling is correct — no issues found in the four files.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

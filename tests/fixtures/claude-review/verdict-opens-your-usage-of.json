@@ -1,0 +1,10 @@
+{
+  "result": "Your usage of `jq -e` in the SPOKE check swallows a malformed envelope; otherwise the change is fine.",
+  "is_error": false,
+  "modelUsage": {
+    "claude-opus-5": {
+      "outputTokens": 2439
+    }
+  },
+  "permission_denials": []
+}

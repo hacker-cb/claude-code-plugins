@@ -1,0 +1,113 @@
+# One row per case, five tab-separated columns:
+#
+#   fixture   the envelope in fixtures/claude-review/, or `-` for a run that must be
+#             refused before the engine is ever reached
+#   args      what this case adds to `--base HEAD --level low`; a NAME=value word is
+#             put in the run's environment instead (that is how a case reaches the
+#             stub's stderr, its touch, or a non-zero exit). `-` for none
+#   exit      0 a review, 1 a failure, 3 a reviewer that could not run, and 2 for a
+#             call the script refused before reaching an engine at all
+#   expect    fragments that must appear in the output, separated by `|`. Written out
+#             per case on purpose: every failure prints the same first line, so a
+#             status implies its line and checking one against the other asserts
+#             nothing. What separates the branches is the advice underneath
+#   note      what the case is there to hold
+#
+# fixture	args	exit	expect	note
+report	-	0	scope:|Findings	a full report prints its coverage record
+nothing-to-review	-	0	scope:|нечего	a working tree with no changes is an answer, not a failure
+no-findings	-	0	scope:|(none)|run-warning: no opus among the models billed	a run that found nothing is a review, and a fallback that answered is named
+verdict-mentions-quota	-	0	scope:|quota handling	a short verdict discussing quota handling is not a quota notice
+verdict-opens-your-usage	-	0	scope:|accounting is correct	a verdict may open by addressing the reader as "your usage"
+verdict-opens-your-organization	-	0	scope:|conventions are followed	and as "your organization"
+verdict-opens-your-usage-of	-	0	scope:|SPOKE check	"Your usage of `jq -e` …" is a finding, not an allowance
+verdict-on-seat-type	-	0	scope:|validation is correct	so is "Your seat type validation is correct"
+verdict-on-allocation	-	0	scope:|right field	and "Your usage allocation handling reads the right field"
+verdict-on-group-limit	-	0	scope:|parsing is fine	and a verdict about the group-limit branch
+verdict-recommends-another-model	-	0	scope:|If the range grows	advising a larger model is advice, not a limit notice
+verdict-on-error-handling	-	0	scope:|handling is correct	"API error handling is correct" opens a verdict, not an error
+finding-quotes-fragment	-	0	scope:|says_cli_notice	a finding may quote the notice fragments this script matches
+finding-quotes-in-quotes	-	0	scope:|Run /usage-credits	including inside quotation marks rather than backticks
+finding-quotes-model-switch	-	0	scope:|machine text	and may quote the machine suffix as well
+report-cut-off	-	0	scope:|did not finish cleanly	a report written before the run broke is kept, under a warning
+report-backgrounded	-	0	scope:|Findings	a turn sent to the background costs the report nothing
+short-verdict-backgrounded	-	0	scope:|No issues found	nor does it cost a short one its coverage record
+connection-refused	-	1	claude review failed:|Connection refused	an error inside the local command is not a review
+auth-403	-	1	the login this run inherited is not usable	a refused login names the login, not the range
+not-logged-in	-	1	claude review failed:|Not logged in	nor is a missing one
+long-auth-error	-	1	claude review failed:|invalid bearer token	a multi-line auth wall has a report's shape and no model behind it
+long-errors-no-result	-	1	claude review failed:|Session crashed	neither has a crash's accumulated stack, past the same threshold
+error-subtype-errors-only	-	1	Reached maximum number of turns|ended on max_turns	an envelope with no `.result` still quotes what it does carry
+cut-off-no-report	-	1	ended on max_turns before it could report	a run cut off before writing anything names what cut it
+empty-result	-	1	the run ended without producing anything	a run that produced nothing quotes the envelope
+whitespace-only-result	-	1	the run ended without producing anything	a result of blanks is not a review with an empty body
+fieldless-envelope	-	1	the run ended without producing anything	an envelope with no fields answers nothing
+unknown-notice	-	1	claude review failed:|entirely new	a wording nobody anticipated is quoted, not classified
+prompt-too-long	-	1	the range does not fit	a filled context asks for a narrower range
+rate-limit-429	-	1	transient — re-running the same command	a throttled request asks to be run again
+transient-denying-limit	-	1	transient — re-running the same command	even when it denies being a limit in words containing "usage limit"
+transient-without-status	-	1	transient — re-running the same command	and when the envelope carries no status at all
+throttled-429-unnamed	-	1	transient — re-running the same command	plain throttling under a 429 stays retryable
+refusal-429-unnamed	-	1	transient — re-running the same command	a 429 the notice did not explain stays retryable too
+server-500	-	1	the API was unavailable	an unavailable API asks to be run again
+server-500-unnamed	-	1	the API was unavailable|is_error	with the envelope quoted where the run said nothing
+zeroed-usage-real-verdict	-	1	claude review failed:|quota handling	a verdict whose usage came back zeroed is quoted, never filed as a limit
+verdict-quotes-limit-phrase	-	1	claude review failed:|usage limit reached	a verdict quoting a limit phrase is quoted back, not filed as one
+quota-session-limit	-	3	claude review unavailable:|resets 11:20pm	a session limit is a reviewer to wait for
+quota-credits-wording	-	3	claude review unavailable:|requires usage credits	so is one worded as required credits
+quota-429	-	3	claude review unavailable:|requires usage credits	and one arriving under a 429
+quota-midrun	-	3	claude review unavailable:|session limit	a limit reached after the models were billed is still a limit
+long-notice-midrun	-	3	claude review unavailable:|resets at 11:20pm	a notice that outgrew a report's length is still a notice
+credit-balance-400	-	3	claude review unavailable:|credit balance	a spent balance arrives as a 400, not a 429
+account-limit-mentions-rate-limit	-	3	claude review unavailable:|weekly limit	an account limit naming a rate window is not a throttle
+org-out-of-credits	-	3	claude review unavailable:|out of usage credits	an organization out of credits, in the CLI's own words
+org-credit-cap	-	3	claude review unavailable:|usage credit cap	an organization's credit cap
+org-is-out-midrun	-	3	claude review unavailable:|contact your admin	the CLI's short spelling of the same, mid-run
+org-is-out-bypassed	-	3	claude review unavailable:|add funds to continue	and its other ending, before a single model call
+admin-disabled-allocation	-	3	claude review unavailable:|disabled by your admin	an allocation an admin turned off
+seat-type-without-usage	-	3	claude review unavailable:|seat type	a seat type that does not include usage
+service-disabled-for-org	-	3	claude review unavailable:|disabled for your org	a service disabled for the organization
+group-zero-limit	-	3	claude review unavailable:|set to $0	a group allowance set to zero
+model-limit-midrun	-	3	claude review unavailable:|out of extra usage	extra usage exhausted mid-run
+model-notice-midrun	-	3	claude review unavailable:|requires usage credits	a notice opening with the model's own name
+model-prefixed-notice	-	3	claude review unavailable:|requires usage credits	including the variant that tells the reader to switch
+switch-models-with-model	-	3	claude review unavailable:|switch models with /model	and the one that names the command instead
+credits-notice-midrun	-	3	claude review unavailable:|out of usage credits	credits exhausted after the models were billed
+long-context-credits	-	3	claude review unavailable:|long context	credits a long context needs and does not have
+#
+# The dispatcher this change is built around: a reason from each half of the split,
+# in an envelope whose other fields look healthy, so the split itself is what decides.
+failed-loop-clean-envelope	-	1	claude review failed:|ended on malformed_tool_use_exhausted	a failed loop is a failure even when nothing else says so
+cut-loop-clean-envelope	-	0	scope:|did not finish cleanly	a cut loop keeps even a short verdict, under the warning
+report-after-failed-loop	-	0	scope:|did not finish cleanly	a report written before the loop failed is kept, under the warning
+quota-under-blocking-limit	-	3	claude review unavailable:|resets 11:20pm	a spent quota filed under a context reason is still a quota
+denied-tool-calls	-	0	scope:|2 tool call(s) were denied	denied tool calls narrow the run, and the record says so
+#
+# What the run reports about itself, which nothing asserted before: a warning from
+# stderr, an edited tree, and a model that answered other than the one asked for.
+report	STUB_STDERR=deprecation:_flag_renamed	0	scope:|run warnings:|deprecation	a degraded run still reports, with its stderr attached
+report	STUB_TOUCH=repo	0	tree-warning:|read git status	a run that edited the tree says so before its findings
+#
+# The argument guards, which no envelope can reach: the run is refused before the
+# engine is launched, and `-` is how a case says so.
+-	--narrow only_errors_--fix	1	the narrowing may not contain an option	the narrowing cannot smuggle a flag that would let the run write
+-	--level bogus	1	'bogus' is not a rung	a level off the ladder is refused
+-	--model --sneaky	1	is not a model	so is a model name shaped like a flag
+-	--bogus x	2	unknown argument	an unknown argument exits 2, distinct from a failed review
+#
+# The engine's own exit status, which the script currently ignores.
+report	STUB_EXIT=9	0	scope:	an engine that answered fully is judged by its envelope, not its status
+#
+# What the classification rests on, each pinned where nothing else would notice it.
+notice-behind-api-error-prefix	-	3	claude review unavailable:|Fable limit	a notice behind the CLI's own preamble is still a notice
+context-reason-without-words	-	1	the range does not fit the context	a context reason is read even when the text says nothing about it
+errors-with-report-shape	-	1	claude review failed:|Session crashed	a crash long enough to look like a report is still a crash
+notice-with-leading-space	-	3	claude review unavailable:|Fable limit	whitespace in front of a notice does not make it a review
+loose-phrase-only-notice	-	3	claude review unavailable:|spend limit	a notice only the looser phrases catch is caught before the record
+context-words-without-reason	-	1	the range does not fit	an overflow named in words needs no reason code
+cyrillic-report-at-threshold	LC_ALL=en_US.UTF-8	0	scope:|Замечаний	a report is measured in bytes, so a UTF-8 one keeps its record
+api-error-clean-envelope	-	1	claude review failed:|upstream refused	an error the CLI announces is not a review, whatever the fields say
+blank-result-over-errors	-	3	claude review unavailable:|session limit	a blank result does not hide the errors underneath it
+single-line-wall	-	1	claude review failed:|Traceback	length alone is not a report — a wall in one line is still a wall
+limit-with-transient-word	-	3	claude review unavailable:|weekly limit	a limit whose wording mentions waiting is still a limit, not a throttle
+api-error-with-report-shape	-	1	claude review failed:|upstream refused	an API error long enough to look like a report is still an error

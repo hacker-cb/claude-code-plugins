@@ -1,0 +1,23 @@
+{
+  "result": "Failed to authenticate. API Error: 429 You've reached your Fable limit · resets Monday 09:00",
+  "is_error": true,
+  "terminal_reason": "api_error",
+  "api_error_status": 429,
+  "modelUsage": {
+    "claude-opus-5": {
+      "inputTokens": 8,
+      "outputTokens": 2439,
+      "cacheReadInputTokens": 62335,
+      "cacheCreationInputTokens": 34247,
+      "webSearchRequests": 0,
+      "costUSD": 0.30622625000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "thinkingTokens": 1580,
+      "canonicalModel": "claude-opus-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": []
+}

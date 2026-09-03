@@ -1,0 +1,7 @@
+{
+  "result": "Prompt is too long",
+  "is_error": true,
+  "terminal_reason": "prompt_too_long",
+  "modelUsage": {},
+  "permission_denials": []
+}
