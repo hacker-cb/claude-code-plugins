@@ -39,7 +39,7 @@ The run is one command, and everything it needs arrives as a flag:
 bash "${CLAUDE_PLUGIN_ROOT}/skills/claude-review/scripts/claude-review.sh" \
   --base "<the ref resolved in §1 — drop the flag entirely for a working-tree review>" \
   --level "<the rung the caller named, or medium>" \
-  --model "<the model the caller named — drop the flag to take the newest Opus>" \
+  --model "<the model the caller named — drop the flag to let the script resolve one>" \
   --narrow "<a path, or a focus such as 'only error handling' — drop the flag for none>"
 ```
 

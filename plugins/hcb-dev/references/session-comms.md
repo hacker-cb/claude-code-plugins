@@ -38,6 +38,11 @@ the stable half of the live one — coin it by the same reference.
    message sent to a sleeping session queues until it wakes. Its registry also
    resolves a known title to an id when the live listing shows nothing. It sees
    less than the live registry; where it cannot see the target, drop a rung.
+
+   **Your own id comes from the host, not from a path this plugin derives.** Take
+   it from wherever this host surfaces it. Where nothing does, write that in the
+   slot rather than leaving it blank and be addressed by title alone — a slot
+   saying no id is available is answerable, an empty one reads as an oversight.
 3. **The tracker.** What must not be lost does not travel by message at all:
    the record goes where the work lives — the epic, the issue, the change
    request — and the message shrinks to a pointer at it. A receiver that never

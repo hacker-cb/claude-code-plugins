@@ -63,10 +63,10 @@ task's output and read it back before answering.
 
 **Waiting is a blocking call, never a loop.**
 
-**Wait on blocking windows.** One `TaskOutput` call with `block: true` and
-`timeout: 600000` holds a single turn for ten minutes; repeat it, window after
-window, until the run answers or the ceiling below is reached. Nothing is checked
-between them — the window *is* the wait.
+**Wait on blocking windows.** One call that holds a single turn until the run
+answers or the window is up; repeat it, window after window, until the run answers
+or the ceiling below is reached. Nothing is checked between them — the window *is*
+the wait.
 
 **With several runs out, a window is spent on one of them.** Collect the ones that
 have already answered before opening any window, and open the next window on the run

@@ -36,7 +36,7 @@ The run is one command, and everything it needs arrives as a flag:
 bash "${CLAUDE_PLUGIN_ROOT}/skills/codex-review/scripts/codex-review.sh" \
   --base "<the ref resolved in §1 — drop the flag entirely for a working-tree review>" \
   --model "<the model the caller named — drop the flag to take the catalog's newest>" \
-  --effort "<the level the caller named — drop the flag to take xhigh, or the model's highest>"
+  --effort "<the level the caller named — drop the flag to let the script resolve one>"
 ```
 
 A caller — a person or another skill — may hand you the base, the model or the
