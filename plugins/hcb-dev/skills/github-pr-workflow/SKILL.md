@@ -347,7 +347,7 @@ PR — behind a signal that read as a decline, or behind a merge taken outside t
 skill. If one appears, don't drop it: surface its findings in the report below and
 recommend a follow-up (issue or change request) as a next step; creating it is an
 outward action the user authorises, not one you take autonomously —
-[`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) owns
+[`../../references/findings.md`](../../references/findings.md) owns
 that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 
 Then give the user a short report:
@@ -355,7 +355,7 @@ Then give the user a short report:
 1. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
    lower-severity items you deliberately skipped during the loop. Each goes through
-   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md), as
+   [`../../references/findings.md`](../../references/findings.md), as
    the late review's findings above do. Where nothing called this driver, this
    report ends the session and that reference says what ends there; under an
    orchestrator it ends a slice, and the run's own report is the end.
@@ -370,7 +370,7 @@ Keep it scannable: short grouped bullets, not an essay.
 - [`references/copilot.md`](references/copilot.md) — read it before Step 4.
 - [`references/platform-status.md`](references/platform-status.md) — read it the
   moment a failure does not look like the diff's.
-- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
+- [`../../references/findings.md`](../../references/findings.md) — read
   it before Step 4, before Step 7, and before recommending a follow-up on a late
   review.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it

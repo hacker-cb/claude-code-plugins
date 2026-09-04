@@ -25,7 +25,7 @@ and what answers there, never from the hostname.
 
 - **Deferred work** — a defect, a follow-up, tech debt: consciously left for
   later, or found in passing and left alone by the test in
-  [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md).
+  [`../../references/findings.md`](../../references/findings.md).
 - **Work conceived and finished in the same effort earns none** — the change
   request and `git log` already record it.
 - **Open-ended architectural direction** belongs to the project's roadmap.
@@ -107,7 +107,7 @@ work raised become issues opened in the same effort.
 
 - [`../../references/classification.md`](../../references/classification.md) — read
   it before applying anything to an issue, and before proposing one.
-- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
+- [`../../references/findings.md`](../../references/findings.md) — read
   it before proposing an out-of-scope finding to the user.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

@@ -217,7 +217,8 @@ When a reviewer fails, quote its error instead of guessing a cause.
 
 Dedup by `(file, line)` **and** by mechanism — reviewers routinely anchor one root
 cause at different lines, and one bug described twice reads as two. Keep whichever
-write-up carries the concrete failure scenario, and rank by severity.
+write-up carries the concrete failure scenario, and rank by the ladder in
+[`../../references/findings.md`](../../references/findings.md).
 
 ## 6. Report
 

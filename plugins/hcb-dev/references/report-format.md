@@ -23,16 +23,13 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    such so the reader can tell it apart from one still worth closing. If every
    slice was fully covered, say that.
 
-3. **Incidental findings, rated by importance.** The lower-severity items
-   surfaced-but-not-fixed during the run (out-of-scope observations, deferred
-   nits, follow-ups), grouped by category and rated `Critical` / `Important` — as
-   [`../skills/github-pr-workflow/references/copilot.md`](../skills/github-pr-workflow/references/copilot.md)
-   defines those two — or `Minor`, this report's own tier for the below-Important
-   items that guidance labels `Skip`.
+3. **Incidental findings, rated by importance.** The items surfaced-but-not-fixed
+   during the run (out-of-scope observations, deferred nits, follow-ups), grouped
+   by category and rated on the ladder in [`findings.md`](findings.md).
    **If there are none, say so explicitly** — "no incidental findings" is a real
    result, and its absence must not read as an omission. Each item worth tracking
    reaches the user as a proposal rather than being listed and left —
-   [`fix-or-surface.md`](fix-or-surface.md).
+   [`findings.md`](findings.md).
 
 4. **Open offers and next steps** — a `declined_offer` (a change request the local
    run *could* have opened and the user turned down), follow-up

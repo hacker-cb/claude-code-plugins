@@ -109,7 +109,8 @@ form: you paste every one of them yourself.
 
 - **`shipping-workflow`** — `/hcb-dev:shipping-workflow`
   Take one finished, verified slice to completion: normalize the branch name,
-  refresh the base, commit, hand off to `multi-review`, apply the fixes, check
+  refresh the base, commit, hand off to `multi-review`, apply the fixes
+  (reviewing them again where they reach past what was already read), check
   coverage, then complete **by mode** — merged locally into its parent branch, or
   an open change request (handed to a PR/MR driver below). Steps 0–5 are identical
   in both modes; the mode is read only at the last step.
@@ -256,10 +257,10 @@ saying something else. Each file opens by saying what it owns.
 - [`references/classification.md`](references/classification.md) — how an issue
   gets classified against what the repository itself defines. Read wherever an
   issue is classified or a backlog is read by what its tracker declares.
-- [`references/fix-or-surface.md`](references/fix-or-surface.md) — what to do with
-  something the work noticed but never set out to do. Read wherever a review, a
-  step or a completion turns something up; the tracker operations themselves stay
-  with `issue-tracking`.
+- [`references/findings.md`](references/findings.md) — how a finding is rated,
+  whether it is fixed in the work that found it, and what reaches the user
+  otherwise. Read wherever a reviewer, a step or a completion turns something up;
+  the tracker operations themselves stay with `issue-tracking`.
 - [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
   endpoint or a concept name gets resolved on either forge. Read before writing an
   invocation or naming a concept in prose.

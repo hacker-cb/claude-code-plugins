@@ -88,7 +88,7 @@ it. Where the order names none — a tracker-less repository — the full report
 goes to the master itself, with a copy in chat for this session's user.
 
 With the four parts travel the batch's own extras: findings surfaced but
-left ([`../../references/fix-or-surface.md`](../../references/fix-or-surface.md)),
+left ([`../../references/findings.md`](../../references/findings.md)),
 hand-offs other batches need to hear about, and candidate issues awaiting the
 master's confirmation.
 

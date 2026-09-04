@@ -92,7 +92,7 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    A finding on the code this change wrote is not weighed against scope: it is
    in-scope work. Scope is the question only for one about anything else the
    reviewers read, and the test in
-   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md)
+   [`../../references/findings.md`](../../references/findings.md)
    settles that one, carries the exits a finding of either kind can take, and owns
    the commit a fix outside this change's own scope takes. One exit is this skill's
    own: where the fix is a product or design call, stop and ask rather than
@@ -102,7 +102,31 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    fixes sitting uncommitted: step 6 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).
-5. **Check the coverage** — the gate below.
+
+   **Then put the fixes through the same test the change went through.** Apply
+   `multi-review`'s high-risk test to what the fixes wrote rather than to the
+   change: a fix that stays inside the finding it answers was covered by the pass
+   that raised it, and one that would have earned a rung of its own is code no
+   reviewer has read — go back to step 3, hand it the same base as the first
+   round and never one narrowed to the fixes, and come back here with what it
+   returns. A `Minor` never opens a round on its own
+   (`../../references/findings.md`); it rides one opened for something else, or
+   it goes to the report. Where the call is borderline the mode decides: in
+   `request` a reviewer reads these fixes downstream on the driver's own budget,
+   while in `local` nothing reads them after you, so the doubt buys the round
+   there. Commit each round's fixes naming the findings they close, so what the
+   rounds spent and closed is readable off the branch rather than out of this
+   session's memory.
+
+   **The rounds end on what they find, not on how many there were.** A round that
+   turns up no new `Critical` or `Important` finding belonging to this change is
+   the last one; so is a round whose finding lands where an earlier round already
+   fixed something, which is the loop trading one break for another. Up to ~3
+   rounds otherwise, then stop and ask. Running out is a stop and never a
+   completion: never complete, never merge, and never re-rate a finding to get
+   under the line. Step 6's driver then loops again against a reviewer of its
+   own, on a budget of its own; neither is drawn from the other.
+5. **Check the coverage** — the gate below, over the last round there was.
 6. **Complete the slice by mode** — hand off to the completion contract in
    `slice-completion.md`, which owns every mechanic of both backends. `local`
    merges the slice into its `parent` with git alone, no forge and no network
@@ -127,8 +151,9 @@ unreviewed as a change request would be — the gate is mode-blind because the
 danger is. When `implementation-workflow` drives the run autonomously, this stop
 is one of its legitimate interrupts, not something the autonomy waives.
 
-Every stop this skill takes — this gate, step 6's default-branch merge, several
-remotes with none preferred — carries your recommended option **first**, per
+Every stop this skill takes — this gate, fix rounds that end with findings still
+open, step 6's default-branch merge, several remotes with none preferred — carries
+your recommended option **first**, per
 [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
 
 A project's own rules outrank this one: where the repository says to commit
