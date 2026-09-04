@@ -85,7 +85,7 @@ it were a pattern:
 
 ```bash
 # GitHub — rules already in force on that branch, ref_name conditions applied
-gh_rule="$(gh api "repos/<owner>/<repo>/rules/branches/<branch>" 2>/dev/null \
+gh_rule="$(gh api "repos/{owner}/{repo}/rules/branches/<branch>" 2>/dev/null \
   | jq -r '.[] | select(.type=="branch_name_pattern") | .parameters.pattern // empty' 2>/dev/null)"
 echo "GitHub: ${gh_rule:-none}"
 # GitLab — one push-rule object per project; <project> is URL-encoded ("group%2Frepo")
