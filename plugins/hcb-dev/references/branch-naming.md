@@ -185,7 +185,7 @@ git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
   closes the request. Resolve the push remote *before* renaming — the ambiguity
   path exits, and exiting after `git branch -m` leaves a branch renamed locally
   with nothing pushed — per [`base-resolution.md`](base-resolution.md) ("Pushing is
-  a different question"). The runnable version is `github-pr-workflow` Step 1.
+  a different question").
 - **Never `git branch -M`.** The force form overwrites an existing branch of that
   name — someone else's work, silently. On a collision pick a different name.
 

@@ -3,9 +3,7 @@
 Read by anything in this plugin that needs a base to diff against, a default
 branch to reason about, or a remote to push to. It lives here, not in any one
 skill, because prose copies drift: a fix lands in some and the rest go on saying
-something else. Which skills read it is not listed here — the links pointing at
-this file are that record, and the map for humans lives in
-[`../README.md`](../README.md).
+something else.
 
 The one rule everything below serves: **never guess a name.** `master`, `main`,
 `dev`, `develop`, `trunk` — every repo picks its own, and `origin` is the same
@@ -100,10 +98,8 @@ stake of the two.
    Pair the bare name with the remote you asked. Never fall back to a list of
    popular names.
 
-   **Parse it with `sed`, not `awk`.** The obvious `awk '$1=="ref:"'` cannot be
-   written in a skill: Claude Code substitutes a positional reference in skill
-   and agent content with a word from the invocation arguments, so awk's field
-   references arrive replaced and the program silently compares the wrong things.
+   **Parse it with `sed`, not `awk`** — awk's field references are rewritten where
+   a skill is substituted, so the program silently compares the wrong things.
    `head -1` rather than a bare `q`, which would quit on the first *input* line
    whether or not it matched — the symref line is not guaranteed to be first.
 
@@ -122,25 +118,15 @@ A resolved default gets used two ways, and they want opposite forms:
 Hand on **both** — the ref, and `${ref#*/}` beside it — because each direction of
 the mistake fails differently and only one of them tells you.
 
-**A bare name where a ref belongs is loud.** A clone that only ever checked out
-feature branches has no local default branch at all, and there both
-
-```bash
-git branch --merged <default>              # fatal: not a valid object name
-git rev-list --count <default>..<branch>   # fatal: unknown revision
-```
-
-die outright, taking the whole step with them.
+**A bare name where a ref belongs is loud** — in a clone that never checked out the
+default, `git branch --merged <default>` and `git rev-list <default>..<branch>` die
+outright, taking the whole step with them.
 
 **A ref where a name belongs is quiet, and that is the direction that costs work.**
-`git switch <remote>/<name>` does refuse — `fatal: a branch is expected, got remote
-branch` — but `git checkout <remote>/<name>` exits 0 and detaches HEAD behind a
-note that reads like routine output. A `git merge` run from there also exits 0,
-writing the merge commit onto the detached HEAD while the branch it was meant to
-land on never moves: the run reports work merged into a parent that is unchanged,
-and the commit becomes unreachable as soon as anything else is checked out.
-Comparisons go the same way: `[ "$cur" = "<remote>/<default>" ]` is false while
-standing on the default branch — test `$cur` against the bare name.
+`git checkout <remote>/<name>` exits 0 and detaches HEAD, and a `git merge` from
+there exits 0 too — writing onto the detached HEAD while the branch it was meant to
+land on never moves. Comparisons go the same way: `[ "$cur" = "<remote>/<default>" ]`
+is false while standing on the default branch — test `$cur` against the bare name.
 
 The remote-tracking ref is not guaranteed present either: a clone that fetched
 only feature branches has no `<remote>/<default>` until you fetch it. Materialise

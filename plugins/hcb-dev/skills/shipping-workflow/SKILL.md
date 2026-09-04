@@ -43,9 +43,7 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
    (a host session's `claude/…`, a `wip`) to the shape in
    [`../../references/branch-naming.md`](../../references/branch-naming.md),
-   **first and in both modes**. That reference defines what counts as
-   auto-generated, leaves a name that already describes the change alone, and
-   lists the cases where the rename is off the table.
+   **first and in both modes**.
 1. **Refresh the base** — what this work is ranged against and lands on: the
    threaded `diff-base` and `parent` where a caller handed them down, otherwise
    what the ladder in

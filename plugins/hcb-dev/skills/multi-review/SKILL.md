@@ -32,20 +32,15 @@ and stop, rather than quietly reviewing the last commit instead.
 
 **Base.** Resolve it by the shared ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md),
-which owns all of it — the rungs and their order, remote ranking, the
-remote-tracking-ref form, the stale-pointer trap. Read it; don't re-derive any of
-it here.
+which owns all of it. Read it; don't re-derive any of it here.
 
 Three things this skill must not let the reference's authority hide:
 
 - **Whatever resolves is handed to the reviewers explicitly**, and an explicit
   base wins over any resolution they would do themselves — so a lossy answer here
   is the last word, with nothing downstream to catch it.
-- **A base a caller hands down is a name, and a name is not a ref.** A bare branch
-  name resolves against a local copy that a worktree may have left behind days ago;
-  the range then opens before commits the parent already carries, and the review
-  reads someone else's landed work as part of this change. Refresh it through the
-  reference before passing it on, same as one you resolved yourself.
+- **A base a caller hands down is a name, and a name is not a ref.** Refresh it
+  through the reference before passing it on, same as one you resolved yourself.
 - **Confirm the base shares history with `HEAD` before passing it on** —
   `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
   base is worse than none). Empty → don't pass it, and **don't quietly fall to

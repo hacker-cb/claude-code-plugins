@@ -22,11 +22,8 @@ worktree still means cleaning the repository as a whole.
 
 **The default branch and its remote come from
 [`../../references/base-resolution.md`](../../references/base-resolution.md)** —
-its rung 4 answers this, and it owns every trap on the way: why a read symref goes
-on naming a branch the forge renamed away, why the answer travels as the
-remote-tracking ref and never as a bare name, and why that ref must be materialised
-and re-verified before anything consumes it. Resolve it there, then carry two
-values into the rest of the sweep:
+its rung 4 answers this. Resolve it there, then carry two values into the rest of
+the sweep:
 
 ```bash
 D="<the remote-tracking ref, per base-resolution.md — EMPTY unless it resolved AND
