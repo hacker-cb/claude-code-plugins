@@ -43,7 +43,7 @@ history ends up carrying: where a change request is squashed, its title becomes
 the commit's subject on the base.
 
 That covers the work the branch is *for*. A commit riding along with it — a fix
-the work made in passing ([`fix-or-surface.md`](fix-or-surface.md)) — takes the
+the work made in passing ([`findings.md`](findings.md)) — takes the
 type of that fix instead, so the history says which commit is the change and which
 is the passenger.
 

@@ -123,7 +123,7 @@ other):
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do. What the work turns up
    along the way goes through the test in
-   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) as it
+   [`../../references/findings.md`](../../references/findings.md) as it
    is noticed, here rather than at Phase 3 — what that test turns down still rides
    the slice's `incidental` output onward to the Phase 3 report.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
@@ -175,7 +175,7 @@ completed straight onto the base in Phase 2.
   `feature → base` change request on the feature branch. This is the consented
   exit from local mode.
 - **Issues output** — the incidental findings and the follow-ups reach the user as
-  proposals, per `fix-or-surface.md`; `hcb-dev:issue-tracking` owns the
+  proposals, per `findings.md`; `hcb-dev:issue-tracking` owns the
   tracker operations their answer authorizes. In local mode no change request
   closes the intake issue, so closing or linking it rides with that handoff or the
   issue is left stale.
@@ -193,7 +193,7 @@ completed straight onto the base in Phase 2.
   — read before Phase 1.
 - [`../../references/report-format.md`](../../references/report-format.md) — the
   Phase 3 report shape.
-- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
+- [`../../references/findings.md`](../../references/findings.md) — read
   before Phase 2's development, and again before Phase 3's issues output.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) —
   read before Phase 0's refresh and Phase 2's cut.

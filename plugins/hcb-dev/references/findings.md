@@ -1,18 +1,37 @@
-# What to do with something you noticed
+# A finding, and what to do with it
 
-Read wherever work turns up something it did not set out to do — a review that
-reported it, a step that noticed it while editing something else, a completion
-that ran past it. It owns both halves of that: the choice between fixing it here
-and leaving it, and, for what is left, everything between noticing and the
-tracker — so one finding gets the same treatment whichever skill found it. The
-tracker operations themselves — searching, the issue body, hierarchy, closing —
-belong to `hcb-dev:issue-tracking`.
+Read wherever work turns up a finding — a reviewer that reported one, a step that
+noticed it while editing something else, a completion that ran past it. A finding
+on the code the work is writing and one noticed in passing are both here: this
+file owns how a finding is rated, whether it is fixed in the work that found it,
+and, for what is left, everything between noticing and the tracker — so one
+finding gets the same treatment whichever skill found it. The tracker operations
+themselves — searching, the issue body, hierarchy, closing — belong to
+`hcb-dev:issue-tracking`.
 
-## The default is to fix it
+Two questions decide everything below: **how much it matters**, and **whether it
+belongs to the work in hand**.
 
-Something noticed in passing that belongs to the work in hand is fixed **in that
-work, as it is noticed** — never carried to a report and handed back as something
-for the user to schedule. Five conditions, all of which have to hold:
+## How much it matters
+
+- **Critical** — security vulnerabilities, data loss or corruption, crashes,
+  auth/permission flaws, secrets exposure, broken core behaviour.
+- **Important** — real logic bugs, incorrect results in plausible cases,
+  significant performance problems, resource leaks, missing error handling on a
+  likely path, API/contract mistakes.
+- **Minor** — style, naming, formatting, subjective readability, "consider"
+  suggestions carrying no concrete defect, speculative edge cases that cannot
+  occur.
+
+**When in doubt between Important and Minor, treat it as Important.** Where the
+reviewer rated the finding itself, take its rating; reading a rating back out of
+an engine is that engine's skill's own business.
+
+## Whether it belongs to the work in hand
+
+A finding on the code this work is writing belongs to it, and is not weighed
+against scope at all. For anything else the reviewers happened to read, five
+conditions, all of which have to hold:
 
 - **It would have been in scope had it been seen earlier.** The test is the
   planning gate: named while this work was being scoped, would it have gone in?
@@ -35,6 +54,21 @@ A finding that is simply **wrong** is neither fixed nor surfaced: say why it doe
 not hold, and move on. A fork does not go below either — §1 routes that one, and
 where it is genuinely unforeseen the route is stopping the run, not filing it.
 Everything else that fails a condition surfaces.
+
+## What the two answers decide
+
+| | `Critical` / `Important` | `Minor` |
+|---|---|---|
+| **belongs** | fixed before the work completes, and blocks completion until it is | fixed where the fix rides a reading happening anyway; on its own it never earns one, and left unfixed it goes to the report |
+| **does not** | surfaced as a proposal — and severe enough that a run may stop on it rather than carry it | surfaced as a proposal, or named as noise with the reason |
+
+## The same finding twice
+
+A finding is identified by `(file, line)` **and** by mechanism — the key
+`hcb-dev:multi-review` dedupes on, since reviewers routinely anchor one root cause
+at different lines. One a run has already ruled on is not a new finding: it earns
+no second reading and blocks nothing. Where it was deferred it stays deferred;
+where it was fixed and a reviewer reports it again, the fix is what to check.
 
 ## A drive-by fix is its own commit
 

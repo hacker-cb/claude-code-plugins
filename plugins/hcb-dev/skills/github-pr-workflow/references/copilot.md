@@ -216,29 +216,19 @@ either comment source.
 
 ## Classifying severity
 
-Copilot does not always tag severity consistently. Rule:
+The ladder and what each tier costs are
+[`../../../references/findings.md`](../../../references/findings.md)'s. What is
+this reviewer's own: **Copilot does not tag severity consistently.** Where it
+labels a finding — high or critical, a bug, a security issue — take its label;
+otherwise rate it yourself by that reference.
 
-- **If Copilot labels the finding** (e.g. it marks something as high/critical or
-  flags it as a bug/security issue), use its label.
-- **If it doesn't,** classify yourself:
-  - **Critical** — security vulnerabilities, data loss/corruption, crashes,
-    auth/permission flaws, secrets exposure, broken core behavior.
-  - **Important** — real logic bugs, incorrect results in plausible cases,
-    significant performance problems, resource leaks, missing error handling on
-    a likely path, API/contract mistakes.
-  - **Skip** — style, naming nits, formatting, subjective readability,
-    "consider" suggestions with no concrete defect, speculative edge cases that
-    can't occur.
-- **When in doubt between Important and Skip, treat it as Important.**
-
-**Critical** and **Important** are fixed in the loop unconditionally. A `Skip` is
-not left alone by its severity either — put it through the test in
-[`../../../references/fix-or-surface.md`](../../../references/fix-or-surface.md)
-and fix here whatever passes. Push it like any other fix — where it is the only
-thing to go up, it still goes up — and take the re-review wait that push costs.
-What it never does is spend the loop's iteration budget: that is there for what
-blocks the exit, and a `Skip` never does. Only what that test turns down goes into
-the end-of-session report (Step 7), under its category so the user sees it.
+**Critical** and **Important** are fixed in the loop unconditionally. A `Minor` is
+not left alone by its rating either — put it through that same reference and fix
+here whatever passes. Push it like any other fix — where it is the only thing to
+go up, it still goes up — and take the re-review wait that push costs. What it
+never does is spend the loop's iteration budget: that is there for what blocks the
+exit, and a `Minor` never does. Only what the reference turns down goes into the
+end-of-session report (Step 7), under its category so the user sees it.
 
 **What you *fix* and what you *resolve* are different questions.** When the repo
 requires all threads resolved (`required_review_thread_resolution`), every thread

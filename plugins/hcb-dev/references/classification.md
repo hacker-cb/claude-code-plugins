@@ -25,7 +25,7 @@ parked reason.
 
 Read it whole — both CLIs stop at a small default page, and a short read is
 indistinguishable from a missing family.
-[`fix-or-surface.md`](fix-or-surface.md)
+[`findings.md`](findings.md)
 sets when this read happens relative to a proposal, and how often.
 
 ```bash

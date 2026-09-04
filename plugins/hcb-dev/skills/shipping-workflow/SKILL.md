@@ -92,7 +92,7 @@ mode ending at `request`. That reference owns the mechanics of completion; steps
    A finding on the code this change wrote is not weighed against scope: it is
    in-scope work. Scope is the question only for one about anything else the
    reviewers read, and the test in
-   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md)
+   [`../../references/findings.md`](../../references/findings.md)
    settles that one, carries the exits a finding of either kind can take, and owns
    the commit a fix outside this change's own scope takes. One exit is this skill's
    own: where the fix is a product or design call, stop and ask rather than
