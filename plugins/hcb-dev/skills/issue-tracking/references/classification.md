@@ -11,7 +11,7 @@ travels between repositories; every literal is read from the repository at hand.
 | kind of work | exactly one | a capability that does not exist yet · shipped behaviour deviating from spec or intent, latent defects included · internal quality with no new capability. A parent takes its children's dominant kind |
 | component | at least one | where the work lands — the ones whose directories the diff actually touches; docs follow their subject. Three or more is a signal to decompose, not to label harder |
 | parked reason | at most one | the pending trigger that should reopen attention — a decision, an upstream release, a dependency of the project's own. **Absence means ready to pick up** |
-| priority | at most one | absence means normal |
+| priority | at most one | how far up the queue the work is wanted, ordinal within the family. **Absence means normal** |
 | security | optional flag | on top of whatever component applies |
 
 A deliberately deferred defect keeps its kind of work — the deferral lives in the
@@ -34,7 +34,8 @@ glab api --paginate "projects/<project>/labels?per_page=100"
 ```
 
 Map the roles onto the prefixes that set already uses, reading the descriptions
-and not only the names.
+and not only the names. Where a family is ordinal, its order comes from those
+descriptions and the colour ramp, never from the order the names sort in.
 
 **Never pass a name you did not just read.** On GitLab an unknown name handed to a
 label parameter is created as a new label, so a typo becomes part of the set

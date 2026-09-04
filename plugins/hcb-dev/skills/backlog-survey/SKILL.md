@@ -43,19 +43,26 @@ never this checkout's own state, which may be stale or mid-feature — and the
 report names the revision it read.
 
 Per issue: the body, every comment, the labels, native type, milestone and
-state reason (the classification `hcb-dev:issue-tracking` resolves — a parked
-reason that still holds keeps an issue out of every "ready" tier), the
-sub-issue and dependency links (both sit past either CLI's issue commands —
-the entry points are resolved per
-[`../../references/forge-docs.md`](../../references/forge-docs.md)), the
-change requests that touch it — then the
-tree itself at the issue's coordinates. The verdict on each is one of:
-**current** (the defect or gap is still there — cite the coordinate that shows
-it), **stale** (the tree moved — cite what fixed or invalidated it), **needs
-rewrite** (real, but the body misleads), **unverifiable** (the trigger cannot
-be checked from here — an unreproduced defect, an environment this session
-lacks — say why; it stays out of every closure proposal). Reading only the
-issues surveys what was once believed, not what is.
+state reason (the classification `hcb-dev:issue-tracking` resolves per
+[`../issue-tracking/references/classification.md`](../issue-tracking/references/classification.md)
+— a parked reason that still holds keeps an issue out of every "ready" tier),
+the sub-issue and dependency links (both sit past either CLI's issue commands
+— the entry points are resolved per
+[`../../references/forge-docs.md`](../../references/forge-docs.md)), the change
+requests that touch it — then the tree itself at the issue's coordinates. The
+verdict on each is one of: **current** (the defect or gap is still there — cite
+the coordinate that shows it), **stale** (the tree moved — cite what fixed or
+invalidated it), **needs rewrite** (real, but the body misleads),
+**unverifiable** (the trigger cannot be checked from here — an unreproduced
+defect, an environment this session lacks — say why; it stays out of every
+closure proposal). Reading only the issues surveys what was once believed, not
+what is.
+
+The priority role that same classification resolves is the issue's **declared
+priority** — read it per issue and carry it as an input of its own, never
+folded into the importance the tests below derive. Where the repository
+expresses no priority at all, the report says so once and the tiers stand on
+the tests alone.
 
 ## The report
 
@@ -66,7 +73,14 @@ In this order, each section explicit even when empty:
 2. **Tiers of importance**, each issue placed by three tests: does it block
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only its
-   members.
+   members, and carry each issue's declared priority beside the tier the tests
+   put it in. Where the two disagree, the disagreement is a result of its own:
+   a priority declared above normal with nothing firing and nothing blocked
+   goes to the hygiene plan to be lowered, citing what the code showed; a
+   vertex of the critical path declared below normal, or not declared at all,
+   goes there to be raised; one declared above normal behind a parked reason
+   stays out of the ready tiers and is named among what is worth unblocking.
+   Where the tests leave two issues level, the declared priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).

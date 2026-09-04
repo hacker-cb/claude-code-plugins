@@ -172,9 +172,11 @@ work is **done** — not how the ask is worded.
   issue by issue and verified against the code, not against the tracker: each
   issue ruled current, stale or needing a rewrite, with the coordinate that
   shows it. Reports the picture, tiers of importance (blocks others / fires
-  today / catches regressions), the dependency graph and critical path,
-  parallel lanes per `references/wave-planning.md`, one recommendation for
-  what to take next, and incidental findings with a hygiene plan — which
+  today / catches regressions) with the priority the tracker declares carried
+  beside each tier and every disagreement between the two reported, the
+  dependency graph and critical path, parallel lanes per
+  `references/wave-planning.md`, one recommendation for what to take next,
+  and incidental findings with a hygiene plan — which
   executes only on your word, item by item through `issue-tracking`. Scales by
   fanning readers out as subagents when the slice runs to hundreds. Its lanes
   are the wave plan's input.
