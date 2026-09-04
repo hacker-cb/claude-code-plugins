@@ -120,7 +120,7 @@ TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
 # Merged reads as state `closed` carrying a merged_at.
 ( cd "$PROJECT" || exit
   HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
-  gh api --hostname "$HOST" --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
+  gh api --hostname "$HOST" --paginate "repos/{owner}/{repo}/commits/$TIP/pulls" \
     --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv' )
 # GitLab — `api` takes the host from that checkout itself. @tsv so an empty column
 # keeps its place; either one can hold the commit
