@@ -404,7 +404,9 @@ Per skill, on top of those:
 - **`issue-tracking`**: the forge CLI — every step of it is a tracker read or
   write. Issue hierarchy and dependencies are past what either CLI's `issue`
   commands wrap, so those go through its `api` subcommand.
-- **`dependency-versions`**: the relevant package manager on `PATH`.
+- **`dependency-versions`**: the relevant package manager on `PATH`. Its
+  Dependabot half is
+  [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
 - **`codex-review`**: the `codex` CLI installed and `codex login` live, plus `jq`
   to read the run's JSON envelope.
 - **`claude-review`**: the `claude` CLI on `PATH` and authenticated, plus `jq` to

@@ -54,33 +54,9 @@ CLAUDE.local.md
 .claude/worktrees/
 ```
 
-What each ignored entry is, so nothing gets over- or under-matched:
-
-- `CLAUDE.local.md` — personal project memory. Nothing auto-ignores it; this
-  line is the only barrier.
-- `.claude/settings.local.json`, `.claude/*.local.json` — personal setting
-  overrides. Claude Code adds the first one to the machine's global git ignore
-  when it creates the file, but the repo needs its own rule so it travels.
-- `.claude/scheduled_tasks.json`, `.claude/scheduled_tasks.lock` — schedule
-  state and its lock, written by the `/schedule` and `/loop` plugins. Per-machine
-  (the tasks run on whoever's box created them), so both stay out of git;
-  harmless if those plugins are unused.
-- `.superpowers/` — Superpowers per-session artifacts.
-- `.agentsroom/` — AgentsRoom (Agentsroom AI) per-project state.
-- `.playwright-mcp/`, `.playwright-cli/` — where Playwright's browser tooling
-  drops screenshots, traces, sessions and page snapshots: the directory it was
-  started in, which is the repo. Two names because the mode picks one — the MCP
-  server writes the first, the agent CLI the second.
-- `.worktrees/`, `.claude/worktrees/` — checkouts of the repo inside itself,
-  never committed. Two paths because two mechanisms create them: the Superpowers
-  `using-git-worktrees` skill defaults to the first, Claude Code's native
-  `/worktree` to the second. List both.
-
-**Everything else under `.claude/` is committed** — `settings.json`,
-`CLAUDE.md`, `rules/`, `skills/`, `commands/`, `agents/`, `hooks/`, and any
-future team-shared file. So is `.mcp.json` at the repo root. Never blanket-ignore
-`.claude/`; that setup is meant to be shared with the team and with future-you on
-another machine.
+**Everything under `.claude/` other than the per-developer files above is
+committed**, and so is `.mcp.json` at the repo root. Never blanket-ignore
+`.claude/`.
 
 ## Part 2 — language and framework patterns
 
@@ -98,9 +74,8 @@ one-size-fits-all list:
 If unsure which patterns a stack needs, take the canonical template from
 [github/gitignore](https://github.com/github/gitignore) for that language rather
 than inventing entries. Those templates stop at the language and its build
-system: for a test runner, a task cache, a hosting or deploy CLI — and for
-deciding which of a visual test's directories is committed and which is ignored —
-read [`references/tool-artifacts.md`](references/tool-artifacts.md).
+system; for anything past it, read
+[`references/tool-artifacts.md`](references/tool-artifacts.md).
 
 ## Editing an existing `.gitignore`
 
