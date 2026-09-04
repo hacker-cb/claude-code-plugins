@@ -5,9 +5,8 @@ carry: a test runner, a monorepo task cache, a hosting or deploy CLI.
 
 ## Where the names come from
 
-A canonical template covers a language and its build system. Nothing else is in
-it, so take the pattern from the tool itself — the lines its own scaffolding
-command appends to `.gitignore`, or its docs.
+Take the pattern from the tool itself — the lines its own scaffolding command
+appends to `.gitignore`, or its docs.
 
 ## A reference snapshot is committed; what a run writes is not
 

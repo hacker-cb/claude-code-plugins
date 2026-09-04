@@ -38,6 +38,11 @@ the stable half of the live one — coin it by the same reference.
    message sent to a sleeping session queues until it wakes. Its registry also
    resolves a known title to an id when the live listing shows nothing. It sees
    less than the live registry; where it cannot see the target, drop a rung.
+
+   **Your own id comes from the host, not from a path this plugin derives.** Take
+   it from wherever this host surfaces it. Where nothing does, write that in the
+   slot rather than leaving it blank and be addressed by title alone — a slot
+   saying no id is available is answerable, an empty one reads as an oversight.
 3. **The tracker.** What must not be lost does not travel by message at all:
    the record goes where the work lives — the epic, the issue, the change
    request — and the message shrinks to a pointer at it. A receiver that never
@@ -55,8 +60,7 @@ a rung's tooling simply starts lower.
 - **First contact carries identity both ways**: who you are — title and session
   id — and which epic or order this concerns. Where the address was guessed,
   the first line is a challenge: "if you are not <who this concerns>, say so
-  and I stop." A wrong guess answered is a mis-delivery caught; one acted on is
-  two sessions corrupting each other's state.
+  and I stop."
 - **The first line of every message is self-contained** — the recipient's human
   previews only that line.
 - **A question waits without blocking.** Send it, then continue on what does

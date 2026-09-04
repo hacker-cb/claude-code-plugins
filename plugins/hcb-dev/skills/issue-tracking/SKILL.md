@@ -27,8 +27,7 @@ and what answers there, never from the hostname.
   later, or found in passing and left alone by the test in
   [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md).
 - **Work conceived and finished in the same effort earns none** — the change
-  request and `git log` already record it. A finding fixed where it was found is
-  the same case.
+  request and `git log` already record it.
 - **Open-ended architectural direction** belongs to the project's roadmap.
 
 ## Searching the tracker
@@ -70,8 +69,7 @@ applying any of them and before proposing one the repository lacks.
 **Hierarchy** — one child per independently completable piece, and the parent
 carries its own kind of work. **Dependencies** — what blocks what.
 
-Both sit past what either CLI's issue commands reach, and the two are separate
-mechanisms on both forges — the entry points are in
+Both are resolved per
 [`../../references/forge-docs.md`](../../references/forge-docs.md).
 
 ## Consult the backlog at three moments
@@ -92,11 +90,9 @@ Where a bare `#N` would not autolink — documentation, code comments, anything 
 outside its own issue or change request — write `[#N](<url>)`.
 
 The closing keyword is the forge's own — the word its pattern matches, verbatim,
-never translated to match the prose around it. That word is English on both
-forges by default, and one outside the pattern matches nothing and reports
-nothing, so the issue is simply still open once the merge lands. Which words a
-forge matches, and whether its pattern can be reconfigured at all, is
-`../../references/forge-docs.md`.
+never translated to match the prose around it. That word is English on both forges
+by default. Which words a forge matches, and whether its pattern can be
+reconfigured at all, is `../../references/forge-docs.md`.
 
 A closing keyword in the change request body closes the issue **only where the
 forge acts on it** — which it does for a request targeting the default branch, and
@@ -109,16 +105,9 @@ work raised become issues opened in the same effort.
 
 ## Reference files
 
-- [`../../references/classification.md`](../../references/classification.md) — the label
-  families as roles and the cardinality between them, which mechanism carries the
-  kind of work in this repository, and milestones where a project uses them. Read
+- [`../../references/classification.md`](../../references/classification.md) — read
   it before applying anything to an issue, and before proposing one.
-- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — the
-  test deciding whether something found in passing is fixed where it was found or
-  left, and, for a left one, what reaches the user, in what form, and what their
-  answer authorizes. Read it before writing that proposal.
-- [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
-  flag, an endpoint or a concept name gets resolved on either forge, what each
-  one matches to close an issue, and which hierarchy and dependency mechanism
-  each one has. Read it before writing an invocation this skill does not spell
-  out.
+- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
+  it before proposing an out-of-scope finding to the user.
+- [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
+  before writing an invocation this skill does not spell out.

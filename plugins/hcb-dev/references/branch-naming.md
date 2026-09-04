@@ -65,10 +65,9 @@ expects beats a nicer shape imported from outside (`architecture-decisions.md`
 gh pr list --state merged --limit 30 --json headRefName -q '.[].headRefName'
 # GitLab
 glab mr list --merged --output json --per-page 30 | jq -r '.[].source_branch'
-# Offline — whatever names the remote still carries. `lstrip=3` drops exactly
-# `refs/remotes/<remote>/` and leaves the rest intact, so `feat/csv-export` stays
-# two segments; `refname:short` would collapse `origin/HEAD` to a bare `origin`
-# and seed the sample with a non-branch.
+# `lstrip=3`, NOT `refname:short`: it drops exactly `refs/remotes/<remote>/`, keeping
+# `feat/csv-export` two segments, where `refname:short` collapses `origin/HEAD` to a
+# bare `origin` and seeds the sample with a non-branch.
 git for-each-ref --format='%(refname:lstrip=3)' refs/remotes | grep -vx HEAD
 ```
 
@@ -164,17 +163,11 @@ cur="$(git symbolic-ref --short -q HEAD)" \
   || { echo "DETACHED HEAD — check out a branch first"; exit 1; }
 NEW="<new>"
 # QUIET #1 — `git branch -m <same-name>` exits 0 having done nothing, so a caller
-# running this block for its push half would sail on to delete the ref it had just
-# pushed under that same name. "Nothing to do" is a result, not a no-op.
+# running this block for its push half would delete the ref it had just pushed.
 [ "$cur" = "$NEW" ] && { echo "ALREADY $NEW — nothing to rename"; exit 0; }
-# QUIET #2 — a branch checked out in ANOTHER worktree belongs to another session.
-# Renaming it exits 0 and retargets that session's HEAD onto the new name without
-# a word. Git normally holds one branch in one worktree, so for the CURRENT branch
-# this fires only where
-# `git worktree add --force` put it in two; the wider case the table below forbids
-# is the two-argument `git branch -m <other> <new>`, which nothing in git prevents.
-# Compare against THIS worktree's path, or the branch you stand on reads as
-# someone else's.
+# QUIET #2 — renaming a branch checked out in ANOTHER worktree exits 0 and retargets
+# that session's HEAD without a word. Compare against THIS worktree's path, or the
+# branch you stand on reads as someone else's.
 here="$(git rev-parse --show-toplevel)"
 git worktree list --porcelain | awk -v cur="refs/heads/$cur" -v here="$here" '
     /^worktree /{w=substr($0,10)}
@@ -192,7 +185,7 @@ git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
   closes the request. Resolve the push remote *before* renaming — the ambiguity
   path exits, and exiting after `git branch -m` leaves a branch renamed locally
   with nothing pushed — per [`base-resolution.md`](base-resolution.md) ("Pushing is
-  a different question"). The runnable version is `github-pr-workflow` Step 1.
+  a different question").
 - **Never `git branch -M`.** The force form overwrites an existing branch of that
   name — someone else's work, silently. On a collision pick a different name.
 

@@ -6,10 +6,7 @@ description: >-
   `hcb-dev:implementation-workflow`, or an investigation whose deliverable is
   recorded tracker state. Use when the user wants a prompt for a new
   session, hands fixes or a build out to run elsewhere, or writes one
-  standalone order outside any wave. This session's numbers, coordinates and
-  settled decisions are the payload; the order ends either in the shape of the
-  answer to send back or in an end state with nothing returning. For work
-  already FINISHED that another session only has to receive, use
+  standalone order outside any wave. For work already FINISHED that another session only has to receive, use
   `hcb-dev:session-handoff` — the discriminator is whether the work is done.
   For a batch fanned out of a coordinating session — by chip or pasted wave
   order — use `hcb-dev:wave-dispatch`. A question is never dispatched — a subagent or a

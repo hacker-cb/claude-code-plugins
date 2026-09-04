@@ -5,12 +5,9 @@ description: >-
   issue/ticket numbers — into implemented, reviewed work. Use it at the START,
   when there is something to build and no code exists yet: "сделай issue #42", "do
   these three tickets", "build this spec", "implement this and open the PRs". It
-  deep-reads the tasks and the codebase, splits the work into independently
-  reviewable slices (one is the normal case), forks the open architectural
-  questions and the completion mode (merge locally, or a change request) to you at
-  one planning gate, then runs each slice through development, review, and
-  completion autonomously, closing with a per-slice report that rates incidental
-  findings or says there are none. Do NOT use it for work already finished that
+  slices the work, forks the architectural questions and the completion mode
+  (merge locally, or a change request) to you at one planning gate, then runs each
+  slice to completion autonomously. Do NOT use it for work already finished that
   only needs completing — that is `hcb-dev:shipping-workflow`, which this skill
   calls per slice; nor for driving an existing PR (`hcb-dev:github-pr-workflow`);
   nor as a diff review (`hcb-dev:multi-review`).
@@ -39,6 +36,8 @@ mode once, at the gate, and threads it down; the mechanics live in
   issue/ticket number, or a mix. Read a number through the mirrored CLIs — GitHub
   `gh issue view <n> --json title,body,comments`, GitLab `glab issue view <n>` —
   detecting the forge from the remote and what answers there, never the hostname.
+  Resolve any invocation this skill does not spell out per
+  [`../../references/forge-docs.md`](../../references/forge-docs.md).
   Reading an issue is reading a *spec*, not a mandate to do everything written in
   it: surface the actual asks and let the gate confirm scope.
 - **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue
@@ -106,8 +105,7 @@ For anything multi-slice, **persist the plan and the captured authorizations** s
 a long autonomous run survives context compaction — track slice progress on the
 native task list, and keep the plan (mode, merge authorization, strategy) in a
 durable plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans` (resolve the
-path from the variable; never hardcode `~/.claude`). Losing the mode or the merge
-authorization to a compaction mid-run is the failure this guards against.
+path from the variable; never hardcode `~/.claude`).
 
 ## Phase 2 — Autonomous execution
 
@@ -130,11 +128,8 @@ other):
    the slice's `incidental` output onward to the Phase 3 report.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
-   commit the slice was cut from — after a refresh that is the ref, not the local
-   parent it may now be behind — so the sweep and the review cover this slice and
-   not the cumulative feature diff), `merge-strategy` and `merge-auth`. The coverage *policy* is not
-   threaded — an actionable gap always stops (Phase 1), a fixed invariant every
-   completion honors.
+   commit this slice was cut from — only the orchestrator knows it),
+   `merge-strategy` and `merge-auth`.
 
 **Autonomy is "no routine questions", not "never pauses".** The legitimate stops
 remain and are honored — this skill does not waive the downstream skills' own
@@ -192,23 +187,17 @@ completed straight onto the base in Phase 2.
 
 ## Reference files
 
-- [`../../references/slice-completion.md`](../../references/slice-completion.md) — how a slice ends, both backends; read
-  before Phase 2's handoff.
-- [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — when to ask, always with a
-  recommendation, and flagging rule-vs-architecture drift; read before Phase 1.
-- [`../../references/report-format.md`](../../references/report-format.md) — the Phase 3 report shape.
-- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — the test that decides
-  whether something noticed in passing is fixed in the slice that found it or left
-  for the report, what the run's incidental findings and follow-ups cost before
-  they can be proposed, and what the user's answer authorizes; read before Phase
-  2's development, and again before Phase 3's issues output.
-- [`../../references/base-resolution.md`](../../references/base-resolution.md) — resolving a base and a remote without
-  guessing either name, and refreshing one before anything is read against it or
-  cut from it; the slice parent is handed to the reviewers and to completion as an
-  explicit base.
-- [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name and the
-  feature/slice layout; read before Phase 1's branch layout and Phase 2's cut.
-- [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
-  forge flag, endpoint or concept name gets resolved, and what each forge calls
-  the thing the other names differently; read before reading a task out of an
-  issue or writing any `gh` / `glab` invocation.
+- [`../../references/slice-completion.md`](../../references/slice-completion.md) —
+  read before Phase 2's handoff.
+- [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+  — read before Phase 1.
+- [`../../references/report-format.md`](../../references/report-format.md) — the
+  Phase 3 report shape.
+- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
+  before Phase 2's development, and again before Phase 3's issues output.
+- [`../../references/base-resolution.md`](../../references/base-resolution.md) —
+  read before Phase 0's refresh and Phase 2's cut.
+- [`../../references/branch-naming.md`](../../references/branch-naming.md) — read
+  before Phase 1's branch layout and Phase 2's cut.
+- [`../../references/forge-docs.md`](../../references/forge-docs.md) — read before
+  reading a task out of an issue or writing any `gh` / `glab` invocation.

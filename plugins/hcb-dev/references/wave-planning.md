@@ -41,10 +41,9 @@ each:
 ## Gating the waves
 
 - A wave's gate is named in the plan: which merges, which decisions open it.
-- **A guard introduced on a clean tree goes early, never last.** The window in
-  which a new gate finds zero violations closes with the first merge that
-  could violate it — a batch that installs checks launches in the first wave,
-  and later batches expect to go red on it and fix, not weaken.
+- **A guard introduced on a clean tree goes early, never last** — a batch that
+  installs checks launches in the first wave, and later batches expect to go
+  red on it and fix, not weaken.
 - The merge order inside a wave is part of the plan: who merges first, who
   rebases on whom across a named seam; two green batches racing CI for the
   next slot is an acceptable order too — say which rule applies.

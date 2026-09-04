@@ -12,7 +12,7 @@ description: >-
 # Codex review
 
 `codex exec review` is Codex's built-in reviewer, running non-interactively in a
-read-only sandbox. It needs `codex` on `PATH` and a live `codex login`.
+read-only sandbox. It needs `codex` on `PATH`, `jq`, and a live `codex login`.
 
 This skill is **review-only**. Never fix what it reports — return the findings
 and let the caller decide.
@@ -20,9 +20,7 @@ and let the caller decide.
 ## 1. Before launching
 
 [`../../references/review-runs.md`](../../references/review-runs.md) owns what
-every detached review shares: resolving the base, the untracked files no diff
-shows, launching in the background, and the coverage record the run hands back.
-Read it first — the sections below carry only what is this engine's own.
+every detached review shares; read it first — below is only this engine's own.
 
 What that base buys here: `--base` diffs `merge-base(base, HEAD)` against the
 **working tree**, so a single pass covers the branch's commits *and* uncommitted
@@ -38,7 +36,7 @@ The run is one command, and everything it needs arrives as a flag:
 bash "${CLAUDE_PLUGIN_ROOT}/skills/codex-review/scripts/codex-review.sh" \
   --base "<the ref resolved in §1 — drop the flag entirely for a working-tree review>" \
   --model "<the model the caller named — drop the flag to take the catalog's newest>" \
-  --effort "<the level the caller named — drop the flag to take xhigh, or the model's highest>"
+  --effort "<the level the caller named — drop the flag to let the script resolve one>"
 ```
 
 A caller — a person or another skill — may hand you the base, the model or the
@@ -50,10 +48,8 @@ machine to machine.
 ## 3. Hand back the findings
 
 The script prints a `started:` line as it launches the engine, and then nothing
-until the run is done — §1's reference says why that line is there and what it does
-not mean. What a finished run prints is the `scope:` line, any `coverage-warning:`
-lines, and then Codex's report — §1's reference owns how all three are read back. The report's shape is a
-one-paragraph verdict followed by findings:
+until the run is done. The report's shape is a one-paragraph verdict followed by
+findings:
 
 ```text
 - [P1] Short title — /abs/path/file.js:12-14
@@ -62,12 +58,8 @@ one-paragraph verdict followed by findings:
 
 **A spent quota lands there too, and does not announce itself.** This CLI writes its
 verdict to a file rather than an envelope, so a limit leaves that file empty and the
-notice in the log tail — indistinguishable in shape from a crash, and told apart only
-by reading what the tail says. §1's reference says why that distinction matters to
-the caller: a quota is not a gap anyone closes by fixing the change.
+notice in the log tail — indistinguishable in shape from a crash, and told apart
+only by reading what the tail says.
 
-Every failure lands in a `codex review failed:` branch and exits non-zero, so a
-detached run reads as failed rather than as a review with nothing in it. What the
-branch carries depends on how far the run got: the engine's own error once it was
-reached — the catalog's, or the log tail — and the script's own where the call
-itself was wrong, before any engine ran.
+**Every failure prints `codex review failed:`** and exits non-zero — that line, not
+an empty file, is what says the run is over.

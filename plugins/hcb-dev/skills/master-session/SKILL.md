@@ -122,5 +122,5 @@ is that session's to sweep. Write the ledger's closing line.
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
-- [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
+- [`../../references/report-format.md`](../../references/report-format.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

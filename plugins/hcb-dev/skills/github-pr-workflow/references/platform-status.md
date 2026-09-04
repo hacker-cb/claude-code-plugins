@@ -35,12 +35,9 @@ it exists to keep usable.
 ```bash
 COMPONENT="<the component that is down, spelled as the feed spells it>"
 while :; do
-  # Three outcomes, not two. Only a feed that answered AND parsed says anything
-  # about the component; a fetch that failed and a body that is not JSON (a CDN
-  # error page is what a struggling status site serves) are both "could not
-  # determine", which retries. An empty status out of a feed that DID parse is a
-  # name matching no component — a typo, or one the feed has since renamed — and
-  # sleeping on that waits forever for a value that cannot arrive.
+  # Three outcomes, not two. A failed fetch and a body that is not JSON are both
+  # "could not determine", which retries; an empty status out of a feed that DID
+  # parse is a name matching no component, and sleeping on that waits forever.
   if ! feed="$(curl -fsS --connect-timeout 10 --max-time 30 \
         https://www.githubstatus.com/api/v2/components.json)" \
      || ! status="$(jq -r --arg c "$COMPONENT" \

@@ -100,10 +100,7 @@ Never create a label that duplicates a native field, a variant spelling of one t
 forge's own tooling matches by exact string, a component that does not exist yet,
 or anything as a side effect of applying a label.
 
-**Never delete or rename.** Deleting strips the label from everything carrying it,
-irreversibly on both forges; renaming keeps the associations but breaks every
-reference held by name — automation, templates, saved searches. Propose either and
-let the user run it.
+**Never delete or rename** — propose either and let the user run it.
 
 ## Naming and colour
 

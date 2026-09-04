@@ -124,14 +124,11 @@ still published: a tracking ref answers only for what the checkout's refspec cov
 which in a single-branch or CI clone is not this branch.
 
 ```bash
-# The URLs that RECEIVE pushes, not the remote by name: the name resolves to the
-# FETCH url, and where a `pushurl` sends pushes elsewhere — fetching from upstream,
-# pushing to a fork — the branch was never published there at all. `--all` because
-# a push reaches every configured endpoint, so one surviving copy is still
-# published. Keep each exit status: an endpoint that did not answer prints nothing
-# either, and reading that as "no branch" calls a live ref one the merge took.
-# The resolution itself can fail — a remote missing or misnamed exits non-zero
-# with no output, which is the same silence as a branch that is gone.
+# The URLs that RECEIVE pushes, not the remote by name: a `pushurl` sends pushes
+# somewhere the FETCH url never published to. `--all`, because a push reaches every
+# configured endpoint. Keep each exit status: an endpoint that did not answer prints
+# nothing, and so does a missing remote — reading either as "no branch" calls a live
+# ref one the merge took.
 if urls="$(git remote get-url --push --all <push-remote>)"; then
   printf '%s\n' "$urls" | while read -r url; do
     git ls-remote --heads "$url" refs/heads/<branch> || echo "NO ANSWER: $url"

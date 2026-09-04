@@ -24,9 +24,7 @@ and let the caller decide.
 ## 1. Before launching
 
 [`../../references/review-runs.md`](../../references/review-runs.md) owns what
-every detached review shares: resolving the base, the untracked files no diff
-shows, launching in the background, and the coverage record the run hands back.
-Read it first — the sections below carry only what is this engine's own.
+every detached review shares; read it first — below is only this engine's own.
 
 What that base buys here: §2 hands the review the range
 `merge-base(base, HEAD)...HEAD` — **the branch's commits, and nothing
@@ -41,7 +39,7 @@ The run is one command, and everything it needs arrives as a flag:
 bash "${CLAUDE_PLUGIN_ROOT}/skills/claude-review/scripts/claude-review.sh" \
   --base "<the ref resolved in §1 — drop the flag entirely for a working-tree review>" \
   --level "<the rung the caller named, or medium>" \
-  --model "<the model the caller named — drop the flag to take the newest Opus>" \
+  --model "<the model the caller named — drop the flag to let the script resolve one>" \
   --narrow "<a path, or a focus such as 'only error handling' — drop the flag for none>"
 ```
 
@@ -71,9 +69,7 @@ record.
 ## 3. Hand back the findings
 
 The script prints a `started:` line as it launches the engine, and then nothing
-until the run is done — §1's reference says why that line is there and what it does
-not mean. What a finished run prints is the `scope:` line, any `coverage-warning:`
-lines, and then the review — §1's reference owns how all three are read back.
+until the run is done.
 
 What is this engine's own:
 
@@ -86,15 +82,10 @@ What is this engine's own:
 - A `run warnings:` block means the run printed to stderr while still succeeding —
   a degradation rather than a failure, so read it before trusting what the scope
   line claims.
-- A missing CLI, an expired login and a non-repository all land in the
-  `claude review failed:` branch, where the diagnosis is whichever of the envelope,
-  stdout or stderr carried it.
-- **A spent quota gets its own line**, `claude review unavailable:`, and exits 3 —
-  it is neither a failure of the engine nor a review. The line carries the engine's
-  own notice, and **which limit it names decides what to do next**: an account limit
-  gives a reset time and nothing else closes it before then, while a *model* limit
-  says to switch models — and §2 takes `--model`, so rerunning on another family
-  closes the gap now rather than recording one.
+- **Every failure prints `claude review failed:`** and exits non-zero — that line,
+  not an empty file, is what says the run is over.
+- **A spent quota gets its own line**, `claude review unavailable:`, and exits 3.
+  Read which limit the notice names; §2 takes `--model`.
 - **A verdict with nothing in it is still a review.** A run that read the range and
   found nothing prints its `scope:` line like any other, with a verdict of a line or
   two beneath it, and so does one handed a working tree with nothing changed in it —

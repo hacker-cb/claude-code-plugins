@@ -11,11 +11,9 @@ own record" that [`order-anatomy.md`](order-anatomy.md) and
 
 One comment on the epic issue, opened when the role is assumed and edited in
 place from then on, carrying the marker `<!-- wave-ledger -->` so it is found
-by content rather than by position. That placement buys the recovery chain —
-the master's title names the epic, the epic holds the ledger — from any
-machine, and it lets the batches read the standing constraints themselves,
-which is why every order names the ledger's coordinate. The exact
-list-and-edit invocation is resolved per [`forge-docs.md`](forge-docs.md),
+by content rather than by position. Every order names its coordinate, so a
+batch reads the standing constraints itself. The exact list-and-edit
+invocation is resolved per [`forge-docs.md`](forge-docs.md),
 mirrored on both forges.
 
 The epic's *body* stays human — the wave table, the progress — and the ledger

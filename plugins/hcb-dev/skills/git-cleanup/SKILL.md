@@ -22,11 +22,8 @@ worktree still means cleaning the repository as a whole.
 
 **The default branch and its remote come from
 [`../../references/base-resolution.md`](../../references/base-resolution.md)** —
-its rung 4 answers this, and it owns every trap on the way: why a read symref goes
-on naming a branch the forge renamed away, why the answer travels as the
-remote-tracking ref and never as a bare name, and why that ref must be materialised
-and re-verified before anything consumes it. Resolve it there, then carry two
-values into the rest of the sweep:
+its rung 4 answers this. Resolve it there, then carry two values into the rest of
+the sweep:
 
 ```bash
 D="<the remote-tracking ref, per base-resolution.md — EMPTY unless it resolved AND
@@ -38,11 +35,7 @@ DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never 
 **`DEFAULT-UNRESOLVED` is not "nothing is merged"** — it is "the merge question
 cannot be answered", and holding those two apart is this skill's whole safety
 margin. Every branch's status becomes **unknown**: surface them all, delete none,
-and say the remote was unreachable. The reason it matters here more than anywhere
-else is that both failing commands answer in the vocabulary of success — a
-`branch --merged` that died prints nothing, which reads as "no branches are
-merged", and a `rev-list --count` that died prints 0, which routes a branch
-straight to deletion.
+and say the remote was unreachable.
 
 If there is no remote at all, ask the user — nothing local names the default.
 
@@ -76,10 +69,7 @@ The argument picks it. With no argument, ask — do not guess.
 
 **Mode S is what you remember creating in this conversation.** That record is the
 source, not a corroborating one — you were there for every branch cut and every
-worktree added. A timestamp probe cannot overrule it and does not settle the case
-it looks built for: a session that was resumed, or whose process restarted, has a
-start time later than the worktree it made, so its own work dates as somebody
-else's.
+worktree added. A timestamp probe cannot overrule it.
 
 Where memory is genuinely unsure about one item, list it. Mode decides *what is
 listed*, never how freely anything is deleted — the risk class does that, and
@@ -102,8 +92,7 @@ fi
 git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
 git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
 # --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
-# worktree, and `ls` would resolve that against the caller's cwd. `-d` so an
-# empty modules dir still prints, instead of leaving both branches silent.
+# worktree, which `ls` resolves against the caller's cwd. `-d` so an empty dir prints.
 ls -d "$(git -C "<each worktree path>" rev-parse --absolute-git-dir)/modules" 2>/dev/null || echo none
 ```
 
@@ -125,15 +114,10 @@ identity, and a request carrying it carries every commit under it.
 
 ```bash
 TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
-# Both CLIs read the repository from the directory they run in, and neither takes
-# git's -C, so they run from $PROJECT: cwd may be another checkout entirely.
-# --paginate on both, since these endpoints page and an open request on page two is
-# an open request the sweep would delete over.
-# GitHub — `api` resolves :owner/:repo from the checkout but not its host, so a
-# self-hosted instance is asked of github.com unless --hostname says otherwise. The
-# endpoint answers with merged AND open requests for a commit outside the default
-# branch, which every squash merge leaves its tip; merged reads as state `closed`
-# carrying a merged_at.
+# Both CLIs read the repository from their cwd and neither takes git's -C, so they
+# run from $PROJECT. --paginate, or an open request on page two is one the sweep
+# deletes over; --hostname, or a self-hosted instance is asked of github.com.
+# Merged reads as state `closed` carrying a merged_at.
 ( cd "$PROJECT" || exit
   HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
   gh api --hostname "$HOST" --paginate "repos/:owner/:repo/commits/$TIP/pulls" \
@@ -314,9 +298,8 @@ Three things come first, in this order, on every branch reaching this step:
 Then the branch's own proof, whichever routed it:
 
 ```bash
-# The open rows step 4's query returns for this tip, re-asked now — empty when none
-# are open and empty again where no forge CLI answered, which take the same path:
-# on to the proofs below.
+# Step 4's open rows for this tip, re-asked now. Empty when none are open and empty
+# where no forge CLI answered — both take the same path, on to the proofs below.
 OPEN="<those rows, or empty>"
 # $OID — the tip read above; every proof measures that object rather than the ref.
 PROVEN=""
@@ -335,9 +318,8 @@ elif [ "$(git -C "$PROJECT" rev-list --count "$D..$OID")" = 0 ]; then
 else
   echo "the proof no longer holds — surface it, saying whether it failed or could not run"
 fi
-# The delete, once, behind a re-read of the ref: a mismatch is an outcome to
-# report, never a silent no-op. Same `--verify -q` plus `|| true` as above, so a
-# ref that vanished is a mismatch to report and not a fatal or an exit.
+# The delete, once, behind a re-read of the ref — same `--verify -q` plus `|| true`
+# as above, so a vanished ref is a mismatch to report, never a fatal or a no-op.
 if [ -n "$PROVEN" ]; then
   NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>" || true)"
   if [ "$NOW" = "$OID" ]; then
@@ -368,15 +350,14 @@ them here unsets the tracking this was meant to repair.
 ```bash
 CURRENT="<the branch being repaired>"
 
-# Re-point at the default ONLY when this IS the default branch; on any other
-# branch drop the dead upstream and let `git push -u <remote> "$CURRENT"` restore
-# it. Skip entirely on DEFAULT-UNRESOLVED: an empty $DEF matches no branch, so the
+# Skip entirely on DEFAULT-UNRESOLVED: an empty $DEF matches no branch, so the
 # else arm would strip every upstream on the one run told it cannot answer.
 if [ -z "$DEF" ]; then
   echo "skipping upstream repair — default branch unresolved"
 elif [ "$CURRENT" = "$DEF" ]; then
   git -C "$PROJECT" branch --set-upstream-to="$D" "$CURRENT"
 else
+  # The next `git push -u <remote> "$CURRENT"` restores it; say so in the report.
   git -C "$PROJECT" branch --unset-upstream "$CURRENT"
 fi
 ```

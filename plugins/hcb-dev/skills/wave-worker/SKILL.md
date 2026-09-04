@@ -5,11 +5,9 @@ description: >-
   a pasted block — with a batch dispatched by a master session ("Batch … from
   its master session", "волна/батч из мастер-сессии", "act per
   hcb-dev:wave-worker"). Governs the engagement around the build, not the build
-  itself: title the session with the batch id, verify the order's premises,
-  confirm composition to the master, route the order's "agree with the master"
-  forks there before building, push statuses at the named milestones, and close
-  with the return — the full report to the tracker, a notice to the master —
-  staying engaged until the master accepts. The building runs through whatever
+  itself — verifying the order, routing its "agree with the master" forks there
+  before building, and staying engaged through the return until the master
+  accepts. The building runs through whatever
   workflow the order names, usually `hcb-dev:implementation-workflow`. For
   returning a hand-carried single order use `hcb-dev:session-handoff`; a
   session with no master over it has no use for this skill.

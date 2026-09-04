@@ -22,11 +22,9 @@ standalone  <issue | nickname> — <topic>
 
 Separator ` — ` throughout, em dash. `[master]` is the role marker: it stands
 first, ahead of the identifier, and keeps that spelling and those brackets
-whatever language the topic is in. Leading is what makes it survive — a list
-of sessions truncates from the right, so a marker parked at the end is the
-first thing lost, exactly where someone is scanning for which session
-coordinates. What follows the marker is the name a session without one wears,
-so anything matching on `<epic>` matches a master exactly as it does a batch.
+whatever language the topic is in. What follows the marker is the name a session
+without one wears, so anything matching on `<epic>` matches a master exactly as
+it does a batch.
 A batch needs no marker, since the `/` is one.
 
 The standalone shape titles a session that belongs to no epic and still

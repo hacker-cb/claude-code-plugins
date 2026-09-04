@@ -32,20 +32,15 @@ and stop, rather than quietly reviewing the last commit instead.
 
 **Base.** Resolve it by the shared ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md),
-which owns all of it — the rungs and their order, remote ranking, the
-remote-tracking-ref form, the stale-pointer trap. Read it; don't re-derive any of
-it here.
+which owns all of it. Read it; don't re-derive any of it here.
 
 Three things this skill must not let the reference's authority hide:
 
 - **Whatever resolves is handed to the reviewers explicitly**, and an explicit
   base wins over any resolution they would do themselves — so a lossy answer here
   is the last word, with nothing downstream to catch it.
-- **A base a caller hands down is a name, and a name is not a ref.** A bare branch
-  name resolves against a local copy that a worktree may have left behind days ago;
-  the range then opens before commits the parent already carries, and the review
-  reads someone else's landed work as part of this change. Refresh it through the
-  reference before passing it on, same as one you resolved yourself.
+- **A base a caller hands down is a name, and a name is not a ref.** Refresh it
+  through the reference before passing it on, same as one you resolved yourself.
 - **Confirm the base shares history with `HEAD` before passing it on** —
   `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
   base is worse than none). Empty → don't pass it, and **don't quietly fall to
@@ -199,32 +194,22 @@ gate treats as closed, so recording a reviewer that did not run passes a complet
 with it missing — which is what `UNAVAILABLE` exists for. The engine's own notice
 goes below the table; the cell stays short.
 
-**Read the notice before recording it, because one kind is recoverable now.** An
-account limit names a reset time and nothing else closes it. A *model* limit says
-to switch models — and `claude-review` takes `--model`, so rerunning it on another
-family costs one command and turns the gap into coverage. Try that before recording
-`UNAVAILABLE`, and record it with which model was tried.
+**A model limit is recoverable now** — rerun on another family before recording
+`UNAVAILABLE`, and record which model was tried.
 
 **A reviewer that edited the tree says so, and that line is not coverage.** It
 belongs above the table with the findings, in the caller's own words: what a
 reviewer changed is not what a reviewer read, and the completion about to happen
 is the reason anyone needs to know before it does.
 
-**Zero files covered is not a pass.** Decide it by the count, never by matching a
-reviewer's wording: each phrases an empty review differently, and one engine
-phrases it differently again between a based and a working-tree run.
-
-**Less than the change is not a pass either.** A reviewer that ran against the
+**Less than the change is not a pass.** A reviewer that ran against the
 wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed. Where the scope was narrowed, the count is
 the range's and not the narrowing's: say what was left unread rather than letting
 it stand as full coverage.
 
-**A nonzero count can still mean the commits went unread.** Both engines print a
-`coverage-warning:` line when they reviewed the working tree alone; the count is
-then of *those* files. Read that line as well as the number — a count that passes
-the zero check under such a warning is `partial`, and a base is what closes it.
+**A `coverage-warning:` row is `partial`**, whatever the count beside it says.
 
 When a reviewer fails, quote its error instead of guessing a cause.
 

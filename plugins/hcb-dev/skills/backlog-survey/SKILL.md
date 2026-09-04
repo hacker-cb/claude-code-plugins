@@ -18,18 +18,12 @@ description: >-
 
 # Backlog survey
 
-The survey answers three questions at once — what is real, what matters, what
-can run in parallel — and its parallel layout takes the shape of
-[`../../references/wave-planning.md`](../../references/wave-planning.md)'s
-closing table, so a master session consumes it without translation.
-
 ## Scope, then scale
 
 Name the slice — a milestone, a label, everything open — and count it before
-reading. **Count exhaustively**: both forge CLIs stop at a small default
-page, so a plain list undercounts anything larger — paginate to the end, or
-set the limit above the tracker's own total, before sizing anything; a
-survey of the first page reads as a survey of the whole. The count picks the
+reading. **Count exhaustively** (per
+[`../../references/forge-docs.md`](../../references/forge-docs.md)) — a survey of
+the first page reads as a survey of the whole. The count picks the
 mechanics: a slice a session can read, it reads itself; hundreds of issues
 fan out to parallel reader subagents, each handed a sub-slice, the same
 per-issue questions and the one priority scale resolved below, with every
@@ -56,8 +50,7 @@ the coordinate that shows it), **stale** (the tree moved — cite what fixed or
 invalidated it), **needs rewrite** (real, but the body misleads),
 **unverifiable** (the trigger cannot be checked from here — an unreproduced
 defect, an environment this session lacks — say why; it stays out of every
-closure proposal). Reading only the issues surveys what was once believed, not
-what is.
+closure proposal).
 
 The priority role `classification.md` resolves is the issue's **declared
 priority** — read it per issue and carry it as an input of its own, never
@@ -87,12 +80,13 @@ In this order, each section explicit even when empty:
    result of its own: reported with what the code showed and left to the
    user to settle, never corrected as an error, never claimed where a
    verdict above or a live parked reason already explains the quiet, and
-   never read out of the normal that absence declares, which is a default
-   nobody chose. Where the tests leave two issues level, the priority
-   orders them.
+   never read out of the normal that absence declares. Where the tests leave
+   two issues level, the priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
-   (the classes `wave-planning.md` rules sequential).
+   (the classes
+   [`../../references/wave-planning.md`](../../references/wave-planning.md) rules
+   sequential).
 4. **The parallel layout** — candidate batches in the columns of
    `wave-planning.md`'s closing table, what must not run in parallel with its
    reason, and the gates the dependencies imply.
