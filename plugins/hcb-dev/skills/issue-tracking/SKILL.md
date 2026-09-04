@@ -100,14 +100,16 @@ not for one targeting a feature branch or any other trunk the repository merges
 into. Write the keyword anyway; where the forge will not act on it, and wherever
 the work completes with no change request at all, close or link the issue
 explicitly once the work lands, with the user's go-ahead. In a set, each child
-closes as its slice lands and the parent when the last one does. Follow-ups the
-work raised become issues opened in the same effort.
+closes as its slice lands and the parent when the last one does. A follow-up the
+work raised is opened in the same effort, on the answer that authorizes any
+tracker write (`../../references/findings.md`).
 
 ## Reference files
 
 - [`../../references/classification.md`](../../references/classification.md) — read
   it before applying anything to an issue, and before proposing one.
 - [`../../references/findings.md`](../../references/findings.md) — read
-  it before proposing an out-of-scope finding to the user.
+  it before proposing an out-of-scope finding, and to see who authorizes a
+  tracker write.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.
