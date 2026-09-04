@@ -61,8 +61,8 @@ what is.
 The priority role that same classification resolves is the issue's **declared
 priority** — read it per issue and carry it as an input of its own, never
 folded into the importance the tests below derive. Where the repository
-expresses no priority at all, the report says so once and the tiers stand on
-the tests alone.
+expresses no priority at all, the tier section says so once and stands on the
+tests alone.
 
 ## The report
 
@@ -74,14 +74,15 @@ In this order, each section explicit even when empty:
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only its
    members, and carry each issue's declared priority beside the tier the tests
-   put it in — an issue carrying none declares nothing to disagree with. Where
-   the two do disagree, the disagreement is a result of its own: a priority
-   declared at the family's upper end with nothing firing and nothing blocked
-   goes to the hygiene plan to be lowered, citing what the code showed; a
-   vertex of the critical path declared at its lower end goes there to be
-   raised; one declared at the upper end behind a parked reason stays out of
-   the ready tiers and is named among what is worth unblocking. Where the
-   tests leave two issues level, the declared priority orders them.
+   put it in — absence declares normal, and a repository carrying no priority
+   vocabulary declares nothing to disagree with. Where the two do disagree,
+   the disagreement is a result of its own: a priority at the family's upper
+   end that no test above puts there goes to the hygiene plan to be lowered,
+   citing what the code showed; a vertex of the critical path left at normal
+   or below goes there to be raised; one at the upper end behind a parked
+   reason stays out of the ready tiers and is named here as blocked, with the
+   reason parking it. Where the tests leave two issues level, the declared
+   priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).
@@ -93,7 +94,8 @@ In this order, each section explicit even when empty:
    user's priorities.
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
-   plan: bodies to rewrite, issues to close or re-milestone, links to fix.
+   plan: bodies to rewrite, issues to close or re-milestone, priorities to
+   correct, links to fix.
 
 ## After the report
 
