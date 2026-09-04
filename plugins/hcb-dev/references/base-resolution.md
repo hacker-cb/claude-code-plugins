@@ -27,10 +27,9 @@ remotes_ranked() {
   git remote | grep -vxE 'upstream|origin'
 }
 
-# Picking ONE remote outright is a different question: take a preferred name, else
-# a lone remote whatever it is called. Never `remotes_ranked | head -1` here — with
-# two remotes named `alice` and `bob` that silently takes whichever sorts first.
-# Empty means "cannot tell", which is an answer; stop and ask.
+# Picking ONE remote outright is a different question: a preferred name, else a lone
+# remote whatever it is called. Never `remotes_ranked | head -1` here — with remotes
+# `alice` and `bob` it silently takes whichever sorts first. Empty means stop and ask.
 REMOTE="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "$r"; break; }; done)"
 [ -n "$REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && REMOTE="$(git remote)"; }
 ```
@@ -159,9 +158,8 @@ past days ago. Refresh it before any consumer reads it:
 
 ```bash
 # The explicit refspec, not a bare `<base>`: where the remote's configured refspec
-# does not cover it — a `--single-branch` clone, the CI checkout shape above — the
-# bare form updates FETCH_HEAD alone and `<remote>/<base>`, which is what every
-# consumer reads, is never written.
+# does not cover it, the bare form updates FETCH_HEAD alone and never writes
+# `<remote>/<base>`, which is what every consumer reads.
 git fetch <remote> "+refs/heads/<base>:refs/remotes/<remote>/<base>"
 ```
 

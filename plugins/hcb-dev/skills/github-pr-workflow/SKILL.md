@@ -110,10 +110,8 @@ Read the live gates before and during the loop:
 # mechanism (rulesets, classic branch protection, org policy). Trust these:
 gh pr checks <pr>                                              # required checks + state
 gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision  # merge verdict + why
-# The "why", read once. Start from the per-branch view: it has already applied
-# each ruleset's ref_name conditions and includes org-level rulesets — a plain
-# /rulesets listing does neither, so it over-reports on a side branch and misses
-# whatever the organization enforces:
+# The "why", read once. The per-branch view, NOT a plain /rulesets listing: it has
+# already applied each ruleset's ref_name conditions and includes org-level rulesets.
 gh api repos/<owner>/<repo>/rules/branches/<base>              # rules in force on the base
 gh api --paginate repos/<owner>/<repo>/rulesets --jq '.[].id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{}          # full definitions: enforcement, bypass_actors
@@ -226,12 +224,10 @@ NEW="<the name from branch-naming.md — MAY equal the current one>"
 # turn a `branch.<name>.*` lookup into `branch..*`. Say so instead.
 cur="$(git symbolic-ref --short -q HEAD)" \
   || { echo "DETACHED HEAD — check out a branch before shipping"; exit 1; }
-# An open PR pins the name: renaming means deleting the head ref below, which
-# closes the PR and takes its review threads with it. Keep the name instead.
-# This probe must fail CLOSED. Empty output covers two very different answers —
-# "no PR" and "gh could not tell me" (auth expired, wrong default repo, network) —
-# and reading the second as the first renames the branch and deletes the old ref,
-# closing a PR you never saw. Keep the exit status, not just the output.
+# An open PR pins the name: renaming deletes the head ref below, closing the PR and
+# its review threads. This probe must fail CLOSED — empty output covers both "no PR"
+# and "gh could not tell me", and the second read as the first closes a PR unseen.
+# Keep the exit status, not just the output.
 if pr_open="$(gh pr list --head "$cur" --state open --json number -q '.[].number' 2>/dev/null)"; then
   pr_known=1
 else
@@ -248,10 +244,8 @@ fi
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
 # 3 both assume an upstream exists, and neither creates one.
 git push "$PUSH_REMOTE" -u "$NEW"
-# Delete the stale remote ref ONLY when the name actually changed. With
-# $cur == $NEW this deletes the ref the line above just pushed — unpublishing the
-# branch and closing any PR whose head it is — and a swallowed error would leave
-# no trace, letting Step 2 proceed as if the branch were pushed.
+# ONLY when the name actually changed: with $cur == $NEW this deletes the ref the
+# line above just pushed, unpublishing the branch and closing any PR on it.
 if [ "$cur" != "$NEW" ]; then
   # The full refname: a bare one is ambiguous where a tag shares the name, and
   # reaches that tag where the branch was never pushed under the old name at all.
