@@ -357,6 +357,7 @@ if [ -z "$DEF" ]; then
 elif [ "$CURRENT" = "$DEF" ]; then
   git -C "$PROJECT" branch --set-upstream-to="$D" "$CURRENT"
 else
+  # The next `git push -u <remote> "$CURRENT"` restores it; say so in the report.
   git -C "$PROJECT" branch --unset-upstream "$CURRENT"
 fi
 ```

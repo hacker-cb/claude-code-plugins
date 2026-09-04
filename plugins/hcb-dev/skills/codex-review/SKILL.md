@@ -60,3 +60,6 @@ findings:
 verdict to a file rather than an envelope, so a limit leaves that file empty and the
 notice in the log tail — indistinguishable in shape from a crash, and told apart
 only by reading what the tail says.
+
+**Every failure prints `codex review failed:`** and exits non-zero — that line, not
+an empty file, is what says the run is over.

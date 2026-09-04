@@ -1,8 +1,7 @@
 # Keeping Dependabot in sync with what the repo uses
 
 Read by `hcb-dev:dependency-versions` on a GitHub-hosted repo, after a manifest
-changed or when the user asks about automated updates. Resolving from the registry
-fixes a version today; this keeps it moving afterwards.
+changed or when the user asks about automated updates.
 
 Resolving from the registry fixes a version *today*; Dependabot keeps it
 current *afterwards* with automated update PRs. On a GitHub-hosted repo,
@@ -49,7 +48,8 @@ updates:
 ```
 
 When extending or proposing a config, include a `github-actions` entry if the
-repo has workflows — it keeps the pinned Action majors (see above) current.
+repo has workflows — it keeps current the floating-major tags
+[`../SKILL.md`](../SKILL.md) pins Actions to.
 With floating-major pins, Actions yield only major-bump PRs, so the
 minor/patch grouping above doesn't apply to that entry — give it just a
 schedule and cooldown.

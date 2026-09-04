@@ -82,6 +82,8 @@ What is this engine's own:
 - A `run warnings:` block means the run printed to stderr while still succeeding —
   a degradation rather than a failure, so read it before trusting what the scope
   line claims.
+- **Every failure prints `claude review failed:`** and exits non-zero — that line,
+  not an empty file, is what says the run is over.
 - **A spent quota gets its own line**, `claude review unavailable:`, and exits 3.
   Read which limit the notice names; §2 takes `--model`.
 - **A verdict with nothing in it is still a review.** A run that read the range and

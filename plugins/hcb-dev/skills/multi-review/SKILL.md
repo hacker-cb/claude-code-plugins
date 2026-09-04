@@ -202,7 +202,7 @@ belongs above the table with the findings, in the caller's own words: what a
 reviewer changed is not what a reviewer read, and the completion about to happen
 is the reason anyone needs to know before it does.
 
-**Less than the change is not a pass either.** A reviewer that ran against the
+**Less than the change is not a pass.** A reviewer that ran against the
 wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it
 counts as a gap — say what it missed. Where the scope was narrowed, the count is

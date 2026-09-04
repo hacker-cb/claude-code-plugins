@@ -104,7 +104,8 @@ the repo enforces, and where the repo enforces nothing, becomes the only one.
 
 [`references/merge-gates.md`](references/merge-gates.md) owns the rest — the rules
 behind those signals, the `mergeStateStatus` values Step 4 routes on, and how to
-tell absent gates from unread ones. **Read it before Step 4.**
+tell absent gates from unread ones. **Read it before Step 2**, which is where the
+first of those values is routed on.
 
 ## When the platform is down, the red check is not yours
 
@@ -258,8 +259,8 @@ Loop until the PR is **both mergeable by GitHub and clean by your own bar** —
 every required check green and the thread-resolution requirement satisfied, plus —
 always, whatever the repo does or doesn't enforce — CI genuinely green, the branch
 current with base, and Copilot's review **of the current head** processed with its
-Critical/Important findings resolved (see *When there are no gates, or they can't
-be trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
+Critical/Important findings resolved (`references/merge-gates.md`, *When there are
+no gates, or they can't be trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
 merge, your bar decides *readiness*; when they diverge, the stricter one wins. The
 severity classification only decides what you *fix*, never when you're *done*.
 
@@ -365,7 +366,7 @@ Keep it scannable: short grouped bullets, not an essay.
 
 ## Reference files
 
-- [`references/merge-gates.md`](references/merge-gates.md) — read it before Step 4.
+- [`references/merge-gates.md`](references/merge-gates.md) — read it before Step 2.
 - [`references/copilot.md`](references/copilot.md) — read it before Step 4.
 - [`references/platform-status.md`](references/platform-status.md) — read it the
   moment a failure does not look like the diff's.

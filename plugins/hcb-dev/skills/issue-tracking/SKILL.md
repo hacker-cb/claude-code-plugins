@@ -108,6 +108,6 @@ work raised become issues opened in the same effort.
 - [`../../references/classification.md`](../../references/classification.md) — read
   it before applying anything to an issue, and before proposing one.
 - [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
-  it before writing that proposal.
+  it before proposing an out-of-scope finding to the user.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

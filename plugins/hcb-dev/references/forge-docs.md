@@ -13,6 +13,10 @@ fields of the build actually installed, which is not the build the site
 documents. Read it before writing an invocation, and treat a flag it does not
 list as absent whatever the site says.
 
+**Both CLIs answer with a small first page.** Paginate to the end, or set the
+limit above the listing's own total, before counting or sweeping anything — a
+short read is indistinguishable from an empty one.
+
 **The sites are authoritative about meaning** — what a field holds, which values
 an enum takes, and every operation the porcelain never wrapped. Both serve their
 pages as markdown, by forms that differ; a wrong form errors rather than falling
@@ -75,10 +79,6 @@ implies one mechanism per forge will be wrong on both.
 | the automated reviewer | [Copilot code review](https://docs.github.com/en/copilot/concepts/agents/code-review.md) | [Duo Code Review](https://docs.gitlab.com/user/gitlab_duo/code_review/index.md) |
 
 ## Issues: the porcelain stops at the flat issue
-
-**Both CLIs answer with a small first page.** Paginate to the end, or set the
-limit above the tracker's own total, before counting or sweeping anything — a
-short read is indistinguishable from an empty one.
 
 Both CLIs stop at the single flat issue — create it, list, view, comment, close,
 and edit its own fields (`gh issue edit`, `glab issue update`). Neither wraps
