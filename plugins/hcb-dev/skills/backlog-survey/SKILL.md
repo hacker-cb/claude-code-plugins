@@ -74,13 +74,14 @@ In this order, each section explicit even when empty:
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only its
    members, and carry each issue's declared priority beside the tier the tests
-   put it in. Where the two disagree, the disagreement is a result of its own:
-   a priority declared above normal with nothing firing and nothing blocked
+   put it in — an issue carrying none declares nothing to disagree with. Where
+   the two do disagree, the disagreement is a result of its own: a priority
+   declared at the family's upper end with nothing firing and nothing blocked
    goes to the hygiene plan to be lowered, citing what the code showed; a
-   vertex of the critical path declared below normal, or not declared at all,
-   goes there to be raised; one declared above normal behind a parked reason
-   stays out of the ready tiers and is named among what is worth unblocking.
-   Where the tests leave two issues level, the declared priority orders them.
+   vertex of the critical path declared at its lower end goes there to be
+   raised; one declared at the upper end behind a parked reason stays out of
+   the ready tiers and is named among what is worth unblocking. Where the
+   tests leave two issues level, the declared priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).
