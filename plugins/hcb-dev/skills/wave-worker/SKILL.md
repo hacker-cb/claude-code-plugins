@@ -27,10 +27,7 @@ mode and merge authority, and no gate inside re-defaults them — and it runs in
 full: where this session admits subagents only on the user's or a skill's ask,
 the order is that ask, for its review across every reviewer and for the
 subagents its skills ask for; a project rule that forbids them outright still
-holds, and what it stops is named in the return as the gap it is. Where that
-workflow addresses its user — its planning gate, and every stop it takes — the
-addressee under this order is the master; chat carries only what
-`session-comms.md` sends there when the master cannot be reached.
+holds, and what it stops is named in the return as the gap it is.
 
 ## On arrival — before the named workflow starts
 
@@ -69,9 +66,10 @@ addressee under this order is the master; chat carries only what
   else": it goes to the master first, exactly as the agree-first forks do, and
   the master's side of the protocol carries it on to a person where that
   reference demands one.
-- **The tracker is not this session's to write.** A finding that earns an issue
-  goes to the master as a candidate — its classification proposed, never
-  applied — and the filing waits on the confirmation the order authorizes.
+- **A finding does not become an issue here.** One that earns an issue rides the
+  return as a candidate — its classification proposed, never applied — and the
+  master's confirmation is what files it; what the order's own deliverable
+  writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first; the order says which one that is, or the dependency
   graph does.

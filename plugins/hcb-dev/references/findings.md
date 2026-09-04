@@ -100,8 +100,7 @@ hold.
 
 ## Prepare the proposal before making it
 
-Both of these happen before the finding reaches the user, not after they accept
-it:
+Both of these happen before the finding is proposed, not after it is accepted:
 
 - **Search the tracker**, closed entries included
   ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — its
@@ -119,8 +118,8 @@ no proposal attached, saying there is nowhere to file it.
 ## The form
 
 Under `## Out-of-scope observations`, at the end of the response that decided not
-to fix it, wherever that response reaches the user. Under an orchestrator it does
-not: the finding rides its slice's `incidental` output
+to fix it, wherever that response lands. Under an orchestrator it does not: the
+finding rides its slice's `incidental` output
 ([`slice-completion.md`](slice-completion.md)) to the run's own report, and an
 autonomous run is never interrupted to ask. One line each:
 
@@ -135,12 +134,13 @@ A line in a report is not this. Naming a finding among the things left undone
 records it; it does not put the decision to anyone, and a finding recorded that
 way ends with the response.
 
-## Only an answer writes to the tracker
+## Only the authorized answer writes to the tracker
 
 The answer is the user's, and where this session works to an order — one written
 by another session rather than typed in chat — it is whoever that order names
-instead. Opening or updating anything waits for it, every time. **A standing
-instruction to work autonomously is not that answer** — it authorizes the work,
+([`order-anatomy.md`](order-anatomy.md)), the user again where it names nobody.
+Opening or updating anything waits for it, every time. **A standing instruction
+to work autonomously is not that answer** — it authorizes the work,
 not the tracker — and an approval covers the batch it was given for, never what
 turns up afterwards.
 
