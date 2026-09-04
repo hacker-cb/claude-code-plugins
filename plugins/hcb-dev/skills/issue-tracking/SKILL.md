@@ -102,14 +102,14 @@ the work completes with no change request at all, close or link the issue
 explicitly once the work lands, with the user's go-ahead. In a set, each child
 closes as its slice lands and the parent when the last one does. A follow-up the
 work raised is opened in the same effort, on the answer that authorizes any
-tracker write (`findings.md`).
+tracker write (`../../references/findings.md`).
 
 ## Reference files
 
 - [`../../references/classification.md`](../../references/classification.md) — read
   it before applying anything to an issue, and before proposing one.
 - [`../../references/findings.md`](../../references/findings.md) — read
-  it before proposing an out-of-scope finding, and for who authorizes a tracker
-  write.
+  it before proposing an out-of-scope finding, and to see who authorizes a
+  tracker write.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

@@ -138,8 +138,8 @@ way ends with the response.
 
 The answer is the user's, and where this session works to an order — one written
 by another session, whatever carried it here — it is whoever that order names
-**for this**; an addressee it names for its forks is not that, and an order
-naming none leaves the user. Opening or updating anything waits for it, every
+**for writing to the tracker**; an addressee it names for its forks is not that,
+and an order naming none leaves the user. Opening or updating anything waits for it, every
 time. **A standing instruction to work autonomously is not that answer** — it
 authorizes the work, not the tracker — and an approval covers the batch it was
 given for, never what turns up afterwards.
