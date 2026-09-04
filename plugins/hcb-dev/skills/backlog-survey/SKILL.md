@@ -26,16 +26,15 @@ closing table, so a master session consumes it without translation.
 ## Scope, then scale
 
 Name the slice — a milestone, a label, everything open — and count it before
-reading. **Count exhaustively**: both forge CLIs stop at a small default page,
-so a plain list undercounts anything larger — paginate to the end, or set the
-limit above the tracker's own total, before sizing anything; a survey of the
-first page reads as a survey of the whole. The count picks the mechanics: a
-slice a session can read, it reads itself; hundreds of issues fan out to
-parallel reader subagents, each handed a sub-slice, the same per-issue
-questions and the one priority scale resolved below, with every conclusion
-synthesized back here. Whichever mechanics
-run, the conclusions below are this session's — a reader's summary is input,
-not a verdict.
+reading. **Count exhaustively**: both forge CLIs stop at a small default
+page, so a plain list undercounts anything larger — paginate to the end, or
+set the limit above the tracker's own total, before sizing anything; a
+survey of the first page reads as a survey of the whole. The count picks the
+mechanics: a slice a session can read, it reads itself; hundreds of issues
+fan out to parallel reader subagents, each handed a sub-slice, the same
+per-issue questions and the one priority scale resolved below, with every
+conclusion synthesized back here. Whichever mechanics run, the conclusions
+below are this session's — a reader's summary is input, not a verdict.
 
 ## Read against the code, not against the tracker
 
@@ -62,11 +61,13 @@ what is.
 
 The priority role `classification.md` resolves is the issue's **declared
 priority** — read it per issue and carry it as an input of its own, never
-folded into the importance the tests below derive. Resolve the family once for
-the whole slice, by that reference rather than from the values that happen to
-appear on these issues, and hand the scale it yields to every reader the slice
-fans out to. Where it yields none, the tier section says so once and stands on
-the tests alone; an issue declaring nothing diverges from nothing.
+folded into the importance the tests below derive. Resolve the family once
+for the whole slice, by that reference rather than from the values that
+happen to appear on these issues, and hand the scale it yields to every
+reader the slice fans out to. A repository expressing no priority leaves the
+tier section standing on the tests alone; one whose set settles no order
+still has values worth carrying beside the tiers, and nothing to compare
+them by.
 
 ## The report
 
@@ -78,13 +79,14 @@ In this order, each section explicit even when empty:
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only
    its members, and carry each issue's declared priority beside the tier
-   the tests put it in. The tests measure what the code makes true; the
-   priority says how far up the queue the work is wanted. Neither disproves
-   the other, so where the two diverge the divergence is a result of its
-   own — reported with what the code showed and left to the user to settle,
-   never corrected as an error, and never claimed where a verdict above or
-   a live parked reason already explains the quiet. Where the tests leave
-   two issues level, the declared priority orders them.
+   the tests put it in. The tests measure what the code makes true, the
+   priority what the queue was told to want, and neither disproves the
+   other — so where the two diverge the divergence is a result of its own:
+   reported with what the code showed and left to the user to settle, never
+   corrected as an error, never claimed where a verdict above or a live
+   parked reason already explains the quiet, and never read out of the
+   normal that absence declares, which is a default nobody chose. Where the
+   tests leave two issues level, the declared priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).
