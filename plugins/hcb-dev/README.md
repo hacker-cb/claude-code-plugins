@@ -109,7 +109,8 @@ form: you paste every one of them yourself.
 
 - **`shipping-workflow`** — `/hcb-dev:shipping-workflow`
   Take one finished, verified slice to completion: normalize the branch name,
-  refresh the base, commit, hand off to `multi-review`, apply the fixes, check
+  refresh the base, commit, hand off to `multi-review`, apply the fixes
+  (reviewing them again where they reach past what was already read), check
   coverage, then complete **by mode** — merged locally into its parent branch, or
   an open change request (handed to a PR/MR driver below). Steps 0–5 are identical
   in both modes; the mode is read only at the last step.

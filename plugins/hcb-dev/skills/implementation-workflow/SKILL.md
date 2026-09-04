@@ -138,6 +138,7 @@ safety gates:
 - an **actionable** coverage gap (Phase 1's non-waivable policy);
 - a local merge into the **default** branch — or one it cannot resolve as
   non-default (`slice-completion.md`);
+- fix rounds that end with findings still open (`shipping-workflow`);
 - CI that will not go green within the driver's fix-iteration budget
   (`github-pr-workflow`);
 - a Critical/Important finding that needs a product/design decision;
