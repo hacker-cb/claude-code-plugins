@@ -2,11 +2,8 @@
 name: github-pr-workflow
 description: >-
   Drive a GitHub pull request from a finished feature branch all the way to a
-  merged PR — renaming auto-generated branches, keeping the branch up to date
-  with base, opening the PR, looping on fixes until CI is green and Copilot has
-  no Critical/Important findings left, then — only with the user's explicit
-  go-ahead — merging with the right strategy,
-  monitoring the merge, and reporting. Use this skill whenever the user wants to
+  merged PR, looping on CI and Copilot findings until it is mergeable and then —
+  only with the user's explicit go-ahead — merging it. Use this skill whenever the user wants to
   "ship", "open a PR", "push this up", "get this merged", "drive the PR",
   "handle the review", "address Copilot comments", or otherwise move committed
   work through the GitHub review-and-merge lifecycle — even if they don't say

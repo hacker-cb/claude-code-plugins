@@ -5,12 +5,9 @@ description: >-
   issue/ticket numbers — into implemented, reviewed work. Use it at the START,
   when there is something to build and no code exists yet: "сделай issue #42", "do
   these three tickets", "build this spec", "implement this and open the PRs". It
-  deep-reads the tasks and the codebase, splits the work into independently
-  reviewable slices (one is the normal case), forks the open architectural
-  questions and the completion mode (merge locally, or a change request) to you at
-  one planning gate, then runs each slice through development, review, and
-  completion autonomously, closing with a per-slice report that rates incidental
-  findings or says there are none. Do NOT use it for work already finished that
+  slices the work, forks the architectural questions and the completion mode
+  (merge locally, or a change request) to you at one planning gate, then runs each
+  slice to completion autonomously. Do NOT use it for work already finished that
   only needs completing — that is `hcb-dev:shipping-workflow`, which this skill
   calls per slice; nor for driving an existing PR (`hcb-dev:github-pr-workflow`);
   nor as a diff review (`hcb-dev:multi-review`).
