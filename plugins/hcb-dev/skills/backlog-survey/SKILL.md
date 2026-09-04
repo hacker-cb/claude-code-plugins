@@ -1,19 +1,19 @@
 ---
 name: backlog-survey
 description: >-
-  Survey a whole slice of the backlog and say what to work on: read every open
-  issue of a milestone, a label or the repository, verify each against the
-  code, tier them by importance, draw the dependency graph and the parallel
-  layout of candidate batches, and recommend what to take next. Use when the
-  user asks to study, re-check or lay out the backlog as a whole — "изучи все
-  issues", "раздели по важности", "что брать в работу", "разложи бэклог",
-  "перепроверь все issues вехи/метки" — and before an epic is split into waves
-  when no survey exists yet. Report-first: tracker hygiene it proposes (bodies
-  to rewrite, issues to close, milestones to move, priorities to reconsider)
-  executes only on the user's word, item by item through
-  `hcb-dev:issue-tracking`. Not for one issue's
-  mechanics (`hcb-dev:issue-tracking`); the ask to split into waves AND run
-  them is `hcb-dev:master-session`'s — this skill surveys and recommends.
+  Survey a whole slice of the backlog and say what to work on: read every
+  open issue of a milestone, a label or the repository, verify each against
+  the code, tier them by importance, draw the dependency graph and the
+  parallel layout of candidate batches, and recommend what to take next. Use
+  when the user asks to study, re-check or lay out the backlog as a whole —
+  "изучи все issues", "раздели по важности", "что брать в работу", "разложи
+  бэклог", "перепроверь все issues вехи/метки" — and before an epic is split
+  into waves when no survey exists yet. Report-first: tracker hygiene it
+  proposes (bodies to rewrite, issues to close, milestones to move) executes
+  only on the user's word, item by item through `hcb-dev:issue-tracking`.
+  Not for one issue's mechanics (`hcb-dev:issue-tracking`); the ask to split
+  into waves AND run them is `hcb-dev:master-session`'s — this skill surveys
+  and recommends.
 ---
 
 # Backlog survey
@@ -86,7 +86,8 @@ In this order, each section explicit even when empty:
    corrected as an error, never claimed where a verdict above or a live
    parked reason already explains the quiet, and never read out of the
    normal that absence declares, which is a default nobody chose. Where the
-   tests leave two issues level, the declared priority orders them.
+   tests leave two issues level and the scale resolved, the declared priority
+   orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).
@@ -94,12 +95,12 @@ In this order, each section explicit even when empty:
    `wave-planning.md`'s closing table, what must not run in parallel with its
    reason, and the gates the dependencies imply.
 5. **What to take next** — one recommendation with its rationale and the cut
-   to start with; alternatives only where the choice genuinely turns on the
-   user's priorities.
+   to start with, the declared priorities of what it names among its
+   reasons; alternatives only where the choice genuinely turns on what the
+   user wants next.
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
-   plan: bodies to rewrite, issues to close or re-milestone, priorities to
-   reconsider, links to fix.
+   plan: bodies to rewrite, issues to close or re-milestone, links to fix.
 
 ## After the report
 
