@@ -14,8 +14,7 @@ cut out".
 
 ## The contract
 
-A skill takes no typed arguments, so the caller passes these as invocation prose,
-exactly as `multi-review` already hands base + effort down to `codex-review`.
+A skill takes no typed arguments, so the caller passes these as invocation prose.
 
 **Inputs every backend receives:**
 
@@ -139,10 +138,6 @@ Publishing is the escalation offer below, and only by consent.
   publishes nothing, so this gate is about the *default* branch; a protected
   non-default branch is a request-mode concern, and merging one locally is still
   just a reversible local commit.)
-- **No push during the merge itself** — the local backend writes to no network. The
-  *only* push is when the consented escalation offer below is accepted, and that is
-  by definition a hand-off **out** of the local backend into the request one, not
-  the local merge reaching for the network.
 - **After the merge, the offer** — offer, never force, to open a change request on
   the landed work. Accepting it is the consented **exit** from local mode: it
   pushes `parent` and hands to the request backend. The escalated change request

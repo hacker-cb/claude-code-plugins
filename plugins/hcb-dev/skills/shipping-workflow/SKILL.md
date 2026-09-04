@@ -33,9 +33,8 @@ calls, and skips nothing below. Steps 0–5 are identical in
 both **completion modes** — `local` (merge into the parent, no forge) and
 `request` (a change request) — because the mode is read only at step 6. When
 driven by the orchestrator, the caller threads the completion signals as
-invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`
-(the coverage *policy* is not one of them — an actionable gap always stops, a
-fixed invariant, not a threaded value). Standalone, they default — mode and
+invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`.
+Standalone, they default — mode and
 `parent` by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md),
 mode ending at `request`. That reference owns the mechanics of completion; steps
@@ -132,9 +131,7 @@ is one of its legitimate interrupts, not something the autonomy waives.
 
 Every stop this skill takes — this gate, step 6's default-branch merge, several
 remotes with none preferred — carries your recommended option **first**, per
-[`../../references/architecture-decisions.md`](../../references/architecture-decisions.md),
-which also draws the line the autonomy above follows: act on what is mechanical
-and reversible, stop on what cannot be walked back.
+[`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
 
 A project's own rules outrank this one: where the repository says to commit
 straight to a branch, or not to commit until asked, or not to open change requests

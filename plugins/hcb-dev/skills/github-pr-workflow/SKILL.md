@@ -32,9 +32,8 @@ local review, go there first; this skill starts at the PR and will not run the
 reviewers for you.
 
 This skill is GitHub-specific by design (the `<forge>-<artifact>-workflow`
-convention). A GitLab twin — `gitlab-mr-workflow` — is not built yet; until it is,
-GitLab change requests are handled by `hcb-dev:shipping-workflow`'s mirrored `glab`
-fallback.
+convention); which driver a forge routes to is
+[`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
 
 ## Autonomy model
 
@@ -69,8 +68,7 @@ Each of those stops shows your recommended option **first**, with a one-line
 reason grounded in the code **and the constraints** — half these stops turn on
 neither the diff nor the code (a ruleset's allowed merge methods, what the CI logs
 say), and a reason invented to look code-shaped is worse than the bare question it
-replaced. Both that and the split above (act on the mechanical and
-reversible, stop on what cannot be walked back) come from the shared protocol in
+replaced. That and the split above are per
 [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
 
 When you do act autonomously, narrate what you did and why in a short line, so the
