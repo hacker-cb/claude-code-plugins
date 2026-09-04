@@ -94,3 +94,13 @@ endpoint where the schema carries what REST does not.
 | dependencies | [issue dependencies REST](https://docs.github.com/en/rest/issues/issue-dependencies.md) | [linked issues](https://docs.gitlab.com/user/project/issues/related_issues/index.md), [issue links REST](https://docs.gitlab.com/api/issue_links/index.md) |
 | time-boxing | [milestones REST](https://docs.github.com/en/rest/issues/milestones.md) | [milestones REST](https://docs.gitlab.com/api/milestones/index.md) |
 | the schema, where REST falls short | [issues](https://docs.github.com/en/graphql/reference/issues.md) | [GraphQL](https://docs.gitlab.com/api/graphql/index.md) |
+
+## Closing an issue from a change request
+
+Both forges close an issue by matching a keyword in the request body, and the two
+patterns differ:
+[GitHub's](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue.md)
+is fixed, while
+[GitLab's](https://docs.gitlab.com/user/project/issues/managing_issues/index.md)
+matches more words and is
+[redefinable on a self-managed instance](https://docs.gitlab.com/administration/issue_closing_pattern/index.md).

@@ -317,7 +317,8 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 - Title: the shape in `branch-naming.md` — GitHub makes it the squash commit's
   subject, and appends the PR number itself.
 - Body: what changed and why, in the user's own framing if known; a short summary
-  and a bullet list of notable changes, plus `Closes #N` for every issue this PR
+  and a bullet list of notable changes, plus `Closes #N` — that English keyword
+  verbatim, whatever language the body is written in — for every issue this PR
   settles. GitHub acts on that keyword only for a PR whose base is the default
   branch, so on any other base — a slice PR onto its feature branch, a repo whose
   PRs target another trunk — the issue is closed explicitly after the merge lands
