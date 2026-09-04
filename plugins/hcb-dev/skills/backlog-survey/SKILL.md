@@ -21,7 +21,7 @@ description: >-
 ## Scope, then scale
 
 Name the slice — a milestone, a label, everything open — and count it before
-reading. The slice named is this session's title, per
+reading. Where this session opened the run, the slice named is its title, per
 [`../../references/session-naming.md`](../../references/session-naming.md).
 **Count exhaustively** (per
 [`../../references/forge-docs.md`](../../references/forge-docs.md)) — a survey of

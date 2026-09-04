@@ -295,10 +295,12 @@ other. What it buys differs per skill: an issue read, a change request opened, a
 squash-merge that git alone cannot see. Where a skill can go on without it, it says
 what it loses rather than stopping.
 
-**Titling a session is the host's**, and `implementation-workflow`,
-`shipping-workflow` and `backlog-survey` use it to name the run they open
-([`references/session-naming.md`](references/session-naming.md)); where the host
-offers none, the run goes untitled and the worktree name carries the address
+**Titling a session is the host's**, and most of this pipeline leans on it
+([`references/session-naming.md`](references/session-naming.md)):
+`master-session` and `wave-worker` wear the address their wave assigns, while
+`implementation-workflow`, `shipping-workflow` and `backlog-survey` name the run
+they open. Where the host offers none, the run goes untitled, and what carries
+the address is a worktree the session cut for itself
 ([`references/session-comms.md`](references/session-comms.md)).
 
 Per skill, on top of those:

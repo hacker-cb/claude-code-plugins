@@ -38,8 +38,8 @@ Standalone, they default — mode and
 `parent` by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md),
 mode ending at `request`. That reference owns the mechanics of completion; steps
-0–5 below are the mode-blind front half. This session titles itself — the
-session, not the branch of step 0 — per
+0–5 below are the mode-blind front half. Entered on its own, this session also
+titles itself — the session, not the branch of step 0 — per
 [`../../references/session-naming.md`](../../references/session-naming.md).
 
 0. **Normalize the branch name** — rename an auto-generated or placeholder name

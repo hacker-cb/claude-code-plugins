@@ -150,8 +150,9 @@ standalone shape:
    the nickname, and the topic the work was asked for. A provisional topic is
    enough; the title does not wait for the analysis behind it.
 2. **When the scope is settled** — a plan approved, a slice named — the
-   title is rewritten to what that scope makes, unless it already stands in
-   it.
+   title is rewritten to what that scope makes, unless it already stands in it
+   or has gone out as an address: an order carrying it, a session answered on
+   it. That one is worn as sent, and the scope reaches the report instead.
 
 **The entry point titles.** A skill invoked inside a run already under way
 touches the title at neither step — a completion called per slice by the
@@ -166,12 +167,13 @@ stands there stays.
 - **A worktree a session cuts for itself leads with its title's identifier**
   — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
   would otherwise prefix every batch's name; a hyphen where the title has a
-  slash, and one where it separates numbers with a comma, since a ref is a
-  path and a prefix match reads the two spellings as one name. The role
-  marker's brackets stay out of a ref, where they are shell glob characters and
-  buy nothing the trailing `-master` does not. One the host generated is left
-  alone — renaming a live session's directory is not a naming decision — so
-  there the title carries the address by itself.
+  slash, and one for each comma between numbers, since a ref is a path and a
+  prefix match reads the two spellings as one name. A counted identifier gives
+  the ref its leading number alone: a ref takes neither the space nor the `+`.
+  The role marker's brackets stay out of a ref, where they are shell glob
+  characters and buy nothing the trailing `-master` does not. One the host
+  generated is left alone — renaming a live session's directory is not a
+  naming decision — so there the title carries the address by itself.
 - **In a wave, the order's tag is `<epic>/<id>`** — no separate tag is coined
   (`order-anatomy.md`).
 - **A branch takes none of this.** It is named for the change it carries

@@ -40,7 +40,7 @@ mode once, at the gate, and threads it down; the mechanics live in
   [`../../references/forge-docs.md`](../../references/forge-docs.md).
   Reading an issue is reading a *spec*, not a mandate to do everything written in
   it: surface the actual asks and let the gate confirm scope.
-- **Be findable.** Title this session per
+- **Be findable.** Where this session opened the run, title it per
   [`../../references/session-naming.md`](../../references/session-naming.md).
 - **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue
   already covering these tasks changes the scope; one covering part of them
@@ -109,8 +109,8 @@ native task list, and keep the plan (mode, merge authorization, strategy) in a
 durable plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans` (resolve the
 path from the variable; never hardcode `~/.claude`).
 
-The approved scope is also what the title settles on — `session-naming.md`'s
-second step.
+Where this session titled itself at intake, the approved scope is what that
+title settles on — `session-naming.md`'s second step.
 
 ## Phase 2 — Autonomous execution
 

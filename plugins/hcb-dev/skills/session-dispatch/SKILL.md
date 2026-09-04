@@ -64,9 +64,9 @@ Done means: <the terminal deliverable>
 Don't <what not to touch, duplicate, or unwind>
 
 Answering by message rather than by hand: the session that wrote this order is
-<its title>, session id <session-id>. Where the process above does not title
-this session itself, title yourself `<tasks | nickname> — <topic>` before you
-start, so it can find you. <Or: the answer travels by hand.>
+<its title>, session id <session-id>. Check your own title before you start and
+set it to `<tasks | nickname> — <topic>` where the process above left it unset,
+so it can find you. <Or: the answer travels by hand.>
 
 Last: <returns — answer with these headings, carrying `<tag>` on the first line:
 premises of this order that did not survive; the deliverable in the terms asked;
