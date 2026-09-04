@@ -9,8 +9,9 @@ description: >-
   issues", "раздели по важности", "что брать в работу", "разложи бэклог",
   "перепроверь все issues вехи/метки" — and before an epic is split into waves
   when no survey exists yet. Report-first: tracker hygiene it proposes (bodies
-  to rewrite, issues to close, milestones to move) executes only on the user's
-  word, item by item through `hcb-dev:issue-tracking`. Not for one issue's
+  to rewrite, issues to close, milestones to move, priorities to correct)
+  executes only on the user's word, item by item through
+  `hcb-dev:issue-tracking`. Not for one issue's
   mechanics (`hcb-dev:issue-tracking`); the ask to split into waves AND run
   them is `hcb-dev:master-session`'s — this skill surveys and recommends.
 ---
@@ -75,14 +76,15 @@ In this order, each section explicit even when empty:
    catch regressions (a guard, a gate). Name the tier's meaning, not only its
    members, and carry each issue's declared priority beside the tier the tests
    put it in — absence declares normal, and a repository carrying no priority
-   vocabulary declares nothing to disagree with. Where the two do disagree,
-   the disagreement is a result of its own: a priority at the family's upper
-   end that no test above puts there goes to the hygiene plan to be lowered,
-   citing what the code showed; a vertex of the critical path left at normal
-   or below goes there to be raised; one at the upper end behind a parked
-   reason stays out of the ready tiers and is named here as blocked, with the
-   reason parking it. Where the tests leave two issues level, the declared
-   priority orders them.
+   vocabulary declares nothing to disagree with. Where tier and priority
+   disagree, the disagreement is a result of its own: an issue the tests place
+   in the top tier while its priority sits below the family's upper end goes
+   to the hygiene plan to be raised; one declared at that upper end which
+   every test answered no to goes there to be lowered, citing what the code
+   showed — an unverifiable issue answered no test, and goes to neither; one
+   at the upper end behind a parked reason stays out of the ready tiers and is
+   named here as blocked, with the reason parking it. Where the tests leave
+   two issues level, the declared priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).
