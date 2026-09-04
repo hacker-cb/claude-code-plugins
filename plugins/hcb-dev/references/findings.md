@@ -135,9 +135,11 @@ A line in a report is not this. Naming a finding among the things left undone
 records it; it does not put the decision to anyone, and a finding recorded that
 way ends with the response.
 
-## Only the user's answer writes to the tracker
+## Only an answer writes to the tracker
 
-Opening or updating anything waits for that answer, every time. **A standing
+The answer is the user's, and where this session works to an order — one written
+by another session rather than typed in chat — it is whoever that order names
+instead. Opening or updating anything waits for it, every time. **A standing
 instruction to work autonomously is not that answer** — it authorizes the work,
 not the tracker — and an approval covers the batch it was given for, never what
 turns up afterwards.

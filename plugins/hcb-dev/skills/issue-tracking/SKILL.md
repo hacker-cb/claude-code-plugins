@@ -100,8 +100,9 @@ not for one targeting a feature branch or any other trunk the repository merges
 into. Write the keyword anyway; where the forge will not act on it, and wherever
 the work completes with no change request at all, close or link the issue
 explicitly once the work lands, with the user's go-ahead. In a set, each child
-closes as its slice lands and the parent when the last one does. Follow-ups the
-work raised become issues opened in the same effort.
+closes as its slice lands and the parent when the last one does. A follow-up the
+work raised is a finding like any other — `findings.md` decides it, and what
+that answer authorizes is opened in the same effort.
 
 ## Reference files
 
