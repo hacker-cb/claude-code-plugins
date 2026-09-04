@@ -64,10 +64,10 @@ priority** — read it per issue and carry it as an input of its own, never
 folded into the importance the tests below derive. Resolve the family once
 for the whole slice, by that reference rather than from the values that
 happen to appear on these issues, and hand the scale it yields to every
-reader the slice fans out to. A repository expressing no priority leaves the
-tier section standing on the tests alone; one whose set settles no order
-still has values worth carrying beside the tiers, and nothing to compare
-them by.
+reader the slice fans out to. An issue carrying two of the family's values
+declares none — the cardinality that reference holds is broken there, so say
+so and leave it out of every comparison below. Where no scale resolves, the
+values still belong beside the tiers; nothing below compares them.
 
 ## The report
 
@@ -81,12 +81,12 @@ In this order, each section explicit even when empty:
    its members, and carry each issue's declared priority beside the tier
    the tests put it in. The tests measure what the code makes true, the
    priority what the queue was told to want, and neither disproves the
-   other — so where the two diverge the divergence is a result of its own:
-   reported with what the code showed and left to the user to settle, never
-   corrected as an error, never claimed where a verdict above or a live
-   parked reason already explains the quiet, and never read out of the
-   normal that absence declares, which is a default nobody chose. Where the
-   tests leave two issues level and the scale resolved, the declared priority
+   other — so where a resolved scale puts the two at odds the divergence is
+   a result of its own: reported with what the code showed and left to the
+   user to settle, never corrected as an error, never claimed where a
+   verdict above or a live parked reason already explains the quiet, and
+   never read out of the normal that absence declares, which is a default
+   nobody chose. Where the tests leave two issues level, the same scale
    orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
