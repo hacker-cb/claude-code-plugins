@@ -64,10 +64,12 @@ priority** — read it per issue and carry it as an input of its own, never
 folded into the importance the tests below derive. Resolve the family once
 for the whole slice, by that reference rather than from the values that
 happen to appear on these issues, and hand the scale it yields to every
-reader the slice fans out to. An issue carrying two of the family's values
-declares none — the cardinality that reference holds is broken there, so say
-so and leave it out of every comparison below. Where no scale resolves, the
-values still belong beside the tiers; nothing below compares them.
+reader the slice fans out to. Everything below that weighs one priority
+against another — the divergence, the ordering, the recommendation's reasons
+— holds only between values that scale compares, and the report says which
+issues it could not place: the ones the repository left unlabelled, the ones
+whose labels break the reference's cardinality, and all of them where no
+scale resolved at all.
 
 ## The report
 
@@ -78,15 +80,15 @@ In this order, each section explicit even when empty:
 2. **Tiers of importance**, each issue placed by three tests: does it block
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only
-   its members, and carry each issue's declared priority beside the tier
-   the tests put it in. The tests measure what the code makes true, the
-   priority what the queue was told to want, and neither disproves the
-   other — so where a resolved scale puts the two at odds the divergence is
-   a result of its own: reported with what the code showed and left to the
+   its members, and carry each issue's declared priority, where it has one,
+   beside the tier the tests put it in. The tests measure what the code
+   makes true, the priority what the queue was told to want, and neither
+   disproves the other — so where the two are at odds the divergence is a
+   result of its own: reported with what the code showed and left to the
    user to settle, never corrected as an error, never claimed where a
    verdict above or a live parked reason already explains the quiet, and
    never read out of the normal that absence declares, which is a default
-   nobody chose. Where the tests leave two issues level, the same scale
+   nobody chose. Where the tests leave two issues level, the priority
    orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
@@ -94,10 +96,10 @@ In this order, each section explicit even when empty:
 4. **The parallel layout** — candidate batches in the columns of
    `wave-planning.md`'s closing table, what must not run in parallel with its
    reason, and the gates the dependencies imply.
-5. **What to take next** — one recommendation with its rationale and the cut
-   to start with, the declared priorities of what it names among its
-   reasons; alternatives only where the choice genuinely turns on what the
-   user wants next.
+5. **What to take next** — one recommendation with its rationale and the
+   cut to start with, the declared priorities of what it names among its
+   reasons where they weigh; alternatives only where the choice genuinely
+   turns on what the user wants next.
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
    plan: bodies to rewrite, issues to close or re-milestone, links to fix.
