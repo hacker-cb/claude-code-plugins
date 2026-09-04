@@ -342,8 +342,8 @@ saying something else.
   under the user's Claude config directory instead.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape (per-slice outcomes, coverage and what stayed uncovered, incidental
-  findings rated by importance, an explicit "none"). Read where a whole run is
-  reported. That is a different altitude from a driver's report on one merged
+  findings rated by importance or an explicit "none", open offers and next
+  steps). Read where a whole run is reported. That is a different altitude from a driver's report on one merged
   change request, and the two do not replace each other.
 - [`references/classification.md`](references/classification.md) — how an issue
   gets classified against what the repository itself defines: the families as
@@ -379,15 +379,15 @@ GitLab (`glab`) forms are given side-by-side.
 One deliberate exception, stated where it occurs: `github-pr-workflow` is
 GitHub-specific by design, named per the rule's `<forge>-<artifact>-workflow`
 convention; a `gitlab-mr-workflow` twin can be added later. Until it exists,
-request-mode completion on GitLab uses `shipping-workflow`'s mirrored `glab`
-fallback.
+request-mode completion on GitLab uses the mirrored `glab` fallback in
+[`references/slice-completion.md`](references/slice-completion.md).
 
 ## Requirements
 
 **`git` and `jq` are the shared tools** — `git` in every skill but
 `dependency-versions`, which touches the package manager and never the repository;
-`jq` wherever a tool's JSON is parsed by hand, which the shared references do on
-their `glab` paths.
+`jq` wherever a tool's JSON is parsed by hand — the shared references on their
+`glab` paths, and the review scripts on every envelope they read back.
 
 **An authenticated forge CLI is assumed wherever the work touches a forge**, which
 is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without the
@@ -404,7 +404,8 @@ Per skill, on top of those:
   write. Issue hierarchy and dependencies are past what either CLI's `issue`
   commands wrap, so those go through its `api` subcommand.
 - **`dependency-versions`**: the relevant package manager on `PATH`.
-- **`codex-review`**: the `codex` CLI installed and `codex login` live.
+- **`codex-review`**: the `codex` CLI installed and `codex login` live, plus `jq`
+  to read the run's JSON envelope.
 - **`claude-review`**: the `claude` CLI on `PATH` and authenticated, plus `jq` to
   read the run's JSON envelope. The review runs as its own session, so it spends
   its own budget rather than the calling session's context.
