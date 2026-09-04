@@ -60,8 +60,10 @@ form: you paste every one of them yourself.
   normal case), settles the architectural questions **and** the completion mode
   (local merge vs change request) at one planning gate, then runs each slice
   through development and `shipping-workflow` autonomously — closing with a
-  per-slice report. Calls `shipping-workflow` per slice; not for work that is
-  already finished (that is `shipping-workflow` directly).
+  per-slice report. Titles the session by the work it took in, per
+  `references/session-naming.md`, so a long run is findable in a list of
+  sessions. Calls `shipping-workflow` per slice; not for work that is already
+  finished (that is `shipping-workflow` directly).
 
 ### Tracking deferred work
 
@@ -113,7 +115,9 @@ form: you paste every one of them yourself.
   (reviewing them again where they reach past what was already read), check
   coverage, then complete **by mode** — merged locally into its parent branch, or
   an open change request (handed to a PR/MR driver below). Steps 0–5 are identical
-  in both modes; the mode is read only at the last step.
+  in both modes; the mode is read only at the last step. Entered on its own, it
+  titles the session per `references/session-naming.md`; driven per slice, it
+  leaves the caller's title standing.
 - **`github-pr-workflow`** — `/hcb-dev:github-pr-workflow`
   Drive a GitHub pull request from a finished branch to a merged PR: rename an
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
@@ -161,8 +165,9 @@ work is **done** — not how the ask is worded.
   tracker declares, the dependency graph and critical path, parallel lanes per
   `references/wave-planning.md`, and one recommendation for what to take next.
   Any tracker hygiene it proposes executes only on your word, item by item
-  through `issue-tracking`. Scales by fanning readers out as subagents when the
-  slice runs to hundreds; its lanes are the wave plan's input.
+  through `issue-tracking`. Titles the session by the slice it surveys, per
+  `references/session-naming.md`. Scales by fanning readers out as subagents
+  when the slice runs to hundreds; its lanes are the wave plan's input.
 
 ### Fanning work out in waves
 
@@ -289,6 +294,12 @@ is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without
 other. What it buys differs per skill: an issue read, a change request opened, a
 squash-merge that git alone cannot see. Where a skill can go on without it, it says
 what it loses rather than stopping.
+
+**Titling a session is the host's**, and `implementation-workflow`,
+`shipping-workflow` and `backlog-survey` use it to name the run they open
+([`references/session-naming.md`](references/session-naming.md)); where the host
+offers none, the run goes untitled and the worktree name carries the address
+([`references/session-comms.md`](references/session-comms.md)).
 
 Per skill, on top of those:
 

@@ -40,6 +40,8 @@ mode once, at the gate, and threads it down; the mechanics live in
   [`../../references/forge-docs.md`](../../references/forge-docs.md).
   Reading an issue is reading a *spec*, not a mandate to do everything written in
   it: surface the actual asks and let the gate confirm scope.
+- **Be findable.** Title this session per
+  [`../../references/session-naming.md`](../../references/session-naming.md).
 - **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue
   already covering these tasks changes the scope; one covering part of them
   changes the slicing.
@@ -106,6 +108,9 @@ a long autonomous run survives context compaction — track slice progress on th
 native task list, and keep the plan (mode, merge authorization, strategy) in a
 durable plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans` (resolve the
 path from the variable; never hardcode `~/.claude`).
+
+The approved scope is also what the title settles on — `session-naming.md`'s
+second step.
 
 ## Phase 2 — Autonomous execution
 
@@ -202,3 +207,5 @@ completed straight onto the base in Phase 2.
   before Phase 1's branch layout and Phase 2's cut.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read before
   reading a task out of an issue or writing any `gh` / `glab` invocation.
+- [`../../references/session-naming.md`](../../references/session-naming.md) —
+  read at Phase 0's intake, and again once Phase 1's scope is settled.
