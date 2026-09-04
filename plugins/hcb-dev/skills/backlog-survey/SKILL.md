@@ -60,13 +60,13 @@ defect, an environment this session lacks — say why; it stays out of every
 closure proposal). Reading only the issues surveys what was once believed, not
 what is.
 
-The priority role that reference resolves is the issue's **declared
+The priority role `classification.md` resolves is the issue's **declared
 priority** — read it per issue and carry it as an input of its own, never
 folded into the importance the tests below derive. Resolve the family once for
-the whole slice, from the label set read whole rather than from the values that
-happen to appear on these issues, and hand that scale to every reader the slice
-fans out to. Where the repository expresses no priority, or its set settles no
-order, the tier section says so once and stands on the tests alone.
+the whole slice, by that reference rather than from the values that happen to
+appear on these issues, and hand the scale it yields to every reader the slice
+fans out to. Where it yields none, the tier section says so once and stands on
+the tests alone; an issue declaring nothing diverges from nothing.
 
 ## The report
 
