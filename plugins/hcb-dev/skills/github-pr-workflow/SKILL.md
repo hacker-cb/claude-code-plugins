@@ -103,7 +103,9 @@ what a check was called there. Your job is to **satisfy** whatever gates this re
 has, then clear your own bar on top of them (see *When there are no gates, or they
 can't be trusted* below).
 
-Read the live gates before and during the loop:
+Read the live gates before and during the loop, resolving anything below this
+skill does not spell out per
+[`../../references/forge-docs.md`](../../references/forge-docs.md):
 
 ```bash
 # The AUTHORITATIVE signals — these already fold in whatever is enforced, by any
@@ -432,33 +434,19 @@ Keep it scannable: short grouped bullets, not an essay.
 
 ## Reference files
 
-- [`references/copilot.md`](references/copilot.md) — How to find, classify (Critical/Important vs skip),
-  fix, and reply to Copilot review findings. Read it before Step 4.
-- [`references/platform-status.md`](references/platform-status.md) — whether a red,
-  stuck or missing check belongs to the platform rather than to the diff, how to
-  wait an outage out, and what to re-trigger once it clears. Read it the moment a
-  failure does not look like the diff's.
-- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — the
-  test deciding whether a finding is fixed in this PR or left, what a left one
-  costs before it can be proposed, the form the proposal takes, and what the
-  user's answer authorizes. Read it before Step 4, before Step 7, and before
-  recommending a follow-up on a late review.
-- [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
-  flag, an endpoint or a ruleset field gets resolved: the installed CLI's
-  `--help` for what this build accepts, the docs sites for what a field means.
-  Read it before writing an invocation this skill does not already spell out.
-- [`../../references/branch-naming.md`](../../references/branch-naming.md) — the shape of a branch name, what counts as
-  auto-generated, and when a rename is off the table. Read it before Step 1; the
-  push mechanics stay in that step.
+- [`references/copilot.md`](references/copilot.md) — read it before Step 4.
+- [`references/platform-status.md`](references/platform-status.md) — read it the
+  moment a failure does not look like the diff's.
+- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
+  it before Step 4, before Step 7, and before recommending a follow-up on a late
+  review.
+- [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
+  before writing an invocation this skill does not already spell out.
+- [`../../references/branch-naming.md`](../../references/branch-naming.md) — read
+  it before Step 1; the push mechanics stay in that step.
 - [`../../references/branch-retirement.md`](../../references/branch-retirement.md)
-  — what becomes of the branch once the merge is confirmed: the tip HEAD moves
-  onto, freeing the worktree that holds it, the proof a deletion needs where a
-  squash merge left git unable to see the merge, and the deletion of the ref the
-  push published. Read it before Step 6.
-- [`../../references/base-resolution.md`](../../references/base-resolution.md) — which remote to push to, which one carries
-  the base, and the ref-versus-name split. Steps 1 and 2 both resolve through it
-  and fill the result in; read it before either.
-- [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) — where autonomy ends and
-  asking begins, and why every stop carries a recommendation rather than a bare
-  question. It governs the stop-and-ask list near the top and Step 5's merge
-  authorization; read it before the first stop, not at it.
+  — read it before Step 6.
+- [`../../references/base-resolution.md`](../../references/base-resolution.md) —
+  Steps 1 and 2 both resolve through it; read it before either.
+- [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+  — read it before the first stop, not at it.

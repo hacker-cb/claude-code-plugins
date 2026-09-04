@@ -109,16 +109,9 @@ work raised become issues opened in the same effort.
 
 ## Reference files
 
-- [`../../references/classification.md`](../../references/classification.md) — the label
-  families as roles and the cardinality between them, which mechanism carries the
-  kind of work in this repository, and milestones where a project uses them. Read
+- [`../../references/classification.md`](../../references/classification.md) — read
   it before applying anything to an issue, and before proposing one.
-- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — the
-  test deciding whether something found in passing is fixed where it was found or
-  left, and, for a left one, what reaches the user, in what form, and what their
-  answer authorizes. Read it before writing that proposal.
-- [`../../references/forge-docs.md`](../../references/forge-docs.md) — where a
-  flag, an endpoint or a concept name gets resolved on either forge, what each
-  one matches to close an issue, and which hierarchy and dependency mechanism
-  each one has. Read it before writing an invocation this skill does not spell
-  out.
+- [`../../references/fix-or-surface.md`](../../references/fix-or-surface.md) — read
+  it before writing that proposal.
+- [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
+  before writing an invocation this skill does not spell out.
