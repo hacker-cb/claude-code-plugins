@@ -74,7 +74,7 @@ form: you paste every one of them yourself.
   between the families and who holds it when the platform will not, how a set gets
   proposed and created where the repository has none, and the two milestone
   patterns a repository can run, are
-  [`skills/issue-tracking/references/classification.md`](skills/issue-tracking/references/classification.md).
+  [`references/classification.md`](references/classification.md).
   Called by `implementation-workflow` at intake and in its report, and by
   `github-pr-workflow` after a merge.
 
@@ -345,6 +345,13 @@ saying something else.
   findings rated by importance, an explicit "none"). Read where a whole run is
   reported. That is a different altitude from a driver's report on one merged
   change request, and the two do not replace each other.
+- [`references/classification.md`](references/classification.md) — how an issue
+  gets classified against what the repository itself defines: the families as
+  roles and the cardinality between them, reading the label set whole before
+  anything is proposed or applied, which mechanism carries a role (a native
+  field, a label family, or neither), proposing a set where the repository has
+  none, and the two milestone patterns. Read wherever an issue is classified or
+  a backlog is read by what its tracker declares.
 - [`references/fix-or-surface.md`](references/fix-or-surface.md) — what to do with
   something the work noticed but never set out to do: the test that decides
   between fixing it in the change that found it — its own commit, its own type —

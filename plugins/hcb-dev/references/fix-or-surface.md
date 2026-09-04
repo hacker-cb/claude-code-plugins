@@ -77,7 +77,7 @@ it:
   ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — its
   result decides which of the three states below applies.
 - **Read the repository's own classification**
-  ([`../skills/issue-tracking/references/classification.md`](../skills/issue-tracking/references/classification.md)),
+  ([`classification.md`](classification.md)),
   once for the run rather than once per finding, so the proposal already carries
   what it would be opened with. Where a role has no vocabulary here, name the role
   and offer nothing for it.

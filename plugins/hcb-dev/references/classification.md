@@ -21,7 +21,7 @@ parked reason.
 
 Read it whole — both CLIs stop at a small default page, and a short read is
 indistinguishable from a missing family.
-[`../../../references/fix-or-surface.md`](../../../references/fix-or-surface.md)
+[`fix-or-surface.md`](fix-or-surface.md)
 sets when this read happens relative to a proposal, and how often.
 
 ```bash
@@ -53,7 +53,7 @@ back, not the exit status.
    reaches this repository, and say which of the two you concluded. Where a native
    field carries a role, nothing is labelled for it. Neither forge's `issue`
    commands reach these —
-   [`../../../references/forge-docs.md`](../../../references/forge-docs.md) has the
+   [`forge-docs.md`](forge-docs.md) has the
    entry points.
 2. **A label family** — the set read above.
 3. **Neither** — apply what exists, and name the roles this repository has no

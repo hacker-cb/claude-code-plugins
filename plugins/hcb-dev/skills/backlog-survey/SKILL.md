@@ -45,7 +45,7 @@ report names the revision it read.
 
 Per issue: the body, every comment, the labels, native type, milestone and
 state reason (the classification `hcb-dev:issue-tracking` resolves per
-[`../issue-tracking/references/classification.md`](../issue-tracking/references/classification.md)
+[`../../references/classification.md`](../../references/classification.md)
 — a parked reason that still holds keeps an issue out of every "ready" tier),
 the sub-issue and dependency links (both sit past either CLI's issue commands
 — the entry points are resolved per

@@ -62,7 +62,7 @@ carry the convention — read the top of a list ordered by creation date, never 
 lowest numbers and never a relevance-ranked search hit. Identifiers and paths stay
 verbatim whatever the language.
 
-Labels, native types and milestones — `references/classification.md`, before
+Labels, native types and milestones — `../../references/classification.md`, before
 applying any of them and before proposing one the repository lacks.
 
 ## Hierarchy and dependencies are separate questions
@@ -109,7 +109,7 @@ work raised become issues opened in the same effort.
 
 ## Reference files
 
-- [`references/classification.md`](references/classification.md) — the label
+- [`../../references/classification.md`](../../references/classification.md) — the label
   families as roles and the cardinality between them, which mechanism carries the
   kind of work in this repository, and milestones where a project uses them. Read
   it before applying anything to an issue, and before proposing one.
