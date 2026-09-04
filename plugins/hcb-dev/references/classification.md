@@ -1,5 +1,9 @@
 # Classifying an issue
 
+Read by anything that classifies an issue against what the repository itself
+defines. It lives outside any one skill because a copy per reader drifts, and a
+classification that drifted labels the same issue two ways.
+
 The families as **roles**, the cardinality between them, how the set that carries
 each role is read, and how one is proposed where none exists. The roles are what
 travels between repositories; every literal is read from the repository at hand.
@@ -11,7 +15,7 @@ travels between repositories; every literal is read from the repository at hand.
 | kind of work | exactly one | a capability that does not exist yet · shipped behaviour deviating from spec or intent, latent defects included · internal quality with no new capability. A parent takes its children's dominant kind |
 | component | at least one | where the work lands — the ones whose directories the diff actually touches; docs follow their subject. Three or more is a signal to decompose, not to label harder |
 | parked reason | at most one | the pending trigger that should reopen attention — a decision, an upstream release, a dependency of the project's own. **Absence means ready to pick up** |
-| priority | at most one | absence means normal |
+| priority | at most one | how far up the queue the work is wanted, ordinal within the family. **Absence means normal** |
 | security | optional flag | on top of whatever component applies |
 
 A deliberately deferred defect keeps its kind of work — the deferral lives in the
@@ -21,7 +25,7 @@ parked reason.
 
 Read it whole — both CLIs stop at a small default page, and a short read is
 indistinguishable from a missing family.
-[`../../../references/fix-or-surface.md`](../../../references/fix-or-surface.md)
+[`fix-or-surface.md`](fix-or-surface.md)
 sets when this read happens relative to a proposal, and how often.
 
 ```bash
@@ -34,7 +38,11 @@ glab api --paginate "projects/<project>/labels?per_page=100"
 ```
 
 Map the roles onto the prefixes that set already uses, reading the descriptions
-and not only the names.
+and not only the names. Where a family is ordinal, its order comes from what the
+descriptions and the values themselves mean, never from the order the names sort
+in; a colour ramp corroborates an order rather than establishing one. Where
+nothing in the set settles which end is which, the order is unresolved — say so,
+and compare nothing by it.
 
 **Never pass a name you did not just read.** On GitLab an unknown name handed to a
 label parameter is created as a new label, so a typo becomes part of the set
@@ -52,7 +60,7 @@ back, not the exit status.
    reaches this repository, and say which of the two you concluded. Where a native
    field carries a role, nothing is labelled for it. Neither forge's `issue`
    commands reach these —
-   [`../../../references/forge-docs.md`](../../../references/forge-docs.md) has the
+   [`forge-docs.md`](forge-docs.md) has the
    entry points.
 2. **A label family** — the set read above.
 3. **Neither** — apply what exists, and name the roles this repository has no

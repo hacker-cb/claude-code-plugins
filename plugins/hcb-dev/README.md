@@ -74,7 +74,7 @@ form: you paste every one of them yourself.
   between the families and who holds it when the platform will not, how a set gets
   proposed and created where the repository has none, and the two milestone
   patterns a repository can run, are
-  [`skills/issue-tracking/references/classification.md`](skills/issue-tracking/references/classification.md).
+  `references/classification.md`.
   Called by `implementation-workflow` at intake and in its report, and by
   `github-pr-workflow` after a merge.
 
@@ -168,16 +168,18 @@ work is **done** — not how the ask is worded.
 ### Surveying the backlog
 
 - **`backlog-survey`** — `/hcb-dev:backlog-survey`
-  A whole slice of the backlog — a milestone, a label, everything open — read
-  issue by issue and verified against the code, not against the tracker: each
-  issue ruled current, stale or needing a rewrite, with the coordinate that
-  shows it. Reports the picture, tiers of importance (blocks others / fires
-  today / catches regressions), the dependency graph and critical path,
-  parallel lanes per `references/wave-planning.md`, one recommendation for
-  what to take next, and incidental findings with a hygiene plan — which
-  executes only on your word, item by item through `issue-tracking`. Scales by
-  fanning readers out as subagents when the slice runs to hundreds. Its lanes
-  are the wave plan's input.
+  A whole slice of the backlog — a milestone, a label, everything open —
+  read issue by issue and verified against the code, not against the
+  tracker: each issue ruled current, stale or needing a rewrite, with the
+  coordinate that shows it. Reports the picture, tiers of importance (blocks
+  others / fires today / catches regressions) with the priority the tracker
+  declares carried beside each issue and the divergences between the two put
+  to you, the dependency graph and critical path, parallel lanes per
+  `references/wave-planning.md`, one recommendation for what to take next,
+  and incidental findings with a hygiene plan — which executes only on your
+  word, item by item through `issue-tracking`. Scales by fanning readers out
+  as subagents when the slice runs to hundreds. Its lanes are the wave
+  plan's input.
 
 ### Fanning work out in waves
 
@@ -343,6 +345,14 @@ saying something else.
   findings rated by importance, an explicit "none"). Read where a whole run is
   reported. That is a different altitude from a driver's report on one merged
   change request, and the two do not replace each other.
+- [`references/classification.md`](references/classification.md) — how an issue
+  gets classified against what the repository itself defines: the families as
+  roles and the cardinality between them, reading the label set whole before
+  anything is proposed or applied, which mechanism carries a role (a native
+  field, a label family, or neither), proposing a set where the repository has
+  none, how an ordinal family's order is resolved — from what the values mean,
+  never from how the names sort — and the two milestone patterns. Read wherever
+  an issue is classified or a backlog is read by what its tracker declares.
 - [`references/fix-or-surface.md`](references/fix-or-surface.md) — what to do with
   something the work noticed but never set out to do: the test that decides
   between fixing it in the change that found it — its own commit, its own type —
