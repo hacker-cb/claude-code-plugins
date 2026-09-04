@@ -130,6 +130,7 @@ form: you paste every one of them yourself.
   run on a platform outage — checking the status feed every half hour — instead of
   fixing a red check the diff never caused. See
   [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md),
+  [`skills/github-pr-workflow/references/merge-gates.md`](skills/github-pr-workflow/references/merge-gates.md),
   [`skills/github-pr-workflow/references/copilot.md`](skills/github-pr-workflow/references/copilot.md)
   and [`skills/github-pr-workflow/references/platform-status.md`](skills/github-pr-workflow/references/platform-status.md).
 

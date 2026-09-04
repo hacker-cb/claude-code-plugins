@@ -24,11 +24,9 @@ where safe. This skill is the full lifecycle; the user may enter at any stage
 (just-finished code, or an already-open PR). Detect where they are and pick up
 from there.
 
-`hcb-dev:shipping-workflow` sits directly upstream of this skill — it normalizes
-the branch name, commits, runs every available local reviewer, applies the fixes
-and checks coverage, then hands off here (in **request** mode; in local mode it merges without a PR and
-never reaches this skill). If you landed here on finished work that has had no
-local review, go there first; this skill starts at the PR and will not run the
+`hcb-dev:shipping-workflow` sits directly upstream and hands off here in
+**request** mode. If you landed here on finished work that has had no local
+review, go there first: this skill starts at the PR and will not run the
 reviewers for you.
 
 This skill is GitHub-specific by design (the `<forge>-<artifact>-workflow`
@@ -91,87 +89,25 @@ Plain `git` handles the local branch/rebase/push operations.
 
 ## The merge gates belong to the repo — discover them, don't assume
 
-What blocks a merge — which CI checks are required, whether *every* review thread
-must be resolved, which merge methods are allowed, whether the branch must be
-current with base — is configured **per repository** (branch protection /
-rulesets) and **enforced by GitHub**. You can't change it and shouldn't hardcode
-assumptions about it: **read the configuration of the repo you're working in**,
-every time, and never carry over what some *other* repo happened to require or
-what a check was called there. Your job is to **satisfy** whatever gates this repo
-has, then clear your own bar on top of them (see *When there are no gates, or they
-can't be trusted* below).
-
-Read the live gates before and during the loop, resolving anything below this
-skill does not spell out per
-[`../../references/forge-docs.md`](../../references/forge-docs.md):
+What blocks a merge — required checks, thread resolution, allowed merge methods,
+being current with base — is configured **per repository** and enforced by GitHub.
+**Read the configuration of the repo you're working in**, every time, and never
+carry over what some *other* repo required or what a check was called there. These
+signals already fold in whatever is enforced, by any mechanism:
 
 ```bash
-# The AUTHORITATIVE signals — these already fold in whatever is enforced, by any
-# mechanism (rulesets, classic branch protection, org policy). Trust these:
 gh pr checks <pr>                                              # required checks + state
 gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision  # merge verdict + why
-# The "why", read once. The per-branch view, NOT a plain /rulesets listing: it has
-# already applied each ruleset's ref_name conditions and includes org-level rulesets.
-gh api repos/<owner>/<repo>/rules/branches/<base>              # rules in force on the base
-gh api --paginate repos/<owner>/<repo>/rulesets --jq '.[].id' \
-  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{}          # full definitions: enforcement, bypass_actors
-gh api repos/<owner>/<repo>/branches/<base>/protection 2>/dev/null || true  # classic (NOT in /rulesets)
 ```
 
-`mergeStateStatus` names exactly what's missing (the GraphQL enum is `BEHIND`,
-`BLOCKED`, `UNSTABLE`, `DIRTY`, `UNKNOWN`, `HAS_HOOKS`, `CLEAN` — there is no
-`DRAFT` value; a draft PR reads `BLOCKED`, and you detect draftness via the
-separate `--json isDraft`):
+**Gates are a floor, never a ceiling** — Step 4's bar applies on top of whatever
+the repo enforces, and where the repo enforces nothing, becomes the only one.
+**Never merge on a bypass**: where you are allowed to skip the gates,
+`mergeStateStatus` reads `CLEAN` because of that, not because they passed.
 
-| status | meaning | what to do |
-|---|---|---|
-| `BEHIND` | branch not up to date with base (strict policy) | re-sync (Step 2) |
-| `BLOCKED` | a required check, review, or thread resolution is missing (a draft also reads `BLOCKED`) | keep looping (Step 4); if it's a draft, mark ready (Step 3) |
-| `UNSTABLE` | a non-required check is red — GitHub *will* let you merge | don't merge until you confirm it's irrelevant or a known flake (see below) |
-| `DIRTY` | merge conflicts | resolve conflicts |
-| `UNKNOWN` | GitHub is still recomputing mergeability (transient — e.g. right after a push) | wait and re-poll |
-| `HAS_HOOKS` | mergeable and checks pass, but the repo has pre-receive hooks that run *at merge time* and can still reject the merge | proceed as for `CLEAN`, but don't treat the merge as guaranteed — a hook may reject it, so confirm it actually landed (Step 6) |
-| `CLEAN` | GitHub's own gates are satisfied | merge-*permitted* by GitHub — still meet your own bar (Step 4) before Step 5 |
-
-### Read the rules, not a checklist of names
-
-Rulesets express gates as **typed rules**; classic protection expresses the same
-ideas under its own keys. Map whichever rules you find onto work — and presume
-none of them are present until you've read them:
-
-| ruleset rule | parameters that matter | what it means for you |
-|---|---|---|
-| `required_status_checks` | `required_status_checks[].context`, `strict_required_status_checks_policy` | every listed context must go green. Treat the names as **opaque** — the repo chooses them, and what any one check stands for is its own business. `strict` additionally means the branch must be current with base (Step 2). |
-| `pull_request` | `required_review_thread_resolution`, `allowed_merge_methods`, `required_approving_review_count`, `dismiss_stale_reviews_on_push` | thread resolution `true` means *every* thread must end resolved, not just the severe ones. Merge methods: pick from the allowed set only (Step 5). Approvals are often 0; if >0, `reviewDecision` reads `REVIEW_REQUIRED` and merge waits on a human. |
-| `copilot_code_review` | `review_on_push`, `review_draft_pull_requests` | Copilot review is part of this repo's flow — automatically **requested**, but gating nothing on its own (it lands as a `COMMENTED` review), so its findings are your bar rather than GitHub's. `review_on_push` re-*requests* Copilot on every push — usually, but not always, producing a new review, so confirm one landed for the current head instead of assuming it. Drafts are skipped unless `review_draft_pull_requests`. See `references/copilot.md`. |
-| `deletion`, `non_fast_forward` | — | the matched branches can't be deleted or force-pushed. Affects Step 1's rename and Step 6's retirement when they touch a protected ref. |
-
-Anything the rules don't cover, the live signals still do: `gh pr checks` is the
-final word on which contexts are required, whatever produced them.
-
-### When there are no gates, or they can't be trusted
-
-A repo with no *enforced* gates reports `CLEAN` the instant the PR opens — that
-means "GitHub won't stop you," not "the work is ready." **Gates are a floor, never
-a ceiling**; Step 4's bar applies on top of whatever the repo enforces.
-
-**Don't merge on a bypass.** Where `current_user_can_bypass` is not `never`, or you
-are in a rule's `bypass_actors`, `mergeStateStatus` reads `CLEAN` because you are
-allowed to skip the gates — not because they passed. Satisfy them as if you could
-not. An `evaluate` or `disabled` ruleset is advisory in the same way: it appears in
-the API and blocks nothing.
-
-**Confirm gates are absent; don't infer it from an empty rulesets list.** A repo
-can enforce required checks, reviews and thread-resolution through **classic branch
-protection**, which `/rulesets` does not return. Treat them as truly absent only
-when the live signals agree: `gh pr checks` shows no required checks,
-`reviewDecision` is empty, and neither `rules/branches/<base>` nor
-`branches/<base>/protection` enforces anything.
-
-Then supply the gates yourself — the Step 4 loop's bar becomes the authoritative
-one — and be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
-irreversible force-pushes, and tell the user their judgment is the only safety net
-here.
+[`references/merge-gates.md`](references/merge-gates.md) owns the rest — the rules
+behind those signals, the `mergeStateStatus` values Step 4 routes on, and how to
+tell absent gates from unread ones. **Read it before Step 4.**
 
 ## When the platform is down, the red check is not yours
 
@@ -432,6 +368,7 @@ Keep it scannable: short grouped bullets, not an essay.
 
 ## Reference files
 
+- [`references/merge-gates.md`](references/merge-gates.md) — read it before Step 4.
 - [`references/copilot.md`](references/copilot.md) — read it before Step 4.
 - [`references/platform-status.md`](references/platform-status.md) — read it the
   moment a failure does not look like the diff's.
