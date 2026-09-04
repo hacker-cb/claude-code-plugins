@@ -45,7 +45,7 @@ never this checkout's own state, which may be stale or mid-feature — and the
 report names the revision it read.
 
 Per issue: the body, every comment, the labels, native type, milestone and
-state reason (the classification `hcb-dev:issue-tracking` resolves per
+state reason (classified per
 [`../../references/classification.md`](../../references/classification.md)
 — a parked reason that still holds keeps an issue out of every "ready" tier),
 the sub-issue and dependency links (both sit past either CLI's issue commands
@@ -60,7 +60,7 @@ defect, an environment this session lacks — say why; it stays out of every
 closure proposal). Reading only the issues surveys what was once believed, not
 what is.
 
-The priority role that same classification resolves is the issue's **declared
+The priority role that reference resolves is the issue's **declared
 priority** — read it per issue and carry it as an input of its own, never
 folded into the importance the tests below derive. Resolve the family once for
 the whole slice, from the label set read whole rather than from the values that
@@ -78,20 +78,13 @@ In this order, each section explicit even when empty:
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only
    its members, and carry each issue's declared priority beside the tier
-   the tests put it in — absence declares normal, and a repository carrying
-   no priority vocabulary declares nothing to disagree with. Where tier and
-   priority disagree, the disagreement is a result of its own. The tests
-   measure what the code makes true and the priority says how far up the
-   queue the work is wanted, so neither disproves the other: report each
-   divergence with what the code showed, as a priority for the user to
-   reconsider rather than one to correct. Two are worth reporting — an
-   issue the tests place in the top tier whose priority sits below the
-   family's upper end, and a current, unparked one at that upper end no
-   test puts there. What a verdict or a parked reason already explains is
-   not a divergence: an unverifiable issue answered no test, a stale one is
-   closed instead, and one behind a parked reason stays out of the ready
-   tiers and is named here as blocked, with the reason parking it. Where
-   the tests leave two issues level, the declared priority orders them.
+   the tests put it in. The tests measure what the code makes true; the
+   priority says how far up the queue the work is wanted. Neither disproves
+   the other, so where the two diverge the divergence is a result of its
+   own — reported with what the code showed and left to the user to settle,
+   never corrected as an error, and never claimed where a verdict above or
+   a live parked reason already explains the quiet. Where the tests leave
+   two issues level, the declared priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).

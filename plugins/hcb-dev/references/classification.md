@@ -1,8 +1,7 @@
 # Classifying an issue
 
 Read by anything that classifies an issue against what the repository itself
-defines — filing one, triaging one, or reading a backlog by what its tracker
-declares. It lives outside any one skill because a copy per reader drifts, and a
+defines. It lives outside any one skill because a copy per reader drifts, and a
 classification that drifted labels the same issue two ways.
 
 The families as **roles**, the cardinality between them, how the set that carries
