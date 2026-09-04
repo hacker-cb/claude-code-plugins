@@ -74,7 +74,7 @@ form: you paste every one of them yourself.
   between the families and who holds it when the platform will not, how a set gets
   proposed and created where the repository has none, and the two milestone
   patterns a repository can run, are
-  [`references/classification.md`](references/classification.md).
+  `references/classification.md`.
   Called by `implementation-workflow` at intake and in its report, and by
   `github-pr-workflow` after a merge.
 
@@ -173,7 +173,7 @@ work is **done** — not how the ask is worded.
   issue ruled current, stale or needing a rewrite, with the coordinate that
   shows it. Reports the picture, tiers of importance (blocks others / fires
   today / catches regressions) with the priority the tracker declares carried
-  beside each issue and every disagreement between the two reported, the
+  beside each issue and the divergences between the two put to you, the
   dependency graph and critical path, parallel lanes per
   `references/wave-planning.md`, one recommendation for what to take next,
   and incidental findings with a hygiene plan — which

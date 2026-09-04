@@ -9,7 +9,7 @@ description: >-
   issues", "раздели по важности", "что брать в работу", "разложи бэклог",
   "перепроверь все issues вехи/метки" — and before an epic is split into waves
   when no survey exists yet. Report-first: tracker hygiene it proposes (bodies
-  to rewrite, issues to close, milestones to move, priorities to correct)
+  to rewrite, issues to close, milestones to move, priorities to reconsider)
   executes only on the user's word, item by item through
   `hcb-dev:issue-tracking`. Not for one issue's
   mechanics (`hcb-dev:issue-tracking`); the ask to split into waves AND run
@@ -31,8 +31,9 @@ so a plain list undercounts anything larger — paginate to the end, or set the
 limit above the tracker's own total, before sizing anything; a survey of the
 first page reads as a survey of the whole. The count picks the mechanics: a
 slice a session can read, it reads itself; hundreds of issues fan out to
-parallel reader subagents, each handed a sub-slice and the same per-issue
-questions, with every conclusion synthesized back here. Whichever mechanics
+parallel reader subagents, each handed a sub-slice, the same per-issue
+questions and the one priority scale resolved below, with every conclusion
+synthesized back here. Whichever mechanics
 run, the conclusions below are this session's — a reader's summary is input,
 not a verdict.
 
@@ -75,19 +76,22 @@ In this order, each section explicit even when empty:
    group is, where the current front line runs.
 2. **Tiers of importance**, each issue placed by three tests: does it block
    others; does it fire today (a reproduced defect, a live hole); does it
-   catch regressions (a guard, a gate). Name the tier's meaning, not only its
-   members, and carry each issue's declared priority beside the tier the tests
-   put it in — absence declares normal, and a repository carrying no priority
-   vocabulary declares nothing to disagree with. Where tier and priority
-   disagree, the disagreement is a result of its own: an issue the tests place
-   in the top tier while its priority sits below the family's upper end goes
-   to the hygiene plan to be raised; a current, unparked one at that upper end
-   which every test answered no to goes there to be lowered, citing what the
-   code showed. Anything the priority does not explain goes to neither: an
-   unverifiable issue answered no test, a stale one is closed instead, and one
-   at the upper end behind a parked reason stays out of the ready tiers and is
-   named here as blocked, with the reason parking it. Where the tests leave
-   two issues level, the declared priority orders them.
+   catch regressions (a guard, a gate). Name the tier's meaning, not only
+   its members, and carry each issue's declared priority beside the tier
+   the tests put it in — absence declares normal, and a repository carrying
+   no priority vocabulary declares nothing to disagree with. Where tier and
+   priority disagree, the disagreement is a result of its own. The tests
+   measure what the code makes true and the priority says how far up the
+   queue the work is wanted, so neither disproves the other: report each
+   divergence with what the code showed, as a priority for the user to
+   reconsider rather than one to correct. Two are worth reporting — an
+   issue the tests place in the top tier whose priority sits below the
+   family's upper end, and a current, unparked one at that upper end no
+   test puts there. What a verdict or a parked reason already explains is
+   not a divergence: an unverifiable issue answered no test, a stale one is
+   closed instead, and one behind a parked reason stays out of the ready
+   tiers and is named here as blocked, with the reason parking it. Where
+   the tests leave two issues level, the declared priority orders them.
 3. **The dependency graph and the critical path** — chains, the unblocked
    vertices, and the constraints visible only from reading the slice whole
    (the classes `wave-planning.md` rules sequential).
@@ -100,7 +104,7 @@ In this order, each section explicit even when empty:
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
    plan: bodies to rewrite, issues to close or re-milestone, priorities to
-   correct, links to fix.
+   reconsider, links to fix.
 
 ## After the report
 
