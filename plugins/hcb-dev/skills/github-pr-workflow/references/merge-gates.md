@@ -16,7 +16,7 @@ The skill's two live signals give the verdict; these give the why:
 # already applied each ruleset's ref_name conditions and includes org-level rulesets.
 gh api repos/{owner}/{repo}/rules/branches/<base>              # rules in force on the base
 gh api --paginate repos/{owner}/{repo}/rulesets --jq '.[].id' \
-  | xargs -I{} gh api repos/{owner}/{repo}/rulesets/{}          # full definitions: enforcement, bypass_actors
+  | xargs -I% gh api repos/{owner}/{repo}/rulesets/%           # -I%, not -I{}: gh's own placeholders are braces too
 gh api repos/{owner}/{repo}/branches/<base>/protection 2>/dev/null || true  # classic (NOT in /rulesets)
 ```
 
