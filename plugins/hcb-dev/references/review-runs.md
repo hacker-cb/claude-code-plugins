@@ -61,8 +61,7 @@ naming the engine, so the run is recognizable in the task list.
 Detached is how it runs, not permission to answer without it: collect the finished
 task's output and read it back before answering.
 
-**Waiting is a blocking call, never a loop.** The engine takes minutes, and how
-those minutes are spent differs by two orders of magnitude in what it costs.
+**Waiting is a blocking call, never a loop.**
 
 **Wait on blocking windows.** One `TaskOutput` call with `block: true` and
 `timeout: 600000` holds a single turn for ten minutes; repeat it, window after
@@ -75,8 +74,7 @@ most likely to return — never on the same silent one over and over while finis
 records sit unread. The ceiling below is wall-clock across the whole wait, not six
 windows per run: three reviewers do not buy three hours.
 
-**Where no blocking wait is available** — the mechanism is deprecated in the harness
-and may go — wait inside a single command instead: one call that blocks until the
+**Where no blocking wait is available**, wait inside a single command instead: one call that blocks until the
 run prints one of those three lines or the window is up, and reads the file by what
 it says
 rather than by whether it is empty. What the rule below forbids is a turn per check,
@@ -97,23 +95,16 @@ what they found until their records are in hand.
 **Never wait by running commands in a loop** — a `sleep`, a `seq` loop, a
 background "watcher" that sleeps and re-checks. A backgrounded call returns
 instantly, so the wait becomes a spin that bills a whole turn, with the whole
-context behind it, every few seconds; sessions doing this have spent a fifth of
-their turns and a quarter of their context on nothing, and on a shared quota they
-starve the very runs they are waiting for.
+context behind it, every few seconds.
 
 **A wait ends, but not soon.** These engines take minutes, and the upper rungs take
 tens of them — half an hour of silence is a run reading, not a run lost, and a
 window that expires is one window, not a verdict — open the next one. What ends a
-wait is an hour of it, counted on the clock rather than per run. Before that hour, waiting is the
-whole of the job; at it, stop and
-record what actually happened — a run that never returned is a row and a reason in
-the caller's report, not a reason to stall, and not a review to claim. Spend the
-wait itself on what does not depend on the answer.
-
-The hour is a ceiling on waiting, not a claim about how long a review may take: it
-is there because the failures that leave nothing in the output file at all —
-against which no amount of further waiting helps — now return at once, so silence
-that outlasts an hour is worth reporting rather than sitting through.
+wait is an hour of it, counted on the clock rather than per run. Before that hour,
+waiting is the whole of the job; at it, stop and record what actually happened — a
+run that never returned is a row and a reason in the caller's report, not a reason
+to stall, and not a review to claim. Spend the wait itself on what does not depend
+on the answer.
 
 **The command lives in the engine's script, and its skill names it.** Run that
 script as it stands, one plain command — an agent isolated in its own worktree has

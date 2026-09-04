@@ -56,8 +56,7 @@ the coordinate that shows it), **stale** (the tree moved — cite what fixed or
 invalidated it), **needs rewrite** (real, but the body misleads),
 **unverifiable** (the trigger cannot be checked from here — an unreproduced
 defect, an environment this session lacks — say why; it stays out of every
-closure proposal). Reading only the issues surveys what was once believed, not
-what is.
+closure proposal).
 
 The priority role `classification.md` resolves is the issue's **declared
 priority** — read it per issue and carry it as an input of its own, never

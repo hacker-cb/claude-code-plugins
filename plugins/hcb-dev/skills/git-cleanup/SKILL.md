@@ -38,11 +38,7 @@ DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never 
 **`DEFAULT-UNRESOLVED` is not "nothing is merged"** — it is "the merge question
 cannot be answered", and holding those two apart is this skill's whole safety
 margin. Every branch's status becomes **unknown**: surface them all, delete none,
-and say the remote was unreachable. The reason it matters here more than anywhere
-else is that both failing commands answer in the vocabulary of success — a
-`branch --merged` that died prints nothing, which reads as "no branches are
-merged", and a `rev-list --count` that died prints 0, which routes a branch
-straight to deletion.
+and say the remote was unreachable.
 
 If there is no remote at all, ask the user — nothing local names the default.
 
@@ -76,10 +72,7 @@ The argument picks it. With no argument, ask — do not guess.
 
 **Mode S is what you remember creating in this conversation.** That record is the
 source, not a corroborating one — you were there for every branch cut and every
-worktree added. A timestamp probe cannot overrule it and does not settle the case
-it looks built for: a session that was resumed, or whose process restarted, has a
-start time later than the worktree it made, so its own work dates as somebody
-else's.
+worktree added. A timestamp probe cannot overrule it.
 
 Where memory is genuinely unsure about one item, list it. Mode decides *what is
 listed*, never how freely anything is deleted — the risk class does that, and

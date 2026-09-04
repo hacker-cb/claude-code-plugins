@@ -106,8 +106,7 @@ For anything multi-slice, **persist the plan and the captured authorizations** s
 a long autonomous run survives context compaction — track slice progress on the
 native task list, and keep the plan (mode, merge authorization, strategy) in a
 durable plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans` (resolve the
-path from the variable; never hardcode `~/.claude`). Losing the mode or the merge
-authorization to a compaction mid-run is the failure this guards against.
+path from the variable; never hardcode `~/.claude`).
 
 ## Phase 2 — Autonomous execution
 

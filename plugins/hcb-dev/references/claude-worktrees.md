@@ -28,20 +28,18 @@ holding work all sit there indefinitely — still the host's, just not yet colle
 
 ## A worktree is leased, not occupied
 
-The host does not hand a worktree to a *process*. It **leases** it to a session:
-a per-profile `git-worktrees.json` records `leasedBy: <sessionId>`, worktrees are
-returned to a pool when released, and the host reuses them rather than cutting new
-ones. A session that is merely closed — not archived — keeps its lease, because the
-user is expected to resume into it.
+The host does not hand a worktree to a *process*. It **leases** it to a session,
+returns it to a pool when released, and reuses it rather than cutting a new one. A
+session that is merely closed — not archived — keeps its lease, because the user is
+expected to resume into it.
 
 So the lease outlives the process, and **a worktree with no running process is
 routinely still someone's**.
 
-Do not try to read the lease. That state lives in the desktop app's own storage,
-one file per profile, outside `${CLAUDE_CONFIG_DIR}` and off any path this plugin
-can derive; profiles disagree with each other about the same directory, and entries
-outlive the directories they name. A check that reads one profile answers
-confidently and wrongly.
+Do not try to read the lease. That state lives off any path this plugin can derive,
+and what can be reached of it disagrees with itself about the same directory and
+outlives the directories it names. A check built on it answers confidently and
+wrongly.
 
 ## Which worktrees are running
 

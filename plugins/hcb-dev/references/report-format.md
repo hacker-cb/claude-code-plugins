@@ -1,11 +1,10 @@
 # The final report
 
-Read by whatever reports on finished work, so the shape is the same whichever ran
-and the wording does not drift. It sits at a different altitude from a
-change-request driver's own report: that one covers a single merged change
-request, this one the *whole run*, across slices. A multi-slice request set
-produces several of the first and one of these at the end — different scopes,
-so don't fold one into the other.
+Read by whatever reports on finished work, so the shape is the same whichever ran.
+It sits at a different altitude from a change-request driver's own report: that
+one covers a single merged change request, this one the *whole run*, across
+slices. A multi-slice request set produces several of the first and one of these
+at the end — never fold one into the other.
 
 Keep it scannable: short grouped bullets, a small table, not an essay.
 

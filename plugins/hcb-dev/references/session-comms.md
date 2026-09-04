@@ -55,8 +55,7 @@ a rung's tooling simply starts lower.
 - **First contact carries identity both ways**: who you are — title and session
   id — and which epic or order this concerns. Where the address was guessed,
   the first line is a challenge: "if you are not <who this concerns>, say so
-  and I stop." A wrong guess answered is a mis-delivery caught; one acted on is
-  two sessions corrupting each other's state.
+  and I stop."
 - **The first line of every message is self-contained** — the recipient's human
   previews only that line.
 - **A question waits without blocking.** Send it, then continue on what does

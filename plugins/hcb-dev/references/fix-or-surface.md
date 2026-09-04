@@ -12,8 +12,7 @@ belong to `hcb-dev:issue-tracking`.
 
 Something noticed in passing that belongs to the work in hand is fixed **in that
 work, as it is noticed** — never carried to a report and handed back as something
-for the user to schedule. Five conditions, all of which have to hold; the first is
-what makes it a drive-by rather than new work:
+for the user to schedule. Five conditions, all of which have to hold:
 
 - **It would have been in scope had it been seen earlier.** The test is the
   planning gate: named while this work was being scoped, would it have gone in?
@@ -41,8 +40,7 @@ Everything else that fails a condition surfaces.
 
 A fix that is not what the change set out to make — as against a fix to the code
 this change is writing, which is just the work — never rides inside another
-commit, and never shares one with a second drive-by: each is read, and can be
-rejected, apart from the change that carried it.
+commit, and never shares one with a second drive-by.
 
 - **Its subject** — [`branch-naming.md`](branch-naming.md) owns what a passenger
   commit is called.
@@ -50,14 +48,12 @@ rejected, apart from the change that carried it.
   together; it is the history that stays separate, not the round trips.
 - **Notice it before the reviewers run**, so it sits inside the range they read.
   One noticed after they have reported is fixed only where it falls inside that
-  range; outside it, it surfaces instead — a coverage gate that has already
-  reported the change fully read is not a gate anything may land behind.
+  range; outside it, it surfaces instead.
 - **Where the merge collapses the commits, name the fix in the change-request
   body** and in the squash message written from it. A slice always squashes and a
   standalone request usually does
-  ([`slice-completion.md`](slice-completion.md)), so the boundary serves the
-  branch and the review and then goes; that line is what reaches the base. A merge
-  keeping the commits carries it already.
+  ([`slice-completion.md`](slice-completion.md)). A merge keeping the commits
+  carries it already.
 
 A fix is not surfaced as a finding — no proposal, no issue. It is done, and the
 commit and that line are its record.
@@ -84,8 +80,7 @@ it:
 
 Where there is no tracker to reach — no remote at all, or none a forge answers
 for — neither is possible, and the finding still surfaces: as an observation with
-no proposal attached, saying there is nowhere to file it. A local completion is
-built to run without a remote, so this is an ordinary case and not a failure.
+no proposal attached, saying there is nowhere to file it.
 
 ## The form
 

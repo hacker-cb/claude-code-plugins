@@ -8,8 +8,6 @@ it to a case this file never named.
 
 ## 1. Ask about architecture; act on mechanics
 
-Autonomy and asking are not opposites — they split by the *kind* of decision.
-
 - **Mechanical / reversible** — a branch name, the order of commits, a trivial
   conflict, a formatting choice, which allowed merge method to default to. Act,
   and narrate what you did in a line. Stopping here is friction with no payoff.
@@ -35,12 +33,8 @@ surfaced belongs at the gate.
 Every fork you put to the person carries your recommended option **first**, with a
 one-line reason, framed as the choice you'd make. A bare "how should I do X?"
 pushes work back onto them that the analysis was supposed to do; a recommendation
-lets them agree in one word or correct with a target.
-
-This is not the same as deciding for them. A recommendation is *shown*, and the
-person approves or overrides it — that is what keeps a captured default (say,
-merge-on-green) honest rather than silent. The recommendation must be grounded in
-the code and the constraints, not asserted; "I'd do A because the schema already
+lets them agree in one word or correct with a target. The recommendation must be
+grounded in the code and the constraints, not asserted; "I'd do A because the schema already
 does A elsewhere" beats "A (recommended)".
 
 Every stop-and-ask point inherits this rule — a finding that needs a product

@@ -23,8 +23,7 @@ in. Name a repository only where the reader could be in a different one.
 
 ## It is a task, not a document
 
-Second person, imperative, ending in something to do. A prompt that only
-describes leaves the reader onboarded and idle.
+Second person, imperative, ending in something to do.
 
 ## Point, don't retell
 
@@ -35,10 +34,8 @@ already taken.
 
 ## Every assertion carries where to re-check it
 
-The prompt is one session's recall, frozen when it was written. Each fact in it
-names the coordinate that confirms it — a file and line, an issue, a command.
-An item recall is unsure of stays in, marked unsure; a dropped one is invisible
-to the reader, a doubtful one costs it a second.
+Each fact names the coordinate that confirms it — a file and line, an issue, a
+command. An item recall is unsure of stays in, marked unsure, never dropped.
 
 ## The first line states the origin
 
