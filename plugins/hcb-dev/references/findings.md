@@ -138,11 +138,12 @@ way ends with the response.
 
 The answer is the user's, and where this session works to an order — one written
 by another session rather than typed in chat — it is whoever that order names
-([`order-anatomy.md`](order-anatomy.md)), the user again where it names nobody.
+**for this** ([`order-anatomy.md`](order-anatomy.md)); an addressee it names for
+its forks is not that, and an order naming none leaves the user.
 Opening or updating anything waits for it, every time. **A standing instruction
-to work autonomously is not that answer** — it authorizes the work,
-not the tracker — and an approval covers the batch it was given for, never what
-turns up afterwards.
+to work autonomously is not that answer** — it authorizes the work, not the
+tracker — and an approval covers the batch it was given for, never what turns up
+afterwards.
 
 Where no answer comes, the finding stays undecided rather than dropped:
 re-surface it at the natural end of the session, once the primary work is done.
