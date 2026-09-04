@@ -22,7 +22,7 @@ back to the rendered page.
 |---|---|---|
 | a page | `https://docs.github.com/en/<path>.md` | `https://docs.gitlab.com/<path>/index.md` |
 | what comes back | the page as markdown | the Hugo source, shortcodes (`{{< details >}}`) left in |
-| the CLI's own pages | `https://docs.github.com/en/github-cli/<path>.md` — install and configuration only, never the command reference | `https://docs.gitlab.com/cli/<path>/index.md` — the full command reference, generated from the source |
+| the CLI's own pages | `https://docs.github.com/en/github-cli/<path>.md` — install and configuration only; the per-command pages are HTML at `cli.github.com/manual/`, so `--help` is the only markdown-free route to them | `https://docs.gitlab.com/cli/<path>/index.md` — the full command reference, generated from the source |
 | every path there is | `https://docs.github.com/api/pagelist/en/<version>` — one path per line, and it decides the row above: only a path it enumerates has the markdown twin | [llms.txt](https://docs.gitlab.com/llms.txt) — the navigation tree only, so a deep page is reached from its parent, not from here |
 | search | `https://docs.github.com/api/search/v1?query=<q>&language=en&version=<ver>&client_name=<caller>` — `client_name` is mandatory, and the `&` mean the URL is quoted wherever a shell sees it | none |
 | a self-hosted version | `enterprise-server@<ver>` leads the path, and is a `<version>` the page list takes; which ones are still served is [the versions endpoint](https://docs.github.com/api/pagelist/versions) | the site carries the current release only — for an older one take the source under `https://gitlab.com/gitlab-org/gitlab/-/raw/<tag>/doc/`, since [archives.docs.gitlab.com](https://archives.docs.gitlab.com/) is rendered HTML |
@@ -43,11 +43,6 @@ an index: when a path is not in it, go to the page list. GitLab publishes no
 
 Fetch the page a flag is on, never the section above it — a schema or API
 reference is large enough to crowd out the context you needed it for.
-
-Neither site publishes `gh`'s command reference as markdown: `docs.github.com`
-carries installation and configuration, and `cli.github.com/manual/` carries the
-generated per-command pages as HTML. `--help` is the markdown-free way to the
-same content, and the only one that describes the installed build.
 
 ## What each forge calls it
 
@@ -80,6 +75,10 @@ implies one mechanism per forge will be wrong on both.
 | the automated reviewer | [Copilot code review](https://docs.github.com/en/copilot/concepts/agents/code-review.md) | [Duo Code Review](https://docs.gitlab.com/user/gitlab_duo/code_review/index.md) |
 
 ## Issues: the porcelain stops at the flat issue
+
+**Both CLIs answer with a small first page.** Paginate to the end, or set the
+limit above the tracker's own total, before counting or sweeping anything — a
+short read is indistinguishable from an empty one.
 
 Both CLIs stop at the single flat issue — create it, list, view, comment, close,
 and edit its own fields (`gh issue edit`, `glab issue update`). Neither wraps
