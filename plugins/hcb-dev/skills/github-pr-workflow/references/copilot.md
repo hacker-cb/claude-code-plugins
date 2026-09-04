@@ -43,7 +43,7 @@ neither.
 ```bash
 # One line per rule in force on the base branch. `ruleset_source_type` says
 # whether it came from this repo or from an org-level ruleset.
-gh api repos/<owner>/<repo>/rules/branches/<base> \
+gh api repos/{owner}/{repo}/rules/branches/<base> \
   --jq '.[] | select(.type=="copilot_code_review") | .parameters | @json'
 ```
 
@@ -81,7 +81,7 @@ would go unread. Check for an existing review before skipping:
 ```bash
 # --paginate applies --jq per page, so a bare `length` prints one number *per
 # page* — sum them, or a PR with >100 reviews answers with several numbers.
-gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
+gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length' \
   | awk '{ n += $1 } END { print n + 0 }'
 ```
@@ -105,7 +105,7 @@ with the PR head:
 head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
 # `| @json` pins each review to exactly one line, so `tail -1` is the last review
 # and not whatever gh's output formatting happened to put on the last line.
-gh api --paginate repos/<owner>/<repo>/pulls/<pr>/reviews \
+gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         | {commit_id, submitted_at} | @json' | tail -1
 # fresh iff commit_id == $head
@@ -126,7 +126,7 @@ After each push:
    requested". Read it over REST, matching the pair from *Identifying Copilot* —
    `gh pr view --json reviewRequests` drops the bot, so a wait built on it never arms:
    ```bash
-   gh api repos/<owner>/<repo>/pulls/<pr> \
+   gh api repos/{owner}/{repo}/pulls/<pr> \
      --jq '[ .requested_reviewers[]? | select((.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i"))) ] | length'
    ```
    Whether one was registered for *this* head is the timeline's answer: its
@@ -140,7 +140,7 @@ After each push:
    # the environment. The comparison is lexicographic, so the value has to be in
    # the API's own form — `date -u +%Y-%m-%dT%H:%M:%SZ` — or it matches by accident.
    SINCE="<that timestamp, snapped before the push>" \
-   gh api --paginate repos/<owner>/<repo>/issues/<pr>/timeline \
+   gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
      --jq '.[] | select((.event? // "") | test("^review_request|^copilot_work_started"))
            | select((.created_at? // "") > env.SINCE)
            | select(.event == "copilot_work_started"
@@ -205,7 +205,7 @@ Use whichever source is available (in priority order):
        }
      }' -F owner=<owner> -F repo=<repo> -F pr=<pr>
    ```
-3. **REST API** via `gh api repos/<owner>/<repo>/pulls/<pr>/comments` as a
+3. **REST API** via `gh api repos/{owner}/{repo}/pulls/<pr>/comments` as a
    fallback.
 
 Filter all three by the pair from *Identifying Copilot*, never by a login you saw
@@ -272,7 +272,7 @@ loop and keeps the review thread honest.
 Reply + resolve via:
 ```bash
 # reply to a review comment thread:
-gh api repos/<owner>/<repo>/pulls/<pr>/comments/<comment_id>/replies \
+gh api repos/{owner}/{repo}/pulls/<pr>/comments/<comment_id>/replies \
   -f body="<reply text>"
 # resolve a thread (GraphQL mutation):
 gh api graphql -f query='
