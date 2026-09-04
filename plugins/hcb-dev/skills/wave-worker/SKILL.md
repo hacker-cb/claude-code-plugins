@@ -67,9 +67,9 @@ holds, and what it stops is named in the return as the gap it is.
   the master's side of the protocol carries it on to a person where that
   reference demands one.
 - **A finding does not become an issue here.** One that earns an issue rides the
-  return as a candidate — its classification proposed, never applied — and the
-  master's confirmation is what files it; what the order's own deliverable
-  writes to the tracker is not this rule's business.
+  return as a candidate — its classification proposed, never applied — and it is
+  filed on the confirmation the order's own text authorizes; what the order's
+  own deliverable writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first; the order says which one that is, or the dependency
   graph does.
