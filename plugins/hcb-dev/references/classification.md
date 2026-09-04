@@ -1,5 +1,10 @@
 # Classifying an issue
 
+Read by anything that classifies an issue against what the repository itself
+defines — filing one, triaging one, or reading a backlog by what its tracker
+declares. It lives outside any one skill because a copy per reader drifts, and a
+classification that drifted labels the same issue two ways.
+
 The families as **roles**, the cardinality between them, how the set that carries
 each role is read, and how one is proposed where none exists. The roles are what
 travels between repositories; every literal is read from the repository at hand.
@@ -34,8 +39,11 @@ glab api --paginate "projects/<project>/labels?per_page=100"
 ```
 
 Map the roles onto the prefixes that set already uses, reading the descriptions
-and not only the names. Where a family is ordinal, its order comes from those
-descriptions and the colour ramp, never from the order the names sort in.
+and not only the names. Where a family is ordinal, its order comes from what the
+descriptions and the values themselves mean, never from the order the names sort
+in; a colour ramp corroborates an order rather than establishing one. Where
+nothing in the set settles which end is which, the order is unresolved — say so,
+and compare nothing by it.
 
 **Never pass a name you did not just read.** On GitLab an unknown name handed to a
 label parameter is created as a new label, so a typo becomes part of the set

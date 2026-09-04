@@ -61,9 +61,11 @@ what is.
 
 The priority role that same classification resolves is the issue's **declared
 priority** — read it per issue and carry it as an input of its own, never
-folded into the importance the tests below derive. Where the repository
-expresses no priority at all, the tier section says so once and stands on the
-tests alone.
+folded into the importance the tests below derive. Resolve the family once for
+the whole slice, from the label set read whole rather than from the values that
+happen to appear on these issues, and hand that scale to every reader the slice
+fans out to. Where the repository expresses no priority, or its set settles no
+order, the tier section says so once and stands on the tests alone.
 
 ## The report
 
@@ -79,9 +81,10 @@ In this order, each section explicit even when empty:
    vocabulary declares nothing to disagree with. Where tier and priority
    disagree, the disagreement is a result of its own: an issue the tests place
    in the top tier while its priority sits below the family's upper end goes
-   to the hygiene plan to be raised; one declared at that upper end which
-   every test answered no to goes there to be lowered, citing what the code
-   showed — an unverifiable issue answered no test, and goes to neither; one
+   to the hygiene plan to be raised; a current, unparked one at that upper end
+   which every test answered no to goes there to be lowered, citing what the
+   code showed. Anything the priority does not explain goes to neither: an
+   unverifiable issue answered no test, a stale one is closed instead, and one
    at the upper end behind a parked reason stays out of the ready tiers and is
    named here as blocked, with the reason parking it. Where the tests leave
    two issues level, the declared priority orders them.
