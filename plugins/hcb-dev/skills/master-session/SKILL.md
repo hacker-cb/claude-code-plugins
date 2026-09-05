@@ -88,7 +88,8 @@ is part of this role's loop, not a one-time launch step.
   slot says the queue decides, and a batch's "green, waiting for the slot" is
   what advances it.
 - **A landing that happened without this session's go still reaches its batch
-  first** — a request merged from outside the queue, by whoever took it. The
+  first** — a request merged from outside the queue, by another session or by
+  the user. The
   batch is told before anything else is sent, because the tail behind that merge
   is still its own to run.
 - **A wave opened or closed advances the epic's human half too** — the wave

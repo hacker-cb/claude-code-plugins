@@ -48,8 +48,8 @@ master, and recovery ends at this machine's config directory.
 5. **Merge queue and gates** — the order inside the current wave, which batch
    stands at "green, waiting for the slot" (written the moment the report
    arrives — a restart must not lose a batch holding on the queue); each landing
-   with whoever took it and what its tail left standing; and what opens each
-   later wave.
+   with whoever took it — its batch, another session, or the user — and what its
+   tail left standing; and what opens each later wave.
 6. **Expectations** — what is awaited from whom: unconfirmed batches, answers
    owed, mandates given with the order's authorization and not yet met.
 7. **Journal** — one line per event, terse, newest last.
