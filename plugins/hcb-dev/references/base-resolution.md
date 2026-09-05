@@ -168,8 +168,8 @@ Three outcomes, and only one of them means current:
 
 A consumer that only **reads** the base brings nothing over: it reads against
 the ref, and a claim it makes about the tree names the revision it was read at.
-The checkout it stands in is older than that ref — what the base moved past is
-unread, not absent.
+The checkout it stands in may be older than that ref, and where it is, what the
+base moved past is unread rather than absent.
 
 Then bring the local side to what arrived:
 
