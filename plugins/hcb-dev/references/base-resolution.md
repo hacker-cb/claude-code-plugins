@@ -166,9 +166,10 @@ Three outcomes, and only one of them means current:
   a repo with no remote — nothing is missing: it is as current as it can be, and
   saying so once is the whole step.
 
-A consumer that only **reads** the base stops here: the ref is what it reads
-against, the tree does not move, and a claim it makes about the tree names the
-revision it was read at.
+A consumer that only **reads** the base brings nothing over: it reads against
+the ref, and a claim it makes about the tree names the revision it was read at.
+The checkout it stands in is older than that ref — what the base moved past is
+unread, not absent.
 
 Then bring the local side to what arrived:
 

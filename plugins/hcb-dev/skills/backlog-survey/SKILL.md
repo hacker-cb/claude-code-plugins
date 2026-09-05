@@ -36,8 +36,7 @@ below are this session's — a reader's summary is input, not a verdict.
 
 The code the verdicts stand on is the refreshed base — resolved and fetched
 per [`../../references/base-resolution.md`](../../references/base-resolution.md),
-never this checkout's own state, which may be stale or mid-feature — and the
-report names the revision it read.
+never this checkout's own state, which may be stale or mid-feature.
 
 Per issue: the body, every comment, the labels, native type, milestone and
 state reason (classified per

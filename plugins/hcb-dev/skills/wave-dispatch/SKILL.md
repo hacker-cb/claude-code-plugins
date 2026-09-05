@@ -80,8 +80,7 @@ batch `<epic>/<id>` is building on, where this batch stacks on it>. <Or: no
 checkout is touched.>
 Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on.
 The delta from the pin to the tip you read these facts against is the list to
-re-verify — at your workflow's own base refresh where it has one, otherwise at
-a base you refresh yourself. Do not build on the pin.
+re-verify, before anything of yours rests on them. Do not build on the pin.
 
 Boundaries: <the files this batch owns; each component shared with another
 batch and how the files split; what is not yours to touch>
