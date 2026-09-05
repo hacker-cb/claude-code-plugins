@@ -23,10 +23,16 @@ is not ready to merge.
 ## The message is written, not defaulted
 
 Where the merge collapses the branch into one commit, compose that commit's
-message from the body — the summary, then what changed — and pass it to the
-merge explicitly, rather than leaving it to be composed from whatever the tool
-reaches for.
+message — the summary, then what changed — and pass it to the merge explicitly,
+rather than leaving it to be composed from whatever the tool reaches for. It is
+written from the body above where a change request carries one, and from the
+collapsed commits themselves where none does: a local merge reaches for no
+forge.
 
 The message says what the change **is**. The route the branch took to it — a fix
 to its own earlier fix, a review round answered, a rebase — belongs to the
 commits being collapsed, and stops there.
+
+What does not stop there is anything in them a machine reads — a co-author's
+trailer above all, which is the record of who else wrote the change. A written
+message drops every one of them silently: carry them across.

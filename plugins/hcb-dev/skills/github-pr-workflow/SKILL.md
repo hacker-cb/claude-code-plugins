@@ -283,7 +283,9 @@ severity classification only decides what you *fix*, never when you're *done*.
 4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
    as few pushes as is reasonable — under `review_on_push` every push re-requests
    Copilot and costs
-   another wait at step 6, whether or not a new review actually follows.
+   another wait at step 6, whether or not a new review actually follows. Each
+   push dates the body — bring it back to what is landing, per
+   `merge-message.md` (`gh pr edit <pr> --body`).
 5. **Reply to every Copilot comment; resolve every thread the repo requires
    resolved** — `references/copilot.md` owns the reply + resolve protocol.
 6. **After pushing, wait for Copilot's review of the new head** — never evaluate
@@ -316,8 +318,9 @@ strategy, pick from the allowed set:
   owns that topology. The choices below apply to that final PR, or to a standalone
   single one.
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
-  logical feature/fix. Pass the commit's subject and body yourself —
-  `--subject` and `--body` (or `--body-file`) — written per `merge-message.md`.
+  logical feature/fix. Pass the commit's body yourself — `--body`, or
+  `--body-file` — written per `merge-message.md`. Leave the subject to the
+  title, and with it whatever the forge appends to one (`branch-naming.md`).
 - **Merge commit** (`gh pr merge --merge`) — when the PR contains multiple
   distinct features whose individual history is worth preserving.
 - If rebase-merge is the only fit but the repo disallows it, or the choice is
