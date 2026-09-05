@@ -260,8 +260,8 @@ always, whatever the repo does or doesn't enforce — CI genuinely green, the br
 current with base, the PR body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
 `gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the
-current head** settled with its Critical/Important findings fixed, every comment
-answered and its thread resolved (`references/copilot.md`;
+current head** settled — its Critical/Important findings fixed, every comment it
+left answered, and every thread it opened resolved (`references/copilot.md`;
 `references/merge-gates.md`, *When there are no gates, or they can't be
 trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
 merge, your bar decides *readiness*; when they diverge, the stricter one wins. The

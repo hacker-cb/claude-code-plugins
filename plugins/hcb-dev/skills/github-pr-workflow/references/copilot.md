@@ -230,10 +230,10 @@ never does is spend the loop's iteration budget: that is there for what blocks t
 exit, and a `Minor` never does. Only what the reference turns down goes into the
 end-of-session report (Step 7), under its category so the user sees it.
 
-**What you *fix* and what you *resolve* are different questions.** A thread ends
-resolved once it has its answer — the fix is in, or the finding was turned down
-with its reason — whatever the rating above decided; a fix and an acknowledgement
-both end in a reply + resolve. Where the repo requires all threads resolved
+**What you *fix* and what you *resolve* are different questions.** A thread this
+reviewer opened ends resolved once it has its answer — the fix is in, or the
+finding was turned down with its reason — whatever the rating above decided; a
+fix and an acknowledgement both end in a reply + resolve. Where the repo requires all threads resolved
 (`required_review_thread_resolution`), a left-open nit blocks the merge just as
 hard as a Critical one.
 
