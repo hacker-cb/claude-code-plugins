@@ -36,8 +36,8 @@ a receiver told only what is known treats the rest as known.
   part of the ask, so a receiver that admits subagents only on the user's or a
   skill's ask has the ask in hand; an order with nothing to build names what
   runs it instead — `hcb-dev:issue-tracking` where classification and bodies
-  are the work, the method the evidence comes from where the deliverable is a
-  verdict. Past that, name only a domain methodology the receiving session's
+  are the work, or the method its evidence comes from where the deliverable is
+  a verdict. Past that, name only a domain methodology the receiving session's
   own rules do not already carry, and mark it mandatory.
 - **The checks** that have to pass before it is complete.
 - **The terminal deliverable** — what exists at the end that does not now, in a
