@@ -54,10 +54,9 @@ a receiver told only what is known treats the rest as known.
   the repository states it as none.
 - **The merge authority**, where the mode is a change request — its own slot,
   under that name, since that is the name the receiver looks for. It says
-  whether the merge goes on green, or waits for a go the ordering session
-  sends, or is not the receiver's to take at all, which leaves the change
-  request open at ready-to-merge. Settle it from what the user authorized and
-  never from this session's own judgement.
+  whether the merge goes on green, or waits for a go the ordering session sends
+  when the landing order allows it. The receiver takes the merge either way;
+  what the authority decides is when.
 - **The decision points** — which forks the receiver settles alone and
   narrates, and which come back — each with its addressee: the user, or the
   session that wrote the order

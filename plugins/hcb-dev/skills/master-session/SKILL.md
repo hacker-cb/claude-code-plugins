@@ -82,10 +82,7 @@ is part of this role's loop, not a one-time launch step.
   landing displaced. A queue whose go never reaches its batch is a deadlock,
   not an order. **The go is the whole of this session's part in a landing** —
   the batch takes the merge, and everything its own completion owes behind it.
-  A go that reaches nobody is the same deadlock from the other end: where the
-  batch has stopped answering, the comms ladder decides whether it is gone, and
-  a slot no living session can take goes to the user rather than being taken
-  here. Each landing is checked against the gates: a wave whose gate
+  Each landing is checked against the gates: a wave whose gate
   just cleared goes back to Launching. Where the plan fixes a landing order,
   the orders themselves withhold merge-on-green — their `Merge authority:`
   slot says the queue decides, and a batch's "green, waiting for the slot" is
