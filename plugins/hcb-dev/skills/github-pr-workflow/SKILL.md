@@ -285,7 +285,7 @@ severity classification only decides what you *fix*, never when you're *done*.
    as few pushes as is reasonable — under `review_on_push` every push re-requests
    Copilot and costs
    another wait at step 6, whether or not a new review actually follows.
-5. **Reply to every Copilot comment, and resolve the thread it leaves** —
+5. **Reply to every Copilot comment, and resolve every thread it opened** —
    `references/copilot.md` owns the reply + resolve protocol.
 6. **After pushing — whichever step pushed — bring the body back to what is
    landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
