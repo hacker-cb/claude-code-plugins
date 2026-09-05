@@ -120,7 +120,9 @@ Publishing is the escalation offer below, and only by consent.
   slice stays a visible, revertible boundary in the parent's history and the later
   whole-feature change request keeps its slices reviewable. `ff` only where the
   caller asked and the history is linear; `squash` where the caller wants a single
-  commit.
+  commit — and there the commit message is written, not the one
+  `git merge --squash` leaves staged: compose it per
+  [`merge-message.md`](merge-message.md) and commit with it.
 - **Conflict** — resolve a trivial conflict yourself; one that needs a real
   decision is an architectural fork ([`architecture-decisions.md`](architecture-decisions.md)),
   so stop and ask — never auto-resolve, or you can silently corrupt an earlier

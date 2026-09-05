@@ -1,7 +1,7 @@
 {
   "name": "hcb-dev",
   "description": "Personal developer baseline — a connected pipeline from a task or an issue to reviewed, completed work: slicing and building behind one planning gate, local review by two independent engines consolidated into one coverage-checked report, completion by mode (a local merge into the parent, or a change request), the forge's issue tracker, handing work across sessions, surveying a backlog slice against the code, fanning an epic out to parallel sessions in waves, and git cleanup.",
-  "version": "0.35.4",
+  "version": "0.36.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
