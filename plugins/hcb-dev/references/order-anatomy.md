@@ -25,10 +25,13 @@ a receiver told only what is known treats the rest as known.
   checkout says so here.
 - **The base pin** — the base as `<remote>/<branch>@<sha>`, the remote-tracking
   form `base-resolution.md` carries forward (the local branch where no remote
-  exists): the commit the order's facts were verified on. It dates the payload,
-  it does not schedule a fetch — the process the order names does its own
-  refreshing, and the receiver reads the delta from the pin to the refreshed
-  tip as the list of facts to re-verify before relying on them.
+  exists): the commit the order's facts were verified on. It dates the payload:
+  the receiver reads the delta from the pin to the tip the facts are read
+  against as the list of facts to re-verify before relying on them — the named
+  process's own base refresh where it has one, otherwise one the receiver
+  refreshes itself (`base-resolution.md`). An order whose facts are the
+  tracker's alone has no delta of this kind — its facts are re-verified in the
+  tracker.
 - **The process** — the workflow that runs the work:
   `hcb-dev:implementation-workflow` where there is something to build, and it
   brings its own slicing, review and completion — write that it runs in full,

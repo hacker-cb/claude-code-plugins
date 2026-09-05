@@ -166,6 +166,11 @@ Three outcomes, and only one of them means current:
   a repo with no remote — nothing is missing: it is as current as it can be, and
   saying so once is the whole step.
 
+A consumer that only **reads** the base brings nothing over: it reads against
+the ref, and a claim it makes about the tree names the revision it was read at.
+The checkout it stands in may be older than that ref, and where it is, what the
+base moved past is unread rather than absent.
+
 Then bring the local side to what arrived:
 
 | the consumer | what refreshing means |
