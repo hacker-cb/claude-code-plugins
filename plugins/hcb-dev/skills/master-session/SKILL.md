@@ -80,11 +80,18 @@ is part of this role's loop, not a one-time launch step.
 - **The merge queue is spoken to the batches it moves**: the go to the batch
   whose slot arrived, BEHIND — with the seam owing a rebase — to the batch a
   landing displaced. A queue whose go never reaches its batch is a deadlock,
-  not an order. Each landing is checked against the gates: a wave whose gate
+  not an order. **The merge itself is never this session's to take** — the batch
+  takes it, and everything its own completion owes behind it.
+  Each landing is checked against the gates: a wave whose gate
   just cleared goes back to Launching. Where the plan fixes a landing order,
   the orders themselves withhold merge-on-green — their `Merge authority:`
   slot says the queue decides, and a batch's "green, waiting for the slot" is
   what advances it.
+- **A landing that happened without this session's go still reaches its batch
+  first** — a request merged from outside the queue, by another session or by
+  the user. The
+  batch is told before anything else is sent, because the tail behind that merge
+  is still its own to run.
 - **A wave opened or closed advances the epic's human half too** — the wave
   table in its body, not only the ledger comment.
 - **A lesson one batch paid for is told to the batches it can still bite**,

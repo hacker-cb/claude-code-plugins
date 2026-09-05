@@ -75,11 +75,21 @@ holds, and what it stops is named in the return as the gap it is.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first; the order says which one that is, or the dependency
   graph does.
-- **Statuses at the order's milestones** — a change request opened; "green,
-  waiting for the slot" where the order gives the merge to the queue (the
-  merge then waits for the master's go — green is readiness, not the slot);
-  merged; the session stuck; a boundary change agreed with the master
-  mid-flight — one line each, the first line self-contained.
+- **Statuses at the order's milestones** — a change request opened, where the
+  mode opens one; "green, waiting for the slot" where the order gives the merge
+  to the queue (the batch then waits for the master's go — green is readiness,
+  not the slot);
+  merged by this session or landed without it; the session stuck; a boundary
+  change agreed with the master mid-flight — one line each, the first line
+  self-contained.
+- **A landing this session did not take is still its landing to finish.** Work
+  found already landed, in either mode, is never landed a second time: confirm
+  the merge, retire the branch per
+  [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
+  and where a change request carried it, read the closed request once more for a
+  review that posted after the merge — its findings are orphaned there otherwise.
+  Commits the landing did not take are not landed behind it either: they go to
+  the master, and into the return as work left undone.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
   lost goes to the tracker, what blocks goes to this session's user, and work
   that depends on neither continues.
