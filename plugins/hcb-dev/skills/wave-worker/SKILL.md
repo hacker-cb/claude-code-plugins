@@ -85,8 +85,9 @@ holds, and what it stops is named in the return as the gap it is.
   change request found merged is not re-driven and never merged again: confirm
   it and retire per
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
-  read the landed head for the review that posts after a landing, and carry what
-  it finds into the return.
+  read the closed request once more for a review that posted after the merge —
+  its findings are orphaned there otherwise — and carry what it finds into the
+  return.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
   lost goes to the tracker, what blocks goes to this session's user, and work
   that depends on neither continues.

@@ -51,10 +51,13 @@ a receiver told only what is known treats the rest as known.
 - **The completion mode**, in the vocabulary of
   [`slice-completion.md`](slice-completion.md). Settling it here is what stops
   the receiver's planning gate asking for it; an order that lands nothing in
-  the repository states it as none. Where the mode is a change request, this
-  slot settles the **merge authority** with it — on green, or on a go the
-  receiver waits for and the ordering session sends. The receiver takes the
-  merge either way; what the go decides is when.
+  the repository states it as none.
+- **The merge authority**, where the mode is a change request — its own slot,
+  under that name, since that is the name the receiver looks for. It says
+  whether the merge goes on green, or waits for a go the ordering session
+  sends, or is not the receiver's to take at all, which leaves the change
+  request open at ready-to-merge. Settle it from what the user authorized and
+  never from this session's own judgement.
 - **The decision points** — which forks the receiver settles alone and
   narrates, and which come back — each with its addressee: the user, or the
   session that wrote the order

@@ -87,15 +87,10 @@ is part of this role's loop, not a one-time launch step.
   the orders themselves withhold merge-on-green — their `Merge authority:`
   slot says the queue decides, and a batch's "green, waiting for the slot" is
   what advances it.
-- **A merge taken here is a released batch's** — its session ended for good
-  before the slot came. What that batch would have run behind its own merge
-  comes with it: the retirement of
-  [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
-  as far as it reaches from here, and the landed head read once more for the
-  review that posts after a landing, its findings routed per
-  [`../../references/findings.md`](../../references/findings.md).
-- **A batch still engaged hears a landing it did not take before anything else
-  is sent** — that it landed, and what of its own tail is left to it.
+- **A landing this session did not send the go for still reaches its batch
+  first** — a request merged from outside the queue, by whoever took it. The
+  batch is told before anything else is sent, because the tail behind that merge
+  is still its own to run.
 - **A wave opened or closed advances the epic's human half too** — the wave
   table in its body, not only the ledger comment.
 - **A lesson one batch paid for is told to the batches it can still bite**,
@@ -133,7 +128,5 @@ is that session's to sweep. Write the ledger's closing line.
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
-- [`../../references/branch-retirement.md`](../../references/branch-retirement.md)
-- [`../../references/findings.md`](../../references/findings.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
