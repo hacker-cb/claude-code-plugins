@@ -85,9 +85,8 @@ commit, and never shares one with a second drive-by.
   range; outside it, it surfaces instead.
 - **Where the merge collapses the commits, name the fix in the message it
   leaves** ([`merge-message.md`](merge-message.md)) — and in the change-request
-  body that message is written from, where there is one. A slice always
-  squashes and a
-  standalone request usually does
+  body that message is written from, where there is one. A slice always squashes
+  and a standalone request usually does
   ([`slice-completion.md`](slice-completion.md)). A merge keeping the commits
   carries it already.
 

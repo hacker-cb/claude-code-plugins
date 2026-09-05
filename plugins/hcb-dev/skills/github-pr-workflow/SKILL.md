@@ -283,12 +283,12 @@ severity classification only decides what you *fix*, never when you're *done*.
 4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
    as few pushes as is reasonable — under `review_on_push` every push re-requests
    Copilot and costs
-   another wait at step 6, whether or not a new review actually follows. Each
-   push dates the body — bring it back to what is landing, per
-   `merge-message.md` (`gh pr edit <pr> --body`).
+   another wait at step 6, whether or not a new review actually follows.
 5. **Reply to every Copilot comment; resolve every thread the repo requires
    resolved** — `references/copilot.md` owns the reply + resolve protocol.
-6. **After pushing, wait for Copilot's review of the new head** — never evaluate
+6. **After pushing — whichever step pushed — bring the body back to what is
+   landing** (`merge-message.md`; `gh pr edit <pr> --body`), **and wait for
+   Copilot's review of the new head**: never evaluate
    exit until its verdict on the head is settled; `references/copilot.md` owns the
    wait and defines what settles it. Then re-read from this loop's step 1 (the
    live-state read), not the top-level Step 1.
@@ -319,8 +319,11 @@ strategy, pick from the allowed set:
   single one.
 - **Squash** (`gh pr merge --squash`) — default; use when the PR is a single
   logical feature/fix. Pass the commit's body yourself — `--body`, or
-  `--body-file` — written per `merge-message.md`. Leave the subject to the
-  title, and with it whatever the forge appends to one (`branch-naming.md`).
+  `--body-file` — written per `merge-message.md`. The subject, passed nothing,
+  is settled by the repo's own `squash_merge_commit_title`, whose values
+  disagree about whether the PR's title reaches it at all: read the setting
+  rather than assume which is in force. Where the subject has to be passed
+  (`--subject`), `branch-naming.md` owns what may go in one.
 - **Merge commit** (`gh pr merge --merge`) — when the PR contains multiple
   distinct features whose individual history is worth preserving.
 - If rebase-merge is the only fit but the repo disallows it, or the choice is
@@ -379,7 +382,7 @@ Keep it scannable: short grouped bullets, not an essay.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — read
   it before Step 1; the push mechanics stay in that step.
 - [`../../references/merge-message.md`](../../references/merge-message.md) — read
-  it before Step 4's exit, and again before Step 5.
+  it before Step 4, and again before Step 5.
 - [`../../references/branch-retirement.md`](../../references/branch-retirement.md)
   — read it before Step 6.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) —
