@@ -82,8 +82,8 @@ holds, and what it stops is named in the return as the gap it is.
   change agreed with the master mid-flight — one line each, the first line
   self-contained.
 - **A landing this session did not take is still its landing to finish.** Work
-  found already landed, in either mode, is never landed a second time: confirm it
-  and retire per
+  found already landed, in either mode, is never landed a second time: confirm
+  the merge, retire the branch per
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
   and where a change request carried it, read the closed request once more for a
   review that posted after the merge — its findings are orphaned there otherwise.
