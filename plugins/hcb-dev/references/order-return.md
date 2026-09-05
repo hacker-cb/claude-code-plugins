@@ -39,9 +39,10 @@ Match the tag against the record of orders out. Verify what the return claims
 rather than adopting it — start with the premises it says did not survive, then
 re-check the deliverable at its coordinates: in the tracker and the history
 where the work landed there, and for findings alone by re-reading or re-running
-the sources they cite — never in the prose alone. A reviewer the return says
-did not run on work it should have covered is not a note to file: reopen,
-naming it, and run the review before acceptance; where the work already merged,
-run it over the landed range, with the commit before the landing handed to the
-reviewers as the explicit base. Then close that order, or reopen it naming what
-is still missing.
+the sources they cite at the revision the return names — never in the prose
+alone, and a landing since that revision is a landing, not a gap. A reviewer
+the return says did not run on work it should have covered is not a note to
+file: reopen, naming it, and run the review before acceptance; where the work
+already merged, run it over the landed range, with the commit before the
+landing handed to the reviewers as the explicit base. Then close that order, or
+reopen it naming what is still missing.
