@@ -139,9 +139,9 @@ work is **done** — not how the ask is worded.
 - **`session-dispatch`** — `/hcb-dev:session-dispatch`
   Work this session will **not** do, turned into an order for another session to
   **execute** — a build run through `implementation-workflow`, or an
-  investigation whose deliverable is recorded tracker state. This session's
-  numbers, coordinates and settled decisions are the payload, and what it did
-  *not* check is named beside them. Settles every slot of
+  investigation whose deliverable is recorded tracker state or a verdict. This
+  session's numbers, coordinates and settled decisions are the payload, and what
+  it did *not* check is named beside them. Settles every slot of
   [`references/order-anatomy.md`](references/order-anatomy.md) and ends in a
   closing act that is never empty. A question is not dispatched at all: that is a
   subagent or a workflow in the session that has it.

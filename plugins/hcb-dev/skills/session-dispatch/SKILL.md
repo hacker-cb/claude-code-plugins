@@ -4,8 +4,8 @@ description: >-
   Work this session is NOT going to do, turned into an order to paste into
   another session: a build to run there through
   `hcb-dev:implementation-workflow`, or an investigation whose deliverable is
-  recorded tracker state. Use when the user wants a prompt for a new
-  session, hands fixes or a build out to run elsewhere, or writes one
+  recorded tracker state or a verdict. Use when the user wants a prompt for a
+  new session, hands fixes or a build out to run elsewhere, or writes one
   standalone order outside any wave. For work already FINISHED that another session only has to receive, use
   `hcb-dev:session-handoff` — the discriminator is whether the work is done.
   For a batch fanned out of a coordinating session — by chip or pasted wave
@@ -23,9 +23,9 @@ skill fills them for the pasteable channel: the user carries the block, and the
 receiving session has nothing of its own in flight and no view of this one.
 
 Every order is work to execute — a build, or an investigation whose deliverable
-is recorded tracker state. A question is answered here — by a subagent or a
-workflow — and never sent to another session, which costs a round trip through
-the user and returns prose instead of a change.
+is recorded tracker state or a verdict. A question is answered here — by a
+subagent or a workflow — and never sent to another session, which costs a round
+trip through the user and returns prose instead of a change.
 
 The subject comes from the invocation prose, or from what this session has been
 working on. Where more than one piece of work could be meant, ask which one

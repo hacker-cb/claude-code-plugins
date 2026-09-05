@@ -102,9 +102,9 @@ batch does, which is never a restatement of the epic's.
 The batch's issues in the order its `Work:` slot takes them, so a list of
 sessions shows the composition without opening the ledger. Up to three
 numbers; past that, the leading one and a count of the rest — `(#896 +5)` is
-six issues. A batch holding no issue carries no tail. An amendment that moves
-an issue between batches moves the tail with it; the address is untouched, so
-nothing has to be matched again.
+six issues. A batch holding no issue carries no tail. A chip re-issued before
+its click carries the composition the batch now has; a batch already running
+keeps the title it started with.
 
 The tail is never matched on — sessions resolve each other by `<epic>/<id>`
 alone, which is what makes it safe to shorten or drop.
@@ -132,8 +132,8 @@ that. What gives way, in this order:
    only itself, as batches are titled by their chip or by themselves.
 2. **When the ledger is in hand** — opened here, or read after a restart —
    it carries both halves, and the title is rewritten to the shape they make
-   unless it already stands in it. A resume is the case that needs this: the
-   number was right from the first line and the topic was the missing half.
+   unless it already stands in it. Opening it here is the case that needs
+   this: the provisional title of step 1 gains the half it was missing.
    Where the ledger already records a title, that string is the address every
    order already out is carrying: wear it as recorded, and leave restyling to
    the epics opened under this shape.
