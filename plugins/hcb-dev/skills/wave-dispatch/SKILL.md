@@ -95,7 +95,8 @@ pass.
 Completion: <mode> — settled here, so don't ask.
 Merge authority: <on green | the master's go — the queue decides your turn:
 report "green, waiting for the slot" and hold; green is readiness, not the
-slot> — settled here too.
+slot | not yours to take — drive to ready-to-merge and report it standing
+open> — settled here too.
 Decide yourself: <forks>. Agree with the master BEFORE building: <forks>.
 Through the master to the user: <forks>.
 

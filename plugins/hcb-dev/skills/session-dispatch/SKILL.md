@@ -60,6 +60,9 @@ names what runs instead>. <Plus <domain methodology> — mandatory.> <checks> mu
 pass.
 Completion: <mode — for work that lands in the repository; an order that lands
 nothing has none> — settled here, so don't ask.
+Merge authority: <on green | a go this session sends | not yours to take — drive
+to ready-to-merge and leave the request open> — settled here too, from what the
+user authorized.
 Decide yourself: <forks>. Bring to your user: <forks>. Bring back to the
 session that wrote this order: <forks>.
 

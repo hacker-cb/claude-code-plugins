@@ -183,8 +183,8 @@ wave is the set of batches launched together once its gate clears.
   loop — answering batch questions only after re-verifying against the tree,
   accepting returns against the ledger's standing constraints, and opening each
   wave as its gate clears. Gives the go for each slot and leaves the merge to the
-  batch — it takes one itself only for a batch already released, and then owes
-  that batch's tail. Recovers after a restart from the ledger before the
+  batch it reaches — sending the go is its whole part in a landing. Recovers
+  after a restart from the ledger before the
   live registry. It does not build batches itself.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   One chip per batch — title per `references/session-naming.md` (it becomes
