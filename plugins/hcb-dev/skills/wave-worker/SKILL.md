@@ -48,11 +48,12 @@ holds, and what it stops is named in the return as the gap it is.
 
 ## While building
 
-- **The order's facts are re-verified at the named workflow's own base
-  refresh**: when it refreshes the base, read the delta from the order's base
-  pin to the refreshed tip as the list of the order's facts to re-check — and a
-  premise that falls is named to the master the moment it falls, never saved
-  for the return.
+- **The order's facts are re-verified before anything rests on them**: read
+  the delta from the order's base pin to the tip they are read against — the
+  named workflow's own base refresh where it has one, otherwise a base
+  refreshed here — as the list of the order's facts to re-check, and a premise
+  that falls is named to the master the moment it falls, never saved for the
+  return.
 - **Forks the order marks "agree with the master" go there before building** —
   each with this session's own analysis, a recommendation, and the coordinates
   that let the master re-verify rather than take it on faith. The master's

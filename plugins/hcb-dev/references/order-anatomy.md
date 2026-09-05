@@ -26,9 +26,10 @@ a receiver told only what is known treats the rest as known.
 - **The base pin** — the base as `<remote>/<branch>@<sha>`, the remote-tracking
   form `base-resolution.md` carries forward (the local branch where no remote
   exists): the commit the order's facts were verified on. It dates the payload,
-  it does not schedule a fetch — the process the order names does its own
-  refreshing, and the receiver reads the delta from the pin to the refreshed
-  tip as the list of facts to re-verify before relying on them.
+  it does not schedule a fetch — the receiver reads the delta from the pin to
+  the tip its facts are read against as the list of facts to re-verify before
+  relying on them, at the named process's own base refresh where it has one and
+  otherwise at a base refreshed here (`base-resolution.md`).
 - **The process** — the workflow that runs the work:
   `hcb-dev:implementation-workflow` where there is something to build, and it
   brings its own slicing, review and completion — write that it runs in full,
