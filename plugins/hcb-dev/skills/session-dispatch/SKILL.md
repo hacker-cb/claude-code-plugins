@@ -9,8 +9,9 @@ description: >-
   standalone order outside any wave. For work already FINISHED that another session only has to receive, use
   `hcb-dev:session-handoff` — the discriminator is whether the work is done.
   For a batch fanned out of a coordinating session — by chip or pasted wave
-  order — use `hcb-dev:wave-dispatch`. A question is never dispatched — a subagent or a
-  workflow answers it here and returns prose, where an order returns a change.
+  order — use `hcb-dev:wave-dispatch`. A question is never dispatched — a
+  subagent or a workflow answers it here, where an order is work another session
+  does.
 ---
 
 # Session dispatch
@@ -25,7 +26,7 @@ receiving session has nothing of its own in flight and no view of this one.
 Every order is work to execute — a build, or an investigation whose deliverable
 is recorded tracker state or a verdict. A question is answered here — by a
 subagent or a workflow — and never sent to another session, which costs a round
-trip through the user and returns prose instead of a change.
+trip through the user for an answer already in reach.
 
 The subject comes from the invocation prose, or from what this session has been
 working on. Where more than one piece of work could be meant, ask which one
@@ -52,10 +53,11 @@ refreshed tip is the list of facts to re-verify. Do not build on the pin.
 
 Run this through <the process — `/hcb-dev:implementation-workflow` where there
 is something to build, in full: its local review across every reviewer and the
-subagents its skills ask for are part of the ask; a tracker-only order names
-what runs instead>. <Plus <domain methodology> — mandatory.> <checks> must pass.
-Completion: <mode — for work that lands in the repository; a tracker-only order
-has none> — settled here, so don't ask.
+subagents its skills ask for are part of the ask; an order with nothing to build
+names what runs instead>. <Plus <domain methodology> — mandatory.> <checks> must
+pass.
+Completion: <mode — for work that lands in the repository; an order that lands
+nothing has none> — settled here, so don't ask.
 Decide yourself: <forks>. Bring to your user: <forks>. Bring back to the
 session that wrote this order: <forks>.
 
