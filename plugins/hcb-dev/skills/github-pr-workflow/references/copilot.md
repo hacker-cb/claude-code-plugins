@@ -231,26 +231,11 @@ exit, and a `Minor` never does. Only what the reference turns down goes into the
 end-of-session report (Step 7), under its category so the user sees it.
 
 **What you *fix* and what you *resolve* are different questions.** A thread ends
-resolved once nothing is left to answer on it — the fix is in, or the finding was
-turned down with its reason — whatever the rating above decided; a fix and an
-acknowledgement both end in a reply + resolve. Where the repo requires all
-threads resolved (`required_review_thread_resolution`), a left-open nit blocks
-the merge just as hard as a Critical one.
-
-**What holds a thread open is a reply you have not answered** — someone wrote
-after you did, and the last word is not yours. Your own never counts: the
-protocol below puts a reply on every thread, posted as you rather than as the
-reviewer, so a test reading "somebody who is not the bot commented here" would
-hold every thread open and the request would never become mergeable. Read the
-state from **every** comment in the thread — the `reviewThreads` query returns
-them all — and compare **who wrote last**, not what type they are.
-
-A thread waiting on someone else does not turn in this loop: another iteration
-re-reads a state only they can change. Name which thread waits on whom, and where
-the answer has to be decided rather than waited for, that is a stop for the user
-([`../../../references/architecture-decisions.md`](../../../references/architecture-decisions.md)).
-All of this governs the threads the filter above found; one a person opened is
-their conversation, and closing it is not this protocol's business.
+resolved once it has its answer — the fix is in, or the finding was turned down
+with its reason — whatever the rating above decided; a fix and an acknowledgement
+both end in a reply + resolve. Where the repo requires all threads resolved
+(`required_review_thread_resolution`), a left-open nit blocks the merge just as
+hard as a Critical one.
 
 ## Fixing
 
@@ -270,10 +255,9 @@ loop and keeps the review thread honest.
 - **Skipped:** reply with the reason it's out of scope / not a defect.
   e.g. "Acknowledged — this is a style preference; leaving as-is for consistency
   with the surrounding module. Noted in the session report."
-- After replying, **resolve every thread your reply left nothing to answer on** —
-  fixed, or turned down with the reason given — so the PR's review state says what
-  was actually settled rather than what the repo happens to enforce. One where
-  somebody wrote after you stays open. (See *Classifying severity*.)
+- After replying, **resolve the thread** — its finding fixed, or turned down with
+  the reason given — so the PR's review state says what was actually settled
+  rather than what the repo happens to enforce. (See *Classifying severity*.)
 
 Reply + resolve via:
 ```bash
