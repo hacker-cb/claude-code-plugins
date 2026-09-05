@@ -197,8 +197,8 @@ wave is the set of batches launched together once its gate clears.
   with you — how many batches run in parallel is your call.
 - **`wave-worker`** — `/hcb-dev:wave-worker`
   The receiving side, governing the engagement around the build: title the
-  session with the batch id, verify the order's premises against the refreshed
-  base, confirm composition to the master, route "agree first" forks there before
+  session with the batch id, re-verify the order's premises before anything rests
+  on them, confirm composition to the master, route "agree first" forks there before
   building, push statuses at the named milestones, finish a landing even where
   another session took it, and close with the return —
   staying engaged until the master accepts. The building itself runs through
