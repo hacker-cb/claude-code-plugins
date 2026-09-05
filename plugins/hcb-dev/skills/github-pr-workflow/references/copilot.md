@@ -255,9 +255,11 @@ loop and keeps the review thread honest.
 - **Skipped:** reply with the reason it's out of scope / not a defect.
   e.g. "Acknowledged — this is a style preference; leaving as-is for consistency
   with the surrounding module. Noted in the session report."
-- After replying, **resolve the thread** — its finding fixed, or turned down with
-  the reason given — so the PR's review state says what was actually settled
-  rather than what the repo happens to enforce. (See *Classifying severity*.)
+- After replying, **resolve the thread**, where the comment sits in one — its
+  finding fixed, or turned down with the reason given — so the PR's review state
+  says what was actually settled rather than what the repo happens to enforce. A
+  review summary carries no thread and needs no resolving. (See *Classifying
+  severity*.)
 
 Reply + resolve via:
 ```bash
