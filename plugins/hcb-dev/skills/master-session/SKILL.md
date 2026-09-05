@@ -47,10 +47,9 @@ starts each chip is a second, separate gate — approval of the plan is not
 permission to hang chips for gated waves early.
 
 A fork too heavy for the plan — a design question whose answer rewrites the
-work — does not stall the planning session: dispatch it as its own
-investigation (`hcb-dev:session-dispatch`, deliverable: the decision recorded
-in the issue), and plan the dependent batches behind that gate. The tracker is
-the source of truth for the answer, not this session's conversation.
+work — is a batch of its own: it leads the table and launches with the first
+wave, and the dependent batches are planned behind its gate. The tracker is the
+source of truth for the answer, not this session's conversation.
 
 ## Launching
 
