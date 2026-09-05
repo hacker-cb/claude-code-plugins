@@ -81,13 +81,14 @@ holds, and what it stops is named in the return as the gap it is.
   merged; a landing this session did not take; the session stuck; a boundary
   change agreed with the master mid-flight — one line each, the first line
   self-contained.
-- **A landing this session did not take is still its landing to finish.** A
-  change request found merged is not re-driven and never merged again: confirm
-  it and retire per
+- **A landing this session did not take is still its landing to finish.** Work
+  found already landed, in either mode, is never landed a second time: confirm it
+  and retire per
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
-  read the closed request once more for a review that posted after the merge —
-  its findings are orphaned there otherwise — and carry what it finds into the
-  return.
+  and where a change request carried it, read the closed request once more for a
+  review that posted after the merge — its findings are orphaned there otherwise.
+  Commits the landing did not take are not landed behind it either: they go to
+  the master, and into the return as work left undone.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
   lost goes to the tracker, what blocks goes to this session's user, and work
   that depends on neither continues.

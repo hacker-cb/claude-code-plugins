@@ -80,8 +80,8 @@ is part of this role's loop, not a one-time launch step.
 - **The merge queue is spoken to the batches it moves**: the go to the batch
   whose slot arrived, BEHIND — with the seam owing a rebase — to the batch a
   landing displaced. A queue whose go never reaches its batch is a deadlock,
-  not an order. **The go is the whole of this session's part in a landing** —
-  the batch takes the merge, and everything its own completion owes behind it.
+  not an order. **The merge itself is never this session's to take** — the batch
+  takes it, and everything its own completion owes behind it.
   Each landing is checked against the gates: a wave whose gate
   just cleared goes back to Launching. Where the plan fixes a landing order,
   the orders themselves withhold merge-on-green — their `Merge authority:`
