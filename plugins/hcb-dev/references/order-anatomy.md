@@ -52,11 +52,11 @@ a receiver told only what is known treats the rest as known.
   [`slice-completion.md`](slice-completion.md). Settling it here is what stops
   the receiver's planning gate asking for it; an order that lands nothing in
   the repository states it as none.
-- **The merge authority**, where the mode is a change request — its own slot,
-  under that name, since that is the name the receiver looks for. It says
-  whether the merge goes on green, or waits for a go the ordering session sends
-  when the landing order allows it. The receiver takes the merge either way;
-  what the authority decides is when.
+- **The merge authority**, where a wave's landing order governs the merge — its
+  own slot, under that name, since that is the name the receiver looks for. It
+  says whether the merge goes on green, or waits for a go the ordering session
+  sends. Outside a wave this slot is absent, and the completion mode alone
+  settles what happens at the end.
 - **The decision points** — which forks the receiver settles alone and
   narrates, and which come back — each with its addressee: the user, or the
   session that wrote the order
