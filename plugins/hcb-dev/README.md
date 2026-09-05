@@ -229,6 +229,9 @@ saying something else. Each file opens by saying what it owns.
   branch is named, renamed or landed under its name.
 - [`references/branch-retirement.md`](references/branch-retirement.md) — what
   becomes of a branch once its merge is confirmed. Read by whatever lands work.
+- [`references/merge-message.md`](references/merge-message.md) — keeping a change
+  request's body true to what is landing, and the message a collapsing merge
+  leaves on the base. Read by whatever lands work, before the merge.
 - [`references/slice-completion.md`](references/slice-completion.md) — how a slice
   *ends*, across both backends. Read by whatever finishes a slice.
 - [`references/architecture-decisions.md`](references/architecture-decisions.md) —
