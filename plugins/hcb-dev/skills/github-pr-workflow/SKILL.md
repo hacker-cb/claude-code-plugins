@@ -259,7 +259,7 @@ every required check green and the thread-resolution requirement satisfied, plus
 always, whatever the repo does or doesn't enforce — CI genuinely green, the branch
 current with base, the PR body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
-`gh pr edit <pr> --body` rewrites it), and Copilot's review **of the current
+`gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the current
 head** processed with its Critical/Important findings resolved
 (`references/merge-gates.md`, *When there are no gates, or they can't be
 trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
@@ -287,7 +287,7 @@ severity classification only decides what you *fix*, never when you're *done*.
 5. **Reply to every Copilot comment; resolve every thread the repo requires
    resolved** — `references/copilot.md` owns the reply + resolve protocol.
 6. **After pushing — whichever step pushed — bring the body back to what is
-   landing** (`merge-message.md`; `gh pr edit <pr> --body`), **and wait for
+   landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
    Copilot's review of the new head**: never evaluate
    exit until its verdict on the head is settled; `references/copilot.md` owns the
    wait and defines what settles it. Then re-read from this loop's step 1 (the
