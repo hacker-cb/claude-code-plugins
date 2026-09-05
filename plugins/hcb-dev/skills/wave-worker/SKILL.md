@@ -75,9 +75,10 @@ holds, and what it stops is named in the return as the gap it is.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first; the order says which one that is, or the dependency
   graph does.
-- **Statuses at the order's milestones** — a change request opened; "green,
-  waiting for the slot" where the order gives the merge to the queue (the batch
-  then waits for the master's go — green is readiness, not the slot);
+- **Statuses at the order's milestones** — a change request opened, where the
+  mode opens one; "green, waiting for the slot" where the order gives the merge
+  to the queue (the batch then waits for the master's go — green is readiness,
+  not the slot);
   merged by this session or landed without it; the session stuck; a boundary
   change agreed with the master mid-flight — one line each, the first line
   self-contained.
