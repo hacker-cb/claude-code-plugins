@@ -239,6 +239,16 @@ requires all threads resolved (`required_review_thread_resolution`), a left-open
 nit blocks the merge just as hard as a Critical one — and a live exchange is
 something the merge should be waiting on anyway.
 
+**A live exchange is a person's.** This reviewer is a bot and answers nothing
+written back to it, so a question posted into its thread waits forever and the
+loop spends its budget on a state that cannot change. Where something has to be
+decided, that is a stop for the user
+([`../../../references/architecture-decisions.md`](../../../references/architecture-decisions.md)),
+never a comment; and where a person has replied, the run says which thread waits
+on whom instead of iterating. Whose thread it is comes from the filter above;
+whether the exchange on it is live is read from **every** comment in it, which is
+what the `reviewThreads` query returns.
+
 ## Fixing
 
 - Address the root cause, not just the symptom Copilot pointed at.
