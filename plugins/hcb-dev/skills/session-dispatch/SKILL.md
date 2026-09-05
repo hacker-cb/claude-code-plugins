@@ -50,7 +50,8 @@ and which base to cut from, where it is one; or that no checkout is touched>
 Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on. It
 dates them: the delta from the pin to the tip you read these facts against is
 the list to re-verify, before anything of yours rests on them. Do not build on
-the pin.
+the pin. <Or: no base pin — these facts are the tracker's, and you re-verify
+them there.>
 
 Run this through <the process — `/hcb-dev:implementation-workflow` where there
 is something to build, in full: its local review across every reviewer and the

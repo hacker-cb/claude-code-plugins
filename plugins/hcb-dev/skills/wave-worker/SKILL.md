@@ -53,6 +53,8 @@ holds, and what it stops is named in the return as the gap it is.
   list of the order's facts to re-check — this session refreshing a base itself
   where the named workflow has no refresh of its own — and a premise that falls
   is named to the master the moment it falls, never saved for the return.
+  Where the order carries no base pin, its facts are the tracker's and
+  re-verified there.
 - **Forks the order marks "agree with the master" go there before building** —
   each with this session's own analysis, a recommendation, and the coordinates
   that let the master re-verify rather than take it on faith. The master's

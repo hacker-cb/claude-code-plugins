@@ -81,6 +81,8 @@ checkout is touched.>
 Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on.
 The delta from the pin to the tip you read these facts against is the list to
 re-verify, before anything of yours rests on them. Do not build on the pin.
+<Or: no base pin — these facts are the tracker's, and you re-verify them
+there.>
 
 Boundaries: <the files this batch owns; each component shared with another
 batch and how the files split; what is not yours to touch>
