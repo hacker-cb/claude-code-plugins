@@ -78,8 +78,15 @@ holds, and what it stops is named in the return as the gap it is.
 - **Statuses at the order's milestones** — a change request opened; "green,
   waiting for the slot" where the order gives the merge to the queue (the
   merge then waits for the master's go — green is readiness, not the slot);
-  merged; the session stuck; a boundary change agreed with the master
-  mid-flight — one line each, the first line self-contained.
+  merged; a landing this session did not take; the session stuck; a boundary
+  change agreed with the master mid-flight — one line each, the first line
+  self-contained.
+- **A landing this session did not take is still its landing to finish.** A
+  change request found merged is not re-driven and never merged again: confirm
+  it and retire per
+  [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
+  read the landed head for the review that posts after a landing, and carry what
+  it finds into the return.
 - **The master unreachable** is `session-comms.md`'s ladder: what must not be
   lost goes to the tracker, what blocks goes to this session's user, and work
   that depends on neither continues.

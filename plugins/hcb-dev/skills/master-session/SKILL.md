@@ -80,11 +80,22 @@ is part of this role's loop, not a one-time launch step.
 - **The merge queue is spoken to the batches it moves**: the go to the batch
   whose slot arrived, BEHIND — with the seam owing a rebase — to the batch a
   landing displaced. A queue whose go never reaches its batch is a deadlock,
-  not an order. Each landing is checked against the gates: a wave whose gate
+  not an order. **The go is the whole of this session's part in a landing** —
+  the batch takes the merge, and everything its own completion owes behind it.
+  Each landing is checked against the gates: a wave whose gate
   just cleared goes back to Launching. Where the plan fixes a landing order,
   the orders themselves withhold merge-on-green — their `Merge authority:`
   slot says the queue decides, and a batch's "green, waiting for the slot" is
   what advances it.
+- **A merge taken here is a released batch's** — its session ended for good
+  before the slot came. What that batch would have run behind its own merge
+  comes with it: the retirement of
+  [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
+  as far as it reaches from here, and the landed head read once more for the
+  review that posts after a landing, its findings routed per
+  [`../../references/findings.md`](../../references/findings.md).
+- **A batch still engaged hears a landing it did not take before anything else
+  is sent** — that it landed, and what of its own tail is left to it.
 - **A wave opened or closed advances the epic's human half too** — the wave
   table in its body, not only the ledger comment.
 - **A lesson one batch paid for is told to the batches it can still bite**,
@@ -122,5 +133,7 @@ is that session's to sweep. Write the ledger's closing line.
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
+- [`../../references/branch-retirement.md`](../../references/branch-retirement.md)
+- [`../../references/findings.md`](../../references/findings.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
