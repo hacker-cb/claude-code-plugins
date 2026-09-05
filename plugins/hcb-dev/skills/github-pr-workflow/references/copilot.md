@@ -230,11 +230,12 @@ never does is spend the loop's iteration budget: that is there for what blocks t
 exit, and a `Minor` never does. Only what the reference turns down goes into the
 end-of-session report (Step 7), under its category so the user sees it.
 
-**What you *fix* and what you *resolve* are different questions.** When the repo
-requires all threads resolved (`required_review_thread_resolution`), every thread
-must end resolved whatever was decided above — a fix and an acknowledgement both
-end in a reply + resolve. A left-open nit blocks the merge just as hard as a
-Critical one there.
+**What you *fix* and what you *resolve* are different questions.** A thread this
+reviewer opened ends resolved once it has its answer — the fix is in, or the
+finding was turned down with its reason — whatever the rating above decided; a
+fix and an acknowledgement both end in a reply + resolve. Where the repo
+requires all threads resolved (`required_review_thread_resolution`), a left-open
+nit blocks the merge just as hard as a Critical one.
 
 ## Fixing
 
@@ -254,10 +255,9 @@ loop and keeps the review thread honest.
 - **Skipped:** reply with the reason it's out of scope / not a defect.
   e.g. "Acknowledged — this is a style preference; leaving as-is for consistency
   with the surrounding module. Noted in the session report."
-- After replying, **resolve the thread where the repo requires it** — all threads
-  under `required_review_thread_resolution`, otherwise at least the ones you fixed —
-  so the PR's review state is clean. (Reply is unconditional; resolution scales with
-  the repo — see *Classifying severity*.)
+- After replying, **resolve the thread** — its finding fixed, or turned down with
+  the reason given — so the PR's review state says what was actually settled
+  rather than what the repo happens to enforce. (See *Classifying severity*.)
 
 Reply + resolve via:
 ```bash
