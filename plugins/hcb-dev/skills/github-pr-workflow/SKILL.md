@@ -259,10 +259,11 @@ every required check green and the thread-resolution requirement satisfied, plus
 always, whatever the repo does or doesn't enforce — CI genuinely green, the branch
 current with base, the PR body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
-`gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the current
-head** processed with its Critical/Important findings resolved
-(`references/merge-gates.md`, *When there are no gates, or they can't be
-trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
+`gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the
+current head** settled with its Critical/Important findings fixed, every comment
+answered, and every thread left resolved unless the exchange on it is still live
+(`references/copilot.md`; `references/merge-gates.md`, *When there are no gates,
+or they can't be trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
 merge, your bar decides *readiness*; when they diverge, the stricter one wins. The
 severity classification only decides what you *fix*, never when you're *done*.
 
@@ -284,8 +285,8 @@ severity classification only decides what you *fix*, never when you're *done*.
    as few pushes as is reasonable — under `review_on_push` every push re-requests
    Copilot and costs
    another wait at step 6, whether or not a new review actually follows.
-5. **Reply to every Copilot comment; resolve every thread the repo requires
-   resolved** — `references/copilot.md` owns the reply + resolve protocol.
+5. **Reply to every Copilot comment, and resolve every thread nothing is left to
+   answer on** — `references/copilot.md` owns the reply + resolve protocol.
 6. **After pushing — whichever step pushed — bring the body back to what is
    landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
    Copilot's review of the new head**: never evaluate
