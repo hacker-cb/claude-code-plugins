@@ -44,7 +44,7 @@ a receiver told only what is known treats the rest as known.
   form the receiver can check itself against. Code is one kind; recorded
   tracker state (issues rewritten, a decision written into a body) and a
   verdict with its evidence are deliverables too — a verdict naming the
-  revision its evidence was read at.
+  revision its evidence was read at, in the base pin's form.
 - **The completion mode**, in the vocabulary of
   [`slice-completion.md`](slice-completion.md). Settling it here is what stops
   the receiver's planning gate asking for it; an order that lands nothing in
