@@ -182,8 +182,11 @@ wave is the set of batches launched together once its gate clears.
   get the user's word on the table, launch through `wave-dispatch`, then run the
   loop — answering batch questions only after re-verifying against the tree,
   accepting returns against the ledger's standing constraints, and opening each
-  wave as its gate clears. Recovers after a restart from the ledger before the
-  live registry. It does not build batches itself.
+  wave as its gate clears. Never takes a merge itself — that is the batch's, and
+  a landing that arrived some other way reaches the batch before anything else is
+  sent.
+  Recovers after a restart from the ledger before the live registry. It does not
+  build batches itself.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   One chip per batch — title per `references/session-naming.md` (it becomes
   the launched session's title, the name every later message matches on), the
@@ -195,9 +198,10 @@ wave is the set of batches launched together once its gate clears.
   with you — how many batches run in parallel is your call.
 - **`wave-worker`** — `/hcb-dev:wave-worker`
   The receiving side, governing the engagement around the build: title the
-  session with the batch id, verify the order's premises against the refreshed
-  base, confirm composition to the master, route "agree first" forks there before
-  building, push statuses at the named milestones, and close with the return —
+  session with the batch id, re-verify the order's premises before anything rests
+  on them, confirm composition to the master, route "agree first" forks there before
+  building, push statuses at the named milestones, finish a landing even where
+  another session took it, and close with the return —
   staying engaged until the master accepts. The building itself runs through
   whatever workflow the order names, usually `implementation-workflow`.
 
