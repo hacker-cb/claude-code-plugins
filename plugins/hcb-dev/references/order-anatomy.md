@@ -34,16 +34,17 @@ a receiver told only what is known treats the rest as known.
   brings its own slicing, review and completion — write that it runs in full,
   its review across every reviewer and the subagents its skills ask for being
   part of the ask, so a receiver that admits subagents only on the user's or a
-  skill's ask has the ask in hand; an order whose deliverable is tracker state
-  alone names what runs it instead — `hcb-dev:issue-tracking` where
-  classification and bodies are the work. Past that, name only a domain
-  methodology the receiving session's own rules do not already carry, and mark
-  it mandatory.
+  skill's ask has the ask in hand; an order with nothing to build names what
+  runs it instead — `hcb-dev:issue-tracking` where classification and bodies
+  are the work, or the method its evidence comes from where the deliverable is
+  a verdict. Past that, name only a domain methodology the receiving session's
+  own rules do not already carry, and mark it mandatory.
 - **The checks** that have to pass before it is complete.
 - **The terminal deliverable** — what exists at the end that does not now, in a
   form the receiver can check itself against. Code is one kind; recorded
   tracker state (issues rewritten, a decision written into a body) and a
-  verdict with its evidence are deliverables too.
+  verdict with its evidence are deliverables too — a verdict naming the
+  revision its evidence was read at, in the base pin's form.
 - **The completion mode**, in the vocabulary of
   [`slice-completion.md`](slice-completion.md). Settling it here is what stops
   the receiver's planning gate asking for it; an order that lands nothing in

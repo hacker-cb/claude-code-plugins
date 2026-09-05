@@ -16,12 +16,12 @@ session that did the work knows them:
 4. **What is left undone, and why.**
 
 With them travel: the branch — or "nothing in the repository" where the result
-lives in the tracker or in findings alone; every change request the work
-touched at the state it stopped at, and every issue with what became of it —
-opened, edited, commented, closed, gone — a line each, and one that no longer
-exists still gets its line; and what a review left uncovered or surfaced
-without fixing — a receiver given only the outcome reads the work as reviewed
-clean.
+lives in the tracker or in findings alone, findings naming the revision they
+were read at; every change request the work touched at the state it stopped at,
+and every issue with what became of it — opened, edited, commented, closed,
+gone — a line each, and one that no longer exists still gets its line; and what
+a review left uncovered or surfaced without fixing — a receiver given only the
+outcome reads the work as reviewed clean.
 
 A return is itself a crossing prompt, and the envelope of
 [`session-prompts.md`](session-prompts.md) holds for it: the first line states
@@ -39,9 +39,11 @@ Match the tag against the record of orders out. Verify what the return claims
 rather than adopting it — start with the premises it says did not survive, then
 re-check the deliverable at its coordinates: in the tracker and the history
 where the work landed there, and for findings alone by re-reading or re-running
-the sources they cite — never in the prose alone. A reviewer the return says
-did not run on work it should have covered is not a note to file: reopen,
-naming it, and run the review before acceptance; where the work already merged,
-run it over the landed range, with the commit before the landing handed to the
-reviewers as the explicit base. Then close that order, or reopen it naming what
-is still missing.
+the sources they cite at the revision the return names — never in the prose
+alone. For those, a landing since that revision is not a gap in the return; the
+verdict is re-checked against it before anything rests on it. A reviewer the
+return says did not run on work it should have covered is not a note to file:
+reopen, naming it, and run the review before acceptance; where the work already
+merged, run it over the landed range, with the commit before the landing handed
+to the reviewers as the explicit base. Then close that order, or reopen it
+naming what is still missing.
