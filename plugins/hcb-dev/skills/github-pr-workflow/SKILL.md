@@ -177,7 +177,12 @@ elif [ "$cur" != "$NEW" ] && [ -n "$pr_open" ]; then
   echo "note: PR already open on $cur — keeping the name (renaming would close it)"
   NEW="$cur"
 fi
-[ "$cur" = "$NEW" ] || git branch -m "$NEW"
+# CHAINED: a rename that failed leaves HEAD on the old branch while every line below
+# names $NEW — so the block would publish, and then force, a branch this session
+# never wrote, and delete the one it did. `git branch -m` fails on a name already
+# taken or checked out in another worktree, and nothing here sets -e.
+[ "$cur" = "$NEW" ] || git branch -m "$NEW" \
+  || { echo "RENAME FAILED — $NEW is taken by another branch or worktree; pick another name"; exit 1; }
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
 # 3 both assume an upstream exists, and neither creates one. The branch arrives
 # already landed on its parent, so its history may have been rewritten upstream of
@@ -195,28 +200,37 @@ if [ -n "$remote_tip" ] \
    && ! git fetch "$PUSH_REMOTE" "+refs/heads/$NEW:refs/remotes/$PUSH_REMOTE/$NEW"; then
   echo "FETCH FAILED for $NEW — not publishing against a ref whose age is unknown"; exit 1
 fi
-published=0
 if [ -z "$remote_tip" ]; then
-  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # first publication
-elif git merge-base --is-ancestor "$PUSH_REMOTE/$NEW" HEAD; then
-  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # fast-forward
+  git push "$PUSH_REMOTE" -u "$NEW"                                # first publication
+# Full refnames on both sides of the test: the short `<remote>/<name>` is ambiguous
+# where a tag shares it, and `refs/heads/$NEW` rather than HEAD keeps the question on
+# the ref actually being pushed.
+elif git merge-base --is-ancestor "refs/remotes/$PUSH_REMOTE/$NEW" "refs/heads/$NEW"; then
+  git push "$PUSH_REMOTE" -u "$NEW"                                # fast-forward
 else
   # `--force-if-includes` is what separates this branch's own rewritten history from
   # someone else's commit: it requires the published tip to be reachable from this
   # branch's reflog. A bare lease passes both and overwrites the second.
-  git push --force-with-lease --force-if-includes "$PUSH_REMOTE" -u "$NEW" && published=1
+  git push --force-with-lease --force-if-includes "$PUSH_REMOTE" -u "$NEW"
 fi
-# Chained, because unpublished-and-deleted is worse than either alone: a refused push
-# followed by the delete below unpublishes the branch and closes the PR on it. The
-# message names what happened, not a cause nothing here established.
-[ "$published" = 1 ] \
-  || { echo "NOT PUBLISHED — push refused for $NEW; read the error above, and leave the old name standing"; exit 1; }
+# Publication is proved by the ref, never by the push's exit status: `git push` exits
+# 0 on "Everything up-to-date" too, which is exactly what a no-op over a branch that
+# is not ours looks like. Chained to the delete below, because unpublished-and-deleted
+# is worse than either alone.
+[ "$(git rev-parse "refs/heads/$NEW")" = "$(git ls-remote "$PUSH_REMOTE" "refs/heads/$NEW" | cut -f1)" ] \
+  || { echo "NOT PUBLISHED — $PUSH_REMOTE does not carry this branch's head; leave the old name standing"; exit 1; }
 # ONLY when the name actually changed: with $cur == $NEW this deletes the ref the
 # line above just pushed, unpublishing the branch and closing any PR on it.
 if [ "$cur" != "$NEW" ]; then
   # The full refname: a bare one is ambiguous where a tag shares the name, and
   # reaches that tag where the branch was never pushed under the old name at all.
-  git push "$PUSH_REMOTE" --delete "refs/heads/$cur" || true
+  # Leased on what the remote carries — the local ref went with the rename — the way
+  # `../../references/branch-retirement.md` deletes: a ref that moved since is one to
+  # report, never one to force.
+  old="$(git ls-remote "$PUSH_REMOTE" "refs/heads/$cur" | cut -f1)"
+  [ -z "$old" ] \
+    || git push --force-with-lease="refs/heads/$cur:$old" "$PUSH_REMOTE" --delete "refs/heads/$cur" \
+    || echo "OLD REF KEPT on $PUSH_REMOTE — $cur moved since the read; report it"
 fi
 ```
 
