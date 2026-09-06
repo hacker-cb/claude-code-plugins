@@ -51,6 +51,10 @@ mode once, at the gate, and threads it down; the mechanics live in
   still on what is checked out: read against the refreshed ref, and where the
   checkout cannot move onto it, say the tree is older and treat what the base moved
   past as unread.
+- **Rule each issue task current, or not** — a number taken in is a claim about
+  the tree, and it earns a verdict against the base just refreshed, per
+  [`../../references/issue-currency.md`](../../references/issue-currency.md).
+  Free text from the conversation is the user's own ask and takes none.
 - **Deep-read the codebase against the tasks** — what is affected, what is risky,
   where the genuinely-open questions are.
 - **Draft a slicing.** Split the work into **independently reviewable slices** — a
@@ -61,7 +65,9 @@ mode once, at the gate, and threads it down; the mechanics live in
 - **The lower bound (Tier 0).** Trivial work — one slice, no architectural
   decisions, a couple of files — skips the gate and this whole orchestration: just
   make the edit and hand it to `hcb-dev:shipping-workflow`. The gate is for work
-  worth planning; a one-line fix does not earn it.
+  worth planning; a one-line fix does not earn it. A verdict of anything but
+  `current` is never trivial, whatever the edit it implies: it carries a fork,
+  and a fork is the gate.
 
 ## Phase 1 — The planning gate
 
@@ -73,6 +79,12 @@ project rule that fights good architecture gets flagged — see
 
 Settle, in one gate:
 
+- **What a non-`current` verdict changes** — an issue ruled stale, needing a
+  rewrite or unverifiable is settled before the slicing that would build it:
+  recommend what becomes of it — built as written, built down to the part that
+  still holds, its body rewritten first, closed as already met — carrying the
+  coordinate the verdict stands on. `hcb-dev:issue-tracking` writes to the
+  tracker on the answer, never ahead of it.
 - **Slice breakdown + branch layout** — a shared feature branch only for more than
   one slice; a single slice's parent is the base. Name both the feature branch and
   its slices per
@@ -201,6 +213,8 @@ completed straight onto the base in Phase 2.
   Phase 3 report shape.
 - [`../../references/findings.md`](../../references/findings.md) — read
   before Phase 2's development, and again before Phase 3's issues output.
+- [`../../references/issue-currency.md`](../../references/issue-currency.md) —
+  read at Phase 0, before anything is built on an issue.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) —
   read before Phase 0's refresh and Phase 2's cut.
 - [`../../references/branch-naming.md`](../../references/branch-naming.md) — read

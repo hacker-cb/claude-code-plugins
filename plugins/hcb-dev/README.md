@@ -56,8 +56,11 @@ form: you paste every one of them yourself.
 - **`implementation-workflow`** — `/hcb-dev:implementation-workflow`
   The front door when you start from tasks or issues rather than finished code.
   Deep-reads the tasks (free text, or GitHub/GitLab issue numbers) and the
-  codebase, splits the work into independently reviewable slices (one is the
-  normal case), settles the architectural questions **and** the completion mode
+  codebase, rules each issue it took in still true of the refreshed base before
+  building on it (`references/issue-currency.md` — a stale or misleading body
+  reaches you as a fork at the gate rather than as work), splits the work into
+  independently reviewable slices (one is the normal case), settles the
+  architectural questions **and** the completion mode
   (local merge vs change request) at one planning gate, then runs each slice
   through development and `shipping-workflow` autonomously — closing with a
   per-slice report. Titles the session by the work it took in, per
@@ -162,9 +165,10 @@ work is **done** — not how the ask is worded.
 - **`backlog-survey`** — `/hcb-dev:backlog-survey`
   A whole slice of the backlog — a milestone, a label, everything open —
   read issue by issue and verified against the code, not against the
-  tracker: each issue ruled current, stale or needing a rewrite, with the
-  coordinate that shows it. Reports tiers of importance beside the priority the
-  tracker declares, the dependency graph and critical path, parallel lanes per
+  tracker: each issue ruled current, stale or needing a rewrite per
+  `references/issue-currency.md`, with the coordinate that shows it. Reports
+  tiers of importance beside the priority the tracker declares, the dependency
+  graph and critical path, parallel lanes per
   `references/wave-planning.md`, and one recommendation for what to take next.
   Any tracker hygiene it proposes executes only on your word, item by item
   through `issue-tracking`. Titles the session by the slice it surveys, per
@@ -268,6 +272,9 @@ saying something else. Each file opens by saying what it owns.
 - [`references/report-format.md`](references/report-format.md) — the final-report
   shape. Read where a whole run is reported — a different altitude from a driver's
   report on one merged change request, and the two do not replace each other.
+- [`references/issue-currency.md`](references/issue-currency.md) — whether an
+  issue is still true of the tree, and the four verdicts that say so. Read
+  wherever an issue is surveyed or taken in as the spec of work about to start.
 - [`references/classification.md`](references/classification.md) — how an issue
   gets classified against what the repository itself defines. Read wherever an
   issue is classified or a backlog is read by what its tracker declares.
