@@ -86,9 +86,12 @@ holding what, which a count of the rest answers for none of them.
 
 Where there are no numbers — free-text work, a repository without a tracker, a
 slice of the backlog — a short kebab-case nickname for the subject stands in
-their place, and so does a list of numbers long enough to stop reading as an
-address: work at that size is a slice of the backlog whatever it was called,
-and a nickname says what the slice is where the numbers say only how many.
+their place. So does a list of them too long for the title to carry: an
+identifier is never trimmed once it stands ("When the title does not fit"), so
+a list that will not fit is settled here, when the address is coined, and the
+nickname is what stands instead. Never the leading number and a count of the
+rest: two slices both starting at `95` would wear one address, and an address
+resolving to two sessions addresses neither.
 
 ## `<topic>`
 
@@ -123,7 +126,9 @@ that. What gives way, in this order:
    — and then goes entirely; the composition stands in the ledger either way;
 2. the topic shortens;
 3. the identifier and the role marker are never touched: together they are the
-   address, and truncating either is losing the session.
+   address, and truncating either is losing the session. A standalone
+   identifier that would not fit is settled where it is coined, by `<tasks>`'s
+   nickname, and never by trimming it here.
 
 ## When a master titles itself
 
@@ -172,7 +177,8 @@ stands there stays.
 - **A worktree a session cuts for itself leads with its title's identifier**
   — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
   would otherwise prefix every batch's name; a hyphen where the title has a
-  slash, and one for each comma between numbers, since a ref is a path and a
+  slash, and one for each comma between numbers — the space after that comma
+  goes into the same hyphen, a ref taking none — since a ref is a path and a
   prefix match reads the two spellings as one name. The role marker's brackets
   stay out of a ref, where they are shell glob characters and buy nothing the
   trailing `-master` does not. One the host generated is left alone — renaming
