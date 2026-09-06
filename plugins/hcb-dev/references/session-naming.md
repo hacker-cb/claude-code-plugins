@@ -38,7 +38,7 @@ come back over the wire, the order says which title to answer
 ([`order-anatomy.md`](order-anatomy.md)).
 
 Examples: `[master] 841 — UI widgets`,
-`841/P — DX odds and ends (#896, #881)`, `514 — OCC acceptance`,
+`841/P — DX odds and ends (#896, #881, #877, #870)`, `514 — OCC acceptance`,
 `95, 96, 97 — link hygiene in the skills`.
 
 ## `<epic>`
@@ -81,12 +81,14 @@ the pair.
 The numbers of the tasks a standalone session is running, digits alone — no
 `#`, for `<epic>`'s reason: the value goes into a worktree name. Comma-separated
 in the order the work takes them, so the number leading the work leads the
-address; up to three, and past that the leading number and a count of the rest
-— `95 +5` is six tasks.
+address — and all of them stand there: a list of sessions is read for who is
+holding what, which a count of the rest answers for none of them.
 
 Where there are no numbers — free-text work, a repository without a tracker, a
 slice of the backlog — a short kebab-case nickname for the subject stands in
-their place.
+their place, and so does a list of numbers long enough to stop reading as an
+address: work at that size is a slice of the backlog whatever it was called,
+and a nickname says what the slice is where the numbers say only how many.
 
 ## `<topic>`
 
@@ -100,22 +102,25 @@ batch does, which is never a restatement of the epic's.
 ## The issue tail
 
 The batch's issues in the order its `Work:` slot takes them, so a list of
-sessions shows the composition without opening the ledger. Up to three
-numbers; past that, the leading one and a count of the rest — `(#896 +5)` is
-six issues. A batch holding no issue carries no tail. A chip re-issued before
-its click carries the composition the batch now has; a batch already running
-keeps the title it started with.
+sessions shows the composition without opening the ledger — all of them, not
+the leading one and a count of the rest. Shortening the tail is what a title
+does under a cap, below, and not the shape it is written in. A batch holding no
+issue carries no tail. A chip re-issued before its click carries the
+composition the batch now has; a batch already running keeps the title it
+started with.
 
 The tail is never matched on — sessions resolve each other by `<epic>/<id>`
-alone, which is what makes it safe to shorten or drop.
+alone, which is what makes it safe to shorten or drop where the title does not
+fit.
 
 ## When the title does not fit
 
 The titling tool caps what it accepts, and a list of sessions truncates before
 that. What gives way, in this order:
 
-1. the tail collapses to its counted form, then goes entirely — the
-   composition stands in the ledger either way;
+1. the tail gives up its trailing numbers for a count of them — `(#896 +5)`
+   is six issues, and the `+` is what says the list was cut rather than short
+   — and then goes entirely; the composition stands in the ledger either way;
 2. the topic shortens;
 3. the identifier and the role marker are never touched: together they are the
    address, and truncating either is losing the session.
@@ -168,12 +173,11 @@ stands there stays.
   — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
   would otherwise prefix every batch's name; a hyphen where the title has a
   slash, and one for each comma between numbers, since a ref is a path and a
-  prefix match reads the two spellings as one name. A counted identifier gives
-  the ref its leading number alone: a ref takes neither the space nor the `+`.
-  The role marker's brackets stay out of a ref, where they are shell glob
-  characters and buy nothing the trailing `-master` does not. One the host
-  generated is left alone — renaming a live session's directory is not a
-  naming decision — so there the title carries the address by itself.
+  prefix match reads the two spellings as one name. The role marker's brackets
+  stay out of a ref, where they are shell glob characters and buy nothing the
+  trailing `-master` does not. One the host generated is left alone — renaming
+  a live session's directory is not a naming decision — so there the title
+  carries the address by itself.
 - **In a wave, the order's tag is `<epic>/<id>`** — no separate tag is coined
   (`order-anatomy.md`).
 - **A branch takes none of this.** It is named for the change it carries
