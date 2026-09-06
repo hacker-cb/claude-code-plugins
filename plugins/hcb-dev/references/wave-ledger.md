@@ -59,7 +59,7 @@ master, and recovery ends at this machine's config directory.
 - **Write on every event** — a chip hung, a batch confirmed, a fork settled, a
   return accepted, a constraint discovered — before the conversation moves on.
 - **Read it first after any restart or compaction**, before the live registry
-  is even listed: the ledger says who is expected to exist; `ListAgents` only
-  says who answers right now.
+  is even listed: the ledger says who is expected to exist; the live registry
+  only says who answers right now.
 - A batch released and a wave closed are written as such; the epic's closing
   line is the ledger's last edit.

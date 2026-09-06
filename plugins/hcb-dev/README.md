@@ -345,10 +345,11 @@ Per skill, on top of those:
   `issue-tracking` on your word.
 - **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
   Code's own cross-session tools — the chip tool for launching
-  (`spawn_task`/`dismiss_task`, the desktop app's) and the live registry and
-  messaging (`ListAgents`/`SendMessage`) for coordination; each degrades along
-  its own ladder where a tool is absent (fenced orders instead of chips, the
-  tracker and the user instead of messages). The master additionally uses
+  (`spawn_task`/`dismiss_task`, the desktop app's) and, for coordination, the
+  live registry plus whichever message channel the host offers, by live name or
+  by session id; each degrades along its own ladder where a tool is absent
+  (fenced orders instead of chips, the tracker and the user instead of
+  messages). The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
   lives in one; without a tracker it falls back to a machine-local file under
   the user's Claude config directory. All sides need this plugin installed —
