@@ -132,6 +132,12 @@ titles itself — the session, not the branch of step 0 — per
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).
 
+   **A fix answers its finding and stops.** Hardening no finding asked for, a
+   guard against a case no reviewer raised, a second check over what the fix
+   already closed — none of it rides in on the fix. Each is a change of its own
+   and takes the route anything incidental takes (`findings.md`): the conditions
+   there, then its own commit or the report.
+
    **Then put the fixes through the same test the change went through.** Apply
    `multi-review`'s high-risk test to what the fixes wrote rather than to the
    change: a fix that stays inside the finding it answers was covered by the pass
