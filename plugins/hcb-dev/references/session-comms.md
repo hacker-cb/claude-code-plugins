@@ -33,9 +33,9 @@ the stable half of the live one — coin it by the same reference.
    stable part — a renamed session's title, or the worktree prefix. Resolve before
    *every* send: an address is the result of a resolution, never something kept
    from last time — not a cached name, not an endpoint, not yesterday's suffix.
-   Replying within the same turn may copy the incoming message's sender field;
-   a reply any later re-resolves like any other send — the sender field of an
-   old message is exactly the kind of address a restart kills.
+   Replying within the same turn may reuse the return address the message
+   arrived with; a reply any later re-resolves like any other send — the return
+   address of an old message is exactly the kind a restart kills.
 2. **Session id, through the host.** Exchanged at first contact — each side
    names its own — it addresses the session rather than the process, so it
    survives restarts, and its registry resolves a known title to an id when the
@@ -43,8 +43,8 @@ the stable half of the live one — coin it by the same reference.
    above, not a degraded copy: to a counterpart that is idle it hands the
    message over at once. To one mid-turn it may hold the message until that
    turn ends, or fail to deliver it at all, and the send's own answer is the
-   only signal of which — one reporting the message waiting or unacknowledged
-   says it has not arrived. And a message to a session that is not running
+   only signal of which — one reporting anything short of the message being
+   handed over says it has not arrived, however that channel words it. And a message to a session that is not running
    arrives nowhere: the id outlives the process, delivery does not. It sees
    less than the live registry; where it cannot see the target, drop a rung.
 
