@@ -58,6 +58,8 @@ Also stop and ask the user when:
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it
+- Step 2's rebase resolution went unreviewed, or left a finding of weight open —
+  this stop outranks any `merge-auth` threaded in
 
 Each of those stops shows your recommended option **first**, with a one-line
 reason grounded in the code **and the constraints** — half these stops turn on
@@ -176,8 +178,31 @@ elif [ "$cur" != "$NEW" ] && [ -n "$pr_open" ]; then
 fi
 [ "$cur" = "$NEW" ] || git branch -m "$NEW"
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
-# 3 both assume an upstream exists, and neither creates one.
-git push "$PUSH_REMOTE" -u "$NEW"
+# 3 both assume an upstream exists, and neither creates one. The branch arrives
+# already landed on its parent, so a force may be owed — to that case alone.
+# `ls-remote` answers three ways: exit 0 and empty is a branch that is not there,
+# non-zero is a remote nobody could read, and conflating them publishes blind.
+if ! remote_tip="$(git ls-remote --heads "$PUSH_REMOTE" "refs/heads/$NEW" 2>/dev/null)"; then
+  echo "CANNOT READ $PUSH_REMOTE"; exit 1
+fi
+# A lease compares against the tracking ref, so it needs one that exists and is current.
+if [ -n "$remote_tip" ] \
+   && ! git fetch "$PUSH_REMOTE" "+refs/heads/$NEW:refs/remotes/$PUSH_REMOTE/$NEW"; then
+  echo "FETCH FAILED for $NEW — its age is unknown"; exit 1
+fi
+published=0
+if [ -z "$remote_tip" ]; then
+  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # first publication
+# Full refnames: the short `<remote>/<name>` reaches a tag of that name instead.
+elif git merge-base --is-ancestor "refs/remotes/$PUSH_REMOTE/$NEW" "refs/heads/$NEW"; then
+  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # fast-forward
+else
+  # `--force-if-includes` requires the published tip to be in this branch's reflog —
+  # a bare lease also passes someone else's commit, and overwrites it.
+  git push --force-with-lease --force-if-includes "$PUSH_REMOTE" -u "$NEW" && published=1
+fi
+# Chained: a refused push followed by the delete below unpublishes the branch.
+[ "$published" = 1 ] || { echo "NOT PUBLISHED — push refused for $NEW"; exit 1; }
 # ONLY when the name actually changed: with $cur == $NEW this deletes the ref the
 # line above just pushed, unpublishing the branch and closing any PR on it.
 if [ "$cur" != "$NEW" ]; then
@@ -221,6 +246,12 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
   and ask.
+- **A resolution past a trivial one is code no reviewer has read** — trivial being
+  the line `slice-completion.md` draws for the same hazard. Put it through
+  `hcb-dev:multi-review`, unnarrowed (a narrowing sends the security review to
+  `n/a`), fix what it rates Critical or Important and push it here. A review that
+  cannot run, or a finding of that weight left open, is the Autonomy model's stop:
+  ask before merging, whatever authorization was threaded in.
 - After a successful rebase, push with `--force-with-lease`.
 - **Exception:** if the branch is shared, do NOT rebase — merge base into the
   branch instead and note why. Shared means anything is built on its current tip:

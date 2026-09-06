@@ -20,7 +20,7 @@ description: >-
 
 Finished work completes automatically. Do not ask for confirmation; the coverage
 gate below is the one exception in the shared front half — local completion
-(step 6) adds its own, mode-specific: a stop before merging into the default
+(step 7) adds its own, mode-specific: a stop before merging into the default
 branch, and the consent-gated post-merge offer. Work counts as ready once the
 change is complete and verified — tests pass, or the behavior is confirmed — and
 the tree is committable.
@@ -29,16 +29,16 @@ This skill runs either standalone (a bare "ship this" on finished work) or as th
 per-slice step `hcb-dev:implementation-workflow` calls. Either way it is a skill,
 not the host's workflow tool: a rule that limits workflows or subagents to what
 the user or a skill asks for is met by the invocation and by the skills this one
-calls, and skips nothing below. Steps 0–5 are identical in
+calls, and skips nothing below. Steps 0–6 are identical in
 both **completion modes** — `local` (merge into the parent, no forge) and
-`request` (a change request) — because the mode is read only at step 6. When
+`request` (a change request) — because the mode is read only at step 7. When
 driven by the orchestrator, the caller threads the completion signals as
 invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`.
 Standalone, they default — mode and
 `parent` by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md),
 mode ending at `request`. That reference owns the mechanics of completion; steps
-0–5 below are the mode-blind front half. Entered on its own, this session also
+0–6 below are the mode-blind front half. Entered on its own, this session also
 titles itself — the session, not the branch of step 0 — per
 [`../../references/session-naming.md`](../../references/session-naming.md).
 
@@ -83,14 +83,41 @@ titles itself — the session, not the branch of step 0 — per
    than what its code does, and correct what the change made false — under
    [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
    §4, which governs any sentence reporting how something is configured.
-3. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
-   `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
-   base so the review covers *this* slice's range, not the cumulative feature
+3. **Land the branch on `parent`, before anyone reads it** — on the **ref** step 1
+   refreshed, `<remote>/<parent>`, or the local branch where no remote carries one.
+   The bare name is a destination, not a tip (`slice-completion.md`): land on it and
+   the slice sits on whatever that branch is behind by. **Both modes** — the write
+   is local, and publishing a rewritten history is step 7's driver's.
+
+   Rebase by default; merge where the driver's shared test says the history is not
+   yours alone to rewrite (`github-pr-workflow` Step 2), and where neither is open,
+   that test's stop is this step's: ask. Merge too where the branch's own history
+   carries a merge whose content is in neither parent — a rebase drops the merge,
+   and a resolution living only there goes silently with it:
+
+   ```bash
+   # Non-empty combined diff = a merge that wrote something of its own → merge, not rebase.
+   for m in $(git rev-list --merges "<diff-base>..HEAD"); do
+     [ -n "$(git show --format= "$m")" ] && echo "$m carries content of its own"
+   done
+   ```
+
+   Landing re-cuts the slice, so `diff-base` moves to the tip landed on
+   (`slice-completion.md`); step 4 gets the moved value.
+
+   **Then run what the project runs** on the integrated tree and commit what that
+   takes — what the base moved past leaves no diff for a reviewer to find, and a
+   rename it made is step 2's sweep over again, this time over `parent`'s range. A
+   conflict needing a real decision is an architectural fork
+   (`architecture-decisions.md`): stop and ask.
+4. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
+   `diff-base` was threaded in (an orchestrated slice), pass it — as step 3 left
+   it — as the explicit base so the review covers *this* slice's range, not the cumulative feature
    diff. Standalone, `multi-review` resolves its own base. Every reviewer
    `multi-review` picks runs, the security review's sub-tasks included; a
    reviewer left out on account of a rule about subagents is a row in the gate
    below, never a judgement call made here.
-4. **Apply the fixes, then commit them** — that skill reports, it does not fix.
+5. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    A finding on the code this change wrote is not weighed against scope: it is
    in-scope work. Scope is the question only for one about anything else the
    reviewers read, and the test in
@@ -101,7 +128,7 @@ titles itself — the session, not the branch of step 0 — per
    deciding it here. A reported stale reference is step 2's sweep over again, not
    a list of lines to edit — the finding is what one reviewer happened to see.
    Do not complete with findings left unresolved — and do not leave the
-   fixes sitting uncommitted: step 6 lands *commits* (a local merge takes what is
+   fixes sitting uncommitted: step 7 lands *commits* (a local merge takes what is
    committed; in request mode the driver's rebase with `--autostash` carries an
    uncommitted fix straight past the change request it was meant to be in).
 
@@ -109,7 +136,7 @@ titles itself — the session, not the branch of step 0 — per
    `multi-review`'s high-risk test to what the fixes wrote rather than to the
    change: a fix that stays inside the finding it answers was covered by the pass
    that raised it, and one that would have earned a rung of its own is code no
-   reviewer has read — go back to step 3, hand it the same base as the first
+   reviewer has read — go back to step 4, hand it the same base as the first
    round and never one narrowed to the fixes, and come back here with what it
    returns. A `Minor` never opens a round on its own
    (`../../references/findings.md`); it rides one opened for something else, or
@@ -126,16 +153,16 @@ titles itself — the session, not the branch of step 0 — per
    fixed something, which is the loop trading one break for another. Up to ~3
    rounds otherwise, then stop and ask. Running out is a stop and never a
    completion: never complete, never merge, and never re-rate a finding to get
-   under the line. Step 6's driver then loops again against a reviewer of its
+   under the line. Step 7's driver then loops again against a reviewer of its
    own, on a budget of its own; neither is drawn from the other.
-5. **Check the coverage** — the gate below, over the last round there was.
-6. **Complete the slice by mode** — hand off to the completion contract in
+6. **Check the coverage** — the gate below, over the last round there was.
+7. **Complete the slice by mode** — hand off to the completion contract in
    `slice-completion.md`, which owns every mechanic of both backends. `local`
    merges the slice into its `parent` with git alone, no forge and no network
    write;
    `request` hands to the forge's change-request driver
    (`hcb-dev:github-pr-workflow` on GitHub), passing `parent` as the base plus
-   `merge-strategy` and `merge-auth`. Nothing in steps 0–5 changes with the mode.
+   `merge-strategy` and `merge-auth`. Nothing in steps 0–6 changes with the mode.
 
 ## The coverage gate
 
@@ -154,7 +181,7 @@ danger is. When `implementation-workflow` drives the run autonomously, this stop
 is one of its legitimate interrupts, not something the autonomy waives.
 
 Every stop this skill takes — this gate, fix rounds that end with findings still
-open, step 6's default-branch merge, several remotes with none preferred — carries
+open, step 7's default-branch merge, several remotes with none preferred — carries
 your recommended option **first**, per
 [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
 
