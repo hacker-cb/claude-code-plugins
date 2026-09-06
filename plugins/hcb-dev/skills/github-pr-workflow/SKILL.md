@@ -182,11 +182,21 @@ fi
 # 3 both assume an upstream exists, and neither creates one. The branch arrives
 # already landed on its parent, so its history may have been rewritten upstream of
 # here — but a force is owed to that case alone, and the other two are safer
-# without one. Fetch the branch first: with no tracking ref for it, a lease has
-# nothing to compare against and refuses an already-published branch outright.
-git fetch "$PUSH_REMOTE" "+refs/heads/$NEW:refs/remotes/$PUSH_REMOTE/$NEW" 2>/dev/null || true
+# without one. Ask the remote what it has: THREE answers, not two. `ls-remote`
+# exits 0 with empty output for a branch that is not there and non-zero when it
+# could not ask at all, and reading the second as the first publishes against a
+# remote nobody read.
+if ! remote_tip="$(git ls-remote --heads "$PUSH_REMOTE" "refs/heads/$NEW" 2>/dev/null)"; then
+  echo "CANNOT READ $PUSH_REMOTE — not publishing against a remote I could not query"; exit 1
+fi
+# A lease compares against the tracking ref, so a published branch needs one that
+# exists and is current; a branch that is not there needs nothing.
+if [ -n "$remote_tip" ] \
+   && ! git fetch "$PUSH_REMOTE" "+refs/heads/$NEW:refs/remotes/$PUSH_REMOTE/$NEW"; then
+  echo "FETCH FAILED for $NEW — not publishing against a ref whose age is unknown"; exit 1
+fi
 published=0
-if ! git rev-parse --verify -q "$PUSH_REMOTE/$NEW^{commit}" >/dev/null; then
+if [ -z "$remote_tip" ]; then
   git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # first publication
 elif git merge-base --is-ancestor "$PUSH_REMOTE/$NEW" HEAD; then
   git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # fast-forward
@@ -197,9 +207,10 @@ else
   git push --force-with-lease --force-if-includes "$PUSH_REMOTE" -u "$NEW" && published=1
 fi
 # Chained, because unpublished-and-deleted is worse than either alone: a refused push
-# followed by the delete below unpublishes the branch and closes the PR on it.
+# followed by the delete below unpublishes the branch and closes the PR on it. The
+# message names what happened, not a cause nothing here established.
 [ "$published" = 1 ] \
-  || { echo "NOT PUBLISHED — $PUSH_REMOTE/$NEW carries work this branch does not; stop and ask"; exit 1; }
+  || { echo "NOT PUBLISHED — push refused for $NEW; read the error above, and leave the old name standing"; exit 1; }
 # ONLY when the name actually changed: with $cur == $NEW this deletes the ref the
 # line above just pushed, unpublishing the branch and closing any PR on it.
 if [ "$cur" != "$NEW" ]; then
@@ -243,14 +254,16 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
   and ask.
-- **What a resolution wrote is code no reviewer has read.** The reviewers
-  upstream read this branch as it stood before this rebase. Put the resolution
-  through `hcb-dev:multi-review` — unnarrowed, since a narrowing is what sends the
-  security review to `n/a` — then fix what it rates Critical or Important and push,
-  before the PR opens, so Step 4's budget stays on the failures the diff caused.
-  Where that review cannot run, or a finding of that weight stays open, it is the
-  Autonomy model's stop below: ask before merging, whatever authorization was
-  threaded in.
+- **What a resolution wrote past a trivial one is code no reviewer has read.**
+  Trivial is the line `slice-completion.md` draws for the same hazard in local
+  mode — whitespace, a lockfile, a generated file re-run — and it rides on. Past
+  it, the reviewers upstream read this branch as it stood before this rebase: put
+  the resolution through `hcb-dev:multi-review` — unnarrowed, since a narrowing is
+  what sends the security review to `n/a` — then fix what it rates Critical or
+  Important and push it here, so Step 4's iterations stay on the failures the diff
+  caused. Where that review cannot run, or a finding of that weight stays open, it
+  is the Autonomy model's stop below: ask before merging, whatever authorization
+  was threaded in.
 - After a successful rebase, push with `--force-with-lease`.
 - **Exception:** if the branch is shared, do NOT rebase — merge base into the
   branch instead and note why. Shared means anything is built on its current tip:

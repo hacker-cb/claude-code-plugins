@@ -85,12 +85,31 @@ titles itself — the session, not the branch of step 0 — per
    §4, which governs any sentence reporting how something is configured.
 3. **Land the branch on the refreshed parent** — step 1 refreshed `diff-base` and
    `parent` and moved nothing else, so the branch still stands where it was cut.
-   Put it on `parent`'s refreshed tip now, in **both modes**: rebase, or merge
-   where something is built on this branch's tip — the same call
-   `slice-completion.md` states for a set's feature branch. `parent` is what the
-   slice lands on at step 7, so it is what it is landed on here. The write is
-   local; local completion promises no *network* write, and publishing a rewritten
-   history is step 7's driver's, not this step's.
+   Land it on the **ref** `parent` was reduced from, `<remote>/<parent>` — or on
+   the local branch itself where step 1 found no remote carrying it, which is the
+   ordinary case for a set's feature branch. The bare name is a destination, not a
+   tip (`slice-completion.md`): landing on it puts the slice on whatever the local
+   branch is behind by. `parent` is what the slice lands on at step 7, so it is
+   what it is landed on here, in **both modes**. The write is local; local
+   completion promises no *network* write, and publishing a rewritten history is
+   step 7's driver's, not this step's.
+
+   **Rebase, except where a rewrite would lose something.** Merge instead wherever
+   the driver's own shared test says the history is not yours alone to rewrite —
+   others have commits on it, a change request references it, something is built on
+   its tip (`github-pr-workflow` Step 2) — and where merging is not an option
+   either, that test's stop is this step's stop too: ask. Merge, never rebase, when
+   the branch's own history carries a merge whose content is in neither parent: a
+   rebase replays the commits and drops the merge, so a resolution living only
+   there goes with it, and nothing conflicts to announce that it did.
+
+   ```bash
+   # A combined diff is empty for an ordinary merge and non-empty for one whose
+   # resolution wrote something of its own. Any output means merge, not rebase.
+   for m in $(git rev-list --merges "<diff-base>..HEAD"); do
+     [ -n "$(git show --format= "$m")" ] && echo "merge $m carries content of its own"
+   done
+   ```
 
    **Landing re-cuts the slice, so `diff-base` moves with it** — to the tip just
    landed on, which is that reference's contract and not a second definition of
@@ -102,6 +121,8 @@ titles itself — the session, not the branch of step 0 — per
    the integrated tree, and commit what that takes. What the base moved past
    leaves no diff for a reviewer to find: a helper renamed upstream while this
    branch went on calling the old name conflicts with nothing and reviews clean.
+   A rename is step 2's sweep over again and its checks will not catch one — run
+   that sweep against what the landing brought in, over `parent`'s own range.
 
    A conflict needing a real decision is an architectural fork
    (`architecture-decisions.md`) — stop and ask. What resolving one writes is code
