@@ -4,9 +4,11 @@ Read wherever an issue is about to be relied on — a backlog surveyed issue by
 issue, or one taken in as the spec of work about to start. An issue is a claim
 about a tree that has moved since it was written, and this file owns the verdict
 on whether that claim still holds: the code it stands on, what is read to reach
-it, and the four it can be. What a verdict then authorizes — a body rewritten,
-an issue closed, a milestone moved — is `hcb-dev:issue-tracking`'s, and it waits
-for the answer of whoever the reading session puts it to.
+it, and the four it can be. It lives outside any one skill because a survey and
+a build reading the same issue have to reach the same verdict on it. What a
+verdict then authorizes — a body rewritten, an issue closed, a milestone moved —
+is `hcb-dev:issue-tracking`'s, and it waits for the answer of whoever the reading
+session puts it to.
 
 **Anything but `current` is a fork before it is work.** It goes to that person
 with a recommendation, never resolved by building the issue as written and never

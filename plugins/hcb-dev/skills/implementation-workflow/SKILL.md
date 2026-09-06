@@ -80,11 +80,15 @@ project rule that fights good architecture gets flagged — see
 Settle, in one gate:
 
 - **What a non-`current` verdict changes** — an issue ruled stale, needing a
-  rewrite or unverifiable is settled before the slicing that would build it:
-  recommend what becomes of it — built as written, built down to the part that
-  still holds, its body rewritten first, closed as already met — carrying the
-  coordinate the verdict stands on. `hcb-dev:issue-tracking` writes to the
-  tracker on the answer, never ahead of it.
+  rewrite or unverifiable carries the fork the rest of the plan is built on, so
+  it is settled first and the slicing below is shown as what the recommended
+  answer makes: recommend what becomes of it — built as written, built down to
+  the part that still holds, its body rewritten first, closed as already met —
+  from what its own verdict leaves open (`issue-currency.md`), and carrying the
+  coordinate that verdict stands on. Where another answer is taken, the layout it
+  invalidates is re-drawn before the gate closes rather than carried into Phase 2
+  as approved. `hcb-dev:issue-tracking` writes to the tracker on the answer, never
+  ahead of it.
 - **Slice breakdown + branch layout** — a shared feature branch only for more than
   one slice; a single slice's parent is the base. Name both the feature branch and
   its slices per
@@ -196,7 +200,7 @@ completed straight onto the base in Phase 2.
   proposals, per `findings.md`; `hcb-dev:issue-tracking` owns the
   tracker operations their answer authorizes. In local mode no change request
   closes the intake issue, so closing or linking it rides with that handoff or the
-  issue is left stale.
+  issue is left open against work that landed.
 - **Cleanup** — a branch retires with the merge that landed it
   ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)),
   so what a run leaves is the worktrees, the older residue, and any local branch no

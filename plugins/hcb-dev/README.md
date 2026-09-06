@@ -165,8 +165,8 @@ work is **done** — not how the ask is worded.
 - **`backlog-survey`** — `/hcb-dev:backlog-survey`
   A whole slice of the backlog — a milestone, a label, everything open —
   read issue by issue and verified against the code, not against the
-  tracker: each issue ruled current, stale or needing a rewrite per
-  `references/issue-currency.md`, with the coordinate that shows it. Reports
+  tracker: each issue ruled current, stale, needing a rewrite or unverifiable
+  per `references/issue-currency.md`, with the coordinate that shows it. Reports
   tiers of importance beside the priority the tracker declares, the dependency
   graph and critical path, parallel lanes per
   `references/wave-planning.md`, and one recommendation for what to take next.

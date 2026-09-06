@@ -27,8 +27,8 @@ reading. Where this session opened the run, the slice named is its title, per
 [`../../references/forge-docs.md`](../../references/forge-docs.md)) — a survey of
 the first page reads as a survey of the whole. The count picks the
 mechanics: a slice a session can read, it reads itself; hundreds of issues
-fan out to parallel reader subagents, each handed a sub-slice, the same
-per-issue questions and the one priority scale resolved below, with every
+fan out to parallel reader subagents, each handed a sub-slice, the verdict
+reference by path, and the one priority scale resolved below, with every
 conclusion synthesized back here. Whichever mechanics run, the conclusions
 below are this session's — a reader's summary is input, not a verdict.
 
