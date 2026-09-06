@@ -82,7 +82,12 @@ Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on.
 The delta from the pin to the tip you read these facts against is the list to
 re-verify, before anything of yours rests on them. Do not build on the pin.
 <Or: no base pin — these facts are the tracker's, and you re-verify them
-there.>
+there.> An issue among them you rule against the code at its own coordinates
+before anything of yours rests on it, and never against what its body says:
+anything short of the issue still being true of the tree — outrun, misleading,
+or not checkable from where you stand — is a premise that fell. It goes to the
+master the moment it does, and nothing is built on that issue until the master
+answers.
 
 Boundaries: <the files this batch owns; each component shared with another
 batch and how the files split; what is not yours to touch>
