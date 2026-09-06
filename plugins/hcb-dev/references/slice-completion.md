@@ -36,9 +36,9 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
   per-slice range is taken against, as an **explicit** base, so coverage is
   *this* slice, not the cumulative feature diff (which would re-read slice 1 while
   auditing slice 2, and the coverage gate would record no gap over the wrong
-  range). **Landing the slice on `parent` moves it** to the tip landed on: the
-  slice is then cut from there, and the value the orchestrator threaded down names
-  a commit `parent` has since grown past.
+  range). **Landing the slice on `parent` moves it** to the tip landed on — the
+  slice is cut from there now, and the threaded value names a commit `parent` has
+  grown past.
 - `merge-strategy` — the shown-and-approved gate default, **mode-dependent**: in
   `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
   the **final** `feature → base` strategy only (*Multi-slice topology* below).
@@ -129,12 +129,11 @@ Publishing is the escalation offer below, and only by consent.
   decision is an architectural fork ([`architecture-decisions.md`](architecture-decisions.md)),
   so stop and ask — never auto-resolve, or you can silently corrupt an earlier
   slice's work. Trivial stays trivial — whitespace, a lockfile, a generated file
-  re-run. Past that, a resolution writes code no reviewer has read, and this
-  backend does not review: abort the merge and hand back to the front half, which
-  lands the branch on this same parent and puts what that took through the
-  reviewers (`shipping-workflow` step 3), rather than committing a resolution
-  nothing after it will read. A conflict that survives that round trip is `parent`
-  moving under the run rather than a round to repeat — stop and ask.
+  re-run. Past that the resolution is code no reviewer has read and this backend
+  does not review: abort the merge and hand back to `shipping-workflow` step 3,
+  which lands on this same parent and puts what that took through the reviewers. A
+  conflict surviving that round trip is `parent` moving under the run, not a round
+  to repeat — stop and ask.
 - **The default-branch hard-gate.** Merging into a **feature** branch is
   autonomous. Merging into the **default branch** is the highest-blast-radius
   action here — an unattended commit on `master`/`main` is not practically
