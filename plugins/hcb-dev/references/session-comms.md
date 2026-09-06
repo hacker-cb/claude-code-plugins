@@ -14,11 +14,11 @@ A live agent name is the name the session registered under: its title once
 something renamed the session with it, else one derived from its worktree plus a
 per-process suffix. The suffix and the endpoint behind it belong to the process
 and die with it — every restart and every reboot re-deals them. Short of that
-rename the two names stay apart, so a session findable by title through the host
-is nameless in the live listing — while the title remains the address the rungs
-below and every first contact use. What survives: the title, the
-session id, the worktree path, and anything written to the forge. Address by what survives; resolve what does not
-at the moment of sending.
+rename, the two names stay apart: a session findable by title through the host
+is nameless in the live listing, while the title remains the address the rungs
+below and every first contact use. What survives: the title, the session id, the
+worktree path, and anything written to the forge. Address by what survives;
+resolve what does not at the moment of sending.
 
 ## Be findable: title first
 
