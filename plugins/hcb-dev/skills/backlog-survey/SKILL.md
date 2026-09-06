@@ -27,43 +27,30 @@ reading. Where this session opened the run, the slice named is its title, per
 [`../../references/forge-docs.md`](../../references/forge-docs.md)) — a survey of
 the first page reads as a survey of the whole. The count picks the
 mechanics: a slice a session can read, it reads itself; hundreds of issues
-fan out to parallel reader subagents, each handed a sub-slice, the same
-per-issue questions and the one priority scale resolved below, with every
+fan out to parallel reader subagents, each handed a sub-slice, the verdict
+reference by path, and the one priority scale resolved below, with every
 conclusion synthesized back here. Whichever mechanics run, the conclusions
 below are this session's — a reader's summary is input, not a verdict.
 
 ## Read against the code, not against the tracker
 
-The code the verdicts stand on is the refreshed base — resolved and fetched
-per [`../../references/base-resolution.md`](../../references/base-resolution.md),
-never this checkout's own state, which may be stale or mid-feature.
+Every issue in the slice carries a verdict, reached per
+[`../../references/issue-currency.md`](../../references/issue-currency.md) — and
+one whose parked reason still holds stays out of every "ready" tier below,
+whatever that verdict was.
 
-Per issue: the body, every comment, the labels, native type, milestone and
-state reason (classified per
+The priority role
 [`../../references/classification.md`](../../references/classification.md)
-— a parked reason that still holds keeps an issue out of every "ready" tier),
-the sub-issue and dependency links (both sit past either CLI's issue commands
-— the entry points are resolved per
-[`../../references/forge-docs.md`](../../references/forge-docs.md)), the change
-requests that touch it — then the tree itself at the issue's coordinates. The
-verdict on each is one of: **current** (the defect or gap is still there — cite
-the coordinate that shows it), **stale** (the tree moved — cite what fixed or
-invalidated it), **needs rewrite** (real, but the body misleads),
-**unverifiable** (the trigger cannot be checked from here — an unreproduced
-defect, an environment this session lacks — say why; it stays out of every
-closure proposal).
-
-The priority role `classification.md` resolves is the issue's **declared
-priority** — read it per issue and carry it as an input of its own, never
-folded into the importance the tests below derive. Resolve the family once
-for the whole slice, by that reference rather than from the values that
-happen to appear on these issues, and hand the scale it yields to every
-reader the slice fans out to. Everything below that weighs one priority
-against another — the divergence, the ordering, the recommendation's reasons
-— holds only between values that scale compares, and the report says which
-issues it could not place: the ones the repository left unlabelled, the ones
-whose labels break the reference's cardinality, and all of them where no
-scale resolved at all.
+resolves is the issue's **declared priority** — read it per issue and carry it
+as an input of its own, never folded into the importance the tests below
+derive. Resolve the family once for the whole slice, by that reference rather
+than from the values that happen to appear on these issues, and hand the scale
+it yields to every reader the slice fans out to. Everything below that weighs
+one priority against another — the divergence, the ordering, the
+recommendation's reasons — holds only between values that scale compares, and
+the report says which issues it could not place: the ones the repository left
+unlabelled, the ones whose labels break the reference's cardinality, and all of
+them where no scale resolved at all.
 
 ## The report
 
