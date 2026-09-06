@@ -44,9 +44,10 @@ the stable half of the live one — coin it by the same reference.
    message over at once. To one mid-turn it may hold the message until that
    turn ends, or fail to deliver it at all, and the send's own answer is the
    only signal of which — one reporting anything short of the message being
-   handed over says it has not arrived, however that channel words it. And a message to a session that is not running
-   arrives nowhere: the id outlives the process, delivery does not. It sees
-   less than the live registry; where it cannot see the target, drop a rung.
+   handed over says it has not arrived, however that channel words it. And a
+   message to a session that is not running arrives nowhere: the id outlives
+   the process, delivery does not. It sees less than the live registry; where
+   it cannot see the target, drop a rung.
 
    **Your own id comes from the host, not from a path this plugin derives.** Take
    it from wherever this host surfaces it. Where nothing does, write that in the
