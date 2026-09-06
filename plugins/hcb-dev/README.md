@@ -111,10 +111,13 @@ form: you paste every one of them yourself.
 
 - **`shipping-workflow`** — `/hcb-dev:shipping-workflow`
   Take one finished, verified slice to completion: normalize the branch name,
-  refresh the base, commit, hand off to `multi-review`, apply the fixes
-  (reviewing them again where they reach past what was already read), check
-  coverage, then complete **by mode** — merged locally into its parent branch, or
-  an open change request (handed to a PR/MR driver below). Steps 0–5 are identical
+  refresh the base, commit, land the branch on that refreshed base and re-run the
+  project's own checks on the integrated tree, hand off to `multi-review`, apply
+  the fixes (reviewing them again where they reach past what was already read),
+  check coverage, then complete **by mode** — merged locally into its parent
+  branch, or an open change request (handed to a PR/MR driver below). Landing
+  before the review is what puts a conflict resolution — code a reviewer has never
+  read — inside the coverage gate rather than after it. Steps 0–6 are identical
   in both modes; the mode is read only at the last step. Entered on its own, it
   titles the session per `references/session-naming.md`; driven per slice, it
   leaves the caller's title standing.

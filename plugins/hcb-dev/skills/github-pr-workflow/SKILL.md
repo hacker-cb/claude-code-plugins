@@ -176,8 +176,10 @@ elif [ "$cur" != "$NEW" ] && [ -n "$pr_open" ]; then
 fi
 [ "$cur" = "$NEW" ] || git branch -m "$NEW"
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
-# 3 both assume an upstream exists, and neither creates one.
-git push "$PUSH_REMOTE" -u "$NEW"
+# 3 both assume an upstream exists, and neither creates one. Leased rather than
+# plain: the branch arrives already landed on the base, so where it was pushed
+# before, its history was rewritten upstream of here and a plain push is refused.
+git push --force-with-lease "$PUSH_REMOTE" -u "$NEW"
 # ONLY when the name actually changed: with $cur == $NEW this deletes the ref the
 # line above just pushed, unpublishing the branch and closing any PR on it.
 if [ "$cur" != "$NEW" ]; then
@@ -221,6 +223,11 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
   and ask.
+- **What a resolution wrote is code no reviewer has read.** The reviewers
+  upstream read this branch as it stood before this rebase. Put the resolution
+  through `hcb-dev:multi-review`, narrowed to the files it touched, and carry what
+  comes back through Step 4's fix loop. Where that review cannot run, Step 5 waits
+  on the user and the report names the gap — never a silent merge.
 - After a successful rebase, push with `--force-with-lease`.
 - **Exception:** if the branch is shared, do NOT rebase — merge base into the
   branch instead and note why. Shared means anything is built on its current tip:

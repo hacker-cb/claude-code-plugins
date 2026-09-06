@@ -44,7 +44,7 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
 
 Completion is **not** handed a `coverage` signal — it runs only *after* the
 coverage gate has passed (an actionable gap already stopped the run upstream, at
-step 5), so it never re-checks coverage; it simply carries whatever noted
+step 6), so it never re-checks coverage; it simply carries whatever noted
 (structural) gaps the gate reported into the `uncovered` output below.
 
 **Outputs every backend returns** (for [`report-format.md`](report-format.md)):
@@ -126,7 +126,11 @@ Publishing is the escalation offer below, and only by consent.
 - **Conflict** — resolve a trivial conflict yourself; one that needs a real
   decision is an architectural fork ([`architecture-decisions.md`](architecture-decisions.md)),
   so stop and ask — never auto-resolve, or you can silently corrupt an earlier
-  slice's work.
+  slice's work. A resolution that writes real code is code no reviewer has read,
+  and this backend does not review: abort the merge and hand back to the front
+  half, which lands the branch on the parent and reviews what that took
+  (`shipping-workflow` step 3), rather than committing a resolution nothing after
+  it will read.
 - **The default-branch hard-gate.** Merging into a **feature** branch is
   autonomous. Merging into the **default branch** is the highest-blast-radius
   action here — an unattended commit on `master`/`main` is not practically
