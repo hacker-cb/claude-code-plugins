@@ -111,7 +111,7 @@ form: you paste every one of them yourself.
 
 - **`shipping-workflow`** — `/hcb-dev:shipping-workflow`
   Take one finished, verified slice to completion: normalize the branch name,
-  refresh the base, commit, land the branch on that refreshed base and re-run the
+  refresh the base, commit, land the branch on the refreshed parent and re-run the
   project's own checks on the integrated tree, hand off to `multi-review`, apply
   the fixes (reviewing them again where they reach past what was already read),
   check coverage, then complete **by mode** — merged locally into its parent

@@ -83,17 +83,20 @@ titles itself — the session, not the branch of step 0 — per
    than what its code does, and correct what the change made false — under
    [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
    §4, which governs any sentence reporting how something is configured.
-3. **Bring the branch onto the refreshed base** — step 1 moved `<remote>/<base>`
-   and nothing else, so what the reviewers are about to read still stands where
-   the branch was cut. Land it on the refreshed ref now, in **both modes**:
-   rebase, or merge where something is built on this branch's tip — the same call
-   `slice-completion.md` states for a set's feature branch. The write is local;
-   local completion promises no *network* write, and publishing a rewritten
+3. **Land the branch on the refreshed parent** — step 1 refreshed `diff-base` and
+   `parent` and moved nothing else, so the branch still stands where it was cut.
+   Put it on `parent`'s refreshed tip now, in **both modes**: rebase, or merge
+   where something is built on this branch's tip — the same call
+   `slice-completion.md` states for a set's feature branch. `parent` is what the
+   slice lands on at step 7, so it is what it is landed on here. The write is
+   local; local completion promises no *network* write, and publishing a rewritten
    history is step 7's driver's, not this step's.
 
-   **Step 4's base is that same refreshed ref** — the branch now stands on it, so
-   it is the branch's own merge-base, while the commit the slice was cut from
-   would put everything the base gained into the reviewers' range.
+   **Landing re-cuts the slice, so `diff-base` moves with it** — to the tip just
+   landed on, which is that reference's contract and not a second definition of
+   the signal. Carry the moved value into step 4: the commit the slice was
+   originally cut from would put everything `parent` gained since into the
+   reviewers' range.
 
    **Then run what the project runs** — its tests, its build, its type check — on
    the integrated tree, and commit what that takes. What the base moved past
@@ -104,8 +107,8 @@ titles itself — the session, not the branch of step 0 — per
    (`architecture-decisions.md`) — stop and ask. What resolving one writes is code
    the review below covers like any other.
 4. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
-   `diff-base` was threaded in (an orchestrated slice), pass it as the explicit
-   base so the review covers *this* slice's range, not the cumulative feature
+   `diff-base` was threaded in (an orchestrated slice), pass it — as step 3 left
+   it — as the explicit base so the review covers *this* slice's range, not the cumulative feature
    diff. Standalone, `multi-review` resolves its own base. Every reviewer
    `multi-review` picks runs, the security review's sub-tasks included; a
    reviewer left out on account of a rule about subagents is a row in the gate

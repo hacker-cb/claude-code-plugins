@@ -58,6 +58,9 @@ Also stop and ask the user when:
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it
+- Step 2's rebase resolved a conflict into code no reviewer has read, and the
+  review that would cover it could not run or left a finding of weight open — this
+  stop outranks any `merge-auth` threaded in
 
 Each of those stops shows your recommended option **first**, with a one-line
 reason grounded in the code **and the constraints** — half these stops turn on
@@ -176,10 +179,27 @@ elif [ "$cur" != "$NEW" ] && [ -n "$pr_open" ]; then
 fi
 [ "$cur" = "$NEW" ] || git branch -m "$NEW"
 # UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
-# 3 both assume an upstream exists, and neither creates one. Leased rather than
-# plain: the branch arrives already landed on the base, so where it was pushed
-# before, its history was rewritten upstream of here and a plain push is refused.
-git push --force-with-lease "$PUSH_REMOTE" -u "$NEW"
+# 3 both assume an upstream exists, and neither creates one. The branch arrives
+# already landed on its parent, so its history may have been rewritten upstream of
+# here — but a force is owed to that case alone, and the other two are safer
+# without one. Fetch the branch first: with no tracking ref for it, a lease has
+# nothing to compare against and refuses an already-published branch outright.
+git fetch "$PUSH_REMOTE" "+refs/heads/$NEW:refs/remotes/$PUSH_REMOTE/$NEW" 2>/dev/null || true
+published=0
+if ! git rev-parse --verify -q "$PUSH_REMOTE/$NEW^{commit}" >/dev/null; then
+  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # first publication
+elif git merge-base --is-ancestor "$PUSH_REMOTE/$NEW" HEAD; then
+  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # fast-forward
+else
+  # `--force-if-includes` is what separates this branch's own rewritten history from
+  # someone else's commit: it requires the published tip to be reachable from this
+  # branch's reflog. A bare lease passes both and overwrites the second.
+  git push --force-with-lease --force-if-includes "$PUSH_REMOTE" -u "$NEW" && published=1
+fi
+# Chained, because unpublished-and-deleted is worse than either alone: a refused push
+# followed by the delete below unpublishes the branch and closes the PR on it.
+[ "$published" = 1 ] \
+  || { echo "NOT PUBLISHED — $PUSH_REMOTE/$NEW carries work this branch does not; stop and ask"; exit 1; }
 # ONLY when the name actually changed: with $cur == $NEW this deletes the ref the
 # line above just pushed, unpublishing the branch and closing any PR on it.
 if [ "$cur" != "$NEW" ]; then
@@ -225,9 +245,12 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   and ask.
 - **What a resolution wrote is code no reviewer has read.** The reviewers
   upstream read this branch as it stood before this rebase. Put the resolution
-  through `hcb-dev:multi-review`, narrowed to the files it touched, and carry what
-  comes back through Step 4's fix loop. Where that review cannot run, Step 5 waits
-  on the user and the report names the gap — never a silent merge.
+  through `hcb-dev:multi-review` — unnarrowed, since a narrowing is what sends the
+  security review to `n/a` — then fix what it rates Critical or Important and push,
+  before the PR opens, so Step 4's budget stays on the failures the diff caused.
+  Where that review cannot run, or a finding of that weight stays open, it is the
+  Autonomy model's stop below: ask before merging, whatever authorization was
+  threaded in.
 - After a successful rebase, push with `--force-with-lease`.
 - **Exception:** if the branch is shared, do NOT rebase — merge base into the
   branch instead and note why. Shared means anything is built on its current tip:
