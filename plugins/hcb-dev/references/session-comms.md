@@ -10,13 +10,13 @@ or its answer carries is [`order-anatomy.md`](order-anatomy.md) and
 
 ## What survives, and what does not
 
-A live agent name is the name the session registered under: the one a person
-gave it, else one derived from its worktree plus a per-process suffix. The
-suffix and the endpoint behind it belong to the process and die with it — every
-restart and every reboot re-deals them. A title reaches that registry only when
-something renames the session with it, so a session findable by title through
-the host may still be nameless in the live listing — the title stays the address
-the rungs below and every first contact use. What survives: the title, the
+A live agent name is the name the session registered under: its title once
+something renamed the session with it, else one derived from its worktree plus a
+per-process suffix. The suffix and the endpoint behind it belong to the process
+and die with it — every restart and every reboot re-deals them. Short of that
+rename the two names stay apart, so a session findable by title through the host
+is nameless in the live listing — while the title remains the address the rungs
+below and every first contact use. What survives: the title, the
 session id, the worktree path, and anything written to the forge. Address by what survives; resolve what does not
 at the moment of sending.
 
@@ -30,7 +30,7 @@ the stable half of the live one — coin it by the same reference.
 ## The ladder — send by the highest rung that answers
 
 1. **Live name, resolved fresh.** List the live sessions and match on the
-   stable part — the name a person gave, or the worktree prefix. Resolve before
+   stable part — a renamed session's title, or the worktree prefix. Resolve before
    *every* send: an address is the result of a resolution, never something kept
    from last time — not a cached name, not an endpoint, not yesterday's suffix.
    Replying within the same turn may copy the incoming message's sender field;
