@@ -116,8 +116,9 @@ Settle, in one gate:
   value and addressee both. In `request` mode `on-green` is the shown default and
   approving the plan *is* that authorization, threaded down so the run does not
   stop to re-ask; the addressee is the user, unless an order above this session
-  named another. `local` takes no `on-green` — the default-branch merge is
-  separately gated in Phase 2.
+  named another. In `local` mode choosing the mode is the consent and the
+  default is `on-green`, with the default-branch merge separately gated in
+  Phase 2 — so the gate shows it rather than asking again.
 - **Coverage policy** — an **actionable** coverage gap stops the run; this is not
   waivable (a reviewer you did not know would go missing is exactly what the gate
   exists to catch). A structural gap is noted, never blocking.

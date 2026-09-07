@@ -64,10 +64,10 @@ names what runs instead>. <Plus <domain methodology> — mandatory.> <checks> mu
 pass.
 Completion: <mode — for work that lands in the repository; an order that lands
 nothing has none> — settled here, so don't ask.
-Merge authority: <ask — drive it to ready and stop there, putting the
-go-ahead to <whom> | on-green — merge once the required gates pass> — settled
-here too, so don't default it. <Or: this order lands nothing and carries
-none.>
+Merge authority: <ask — drive it to ready and stop there | on-green — merge
+once the required gates pass>, and whatever it or a stop above it leaves to
+decide goes to <whom> — settled here too, both halves, so don't default
+either. <Or: this order lands nothing and carries none.>
 Decide yourself: <forks>. Bring to your user: <forks>. Bring back to the
 session that wrote this order: <forks>.
 

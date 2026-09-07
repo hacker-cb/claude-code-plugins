@@ -2,8 +2,10 @@
 name: github-pr-workflow
 description: >-
   Drive a GitHub pull request from a finished feature branch all the way to a
-  merged PR, looping on CI and Copilot findings until it is mergeable and then —
-  only with the user's explicit go-ahead — merging it. Use this skill whenever the user wants to
+  merged PR, looping on CI and Copilot findings until it is mergeable and then
+  merging it on the authorization it was given — absent one, it stops at ready
+  and asks, and it never merges on its own initiative. Use this skill whenever
+  the user wants to
   "ship", "open a PR", "push this up", "get this merged", "drive the PR",
   "handle the review", "address Copilot comments", or otherwise move committed
   work through the GitHub review-and-merge lifecycle — even if they don't say
@@ -52,13 +54,17 @@ and holds for its go, `ask` puts the question to the addressee and waits.
 
 Where a flow upstream threaded one in (`hcb-dev:shipping-workflow`, or
 `hcb-dev:implementation-workflow`'s planning gate), **that value governs** — it
-is what the user settled, and it outranks anything read out of the words that
-reached this session. Entered directly with nothing threaded, the value comes
-from the user here: `on-green` where their own request said to merge ("merge
-once it's green", "get this merged"), and `ask` otherwise — asking to ship,
-open, drive or handle a PR authorizes none of the merge. Never merge on your own
-initiative, and never widen an authorization you were handed; narrowing one and
-saying you did is always yours.
+is what the user settled, and it outranks whatever the words that *started*
+this run would otherwise say. It does not outrank the user: anything they say
+afterwards narrows or withdraws it, and a "hold on" stops the merge whatever
+was threaded.
+
+Entered directly with nothing threaded, the value comes from the user here:
+`on-green` where their own request spoke of the merge ("merge it", "merge once
+it's green"), and `ask` otherwise — asking to ship, finish, open, drive or
+handle a PR authorizes none of the merge. Never merge on your own initiative,
+and never widen an authorization you were handed; narrowing one and saying you
+did is always yours.
 
 Also stop and ask — the addressee `merge-auth` names, which is the user unless a
 flow upstream named another — when:

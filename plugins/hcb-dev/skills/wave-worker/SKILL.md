@@ -81,8 +81,9 @@ holds, and what it stops is named in the return as the gap it is.
   needs no answer first; the order says which one that is, or the dependency
   graph does.
 - **Statuses at the order's milestones** — a change request opened, where the
-  mode opens one; "green, waiting for the slot" under a `queued` merge authority
-  (the batch then waits for the master's go — green is readiness, not the slot);
+  mode opens one; the readiness report a `queued` merge authority obliges, in
+  the words the order gives it (the batch then waits for the master's go —
+  readiness is not the slot);
   merged by this session or landed without it; the session stuck; a boundary
   change agreed with the master mid-flight — one line each, the first line
   self-contained.

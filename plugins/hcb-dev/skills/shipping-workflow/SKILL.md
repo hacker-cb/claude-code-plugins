@@ -39,10 +39,11 @@ invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-aut
 Standalone, they default — mode and
 `parent` by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md),
-mode ending at `request`, and `merge-auth` at `ask` addressed to the user —
-the words that started this run are not that authorization, however plainly
-they asked to ship. That reference owns the mechanics of completion; steps
-0–6 below are the mode-blind front half. Entered on its own, this session also
+mode ending at `request`, and `merge-auth` off the same ladder, addressed to
+the user: a phrase asking to ship, finish or complete the work settles the
+mode and authorizes no merge, where one about the merge itself does. That
+reference owns the mechanics of completion; steps 0–6 below are the mode-blind
+front half. Entered on its own, this session also
 titles itself — the session, not the branch of step 0 — per
 [`../../references/session-naming.md`](../../references/session-naming.md).
 

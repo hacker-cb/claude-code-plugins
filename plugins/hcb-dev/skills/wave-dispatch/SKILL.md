@@ -37,7 +37,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).
   Narrowing to `queued` is **required** wherever the plan fixes a landing
   order: a seam shared with another batch, a batch standing on another's
-  merge.
+  merge. An epic already at `ask` is **stricter** than `queued` and stays as it
+  is — the landing order is then held by the order this session puts its
+  questions in, never by trading a person's answer for the queue's.
 - **Check what is already out**: a chip still pending for the same batch is
   withdrawn (`dismiss_task`) before a replacement goes up, and a batch already
   running in a session is not chipped again.
@@ -106,11 +108,12 @@ names what runs instead>. <Plus <domain methodology> — mandatory.> <checks> mu
 pass.
 Completion: <mode> — settled here, so don't ask.
 Merge authority: <on-green — merge once the required gates pass | queued — the
-queue decides your turn: report "green, waiting for the slot" to the master and
-hold, green being readiness and not the slot | ask — drive to ready and put the
-go-ahead to the master, which carries it on> — settled here too. The merge is
-yours to take when it comes; narrowing what you were given is yours too,
-widening it never.
+queue decides your turn: report ready to the master ("green, waiting for the
+slot" where a change request is what goes green; "ready, waiting for the slot"
+in local mode) and hold, readiness not being the slot | ask — drive to ready
+and put the go-ahead to the master, which carries it on> — settled here too.
+The merge is yours to take when it comes; narrowing what you were given is
+yours too, widening it never.
 Decide yourself: <forks>. Agree with the master BEFORE building: <forks>.
 Through the master to the user: <forks>.
 
@@ -122,9 +125,9 @@ are not yours>
 Master: <its title>, session id <session-id>. The wave ledger — standing
 constraints included — is <its coordinate; or: local to the master>. On start, confirm
 your composition to it and name your own title and session id. Report status
-when <the milestones — in request mode a change request opens and "green,
-waiting for the slot"; in either mode you land it or it lands without you; you
-are stuck>.
+when <the milestones — in request mode a change request opens; under a queued
+authority, the readiness report above; in either mode you land it or it lands
+without you; you are stuck>.
 Questions go to the master; master unreachable — to your user in chat, and
 keep working on what does not depend on the answer.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker

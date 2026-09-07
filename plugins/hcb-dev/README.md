@@ -127,8 +127,8 @@ form: you paste every one of them yourself.
   Drive a GitHub pull request from a finished branch to a merged PR: rename an
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
-  clean, then merge on the authority it was handed — which by default is none,
-  so it stops at ready and asks — monitor, and report.
+  clean, then merge on the authority it was handed — `ask` by default, so it
+  stops at ready and asks — monitor, and report.
   Discovers the repo's actual merge gates instead of assuming them, and parks the
   run on a platform outage — checking the status feed every half hour — instead of
   fixing a red check the diff never caused. See

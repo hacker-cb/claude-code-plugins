@@ -43,20 +43,26 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
   `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
   the **final** `feature → base` strategy only (*Multi-slice topology* below).
 - `merge-auth` — the merge authorization: a **value** and the **addressee** it
-  names, never one without the other.
-  - `ask` — drive to ready and stop; the addressee decides.
-  - `on-green` — merge once the required gates pass.
-  - `queued` — green is readiness, not the slot: report readiness to the
-    addressee and hold until it says go.
+  names, never one without the other. The three run loosest to strictest, and
+  that order is what *narrow* and *widen* mean below:
+  - `on-green` — merge once the required gates pass. In `local` mode, where
+    nothing goes green, those gates are the project's own checks.
+  - `queued` — readiness is not the slot: report ready to the addressee and
+    hold until it says go.
+  - `ask` — drive to ready and stop; the addressee decides whether it merges
+    at all.
 
   The addressee is named, never read off the session's own role: standalone
   it is the user; under a coordinating session it is that session, which
   carries on to a person whatever
   [`architecture-decisions.md`](architecture-decisions.md) puts there.
-  **Absent reads as `ask` addressed to the user** — the words that started a
-  run authorize nothing here. `local` mode takes no `on-green` (there is no
-  green to merge on), and the default-branch stop below outranks whatever was
-  passed.
+
+  **Absent** reads as `ask` in `request` mode and `on-green` in `local`, where
+  choosing the mode is itself the consent to the merge it names — and the
+  default-branch stop below guards the one merge that consent does not cover.
+  A phrase that started a run settles this only where it speaks of the
+  **merge** ("merge it", "merge once it's green"); one asking for the work to
+  be finished, shipped or driven settles the mode and nothing here.
 
 Completion is **not** handed a `coverage` signal — it runs only *after* the
 coverage gate has passed (an actionable gap already stopped the run upstream, at
@@ -103,7 +109,9 @@ stands:
 - a `local` merge into the default branch, or into a parent that cannot be ruled
   non-default.
 
-Each of them stops where the authorization's own addressee decides.
+Each of them stops where the authorization's own addressee decides — except the
+last, whose addressee is a **person** whatever the authorization named: a
+coordinating session carries that one on rather than answering it.
 
 An authorization is **narrowed** on the way down and never widened: a session
 holding `on-green` may hold the merge back — reporting that it did — and no
@@ -124,8 +132,9 @@ First hit wins:
 
 Only `implementation-workflow` (asks/infers at the gate) and `shipping-workflow`
 (consumes it; owns the standalone fallback) touch mode. Every skill upstream is
-mode-blind. `merge-auth` resolves alongside it, off the same rungs, and its own
-fallback is `ask`.
+mode-blind. `merge-auth` resolves off the same rungs — rung 1 being a phrase
+about the **merge**, never one about finishing the work — and its own fallback
+is the mode-dependent one above.
 
 ## Backend: local — merge into the parent, no forge
 
@@ -171,7 +180,8 @@ Publishing is the escalation offer below, and only by consent.
   conflict surviving that round trip is `parent` moving under the run, not a round
   to repeat — stop and ask.
 - **The default-branch hard-gate.** Merging into a **feature** branch is
-  autonomous. Merging into the **default branch** is the highest-blast-radius
+  autonomous under an `on-green`, and under anything stricter takes what that
+  value says. Merging into the **default branch** is the highest-blast-radius
   action here — an unattended commit on `master`/`main` is not practically
   reversible and bypasses every gate the forge would otherwise enforce — so **stop
   and ask first**, whatever `merge-auth` was passed. Resolve the default offline
