@@ -62,8 +62,8 @@ source of truth for the answer, not this session's conversation.
 
 `hcb-dev:wave-dispatch` — chips for the wave whose gate is clear, every batch
 recorded in the ledger as it is hung. What the dispatch skill owes the batches
-mid-flight — boundary amendments re-issued, batches whose start report never
-came checked on — is part of this role's loop, not a one-time launch step.
+mid-flight — boundary amendments re-issued, a batch that never reported
+checked on — is part of this role's loop, not a one-time launch step.
 
 ## The loop
 

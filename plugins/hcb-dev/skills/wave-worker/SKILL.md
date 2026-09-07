@@ -53,9 +53,9 @@ holds, and what it stops is named in the return as the gap it is.
    be taken in — and everything that came back different from the order: a
    boundary wrong from here, a premise that fell, a fork nobody foresaw. Where
    the master's address had to be guessed, open with the challenge line from
-   `session-comms.md`. Building starts on the send, the gate above having opened
-   first; what waits for the master's answer past that is only what a reported
-   divergence touches.
+   `session-comms.md`. Building starts once that report is sent — no answer
+   awaited, the gate above having opened first — and what does wait for the
+   master's answer is only what a reported divergence touches.
 
 ## While building
 
