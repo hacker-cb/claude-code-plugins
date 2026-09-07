@@ -111,9 +111,8 @@ Settle, in one gate:
   the real choice is the final `feature → base` change request: `merge-commit` to
   keep slice history, `squash` to collapse), filtered for request mode to the
   repo's allowed methods.
-- **Merge authorization** — the `merge-auth` of
-  [`../../references/slice-completion.md`](../../references/slice-completion.md),
-  value and addressee both. In `request` mode `on-green` is the shown default and
+- **Merge authorization** — the `merge-auth` of `slice-completion.md`, value
+  and addressee both. In `request` mode `on-green` is the shown default and
   approving the plan *is* that authorization, threaded down so the run does not
   stop to re-ask; the addressee is the user, unless an order above this session
   named another. In `local` mode choosing the mode is the consent and the

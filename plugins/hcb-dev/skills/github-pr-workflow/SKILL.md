@@ -47,8 +47,7 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
   platform is down, the red check is not yours* below)
 
 **Merging is the one action that is NOT autonomous.** What governs it is
-`merge-auth` — a value and the addressee it names
-([`../../references/slice-completion.md`](../../references/slice-completion.md)):
+`merge-auth` — a value and the addressee it names (`slice-completion.md`):
 `on-green` merges at Step 4's exit, `queued` reports readiness to the addressee
 and holds for its go, `ask` puts the question to the addressee and waits.
 
@@ -67,7 +66,7 @@ flow upstream named another — when:
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it
-- a stop that outranks an authorization applies, Step 2's unreviewed rebase
+- A stop that outranks an authorization applies, Step 2's unreviewed rebase
   resolution among them (`slice-completion.md`)
 
 Each of those stops shows your recommended option **first**, with a one-line
