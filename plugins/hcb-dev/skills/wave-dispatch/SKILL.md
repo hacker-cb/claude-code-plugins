@@ -108,12 +108,13 @@ names what runs instead>. <Plus <domain methodology> — mandatory.> <checks> mu
 pass.
 Completion: <mode> — settled here, so don't ask.
 Merge authority: <on-green — merge once the required gates pass | queued — the
-queue decides your turn: report ready to the master ("green, waiting for the
-slot" where a change request is what goes green; "ready, waiting for the slot"
-in local mode) and hold, readiness not being the slot | ask — drive to ready
-and put the go-ahead to the master, which carries it on> — settled here too.
-The merge is yours to take when it comes; narrowing what you were given is
-yours too, widening it never.
+queue decides your turn: report ready and hold, readiness not being the slot
+("green, waiting for the slot" where a change request is what goes green;
+"ready, waiting for the slot" in local mode) | ask — drive to ready and put the
+go-ahead there>, addressed to the master below, which decides whatever this
+authority or a stop above it leaves open and carries to the user what belongs
+to a person — settled here too, both halves. The merge is yours to take when it
+comes; narrowing what you were given is yours too, widening it never.
 Decide yourself: <forks>. Agree with the master BEFORE building: <forks>.
 Through the master to the user: <forks>.
 
