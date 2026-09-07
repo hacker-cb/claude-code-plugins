@@ -42,7 +42,31 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
 - `merge-strategy` — the shown-and-approved gate default, **mode-dependent**: in
   `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
   the **final** `feature → base` strategy only (*Multi-slice topology* below).
-- `merge-auth` — request only: the gate-captured merge authorization, or absent.
+- `merge-auth` — the merge authorization: a **value** and the **addressee** it
+  names, never one without the other. The three run loosest to strictest, and
+  that order is what *narrow* and *widen* mean below:
+  - `on-green` — merge once the required gates pass. In `local` mode, where
+    nothing goes green, those gates are the project's own checks.
+  - `queued` — readiness is not the slot: report ready to the addressee and
+    hold until it says go.
+  - `ask` — drive to ready and stop; the addressee decides whether it merges
+    at all.
+
+  The addressee is named, never read off the session's own role: standalone
+  it is the user; under a coordinating session it is that session, which
+  carries on to a person whatever
+  [`architecture-decisions.md`](architecture-decisions.md) puts there.
+
+  **Absent** reads as `ask` in `request` mode and `on-green` in `local`, where
+  choosing the mode is itself the consent to the merge it names — and the
+  default-branch stop below guards the one merge that consent does not cover.
+  That fallback is addressed to the **user**, which is why an order or a caller
+  handing work to another session names its addressee outright: fall back there
+  and a batch's question reaches its own user instead of the session running the
+  epic.
+  A phrase that started a run settles this only where it speaks of the
+  **merge** ("merge it", "merge once it's green"); one asking for the work to
+  be finished, shipped or driven settles the mode and nothing here.
 
 Completion is **not** handed a `coverage` signal — it runs only *after* the
 coverage gate has passed (an actionable gap already stopped the run upstream, at
@@ -77,19 +101,62 @@ branch the merge landed, per
 [`branch-retirement.md`](branch-retirement.md); leave the
 tree in a known state; emit a completion record.
 
+## What outranks an authorization
+
+An `on-green` does not fire, and a `queued` go is not taken, while any of these
+stands:
+
+- a rebase resolution past a trivial one that no reviewer has read, or one whose
+  review left a finding of weight open (`github-pr-workflow` Step 2);
+- a `Critical` or `Important` finding still open on the change
+  ([`findings.md`](findings.md));
+- a `local` merge into the default branch, or into a parent that cannot be ruled
+  non-default;
+- an `on-green` in a repository where no enforced gate was confirmed — what goes
+  green there is nothing anyone enforced
+  ([`../skills/github-pr-workflow/references/merge-gates.md`](../skills/github-pr-workflow/references/merge-gates.md)).
+
+Each of them stops where the authorization's own addressee decides — except the
+last, whose addressee is a **person** whatever the authorization named: a
+coordinating session carries that one on rather than answering it.
+
+An authorization is **narrowed** on the way down and never widened: a session
+holding `on-green` may hold the merge back — reporting that it did — and no
+session gives itself a value its caller did not hand it.
+
 ## Mode — resolve, don't assume
 
 First hit wins:
 
 1. **Explicit user phrasing** — "merge locally / no PR / land it in `dev`" →
-   `local`; "ship it / open a PR / get this merged" → `request`.
-2. **The value the planning gate settled** (the orchestrator threads it down).
-3. **Fallback: `request`.** Where nothing said otherwise, finishing means a change
-   request.
+   `local`; "ship it / open a PR / get this merged" → `request`. What such a
+   phrase settles here is the mode; whether it also authorizes the merge is
+   `merge-auth`'s own order below.
+2. **What the invocation carried** — an order's own settlements
+   ([`order-anatomy.md`](order-anatomy.md)), threaded on by whatever received
+   them. A gate downstream shows such a value; it never re-asks it.
+3. **The value the planning gate settled** (the orchestrator threads it down).
+4. **Fallback: `request`.** Where nothing said otherwise, finishing means a
+   change request.
 
 Only `implementation-workflow` (asks/infers at the gate) and `shipping-workflow`
 (consumes it; owns the standalone fallback) touch mode. Every skill upstream is
 mode-blind.
+
+**`merge-auth` resolves by its own order, not this one** — the ladder above puts
+a phrase first, which for an authorization would widen what a caller narrowed:
+
+1. **The value supplied** — carried by the invocation (an order's slot) or
+   threaded by the caller (a planning gate's). Never overridden by the words a
+   run started with.
+2. **A phrase of the user's about the merge itself** — "merge it", "get this
+   merged", "merge once it's green" → `on-green`. One asking for the work to be
+   finished, shipped, opened or driven is not one of these, and settles the mode
+   alone.
+3. **The mode-dependent fallback above.**
+
+A later word from the user lands over all three: it narrows or withdraws what
+any rung gave, and widens nothing.
 
 ## Backend: local — merge into the parent, no forge
 
@@ -135,10 +202,11 @@ Publishing is the escalation offer below, and only by consent.
   conflict surviving that round trip is `parent` moving under the run, not a round
   to repeat — stop and ask.
 - **The default-branch hard-gate.** Merging into a **feature** branch is
-  autonomous. Merging into the **default branch** is the highest-blast-radius
+  autonomous under an `on-green`, and under anything stricter takes what that
+  value says. Merging into the **default branch** is the highest-blast-radius
   action here — an unattended commit on `master`/`main` is not practically
   reversible and bypasses every gate the forge would otherwise enforce — so **stop
-  and ask first**. Resolve the default offline
+  and ask first**, whatever `merge-auth` was passed. Resolve the default offline
   (`base-resolution.md`: `<remote>/HEAD`, verified). Where you **cannot** resolve
   it — no remote at all, or a stale/unverifiable pointer —
   do **not** assume the parent is a feature branch: ask before merging. Erring
@@ -150,10 +218,10 @@ Publishing is the escalation offer below, and only by consent.
 - **After the merge, the offer** — offer, never force, to open a change request on
   the landed work. Accepting it is the consented **exit** from local mode: it
   pushes `parent` and hands to the request backend. The escalated change request
-  carries **no** merge authorization (none was captured at a gate, and
-  merge-on-green is request-only) — it is governed by the driver's own
-  stop-and-ask, not by request-mode auto-merge. **One offer per run**: after a set,
-  it is made once on the whole feature at the end, not once per slice.
+  carries `merge-auth` `ask`, addressed to whoever accepted the offer:
+  accepting it authorizes the change request, never the merge behind it.
+  **One offer per run**: after a set, it is made once on the whole feature at
+  the end, not once per slice.
 
 ## Backend: request — a change request, by forge
 
@@ -182,13 +250,15 @@ Publishing is the escalation offer below, and only by consent.
   Opening it is **all** the inline path does — say so. No review-and-merge loop is
   being driven (no CI/automated-review fix loop, no merge), so nobody who asked to
   "ship it" assumes the change is on its way to merge while it actually sits open.
-- **Merge authorization.** Pass the gate-captured, shown-and-approved `merge-auth`
-  into the driver as its **explicit** authorization — it satisfies the driver's
-  own "the request asked to merge/ship" clause, so the driver does not stop to
-  re-ask. Where `merge-auth` is **absent** — standalone completion, or the user
-  declined it — the driver keeps its own stop-and-ask: it drives to "ready to
-  merge" and waits. Completion never invents authorization the gate did not
-  capture.
+  An `on-green` or `queued` `merge-auth` goes unspent here for the same reason:
+  name it, and say the change request sits waiting on a merge nobody is driving.
+- **Merge authorization.** Pass `merge-auth` — value and addressee both —
+  into the driver, where it settles what the driver would otherwise decide
+  from the words that started the run: a threaded value **outranks** that
+  clause of its own. `on-green` merges; `queued` drives to ready, reports
+  readiness to the addressee and holds for its go; `ask` drives to ready and
+  puts the question to the addressee. Completion never invents an
+  authorization it was not handed, and never upgrades one it was.
 - **Merge strategy.** Pass `merge-strategy` and let the driver filter it to the
   repo's allowed methods. Which change request it actually governs is the topology
   question below.

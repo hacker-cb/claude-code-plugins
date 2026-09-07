@@ -18,10 +18,14 @@ description: >-
 
 # Shipping workflow
 
-Finished work completes automatically. Do not ask for confirmation; the coverage
-gate below is the one exception in the shared front half — local completion
-(step 7) adds its own, mode-specific: a stop before merging into the default
-branch, and the consent-gated post-merge offer. Work counts as ready once the
+Finished work completes automatically. Do not ask for confirmation **about the
+steps below**; the coverage gate is the one exception in the shared front half,
+and local completion (step 7) adds its own, mode-specific: a stop before merging
+into the default branch, and the consent-gated post-merge offer. **Completing is
+not merging**, and the merge is gated separately: `merge-auth` decides it, and
+in `request` mode its default drives the change request to ready and waits there
+for the addressee — which is not this paragraph's confirmation, but the
+authorization the contract defines. Work counts as ready once the
 change is complete and verified — tests pass, or the behavior is confirmed — and
 the tree is committable.
 
@@ -37,8 +41,11 @@ invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-aut
 Standalone, they default — mode and
 `parent` by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md),
-mode ending at `request`. That reference owns the mechanics of completion; steps
-0–6 below are the mode-blind front half. Entered on its own, this session also
+mode ending at `request`, and `merge-auth` off the same ladder, addressed to
+the user: a phrase asking to ship, finish or complete the work settles the
+mode and authorizes no merge, where one about the merge itself does. That
+reference owns the mechanics of completion; steps 0–6 below are the mode-blind
+front half. Entered on its own, this session also
 titles itself — the session, not the branch of step 0 — per
 [`../../references/session-naming.md`](../../references/session-naming.md).
 
@@ -168,7 +175,8 @@ titles itself — the session, not the branch of step 0 — per
    write;
    `request` hands to the forge's change-request driver
    (`hcb-dev:github-pr-workflow` on GitHub), passing `parent` as the base plus
-   `merge-strategy` and `merge-auth`. Nothing in steps 0–6 changes with the mode.
+   `merge-strategy` and `merge-auth` — the authorization with the addressee it
+   names, never the value alone. Nothing in steps 0–6 changes with the mode.
 
 ## The coverage gate
 

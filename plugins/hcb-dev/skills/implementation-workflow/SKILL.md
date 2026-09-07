@@ -67,7 +67,9 @@ mode once, at the gate, and threads it down; the mechanics live in
   make the edit and hand it to `hcb-dev:shipping-workflow`. The gate is for work
   worth planning; a one-line fix does not earn it. A verdict of anything but
   `current` is never trivial, whatever the edit it implies: it carries a fork,
-  and a fork is the gate.
+  and a fork is the gate. Skipping the gate skips the **asking**, never the
+  **threading**: settlements the invocation carried travel on to
+  `hcb-dev:shipping-workflow` exactly as they arrived.
 
 ## Phase 1 — The planning gate
 
@@ -76,6 +78,13 @@ deciding everything foreseeable at once so Phase 2 has no routine questions left
 Every fork carries a **recommendation shown first**, never a bare question, and a
 project rule that fights good architecture gets flagged — see
 [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
+
+**A settlement the invocation carried is shown, not asked.** Where this session
+was started by an order
+([`../../references/order-anatomy.md`](../../references/order-anatomy.md)), its
+completion mode and merge authority arrive settled: display them with the plan
+and act on them. Re-asking re-opens what the order closed. Everything the order
+left open is settled here as usual.
 
 Settle, in one gate:
 
@@ -102,10 +111,13 @@ Settle, in one gate:
   the real choice is the final `feature → base` change request: `merge-commit` to
   keep slice history, `squash` to collapse), filtered for request mode to the
   repo's allowed methods.
-- **Merge authorization** (request only) — merge-on-green as the shown default;
-  approving the plan *is* the explicit authorization, threaded to the driver so
-  the run does not stop to re-ask. Local completion needs none (choosing local is
-  the consent; the default-branch merge is separately gated in Phase 2).
+- **Merge authorization** — the `merge-auth` of `slice-completion.md`, value
+  and addressee both. In `request` mode `on-green` is the shown default and
+  approving the plan *is* that authorization, threaded down so the run does not
+  stop to re-ask; the addressee is the user, unless an order above this session
+  named another. In `local` mode choosing the mode is the consent and the
+  default is `on-green`, with the default-branch merge separately gated in
+  Phase 2 — so the gate shows it rather than asking again.
 - **Coverage policy** — an **actionable** coverage gap stops the run; this is not
   waivable (a reviewer you did not know would go missing is exactly what the gate
   exists to catch). A structural gap is noted, never blocking.
@@ -150,7 +162,7 @@ other):
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
    commit this slice was cut from — only the orchestrator knows it),
-   `merge-strategy` and `merge-auth`.
+   `merge-strategy` and `merge-auth` with the addressee it names.
 
 **Autonomy is "no routine questions", not "never pauses".** The legitimate stops
 remain and are honored — this skill does not waive the downstream skills' own
@@ -179,7 +191,8 @@ land as a whole — and this is where `local` and `request` diverge:
 - **`request`** — the per-slice change requests have stacked on the feature
   branch; now open and drive the final `feature → base` change request through the
   forge driver (`hcb-dev:github-pr-workflow` on GitHub), with the gate's
-  `merge-strategy` and `merge-auth`. This is **completion, not an offer** —
+  `merge-strategy` and `merge-auth`, addressee included. This is **completion,
+  not an offer** —
   request mode was chosen, so the integration change request is driven like any
   other, or the set's work is left stranded on the feature branch.
 - **`local`** — the slices are already merged into the feature branch, so there is
