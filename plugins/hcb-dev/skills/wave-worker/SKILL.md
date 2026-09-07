@@ -23,7 +23,9 @@ the return takes the shape of
 [`../../references/order-return.md`](../../references/order-return.md). The
 workflow the order names runs with the order's settlements threaded in — the
 `Completion:` and `Merge authority:` slots are the invocation's completion
-mode and merge authority, and no gate inside re-defaults them — and it runs in
+mode and merge authority, and no gate inside re-defaults them; the master is
+the addressee that authority names, so an `ask` goes there rather than to this
+session's user, and a readiness report goes there too — and it runs in
 full: where this session admits subagents only on the user's or a skill's ask,
 the order is that ask, for its review across every reviewer and for the
 subagents its skills ask for; a project rule that forbids them outright still
@@ -79,9 +81,8 @@ holds, and what it stops is named in the return as the gap it is.
   needs no answer first; the order says which one that is, or the dependency
   graph does.
 - **Statuses at the order's milestones** — a change request opened, where the
-  mode opens one; "green, waiting for the slot" where the order gives the merge
-  to the queue (the batch then waits for the master's go — green is readiness,
-  not the slot);
+  mode opens one; "green, waiting for the slot" under a `queued` merge authority
+  (the batch then waits for the master's go — green is readiness, not the slot);
   merged by this session or landed without it; the session stuck; a boundary
   change agreed with the master mid-flight — one line each, the first line
   self-contained.

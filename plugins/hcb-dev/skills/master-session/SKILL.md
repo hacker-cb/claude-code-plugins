@@ -46,6 +46,13 @@ closing table. The launch waits for their word on the table; the click that
 starts each chip is a second, separate gate — approval of the plan is not
 permission to hang chips for gated waves early.
 
+**The epic's merge authority is settled with that same word**, once, before the
+first chip goes up — `on-green` recommended first
+([`../../references/slice-completion.md`](../../references/slice-completion.md)),
+its reason being that every gate guarding that merge has run by the time it is
+reached. It is written to the ledger before anything is hung, narrowed per batch
+where the plan fixes a landing order, and never widened.
+
 A fork too heavy for the plan — a design question whose answer rewrites the
 work — is a batch of its own: it leads the table and launches with the first
 wave, and the dependent batches are planned behind its gate. The tracker is the
@@ -81,12 +88,13 @@ is part of this role's loop, not a one-time launch step.
   whose slot arrived, BEHIND — with the seam owing a rebase — to the batch a
   landing displaced. A queue whose go never reaches its batch is a deadlock,
   not an order. **The merge itself is never this session's to take** — the batch
-  takes it, and everything its own completion owes behind it.
+  takes it, and everything its own completion owes behind it. A batch holding an
+  `ask` reaches the user through this session, its recommendation first, and the
+  answer travels back down as that batch's go.
   Each landing is checked against the gates: a wave whose gate
-  just cleared goes back to Launching. Where the plan fixes a landing order,
-  the orders themselves withhold merge-on-green — their `Merge authority:`
-  slot says the queue decides, and a batch's "green, waiting for the slot" is
-  what advances it.
+  just cleared goes back to Launching. What advances the queue is a batch's
+  "green, waiting for the slot", the report a `queued` authority obliges it to
+  send (`hcb-dev:wave-dispatch`).
 - **A landing that happened without this session's go still reaches its batch
   first** — a request merged from outside the queue, by another session or by
   the user. The

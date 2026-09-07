@@ -127,7 +127,8 @@ form: you paste every one of them yourself.
   Drive a GitHub pull request from a finished branch to a merged PR: rename an
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
-  clean, then — only on your explicit go-ahead — merge, monitor, and report.
+  clean, then merge on the authority it was handed — which by default is none,
+  so it stops at ready and asks — monitor, and report.
   Discovers the repo's actual merge gates instead of assuming them, and parks the
   run on a platform outage — checking the status feed every half hour — instead of
   fixing a red check the diff never caused. See
@@ -185,7 +186,8 @@ wave is the set of batches launched together once its gate clears.
   The coordinating role itself: assume it on assignment (title the session per
   `references/session-naming.md`, file the umbrella where none exists, open the
   wave ledger on the epic), draw the split per `references/wave-planning.md` and
-  get the user's word on the table, launch through `wave-dispatch`, then run the
+  get the user's word on the table — the epic's merge authority settled with
+  it — launch through `wave-dispatch`, then run the
   loop — answering batch questions only after re-verifying against the tree,
   accepting returns against the ledger's standing constraints, and opening each
   wave as its gate clears. Never takes a merge itself — that is the batch's, and

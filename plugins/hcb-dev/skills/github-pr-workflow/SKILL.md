@@ -44,22 +44,31 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 - Parking the run on a platform outage and resuming when it clears (see *When the
   platform is down, the red check is not yours* below)
 
-**Merging is the one action that is NOT autonomous.** Merge only when the user has
-explicitly authorized it — either their request itself asked to merge/ship (e.g.
-"ship it", "get this merged", "merge once it's green"), the captured user-approved
-`merge-auth` was threaded in from an upstream flow (`hcb-dev:shipping-workflow`, or
-`hcb-dev:implementation-workflow`'s planning gate), or they say yes when you ask.
-If they only asked to open or drive the PR, take it to Step 4's exit and then stop
-and ask (see Step 5). Never merge on your own initiative.
+**Merging is the one action that is NOT autonomous.** What governs it is
+`merge-auth` — a value and the addressee it names
+([`../../references/slice-completion.md`](../../references/slice-completion.md)):
+`on-green` merges at Step 4's exit, `queued` reports readiness to the addressee
+and holds for its go, `ask` puts the question to the addressee and waits.
 
-Also stop and ask the user when:
+Where a flow upstream threaded one in (`hcb-dev:shipping-workflow`, or
+`hcb-dev:implementation-workflow`'s planning gate), **that value governs** — it
+is what the user settled, and it outranks anything read out of the words that
+reached this session. Entered directly with nothing threaded, the value comes
+from the user here: `on-green` where their own request said to merge ("merge
+once it's green", "get this merged"), and `ask` otherwise — asking to ship,
+open, drive or handle a PR authorizes none of the merge. Never merge on your own
+initiative, and never widen an authorization you were handed; narrowing one and
+saying you did is always yours.
+
+Also stop and ask — the addressee `merge-auth` names, which is the user unless a
+flow upstream named another — when:
 - The required gates will not go green within Step 4's iteration budget
 - A Critical/Important finding requires a product/design decision you can't make
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it
-- Step 2's rebase resolution went unreviewed, or left a finding of weight open —
-  this stop outranks any `merge-auth` threaded in
+- any of the stops that outrank an authorization stands, Step 2's unreviewed
+  rebase resolution among them (`slice-completion.md`)
 
 Each of those stops shows your recommended option **first**, with a one-line
 reason grounded in the code **and the constraints** — half these stops turn on
@@ -327,15 +336,17 @@ severity classification only decides what you *fix*, never when you're *done*.
 
 ## Step 5 — Merge (only with explicit authorization)
 
-Merging is gated on explicit user permission — see the Autonomy model. Once Step 4's
-exit is met:
+Merging is gated on `merge-auth` — see the Autonomy model. Once Step 4's exit is
+met, the value decides:
 
-- **If the user already authorized the merge** — their request asked to merge/ship
-  ("ship it", "get this merged", "merge when green"), or they've since said go
-  ahead — merge now.
-- **Otherwise, stop here.** Report that the PR is ready to merge (all required
-  gates satisfied) and ask for an explicit go-ahead. Do not merge until they
-  confirm.
+- **`on-green`** — merge now.
+- **`queued`** — report readiness to the addressee in the words it waits for
+  ("green, waiting for the slot"), and hold. Green is readiness, not the slot:
+  the merge is yours to take, on that addressee's go, and nothing here passes it
+  to anyone else.
+- **`ask`** — report that the PR is ready to merge (all required gates
+  satisfied) and put the go-ahead to the addressee, with your recommendation
+  first. Do not merge until it comes back.
 
 Choose the strategy — a `merge-strategy` threaded in from the planning gate wins
 if one was passed (the user's shown-and-approved choice), always **filtered to the

@@ -32,7 +32,9 @@ ledger is local to the master, and recovery ends at this machine's
 ## What it holds
 
 1. **Header** — the epic, the master's title and session id, the current
-   wave's base pin (`<remote>/<branch>@<sha>`), when last updated.
+   wave's base pin (`<remote>/<branch>@<sha>`), the epic's merge authority as
+   the user settled it ([`slice-completion.md`](slice-completion.md)), when last
+   updated.
 2. **Batches** — one row each: id, topic, issues, the order's ask and terminal
    deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the order's base pin, chip, the
@@ -48,7 +50,8 @@ ledger is local to the master, and recovery ends at this machine's
    change request that must not merge, a foreign stash, a pinned version. A
    return whose claims touch one of these is checked against it before either
    is believed.
-5. **Merge queue and gates** — the order inside the current wave, which batch
+5. **Merge queue and gates** — the order inside the current wave, each batch
+   whose authority the header's policy was narrowed for and why, which batch
    stands at "green, waiting for the slot" (written the moment the report
    arrives — a restart must not lose a batch holding on the queue); each landing
    with whoever took it — its batch, another session, or the user — and what its

@@ -54,6 +54,10 @@ a receiver told only what is known treats the rest as known.
   [`slice-completion.md`](slice-completion.md). Settling it here is what stops
   the receiver's planning gate asking for it; an order that lands nothing in
   the repository states it as none.
+- **The merge authority**, in that same vocabulary — the value *and* the
+  addressee it names, never read off the receiver's own role. Settling it here
+  is what stops the receiver defaulting it to its own user; an order that lands
+  nothing states it as none. The receiver may narrow it and never widen it.
 - **The decision points** — which forks the receiver settles alone and
   narrates, and which come back — each with its addressee: the user, or the
   session that wrote the order
