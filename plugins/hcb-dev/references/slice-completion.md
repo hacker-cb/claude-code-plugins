@@ -60,6 +60,10 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
   **Absent** reads as `ask` in `request` mode and `on-green` in `local`, where
   choosing the mode is itself the consent to the merge it names — and the
   default-branch stop below guards the one merge that consent does not cover.
+  That fallback is addressed to the **user**, which is why an order or a caller
+  handing work to another session names its addressee outright: fall back there
+  and a batch's question reaches its own user instead of the session running the
+  epic.
   A phrase that started a run settles this only where it speaks of the
   **merge** ("merge it", "merge once it's green"); one asking for the work to
   be finished, shipped or driven settles the mode and nothing here.
