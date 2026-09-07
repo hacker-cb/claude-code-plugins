@@ -81,7 +81,9 @@ Work: <the issues, in order — what to take first and why>
 What is settled: <facts with coordinates, each with how it was verified>
 Not checked: <what the master left open, so you do not read it as known>
 
-Start: <now | after <gate> — do not begin before it>
+Start: <now | after <gate> — do not begin before it; it holds the reading
+below as much as the building>. Once it is open, the start report described at
+the end of this order goes out first, and building starts once it has.
 Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. Verify you are in a worktree of your own before the first
 write; where you are not, cut your own worktree from <the base | the branch
@@ -124,13 +126,25 @@ Don't <what would duplicate or undo another batch's work, and the tracks that
 are not yours>
 
 Master: <its title>, session id <session-id>. The wave ledger — standing
-constraints included — is <its coordinate; or: local to the master>. On start, confirm
-your composition to it and name your own title and session id. Report status
-when <the milestones — in request mode a change request opens; under a queued
-authority, the readiness report above; in either mode you land it or it lands
-without you; you are stuck>.
-Questions go to the master; master unreachable — to your user in chat, and
-keep working on what does not depend on the answer.
+constraints included — is <its coordinate; or: local to the master>.
+Before you build, read the whole batch through — this order, its issues on the
+forge in full, the code they name — and send the master your start report: what
+the work turned out to be. Your title and session id, the scope you now read as
+yours — the files and the issues it touches, and what taking it involves — the
+order you will take it in, and everything that came back different from this
+order: a boundary wrong from where you stand, a premise that fell, a fork nobody
+foresaw. Then build: you do not wait for an answer to the report itself, and
+nothing of yours rests on a divergence in it until the master answers that.
+Report status when <the milestones — in request mode a change request opens;
+under a queued authority, the readiness report above; the scope moving off your
+start report; in either mode you land it or it lands without you; you are
+stuck>, each carrying the coordinate that lets the master check it without
+asking back: the change request by number and URL, a landing by its commit, a
+stall by what it waits on.
+Questions go to the master — the forks above, and every architectural one this
+order did not foresee, before your own reading of it goes into the tree; master
+unreachable — to your user in chat, and keep working on what does not depend on
+the answer.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker
 coordinate — the epic, the batch's issues; or: no tracker here — return in
 full to the master>, a short notice to the master. Filing the follow-up issues
@@ -144,8 +158,8 @@ is not free until the master accepts.
   it** — a one-line amendment naming the file and its new owner, sent before
   the asking batch builds on the change. The launch-time order is not the last
   word on a shared file.
-- **A batch that never confirms its composition is unreached**, whatever its
-  chip says — check on it rather than assuming the title made contact.
+- **A batch whose start report never arrives is unreached**, whatever its chip
+  says — check on it rather than assuming the title made contact.
 
 ## When a return arrives
 
