@@ -32,8 +32,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
-- **Settle each batch's merge authority** from the epic's policy, the master's
-  to narrow and never to widen
+- **Settle each batch's merge authority** from the epic's policy — which this
+  session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).
   Narrowing to `queued` is **required** wherever the plan fixes a landing
   order: a seam shared with another batch, a batch standing on another's
