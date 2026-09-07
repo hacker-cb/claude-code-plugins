@@ -10,9 +10,13 @@ verdict then authorizes — a body rewritten, an issue closed, a milestone moved
 is `hcb-dev:issue-tracking`'s, and it waits for the answer of whoever the reading
 session puts it to.
 
-**Anything but `current` is a fork before it is work.** It goes to that person
-with a recommendation, never resolved by building the issue as written and never
-by quietly building something else.
+**Anything but `current` is a fork before it is work.** It goes to that
+addressee with a recommendation, never resolved by building the issue as
+written and never by quietly building something else. **The addressee is named,
+not inferred**: the order that dispatched this work names it, and where no
+order did, it is this session's own user. A session running under a coordinator
+answers to that coordinator, and a person is the addressee only where this
+session answers to one directly.
 
 ## The code the verdict stands on
 
