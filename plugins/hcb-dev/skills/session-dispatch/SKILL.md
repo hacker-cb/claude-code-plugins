@@ -64,12 +64,11 @@ names what runs instead>. <Plus <domain methodology> — mandatory.> <checks> mu
 pass.
 Completion: <mode — for work that lands in the repository; an order that lands
 nothing has none> — settled here, so don't ask.
-Merge authority: <ask — drive it to ready and stop there | queued — report
-ready and hold until you are told the slot is yours | on-green — merge once
-the required gates pass>, addressed to <whom>, who decides whatever this
-authority or a stop above it leaves open — settled here too, both halves
-together, so don't default either. <Or: this order lands nothing and carries
-none.>
+Merge authority: <on-green — merge once the required gates pass | queued —
+report ready and hold until you are told the slot is yours | ask — drive it to
+ready and stop there>, addressed to <whom>, who decides whatever this authority
+or a stop above it leaves open — settled here too, both halves together, so
+don't default either. <Or: this order lands nothing and carries none.>
 Decide yourself: <forks>. Bring to your user: <forks>. Bring back to the
 session that wrote this order: <forks>.
 
