@@ -93,8 +93,10 @@ is part of this role's loop, not a one-time launch step.
   answer travels back down as that batch's go.
   Each landing is checked against the gates: a wave whose gate
   just cleared goes back to Launching. What advances the queue is a batch's
-  "green, waiting for the slot", the report a `queued` authority obliges it to
-  send (`hcb-dev:wave-dispatch`).
+  readiness report, in whichever words its order gave it for the mode it runs
+  in (`hcb-dev:wave-dispatch`). Where the epic stands at `ask` and the plan
+  fixes a landing order, the order is held here: a later batch's question waits
+  until the earlier one has landed, rather than reaching the user beside it.
 - **A landing that happened without this session's go still reaches its batch
   first** — a request merged from outside the queue, by another session or by
   the user. The

@@ -52,19 +52,13 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 `on-green` merges at Step 4's exit, `queued` reports readiness to the addressee
 and holds for its go, `ask` puts the question to the addressee and waits.
 
-Where a flow upstream threaded one in (`hcb-dev:shipping-workflow`, or
-`hcb-dev:implementation-workflow`'s planning gate), **that value governs** — it
-is what the user settled, and it outranks whatever the words that *started*
-this run would otherwise say. It does not outrank the user: anything they say
-afterwards narrows or withdraws it, and a "hold on" stops the merge whatever
-was threaded.
-
-Entered directly with nothing threaded, the value comes from the user here:
-`on-green` where their own request spoke of the merge ("merge it", "merge once
-it's green"), and `ask` otherwise — asking to ship, finish, open, drive or
-handle a PR authorizes none of the merge. Never merge on your own initiative,
-and never widen an authorization you were handed; narrowing one and saying you
-did is always yours.
+Which value governs — one a flow upstream threaded in
+(`hcb-dev:shipping-workflow`, or `hcb-dev:implementation-workflow`'s planning
+gate), one the user's own phrasing settles here, or the fallback — is that
+contract's order to decide, and reading it is how this skill answers the
+question. What is this skill's own: never merge on your own initiative, and
+never widen an authorization you were handed; narrowing one and saying you did
+is always yours.
 
 Also stop and ask — the addressee `merge-auth` names, which is the user unless a
 flow upstream named another — when:

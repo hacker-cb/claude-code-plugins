@@ -52,8 +52,9 @@ ledger is local to the master, and recovery ends at this machine's
    is believed.
 5. **Merge queue and gates** — the order inside the current wave, each batch
    whose authority the header's policy was narrowed for and why, which batch
-   stands at "green, waiting for the slot" (written the moment the report
-   arrives — a restart must not lose a batch holding on the queue); each landing
+   stands ready and waiting for its slot, in either mode (written the moment
+   the report arrives — a restart must not lose a batch holding on the queue);
+   each landing
    with whoever took it — its batch, another session, or the user — and what its
    tail left standing; and what opens each later wave.
 6. **Expectations** — what is awaited from whom: unconfirmed batches, answers

@@ -107,7 +107,10 @@ stands:
 - a `Critical` or `Important` finding still open on the change
   ([`findings.md`](findings.md));
 - a `local` merge into the default branch, or into a parent that cannot be ruled
-  non-default.
+  non-default;
+- an `on-green` in a repository where no enforced gate was confirmed — what goes
+  green there is nothing anyone enforced
+  ([`../skills/github-pr-workflow/references/merge-gates.md`](../skills/github-pr-workflow/references/merge-gates.md)).
 
 Each of them stops where the authorization's own addressee decides — except the
 last, whose addressee is a **person** whatever the authorization named: a
@@ -122,7 +125,9 @@ session gives itself a value its caller did not hand it.
 First hit wins:
 
 1. **Explicit user phrasing** — "merge locally / no PR / land it in `dev`" →
-   `local`; "ship it / open a PR / get this merged" → `request`.
+   `local`; "ship it / open a PR / get this merged" → `request`. What such a
+   phrase settles here is the mode; whether it also authorizes the merge is
+   `merge-auth`'s own order below.
 2. **What the invocation carried** — an order's own settlements
    ([`order-anatomy.md`](order-anatomy.md)), threaded on by whatever received
    them. A gate downstream shows such a value; it never re-asks it.
@@ -132,9 +137,22 @@ First hit wins:
 
 Only `implementation-workflow` (asks/infers at the gate) and `shipping-workflow`
 (consumes it; owns the standalone fallback) touch mode. Every skill upstream is
-mode-blind. `merge-auth` resolves off the same rungs — rung 1 being a phrase
-about the **merge**, never one about finishing the work — and its own fallback
-is the mode-dependent one above.
+mode-blind.
+
+**`merge-auth` resolves by its own order, not this one** — the ladder above puts
+a phrase first, which for an authorization would widen what a caller narrowed:
+
+1. **The value supplied** — carried by the invocation (an order's slot) or
+   threaded by the caller (a planning gate's). Never overridden by the words a
+   run started with.
+2. **A phrase of the user's about the merge itself** — "merge it", "get this
+   merged", "merge once it's green" → `on-green`. One asking for the work to be
+   finished, shipped, opened or driven is not one of these, and settles the mode
+   alone.
+3. **The mode-dependent fallback above.**
+
+A later word from the user lands over all three: it narrows or withdraws what
+any rung gave, and widens nothing.
 
 ## Backend: local — merge into the parent, no forge
 
