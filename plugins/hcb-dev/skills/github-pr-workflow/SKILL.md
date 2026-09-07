@@ -46,8 +46,10 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
 - Parking the run on a platform outage and resuming when it clears (see *When the
   platform is down, the red check is not yours* below)
 
-**Merging is the one action that is NOT autonomous.** What governs it is
-`merge-auth` — a value and the addressee it names (`slice-completion.md`):
+**Merging is the one action this skill never takes on its own authority.** It is
+autonomous exactly as far as the authorization it was handed reaches, and no
+further. What governs it is `merge-auth` — a value and the addressee it names
+(`slice-completion.md`):
 `on-green` merges at Step 4's exit, `queued` reports readiness to the addressee
 and holds for its go, `ask` puts the question to the addressee and waits.
 
