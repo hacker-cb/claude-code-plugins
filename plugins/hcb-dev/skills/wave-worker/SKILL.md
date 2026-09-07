@@ -41,18 +41,21 @@ holds, and what it stops is named in the return as the gap it is.
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip
    carried it here.
-3. **Read the whole batch through before building any of it** — the order, its
-   issues on the forge in full with their comments, and the code they name; the
-   discussion may have moved since the order was written, and the scope is what
-   the tree shows rather than what the order summarised.
+3. **Read the whole batch through before building any of it, and not before the
+   order's `Start:` gate is open** — the order, its issues on the forge in full
+   with their comments, and the code they name; the discussion may have moved
+   since the order was written, the scope is what the tree shows rather than
+   what the order summarised, and a gated batch reads a tree its dependency has
+   not landed on.
 4. **Report that scope to the master, before the first write**: which batch this
    session is, its title and session id, what the work turned out to be — the
    files and the issues it touches, what taking it involves, the order it will
    be taken in — and everything that came back different from the order: a
    boundary wrong from here, a premise that fell, a fork nobody foresaw. Where
    the master's address had to be guessed, open with the challenge line from
-   `session-comms.md`. Building starts on the send; what waits for the master's
-   answer is only what a reported divergence touches.
+   `session-comms.md`. Building starts on the send, the gate above having opened
+   first; what waits for the master's answer past that is only what a reported
+   divergence touches.
 
 ## While building
 

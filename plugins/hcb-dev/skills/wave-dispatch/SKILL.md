@@ -81,9 +81,9 @@ Work: <the issues, in order — what to take first and why>
 What is settled: <facts with coordinates, each with how it was verified>
 Not checked: <what the master left open, so you do not read it as known>
 
-Start: <now | after <gate> — do not begin before it>. Either way the first
-thing you do is the read-and-report to the master below; building starts
-once it has gone out.
+Start: <now | after <gate> — do not begin before it; it holds the reading
+below as much as the building>. Once it is open, the start report described at
+the end of this order goes out first, and building starts once it has.
 Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. Verify you are in a worktree of your own before the first
 write; where you are not, cut your own worktree from <the base | the branch
@@ -128,13 +128,13 @@ are not yours>
 Master: <its title>, session id <session-id>. The wave ledger — standing
 constraints included — is <its coordinate; or: local to the master>.
 Before you build, read the whole batch through — this order, its issues on the
-forge in full, the code they name — and report to the master what the work
-turned out to be: your title and session id, the scope you now read as yours —
-the files and the issues it touches, and what taking it involves — the order
-you will take it in, and everything that came back different from this order: a
-boundary wrong from where you stand, a premise that fell, a fork nobody
-foresaw. Then build — the report is not a gate to wait on; a divergence inside
-it is, and nothing of yours rests on that divergence until the master answers.
+forge in full, the code they name — and send the master your start report: what
+the work turned out to be. Your title and session id, the scope you now read as
+yours — the files and the issues it touches, and what taking it involves — the
+order you will take it in, and everything that came back different from this
+order: a boundary wrong from where you stand, a premise that fell, a fork nobody
+foresaw. Then build: you do not wait for an answer to the report itself, and
+nothing of yours rests on a divergence in it until the master answers that.
 Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
 start report; in either mode you land it or it lands without you; you are
