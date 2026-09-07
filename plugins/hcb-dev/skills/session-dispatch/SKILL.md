@@ -55,7 +55,8 @@ them there.> An issue among them you rule against the code at its own
 coordinates before anything of yours rests on it, and never against what its
 body says: anything short of the issue still being true of the tree — outrun,
 misleading, or not checkable from where you stand — is a premise that did not
-survive, and the fork lines below say where it goes before it is built.
+survive. It goes to <whom> the moment it does, and nothing of yours rests on
+that issue until the answer comes.
 
 Run this through <the process — `/hcb-dev:implementation-workflow` where there
 is something to build, in full: its local review across every reviewer and the
