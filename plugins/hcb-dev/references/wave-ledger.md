@@ -20,11 +20,14 @@ The epic's *body* stays human — the wave table, the progress — and the ledge
 comment is the working state; the two are not copies of each other.
 
 Where the repository has no tracker, the ledger is a file outside every
-checkout: `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hcb-dev/ledgers/<repo>-<epic>.md`,
-its `<epic>` the one fixed here per [`session-naming.md`](session-naming.md).
-The fallback trades both properties away — it is machine-local and invisible
-to the batches — so orders written from one say the ledger is local to the
-master, and recovery ends at this machine's config directory.
+checkout: `$HOME/.claude/hcb-dev/ledgers/<repo>-<epic>.md`, its `<epic>` the
+one fixed here per [`session-naming.md`](session-naming.md). That path is
+`$HOME/.claude` literally, never `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`: a
+master resumed under a different configuration directory must still open the
+ledger its predecessor wrote. The fallback trades both properties away — it is
+machine-local and invisible to the batches — so orders written from one say the
+ledger is local to the master, and recovery ends at this machine's
+`$HOME/.claude`.
 
 ## What it holds
 

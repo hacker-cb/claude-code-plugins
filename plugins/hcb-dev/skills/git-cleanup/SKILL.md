@@ -379,7 +379,7 @@ without asking.
 | `rm -rf` a path outside this repository's worktree directories | resolve it from `worktree list` / the git dir, never from a name |
 | push, or delete a **remote** branch | keep the forge CLI read-only — never merge/close/edit a PR/MR |
 | `git reset`, stage, commit, or edit files | git plumbing and worktree removal only |
-| hardcode `~/.claude` | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` |
+| hardcode `~/.claude` to reach the session registry | `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` — the registry is Claude Code's own state, and it moves with the configuration |
 
 ## Edge cases
 

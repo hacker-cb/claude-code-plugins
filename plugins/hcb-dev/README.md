@@ -359,8 +359,9 @@ Per skill, on top of those:
   messages). The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
   lives in one; without a tracker it falls back to a machine-local file under
-  the user's Claude config directory. All sides need this plugin installed —
-  the orders name `wave-worker` and `implementation-workflow` by identifier.
+  `$HOME/.claude`, the same path under every configuration. All sides need this
+  plugin installed — the orders name `wave-worker` and
+  `implementation-workflow` by identifier.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
   are occupied it also reads Claude Code's live-session registry under
