@@ -67,8 +67,8 @@ flow upstream named another — when:
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it
-- any of the stops that outrank an authorization stands, Step 2's unreviewed
-  rebase resolution among them (`slice-completion.md`)
+- a stop that outranks an authorization applies, Step 2's unreviewed rebase
+  resolution among them (`slice-completion.md`)
 
 Each of those stops shows your recommended option **first**, with a one-line
 reason grounded in the code **and the constraints** — half these stops turn on
