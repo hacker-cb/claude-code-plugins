@@ -199,16 +199,18 @@ wave is the set of batches launched together once its gate clears.
   One chip per batch — title per `references/session-naming.md` (it becomes
   the launched session's title, the name every later message matches on), the
   wave order as the prompt: the slots of `references/order-anatomy.md` plus this
-  batch's boundaries, fork routing, the master's own coordinates, the status
-  milestones and the return protocol. Pins one base per wave, reports blocked
+  batch's boundaries, fork routing, the master's own coordinates, the start
+  report that precedes the build, the status milestones and the return
+  protocol. Pins one base per wave, reports blocked
   batches instead of hanging them, withdraws chips the plan obsoleted, and falls
   back to pasteable fenced orders where chips are unavailable. The click stays
   with you — how many batches run in parallel is your call.
 - **`wave-worker`** — `/hcb-dev:wave-worker`
   The receiving side, governing the engagement around the build: title the
   session with the batch id, re-verify the order's premises before anything rests
-  on them, confirm composition to the master, route "agree first" forks there before
-  building, push statuses at the named milestones, finish a landing even where
+  on them, report the scope it found to the master before the first write, route
+  "agree first" forks there before building, push statuses with their coordinates
+  at the named milestones, finish a landing even where
   another session took it, and close with the return —
   staying engaged until the master accepts. The building itself runs through
   whatever workflow the order names, usually `implementation-workflow`.

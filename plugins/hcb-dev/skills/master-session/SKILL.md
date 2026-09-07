@@ -62,11 +62,16 @@ source of truth for the answer, not this session's conversation.
 
 `hcb-dev:wave-dispatch` — chips for the wave whose gate is clear, every batch
 recorded in the ledger as it is hung. What the dispatch skill owes the batches
-mid-flight — boundary amendments re-issued, unconfirmed batches checked on —
-is part of this role's loop, not a one-time launch step.
+mid-flight — boundary amendments re-issued, batches whose start report never
+came checked on — is part of this role's loop, not a one-time launch step.
 
 ## The loop
 
+- **A batch's start report is checked against the plan as it lands** — a scope
+  read wider or narrower than the batch was drawn, a boundary read differently,
+  a premise it says fell. What diverges is answered ahead of that batch's other
+  traffic, since the batch holds only the work that divergence touches, and the
+  ledger row carries what the answer changed.
 - **A question from a batch is answered after re-verifying, never from
   memory.** Read the code the question is about; where the batch's own
   analysis came along, check it and say which parts held — a confirmation that

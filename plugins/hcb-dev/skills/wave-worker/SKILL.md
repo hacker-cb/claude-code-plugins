@@ -5,9 +5,9 @@ description: >-
   a pasted block — with a batch dispatched by a master session ("Batch … from
   its master session", "волна/батч из мастер-сессии", "act per
   hcb-dev:wave-worker"). Governs the engagement around the build, not the build
-  itself — verifying the order, routing its "agree with the master" forks there
-  before building, and staying engaged through the return until the master
-  accepts. The building runs through whatever
+  itself — verifying the order, reporting the scope it found before it builds,
+  routing its "agree with the master" forks there, and staying engaged through
+  the return until the master accepts. The building runs through whatever
   workflow the order names, usually `hcb-dev:implementation-workflow`. For
   returning a hand-carried single order use `hcb-dev:session-handoff`; a
   session with no master over it has no use for this skill.
@@ -41,12 +41,18 @@ holds, and what it stops is named in the return as the gap it is.
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip
    carried it here.
-3. **Read the order fully, and its issues on the forge in full** — comments
-   included; the discussion may have moved since the order was written.
-4. **Confirm composition to the master**: which batch this session is, its
-   title and session id, what it read the work to be, and any boundary that
-   looks wrong from here. Where the master's address had to be guessed, open
-   with the challenge line from `session-comms.md`.
+3. **Read the whole batch through before building any of it** — the order, its
+   issues on the forge in full with their comments, and the code they name; the
+   discussion may have moved since the order was written, and the scope is what
+   the tree shows rather than what the order summarised.
+4. **Report that scope to the master, before the first write**: which batch this
+   session is, its title and session id, what the work turned out to be — the
+   files and the issues it touches, what taking it involves, the order it will
+   be taken in — and everything that came back different from the order: a
+   boundary wrong from here, a premise that fell, a fork nobody foresaw. Where
+   the master's address had to be guessed, open with the challenge line from
+   `session-comms.md`. Building starts on the send; what waits for the master's
+   answer is only what a reported divergence touches.
 
 ## While building
 
@@ -84,9 +90,11 @@ holds, and what it stops is named in the return as the gap it is.
   mode opens one; the readiness report a `queued` merge authority obliges, in
   the words the order gives it (the batch then waits for the master's go —
   readiness is not the slot);
-  merged by this session or landed without it; the session stuck; a boundary
-  change agreed with the master mid-flight — one line each, the first line
-  self-contained.
+  merged by this session or landed without it; the session stuck; the scope
+  moving off the start report; a boundary change agreed with the master
+  mid-flight — one line each, the first line self-contained, and each carrying
+  the coordinate it is checked at: the change request by number and URL, a
+  landing by its commit, a stall by what it waits on.
 - **A landing this session did not take is still its landing to finish.** Work
   found already landed, in either mode, is never landed a second time: confirm
   the merge, retire the branch per
