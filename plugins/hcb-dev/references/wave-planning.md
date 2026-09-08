@@ -18,9 +18,12 @@ each:
 - **File zones.** Each batch owns a set of files; the map of who owns what is
   written into every order's `Boundaries:`. Two batches may share a *component*
   only with an explicit per-file split, spelled out in both orders — and the
-  seam named as the one place a rebase is expected. Two batches writing the
-  same file, or rewriting the same pass of the same mechanism, are not two
-  batches: that is one batch, sequential inside.
+  seam named as the one place a rebase is expected. Where the base does not
+  require branches current with it, nothing at merge time reads the two sides of
+  a seam together, so give batches sharing one a stated merge order in the wave's
+  gate instead of letting them race. Two batches writing the same file, or
+  rewriting the same pass of the same mechanism, are not two batches: that is one
+  batch, sequential inside.
 - **Dependency edges.** What blocks what, read from the issues and the tree —
   not assumed from titles. A chain with one unblocked vertex is one batch in
   that order, not a wave of three; the blocked remainder waits behind the gate

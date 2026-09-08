@@ -27,7 +27,7 @@ separate `--json isDraft`):
 
 | status | meaning | what to do |
 |---|---|---|
-| `BEHIND` | branch not up to date with base (strict policy) | re-sync (Step 2) |
+| `BEHIND` | branch not up to date with base | where the base requires it, a gate — re-sync (Step 2); where it does not, Step 4's judgement call |
 | `BLOCKED` | a required check, review, or thread resolution is missing (a draft also reads `BLOCKED`) | keep looping (Step 4); if it's a draft, mark ready (Step 3) |
 | `UNSTABLE` | a non-required check is red — GitHub *will* let you merge | don't merge until you confirm it's irrelevant or a known flake (see below) |
 | `DIRTY` | merge conflicts | resolve conflicts |
@@ -43,7 +43,7 @@ none of them are present until you've read them:
 
 | ruleset rule | parameters that matter | what it means for you |
 |---|---|---|
-| `required_status_checks` | `required_status_checks[].context`, `strict_required_status_checks_policy` | every listed context must go green. Treat the names as **opaque** — the repo chooses them, and what any one check stands for is its own business. `strict` additionally means the branch must be current with base (Step 2). |
+| `required_status_checks` | `required_status_checks[].context`, `strict_required_status_checks_policy` | every listed context must go green. Treat the names as **opaque** — the repo chooses them, and what any one check stands for is its own business. `strict` additionally means the branch must be current with base (Step 2) — read it from the per-branch view above, never from a repo-wide assumption: one repo's bases differ, and a base carrying no rule at all answers `false`. Where it is off, no pre-merge signal reads two heads combined; Step 6's watch on the base is what does. |
 | `pull_request` | `required_review_thread_resolution`, `allowed_merge_methods`, `required_approving_review_count`, `dismiss_stale_reviews_on_push` | thread resolution `true` means *every* thread must end resolved, not just the severe ones. Merge methods: pick from the allowed set only (Step 5). Approvals are often 0; if >0, `reviewDecision` reads `REVIEW_REQUIRED` and merge waits on a human. |
 | `copilot_code_review` | `review_on_push`, `review_draft_pull_requests` | Copilot is in this repo's flow — [`copilot.md`](copilot.md) owns what these parameters cost you. |
 | `deletion`, `non_fast_forward` | — | the matched branches can't be deleted or force-pushed. Affects Step 1's rename and Step 6's retirement when they touch a protected ref. |

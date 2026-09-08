@@ -96,13 +96,16 @@ works, in this order:
 
 Plain `git` handles the local branch/rebase/push operations.
 
-## The merge gates belong to the repo — discover them, don't assume
+## The merge gates belong to the base branch — discover them, don't assume
 
 What blocks a merge — required checks, thread resolution, allowed merge methods,
-being current with base — is configured **per repository** and enforced by GitHub.
-**Read the configuration of the repo you're working in**, every time, and never
-carry over what some *other* repo required or what a check was called there. These
-signals already fold in whatever is enforced, by any mechanism:
+being current with base — is configured **per base branch** and enforced by
+GitHub. Two bases of one repository answer differently, and a base no rule names —
+a slice's feature branch — carries none at all, leaving Step 4's bar the only one.
+**Read the configuration of the base this PR targets**, every time, and never
+carry over what another base of the same repo required, what some *other* repo
+required, or what a check was called there. These signals already fold in whatever
+is enforced, by any mechanism:
 
 ```bash
 gh pr checks <pr>                                              # required checks + state
@@ -115,9 +118,11 @@ the repo enforces, and where the repo enforces nothing, becomes the only one.
 `mergeStateStatus` reads `CLEAN` because of that, not because they passed.
 
 [`references/merge-gates.md`](references/merge-gates.md) owns the rest — the rules
-behind those signals, the `mergeStateStatus` values Step 4 routes on, and how to
-tell absent gates from unread ones. **Read it before Step 2**, which is where the
-first of those values is routed on.
+behind those signals, the per-base read that resolves them, the `mergeStateStatus`
+values Step 4 routes on, and how to tell absent gates from unread ones. **Read it
+before Step 2**, which is where the first of those values is routed on. One answer
+from that read — whether this base requires the branch current with it — is routed
+on by Steps 2, 4 and 6 alike, so resolve it there, once.
 
 ## When the platform is down, the red check is not yours
 
@@ -269,10 +274,13 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   a slice is still open against it or already cut from it. Once every slice has
   landed and its PR is closed, the branch is yours again and rebase is the default
   as usual.
-- **Under a strict required-checks policy, being up to date is itself a merge
-  gate:** whenever GitHub reports the branch `BEHIND` (base moved while the PR was
-  open, including right before merge), re-sync again — `gh pr update-branch <pr>`
-  does this server-side without a local rebase.
+- **Whether staying up to date is itself a merge gate is the base's answer, not
+  this step's.** Where the base requires the branch current with it, every later
+  `BEHIND` (base moved while the PR was open, including right before merge) is
+  re-synced until it clears — `gh pr update-branch <pr>` does this server-side
+  without a local rebase. Where it does not, `BEHIND` blocks nothing and a further
+  re-sync is Step 4's call. Either way this step's own rebase stands: what CI
+  reads must be the code that is going to land.
 
 ## Step 3 — Open the PR (if not already open)
 
@@ -297,16 +305,25 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 
 Loop until the PR is **both mergeable by GitHub and clean by your own bar** —
 every required check green and the thread-resolution requirement satisfied, plus —
-always, whatever the repo does or doesn't enforce — CI genuinely green, the branch
-current with base, the PR body describing the head that is about to land
+always, whatever the repo does or doesn't enforce — CI genuinely green, the PR
+body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
 `gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the
 current head** settled — its Critical/Important findings fixed, every comment it
 left answered, and every thread it opened resolved (`references/copilot.md`;
 `references/merge-gates.md`, *When there are no gates, or they can't be
 trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
-merge, your bar decides *readiness*; when they diverge, the stricter one wins. The
-severity classification only decides what you *fix*, never when you're *done*.
+merge, your bar decides *readiness*; when they diverge, the stricter one wins —
+save for the one item below, whose answer is the base's. The severity
+classification only decides what you *fix*, never when you're *done*.
+
+**Being current with base is that item.** Where the base requires it, `BEHIND` is
+a gate: re-sync until it clears. Where it does not, `BEHIND` is a judgement —
+re-sync when what has landed in the base since this branch was cut can break this
+head (the same files or modules, an interface a caller here uses, a migration, a
+dependency), and merge without one when the base moved elsewhere. Neither answer
+is free: a re-sync is a push, which restarts the checks and the review; a skipped
+one that was needed puts the break in the base, where only Step 6 finds it.
 
 1. **Read the live state:** `gh pr checks <pr>` plus
    `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP
@@ -376,14 +393,29 @@ strategy, pick from the allowed set:
 **Merge, and nothing else** — never `--delete-branch`. Both refs retire in Step 6,
 on the confirmed merge.
 
-## Step 6 — Monitor the merge
+## Step 6 — Monitor the merge, then the base
 
 After issuing the merge, confirm it actually landed — what the PR reports decides
 that, never the merge command's exit status:
 - Merge can be queued (merge queue) or blocked by a last-second protection rule.
-- Under a strict policy the base may have moved, flipping the PR to `BEHIND` — run
-  `gh pr update-branch <pr>`, let the required checks re-pass, then merge again.
+- Where the base requires the branch current with it, the base may have moved,
+  flipping the PR to `BEHIND` — run `gh pr update-branch <pr>`, let the required
+  checks re-pass, then merge again.
 - Poll until the PR shows `MERGED`, or report what's blocking it.
+- **On `MERGED`, wait for the base's own checks on the merge commit.** Two heads
+  green apart can be red together, and where the base does not require branches
+  current with it, nothing before this point reads them combined:
+
+  ```bash
+  MERGE_SHA=$(gh pr view <pr> --json mergeCommit --jq '.mergeCommit.oid')
+  gh api "repos/{owner}/{repo}/commits/$MERGE_SHA/check-runs" \
+    --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"'
+  ```
+
+  Poll while any row is unfinished. A red row is **this merge's**, not the next
+  author's: report it in Step 7 and fix it forward on a branch cut from the base,
+  through this skill from Step 1. Where the base does require branches current,
+  this read confirms rather than guards — take it either way.
 - On `MERGED`, retire the branch — both the local ref and the one on the remote —
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
 
