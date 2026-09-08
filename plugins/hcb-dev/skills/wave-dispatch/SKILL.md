@@ -6,9 +6,9 @@ description: >-
   are unavailable. Use when a coordinating (master) session is told to hang
   chips or launch the waves ("повесь чипы", "запусти волны/батчи в сессиях",
   "раздай работу по сессиям"), and when a hung chip goes stale and needs
-  re-issuing or withdrawing. Preflight pins the base and checks each batch's
-  environment blockers; a blocked batch is reported with its unblock condition,
-  never hung. The coordinating role around it is `hcb-dev:master-session`; the
+  re-issuing or withdrawing. Preflight pins the base and checks what holds each
+  batch — an environment blocker, an issue body a survey ruled `needs rewrite`;
+  a held batch is reported with the condition that releases it, never hung. The coordinating role around it is `hcb-dev:master-session`; the
   receiving side of every order it writes is `hcb-dev:wave-worker`. For one
   ad-hoc order pasted by hand use `hcb-dev:session-dispatch`; for work already
   finished that another session receives, `hcb-dev:session-handoff`.
@@ -35,6 +35,11 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
+- **Check the bodies each batch stands on**: an issue ruled `needs rewrite`
+  ([`../../references/issue-currency.md`](../../references/issue-currency.md))
+  whose body still says otherwise holds its batch exactly as the blocker above
+  does — **not hung**, reported with that rewrite as the condition that releases
+  it. Nothing else releases it, a verdict carried in the order included.
 - **Settle each batch's merge authority** from the epic's policy — which this
   session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).

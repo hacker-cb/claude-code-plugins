@@ -8,7 +8,7 @@ description: >-
   when the user asks to study, re-check or lay out the backlog as a whole —
   "изучи все issues", "раздели по важности", "что брать в работу", "разложи
   бэклог", "перепроверь все issues вехи/метки" — and before an epic is split
-  into waves when no survey exists yet. Report-first: tracker hygiene it
+  into waves when no survey exists yet. Report-first: every tracker edit it
   proposes (bodies to rewrite, issues to close, milestones to move) executes
   only on the user's word, item by item through `hcb-dev:issue-tracking`.
   Not for one issue's mechanics (`hcb-dev:issue-tracking`); the ask to split
@@ -77,20 +77,30 @@ In this order, each section explicit even when empty:
    sequential).
 4. **The parallel layout** — candidate batches in the columns of
    `wave-planning.md`'s closing table, what must not run in parallel with its
-   reason, and the gates the dependencies imply.
+   reason, and the gates the dependencies imply. What a verdict past `current`
+   does to a batch is said where that batch stands: `needs rewrite` holds it,
+   written beside it with the rewrite that releases it, the way
+   `wave-planning.md` already holds a blocked batch; `stale` takes the issue out
+   of the layout, its closure being the hygiene plan's to propose;
+   `unverifiable` keeps it out of every wave, with that as the reason. What a
+   builder reads is the tracker's body, never this report.
 5. **What to take next** — one recommendation with its rationale and the
    cut to start with, the declared priorities of what it names among its
    reasons where they weigh; alternatives only where the choice genuinely
    turns on what the user wants next.
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
-   plan: bodies to rewrite, issues to close or re-milestone, links to fix.
+   plan: bodies to rewrite, issues to close or re-milestone, links to fix. What
+   a batch above stands on is not filed here; this section holds up nothing.
 
 ## After the report
 
-- **Hygiene executes on the user's word**, item by item through
-  `hcb-dev:issue-tracking` — a survey that silently edits the tracker has
-  outrun its mandate.
+- **Every tracker edit executes on the user's word** — one this report **asks
+  for** where it is handed over, never one it merely displays and waits for —
+  item by item through `hcb-dev:issue-tracking`; a survey that silently edits
+  the tracker has outrun its mandate. What the layout's preconditions change is
+  *when* that word is needed, never whether: they are asked with the layout, and
+  a batch runs once its own is settled.
 - **The parallel layout is the wave plan's input** — it already carries the
   closing-table columns as candidates. When the user says to run them, the
   session assumes `hcb-dev:master-session` — or hands the table to the session
