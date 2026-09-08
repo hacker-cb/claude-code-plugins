@@ -464,11 +464,18 @@ that, never the merge command's exit status:
   state of each, against its own repository where it lives in another:
 
   ```bash
-  gh pr view <pr> --json closingIssuesReferences \
-    --jq '.closingIssuesReferences[] | "\(.repository.owner.login)/\(.repository.name) \(.number)"' |
-  while read -r ISSUE_REPO ISSUE_NUM; do
-    gh issue view "$ISSUE_NUM" --repo "$ISSUE_REPO" --json state,url --jq '"\(.state)\t\(.url)"'
-  done
+  # Captured, never piped into the loop: a call that failed and a body the forge
+  # parsed nothing out of both arrive as no rows, and the two take different steps.
+  ISSUES="$(gh pr view <pr> --json closingIssuesReferences \
+    --jq '.closingIssuesReferences[] | "\(.repository.owner.login)/\(.repository.name) \(.number)"')" \
+    || { echo "CANNOT READ the closing references — settle the issues by hand"; exit 1; }
+  if [ -z "$ISSUES" ]; then
+    echo "the forge parsed no closing reference out of this body"
+  else
+    printf '%s\n' "$ISSUES" | while read -r ISSUE_REPO ISSUE_NUM; do
+      gh issue view "$ISSUE_NUM" --repo "$ISSUE_REPO" --json state,url --jq '"\(.state)\t\(.url)"'
+    done
+  fi
   ```
 
   That list is what the forge parsed out of the body, not what the work settles —
