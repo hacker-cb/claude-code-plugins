@@ -38,11 +38,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check the bodies each batch stands on**: an issue ruled `needs rewrite`
   ([`../../references/issue-currency.md`](../../references/issue-currency.md))
   whose body still says otherwise holds its batch exactly as the blocker above
-  does — **not hung**, reported with the rewrite as the condition that releases
-  it. Carrying the verdict in the order instead releases nothing: the receiver
-  rules that issue itself, and a verdict past `current` is a fallen premise
-  there (`hcb-dev:wave-worker`), so the batch stops on the round this session
-  had already been through.
+  does — **not hung**, reported with that rewrite as the condition that releases
+  it. Nothing else releases it, a verdict carried in the order included.
 - **Settle each batch's merge authority** from the epic's policy — which this
   session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).
