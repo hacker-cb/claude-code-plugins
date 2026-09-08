@@ -497,16 +497,22 @@ that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 
 Then give the user a short report:
 
-1. **Additional findings from this session**, grouped by category (e.g.
+1. **Copilot's verdict on the head that merged** — the state its review of that
+   head actually carries, and the effort level each of its runs reported.
+   `references/copilot.md` owns where both are read from, what an unread level
+   means, and what this line says when that head carries no review at all or more
+   than one — including the case where the reference ruled Copilot out of this
+   repo's flow, which is said here instead of a verdict.
+2. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
    lower-severity items you deliberately skipped during the loop. Each goes through
    [`../../references/findings.md`](../../references/findings.md), as
    the late review's findings above do. Where nothing called this driver, this
    report ends the session and that reference says what ends there; under an
    orchestrator it ends a slice, and the run's own report is the end.
-2. **Issues this PR was to close**, at the state Step 6 read — closed, or still
+3. **Issues this PR was to close**, at the state Step 6 read — closed, or still
    open and what closing one now waits on.
-3. **Suggested next steps** — tech debt to track, tests to add, or related work
+4. **Suggested next steps** — tech debt to track, tests to add, or related work
    that surfaced.
 
 Keep it scannable: short grouped bullets, not an essay.
@@ -514,7 +520,8 @@ Keep it scannable: short grouped bullets, not an essay.
 ## Reference files
 
 - [`references/merge-gates.md`](references/merge-gates.md) — read it before Step 2.
-- [`references/copilot.md`](references/copilot.md) — read it before Step 4.
+- [`references/copilot.md`](references/copilot.md) — read it before Step 4, and
+  again before Step 7.
 - [`references/platform-status.md`](references/platform-status.md) — read it the
   moment a failure does not look like the diff's.
 - [`../../references/findings.md`](../../references/findings.md) — read

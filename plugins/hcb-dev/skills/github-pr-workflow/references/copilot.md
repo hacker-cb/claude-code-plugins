@@ -59,10 +59,9 @@ Copilot on its default branch and nothing at all on a side branch.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
-**The rule requests the review; it does not gate the merge.** Copilot's review
-lands as a `COMMENTED` review: it counts toward no approval requirement and blocks
-nothing by itself. Its findings are therefore *your* bar, not GitHub's — nothing
-external will stop you from finishing while they are unread.
+**The rule requests the review; whether that review gates the merge is settled
+elsewhere** — *What the review lands as* below. The rule's own parameters say
+nothing about it.
 
 A repo may separately mark some status check required that stands in for the
 review. You need not know which, or what it is called: it is just another context
@@ -88,6 +87,53 @@ gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
 
 Only when all three come back empty is Copilot genuinely not part of this repo's
 flow — then skip it and rely on the rest of your bar.
+
+## What the review lands as
+
+A review posts as `COMMENTED` — findings under a state that satisfies no
+requirement and blocks nothing *of itself*, while the threads its inline findings
+open block on their own wherever the base requires them resolved — or as
+`APPROVED`, which counts toward `required_approving_review_count` like a
+teammate's **where this repository lets it count** — two paragraphs down are the
+settings that decide that, and the paths they limit it to. Where they do not,
+`APPROVED` is a state and satisfies nothing. Those are what Copilot writes; the field holds other
+values too, `DISMISSED` above all, which is an approval that *was* one and was
+taken back. Treat anything that is not `APPROVED` as not an approval, and never as
+a decline it did not state.
+
+**One approval is not the verdict.** `reviewDecision` is the aggregate over every
+reviewer and every requirement: it stays `REVIEW_REQUIRED` with Copilot's approval
+already in when the base wants a second one or a code owner's, and it is empty
+where the base requires no approvals at all. So read the review's `state` for what
+*this reviewer* did, and `reviewDecision` for where the *pull request* stands —
+neither answers the other's question.
+
+**The body's verdict is not the review's state.** Every Copilot review opens with
+an approval *assessment* — a line saying whether it considers the PR ready to
+approve — and a review carrying the most favourable such line still lands
+`COMMENTED` when it did not actually approve. Route on `.state`; the assessment is
+prose to read, never a signal to act on.
+
+Whether Copilot may approve at all, whether its approval counts toward the merge
+requirements, and which changed paths it may count for are repository settings
+(mirrored at the organization and enterprise level) that the `copilot_code_review`
+rule does not carry — its parameters govern requesting the review, not approving
+it. So predict nothing from configuration — read what actually posted.
+
+**A push dismisses Copilot's approval exactly where it dismisses a human's** —
+under `dismiss_stale_reviews_on_push`, and not otherwise. Where that is on, a repo
+counting approvals reports `BLOCKED` after each fix until a fresh one lands: a wait
+for the head's review, not a check that went missing. Where it is off, the approval
+of an earlier head survives the push — which says nothing about the commit you are
+now about to merge, and does not settle the aggregate either: under
+`require_last_push_approval` that surviving review stops satisfying the gate and
+`reviewDecision` goes back to `REVIEW_REQUIRED`. Read the field; never infer it
+from this one parameter. Either way what settles the head is the next section,
+never the approval standing.
+
+Neither state settles your own bar. `APPROVED` is not "no findings": an approving
+review can still carry comments, and every one of them is read, answered and
+resolved like any other.
 
 ## Wait for the review of the CURRENT head
 
@@ -172,10 +218,12 @@ After each push:
    the same reason no elapsed time settles anything: while Copilot is still a
    requested reviewer, hold, and say the head review is outstanding.
 
-**Merge only once the head's review has settled.** The repository's own gate cannot
-hold the merge for it — a review of any earlier commit already satisfies the check —
-so a driver that merges on green without this wait merges before the review of what
-it merged, and the findings arrive on a closed pull request where the
+**Merge only once the head's review has settled.** Nothing the repository enforces
+can be relied on to hold the merge for it: a status check standing in for the
+review is already satisfied by a review of any earlier commit, and an approval
+requirement holds only where this repo counts Copilot's approval at all. So a
+driver that merges on green without this wait merges before the review of what it
+merged, and the findings arrive on a closed pull request where the
 thread-resolution rule can no longer block them.
 
 Do this after *every* push, the last one included — its review is the easiest to
@@ -272,3 +320,49 @@ gh api graphql -f query='
   -F threadId=<thread_node_id>
 ```
 Or the equivalent MCP tools if available.
+
+## What the report says about this reviewer
+
+The end-of-session report (main skill Step 7) states the verdict Copilot left **on
+the head that merged** — the state that review actually carries, whichever it is —
+and the effort level each of its runs went at. The verdict is the `state` of the
+review whose `commit_id` is that head, which is why the head is read first: `headRefOid` survives both the merge and
+the deletion of the branch, so this works after Step 6 as well as before it.
+
+```bash
+HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
+# Unset it and every row below reads `head: false` — "no verdict on the merged
+# head", said by a variable that never got a value rather than by the PR.
+[ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — report no verdict"; exit 1; }
+export HEAD_SHA
+gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
+  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
+        | (((.body? // "") | split("\n")
+             # stripped before the line is picked: the label is a table cell or a bold run as often as a bullet
+             | map(gsub("<[^>]*>"; " ") | gsub("\\*"; " "))
+             # per line, anchored: prose naming a level otherwise wins, and a pattern crossing non-word characters walks through the newline into the next line
+             | map(select(test("^[^A-Za-z0-9]*(review )?effort level"; "i")))
+             | last) // "") as $line
+        | {state, head: (.commit_id == env.HEAD_SHA),
+           # `// ""` and not the `?`: capture yields NOTHING here rather than raising, and without it the object is never built — the review vanishes from the report instead of arriving with no level
+           effort: (($line | capture("effort level[^A-Za-z0-9]*(?<v>[A-Za-z][A-Za-z0-9 _-]*)"; "i").v // "")
+                    | gsub("^\\s+|\\s+$"; "")),
+           effort_line: ($line | gsub("^\\s+|\\s+$"; ""))} | @json'
+```
+
+Report the label verbatim, whatever word it holds — the set of levels is GitHub's
+to extend, and a level you translate into a familiar one is a level you invented.
+An empty `effort` beside an empty `effort_line` is a review that named no level;
+an empty one beside a non-empty line is a label this filter could not read — say
+which of the two it was, and never fill in a default for either.
+
+**`head: true` is a row count, not a verdict, and both of its other counts
+happen.** No such row has three causes and they take different steps: a review
+still outstanding — the requested-reviewer state above is what tells that one, and
+after a merge it is the late review the main skill's Step 7 goes back for — a
+request that declined, or a repository Copilot is out of. Report which of the
+three it was; never a verdict borrowed from an earlier head's row.
+Several mean several runs reviewed the same commit, which is what a re-requested
+review buys; the verdict is the last of them — the rows come back in the order
+they were published — and every run still contributes its own effort level to the
+line.
