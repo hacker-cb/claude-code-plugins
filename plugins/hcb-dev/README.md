@@ -128,8 +128,10 @@ form: you paste every one of them yourself.
   auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
   clean, then merge on the authority it was handed — `ask` by default, so it
-  stops at ready and asks — monitor, and report.
-  Discovers the repo's actual merge gates instead of assuming them, and parks the
+  stops at ready and asks — monitor, watch the base's own checks on the merge
+  commit, and report.
+  Discovers the merge gates the base branch actually enforces — two bases of one
+  repo answer differently — instead of assuming them, and parks the
   run on a platform outage — checking the status feed every half hour — instead of
   fixing a red check the diff never caused. See
   [`skills/github-pr-workflow/SKILL.md`](skills/github-pr-workflow/SKILL.md),

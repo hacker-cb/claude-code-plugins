@@ -46,7 +46,10 @@ each:
   red on it and fix, not weaken.
 - The merge order inside a wave is part of the plan: who merges first, who
   rebases on whom across a named seam; two green batches racing CI for the
-  next slot is an acceptable order too — say which rule applies.
+  next slot is an acceptable order too — say which rule applies. Racing stops
+  being one of the choices across a seam whose base does not require branches
+  current with it: nothing at merge time reads the seam's two sides together, so
+  the displaced batch owes its rebase before its own merge, not after.
 - A batch whose environment blocker stands is planned but not launched; the
   blocker and its unhang condition are written beside it.
 
