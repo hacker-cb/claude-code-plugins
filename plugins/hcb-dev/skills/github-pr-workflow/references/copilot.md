@@ -91,8 +91,10 @@ flow — then skip it and rely on the rest of your bar.
 ## What the review lands as
 
 A review posts as `COMMENTED` — findings and nothing else, blocking nothing — or
-as `APPROVED`, which counts toward `required_approving_review_count` exactly as a
-teammate's approval does. Those are what Copilot writes; the field holds other
+as `APPROVED`, which counts toward `required_approving_review_count` like a
+teammate's **where this repository lets it count** — two paragraphs down are the
+settings that decide that, and the paths they limit it to. Where they do not,
+`APPROVED` is a state and satisfies nothing. Those are what Copilot writes; the field holds other
 values too, `DISMISSED` above all, which is an approval that *was* one and was
 taken back. Treat anything that is not `APPROVED` as not an approval, and never as
 a decline it did not state.
@@ -359,3 +361,12 @@ to extend, and a level you translate into a familiar one is a level you invented
 An empty `effort` beside an empty `effort_line` is a review that named no level;
 an empty one beside a non-empty line is a label this filter could not read — say
 which of the two it was, and never fill in a default for either.
+
+**`head: true` is a row count, not a verdict, and both of its other counts
+happen.** No such row means this head has no review of its own — a request that
+declined, or a repository Copilot is out of: report that there is no verdict and
+which of the two it was, never a verdict borrowed from an earlier head's row.
+Several mean several runs reviewed the same commit, which is what a re-requested
+review buys; the verdict is the last of them — the rows come back in the order
+they were published — and every run still contributes its own effort level to the
+line.
