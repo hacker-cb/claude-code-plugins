@@ -12,12 +12,14 @@ or its answer carries is [`order-anatomy.md`](order-anatomy.md) and
 
 A session is addressed by its **name**: the one it set for itself, in the shape
 [`session-naming.md`](session-naming.md) gives, which is what an order and a
-ledger record. Read back what the channels this session can be reached on
-actually show before writing it down — naming this session obliges none of them
-to adopt that name, and
-a host that finds the name already taken renames the session to a variant. Where
-the two differ, the record carries both: the name that survives, and the one
-that reaches.
+ledger record — one name, in one field, wherever a contract has one. Read back
+what the channels this session can be reached on actually show before writing it
+down: naming this session obliges none of them to adopt that name, and a host
+that finds the name already taken renames the session to a variant. Where a
+channel shows something else, that is what resolves the session *in that
+channel* — matched there rather than recorded here, and named in the first
+contact's identity line, so a counterpart matching on the recorded name knows
+what it will find.
 
 No identifier found in a path or in the environment is an address, however much
 it looks like one — an address is what a channel answers when asked about this
@@ -85,7 +87,11 @@ The ladder is how a session is reached, never where a decision is kept.
 Anything that changes what the other side is building — an answer to a fork it
 raised, a form withdrawn, a stop — is written where the work lives (the epic,
 the issue, the change request) **before** it is sent, and the message shrinks to
-a pointer at that record. A decision exists once it can be read at its
+a pointer at that record. Where the work has no such place — a standalone order
+in a repository with no tracker — the decision travels in the message in full
+rather than as a pointer, the sender's own record keeps it, and the receiver is
+told there is no coordinate to re-read: a rule to re-read one it cannot reach is
+worse than none. A decision exists once it can be read at its
 coordinate, not once it was sent: a receiver that never got the pointer finds it
 anyway, and so does one that arrives later, replacing a session that failed.
 
@@ -125,8 +131,9 @@ the two; three things follow, and none of them is optional:
 
 ## Contact hygiene
 
-- **First contact carries identity both ways**: the name you answer to, and
-  which epic or order this concerns. Where the address was not exchanged with
+- **First contact carries identity both ways**: the name you answer to — and
+  what a channel shows you as instead, where it differs from the recorded one —
+  and which epic or order this concerns. Where the address was not exchanged with
   this counterpart — guessed, or matched in a registry — the first line is a
   challenge: "if you are not <who this concerns>, say so and I stop."
 - **The first line of every message is self-contained** — the recipient's human

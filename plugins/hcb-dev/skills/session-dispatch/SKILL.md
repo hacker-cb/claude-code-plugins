@@ -82,8 +82,10 @@ Don't <what not to touch, duplicate, or unwind>
 
 Answering by message rather than by hand: the session that wrote this order is
 <its name>. Check your own name before you start and set it to
-`<tasks | nickname> — <topic>` where the process above left it unset, so it can
-find you. <Or: the answer travels by hand.>
+`<tasks | nickname> — <topic>` where the process above left it unset; then read
+back what the channels you can be reached on show you as, and lead your first
+answer with that — the name you set is not the name a host that already has it
+taken will give you. <Or: the answer travels by hand.>
 
 Last: <returns — answer with these headings, carrying `<tag>` on the first line:
 premises of this order that did not survive; the deliverable in the terms asked;
