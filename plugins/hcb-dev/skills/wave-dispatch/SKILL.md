@@ -29,9 +29,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   [`../../references/base-resolution.md`](../../references/base-resolution.md),
   refresh it, and write the pin as `<remote>/<branch>@<sha>` — one pin, shared
   by every batch of the wave.
-- **Confirm this session's own address resolves** before it goes into the
-  `Master:` slot — a batch cannot tell a wrong id from a silent master
-  ([`../../references/session-comms.md`](../../references/session-comms.md)).
+- **Confirm this session's own address** before it goes into the `Master:`
+  slot: the id the host resolves back to this session, or the title that answers
+  in its place where the host surfaces no id (`session-comms.md`).
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
@@ -147,14 +147,16 @@ stall by what it waits on.
 Questions go to the master — the forks above, and every architectural one this
 order did not foresee, before your own reading of it goes into the tree. An
 answer you are still waiting for parks you and does not stop you: say in one
-line what you are waiting on, end your turn so the answer can reach you at all,
-and keep building what it does not touch — a reversible fork you take on your
-own recommendation, stated to the master, and leave unlanded. Silence is not
-unreachability, and neither is a master shown between turns or a send the
-channel says it is holding: the master is unreachable only when nothing
-resolves it, not its id and not its title. Then the question goes to your user
-as a line you keep working past, never as one that halts you until a person
-answers.
+line what you are waiting on, then end your turn — with a wait armed that wakes
+you again — because an answer reaches you between your turns and never inside
+one. Keep building what the answer does not touch; a fork this order reserved
+stays reserved until the master answers it. Silence is not unreachability, and
+neither is a master shown between turns or a send the channel says it is
+holding: the master is unreachable when nothing resolves it — not its id, not
+its title — or when the channel itself refuses to deliver, and so is one whose
+silence outlasts your turns with nothing left to build around it. Then the
+question goes to your user as a line you keep working past, never as one that
+halts you until a person answers.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker
 coordinate — the epic, the batch's issues; or: no tracker here — return in
 full to the master>, a short notice to the master. Filing the follow-up issues

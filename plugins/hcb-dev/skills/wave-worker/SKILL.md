@@ -86,13 +86,15 @@ holds, and what it stops is named in the return as the gap it is.
   return as a candidate — its classification proposed, never applied — and it is
   filed on the confirmation that the order's own text authorizes; what the
   order's own deliverable writes to the tracker is not this rule's business.
-- **A pending question blocks only what depends on it, and of that only what
-  cannot be taken back.** Take the slice that needs no answer first — the order
-  says which one that is, or the dependency graph does. Where the fork the
-  answer settles is reversible, take this session's own recommendation under an
-  assumption stated to the master and leave it unlanded, so the answer costs a
-  revert and not a rebuild; what waits for the answer itself is the landing and
-  anything reaching outside this repository.
+- **A pending question blocks only what depends on it.** Take the slice that
+  needs no answer first — the order says which one that is, or the dependency
+  graph does. A fork the order reserved stays reserved however long the answer
+  takes: what the reservation buys is the master's decision, and building it
+  under an assumption spends that. Where the fork is this session's own to
+  settle and the question was sent for the master's sight rather than its
+  permission, this session's own reading carries the work — stated to the master
+  as the assumption it is, and left unlanded, so an answer that differs costs a
+  revert and not a rebuild.
 - **Statuses at the order's milestones** — a change request opened, where the
   mode opens one; the readiness report a `queued` merge authority obliges, in
   the words the order gives it (the batch then waits for the master's go —
@@ -111,10 +113,9 @@ holds, and what it stops is named in the return as the gap it is.
   Commits the landing did not take are not landed behind it either: they go to
   the master, and into the return as work left undone.
 - **The master silent and the master unreachable are different states**, told
-  apart by `session-comms.md` and never by how long the wait has run: silence
-  is parked for as that reference parks, unreachability is what puts this
-  session on its ladder, and the work depending on neither carries on through
-  both.
+  apart by `session-comms.md` — which also says when a silence stops being
+  parked for and takes the ladder instead. The work depending on neither carries
+  on through both.
 
 ## The return
 

@@ -79,8 +79,8 @@ checked on — is part of this role's loop, not a one-time launch step.
   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
   decides which answers must first go to the user. Every answer carries the
   coordinates that let the batch re-verify it back, and one that changes what
-  a batch is building is among the things that must not be lost — it takes the
-  tracker rung besides the message.
+  a batch is building is among the things that must not be lost — it travels by
+  the tracker rung of `session-comms.md`.
 - **A return is accepted per `order-return.md`** — and checked against the
   ledger's standing constraints besides: a claim that touches one ("that
   request is harmless") is verified in the tree and the tracker before either
