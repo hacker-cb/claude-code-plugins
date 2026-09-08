@@ -101,7 +101,11 @@ checked on — is part of this role's loop, not a one-time launch step.
   backlog already holds
   ([`../../references/findings.md`](../../references/findings.md)); each ends in
   one of that file's outcomes, and a candidate ruled **DROP** is answered with
-  the reason.
+  the reason. The ruling is not the authorization to write: what that file's own
+  rule leaves with the user goes to them, this session's recommendation first.
+  **What is opened is opened here** — a batch accepted on its return is free
+  before this pass runs, so a worker files its own only where the pass ruled its
+  candidates before it was released.
 - **The merge queue is spoken to the batches it moves**: the go to the batch
   whose slot arrived, BEHIND — with the seam owing a rebase — to the batch a
   landing displaced. A queue whose go never reaches its batch is a deadlock,

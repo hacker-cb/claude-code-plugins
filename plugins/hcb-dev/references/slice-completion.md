@@ -81,7 +81,8 @@ of the branch, on each side it stood — gone, or standing with the reason
 `uncovered` (coverage
 gaps carried into the report), `issues` (what became of each issue this slice
 settles — closed, or open with why), `incidental` (surfaced-not-fixed findings,
-severity rated, each with the outcome it ended in), `declined_offer` (local only — a change request the run could have opened
+severity rated, each with its outcome — reached, or proposed where the decision
+sits above the slice), `declined_offer` (local only — a change request the run could have opened
 and the user turned down, recorded so it is not silently dropped), `follow_ups`.
 
 Where no run report follows — a standalone ship, with no orchestrator above this

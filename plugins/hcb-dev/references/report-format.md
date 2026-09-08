@@ -30,7 +30,8 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 4. **Incidental findings, rated by importance.** The items surfaced-but-not-fixed
    during the run (out-of-scope observations, deferred nits, follow-ups), grouped
    by category, rated on the ladder in [`findings.md`](findings.md) and each
-   carrying the outcome it ended in.
+   carrying its outcome — the one it ended in, or the one proposed for it where
+   the decision sits above this run.
    **If there are none, say so explicitly** — "no incidental findings" is a real
    result, and its absence must not read as an omission. Each item worth tracking
    reaches the user as a proposal rather than being listed and left —

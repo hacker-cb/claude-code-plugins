@@ -87,8 +87,10 @@ holds, and what it stops is named in the return as the gap it is.
   return as a candidate — its outcome and its classification proposed, never
   applied, and ranked against this batch's others within whatever budget the
   order set ([`../../references/findings.md`](../../references/findings.md)) — and
-  it is filed on the confirmation that the order's own text authorizes; what the
-  order's own deliverable writes to the tracker is not this rule's business.
+  it is filed on the confirmation that the order's own text authorizes, where that
+  confirmation reaches this session while it is still engaged; one arriving after
+  its release is the ruling session's to file. What the order's own deliverable
+  writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first — the order says which one that is, or the dependency
   graph does. A fork the order reserved stays reserved however long the answer
