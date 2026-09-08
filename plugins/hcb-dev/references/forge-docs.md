@@ -88,6 +88,7 @@ endpoint where the schema carries what REST does not.
 
 | | GitHub | GitLab |
 |---|---|---|
+| whether the tracker is there at all | `has_issues` on [the repository](https://docs.github.com/en/rest/repos/repos.md), `hasIssuesEnabled` through `gh repo view --json` — a boolean either way | `issues_access_level` on [the project](https://docs.gitlab.com/api/projects/index.md) — a string, `enabled` or `private` being a tracker and `disabled` none, so a test for a non-empty one passes on every project; `issues_enabled` beside it is the deprecated boolean |
 | classification beyond labels | [issue types on the org](https://docs.github.com/en/rest/orgs/issue-types.md), [on the repository](https://docs.github.com/en/rest/repos/issue-types.md) — organisation-owned repositories only, one per issue | [configurable work item types](https://docs.gitlab.com/user/work_items/configurable_work_item_types/index.md) — paid tier, configured on the top-level group, no REST surface |
 | hierarchy | [sub-issues REST](https://docs.github.com/en/rest/issues/sub-issues.md) | [epics](https://docs.gitlab.com/user/group/epics/index.md), [work items](https://docs.gitlab.com/user/work_items/index.md), [epics REST](https://docs.gitlab.com/api/epics/index.md) |
 | dependencies | [issue dependencies REST](https://docs.github.com/en/rest/issues/issue-dependencies.md) | [linked issues](https://docs.gitlab.com/user/project/issues/related_issues/index.md), [issue links REST](https://docs.gitlab.com/api/issue_links/index.md) |

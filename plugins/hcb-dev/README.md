@@ -364,9 +364,8 @@ Per skill, on top of those:
   (fenced orders instead of chips, the tracker and the user instead of
   messages). The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
-  lives in one; without a tracker it falls back to a machine-local file under
-  `$HOME/.claude`, the same path under every configuration. All sides need this
-  plugin installed — the orders name `wave-worker` and
+  lives in one, and a repository without a tracker cannot hold the role at all.
+  All sides need this plugin installed — the orders name `wave-worker` and
   `implementation-workflow` by identifier.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees

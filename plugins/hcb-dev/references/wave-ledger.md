@@ -19,15 +19,31 @@ mirrored on both forges.
 The epic's *body* stays human — the wave table, the progress — and the ledger
 comment is the working state; the two are not copies of each other.
 
-Where the repository has no tracker, the ledger is a file outside every
-checkout: `$HOME/.claude/hcb-dev/ledgers/<repo>-<epic>.md`, its `<epic>` the
-one fixed here per [`session-naming.md`](session-naming.md). That path is
-`$HOME/.claude` literally, never `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`: a
-master resumed under a different configuration directory must still open the
-ledger its predecessor wrote. The fallback trades both properties away — it is
-machine-local and invisible to the batches — so orders written from one say the
-ledger is local to the master, and recovery ends at this machine's
-`$HOME/.claude`.
+The comment is the only form the ledger takes, so a tracker is what the role
+stands on: whether the repository has one is established against the forge —
+the field naming it is `forge-docs.md`'s — while the role is being assumed and
+before the epic is settled, never inferred from what the epic looks like. An
+epic with no umbrella issue is an umbrella not yet filed, not a repository
+without a tracker. Where the answer is that there is none — the field says so,
+or no forge answers for the remote at all — the role does not begin, and what
+was established goes to the user in those words.
+
+**One epic, one ledger.** The marker is searched before one is opened, and what
+it finds is edited rather than joined by a second — a later wave of the same
+epic continues the comment its predecessor wrote. Two comments bearing the
+marker are repaired before the next chip goes up: a coordinate resolving to two
+states resolves to neither.
+
+**Only the journal moves out when the ledger outgrows a comment.** The forge's
+cap announces itself by refusing a write, never by a number carried here;
+answer that refusal by moving the journal into comments of its own — marked
+`<!-- wave-journal-<n> -->`, which carries no part of the ledger's own marker,
+so the search above still finds one comment — listed in the ledger, the last of
+them taking new entries. Where the state itself meets the cap with the journal
+already out, what leaves is a closed wave — its batches released, its gates
+spent — archived the same way and listed the same way, and what is still open
+never leaves. Nothing is shortened to fit: a section summarised is a section
+that will be believed in its summarised form.
 
 ## What it holds
 

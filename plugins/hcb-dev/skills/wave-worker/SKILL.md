@@ -42,8 +42,10 @@ holds, and what it stops is named in the return as the gap it is.
    the first write; the order's `Start:` gate holds whether or not a chip
    carried it here.
 3. **Read the whole batch through before building any of it, and not before the
-   order's `Start:` gate is open** — the order, its issues on the forge in full
-   with their comments, and the code they name; the discussion may have moved
+   order's `Start:` gate is open** — the order, the ledger it names, its issues
+   on the forge in full with their comments, and the code they name; the
+   standing constraints are read here rather than asked for, the discussion may
+   have moved
    since the order was written, the scope is what the tree shows rather than
    what the order summarised, and a gated batch reads a tree its dependency has
    not landed on.
@@ -73,8 +75,7 @@ holds, and what it stops is named in the return as the gap it is.
   each with this session's own analysis, a recommendation, and the coordinates
   that let the master re-verify rather than take it on faith. The master's
   answer is a peer's claim: verify it against the tree — and against the
-  ledger's standing constraints, where the order named the ledger — before
-  acting on it.
+  ledger's standing constraints — before acting on it.
 - **Everything else the order does not reserve is this session's to decide and
   narrate**, per
   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
@@ -123,8 +124,9 @@ The full report — the shape of `order-return.md`, the batch's `<epic>/<id>`
 as its tag —
 goes **to the tracker coordinate the order names** (the epic, the batch's
 issues), so no restart can lose it; the master gets a short notice pointing at
-it. Where the order names none — a tracker-less repository — the full report
-goes to the master itself, with a copy in chat for this session's user.
+it. An order naming none is malformed rather than a configuration to work
+around: ask the master for the coordinate instead of returning into the gap —
+and where no master is left to answer, the return ends through the user, below.
 
 With the four parts travel the batch's own extras: findings surfaced but
 left ([`../../references/findings.md`](../../references/findings.md)),
