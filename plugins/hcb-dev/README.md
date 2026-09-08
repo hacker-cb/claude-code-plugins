@@ -201,8 +201,9 @@ wave is the set of batches launched together once its gate clears.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
-  One chip per batch — title per `references/session-naming.md` (it becomes
-  the launched session's title, the name every later message matches on), the
+  One chip per batch — title per `references/session-naming.md` (the launched
+  session is asked to wear it; what later messages match on is what its start
+  report says it answers to), the
   wave order as the prompt: the slots of `references/order-anatomy.md` plus this
   batch's boundaries, fork routing, the master's own coordinates, the start
   report that precedes the build, the status milestones and the return

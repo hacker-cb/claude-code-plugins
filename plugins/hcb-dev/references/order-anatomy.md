@@ -68,13 +68,17 @@ a receiver told only what is known treats the rest as known.
   [`order-return.md`](order-return.md), or a named end state with nothing
   coming back. Where the return travels by message rather than by hand, it
   also carries the address to answer — the name the writing session answers to,
-  in [`session-naming.md`](session-naming.md)'s shape.
+  read back rather than assumed ([`session-comms.md`](session-comms.md)).
+- **The answer's coordinate** — where an answer that changes what the receiver
+  is building will be written, so it is read there rather than waited for in an
+  inbox (`session-comms.md`); never empty, and where the work has no such place
+  the slot says so, and the answer travels in the message instead.
 
 ## The tag
 
 Coin one naming the subject, unique among the orders the writing session has
 out — except in a wave, where the tag is the batch's own `<epic>/<id>`
-(`session-naming.md`) and none is coined. It goes in the
+([`session-naming.md`](session-naming.md)) and none is coined. It goes in the
 first line beside the ask in prose, and into the writing session's own record
 together with the ask and the deliverable expected back.
 

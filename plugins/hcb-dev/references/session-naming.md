@@ -174,9 +174,12 @@ stands there stays.
 
 ## Where these names travel
 
-- **The chip's title is the batch session's title**: a dispatcher writing the
-  batch shape into the chip has titled the receiver, and every later message
-  matches on it.
+- **The chip's title is what the batch session is asked to wear**: a dispatcher
+  writing the batch shape into the chip has titled the receiver, and later
+  messages match on it — until the receiver's own start report says what it
+  answers to, which is what they match on from then on. The two part company
+  where a host hands back a variant, and matching the chip's title after that
+  reaches whoever holds the original ([`session-comms.md`](session-comms.md)).
 - **A worktree a session cuts for itself leads with its title's identifier**
   — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
   would otherwise prefix every batch's name; a hyphen where the title has a
