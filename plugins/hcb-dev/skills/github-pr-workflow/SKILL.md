@@ -437,15 +437,18 @@ that, never the merge command's exit status:
   gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
     --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"'
   # Checks API and the older statuses are separate feeds; an external CI posting only
-  # the latter leaves the call above empty however red it is.
-  gh api --paginate "repos/$REPO/commits/$MERGE_SHA/status" \
-    --jq '.statuses[] | "\(.state)\t\(.context)"'
+  # the latter leaves the call above empty however red it is. This one answers with an
+  # object, so its verdict is the rolled-up `.state` the server computes over every
+  # status — take that, and read `.statuses[]` as detail that a long list may cut off.
+  gh api "repos/$REPO/commits/$MERGE_SHA/status" \
+    --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")'
   ```
 
   Poll while any row is unfinished, on Step 4's budget and its escalation.
   **Nothing returned is not green**: a run registers after the push that triggers
   it, so an empty pair of reads right after the merge is the answer arriving, not
-  the answer. Tell that apart from a base that runs nothing at all by reading the
+  the answer. A rollup of `pending` over zero statuses is that same emptiness and
+  not a run in flight — the rollup says something only beside a non-empty list. Tell that apart from a base that runs nothing at all by reading the
   same two feeds on the commit the base carried *before* this merge — where that
   one has rows, keep polling; where it has none either, say the base is unchecked
   and that this step guaranteed nothing.
