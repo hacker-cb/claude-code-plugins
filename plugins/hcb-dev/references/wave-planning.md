@@ -50,8 +50,9 @@ each:
   being one of the choices across a seam whose base does not require branches
   current with it: nothing at merge time reads the seam's two sides together, so
   the displaced batch owes its rebase before its own merge, not after.
-- A batch whose environment blocker stands is planned but not launched; the
-  blocker and its unhang condition are written beside it.
+- A batch is planned but not launched while anything holds it — an environment
+  blocker, an issue whose body a survey ruled `needs rewrite`; what holds it and
+  the condition that releases it are written beside it.
 
 ## What the plan hands over
 
