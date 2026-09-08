@@ -338,28 +338,17 @@ export HEAD_SHA
 gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         | (((.body? // "") | split("\n")
+             # stripped before the line is picked: the label is a table cell or a bold run as often as a bullet
              | map(gsub("<[^>]*>"; " ") | gsub("\\*"; " "))
+             # per line, anchored: prose naming a level otherwise wins, and a pattern crossing non-word characters walks through the newline into the next line
              | map(select(test("^[^A-Za-z0-9]*(review )?effort level"; "i")))
              | last) // "") as $line
         | {state, head: (.commit_id == env.HEAD_SHA),
+           # `// ""` and not the `?`: capture yields NOTHING here rather than raising, and without it the object is never built — the review vanishes from the report instead of arriving with no level
            effort: (($line | capture("effort level[^A-Za-z0-9]*(?<v>[A-Za-z][A-Za-z0-9 _-]*)"; "i").v // "")
                     | gsub("^\\s+|\\s+$"; "")),
            effort_line: ($line | gsub("^\\s+|\\s+$"; ""))} | @json'
 ```
-
-Three things in that filter are load-bearing, and each fails silently if
-"simplified":
-
-- **`// ""` after `capture`, not the `?`.** A body with no such line makes
-  `capture` yield *nothing at all* rather than raise, so without the alternative
-  the object constructor produces no row — and the review disappears from the
-  report entirely instead of appearing with no level.
-- **The label is matched per line, and only where the line starts with it.** A body
-  discussing effort levels in prose otherwise wins the match ahead of the metadata,
-  and a pattern crossing non-word characters walks straight through `\n` and
-  through markup into whatever follows.
-- **The markup is stripped before the line is chosen**, because the label is a
-  table cell or a bold run as often as a bullet.
 
 Report the label verbatim, whatever word it holds — the set of levels is GitHub's
 to extend, and a level you translate into a familiar one is a level you invented.
