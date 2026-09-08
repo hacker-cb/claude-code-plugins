@@ -17,6 +17,10 @@ change, a bullet for work that came back out of it. What the rewritten body
 asserts about how something is configured is held to
 [`architecture-decisions.md`](architecture-decisions.md) §4.
 
+A rewrite carries the body's machine-read parts across intact, the closing
+keywords above all, each in the forge's own word. Before the merge, read back
+what the forge parsed out of the body rather than what the body appears to say.
+
 A change request whose gates are green and whose body describes something else
 is not ready to merge.
 

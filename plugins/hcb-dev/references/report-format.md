@@ -16,14 +16,18 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    a slice failed or was skipped — says so here plainly; never let a summary read
    as complete when it isn't.
 
-2. **Review coverage, and what stayed uncovered.** Carry the coverage lines from
+2. **The issues the run settles, at their state now** — one line each: closed, or
+   still open and why. A merged slice row does not say what became of the issue
+   behind it.
+
+3. **Review coverage, and what stayed uncovered.** Carry the coverage lines from
    each slice's `multi-review` verbatim — a reviewer that could not run, ran over
    nothing, or ran over the wrong range is a gap, and a structural gap (a
    reviewer's own fixed limitation, which no answer could close) is labelled as
    such so the reader can tell it apart from one still worth closing. If every
    slice was fully covered, say that.
 
-3. **Incidental findings, rated by importance.** The items surfaced-but-not-fixed
+4. **Incidental findings, rated by importance.** The items surfaced-but-not-fixed
    during the run (out-of-scope observations, deferred nits, follow-ups), grouped
    by category and rated on the ladder in [`findings.md`](findings.md).
    **If there are none, say so explicitly** — "no incidental findings" is a real
@@ -31,7 +35,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
    reaches the user as a proposal rather than being listed and left —
    [`findings.md`](findings.md).
 
-4. **Open offers and next steps** — a `declined_offer` (a change request the local
+5. **Open offers and next steps** — a `declined_offer` (a change request the local
    run *could* have opened and the user turned down), follow-up
    issues worth filing, any ref a completion could not retire and why
    ([`branch-retirement.md`](branch-retirement.md)), and a pointer to
@@ -45,6 +49,8 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 | Slice | What | Completion | State |
 |---|---|---|---|
 | <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) | done\|partial\|skipped |
+
+**Issues** — <one line per issue the run settles: closed, or open with why; or "none">
 
 **Coverage** — <per-slice coverage lines; name any gap; "fully covered" if clean>
 
