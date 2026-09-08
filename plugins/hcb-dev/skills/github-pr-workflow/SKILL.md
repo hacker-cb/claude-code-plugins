@@ -460,6 +460,20 @@ that, never the merge command's exit status:
   Step 7 and fix it forward on a branch cut from the base, through this skill from
   Step 1. Where the base does require branches current, this read confirms rather
   than guards — take it either way.
+- **On `MERGED`, check that every issue this PR was to close is closed.** Read the
+  state of each, against its own repository where it lives in another:
+
+  ```bash
+  gh pr view <pr> --json closingIssuesReferences \
+    --jq '.closingIssuesReferences[] | "\(.repository.owner.login)/\(.repository.name) \(.number)"' |
+  while read -r ISSUE_REPO ISSUE_NUM; do
+    gh issue view "$ISSUE_NUM" --repo "$ISSUE_REPO" --json state,url --jq '"\(.state)\t\(.url)"'
+  done
+  ```
+
+  That list is what the forge parsed out of the body, not what the work settles —
+  read it against the issues this PR set out to close. Close what is still open
+  explicitly (`hcb-dev:issue-tracking`); carry into Step 7 what stays open.
 - On `MERGED`, retire the branch — both the local ref and the one on the remote —
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
 
@@ -483,7 +497,9 @@ Then give the user a short report:
    the late review's findings above do. Where nothing called this driver, this
    report ends the session and that reference says what ends there; under an
    orchestrator it ends a slice, and the run's own report is the end.
-2. **Suggested next steps** — tech debt to track, tests to add, or related work
+2. **Issues this PR was to close**, at the state Step 6 read — closed, or still
+   open and what closing one now waits on.
+3. **Suggested next steps** — tech debt to track, tests to add, or related work
    that surfaced.
 
 Keep it scannable: short grouped bullets, not an essay.
