@@ -59,10 +59,9 @@ Copilot on its default branch and nothing at all on a side branch.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
-**The rule requests the review; it does not gate the merge.** Copilot's review
-lands as a `COMMENTED` review: it counts toward no approval requirement and blocks
-nothing by itself. Its findings are therefore *your* bar, not GitHub's — nothing
-external will stop you from finishing while they are unread.
+**The rule requests the review; whether that review gates the merge is settled
+elsewhere** — *What the review lands as* below. The rule's own parameters say
+nothing about it.
 
 A repo may separately mark some status check required that stands in for the
 review. You need not know which, or what it is called: it is just another context
@@ -88,6 +87,35 @@ gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
 
 Only when all three come back empty is Copilot genuinely not part of this repo's
 flow — then skip it and rely on the rest of your bar.
+
+## What the review lands as
+
+Two states, and only the state carries weight: `COMMENTED` — findings and nothing
+else, blocking nothing — or `APPROVED`, which satisfies
+`required_approving_review_count` exactly as a teammate's approval does and turns
+`reviewDecision` into `APPROVED`.
+
+**The body's verdict is not the review's state.** Every Copilot review opens with
+an approval *assessment* — a line saying whether it considers the PR ready to
+approve — and a review carrying the most favourable such line still lands
+`COMMENTED` when it did not actually approve. Route on `.state`; the assessment is
+prose to read, never a signal to act on.
+
+Whether Copilot may approve at all, whether its approval counts toward the merge
+requirements, and which changed paths it may count for are repository settings
+(mirrored at the organization and enterprise level) that the `copilot_code_review`
+rule does not carry — its parameters govern requesting the review, not approving
+it. So predict nothing from configuration: the state that posted, and the
+`reviewDecision` beside it, are the whole answer.
+
+**An approval is dismissed by the next push, exactly as a human one is.** In the
+fix loop every push therefore both re-requests the review and drops the approval
+the previous head had earned, so a repo counting them reports `BLOCKED` until a
+fresh one lands — a wait for the head's review, not a check that went missing.
+
+Neither state settles your own bar. `APPROVED` is not "no findings": an approving
+review can still carry comments, and every one of them is read, answered and
+resolved like any other.
 
 ## Wait for the review of the CURRENT head
 
@@ -172,10 +200,12 @@ After each push:
    the same reason no elapsed time settles anything: while Copilot is still a
    requested reviewer, hold, and say the head review is outstanding.
 
-**Merge only once the head's review has settled.** The repository's own gate cannot
-hold the merge for it — a review of any earlier commit already satisfies the check —
-so a driver that merges on green without this wait merges before the review of what
-it merged, and the findings arrive on a closed pull request where the
+**Merge only once the head's review has settled.** Nothing the repository enforces
+can be relied on to hold the merge for it: a status check standing in for the
+review is already satisfied by a review of any earlier commit, and an approval
+requirement holds only where this repo counts Copilot's approval at all. So a
+driver that merges on green without this wait merges before the review of what it
+merged, and the findings arrive on a closed pull request where the
 thread-resolution rule can no longer block them.
 
 Do this after *every* push, the last one included — its review is the easiest to
@@ -272,3 +302,25 @@ gh api graphql -f query='
   -F threadId=<thread_node_id>
 ```
 Or the equivalent MCP tools if available.
+
+## What the report says about this reviewer
+
+The end-of-session report (main skill Step 7) states the verdict Copilot left on
+the head that merged — approved, or commented — and the effort level each of its
+runs went at. The verdict is the `state` field; the effort level exists **only** as
+a line in the review body, so take both from `/reviews` in one pass:
+
+```bash
+gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
+  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
+        | {state, commit_id,
+           effort: (((.body? // "") | capture("effort level:\\W*(?<v>[^\\n<*]+)"; "i").v? // "") | gsub("^\\s+|\\s+$"; ""))}
+        | @json'
+# `capture` raises on a body with no such line; the `?` is what turns that into the
+# empty string instead of aborting the program on its first unlabelled review.
+```
+
+Report the label verbatim, whatever word it holds — the set of levels is GitHub's
+to extend, and a level you translate into a familiar one is a level you invented.
+An empty `effort` means the review named none: say that, rather than filling in a
+default.
