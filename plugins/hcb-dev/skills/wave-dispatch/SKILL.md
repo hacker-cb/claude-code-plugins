@@ -35,6 +35,12 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
+- **Check the bodies each batch stands on**: where an issue was ruled past
+  `current`
+  ([`../../references/issue-currency.md`](../../references/issue-currency.md))
+  and its body still says otherwise, the chip waits for the rewrite — or the
+  order carries the verdict as a fact with its coordinates, so the batch does
+  not spend its first move re-deriving what this session already knew.
 - **Settle each batch's merge authority** from the epic's policy — which this
   session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).

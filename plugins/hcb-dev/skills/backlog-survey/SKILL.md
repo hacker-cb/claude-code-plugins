@@ -77,20 +77,26 @@ In this order, each section explicit even when empty:
    sequential).
 4. **The parallel layout** — candidate batches in the columns of
    `wave-planning.md`'s closing table, what must not run in parallel with its
-   reason, and the gates the dependencies imply.
+   reason, and the gates the dependencies imply. A batch holding an issue whose
+   verdict came out anything but `current` carries that verdict in its own row,
+   as a precondition of the batch — what a builder reads is the tracker's body,
+   never this report.
 5. **What to take next** — one recommendation with its rationale and the
    cut to start with, the declared priorities of what it names among its
    reasons where they weigh; alternatives only where the choice genuinely
    turns on what the user wants next.
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
-   plan: bodies to rewrite, issues to close or re-milestone, links to fix.
+   plan: bodies to rewrite, issues to close or re-milestone, links to fix. What
+   a batch above stands on is not filed here; this section holds up nothing.
 
 ## After the report
 
-- **Hygiene executes on the user's word**, item by item through
-  `hcb-dev:issue-tracking` — a survey that silently edits the tracker has
-  outrun its mandate.
+- **Hygiene executes on the user's word** — one this report **asks for** where
+  it is handed over, never one it merely displays and waits for — item by item
+  through `hcb-dev:issue-tracking`; a survey that silently edits the tracker has
+  outrun its mandate. A precondition the layout carries is asked with the
+  layout, and settled before the batch it gates runs.
 - **The parallel layout is the wave plan's input** — it already carries the
   closing-table columns as candidates. When the user says to run them, the
   session assumes `hcb-dev:master-session` — or hands the table to the session

@@ -173,8 +173,10 @@ work is **done** — not how the ask is worded.
   tiers of importance beside the priority the tracker declares, the dependency
   graph and critical path, parallel lanes per
   `references/wave-planning.md`, and one recommendation for what to take next.
-  Any tracker hygiene it proposes executes only on your word, item by item
-  through `issue-tracking`. Titles the session by the slice it surveys, per
+  A verdict past current on an issue its lanes hold rides in that lane as the
+  batch's precondition; everything else is tracker hygiene, which it asks you
+  about and executes only on your word, item by item through `issue-tracking`.
+  Titles the session by the slice it surveys, per
   `references/session-naming.md`. Scales by fanning readers out as subagents
   when the slice runs to hundreds; its lanes are the wave plan's input.
 

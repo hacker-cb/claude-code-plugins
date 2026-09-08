@@ -46,7 +46,11 @@ it accepts their returns per
 
 Draw the split per `wave-planning.md` — where no survey of the slice exists
 yet, `hcb-dev:backlog-survey` produces its input first — and hand the user its
-closing table. The launch waits for their word on the table; the click that
+closing table. **The preconditions that table carries go up with it** — a
+batch standing on an issue ruled past `current`
+([`../../references/issue-currency.md`](../../references/issue-currency.md))
+needs that body settled, and the tracker edit settling it runs before the
+batch's chip. The launch waits for their word on the table; the click that
 starts each chip is a second, separate gate — approval of the plan is not
 permission to hang chips for gated waves early.
 
