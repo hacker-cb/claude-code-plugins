@@ -87,9 +87,9 @@ checked on — is part of this role's loop, not a one-time launch step.
   merely echoes is adoption, and
   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
   decides which answers must first go to the user. Every answer carries the
-  coordinates that let the batch re-verify it back, and one that changes what
-  a batch is building is among the things that must not be lost — it travels by
-  the tracker rung of `session-comms.md`.
+  coordinates that let the batch re-verify it back, and one that changes what a
+  batch is building is written at its coordinate before it is sent, the message
+  that follows pointing at that record (`session-comms.md`).
 - **A return is accepted per `order-return.md`** — and checked against the
   ledger's standing constraints besides: a claim that touches one ("that
   request is harmless") is verified in the tree and the tracker before either
@@ -140,13 +140,13 @@ checked on — is part of this role's loop, not a one-time launch step.
 ## After a restart or compaction
 
 The ledger first — the title names the epic, and the epic holds the ledger.
-What it records as the master's title is this session's own: wear it before
+What it records as the master's name is this session's own: wear it before
 anything is sent, since the batches' orders address that name. Then the live
 registry, then a re-introduction to
-every batch still engaged, carrying what first contact carries: the title and
-this session's id, the standing plan, and a status request. Where a new
-session took over the role, the ledger header's master id is corrected before
-anything else is sent. Expectations the ledger lists and the registry cannot
+every batch still engaged, carrying what first contact carries: the name this
+session answers to, the standing plan, and a status request. Where a new session
+took over the role, or this one now answers to another name, the ledger header
+is corrected before anything else is sent. Expectations the ledger lists and the registry cannot
 see are chased by the comms ladder, not assumed dead.
 
 ## Closing the epic

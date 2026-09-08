@@ -50,7 +50,9 @@ holds, and what it stops is named in the return as the gap it is.
    what the order summarised, and a gated batch reads a tree its dependency has
    not landed on.
 4. **Report that scope to the master, before the first write**: which batch this
-   session is, its title and session id, what the work turned out to be — the
+   session is, the name it answers to — read from the channel the master will
+   answer on, never built from what a neighbour's looks like — what the work
+   turned out to be: the
    files and the issues it touches, what taking it involves, the order it will
    be taken in — and everything that came back different from the order: a
    boundary wrong from here, a premise that fell, a fork nobody foresaw. Where
@@ -93,8 +95,11 @@ holds, and what it stops is named in the return as the gap it is.
   writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first — the order says which one that is, or the dependency
-  graph does. A fork the order reserved stays reserved however long the answer
-  takes: what the reservation buys is the master's decision, and building it
+  graph does. Before taking up what does depend on it, read the answer where the
+  master writes it rather than in the inbox alone (`session-comms.md`): a
+  message can be held or dropped, and what that costs is a form built after its
+  answer withdrew it. A fork the order reserved stays reserved however long the
+  answer takes: what the reservation buys is the master's decision, and building it
   under an assumption spends that. Where the fork is this session's own to
   settle and the question was sent for the master's sight rather than its
   permission, this session's own reading carries the work — stated to the master

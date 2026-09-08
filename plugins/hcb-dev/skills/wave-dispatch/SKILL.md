@@ -29,9 +29,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   [`../../references/base-resolution.md`](../../references/base-resolution.md),
   refresh it, and write the pin as `<remote>/<branch>@<sha>` — one pin, shared
   by every batch of the wave.
-- **Confirm this session's own address** before it goes into the `Master:`
-  slot: the id the host resolves back to this session, or the title that answers
-  in its place where the host surfaces no id (`session-comms.md`).
+- **Read this session's own name** — from the channel a batch will answer on,
+  never assumed from what this session set — before it goes into the `Master:`
+  slot (`session-comms.md`).
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
@@ -133,11 +133,11 @@ Done means: <the terminal deliverable>
 Don't <what would duplicate or undo another batch's work, and the tracks that
 are not yours>
 
-Master: <its title>, session id <session-id>. The wave ledger — standing
-constraints included — is <its coordinate>.
+Master: <its name>. The wave ledger — standing constraints included — is
+<its coordinate>, and it carries that name too, should this order's go stale.
 Before you build, read the whole batch through — this order, the ledger, its
 issues on the forge in full, the code they name — and send the master your
-start report: what the work turned out to be. Your title and session id, the
+start report: what the work turned out to be. The name you answer to, the
 scope you now read as yours — the files and the issues it touches, and what
 taking it involves — the
 order you will take it in, and everything that came back different from this
@@ -154,12 +154,13 @@ Questions go to the master — the forks above, and every architectural one this
 order did not foresee, before your own reading of it goes into the tree. An
 answer you are still waiting for parks you and does not stop you: say in one
 line what you are waiting on, then end your turn — with a wait armed that wakes
-you again — because an answer reaches you between your turns and never inside
-one. Keep building what the answer does not touch; a fork this order reserved
-stays reserved until the master answers it. Silence is not unreachability, and
-neither is a master shown between turns or a send the channel says it is
-holding: the master is unreachable when nothing resolves it — not its id, not
-its title — or when the channel itself refuses to deliver, and so is one whose
+you again — because an answer may not reach you until your turn ends, and read
+it where the master records it rather than in your inbox alone. Keep building
+what the answer does not touch; a fork this order reserved stays reserved until
+the master answers it. Silence is not unreachability, and neither is a master
+shown between turns or a send the channel says it is holding: the master is
+unreachable when neither registry resolves it, or when the channel itself
+refuses to deliver, and so is one whose
 silence outlasts your turns with nothing left to build around it. Then the
 question goes to your user as a line you keep working past, never as one that
 halts you until a person answers.
@@ -173,11 +174,12 @@ is not free until the master accepts.
 ## While batches run
 
 - **A boundary renegotiated with one batch is re-issued to every batch sharing
-  it** — a one-line amendment naming the file and its new owner, sent before
-  the asking batch builds on the change. The launch-time order is not the last
+  it** — recorded at the ledger's coordinate, then sent as a one-line amendment
+  naming the file and its new owner, before the asking batch builds on the
+  change. The launch-time order is not the last
   word on a shared file.
 - **A batch whose start report never arrives is unreached**, whatever its chip
-  says — check on it rather than assuming the title made contact.
+  says — check on it rather than assuming the name made contact.
 
 ## When a return arrives
 

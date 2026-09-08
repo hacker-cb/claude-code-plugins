@@ -363,8 +363,8 @@ Per skill, on top of those:
 - **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
   Code's own cross-session tools — the chip tool for launching
   (`spawn_task`/`dismiss_task`, the desktop app's) and, for coordination, the
-  live registry plus whichever message channel the host offers, by live name or
-  by session id; each degrades along its own ladder where a tool is absent
+  live registry plus whichever message channel the host offers, addressed by
+  name; each degrades along its own ladder where a tool is absent
   (fenced orders instead of chips, the tracker and the user instead of
   messages). The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger

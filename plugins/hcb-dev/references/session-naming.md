@@ -12,7 +12,9 @@ change.** A title is an address — sessions resolve each other by it across
 restarts ([`session-comms.md`](session-comms.md)), and the user picks one run
 out of a list of them by it — so what stands first is what a stranger matches
 on, and a name already sent out is not re-coined. The address is the
-identifier, preceded by the role marker where the role has one.
+identifier, preceded by the role marker where the role has one. A name that
+changes regardless — a host renaming a session whose name was taken — is
+announced to whoever already holds the old one (`session-comms.md`).
 
 ## The shapes
 
@@ -54,12 +56,12 @@ Resuming an epic reads it back from the epic the ledger hangs on rather than
 coining it again.
 
 The value is unique inside its repository and nowhere else: two repositories
-can each hold an issue 841, while the live registry spans the machine. A title
-matched there is therefore a candidate, not a destination. What addresses a
-session is its session id, and both sides hand one over early — the order
-carries the master's, the confirmation that opens a batch carries the batch's.
-Until one is in hand, a message on a matched title leads with the challenge
-line (`session-comms.md`) and waits for its answer.
+can each hold an issue 841, while the live registry spans the machine. A name
+matched there is therefore a candidate, not a destination, and both sides hand
+their own over early — the order carries the master's name, the confirmation
+that opens a batch carries the batch's. What settles a matched name is the
+challenge line (`session-comms.md`), which leads the message and waits for its
+answer.
 
 ## `<id>`
 
