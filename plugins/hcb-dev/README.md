@@ -285,9 +285,10 @@ saying something else. Each file opens by saying what it owns.
   gets classified against what the repository itself defines. Read wherever an
   issue is classified or a backlog is read by what its tracker declares.
 - [`references/findings.md`](references/findings.md) — how a finding is rated,
-  whether it is fixed in the work that found it, and what gets proposed
-  otherwise. Read wherever a reviewer, a step or a completion turns something up;
-  the tracker operations themselves stay with `issue-tracking`.
+  whether it is fixed in the work that found it, whether it is worth a tracker
+  entry at all, and the closed list of outcomes one can end in. Read wherever a
+  reviewer, a step or a completion turns something up; the tracker operations
+  themselves stay with `issue-tracking`.
 - [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
   endpoint or a concept name gets resolved on either forge. Read before writing an
   invocation or naming a concept in prose.

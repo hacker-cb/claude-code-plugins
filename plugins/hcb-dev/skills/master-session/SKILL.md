@@ -95,6 +95,13 @@ checked on — is part of this role's loop, not a one-time launch step.
 - **New issues born mid-epic are classified by this session itself**
   (`hcb-dev:issue-tracking`) — a worker's proposed milestone or label is a
   claim to verify, not a decision to adopt.
+- **Candidates for the tracker are ruled cold, and together** — never on the
+  return that carried them. They accumulate in the ledger and are decided in one
+  pass at the close of the round, read against each other and against what the
+  backlog already holds
+  ([`../../references/findings.md`](../../references/findings.md)); each ends in
+  one of that file's outcomes, and a candidate ruled **DROP** is answered with
+  the reason.
 - **The merge queue is spoken to the batches it moves**: the go to the batch
   whose slot arrived, BEHIND — with the seam owing a rebase — to the batch a
   landing displaced. A queue whose go never reaches its batch is a deadlock,
@@ -152,3 +159,4 @@ is that session's to sweep. Write the ledger's closing line.
 - [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+- [`../../references/findings.md`](../../references/findings.md)

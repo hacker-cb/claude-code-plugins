@@ -29,7 +29,8 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 4. **Incidental findings, rated by importance.** The items surfaced-but-not-fixed
    during the run (out-of-scope observations, deferred nits, follow-ups), grouped
-   by category and rated on the ladder in [`findings.md`](findings.md).
+   by category, rated on the ladder in [`findings.md`](findings.md) and each
+   carrying the outcome it ended in.
    **If there are none, say so explicitly** — "no incidental findings" is a real
    result, and its absence must not read as an omission. Each item worth tracking
    reaches the user as a proposal rather than being listed and left —
@@ -54,7 +55,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 **Coverage** — <per-slice coverage lines; name any gap; "fully covered" if clean>
 
-**Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above; or "none">
+**Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above, each with its outcome; or "none">
 
 **Offers & next steps** — <open change-request offers, follow-ups, any ref left standing (local or on the remote), cleanup pointer; or "none">
 ```
