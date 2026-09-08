@@ -44,13 +44,12 @@ Examples: `[master] 841 — UI widgets`,
 ## `<epic>`
 
 The epic issue's number, digits alone: no `#`, since the same value goes into
-a worktree name and into the ledger's file-name fallback. Where the repository
-has no tracker, a short kebab-case nickname for the subject instead.
+a worktree name. An epic always has one — the ledger hangs on an umbrella issue
+([`wave-ledger.md`](wave-ledger.md)) — so a nickname never stands here, whatever
+the work was gathered from.
 
-It is fixed once, when the ledger is opened, and the ledger takes its own
-name from the same value. Resuming an epic reads it back rather than coining
-it again — from the epic the ledger hangs on, or from the name of the ledger
-file where there is no tracker.
+It is fixed once, when the ledger is opened. Resuming an epic reads it back from
+the epic the ledger hangs on rather than coining it again.
 
 The value is unique inside its repository and nowhere else: two repositories
 can each hold an issue 841, while the live registry spans the machine. A title

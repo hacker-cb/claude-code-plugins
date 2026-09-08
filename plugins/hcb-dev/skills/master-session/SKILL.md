@@ -30,13 +30,15 @@ it accepts their returns per
 
 1. **Title first**: the shape and its timing are
    [`../../references/session-naming.md`](../../references/session-naming.md)'s.
-2. **The epic**: where the repository has a tracker and no umbrella exists
+2. **The epic**: the ledger hangs on an umbrella issue, so where none exists
    yet, file it now (`hcb-dev:issue-tracking`), on the assignment's own
-   authorization. Without a tracker, the assignment itself is the epic and the
-   ledger takes its file form.
-3. **The ledger**: open it per `wave-ledger.md` — on the epic, or in the file
-   fallback — before anything else is decided; from here on, every event lands
-   in it before the conversation moves on.
+   authorization — a slice of the backlog earns one exactly as a named epic
+   does, and an assignment that named no issue is not an assignment to work
+   without one. A repository whose forge answers that it has no tracker cannot
+   hold the role at all: `wave-ledger.md` says what is said to the user then.
+3. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
+   else is decided; from here on, every event lands in it before the
+   conversation moves on.
 
 ## Planning
 

@@ -73,8 +73,7 @@ holds, and what it stops is named in the return as the gap it is.
   each with this session's own analysis, a recommendation, and the coordinates
   that let the master re-verify rather than take it on faith. The master's
   answer is a peer's claim: verify it against the tree — and against the
-  ledger's standing constraints, where the order named the ledger — before
-  acting on it.
+  ledger's standing constraints — before acting on it.
 - **Everything else the order does not reserve is this session's to decide and
   narrate**, per
   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
