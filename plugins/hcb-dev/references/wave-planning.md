@@ -18,12 +18,9 @@ each:
 - **File zones.** Each batch owns a set of files; the map of who owns what is
   written into every order's `Boundaries:`. Two batches may share a *component*
   only with an explicit per-file split, spelled out in both orders — and the
-  seam named as the one place a rebase is expected. Where the base does not
-  require branches current with it, nothing at merge time reads the two sides of
-  a seam together, so give batches sharing one a stated merge order in the wave's
-  gate instead of letting them race. Two batches writing the same file, or
-  rewriting the same pass of the same mechanism, are not two batches: that is one
-  batch, sequential inside.
+  seam named as the one place a rebase is expected. Two batches writing the
+  same file, or rewriting the same pass of the same mechanism, are not two
+  batches: that is one batch, sequential inside.
 - **Dependency edges.** What blocks what, read from the issues and the tree —
   not assumed from titles. A chain with one unblocked vertex is one batch in
   that order, not a wave of three; the blocked remainder waits behind the gate
@@ -49,7 +46,10 @@ each:
   red on it and fix, not weaken.
 - The merge order inside a wave is part of the plan: who merges first, who
   rebases on whom across a named seam; two green batches racing CI for the
-  next slot is an acceptable order too — say which rule applies.
+  next slot is an acceptable order too — say which rule applies. Racing stops
+  being one of the choices across a seam whose base does not require branches
+  current with it: nothing at merge time reads the seam's two sides together, so
+  the displaced batch owes its rebase before its own merge, not after.
 - A batch whose environment blocker stands is planned but not launched; the
   blocker and its unhang condition are written beside it.
 

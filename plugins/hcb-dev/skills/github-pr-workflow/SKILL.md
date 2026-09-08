@@ -100,8 +100,10 @@ Plain `git` handles the local branch/rebase/push operations.
 
 What blocks a merge — required checks, thread resolution, allowed merge methods,
 being current with base — is configured **per base branch** and enforced by
-GitHub. Two bases of one repository answer differently, and a base no rule names —
-a slice's feature branch — carries none at all, leaving Step 4's bar the only one.
+GitHub. Two bases of one repository answer differently, and a slice's feature
+branch often carries no rules at all, leaving Step 4's bar the only one — but that
+is a reading, never a presumption: a `feature/**` pattern or an org-level rule on
+every ref covers one just as well.
 **Read the configuration of the base this PR targets**, every time, and never
 carry over what another base of the same repo required, what some *other* repo
 required, or what a check was called there. These signals already fold in whatever
@@ -278,9 +280,10 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   this step's.** Where the base requires the branch current with it, every later
   `BEHIND` (base moved while the PR was open, including right before merge) is
   re-synced until it clears — `gh pr update-branch <pr>` does this server-side
-  without a local rebase. Where it does not, `BEHIND` blocks nothing and a further
-  re-sync is Step 4's call. Either way this step's own rebase stands: what CI
-  reads must be the code that is going to land.
+  without a local rebase. Where it does not, no `BEHIND` is ever reported and a
+  further re-sync is Step 4's call, taken on a drift it measures itself. Either
+  way this step's own rebase stands: what CI reads must be the code that is going
+  to land.
 
 ## Step 3 — Open the PR (if not already open)
 
@@ -318,12 +321,26 @@ save for the one item below, whose answer is the base's. The severity
 classification only decides what you *fix*, never when you're *done*.
 
 **Being current with base is that item.** Where the base requires it, `BEHIND` is
-a gate: re-sync until it clears. Where it does not, `BEHIND` is a judgement —
-re-sync when what has landed in the base since this branch was cut can break this
-head (the same files or modules, an interface a caller here uses, a migration, a
-dependency), and merge without one when the base moved elsewhere. Neither answer
-is free: a re-sync is a push, which restarts the checks and the review; a skipped
-one that was needed puts the break in the base, where only Step 6 finds it.
+a gate: re-sync until it clears. Where it does not, **that enum never arrives** —
+nothing is blocking the merge, so a head sitting well behind its base reads
+`CLEAN` — and routing on it would skip exactly the case this paragraph is for.
+Measure the drift yourself, on the two values Step 2 filled:
+
+```bash
+git fetch -q "$BASE_REMOTE" "+refs/heads/$BASE:refs/remotes/$BASE_REMOTE/$BASE" || \
+  { echo "FETCH FAILED — drift unknown, do not rule the head current"; exit 1; }
+# `HEAD..` is what this head has NOT absorbed, so a Step 2 rebase already moved the
+# line forward: this is the window since the last re-sync, not since the branch was cut.
+git rev-list --count "HEAD..$BASE_REMOTE/$BASE"   # 0 = current
+git diff --name-only "HEAD..$BASE_REMOTE/$BASE"   # what moved, when it is not
+```
+
+A non-zero count is a judgement, not a gate: re-sync when what those paths carry
+can break this head — the same files or modules, an interface a caller here uses,
+a migration, a dependency — and merge without one when the base moved elsewhere.
+Neither answer is free: a re-sync is a push, which restarts the checks and the
+review; a skipped one that was needed puts the break in the base, where only
+Step 6 finds it.
 
 1. **Read the live state:** `gh pr checks <pr>` plus
    `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP
@@ -407,15 +424,36 @@ that, never the merge command's exit status:
   current with it, nothing before this point reads them combined:
 
   ```bash
-  MERGE_SHA=$(gh pr view <pr> --json mergeCommit --jq '.mergeCommit.oid')
-  gh api "repos/{owner}/{repo}/commits/$MERGE_SHA/check-runs" \
+  # The PR's own repo, never gh's default — in a fork checkout that default is the
+  # parent, where this SHA does not exist and every read below 404s into silence.
+  PR_URL=$(gh pr view <pr> --json url --jq '.url')
+  REPO="${PR_URL#https://github.com/}"; REPO="${REPO%%/pull/*}"
+  # Empty until the merge commit is published (a queue, a replica behind) — re-poll,
+  # never read an empty SHA into the paths below.
+  MERGE_SHA=$(gh pr view <pr> --json mergeCommit --jq '.mergeCommit.oid // empty')
+  gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
     --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"'
+  # Checks API and the older statuses are separate feeds; an external CI posting only
+  # the latter leaves the call above empty however red it is.
+  gh api --paginate "repos/$REPO/commits/$MERGE_SHA/status" \
+    --jq '.statuses[] | "\(.state)\t\(.context)"'
   ```
 
-  Poll while any row is unfinished. A red row is **this merge's**, not the next
-  author's: report it in Step 7 and fix it forward on a branch cut from the base,
-  through this skill from Step 1. Where the base does require branches current,
-  this read confirms rather than guards — take it either way.
+  Poll while any row is unfinished, on Step 4's budget and its escalation.
+  **Nothing returned is not green**: a run registers after the push that triggers
+  it, so an empty pair of reads right after the merge is the answer arriving, not
+  the answer. Tell that apart from a base that runs nothing at all by reading the
+  same two feeds on the commit the base carried *before* this merge — where that
+  one has rows, keep polling; where it has none either, say the base is unchecked
+  and that this step guaranteed nothing.
+
+  A red row is attributed before it is owned, the way Step 4 attributes one: red
+  on that previous commit too is not this merge's, and neither is a degraded forge
+  (*When the platform is down, the red check is not yours*) or a known flake.
+  What survives that is **this merge's**, not the next author's — report it in
+  Step 7 and fix it forward on a branch cut from the base, through this skill from
+  Step 1. Where the base does require branches current, this read confirms rather
+  than guards — take it either way.
 - On `MERGED`, retire the branch — both the local ref and the one on the remote —
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
 
