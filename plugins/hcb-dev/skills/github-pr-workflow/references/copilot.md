@@ -124,9 +124,12 @@ it. So predict nothing from configuration — read what actually posted.
 under `dismiss_stale_reviews_on_push`, and not otherwise. Where that is on, a repo
 counting approvals reports `BLOCKED` after each fix until a fresh one lands: a wait
 for the head's review, not a check that went missing. Where it is off, the approval
-of an earlier head survives the push and keeps `reviewDecision` at `APPROVED` —
-which says nothing about the commit you are now about to merge. Either way what
-settles the head is the next section, never the approval standing.
+of an earlier head survives the push — which says nothing about the commit you are
+now about to merge, and does not settle the aggregate either: under
+`require_last_push_approval` that surviving review stops satisfying the gate and
+`reviewDecision` goes back to `REVIEW_REQUIRED`. Read the field; never infer it
+from this one parameter. Either way what settles the head is the next section,
+never the approval standing.
 
 Neither state settles your own bar. `APPROVED` is not "no findings": an approving
 review can still carry comments, and every one of them is read, answered and
@@ -365,9 +368,11 @@ an empty one beside a non-empty line is a label this filter could not read — s
 which of the two it was, and never fill in a default for either.
 
 **`head: true` is a row count, not a verdict, and both of its other counts
-happen.** No such row means this head has no review of its own — a request that
-declined, or a repository Copilot is out of: report that there is no verdict and
-which of the two it was, never a verdict borrowed from an earlier head's row.
+happen.** No such row has three causes and they take different steps: a review
+still outstanding — the requested-reviewer state above is what tells that one, and
+after a merge it is the late review the main skill's Step 7 goes back for — a
+request that declined, or a repository Copilot is out of. Report which of the
+three it was; never a verdict borrowed from an earlier head's row.
 Several mean several runs reviewed the same commit, which is what a re-requested
 review buys; the verdict is the last of them — the rows come back in the order
 they were published — and every run still contributes its own effort level to the
