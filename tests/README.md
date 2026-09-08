@@ -37,6 +37,11 @@ one `key value` per line, paths relative to the repo root:
 | `args` | what every case of this suite is invoked with, before its own `args` column |
 | `env` | a `NAME=value` put in every run's environment; may repeat |
 
+A case's own `NAME=value` word overrides its suite's `env` — that is how one case
+pins a locale of its own. Neither overrides what the runner sets to make the run
+observable (`PATH`, `STUB_ENVELOPE`, `STUB_MARKER_FILE`): those are applied last, so
+a suite cannot walk its own stubs off the search path and stay green.
+
 Anything else is a typo, and the runner says so rather than ignoring it — an unknown
 key, and an `env` that is not `NAME=value` (which `env(1)` would otherwise read as a
 program to run, failing every case of the suite instead of naming the line). `run.sh`

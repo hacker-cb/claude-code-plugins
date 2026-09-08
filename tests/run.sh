@@ -95,7 +95,7 @@ for suite in "${all_suites[@]}"; do
     suite_failure "$suite" "no suite.conf — the directory declares no script to run"
     continue; }
 
-  suite_script="" suite_args="" unknown_key="" bad_env=""
+  suite_script="" suite_args="" unknown_key="" bad_env="" env_bad=0
   suite_env=()
   # `read key value` splits on the first run of whitespace and hands the rest of
   # the line to `value`, so `args` keeps its words and a tab or spaces both work.
@@ -113,10 +113,13 @@ for suite in "${all_suites[@]}"; do
         env_name=${value%%=*}
         case "${value:-}" in
           *=*) case "$env_name" in
-                 ''|[0-9]*|*[!A-Za-z0-9_]*) bad_env="$value" ;;
+                 ''|[0-9]*|*[!A-Za-z0-9_]*) env_bad=1 bad_env="$value" ;;
                  *) suite_env+=("$value") ;;
                esac ;;
-          *) bad_env="${value:-}" ;;
+          # The flag, not the value: a bare `env` line has nothing to quote back, and
+          # storing its empty value would read as "no error" — and would erase the
+          # error a malformed line above it had already recorded.
+          *) env_bad=1 bad_env="${value:-}" ;;
         esac ;;
       # Silently ignoring it would make a typo look like a setting that had no
       # effect — the suite would run, wrongly, and say nothing.
@@ -127,7 +130,7 @@ for suite in "${all_suites[@]}"; do
   [ -z "$unknown_key" ] || {
     suite_failure "$suite" "suite.conf: unknown key '$unknown_key' (known: script, args, env)"
     continue; }
-  [ -z "$bad_env" ] || {
+  [ "$env_bad" = 0 ] || {
     suite_failure "$suite" "suite.conf: env '$bad_env' is not NAME=value"; continue; }
   [ -n "$suite_script" ] || {
     suite_failure "$suite" "suite.conf names no script"; continue; }
@@ -143,7 +146,10 @@ for suite in "${all_suites[@]}"; do
   stubs="$dir/stub"
   stub_count=0 stub_unarmed=""
   for stub in "$stubs"/*; do
-    [ -e "$stub" ] || continue
+    # Regular files only. `[ -x ]` is true of a directory, so a stray `stub/helpers/`
+    # would satisfy the count below while no stand-in engine stood anywhere — and the
+    # `-` cases would then assert their refusal against a `command not found`.
+    [ -f "$stub" ] || continue
     stub_count=$((stub_count + 1))
     # Without the bit, a PATH search skips the stub and finds the real CLI: the
     # suite would then spend an account's quota, take minutes, and answer
@@ -219,9 +225,15 @@ for suite in "${all_suites[@]}"; do
         esac
       done
     fi
-    out=$(env STUB_ENVELOPE="$envelope" STUB_MARKER_FILE="$marker" \
-              PATH="$stubs:$PATH" ${suite_env[@]+"${suite_env[@]}"} \
-              ${stub_env[@]+"${stub_env[@]}"} \
+    # Order is the guard, not a detail. The suite's own env comes first and the
+    # case's next, so a case overrides its suite (that is how a case pins a locale of
+    # its own) — and the three the runner needs come LAST, where neither can reach
+    # them: a suite.conf line setting PATH would walk the stub directory off the
+    # search path, and one setting STUB_MARKER_FILE would leave the marker
+    # witnessing nothing, both while the suite went on reporting green.
+    out=$(env ${suite_env[@]+"${suite_env[@]}"} ${stub_env[@]+"${stub_env[@]}"} \
+              STUB_ENVELOPE="$envelope" STUB_MARKER_FILE="$marker" \
+              PATH="$stubs:$PATH" \
               bash "$script" ${suite_argv[@]+"${suite_argv[@]}"} \
               ${extra[@]+"${extra[@]}"} 2>&1 </dev/null)
     got=$?
@@ -276,23 +288,27 @@ for suite in "${all_suites[@]}"; do
   fi
 done
 
-# "Nothing ran" is only an answer when nothing went wrong either: a suite that failed
-# its setup selects no case, and reporting THAT as an unmatched filter would send the
-# reader looking for a typo in their arguments instead of at the failure above.
-if [ "$selected" = 0 ] && [ "$fail" = 0 ]; then
-  if [ "${#want_names[@]}" -gt 0 ]; then
-    printf '\nno case matched %s — nothing ran\n' "${want_names[*]}"
-  else
-    printf '\nno case to run\n'
-  fi
-  exit 1
-fi
 cases_note=""
 [ "$skipped" = 0 ] || cases_note=", $skipped not selected"
 suites_note=""
 if [ "$suites_skipped" != 0 ]; then
   suites_word="suites"; [ "$suites_skipped" = 1 ] && suites_word="suite"
   suites_note=" ($suites_skipped $suites_word not selected)"
+fi
+
+# "Nothing ran" is only an answer when nothing went wrong either: a suite that failed
+# its setup selects no case, and reporting THAT as an unmatched filter would send the
+# reader looking for a typo in their arguments instead of at the failure above.
+# It carries the suite note too — `--suite x fragment` matching nothing is most often
+# the narrowing, not the fragment, and a reader told only about the fragment goes
+# hunting the wrong one.
+if [ "$selected" = 0 ] && [ "$fail" = 0 ]; then
+  if [ "${#want_names[@]}" -gt 0 ]; then
+    printf '\nno case matched %s — nothing ran%s\n' "${want_names[*]}" "$suites_note"
+  else
+    printf '\nno case to run%s\n' "$suites_note"
+  fi
+  exit 1
 fi
 printf '\n%s passed, %s failed%s%s\n' "$pass" "$fail" "$cases_note" "$suites_note"
 [ "$fail" = 0 ]
