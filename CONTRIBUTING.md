@@ -104,11 +104,13 @@ bash tests/run.sh                # must pass (0 failed)
 CI runs the same structural validation and the same tests, plus the official
 `claude plugin validate`.
 
-The tests cover the review scripts' classification of an engine's result envelope —
-review, failure, or reviewer that could not run — against saved envelopes, with a stub
-standing in for the CLI. They need `jq` and a git checkout, and nothing else: no
-engine, no account, no network. What each case holds is in
-[`tests/README.md`](tests/README.md), which is also where the rule for adding one is.
+The tests are grouped into suites — one directory under `tests/suites/` per script
+under test, holding its cases, its fixtures and the stubs that stand in for the
+commands it shells out to. They cover what must not vary: how a script reads what its
+engine returned and what it therefore tells the caller. They need `jq` and a git
+checkout, and nothing else: no engine, no account, no network. What each case holds,
+and the rules for adding a case or a whole suite, are in
+[`tests/README.md`](tests/README.md).
 
 A pointer to another file in this repo is a markdown link whose path is
 **relative to the file it is written in**. `scripts/validate.sh` takes that as
