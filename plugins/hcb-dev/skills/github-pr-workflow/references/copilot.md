@@ -90,8 +90,10 @@ flow — then skip it and rely on the rest of your bar.
 
 ## What the review lands as
 
-A review posts as `COMMENTED` — findings and nothing else, blocking nothing — or
-as `APPROVED`, which counts toward `required_approving_review_count` like a
+A review posts as `COMMENTED` — findings under a state that satisfies no
+requirement and blocks nothing *of itself*, while the threads its inline findings
+open block on their own wherever the base requires them resolved — or as
+`APPROVED`, which counts toward `required_approving_review_count` like a
 teammate's **where this repository lets it count** — two paragraphs down are the
 settings that decide that, and the paths they limit it to. Where they do not,
 `APPROVED` is a state and satisfies nothing. Those are what Copilot writes; the field holds other
@@ -319,9 +321,9 @@ Or the equivalent MCP tools if available.
 ## What the report says about this reviewer
 
 The end-of-session report (main skill Step 7) states the verdict Copilot left **on
-the head that merged** — approved, or commented — and the effort level each of its
-runs went at. The verdict is the `state` of the review whose `commit_id` is that
-head, which is why the head is read first: `headRefOid` survives both the merge and
+the head that merged** — the state that review actually carries, whichever it is —
+and the effort level each of its runs went at. The verdict is the `state` of the
+review whose `commit_id` is that head, which is why the head is read first: `headRefOid` survives both the merge and
 the deletion of the branch, so this works after Step 6 as well as before it.
 
 ```bash
