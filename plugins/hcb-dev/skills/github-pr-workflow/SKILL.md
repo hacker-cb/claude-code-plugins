@@ -426,11 +426,14 @@ that, never the merge command's exit status:
   ```bash
   # The PR's own repo, never gh's default — in a fork checkout that default is the
   # parent, where this SHA does not exist and every read below 404s into silence.
+  # Strip the host rather than a literal one: an Enterprise instance serves its own.
   PR_URL=$(gh pr view <pr> --json url --jq '.url')
-  REPO="${PR_URL#https://github.com/}"; REPO="${REPO%%/pull/*}"
-  # Empty until the merge commit is published (a queue, a replica behind) — re-poll,
-  # never read an empty SHA into the paths below.
+  REPO=$(printf '%s' "$PR_URL" | sed -E 's#^https?://[^/]+/##; s#/pull/.*$##')
   MERGE_SHA=$(gh pr view <pr> --json mergeCommit --jq '.mergeCommit.oid // empty')
+  # Empty until the merge commit is published (a queue, a replica behind). Stop here
+  # and re-poll: an empty SHA builds a URL that 404s, and a 404 prints no rows —
+  # which the reading below would take for a base with nothing to run.
+  [ -n "$MERGE_SHA" ] || { echo "merge commit not published yet — re-poll"; exit 1; }
   gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
     --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"'
   # Checks API and the older statuses are separate feeds; an external CI posting only
