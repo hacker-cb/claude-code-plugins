@@ -10,16 +10,15 @@ or its answer carries is [`order-anatomy.md`](order-anatomy.md) and
 
 ## What survives, and what does not
 
-A session is addressed by its **name**: the one it set for itself, in the shape
-[`session-naming.md`](session-naming.md) gives, which is what an order and a
-ledger record — one name, in one field, wherever a contract has one. Read back
-what the channels this session can be reached on actually show before writing it
-down: naming this session obliges none of them to adopt that name, and a host
-that finds the name already taken renames the session to a variant. Where a
-channel shows something else, that is what resolves the session *in that
-channel* — matched there rather than recorded here, and named in the first
-contact's identity line, so a counterpart matching on the recorded name knows
-what it will find.
+A session is addressed by its **name** — one name, in one field, wherever a
+contract has one: the name it actually answers to. A session sets its own in the
+shape [`session-naming.md`](session-naming.md) gives, then reads back what the
+channels it can be reached on show it as, since naming it obliges none of them
+to adopt that name and a host that finds the name taken hands back a variant.
+What comes back is what gets recorded, a variant included, and a later change to
+it is announced like any other change of name. Where two channels show it
+differently, the record carries the one an answer will arrive on and the first
+contact's identity line names the other.
 
 No identifier found in a path or in the environment is an address, however much
 it looks like one — an address is what a channel answers when asked about this
