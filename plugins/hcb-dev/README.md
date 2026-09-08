@@ -201,8 +201,9 @@ wave is the set of batches launched together once its gate clears.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
-  One chip per batch — title per `references/session-naming.md` (it becomes
-  the launched session's title, the name every later message matches on), the
+  One chip per batch — title per `references/session-naming.md` (the launched
+  session is asked to wear it; what later messages match on is what its start
+  report says it answers to), the
   wave order as the prompt: the slots of `references/order-anatomy.md` plus this
   batch's boundaries, fork routing, the master's own coordinates, the start
   report that precedes the build, the status milestones and the return
@@ -352,10 +353,12 @@ Per skill, on top of those:
   directly. Nothing in it is GitHub-only.
 - **`github-pr-workflow`**: GitHub specifically — a connected GitHub MCP server
   is preferred over `gh` for reading reviews, but `gh` alone suffices.
-- **`session-dispatch`** and **`session-handoff`**: nothing in the session that
-  writes the prompt — both produce text from what it recalls, and neither reads
-  the repository or the forge; the verification they call for happens on the
-  receiving side. A dispatched order does name `implementation-workflow`, so the
+- **`session-dispatch`** and **`session-handoff`**: neither reads the repository
+  or the forge — they produce text from what the writing session recalls, and the
+  verification they call for happens on the receiving side. `session-dispatch`
+  reads one thing beyond that: whatever names this session, where the order
+  leaves an address to answer at, since the name to write down is the one a
+  channel actually shows. A dispatched order does name `implementation-workflow`, so the
   session that receives one needs this plugin installed.
 - **`backlog-survey`**: the forge CLI (`gh` / `glab`) to list and read the
   slice's issues; nothing else — the hygiene it proposes runs through
@@ -363,10 +366,11 @@ Per skill, on top of those:
 - **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
   Code's own cross-session tools — the chip tool for launching
   (`spawn_task`/`dismiss_task`, the desktop app's) and, for coordination, the
-  live registry plus whichever message channel the host offers, by live name or
-  by session id; each degrades along its own ladder where a tool is absent
-  (fenced orders instead of chips, the tracker and the user instead of
-  messages). The master additionally uses
+  live registry plus whichever message channel the host offers, addressed by
+  name; each degrades along its own ladder where a tool is absent
+  (fenced orders instead of chips, a line to the user instead of messages) —
+  while a decision stands at its coordinate on the forge whichever of them
+  carries the pointer to it. The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
   lives in one, and a repository without a tracker cannot hold the role at all.
   All sides need this plugin installed — the orders name `wave-worker` and

@@ -12,7 +12,9 @@ change.** A title is an address — sessions resolve each other by it across
 restarts ([`session-comms.md`](session-comms.md)), and the user picks one run
 out of a list of them by it — so what stands first is what a stranger matches
 on, and a name already sent out is not re-coined. The address is the
-identifier, preceded by the role marker where the role has one.
+identifier, preceded by the role marker where the role has one. A name that
+changes regardless — a host renaming a session whose name was taken — is
+announced to whoever already holds the old one (`session-comms.md`).
 
 ## The shapes
 
@@ -54,12 +56,12 @@ Resuming an epic reads it back from the epic the ledger hangs on rather than
 coining it again.
 
 The value is unique inside its repository and nowhere else: two repositories
-can each hold an issue 841, while the live registry spans the machine. A title
-matched there is therefore a candidate, not a destination. What addresses a
-session is its session id, and both sides hand one over early — the order
-carries the master's, the confirmation that opens a batch carries the batch's.
-Until one is in hand, a message on a matched title leads with the challenge
-line (`session-comms.md`) and waits for its answer.
+can each hold an issue 841, while the live registry spans the machine. A name
+matched there is therefore a candidate, not a destination, and both sides hand
+their own over early — the order carries the master's name, the confirmation
+that opens a batch carries the batch's. What settles a matched name is the
+challenge line (`session-comms.md`), which leads the message and waits for its
+answer.
 
 ## `<id>`
 
@@ -172,9 +174,12 @@ stands there stays.
 
 ## Where these names travel
 
-- **The chip's title is the batch session's title**: a dispatcher writing the
-  batch shape into the chip has titled the receiver, and every later message
-  matches on it.
+- **The chip's title is what the batch session is asked to wear**: a dispatcher
+  writing the batch shape into the chip has titled the receiver, and later
+  messages match on it — until the receiver's own start report says what it
+  answers to, which is what they match on from then on. The two part company
+  where a host hands back a variant, and matching the chip's title after that
+  reaches whoever holds the original (`session-comms.md`).
 - **A worktree a session cuts for itself leads with its title's identifier**
   — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
   would otherwise prefix every batch's name; a hyphen where the title has a

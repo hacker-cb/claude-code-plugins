@@ -35,7 +35,10 @@ before writing anything.
 ## The prompt
 
 Every slot below is `order-anatomy.md`'s; the closing step spells the return
-inline because the receiver reads this text, not that file.
+inline because the receiver reads this text, not that file. Where the order
+leaves an address to answer at, it is this session's name **read back** from the
+channels it can be reached on, never the name it merely set for itself
+([`../../references/session-comms.md`](../../references/session-comms.md)).
 
 ```text
 Dispatch `<tag>` from another Claude Code session — you did not do this work;
@@ -77,10 +80,20 @@ Done means: <the terminal deliverable>
 
 Don't <what not to touch, duplicate, or unwind>
 
+An answer that changes what you are building is written at <the coordinate
+answers to this order land at — an issue, the change request | or: nowhere
+durable, so it will reach you whole in the message itself and there is nothing to
+re-read>: read it there before taking up the work that waits on it, rather than
+trusting your inbox to have carried it.
+
 Answering by message rather than by hand: the session that wrote this order is
-<its title>, session id <session-id>. Check your own title before you start and
-set it to `<tasks | nickname> — <topic>` where the process above left it unset,
-so it can find you. <Or: the answer travels by hand.>
+<its name><, shown as <the other name> where the other registry disagrees>. Check
+your own name before you start and set it to `<tasks | nickname> — <topic>` where
+the process above left it unset; then read back what the channels you can be
+reached on show you as, and lead your first answer with that — both values where
+they differ, since a counterpart matching on one rung will not find the other.
+The name you set is not the name a host that already has it taken will give you.
+<Or: the answer travels by hand.>
 
 Last: <returns — answer with these headings, carrying `<tag>` on the first line:
 premises of this order that did not survive; the deliverable in the terms asked;
@@ -110,6 +123,7 @@ this session is now waiting on, and do not begin the dispatched work.
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/session-naming.md`](../../references/session-naming.md)
+- [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/slice-completion.md`](../../references/slice-completion.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

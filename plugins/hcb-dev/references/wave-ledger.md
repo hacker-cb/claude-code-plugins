@@ -47,14 +47,15 @@ that will be believed in its summarised form.
 
 ## What it holds
 
-1. **Header** — the epic, the master's title and session id, the current
+1. **Header** — the epic, the master's name — rewritten whenever it changes —
+   the current
    wave's base pin (`<remote>/<branch>@<sha>`), the epic's merge authority as
    the user settled it ([`slice-completion.md`](slice-completion.md)), when last
    updated.
 2. **Batches** — one row each: id, topic, issues, the order's ask and terminal
    deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the order's base pin, chip, the
-   session's title and session id, state, result coordinates. States:
+   session's name, state, result coordinates. States:
    `planned → chipped → started → confirmed → building → completed(<mode> —
    request merged, merged locally, tracker state delivered, verdict delivered)
    → accepted → released`; a batch can instead stand at `blocked(<condition>)`
