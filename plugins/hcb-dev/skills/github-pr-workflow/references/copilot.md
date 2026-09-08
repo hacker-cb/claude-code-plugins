@@ -103,10 +103,13 @@ a decline it did not state.
 
 **One approval is not the verdict.** `reviewDecision` is the aggregate over every
 reviewer and every requirement: it stays `REVIEW_REQUIRED` with Copilot's approval
-already in when the base wants a second one or a code owner's, and it is empty
-where the base requires no approvals at all. So read the review's `state` for what
-*this reviewer* did, and `reviewDecision` for where the *pull request* stands —
-neither answers the other's question.
+already in when the base wants a second one or a code owner's. **Empty is not a
+verdict either** — the field reads empty with an approval requirement in force and
+unmet just as readily as with no requirement at all, so it never says which of the
+two you are in. Read the review's `state` for what *this reviewer* did,
+`reviewDecision` for where the *pull request* stands, and neither of them for what
+the base requires — that read is
+[`merge-gates.md`](merge-gates.md)'s.
 
 **The body's verdict is not the review's state.** Every Copilot review opens with
 an approval *assessment* — a line saying whether it considers the PR ready to
