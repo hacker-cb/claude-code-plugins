@@ -121,7 +121,7 @@ it cannot be written, the finding is **DROP**.
 
 Every finding ends in exactly one, named when it is proposed:
 
-| | |
+| outcome | what it means |
 |---|---|
 | **FIX** | done in this work — no proposal, no number |
 | **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change |
