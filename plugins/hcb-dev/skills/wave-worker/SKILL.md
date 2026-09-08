@@ -87,8 +87,14 @@ holds, and what it stops is named in the return as the gap it is.
   filed on the confirmation that the order's own text authorizes; what the
   order's own deliverable writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that
-  needs no answer first; the order says which one that is, or the dependency
-  graph does.
+  needs no answer first — the order says which one that is, or the dependency
+  graph does. A fork the order reserved stays reserved however long the answer
+  takes: what the reservation buys is the master's decision, and building it
+  under an assumption spends that. Where the fork is this session's own to
+  settle and the question was sent for the master's sight rather than its
+  permission, this session's own reading carries the work — stated to the master
+  as the assumption it is, and left unlanded, so an answer that differs costs a
+  revert and not a rebuild.
 - **Statuses at the order's milestones** — a change request opened, where the
   mode opens one; the readiness report a `queued` merge authority obliges, in
   the words the order gives it (the batch then waits for the master's go —
@@ -106,9 +112,10 @@ holds, and what it stops is named in the return as the gap it is.
   review that posted after the merge — its findings are orphaned there otherwise.
   Commits the landing did not take are not landed behind it either: they go to
   the master, and into the return as work left undone.
-- **The master unreachable** is `session-comms.md`'s ladder: what must not be
-  lost goes to the tracker, what blocks goes to this session's user, and work
-  that depends on neither continues.
+- **The master silent and the master unreachable are different states**, told
+  apart by `session-comms.md` — which also says when a silence stops being
+  parked for and takes the ladder instead. The work depending on neither carries
+  on through both.
 
 ## The return
 
