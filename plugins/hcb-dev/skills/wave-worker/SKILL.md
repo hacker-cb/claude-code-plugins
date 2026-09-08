@@ -122,8 +122,8 @@ The full report — the shape of `order-return.md`, the batch's `<epic>/<id>`
 as its tag —
 goes **to the tracker coordinate the order names** (the epic, the batch's
 issues), so no restart can lose it; the master gets a short notice pointing at
-it. Where the order names none — a tracker-less repository — the full report
-goes to the master itself, with a copy in chat for this session's user.
+it. An order naming none is malformed rather than a configuration to work
+around: ask the master for the coordinate instead of returning into the gap.
 
 With the four parts travel the batch's own extras: findings surfaced but
 left ([`../../references/findings.md`](../../references/findings.md)),

@@ -21,11 +21,11 @@ comment is the working state; the two are not copies of each other.
 
 The comment is the only form the ledger takes, so a tracker is what the role
 stands on: whether the repository has one is established against the forge —
-the field naming it resolved per [`forge-docs.md`](forge-docs.md) — before the
-role is assumed, and never inferred from what the epic looks like. An epic with
-no umbrella issue is an umbrella not yet filed, not a repository without a
-tracker. Where the forge answers that there is none, the role does not begin,
-and that answer goes to the user in those words.
+the field naming it is `forge-docs.md`'s — while the role is being assumed and
+before the epic is settled, never inferred from what the epic looks like. An
+epic with no umbrella issue is an umbrella not yet filed, not a repository
+without a tracker. Where the forge answers that there is none, the role does
+not begin, and that answer goes to the user in those words.
 
 **One epic, one ledger.** The marker is searched before one is opened, and what
 it finds is edited rather than joined by a second — a later wave of the same
@@ -35,10 +35,11 @@ states resolves to neither.
 
 **Only the journal moves out when the ledger outgrows a comment.** The forge's
 cap announces itself by refusing a write, never by a number carried here;
-answer that refusal by moving the journal into comments of its own — each
-marked `<!-- wave-ledger-journal-<n> -->`, all of them listed in the ledger,
-the last one taking new entries — and leave the state whole. A section
-shortened to fit is a section that will be believed in its shortened form.
+answer that refusal by moving the journal into comments of its own — marked
+`<!-- wave-journal-<n> -->`, which carries no part of the ledger's own marker,
+so the search above still finds one comment — listed in the ledger, the last of
+them taking new entries. The state stays whole: a section shortened to fit is a
+section that will be believed in its shortened form.
 
 ## What it holds
 
