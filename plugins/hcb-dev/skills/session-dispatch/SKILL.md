@@ -80,16 +80,20 @@ Done means: <the terminal deliverable>
 
 Don't <what not to touch, duplicate, or unwind>
 
+An answer that changes what you are building is written at <the coordinate
+answers to this order land at — an issue, the change request | or: nowhere
+durable, so it will reach you whole in the message itself and there is nothing to
+re-read>: read it there before taking up the work that waits on it, rather than
+trusting your inbox to have carried it.
+
 Answering by message rather than by hand: the session that wrote this order is
-<its name>. Check your own name before you start and set it to
-`<tasks | nickname> — <topic>` where the process above left it unset; then read
-back what the channels you can be reached on show you as, and lead your first
-answer with that — the name you set is not the name a host that already has it
-taken will give you. An answer that changes what you are building is written at
-<the coordinate answers to this order land at — an issue, the change request | or:
-nowhere durable, so it will reach you in the message itself and there is nothing
-to re-read>: read it there before taking up the work that waits on it, rather
-than trusting your inbox to have carried it. <Or: the answer travels by hand.>
+<its name><, shown as <the other name> where the other registry disagrees>. Check
+your own name before you start and set it to `<tasks | nickname> — <topic>` where
+the process above left it unset; then read back what the channels you can be
+reached on show you as, and lead your first answer with that — both values where
+they differ, since a counterpart matching on one rung will not find the other.
+The name you set is not the name a host that already has it taken will give you.
+<Or: the answer travels by hand.>
 
 Last: <returns — answer with these headings, carrying `<tag>` on the first line:
 premises of this order that did not survive; the deliverable in the terms asked;

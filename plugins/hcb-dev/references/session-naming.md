@@ -179,7 +179,7 @@ stands there stays.
   messages match on it — until the receiver's own start report says what it
   answers to, which is what they match on from then on. The two part company
   where a host hands back a variant, and matching the chip's title after that
-  reaches whoever holds the original ([`session-comms.md`](session-comms.md)).
+  reaches whoever holds the original (`session-comms.md`).
 - **A worktree a session cuts for itself leads with its title's identifier**
   — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
   would otherwise prefix every batch's name; a hyphen where the title has a

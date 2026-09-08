@@ -353,10 +353,12 @@ Per skill, on top of those:
   directly. Nothing in it is GitHub-only.
 - **`github-pr-workflow`**: GitHub specifically — a connected GitHub MCP server
   is preferred over `gh` for reading reviews, but `gh` alone suffices.
-- **`session-dispatch`** and **`session-handoff`**: nothing in the session that
-  writes the prompt — both produce text from what it recalls, and neither reads
-  the repository or the forge; the verification they call for happens on the
-  receiving side. A dispatched order does name `implementation-workflow`, so the
+- **`session-dispatch`** and **`session-handoff`**: neither reads the repository
+  or the forge — they produce text from what the writing session recalls, and the
+  verification they call for happens on the receiving side. `session-dispatch`
+  reads one thing beyond that: whatever names this session, where the order
+  leaves an address to answer at, since the name to write down is the one a
+  channel actually shows. A dispatched order does name `implementation-workflow`, so the
   session that receives one needs this plugin installed.
 - **`backlog-survey`**: the forge CLI (`gh` / `glab`) to list and read the
   slice's issues; nothing else — the hygiene it proposes runs through
