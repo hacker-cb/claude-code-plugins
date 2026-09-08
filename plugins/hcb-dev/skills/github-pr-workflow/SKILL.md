@@ -498,8 +498,9 @@ that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 Then give the user a short report:
 
 1. **Copilot's verdict on the head that merged** — approved, or commented — and
-   the effort level each of its runs reported; `references/copilot.md` owns where
-   both are read from and what an unlabelled run means.
+   the effort level each of its runs reported (`references/copilot.md` owns where
+   both are read from, and what an unread level means). Where that reference ruled
+   Copilot out of this repo's flow, this line says so instead of a verdict.
 2. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
    lower-severity items you deliberately skipped during the loop. Each goes through

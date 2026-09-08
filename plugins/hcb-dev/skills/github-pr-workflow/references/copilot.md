@@ -90,10 +90,19 @@ flow — then skip it and rely on the rest of your bar.
 
 ## What the review lands as
 
-Two states, and only the state carries weight: `COMMENTED` — findings and nothing
-else, blocking nothing — or `APPROVED`, which satisfies
-`required_approving_review_count` exactly as a teammate's approval does and turns
-`reviewDecision` into `APPROVED`.
+A review posts as `COMMENTED` — findings and nothing else, blocking nothing — or
+as `APPROVED`, which counts toward `required_approving_review_count` exactly as a
+teammate's approval does. Those are what Copilot writes; the field holds other
+values too, `DISMISSED` above all, which is an approval that *was* one and was
+taken back. Treat anything that is not `APPROVED` as not an approval, and never as
+a decline it did not state.
+
+**One approval is not the verdict.** `reviewDecision` is the aggregate over every
+reviewer and every requirement: it stays `REVIEW_REQUIRED` with Copilot's approval
+already in when the base wants a second one or a code owner's, and it is empty
+where the base requires no approvals at all. So read the review's `state` for what
+*this reviewer* did, and `reviewDecision` for where the *pull request* stands —
+neither answers the other's question.
 
 **The body's verdict is not the review's state.** Every Copilot review opens with
 an approval *assessment* — a line saying whether it considers the PR ready to
@@ -105,13 +114,15 @@ Whether Copilot may approve at all, whether its approval counts toward the merge
 requirements, and which changed paths it may count for are repository settings
 (mirrored at the organization and enterprise level) that the `copilot_code_review`
 rule does not carry — its parameters govern requesting the review, not approving
-it. So predict nothing from configuration: the state that posted, and the
-`reviewDecision` beside it, are the whole answer.
+it. So predict nothing from configuration — read what actually posted.
 
-**An approval is dismissed by the next push, exactly as a human one is.** In the
-fix loop every push therefore both re-requests the review and drops the approval
-the previous head had earned, so a repo counting them reports `BLOCKED` until a
-fresh one lands — a wait for the head's review, not a check that went missing.
+**A push dismisses Copilot's approval exactly where it dismisses a human's** —
+under `dismiss_stale_reviews_on_push`, and not otherwise. Where that is on, a repo
+counting approvals reports `BLOCKED` after each fix until a fresh one lands: a wait
+for the head's review, not a check that went missing. Where it is off, the approval
+of an earlier head survives the push and keeps `reviewDecision` at `APPROVED` —
+which says nothing about the commit you are now about to merge. Either way what
+settles the head is the next section, never the approval standing.
 
 Neither state settles your own bar. `APPROVED` is not "no findings": an approving
 review can still carry comments, and every one of them is read, answered and
@@ -305,22 +316,46 @@ Or the equivalent MCP tools if available.
 
 ## What the report says about this reviewer
 
-The end-of-session report (main skill Step 7) states the verdict Copilot left on
-the head that merged — approved, or commented — and the effort level each of its
-runs went at. The verdict is the `state` field; the effort level exists **only** as
-a line in the review body, so take both from `/reviews` in one pass:
+The end-of-session report (main skill Step 7) states the verdict Copilot left **on
+the head that merged** — approved, or commented — and the effort level each of its
+runs went at. The verdict is the `state` of the review whose `commit_id` is that
+head, which is why the head is read first: `headRefOid` survives both the merge and
+the deletion of the branch, so this works after Step 6 as well as before it.
 
 ```bash
+HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
+# Unset it and every row below reads `head: false` — "no verdict on the merged
+# head", said by a variable that never got a value rather than by the PR.
+[ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — report no verdict"; exit 1; }
+export HEAD_SHA
 gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | {state, commit_id,
-           effort: (((.body? // "") | capture("effort level:\\W*(?<v>[^\\n<*]+)"; "i").v? // "") | gsub("^\\s+|\\s+$"; ""))}
-        | @json'
-# `capture` raises on a body with no such line; the `?` is what turns that into the
-# empty string instead of aborting the program on its first unlabelled review.
+        | (((.body? // "") | split("\n")
+             | map(gsub("<[^>]*>"; " ") | gsub("\\*"; " "))
+             | map(select(test("^[^A-Za-z0-9]*(review )?effort level"; "i")))
+             | last) // "") as $line
+        | {state, head: (.commit_id == env.HEAD_SHA),
+           effort: (($line | capture("effort level[^A-Za-z0-9]*(?<v>[A-Za-z][A-Za-z0-9 _-]*)"; "i").v // "")
+                    | gsub("^\\s+|\\s+$"; "")),
+           effort_line: ($line | gsub("^\\s+|\\s+$"; ""))} | @json'
 ```
+
+Three things in that filter are load-bearing, and each fails silently if
+"simplified":
+
+- **`// ""` after `capture`, not the `?`.** A body with no such line makes
+  `capture` yield *nothing at all* rather than raise, so without the alternative
+  the object constructor produces no row — and the review disappears from the
+  report entirely instead of appearing with no level.
+- **The label is matched per line, and only where the line starts with it.** A body
+  discussing effort levels in prose otherwise wins the match ahead of the metadata,
+  and a pattern crossing non-word characters walks straight through `\n` and
+  through markup into whatever follows.
+- **The markup is stripped before the line is chosen**, because the label is a
+  table cell or a bold run as often as a bullet.
 
 Report the label verbatim, whatever word it holds — the set of levels is GitHub's
 to extend, and a level you translate into a familiar one is a level you invented.
-An empty `effort` means the review named none: say that, rather than filling in a
-default.
+An empty `effort` beside an empty `effort_line` is a review that named no level;
+an empty one beside a non-empty line is a label this filter could not read — say
+which of the two it was, and never fill in a default for either.
