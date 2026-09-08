@@ -30,14 +30,14 @@ it accepts their returns per
 
 1. **Title first**: the shape and its timing are
    [`../../references/session-naming.md`](../../references/session-naming.md)'s.
-2. **The epic**: the ledger hangs on an umbrella issue, so where none exists
+2. **The epic**: settle the tracker before writing anything to it — without one
+   the role does not begin, and `wave-ledger.md` says what is said to the user
+   then. With one, the ledger hangs on an umbrella issue, so where none exists
    yet it is filed now (`hcb-dev:issue-tracking`) — on the assignment's own
    authorization where the assignment named the epic, and on the user's word
    where it named none, which is the first thing this role asks for rather
    than something it decides. A slice of the backlog needs one exactly as a
-   named epic does. Whether the repository has a tracker at all is settled
-   here too: without one the role does not begin, and `wave-ledger.md` says
-   what is said to the user then.
+   named epic does.
 3. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
    else is decided; from here on, every event lands in it before the
    conversation moves on.
@@ -124,9 +124,9 @@ checked on — is part of this role's loop, not a one-time launch step.
 ## After a restart or compaction
 
 The ledger first — the title names the epic, and the epic holds the ledger.
-What it records as the master's title is this
-session's own: wear it before anything is sent, since the batches' orders
-address that name. Then the live registry, then a re-introduction to
+What it records as the master's title is this session's own: wear it before
+anything is sent, since the batches' orders address that name. Then the live
+registry, then a re-introduction to
 every batch still engaged, carrying what first contact carries: the title and
 this session's id, the standing plan, and a status request. Where a new
 session took over the role, the ledger header's master id is corrected before

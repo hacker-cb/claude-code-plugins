@@ -132,8 +132,9 @@ Master: <its title>, session id <session-id>. The wave ledger — standing
 constraints included — is <its coordinate>.
 Before you build, read the whole batch through — this order, the ledger, its
 issues on the forge in full, the code they name — and send the master your
-start report: what the work turned out to be. Your title and session id, the scope you now read as
-yours — the files and the issues it touches, and what taking it involves — the
+start report: what the work turned out to be. Your title and session id, the
+scope you now read as yours — the files and the issues it touches, and what
+taking it involves — the
 order you will take it in, and everything that came back different from this
 order: a boundary wrong from where you stand, a premise that fell, a fork nobody
 foresaw. Then build: you do not wait for an answer to the report itself, and
@@ -159,8 +160,8 @@ question goes to your user as a line you keep working past, never as one that
 halts you until a person answers.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker
 coordinate — the epic, the batch's issues>, a short notice to the master.
-Filing the follow-up issues
-your return proposes is authorized once the master confirms them. Your session
+Filing the follow-up issues your return proposes is authorized once the master
+confirms them. Your session
 is not free until the master accepts.
 ```
 

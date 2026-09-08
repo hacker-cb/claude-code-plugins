@@ -24,8 +24,9 @@ stands on: whether the repository has one is established against the forge —
 the field naming it is `forge-docs.md`'s — while the role is being assumed and
 before the epic is settled, never inferred from what the epic looks like. An
 epic with no umbrella issue is an umbrella not yet filed, not a repository
-without a tracker. Where the forge answers that there is none, the role does
-not begin, and that answer goes to the user in those words.
+without a tracker. Where the answer is that there is none — the field says so,
+or no forge answers for the remote at all — the role does not begin, and what
+was established goes to the user in those words.
 
 **One epic, one ledger.** The marker is searched before one is opened, and what
 it finds is edited rather than joined by a second — a later wave of the same
@@ -38,8 +39,11 @@ cap announces itself by refusing a write, never by a number carried here;
 answer that refusal by moving the journal into comments of its own — marked
 `<!-- wave-journal-<n> -->`, which carries no part of the ledger's own marker,
 so the search above still finds one comment — listed in the ledger, the last of
-them taking new entries. The state stays whole: a section shortened to fit is a
-section that will be believed in its shortened form.
+them taking new entries. Where the state itself meets the cap with the journal
+already out, what leaves is a closed wave — its batches released, its gates
+spent — archived the same way and listed the same way, and what is still open
+never leaves. Nothing is shortened to fit: a section summarised is a section
+that will be believed in its summarised form.
 
 ## What it holds
 
