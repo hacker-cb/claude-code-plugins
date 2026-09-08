@@ -28,9 +28,9 @@ jobs:
       - name: Structural validation
         run: bash scripts/validate.sh
 
-      # The review scripts, against saved envelopes. A stub plays the CLI, so this
-      # needs no engine, no account and no network — and no history either: the runs
-      # are pinned to an empty range, which a shallow checkout satisfies.
+      # Every suite under tests/suites/. A stub plays each CLI, so this needs no
+      # engine, no account and no network — and no history either: the runs are
+      # pinned to an empty range, which a shallow checkout satisfies.
       - name: Script tests
         run: bash tests/run.sh
 

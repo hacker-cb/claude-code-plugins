@@ -1,0 +1,6 @@
+# One row per case, five tab-separated columns — the contract is
+# tests/README.md's, and identical across suites.
+#
+# fixture	args	exit	expect	note
+-	--model	2	codex review failed: --model needs a value	a flag arriving without its value is refused, and says so
+-	--bogus	2	codex review failed: unknown argument '--bogus'	an argument the script does not know is refused, and is quoted back

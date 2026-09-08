@@ -1,10 +1,11 @@
 # One row per case, five tab-separated columns:
 #
-#   fixture   the envelope in fixtures/claude-review/, or `-` for a run that must be
+#   fixture   the envelope in this suite's fixtures/, or `-` for a run that must be
 #             refused before the engine is ever reached
-#   args      what this case adds to `--base HEAD --level low`; a NAME=value word is
-#             put in the run's environment instead (that is how a case reaches the
-#             stub's stderr, its touch, or a non-zero exit). `-` for none
+#   args      what this case adds to the suite's own invocation (suite.conf); a
+#             NAME=value word is put in the run's environment instead (that is how
+#             a case reaches the stub's stderr, its touch, or a non-zero exit).
+#             `-` for none
 #   exit      0 a review, 1 a failure, 3 a reviewer that could not run, and 2 for a
 #             call the script refused before reaching an engine at all
 #   expect    fragments that must appear in the output, separated by `|`. Written out
