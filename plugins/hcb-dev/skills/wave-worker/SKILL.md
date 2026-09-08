@@ -50,8 +50,8 @@ holds, and what it stops is named in the return as the gap it is.
    what the order summarised, and a gated batch reads a tree its dependency has
    not landed on.
 4. **Report that scope to the master, before the first write**: which batch this
-   session is, the name it answers to — read from the channel the master will
-   answer on, never built from what a neighbour's looks like — what the work
+   session is, the name it answers to — read back from the channels it can be
+   reached on, never built from what a neighbour's looks like — what the work
    turned out to be: the
    files and the issues it touches, what taking it involves, the order it will
    be taken in — and everything that came back different from the order: a

@@ -140,13 +140,16 @@ checked on — is part of this role's loop, not a one-time launch step.
 ## After a restart or compaction
 
 The ledger first — the title names the epic, and the epic holds the ledger.
-What it records as the master's name is this session's own: wear it before
-anything is sent, since the batches' orders address that name. Then the live
+What it records as the master's name is this session's own, in
+`session-naming.md`'s shape: wear that before anything is sent, since the
+batches' orders address it. Then read back what this session actually answers
+to: where the host would not give that name — it handed back a variant, or a new
+session took over the role — what answers wins, the ledger header is corrected
+to it before anything else is sent, and the batches hear it as the change
+`session-comms.md` has them announce. Then the live
 registry, then a re-introduction to
 every batch still engaged, carrying what first contact carries: the name this
-session answers to, the standing plan, and a status request. Where a new session
-took over the role, or this one now answers to another name, the ledger header
-is corrected before anything else is sent. Expectations the ledger lists and the registry cannot
+session answers to, the standing plan, and a status request. Expectations the ledger lists and the registry cannot
 see are chased by the comms ladder, not assumed dead.
 
 ## Closing the epic

@@ -10,18 +10,21 @@ or its answer carries is [`order-anatomy.md`](order-anatomy.md) and
 
 ## What survives, and what does not
 
-A session is addressed by its **name**, and every channel shows one. Two
-channels may show the same session under different names, so the name worth
-writing down is the one shown by the channel that will answer, and it is **read
-back** rather than assumed: naming this session does not oblige every channel to
-adopt that name, and a host that finds the name already taken renames the
-session to a variant instead.
+A session is addressed by its **name**: the one it set for itself, in the shape
+[`session-naming.md`](session-naming.md) gives, which is what an order and a
+ledger record. Read back what the channels this session can be reached on
+actually show before writing it down — naming this session obliges none of them
+to adopt that name, and
+a host that finds the name already taken renames the session to a variant. Where
+the two differ, the record carries both: the name that survives, and the one
+that reaches.
 
 No identifier found in a path or in the environment is an address, however much
 it looks like one — an address is what a channel answers when asked about this
 session. What survives a restart: the name a session set for itself, its
-worktree path, and anything written to the forge. What does not: a name derived
-from the working directory, re-dealt at every launch, and any short identifier a
+worktree path, and anything written to the forge. Where a channel names a
+session after its working directory instead, that much survives and the suffix
+it carries does not — re-dealt at every launch, as is any short identifier a
 listing adds beside it. Address by what survives; resolve what does not at the
 moment of sending.
 
@@ -29,12 +32,16 @@ moment of sending.
 
 A session that expects to be contacted names itself before anything else, in
 the shape and at the moment [`session-naming.md`](session-naming.md) gives, and
-reads back what the channel it expects an answer on now shows it as.
+reads back what the channels it can be reached on now show it as.
 
 **A name that changes after first contact is announced.** Tell whoever has
 already been in touch, and write the new name where the work's own record lives
 — a counterpart that missed the message still resolves the old name to the new
 one there.
+
+Where no channel here names this session at all, the name it set for itself is
+what goes into the slot, said to be unconfirmed — a slot naming an unconfirmed
+address is answerable, an empty one reads as an oversight.
 
 ## The ladder — send by the highest rung that answers
 
@@ -43,7 +50,8 @@ one there.
    never something kept from last time — not a cached name, not an endpoint, not
    yesterday's listing. One worktree can hold several live sessions, so a name
    the working directory gave them fits more than one, and what settles which is
-   the challenge line below rather than the closest match. Replying within the
+   the challenge line below — owed by a name matched rather than exchanged, as
+   much as by a guessed one — rather than the closest match. Replying within the
    same turn may reuse the return address the message arrived with; a reply any
    later re-resolves like any other send — the return address of an old message
    is exactly the kind a restart kills.
@@ -107,8 +115,9 @@ the two; three things follow, and none of them is optional:
   says in one line what it is waiting on, then ends its turn under the rule
   above. Holding the turn open instead, by polling the counterpart or by putting
   the question to a person in a form that stops everything until they answer, is
-  the one state the counterpart's answer cannot end: it lands in a queue nobody
-  is reading, and only a person can undo that. Where the channel offers a
+  the state the counterpart's answer may be unable to end: on a channel that
+  waits for the turn, it lands in a queue nobody is reading, and only a person
+  can undo that. Where the channel offers a
   one-shot notice that a busy counterpart went idle, take it instead of polling
   or sending "are you done". A run this session launched itself is not this
   wait — its answer arrives inside the turn, and
@@ -117,9 +126,9 @@ the two; three things follow, and none of them is optional:
 ## Contact hygiene
 
 - **First contact carries identity both ways**: the name you answer to, and
-  which epic or order this concerns. Where the address was guessed,
-  the first line is a challenge: "if you are not <who this concerns>, say so
-  and I stop."
+  which epic or order this concerns. Where the address was not exchanged with
+  this counterpart — guessed, or matched in a registry — the first line is a
+  challenge: "if you are not <who this concerns>, say so and I stop."
 - **The first line of every message is self-contained** — the recipient's human
   previews only that line.
 - **A question does not stop the work.** Send it, then continue on what does
@@ -142,8 +151,8 @@ the two; three things follow, and none of them is optional:
   send was carrying: that belongs at a coordinate. Escalation is a change of
   rung.
 - **Unreachable is a fact to report, not to retry into**: one fresh resolution,
-  one send; then the rungs not yet tried — the host's registry, the record at
-  its coordinate, and a line to the user. Silence after a
+  one send; then the rungs not yet tried — the host's registry, then a line to
+  the user, the record at its coordinate standing under all of them. Silence after a
   send that reported success is not that fact: it is a counterpart that has not
   answered yet, and it is parked for rather than escalated. What escalates it is
   the parking running out of use — this session's own turns ended and the inbox

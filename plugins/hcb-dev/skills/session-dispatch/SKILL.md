@@ -35,7 +35,10 @@ before writing anything.
 ## The prompt
 
 Every slot below is `order-anatomy.md`'s; the closing step spells the return
-inline because the receiver reads this text, not that file.
+inline because the receiver reads this text, not that file. Where the order
+leaves an address to answer at, it is this session's name **read back** from the
+channels it can be reached on, never the name it merely set for itself
+([`../../references/session-comms.md`](../../references/session-comms.md)).
 
 ```text
 Dispatch `<tag>` from another Claude Code session — you did not do this work;
@@ -110,6 +113,7 @@ this session is now waiting on, and do not begin the dispatched work.
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/session-naming.md`](../../references/session-naming.md)
+- [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/slice-completion.md`](../../references/slice-completion.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

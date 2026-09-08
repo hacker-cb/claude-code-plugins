@@ -67,8 +67,8 @@ a receiver told only what is known treats the rest as known.
 - **The closing act** — never empty: the return of
   [`order-return.md`](order-return.md), or a named end state with nothing
   coming back. Where the return travels by message rather than by hand, it
-  also carries the address to answer — the writing session's title and session
-  id, that title being [`session-naming.md`](session-naming.md)'s.
+  also carries the address to answer — the name the writing session answers to,
+  in [`session-naming.md`](session-naming.md)'s shape.
 
 ## The tag
 

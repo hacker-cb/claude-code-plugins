@@ -29,9 +29,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   [`../../references/base-resolution.md`](../../references/base-resolution.md),
   refresh it, and write the pin as `<remote>/<branch>@<sha>` — one pin, shared
   by every batch of the wave.
-- **Read this session's own name** — from the channel a batch will answer on,
-  never assumed from what this session set — before it goes into the `Master:`
-  slot (`session-comms.md`).
+- **Read this session's own name** — as the channels here show it, never
+  assumed from what this session set — before it goes into the `Master:` slot;
+  `session-comms.md` says what that slot carries where none of them names it.
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
@@ -155,7 +155,8 @@ order did not foresee, before your own reading of it goes into the tree. An
 answer you are still waiting for parks you and does not stop you: say in one
 line what you are waiting on, then end your turn — with a wait armed that wakes
 you again — because an answer may not reach you until your turn ends, and read
-it where the master records it rather than in your inbox alone. Keep building
+it at the coordinate that answer names rather than in your inbox alone; failing
+that, at the ledger above and this batch's issues. Keep building
 what the answer does not touch; a fork this order reserved stays reserved until
 the master answers it. Silence is not unreachability, and neither is a master
 shown between turns or a send the channel says it is holding: the master is
