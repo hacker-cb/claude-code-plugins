@@ -32,6 +32,9 @@ and what answers there, never from the hostname.
 
 ## Searching the tracker
 
+A finding out of work on an issue is measured against that issue first
+(`../../references/findings.md`); the search here runs on what that leaves.
+
 Closed ones too — a finding already decided against must not return under a new
 number, with the decision left behind on the old one.
 
@@ -53,8 +56,11 @@ finding adds something** (new facts, wider scope, a changed trigger) → update 
 ## What goes in the issue
 
 Body: **what is deferred**, identifiers and paths verbatim · **the trigger** that
-should reopen attention · **the source** (`<file>:<line>`, a change request, an
-audit date).
+should reopen attention · **what it costs to never do it**, in one sentence ·
+**the source** (`<file>:<line>`, a change request, an audit date).
+
+Where nothing triggers a return, the priority is what says when to pick it up —
+one carrying neither is not deferred work, and is not opened.
 
 Language follows the project; where nothing states one, the **newest** issues
 carry the convention — read the top of a list ordered by creation date, never the

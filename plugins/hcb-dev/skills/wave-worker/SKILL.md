@@ -84,9 +84,13 @@ holds, and what it stops is named in the return as the gap it is.
   the master's side of the protocol carries it on to a person where that
   reference demands one.
 - **A finding does not become an issue here.** One that earns an issue rides the
-  return as a candidate — its classification proposed, never applied — and it is
-  filed on the confirmation that the order's own text authorizes; what the
-  order's own deliverable writes to the tracker is not this rule's business.
+  return as a candidate — its outcome and its classification proposed, never
+  applied, and ranked against this batch's others within whatever budget the
+  order set ([`../../references/findings.md`](../../references/findings.md)) — and
+  it is filed on the confirmation that the order's own text authorizes, where that
+  confirmation reaches this session while it is still engaged; one arriving after
+  its release is the ruling session's to file. What the order's own deliverable
+  writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first — the order says which one that is, or the dependency
   graph does. A fork the order reserved stays reserved however long the answer
@@ -129,7 +133,7 @@ around: ask the master for the coordinate instead of returning into the gap —
 and where no master is left to answer, the return ends through the user, below.
 
 With the four parts travel the batch's own extras: findings surfaced but
-left ([`../../references/findings.md`](../../references/findings.md)),
+left (`../../references/findings.md`),
 hand-offs other batches need to hear about, and candidate issues awaiting the
 master's confirmation.
 
