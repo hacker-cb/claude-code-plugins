@@ -37,8 +37,15 @@ one `key value` per line, paths relative to the repo root:
 | `args` | what every case of this suite is invoked with, before its own `args` column |
 | `env` | a `NAME=value` put in every run's environment; may repeat |
 
-Anything else is a typo, and the runner says so rather than ignoring it. `run.sh`
+Anything else is a typo, and the runner says so rather than ignoring it — an unknown
+key, and an `env` that is not `NAME=value` (which `env(1)` would otherwise read as a
+program to run, failing every case of the suite instead of naming the line). `run.sh`
 holds no suite's name, path or flag: it finds the suites by looking.
+
+What it looks for is the *directory*, not the `suite.conf` inside it, so a suite that
+declares nothing fails loudly instead of dropping out of the run — and a `cases.tsv`
+holding no case fails the same way. Both are the shape a lost suite takes: the script
+still has a suite's name against it, and nothing runs.
 
 `fixtures/` may be absent when no case names an envelope. `stub/` may not: a case
 asserting it was refused *before* its engine needs something standing where that

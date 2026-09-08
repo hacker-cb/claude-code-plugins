@@ -40,10 +40,14 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# Directories, not suite.conf files: a suite that declares nothing is a suite that
+# is broken, and finding them by their manifest would drop it from the run silently
+# — a `suite.cfg` typo beside a full cases.tsv would leave the gate green over a
+# script nobody tested.
 all_suites=()
-for conf in "$SUITES"/*/suite.conf; do
-  [ -f "$conf" ] || continue
-  suite_dir=${conf%/suite.conf}
+for suite_dir in "$SUITES"/*/; do
+  [ -d "$suite_dir" ] || continue
+  suite_dir=${suite_dir%/}
   all_suites+=("${suite_dir##*/}")
 done
 [ "${#all_suites[@]}" -gt 0 ] || {
@@ -87,7 +91,11 @@ for suite in "${all_suites[@]}"; do
   fi
 
   dir="$SUITES/$suite"
-  suite_script="" suite_args="" unknown_key=""
+  [ -f "$dir/suite.conf" ] || {
+    suite_failure "$suite" "no suite.conf — the directory declares no script to run"
+    continue; }
+
+  suite_script="" suite_args="" unknown_key="" bad_env=""
   suite_env=()
   # `read key value` splits on the first run of whitespace and hands the rest of
   # the line to `value`, so `args` keeps its words and a tab or spaces both work.
@@ -97,7 +105,19 @@ for suite in "${all_suites[@]}"; do
       ''|'#'*) ;;
       script) suite_script="${value:-}" ;;
       args)   suite_args="${value:-}" ;;
-      env)    suite_env+=("${value:-}") ;;
+      # Checked for shape, not just for the key: `env` reaches `env(1)`, which takes
+      # a first word without `=` for the program to run — so `env LC_ALL` would run
+      # the script not at all and fail every case of the suite with exit 127, where
+      # one line here names the typo.
+      env)
+        env_name=${value%%=*}
+        case "${value:-}" in
+          *=*) case "$env_name" in
+                 ''|[0-9]*|*[!A-Za-z0-9_]*) bad_env="$value" ;;
+                 *) suite_env+=("$value") ;;
+               esac ;;
+          *) bad_env="${value:-}" ;;
+        esac ;;
       # Silently ignoring it would make a typo look like a setting that had no
       # effect — the suite would run, wrongly, and say nothing.
       *) unknown_key="$key" ;;
@@ -107,6 +127,8 @@ for suite in "${all_suites[@]}"; do
   [ -z "$unknown_key" ] || {
     suite_failure "$suite" "suite.conf: unknown key '$unknown_key' (known: script, args, env)"
     continue; }
+  [ -z "$bad_env" ] || {
+    suite_failure "$suite" "suite.conf: env '$bad_env' is not NAME=value"; continue; }
   [ -n "$suite_script" ] || {
     suite_failure "$suite" "suite.conf names no script"; continue; }
   script="$ROOT/$suite_script"
@@ -137,9 +159,14 @@ for suite in "${all_suites[@]}"; do
   # shellcheck disable=SC2206 # deliberate: suite.conf supplies separate words
   suite_argv=($suite_args)
 
-  suite_pass=0 suite_fail=0 suite_selected=0
+  suite_pass=0 suite_fail=0 suite_selected=0 suite_rows=0
   while IFS=$(printf '\t') read -r fixture args want expect note; do
     case "${fixture:-}" in ''|'#'*) continue ;; esac
+    # Rows the manifest holds, before any filter — what a suite would run if asked
+    # for all of it. `suite_selected` cannot answer that: a filter legitimately
+    # brings it to zero, which is how a manifest emptied by a bad merge would pass
+    # as a narrowed run.
+    suite_rows=$((suite_rows + 1))
     # Every column is required. A row missing one would otherwise assert less than it
     # appears to — the empty `expect` being the dangerous one, since a substring test
     # against "" matches any output at all.
@@ -235,7 +262,12 @@ for suite in "${all_suites[@]}"; do
     suite_pass=$((suite_pass + 1))
   done < "$manifest"
 
-  if [ "$suite_selected" -gt 0 ]; then
+  # A suite whose manifest holds nothing has lost its coverage rather than finished
+  # early, and it says so — silence here is what lets a script keep a suite's name
+  # while nothing is run against it.
+  if [ "$suite_rows" = 0 ]; then
+    suite_failure "$suite" "cases.tsv holds no case"
+  elif [ "$suite_selected" -gt 0 ]; then
     if [ "$suite_fail" = 0 ]; then
       printf '%-16s %s passed\n' "$suite" "$suite_pass"
     else
