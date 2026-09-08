@@ -78,7 +78,9 @@ checked on — is part of this role's loop, not a one-time launch step.
   merely echoes is adoption, and
   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
   decides which answers must first go to the user. Every answer carries the
-  coordinates that let the batch re-verify it back.
+  coordinates that let the batch re-verify it back, and one that changes what
+  a batch is building is among the things that must not be lost — it takes the
+  tracker rung besides the message.
 - **A return is accepted per `order-return.md`** — and checked against the
   ledger's standing constraints besides: a claim that touches one ("that
   request is harmless") is verified in the tree and the tracker before either

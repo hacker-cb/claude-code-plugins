@@ -86,9 +86,13 @@ holds, and what it stops is named in the return as the gap it is.
   return as a candidate — its classification proposed, never applied — and it is
   filed on the confirmation that the order's own text authorizes; what the
   order's own deliverable writes to the tracker is not this rule's business.
-- **A pending question blocks only what depends on it.** Take the slice that
-  needs no answer first; the order says which one that is, or the dependency
-  graph does.
+- **A pending question blocks only what depends on it, and of that only what
+  cannot be taken back.** Take the slice that needs no answer first — the order
+  says which one that is, or the dependency graph does. Where the fork the
+  answer settles is reversible, take this session's own recommendation under an
+  assumption stated to the master and leave it unlanded, so the answer costs a
+  revert and not a rebuild; what waits for the answer itself is the landing and
+  anything reaching outside this repository.
 - **Statuses at the order's milestones** — a change request opened, where the
   mode opens one; the readiness report a `queued` merge authority obliges, in
   the words the order gives it (the batch then waits for the master's go —
@@ -106,9 +110,11 @@ holds, and what it stops is named in the return as the gap it is.
   review that posted after the merge — its findings are orphaned there otherwise.
   Commits the landing did not take are not landed behind it either: they go to
   the master, and into the return as work left undone.
-- **The master unreachable** is `session-comms.md`'s ladder: what must not be
-  lost goes to the tracker, what blocks goes to this session's user, and work
-  that depends on neither continues.
+- **The master silent and the master unreachable are different states**, told
+  apart by `session-comms.md` and never by how long the wait has run: silence
+  is parked for as that reference parks, unreachability is what puts this
+  session on its ladder, and the work depending on neither carries on through
+  both.
 
 ## The return
 

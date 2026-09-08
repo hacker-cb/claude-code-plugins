@@ -267,8 +267,8 @@ saying something else. Each file opens by saying what it owns.
   answer an order asks for, and the acceptance on the way back. Read by whatever
   answers an order and whatever receives that answer.
 - [`references/session-comms.md`](references/session-comms.md) — how one session
-  reaches another and stays reachable itself. Read by whatever contacts another
-  session or expects to be contacted.
+  reaches another, reads what reaches it, and stays reachable itself. Read by
+  whatever contacts another session or expects to be contacted.
 - [`references/session-naming.md`](references/session-naming.md) — the names
   sessions are found by. Read by whatever titles a session or coins a batch id.
 - [`references/wave-planning.md`](references/wave-planning.md) — splitting an epic
