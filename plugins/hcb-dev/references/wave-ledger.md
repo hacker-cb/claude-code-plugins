@@ -78,12 +78,20 @@ test on a passage is whether deleting it changes what anyone does next.
 2. **Batches** — one row each: id, topic, issues, the order's ask and terminal
    deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the order's base pin, chip, the
-   session's name, state, result coordinates. States:
+   session's name, state, result coordinates. A batch runs
    `planned → chipped → started → confirmed → building → completed(<mode> —
    request merged, merged locally, tracker state delivered, verdict delivered)
-   → accepted → released`; a batch can instead stand at `blocked(<condition>)`
-   or end at `withdrawn(<reason>)` or `failed(<what stands>)` — a state is
-   advanced, never skipped silently.
+   → accepted`, standing at `blocked(<condition>)` for as long as something
+   holds it; a state is advanced, never skipped silently. It **ends** in one of
+   three, and the three carry equal weight:
+   - `released` — the work landed and the batch was let go;
+   - `withdrawn(<reason>)` — it was called off before it did;
+   - `failed(<what stands>)` — it did not come off, and what is still standing
+     is named.
+
+   A rule asking whether a batch is finished says which of the three it counts,
+   and answers the question it actually needs: what landed is one question, what
+   has nothing outstanding is another, and `released` alone is neither.
 3. **Decisions** — every fork settled during the epic: who asked, what was
    decided, where it is recorded (issue, change request) — the decision, not the
    case that was made for it.
