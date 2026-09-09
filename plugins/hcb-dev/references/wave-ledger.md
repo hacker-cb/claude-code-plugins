@@ -37,17 +37,27 @@ states resolves to neither.
 **A refused write archives and retries, and asks nothing.** The cap announces
 itself by refusing a write, never by a number carried here, and that refusal is
 answered in the same step rather than reported: the oldest closed unit moves
-out, and the entry is written after it. What leaves is the journal while it is
-still inline, and after that a closed wave — its batches released, its gates
-spent. It goes verbatim into a comment of its own marked
-`<!-- wave-journal-<n> -->`, which carries no part of the ledger's own marker,
-so the search above still finds one comment; it is listed in the ledger, the
-last of them takes new entries, and a pointer stands where the text did. This
-is bookkeeping and not a decision — it needs no permission, and it is reported
-in one line once done rather than announced while it is still coming. What is
-still open never leaves, and nothing is shortened to fit: a section summarised
-is a section that will be believed in its summarised form. A refusal with
-nothing closed left to move is the one case that stops and goes to the user.
+out, and the entry is written again — as many times over as it takes to fit.
+What leaves is the journal while it is still inline, and after that a closed
+wave: one whose batches have all reached a terminal state with nothing of theirs
+left standing, its gates spent. This is bookkeeping and not a decision — it
+needs no permission, and it is reported in one line once done rather than
+announced while it is still coming. What is still open never leaves, and nothing
+is shortened to fit: a section summarised is a section that will be believed in
+its summarised form. A refusal with nothing closed left to move is the one case
+that stops and goes to the user.
+
+**An archive is a comment, and the ledger indexes it.** What leaves goes
+verbatim under the marker `<!-- wave-journal-<n> -->`, which carries no part of
+the ledger's own marker, so the search above still finds one comment; `<n>` runs
+as one series over journal and closed wave alike, and a block too large for a
+single comment takes as many as it needs. A pointer stands where the text did,
+the ledger's journal section lists every archive in order, and new journal
+entries go to the most recent journal archive — never into a closed wave's
+snapshot, which is written once and left. Archiving is two writes, so an archive
+the ledger does not list is the same fault as a second ledger marker: repaired
+before the next chip goes up, by reading that list against what the epic
+carries.
 
 ## What it holds
 
@@ -73,9 +83,9 @@ test on a passage is whether deleting it changes what anyone does next.
 4. **Standing constraints** — what no batch may violate while the epic runs: a
    change request that must not merge, a foreign stash, a pinned version. A
    return whose claims touch one of these is checked against it before either
-   is believed. Each is written as the rule a batch acts on; how it came to be
-   known is journal, and a constraint carrying its own derivation is where the
-   ledger grows.
+   is believed. Each is written as the rule a batch acts on, together with what
+   would lift it; how it came to be known is journal, and a constraint carrying
+   its own derivation is where the ledger grows.
 5. **Merge queue and gates** — the order inside the current wave, each batch
    whose authority the header's policy was narrowed for and why, which batch
    stands ready and waiting for its slot, in either mode (written the moment
@@ -88,7 +98,8 @@ test on a passage is whether deleting it changes what anyone does next.
 7. **Journal** — one line per event, terse, newest last; and the account behind
    a constraint or a decision, at the length it takes. The ledger carries what
    is acted on and the journal how it was arrived at — and the journal is what
-   moves out first.
+   moves out first, so this section also indexes what has left: every archive in
+   order, and which of them new entries are going to.
 
 ## Discipline
 
