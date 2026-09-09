@@ -9,13 +9,18 @@
 // `--root` holding no plugin.
 //
 // Usage: node plugin-versions.mjs --root <plugin installation directory> [--project <dir>]
+//        [--floor <version>]
+//
+// `--floor` is the version a caller has pinned — the one its durable record says it last
+// reconciled against. It outranks what this script would infer, and resolves to the tree
+// that version occupies.
 //
 // The root comes from `${CLAUDE_PLUGIN_ROOT}`, which Claude Code substitutes into skill
 // content: it names the tree this session's instructions were actually loaded from, which
 // is the one question no registry can answer.
 
 import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const ORDER = [
@@ -40,9 +45,12 @@ const set = (key, value, reason) => {
 
 const firstLine = (text) => (text || '').trim().split('\n')[0] || '';
 
+const USAGE = 'usage: node plugin-versions.mjs --root <plugin installation directory>'
+  + ' [--project <dir>] [--floor <version>]\n';
+
 function die(message) {
   process.stderr.write(`plugin-versions: ${message}\n`);
-  process.stderr.write('usage: node plugin-versions.mjs --root <plugin installation directory> [--project <dir>]\n');
+  process.stderr.write(USAGE);
   process.exit(2);
 }
 
@@ -62,16 +70,19 @@ function run(cmd, args, timeoutMs) {
   return { ok: r.status === 0, out: r.stdout || '', err: r.stderr || '' };
 }
 
-// Two spellings can name one tree — a symlinked home, a trailing slash — and the
-// registry's spelling is not this run's.
+// Two spellings can name one tree — a symlinked home or project directory, a trailing
+// slash, a relative path — and the registry's spelling is not this run's.
+function canonical(path) {
+  try {
+    return realpathSync(resolve(path));
+  } catch {
+    return resolve(path);
+  }
+}
+
 function samePath(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string' || !a || !b) return false;
-  if (a === b) return true;
-  try {
-    return realpathSync(a) === realpathSync(b);
-  } catch {
-    return resolve(a) === resolve(b);
-  }
+  return a === b || canonical(a) === canonical(b);
 }
 
 function readJson(path) {
@@ -152,20 +163,24 @@ const highest = (versions) =>
 
 let root = null;
 let project = process.cwd();
+let pinned = null;
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const arg = argv[i];
-  if (arg === '--root' || arg === '--project') {
+  if (arg === '--root' || arg === '--project' || arg === '--floor') {
     if (i + 1 >= argv.length) die(`${arg} needs a value`);
     if (arg === '--root') root = argv[i + 1];
-    else project = argv[i + 1];
+    else if (arg === '--project') project = argv[i + 1];
+    else pinned = argv[i + 1];
     i += 1;
   } else if (arg.startsWith('--root=')) {
     root = arg.slice('--root='.length);
   } else if (arg.startsWith('--project=')) {
     project = arg.slice('--project='.length);
+  } else if (arg.startsWith('--floor=')) {
+    pinned = arg.slice('--floor='.length);
   } else if (arg === '-h' || arg === '--help') {
-    process.stdout.write('usage: node plugin-versions.mjs --root <plugin installation directory> [--project <dir>]\n');
+    process.stdout.write(USAGE);
     process.exit(0);
   } else {
     die(`unknown argument '${arg}'`);
@@ -216,8 +231,11 @@ if (inCache) {
 // this plugin, each at its own version — so the records that do not apply here are dropped
 // before any of them is read as the installed version. What applies: this very tree, a
 // user-wide or managed install, and a project record whose directory holds this run.
-const projectDir = resolve(project);
-const within = (parent) => projectDir === parent || projectDir.startsWith(parent.endsWith('/') ? parent : `${parent}/`);
+const projectDir = canonical(project);
+const within = (parent) => {
+  const dir = canonical(parent);
+  return projectDir === dir || projectDir.startsWith(dir.endsWith(sep) ? dir : `${dir}${sep}`);
+};
 
 let registry = null;
 let registryEntry = null;
@@ -420,10 +438,17 @@ set('read_root', runningAhead ? root : (installedRoot || root),
   runningAhead || installedRoot || drift === 0 ? null
     : `the ${installed} tree could not be found — this is the loaded tree, not the installed one`);
 
-// The floor a diff stands on is the tree this session has been acting under. Still running
-// older text makes that the loaded tree itself; already on the installed one makes it the
-// version before that, where the cache kept it.
-if (facts.get('reload_needed') === 'yes') {
+// The floor a diff stands on is the tree this session has been acting under. A version the
+// caller pinned answers that outright; absent one, still running older text makes it the
+// loaded tree itself, and already being on the installed one makes it the version before
+// that, where the cache kept it.
+const pinnedRoot = pinned && siblings.includes(pinned) ? join(pluginDir, pinned) : null;
+if (pinned) {
+  set('floor', pinned);
+  set('floor_root', pinnedRoot || 'unknown',
+    pinnedRoot ? null : `no ${pinned} tree in the cache — the pin has nothing left to diff against`);
+  set('floor_source', 'pinned');
+} else if (facts.get('reload_needed') === 'yes') {
   set('floor', loaded);
   set('floor_root', root);
   set('floor_source', 'loaded');

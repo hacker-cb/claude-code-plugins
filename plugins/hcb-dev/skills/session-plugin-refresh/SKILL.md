@@ -6,13 +6,10 @@ description: >-
   say. Use when the user reports the update — "plugin was updated", "плагин
   обновился", "перечитай скиллы и референсы", "обновись под новую версию" — and
   when a coordinating session tells its batches that the wave's plugin moved.
-  Reports four versions (the one this session is running, the one installed now,
-  the predecessor it can diff against, and the one the marketplace's own
-  repository carries), then what changed among the files in use, what that breaks
-  in work already done, and what is owed to whoever is downstream. It re-reads
-  and reports only: it never installs or updates a plugin, and `/reload-plugins`
-  stays the user's to run. Not recovery after a restart or compaction — that is
-  the resuming role's own step (`hcb-dev:master-session`, `hcb-dev:wave-worker`).
+  It re-reads and reports only: it never installs or updates a plugin, and
+  `/reload-plugins` stays the user's to run. Not recovery after a restart or
+  compaction — that is the resuming role's own step (`hcb-dev:master-session`,
+  `hcb-dev:wave-worker`).
 ---
 
 # Session plugin refresh
@@ -26,7 +23,7 @@ changes with the role is where the version is pinned and who hears about it.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/session-plugin-refresh/scripts/plugin-versions.mjs" \
-  --root "${CLAUDE_PLUGIN_ROOT}"
+  --root "${CLAUDE_PLUGIN_ROOT}" --floor "<the pinned version, where this session has one>"
 ```
 
 It prints `key=value` lines and never fails on a number it cannot resolve: an
@@ -56,10 +53,13 @@ report rather than something to work around.
 
 The floor is the tree this session had been acting under, and `floor_root` is the
 script's answer for it: the loaded tree where this session is still running older
-text, the version before it where it is not. Two things outrank that answer, and
-whichever one is used is named in the report — a version pinned in this session's
-own durable record, and one the invocation itself named. A floor buys a diff and
-nothing else, so a wrong one widens the reading rather than changing a verdict.
+text, the version before it where it is not. Two things outrank that answer — the
+version this session's own durable record pins as the one it last reconciled
+against, and one the invocation itself named — and either is handed to the script
+as `--floor`, which resolves the tree that version occupies and says so when the
+cache no longer holds it. `floor_source` names which of the three answered. A
+floor buys a diff and nothing else, so a wrong one widens the reading rather than
+changing a verdict.
 
 ```bash
 diff -ru <floor_root>/skills <read_root>/skills
@@ -129,8 +129,10 @@ nothing diverges" are different answers, and neither is written as the other.
 
 ## Closing the loop
 
-Write the version now in force into whatever durable record this session keeps,
-so the next refresh has a floor rather than a guess: for a coordinating session
+Write the version this run **reconciled against** — the one at `read_root`, which
+is not always the one the session is still running — into whatever durable record
+this session keeps, so the next refresh has a floor rather than a guess and hands
+it back as `--floor`: for a coordinating session
 that is the ledger header
 ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)), for a
 session driving a plan it is the plan document, and for one keeping neither the

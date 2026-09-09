@@ -40,9 +40,9 @@ it accepts their returns per
    named epic does.
 3. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
    else is decided; from here on, every event lands in it before the
-   conversation moves on. Its header carries the plugin version this role is
-   running, resolved rather than recalled
-   (`hcb-dev:session-plugin-refresh`).
+   conversation moves on. Its header carries the plugin version this role
+   reconciled against, which starts as the one it is running, resolved rather
+   than recalled (`hcb-dev:session-plugin-refresh`).
 
 ## Planning
 
