@@ -241,6 +241,7 @@ let registry = null;
 let registryEntry = null;
 let registryReason = null;
 let registryAmbiguity = null;
+let registryUnsettled = false;
 const listed = run('claude', ['plugin', 'list', '--json']);
 if (!listed.ok) {
   registryReason = `claude plugin list: ${firstLine(listed.err) || 'exited non-zero'}`;
@@ -285,8 +286,13 @@ if (!listed.ok) {
         // ranking: it says what this project resolved to, whatever a wider scope installed.
         const exact = mine.find((e) => samePath(e.installPath, root));
         const versions = [...new Set(mine.map((e) => e.version).filter((v) => typeof v === 'string'))];
-        registry = exact && typeof exact.version === 'string' ? exact.version : highest(versions);
-        if (!registry) registryReason = 'the entries carry no orderable version';
+        // A lone version needs no ordering to be the answer — a plugin versioned by a bare
+        // commit sha has exactly one, and discarding it would report nothing installed.
+        registry = exact && typeof exact.version === 'string' ? exact.version
+          : (highest(versions) || (versions.length === 1 ? versions[0] : null));
+        if (!registry) registryReason = versions.length > 1
+          ? 'the applicable entries carry no orderable version'
+          : 'the applicable entries carry no version';
         else {
           registryEntry = exact
             || mine.find((e) => e.version === registry && existsSync(e.installPath || ''))
@@ -294,6 +300,7 @@ if (!listed.ok) {
           // Which of several applicable installs a restart would load is the host's to
           // decide, and nothing here can read that order — so a disagreement is reported
           // rather than settled, whichever of them was picked to stand in the answer.
+          registryUnsettled = !exact && versions.length > 1;
           if (versions.length > 1) {
             registryAmbiguity = `${versions.length} installs apply here and disagree (`
               + `${mine.map((e) => `${e.scope || 'unknown'}:${e.version}`).join(', ')}) — `
@@ -313,9 +320,14 @@ set('installed_source', registry ? 'registry' : (fromCache ? 'cache' : 'loaded')
   registry ? null : registryReason);
 if (registryEntry && typeof registryEntry.scope === 'string') set('installed_scope', registryEntry.scope);
 
+// A root outside the plugin cache is not a tree the host swaps under this session: a
+// --plugin-dir run, a skills directory, a working copy. What is installed elsewhere is
+// still worth reporting, but it is not what a restart here would load.
+const entryPath = registryEntry && typeof registryEntry.installPath === 'string' ? registryEntry.installPath : null;
+const registryBacked = inCache || samePath(entryPath, root);
+
 // The registry carries the path it installed to; the cache layout is what answers when it
 // could not be read, and neither is trusted past the directory actually being there.
-const entryPath = registryEntry && typeof registryEntry.installPath === 'string' ? registryEntry.installPath : null;
 const installedRoot = (entryPath && existsSync(entryPath) ? entryPath : null)
   || (installed && siblings.includes(installed) ? join(pluginDir, installed) : null);
 set('installed_root', installedRoot || 'unknown',
@@ -419,23 +431,28 @@ if (upstream.ref) set('upstream_ref', upstream.ref);
 
 // ----------------------------------------------------------------- derived
 
-// A loaded tree AHEAD of what is installed is a working copy or a --plugin-dir run: there
-// is nothing newer to pick up. Inside the cache the same shape is a rollback — the session
-// holds text that is no longer installed — and that does call for a reload.
-const drift = loaded && installed ? compareVersions(installed, loaded) : null;
-const runningAhead = drift === -1 && !inCache;
-set('reload_needed', drift === null ? 'unknown' : (drift === 0 || runningAhead ? 'no' : 'yes'),
-  drift === null ? 'the loaded and installed versions cannot be compared'
-    : (runningAhead ? 'the loaded tree is ahead of what is installed' : null));
+// Reload turns on identity, not on order: two versions that cannot be ranked can still be
+// told apart, and a different one installed is a different tree a restart would load. What
+// settles it first is whether the host installed this tree at all.
+const sameVersion = Boolean(loaded) && loaded === installed;
+if (!registryBacked) {
+  set('reload_needed', 'no', 'the loaded tree is not one the host installed here — a restart loads this same tree');
+} else if (!loaded || !installed) {
+  set('reload_needed', 'unknown', 'one of the two versions is unknown');
+} else if (sameVersion) {
+  set('reload_needed', 'no');
+} else if (registryUnsettled) {
+  set('reload_needed', 'unknown', registryAmbiguity);
+} else {
+  set('reload_needed', 'yes');
+}
 
 // The tree to re-read from is the installed one: an update that landed mid-session leaves
-// the session reading text a restart has already replaced. Where that tree cannot be found
-// the loaded one is all there is, and the report has to say so rather than let the fallback
-// pass for the installed tree.
-// A working copy or a --plugin-dir tree ahead of the registry is the text this session is
-// meant to keep: re-reading the installed one would put older instructions back.
-set('read_root', runningAhead ? root : (installedRoot || root),
-  runningAhead || installedRoot || drift === 0 ? null
+// the session reading text a restart has already replaced. A tree the host did not install
+// reads itself — nothing swaps it — and where the installed one cannot be found the report
+// says so rather than letting the fallback pass for it.
+set('read_root', registryBacked ? (installedRoot || root) : root,
+  !registryBacked || installedRoot || sameVersion ? null
     : `the ${installed} tree could not be found — this is the loaded tree, not the installed one`);
 
 // The floor a diff stands on is the tree this session has been acting under. A version the

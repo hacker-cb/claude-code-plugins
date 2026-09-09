@@ -36,10 +36,12 @@ report rather than something to work around.
   either way what a restart lands on is the installed one. Reading it by path is
   what fixes *this* session, while
   hooks, MCP servers and monitors keep the old path until the user runs
-  `/reload-plugins` or restarts. Say so; neither is yours to run. A
-  `read_root_reason` beside it means the installed tree is not on disk at all, so
-  what follows is the loaded tree read against itself — a missing delta, reported
-  as such and never as "nothing changed".
+  `/reload-plugins` or restarts. Say so; neither is yours to run. `unknown` there
+  is two applicable installs disagreeing, both named in the reason: read from
+  `read_root` and carry that disagreement into the report rather than picking one.
+  A `read_root_reason` means the installed tree is not on disk at all, so what
+  follows is the loaded tree read against itself — a missing delta, reported as
+  such and never as "nothing changed".
 - **`update_pending=yes` means the update did not fully land** — what is
   installed is behind the marketplace's repository. Report it with the command
   that closes it (`/plugin marketplace update <marketplace>`, then the plugin's
