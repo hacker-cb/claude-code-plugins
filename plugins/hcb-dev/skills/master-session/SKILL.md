@@ -55,9 +55,6 @@ the table; the click that
 starts each chip is a second, separate gate — approval of the plan is not
 permission to hang chips for gated waves early.
 
-**A wave wider than one batch goes up with its case** — the columns
-`wave-planning.md` closes on, its launch order among them.
-
 **The epic's merge authority is settled with that same word**, once, before the
 first chip goes up — `on-green` recommended first
 ([`../../references/slice-completion.md`](../../references/slice-completion.md)),

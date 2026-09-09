@@ -16,10 +16,11 @@ description: >-
 
 # Wave dispatch
 
-A batch is one session's worth of work; a wave is the set of batches its gate
-releases — together, or one at a time where the plan stages them. This skill
-takes batches already planned — by the coordinating session's own analysis —
-and launches them. The order it
+A batch is one session's worth of work; what a wave is, and how a split was
+drawn, is
+[`../../references/wave-planning.md`](../../references/wave-planning.md)'s. This
+skill takes batches already planned — by the coordinating session's own
+analysis — and launches them. The order it
 writes obeys [`../../references/session-prompts.md`](../../references/session-prompts.md),
 settles every slot of [`../../references/order-anatomy.md`](../../references/order-anatomy.md),
 and addresses its receiver per [`../../references/session-comms.md`](../../references/session-comms.md).
@@ -185,7 +186,7 @@ is not free until the master accepts.
   change. The launch-time order is not the last
   word on a shared file.
 - **A staged wave's next chip goes up when the one before it lands** — the
-  preflight above run again for that step alone, its own pin included. A step
+  preflight above is run again for that step alone, its own pin included. A step
   whose predecessor reached a terminal state without landing waits for nothing:
   the wave is replanned from there. A staged wave whose next step is
   never hung is a stall, not a finished launch.
@@ -218,6 +219,7 @@ plan changes, withdraw the chips it obsoleted (`dismiss_task`) and say so.
 
 ## Reference files
 
+- [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/session-prompts.md`](../../references/session-prompts.md)
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
