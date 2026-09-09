@@ -1,32 +1,36 @@
 #!/usr/bin/env node
 // plugin-versions.mjs — which version of a plugin this session is running, which one is
-// installed, which one came before it, and what the marketplace's own repository says now.
-// Prints `key=value` lines on stdout and nothing else.
+// installed for it, which tree a diff stands on, and what the marketplace's own repository
+// says now. Prints `key=value` lines on stdout and nothing else.
 //
 // Every answer degrades to `unknown` with a `<key>_reason` beside it: a number that could
 // not be resolved is a line of the report, where a crash would take the whole re-read down
 // with it. Exit 2 is kept for a call this script cannot act on at all — an unknown flag, a
 // `--root` holding no plugin.
 //
-// Usage: node plugin-versions.mjs --root <plugin installation directory>
+// Usage: node plugin-versions.mjs --root <plugin installation directory> [--project <dir>]
 //
 // The root comes from `${CLAUDE_PLUGIN_ROOT}`, which Claude Code substitutes into skill
 // content: it names the tree this session's instructions were actually loaded from, which
 // is the one question no registry can answer.
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const ORDER = [
   'plugin', 'marketplace',
   'loaded', 'loaded_root',
   'cache',
-  'installed', 'installed_root', 'installed_source',
+  'installed', 'installed_root', 'installed_scope', 'installed_source',
   'predecessor', 'predecessor_root',
-  'upstream', 'upstream_repo',
+  'floor', 'floor_root', 'floor_source',
+  'upstream', 'upstream_repo', 'upstream_ref',
   'read_root', 'reload_needed', 'update_pending',
 ];
+
+const LOCAL_TIMEOUT = 15000;
+const NETWORK_TIMEOUT = 60000;
 
 const facts = new Map();
 const set = (key, value, reason) => {
@@ -38,16 +42,23 @@ const firstLine = (text) => (text || '').trim().split('\n')[0] || '';
 
 function die(message) {
   process.stderr.write(`plugin-versions: ${message}\n`);
-  process.stderr.write('usage: node plugin-versions.mjs --root <plugin installation directory>\n');
+  process.stderr.write('usage: node plugin-versions.mjs --root <plugin installation directory> [--project <dir>]\n');
   process.exit(2);
 }
 
-// Never throws: a missing command is an answer ("unknown, because"), not an exception.
-function run(cmd, args) {
-  const r = spawnSync(cmd, args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+// Never throws: a missing command, a refusal and a hung network are all answers
+// ("unknown, because"), and the timeout is what keeps the last of those from becoming
+// a session that waits for a forge forever.
+function run(cmd, args, timeoutMs) {
+  const limit = timeoutMs || LOCAL_TIMEOUT;
+  const r = spawnSync(cmd, args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, timeout: limit });
+  const timedOut = `${cmd} timed out after ${Math.round(limit / 1000)}s`;
   if (r.error) {
-    return { ok: false, out: '', err: r.error.code === 'ENOENT' ? `${cmd} not found` : r.error.message };
+    if (r.error.code === 'ENOENT') return { ok: false, out: '', err: `${cmd} not found` };
+    if (r.error.code === 'ETIMEDOUT') return { ok: false, out: '', err: timedOut };
+    return { ok: false, out: '', err: r.error.message };
   }
+  if (r.signal) return { ok: false, out: '', err: timedOut };
   return { ok: r.status === 0, out: r.stdout || '', err: r.stderr || '' };
 }
 
@@ -59,13 +70,45 @@ function readJson(path) {
   }
 }
 
+function parseJsonText(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 // A cache directory is "named for the resolved version", which is a semver string for a
-// plugin declaring one and a bare commit sha for one that does not. A sha carries no order,
-// so it is left out of every comparison rather than sorted as text.
+// plugin declaring one and a bare commit sha for one that does not. At least one dot is
+// required so an all-numeric sha is not read as a major version — a sha carries no order,
+// and is left out of every comparison rather than sorted as text.
 function parseVersion(value) {
-  const m = /^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(value || '');
+  const m = /^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(value || '');
   if (!m) return null;
   return { nums: [m[1], m[2], m[3]].map((n) => (n === undefined ? 0 : Number(n))), pre: m[4] || '' };
+}
+
+// Prerelease identifiers compare one dot-separated field at a time, numeric fields
+// numerically: `beta.10` is above `beta.2`, which a whole-string comparison reverses.
+function comparePrerelease(a, b) {
+  const as = a.split('.');
+  const bs = b.split('.');
+  for (let i = 0; i < Math.max(as.length, bs.length); i += 1) {
+    const x = as[i];
+    const y = bs[i];
+    if (x === undefined) return -1;
+    if (y === undefined) return 1;
+    const nx = /^\d+$/.test(x);
+    const ny = /^\d+$/.test(y);
+    if (nx && ny) {
+      if (Number(x) !== Number(y)) return Number(x) < Number(y) ? -1 : 1;
+    } else if (nx !== ny) {
+      return nx ? -1 : 1;
+    } else if (x !== y) {
+      return x < y ? -1 : 1;
+    }
+  }
+  return 0;
 }
 
 // null where either side is unorderable — the caller drops that candidate instead of
@@ -80,7 +123,7 @@ function compareVersions(a, b) {
   if (pa.pre === pb.pre) return 0;
   if (!pa.pre) return 1;
   if (!pb.pre) return -1;
-  return pa.pre < pb.pre ? -1 : 1;
+  return comparePrerelease(pa.pre, pb.pre);
 }
 
 const highest = (versions) =>
@@ -93,17 +136,21 @@ const highest = (versions) =>
 // ---------------------------------------------------------------- arguments
 
 let root = null;
+let project = process.cwd();
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const arg = argv[i];
-  if (arg === '--root') {
-    if (i + 1 >= argv.length) die('--root needs a value');
-    root = argv[i + 1];
+  if (arg === '--root' || arg === '--project') {
+    if (i + 1 >= argv.length) die(`${arg} needs a value`);
+    if (arg === '--root') root = argv[i + 1];
+    else project = argv[i + 1];
     i += 1;
   } else if (arg.startsWith('--root=')) {
     root = arg.slice('--root='.length);
+  } else if (arg.startsWith('--project=')) {
+    project = arg.slice('--project='.length);
   } else if (arg === '-h' || arg === '--help') {
-    process.stdout.write('usage: node plugin-versions.mjs --root <plugin installation directory>\n');
+    process.stdout.write('usage: node plugin-versions.mjs --root <plugin installation directory> [--project <dir>]\n');
     process.exit(0);
   } else {
     die(`unknown argument '${arg}'`);
@@ -132,8 +179,6 @@ if (inCache) set('marketplace', basename(dirname(pluginDir)));
 
 const plugin = facts.get('plugin');
 
-// -------------------------------------------------------- versions on disk
-
 const siblings = inCache
   ? readdirSync(pluginDir, { withFileTypes: true })
       .filter((e) => e.isDirectory())
@@ -144,38 +189,64 @@ const siblings = inCache
 // ------------------------------------------------- what the registry installed
 
 // The registry is the authority on what is installed: the cache also holds versions an
-// update left orphaned, and after a downgrade its highest is not the one a restart loads.
+// update left orphaned, and after a rollback its highest is not the one a restart loads.
+//
+// It answers for every scope on the machine at once — one record per project that pinned
+// this plugin, each at its own version — so the records that do not apply here are dropped
+// before any of them is read as the installed version. What applies: this very tree, a
+// user-wide or managed install, and a project record whose directory holds this run.
+const projectDir = resolve(project);
+const within = (parent) => projectDir === parent || projectDir.startsWith(parent.endsWith('/') ? parent : `${parent}/`);
+
 let registry = null;
+let registryEntry = null;
 let registryReason = null;
 const listed = run('claude', ['plugin', 'list', '--json']);
 if (!listed.ok) {
   registryReason = `claude plugin list: ${firstLine(listed.err) || 'exited non-zero'}`;
 } else {
-  let parsed = null;
-  try {
-    parsed = JSON.parse(listed.out);
-  } catch {
-    parsed = null;
-  }
+  const parsed = parseJsonText(listed.out);
   const entries = Array.isArray(parsed)
     ? parsed
     : (parsed && Array.isArray(parsed.installed) ? parsed.installed : null);
   if (!entries) {
     registryReason = 'claude plugin list did not answer a JSON list';
   } else {
-    const mine = entries.filter((e) => {
+    const known = facts.get('marketplace');
+    const named = entries.filter((e) => {
       if (!e || typeof e !== 'object') return false;
-      if (typeof e.installPath === 'string' && (e.installPath === root || dirname(e.installPath) === pluginDir)) return true;
-      return typeof e.id === 'string' && e.id.split('@')[0] === plugin;
+      if (typeof e.installPath === 'string' && e.installPath === root) return true;
+      if (typeof e.id !== 'string') return false;
+      const [name, market] = e.id.split('@');
+      if (name !== plugin) return false;
+      // A plugin name belongs to its marketplace, not to every marketplace: another
+      // catalog's plugin of the same name is a different plugin at a different version.
+      return known ? market === known : true;
     });
-    if (mine.length === 0) {
+    const mine = named.filter((e) =>
+      (typeof e.installPath === 'string' && e.installPath === root)
+      || e.scope === 'user' || e.scope === 'managed'
+      || (typeof e.projectPath === 'string' && within(e.projectPath)));
+
+    if (named.length === 0) {
       registryReason = `no entry for '${plugin}' — a plugin loaded with --plugin-dir is not listed`;
+    } else if (mine.length === 0) {
+      registryReason = `${named.length} entries for '${plugin}', none of them installed for this project`;
     } else {
-      registry = highest(mine.map((e) => e.version).filter((v) => typeof v === 'string'));
-      if (!registry) registryReason = 'the entries carry no orderable version';
-      if (!facts.has('marketplace')) {
-        const id = mine.map((e) => e.id).find((v) => typeof v === 'string' && v.includes('@'));
-        if (id) set('marketplace', id.split('@')[1]);
+      const markets = [...new Set(mine
+        .map((e) => (typeof e.id === 'string' ? e.id.split('@')[1] : null))
+        .filter(Boolean))];
+      if (!known && markets.length > 1) {
+        registryReason = `entries for '${plugin}' come from several marketplaces: ${markets.join(', ')}`;
+      } else {
+        if (!known && markets.length === 1) set('marketplace', markets[0]);
+        registry = highest(mine.map((e) => e.version).filter((v) => typeof v === 'string'));
+        if (!registry) registryReason = 'the entries carry no orderable version';
+        else {
+          registryEntry = mine.find((e) => e.version === registry
+            && typeof e.installPath === 'string' && existsSync(e.installPath))
+            || mine.find((e) => e.version === registry) || null;
+        }
       }
     }
   }
@@ -186,24 +257,27 @@ const installed = registry || fromCache || loaded;
 set('installed', installed || 'unknown', installed ? null : (registryReason || 'no version could be resolved'));
 set('installed_source', registry ? 'registry' : (fromCache ? 'cache' : 'loaded'),
   registry ? null : registryReason);
+if (registryEntry && typeof registryEntry.scope === 'string') set('installed_scope', registryEntry.scope);
 
-const installedRoot = installed && siblings.includes(installed) ? join(pluginDir, installed) : null;
+// The registry carries the path it installed to; the cache layout is what answers when it
+// could not be read, and neither is trusted past the directory actually being there.
+const entryPath = registryEntry && typeof registryEntry.installPath === 'string' ? registryEntry.installPath : null;
+const installedRoot = (entryPath && existsSync(entryPath) ? entryPath : null)
+  || (installed && siblings.includes(installed) ? join(pluginDir, installed) : null);
 set('installed_root', installedRoot || 'unknown',
   installedRoot ? null
-    : (!inCache ? 'the root is outside the plugin cache'
-      : (installed ? `no ${installed} directory beside the loaded one` : 'no installed version to point at')));
+    : (!inCache && !entryPath ? 'the root is outside the plugin cache'
+      : (installed ? `nothing on disk at the ${installed} installation` : 'no installed version to point at')));
 
 // ------------------------------------------------------------- predecessor
 
-// The floor a diff stands on: the highest version below the one this session is running.
 // Claude Code sweeps an orphaned version directory roughly two weeks after an update, so
-// its absence is an ordinary answer and not a fault.
+// the absence of an earlier one is an ordinary answer and not a fault.
 const below = loaded ? siblings.filter((v) => compareVersions(v, loaded) === -1) : [];
 const predecessor = highest(below);
 set('predecessor', predecessor || 'unknown',
   predecessor ? null
-    : (!inCache ? 'the root is outside the plugin cache'
-      : (!loaded ? 'the loaded version is unknown' : 'no earlier version is left in the cache')));
+    : (!inCache ? 'the root is outside the plugin cache' : 'no earlier version is left in the cache'));
 if (predecessor) set('predecessor_root', join(pluginDir, predecessor));
 
 // ---------------------------------------------------------------- upstream
@@ -219,22 +293,29 @@ function resolveUpstream() {
   if (!listedMarkets.ok) {
     return { reason: `claude plugin marketplace list: ${firstLine(listedMarkets.err) || 'exited non-zero'}` };
   }
-  let markets = null;
-  try {
-    markets = JSON.parse(listedMarkets.out);
-  } catch {
-    markets = null;
-  }
+  const markets = parseJsonText(listedMarkets.out);
   if (!Array.isArray(markets)) return { reason: 'claude plugin marketplace list did not answer a JSON list' };
   const entry = markets.find((m) => m && m.name === marketplace);
   if (!entry) return { reason: `marketplace '${marketplace}' is not configured here` };
-  const location = typeof entry.installLocation === 'string' ? entry.installLocation : null;
-  if (!location) return { reason: `marketplace '${marketplace}' names no checkout to read`, repo: entry.repo };
-
   const repo = typeof entry.repo === 'string' ? entry.repo : null;
+  const location = typeof entry.installLocation === 'string' ? entry.installLocation : null;
+  if (!location) return { reason: `marketplace '${marketplace}' names no checkout to read`, repo };
+
+  // The checkout has to BE a repository, not merely sit inside one: a marketplace kept in
+  // a directory of someone else's project would otherwise put the fetch below onto that
+  // project's remote.
+  const top = run('git', ['-C', location, 'rev-parse', '--show-toplevel']);
+  if (!top.ok) return { reason: `'${marketplace}' is not a git checkout`, repo };
+  let sameTree = false;
+  try {
+    sameTree = realpathSync(top.out.trim()) === realpathSync(location);
+  } catch {
+    sameTree = false;
+  }
+  if (!sameTree) return { reason: `the '${marketplace}' checkout sits inside another repository`, repo };
 
   const remotes = run('git', ['-C', location, 'remote']);
-  if (!remotes.ok) return { reason: `'${marketplace}' is not a git checkout`, repo };
+  if (!remotes.ok) return { reason: `no remote could be read for '${marketplace}'`, repo };
   const names = remotes.out.split('\n').map((s) => s.trim()).filter(Boolean);
   if (names.length === 0) return { reason: `the '${marketplace}' checkout has no remote`, repo };
   // One remote is the answer; with several, `origin` is a documented preference and
@@ -242,68 +323,79 @@ function resolveUpstream() {
   const remote = names.length === 1 ? names[0] : (names.includes('origin') ? 'origin' : null);
   if (!remote) return { reason: `several remotes on the '${marketplace}' checkout: ${names.join(', ')}`, repo };
 
-  // --symref reads the default branch and its tip in one call and writes nothing.
-  const head = run('git', ['-C', location, 'ls-remote', '--symref', remote, 'HEAD']);
-  if (!head.ok) return { reason: `ls-remote ${remote}: ${firstLine(head.err) || 'exited non-zero'}`, repo };
-  const branch = /^ref:\s+refs\/heads\/(\S+)\s+HEAD/m.exec(head.out);
-  const tip = /^([0-9a-f]{7,40})\s+HEAD/m.exec(head.out);
-  if (!branch || !tip) return { reason: `${remote} names no default branch`, repo };
-
-  const fetched = run('git', ['-C', location, 'fetch', '--quiet', remote, branch[1]]);
-  if (!fetched.ok) return { reason: `fetch ${remote} ${branch[1]}: ${firstLine(fetched.err) || 'exited non-zero'}`, repo };
-
-  const show = (path) => run('git', ['-C', location, 'show', `${tip[1]}:${path}`]);
-  const marketManifest = show('.claude-plugin/marketplace.json');
-  if (!marketManifest.ok) return { reason: `no marketplace manifest at ${remote}/${branch[1]}`, repo };
-  let catalog = null;
-  try {
-    catalog = JSON.parse(marketManifest.out);
-  } catch {
-    catalog = null;
+  // A marketplace pinned to a branch or a tag is answered by that ref, not by the
+  // repository's default branch — an update follows the pin, so a version elsewhere is
+  // one nobody here can install. Absent a pin, the remote's own HEAD says which branch.
+  let branch = typeof entry.ref === 'string' && entry.ref ? entry.ref : null;
+  if (!branch) {
+    const head = run('git', ['-C', location, 'ls-remote', '--symref', remote, 'HEAD'], NETWORK_TIMEOUT);
+    if (!head.ok) return { reason: `ls-remote ${remote}: ${firstLine(head.err) || 'exited non-zero'}`, repo };
+    const named = /^ref:\s+refs\/heads\/(\S+)\s+HEAD/m.exec(head.out);
+    if (!named) return { reason: `${remote} names no default branch`, repo };
+    branch = named[1];
   }
+  const ref = `${remote}/${branch}`;
+
+  const fetched = run('git', ['-C', location, 'fetch', '--quiet', remote, branch], NETWORK_TIMEOUT);
+  if (!fetched.ok) return { reason: `fetch ${remote} ${branch}: ${firstLine(fetched.err) || 'exited non-zero'}`, repo, ref };
+
+  const show = (path) => run('git', ['-C', location, 'show', `FETCH_HEAD:${path}`]);
+  const catalog = parseJsonText(show('.claude-plugin/marketplace.json').out);
   const plugins = catalog && Array.isArray(catalog.plugins) ? catalog.plugins : null;
-  if (!plugins) return { reason: 'the marketplace manifest carries no plugin list', repo };
+  if (!plugins) return { reason: `no readable marketplace manifest at ${ref}`, repo, ref };
   const record = plugins.find((p) => p && p.name === plugin);
-  if (!record) return { reason: `no entry named '${plugin}' in the marketplace manifest`, repo };
+  if (!record) return { reason: `no entry named '${plugin}' in the manifest at ${ref}`, repo, ref };
 
   // A source that is a path in this same repository is the only one whose version can be
   // read here; a github / git / npm / command source is versioned somewhere else entirely.
   if (typeof record.source === 'string' && record.source.startsWith('./')) {
-    const pluginManifest = show(`${record.source.slice(2)}/.claude-plugin/plugin.json`);
-    if (pluginManifest.ok) {
-      const upstream = readJsonText(pluginManifest.out);
-      if (upstream && typeof upstream.version === 'string') return { version: upstream.version, repo };
-    }
+    const upstream = parseJsonText(show(`${record.source.slice(2)}/.claude-plugin/plugin.json`).out);
+    if (upstream && typeof upstream.version === 'string') return { version: upstream.version, repo, ref };
   }
   // The marketplace entry's own version is what a plugin declaring none resolves to.
-  if (typeof record.version === 'string') return { version: record.version, repo };
-  return { reason: `the entry for '${plugin}' declares no version this checkout can read`, repo };
-}
-
-function readJsonText(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+  if (typeof record.version === 'string') return { version: record.version, repo, ref };
+  return { reason: `the entry for '${plugin}' declares no version readable at ${ref}`, repo, ref };
 }
 
 const upstream = resolveUpstream();
 set('upstream', upstream.version || 'unknown', upstream.version ? null : upstream.reason);
 if (upstream.repo) set('upstream_repo', upstream.repo);
+if (upstream.ref) set('upstream_ref', upstream.ref);
 
 // ----------------------------------------------------------------- derived
 
-// The tree to re-read from is the installed one, not the loaded one: an update that landed
-// mid-session leaves the session reading text a restart has already replaced.
-set('read_root', installedRoot || root);
-
-// Only one direction calls for a reload. A loaded tree AHEAD of what is installed is a
-// working copy or a --plugin-dir run, where there is nothing newer to pick up.
+// A loaded tree AHEAD of what is installed is a working copy or a --plugin-dir run: there
+// is nothing newer to pick up. Inside the cache the same shape is a rollback — the session
+// holds text that is no longer installed — and that does call for a reload.
 const drift = loaded && installed ? compareVersions(installed, loaded) : null;
-set('reload_needed', drift === null ? 'unknown' : (drift === 1 ? 'yes' : 'no'),
+const runningAhead = drift === -1 && !inCache;
+set('reload_needed', drift === null ? 'unknown' : (drift === 0 || runningAhead ? 'no' : 'yes'),
   drift === null ? 'the loaded and installed versions cannot be compared'
-    : (drift === -1 ? 'the loaded tree is ahead of what is installed' : null));
+    : (runningAhead ? 'the loaded tree is ahead of what is installed' : null));
+
+// The tree to re-read from is the installed one: an update that landed mid-session leaves
+// the session reading text a restart has already replaced. Where that tree cannot be found
+// the loaded one is all there is, and the report has to say so rather than let the fallback
+// pass for the installed tree.
+set('read_root', installedRoot || root,
+  installedRoot || facts.get('reload_needed') !== 'yes' ? null
+    : `the ${installed} tree could not be found — this is the loaded tree, not the installed one`);
+
+// The floor a diff stands on is the tree this session has been acting under. Still running
+// older text makes that the loaded tree itself; already on the installed one makes it the
+// version before that, where the cache kept it.
+if (facts.get('reload_needed') === 'yes') {
+  set('floor', loaded);
+  set('floor_root', root);
+  set('floor_source', 'loaded');
+} else if (predecessor) {
+  set('floor', predecessor);
+  set('floor_root', join(pluginDir, predecessor));
+  set('floor_source', 'predecessor');
+} else {
+  set('floor', 'unknown', facts.get('predecessor_reason') || 'no earlier tree to diff against');
+  set('floor_source', 'none');
+}
 
 const behind = upstream.version && installed ? compareVersions(upstream.version, installed) : null;
 set('update_pending', behind === null ? 'unknown' : (behind === 1 ? 'yes' : 'no'),

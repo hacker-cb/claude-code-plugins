@@ -2,10 +2,19 @@
   "plugin_list": [
     {
       "id": "hcb-dev@hacker-cb-plugins",
-      "version": "0.48.0",
-      "scope": "user",
+      "version": "0.52.0",
+      "scope": "project",
       "enabled": true,
-      "installPath": "tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.48.0"
+      "installPath": "tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.52.0",
+      "projectPath": "/somewhere/else/repo-b"
+    },
+    {
+      "id": "hcb-dev@hacker-cb-plugins",
+      "version": "0.48.0",
+      "scope": "project",
+      "enabled": true,
+      "installPath": "tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.48.0",
+      "projectPath": "/tmp/this-project"
     }
   ],
   "marketplace_list": [

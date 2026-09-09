@@ -1,6 +1,13 @@
 {
   "plugin_list": [
     {
+      "id": "hcb-dev@some-other-market",
+      "version": "9.9.9",
+      "scope": "user",
+      "enabled": true,
+      "installPath": "/cache/some-other-market/hcb-dev/9.9.9"
+    },
+    {
       "id": "hcb-dev@hacker-cb-plugins",
       "version": "0.41.0",
       "scope": "user",
@@ -10,9 +17,9 @@
   ],
   "marketplace_list": [
     {
-      "name": "claude-plugins-official",
+      "name": "hacker-cb-plugins",
       "source": "github",
-      "repo": "anthropics/claude-plugins-official",
+      "repo": "hacker-cb/claude-code-plugins",
       "installLocation": "tests/suites/plugin-versions/fixtures"
     }
   ],

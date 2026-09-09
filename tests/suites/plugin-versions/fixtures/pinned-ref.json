@@ -10,10 +10,11 @@
   ],
   "marketplace_list": [
     {
-      "name": "claude-plugins-official",
+      "name": "hacker-cb-plugins",
       "source": "github",
-      "repo": "anthropics/claude-plugins-official",
-      "installLocation": "tests/suites/plugin-versions/fixtures"
+      "repo": "hacker-cb/claude-code-plugins",
+      "installLocation": "tests/suites/plugin-versions/fixtures",
+      "ref": "release/1.x"
     }
   ],
   "git_show": {

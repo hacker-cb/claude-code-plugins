@@ -37,7 +37,10 @@ report rather than something to work around.
   the loaded one. Where `reload_needed` is `yes`, this session was handed the
   older files: reading the newer ones by path is what fixes *this* session, while
   hooks, MCP servers and monitors keep the old path until the user runs
-  `/reload-plugins` or restarts. Say so; neither is yours to run.
+  `/reload-plugins` or restarts. Say so; neither is yours to run. A
+  `read_root_reason` beside it means the installed tree is not on disk at all, so
+  what follows is the loaded tree read against itself — a missing delta, reported
+  as such and never as "nothing changed".
 - **`update_pending=yes` means the update did not fully land** — what is
   installed is behind the marketplace's repository. Report it with the command
   that closes it (`/plugin marketplace update <marketplace>`, then the plugin's
@@ -49,21 +52,22 @@ report rather than something to work around.
 
 ## The floor, and the diff it buys
 
-The floor is the version this session had been acting under. Take the first that
-answers, and name which one it was: a version pinned in this session's own
-durable record · one the context shows this session read · one the invocation
-named · the script's `predecessor` · none. A floor buys a diff and nothing else,
-so a wrong one widens the reading rather than changing a verdict.
+The floor is the tree this session had been acting under, and `floor_root` is the
+script's answer for it: the loaded tree where this session is still running older
+text, the version before it where it is not. Two things outrank that answer, and
+whichever one is used is named in the report — a version pinned in this session's
+own durable record, and one the invocation itself named. A floor buys a diff and
+nothing else, so a wrong one widens the reading rather than changing a verdict.
 
 ```bash
-diff -ru <floor tree>/skills <read_root>/skills
-diff -ru <floor tree>/references <read_root>/references
+diff -ru <floor_root>/skills <read_root>/skills
+diff -ru <floor_root>/references <read_root>/references
 ```
 
-`Only in <floor tree>` is its own finding: a file this session's memory points at
-that no longer exists under that name. With no floor there is no diff, and the
-reading below is what it always was — the report says the delta is missing rather
-than implying nothing changed.
+`Only in <floor_root>` is its own finding: a file this session's memory points at
+that no longer exists under that name. With `floor=unknown` there is no diff, and
+the reading below is what it always was — the report says the delta is missing
+rather than implying nothing changed.
 
 ## What is re-read, and how
 
