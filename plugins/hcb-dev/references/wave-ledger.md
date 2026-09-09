@@ -36,16 +36,19 @@ states resolves to neither.
 
 **A refused write archives and retries, and asks nothing.** The cap announces
 itself by refusing a write, never by a number carried here, and that refusal is
-answered in the same step rather than reported: the oldest closed unit moves
-out, and the entry is written again — as many times over as it takes to fit.
-What leaves is the journal while it is still inline, and after that a closed
-wave: one whose batches have all reached a terminal state with nothing of theirs
-left standing, its gates spent. This is bookkeeping and not a decision — it
-needs no permission, and it is reported in one line once done rather than
-announced while it is still coming. What is still open never leaves, and nothing
-is shortened to fit: a section summarised is a section that will be believed in
-its summarised form. A refusal with nothing closed left to move is the one case
-that stops and goes to the user.
+answered in the same step rather than reported — by which comment refused. A
+refused **ledger** write moves the oldest closed unit out and writes the entry
+again, as many times over as it takes to fit: what leaves is the journal while
+it is still inline, and after that a closed wave, one whose batches have all
+reached a terminal state with nothing of theirs left standing and whose gates
+are spent. A refused write to the **journal archive** taking new entries opens
+the next archive and writes there instead — moving anything out of the ledger
+would not free a byte of the comment that refused. All of it is bookkeeping and
+not a decision: it needs no permission, and it is reported in one line once done
+rather than announced while it is still coming. What is still open never leaves,
+and nothing is shortened to fit — a section summarised is a section that will be
+believed in its summarised form. A refused ledger write with nothing closed left
+to move is the one case that stops and goes to the user.
 
 **An archive is a comment, and the ledger indexes it.** What leaves goes
 verbatim under the marker `<!-- wave-journal-<n> -->`, which carries no part of
@@ -54,10 +57,12 @@ as one series over journal and closed wave alike, and a block too large for a
 single comment takes as many as it needs. A pointer stands where the text did,
 the ledger's journal section lists every archive in order, and new journal
 entries go to the most recent journal archive — never into a closed wave's
-snapshot, which is written once and left. Archiving is two writes, so an archive
-the ledger does not list is the same fault as a second ledger marker: repaired
-before the next chip goes up, by reading that list against what the epic
-carries.
+snapshot, which is written once and left. Archiving is two writes and they are
+ordered, the archive comment first and the ledger's own edit second, so an
+interruption leaves an archive nothing points at rather than a pointer to text
+that no longer exists. An archive the ledger does not list is then the same
+fault as a second ledger marker: repaired before the next chip goes up, by
+reading that list against what the epic carries.
 
 ## What it holds
 
