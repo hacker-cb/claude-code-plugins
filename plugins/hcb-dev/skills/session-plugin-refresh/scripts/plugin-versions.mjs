@@ -62,6 +62,18 @@ function run(cmd, args, timeoutMs) {
   return { ok: r.status === 0, out: r.stdout || '', err: r.stderr || '' };
 }
 
+// Two spellings can name one tree — a symlinked home, a trailing slash — and the
+// registry's spelling is not this run's.
+function samePath(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || !a || !b) return false;
+  if (a === b) return true;
+  try {
+    return realpathSync(a) === realpathSync(b);
+  } catch {
+    return resolve(a) === resolve(b);
+  }
+}
+
 function readJson(path) {
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
@@ -114,6 +126,9 @@ function comparePrerelease(a, b) {
 // null where either side is unorderable — the caller drops that candidate instead of
 // ranking it, which is what keeps a sha-named sibling out of the maximum.
 function compareVersions(a, b) {
+  // Two identical strings are the same version whether or not either parses — a plugin
+  // versioned by a bare commit sha is still not two different versions.
+  if (a && a === b) return 0;
   const pa = parseVersion(a);
   const pb = parseVersion(b);
   if (!pa || !pb) return null;
@@ -179,12 +194,18 @@ if (inCache) set('marketplace', basename(dirname(pluginDir)));
 
 const plugin = facts.get('plugin');
 
-const siblings = inCache
-  ? readdirSync(pluginDir, { withFileTypes: true })
+let siblings = [];
+let cacheReason = null;
+if (inCache) {
+  try {
+    siblings = readdirSync(pluginDir, { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
-      .filter((n) => existsSync(join(pluginDir, n, '.claude-plugin', 'plugin.json')))
-  : [];
+      .filter((n) => existsSync(join(pluginDir, n, '.claude-plugin', 'plugin.json')));
+  } catch (e) {
+    cacheReason = `the cache directory could not be listed: ${e.code || e.message}`;
+  }
+}
 
 // ------------------------------------------------- what the registry installed
 
@@ -201,6 +222,7 @@ const within = (parent) => projectDir === parent || projectDir.startsWith(parent
 let registry = null;
 let registryEntry = null;
 let registryReason = null;
+let registryAmbiguity = null;
 const listed = run('claude', ['plugin', 'list', '--json']);
 if (!listed.ok) {
   registryReason = `claude plugin list: ${firstLine(listed.err) || 'exited non-zero'}`;
@@ -223,9 +245,10 @@ if (!listed.ok) {
       // catalog's plugin of the same name is a different plugin at a different version.
       return known ? market === known : true;
     });
+    // A cache directory is shared between projects, so the loaded tree's path says which
+    // plugin this is and nothing about whose install it is: applicability is the scope's.
     const mine = named.filter((e) =>
-      (typeof e.installPath === 'string' && e.installPath === root)
-      || e.scope === 'user' || e.scope === 'managed'
+      e.scope === 'user' || e.scope === 'managed'
       || (typeof e.projectPath === 'string' && within(e.projectPath)));
 
     if (named.length === 0) {
@@ -240,12 +263,24 @@ if (!listed.ok) {
         registryReason = `entries for '${plugin}' come from several marketplaces: ${markets.join(', ')}`;
       } else {
         if (!known && markets.length === 1) set('marketplace', markets[0]);
-        registry = highest(mine.map((e) => e.version).filter((v) => typeof v === 'string'));
+        // An applicable record whose path IS the loaded tree is evidence rather than a
+        // ranking: it says what this project resolved to, whatever a wider scope installed.
+        const exact = mine.find((e) => samePath(e.installPath, root));
+        const versions = [...new Set(mine.map((e) => e.version).filter((v) => typeof v === 'string'))];
+        registry = exact && typeof exact.version === 'string' ? exact.version : highest(versions);
         if (!registry) registryReason = 'the entries carry no orderable version';
         else {
-          registryEntry = mine.find((e) => e.version === registry
-            && typeof e.installPath === 'string' && existsSync(e.installPath))
+          registryEntry = exact
+            || mine.find((e) => e.version === registry && existsSync(e.installPath || ''))
             || mine.find((e) => e.version === registry) || null;
+          // Which of several applicable installs a restart would load is the host's to
+          // decide, and nothing here can read that order — so a disagreement is reported
+          // rather than settled, whichever of them was picked to stand in the answer.
+          if (versions.length > 1) {
+            registryAmbiguity = `${versions.length} installs apply here and disagree (`
+              + `${mine.map((e) => `${e.scope || 'unknown'}:${e.version}`).join(', ')}) — `
+              + (exact ? 'the one this session loaded is reported' : 'the highest is reported');
+          }
         }
       }
     }
@@ -254,7 +289,8 @@ if (!listed.ok) {
 
 const fromCache = highest(siblings);
 const installed = registry || fromCache || loaded;
-set('installed', installed || 'unknown', installed ? null : (registryReason || 'no version could be resolved'));
+set('installed', installed || 'unknown',
+  installed ? registryAmbiguity : (registryReason || 'no version could be resolved'));
 set('installed_source', registry ? 'registry' : (fromCache ? 'cache' : 'loaded'),
   registry ? null : registryReason);
 if (registryEntry && typeof registryEntry.scope === 'string') set('installed_scope', registryEntry.scope);
@@ -277,7 +313,8 @@ const below = loaded ? siblings.filter((v) => compareVersions(v, loaded) === -1)
 const predecessor = highest(below);
 set('predecessor', predecessor || 'unknown',
   predecessor ? null
-    : (!inCache ? 'the root is outside the plugin cache' : 'no earlier version is left in the cache'));
+    : (!inCache ? 'the root is outside the plugin cache'
+      : (cacheReason || 'no earlier version is left in the cache')));
 if (predecessor) set('predecessor_root', join(pluginDir, predecessor));
 
 // ---------------------------------------------------------------- upstream
@@ -377,8 +414,10 @@ set('reload_needed', drift === null ? 'unknown' : (drift === 0 || runningAhead ?
 // the session reading text a restart has already replaced. Where that tree cannot be found
 // the loaded one is all there is, and the report has to say so rather than let the fallback
 // pass for the installed tree.
-set('read_root', installedRoot || root,
-  installedRoot || facts.get('reload_needed') !== 'yes' ? null
+// A working copy or a --plugin-dir tree ahead of the registry is the text this session is
+// meant to keep: re-reading the installed one would put older instructions back.
+set('read_root', runningAhead ? root : (installedRoot || root),
+  runningAhead || installedRoot || drift === 0 ? null
     : `the ${installed} tree could not be found — this is the loaded tree, not the installed one`);
 
 // The floor a diff stands on is the tree this session has been acting under. Still running

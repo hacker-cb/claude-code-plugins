@@ -32,8 +32,10 @@ case "${args[0]:-}" in
     fi
     # Where the case pins a ref, only that ref is fetchable: reaching for the remote's
     # default branch instead is the mistake this answers.
-    if [ -n "${STUB_GIT_BRANCH:-}" ] && [ "${args[-1]}" != "$STUB_GIT_BRANCH" ]; then
-      echo "fatal: couldn't find remote ref ${args[-1]}" >&2
+    # `${args[-1]}` is a bash 4.3 spelling, and macOS ships 3.2 as /bin/bash.
+    last=$(( ${#args[@]} - 1 ))
+    if [ -n "${STUB_GIT_BRANCH:-}" ] && [ "${args[$last]}" != "$STUB_GIT_BRANCH" ]; then
+      echo "fatal: couldn't find remote ref ${args[$last]}" >&2
       exit 128
     fi ;;
   show)

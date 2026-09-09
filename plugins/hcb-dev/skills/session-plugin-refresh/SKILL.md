@@ -34,8 +34,10 @@ It prints `key=value` lines and never fails on a number it cannot resolve: an
 report rather than something to work around.
 
 - **`read_root` is what everything below is read from** — the installed tree, not
-  the loaded one. Where `reload_needed` is `yes`, this session was handed the
-  older files: reading the newer ones by path is what fixes *this* session, while
+  the loaded one. Where `reload_needed` is `yes`, the tree this session holds is
+  not the installed one — older after an update, newer after a rollback, and
+  either way what a restart lands on is the installed one. Reading it by path is
+  what fixes *this* session, while
   hooks, MCP servers and monitors keep the old path until the user runs
   `/reload-plugins` or restarts. Say so; neither is yours to run. A
   `read_root_reason` beside it means the installed tree is not on disk at all, so
