@@ -58,12 +58,13 @@ as one series over journal and closed wave alike, and a block too large for a
 single comment takes as many as it needs. A pointer stands where the text did,
 the ledger's journal section lists every archive in order, and new journal
 entries go to the most recent journal archive — never into a closed wave's
-snapshot, which is written once and left. Archiving is two writes and they are
-ordered, the archive comment first and the ledger's own edit second, so an
-interruption leaves an archive nothing points at rather than a pointer to text
-that no longer exists. An archive the ledger does not list is then the same
-fault as a second ledger marker: repaired before the next chip goes up, by
-reading that list against what the epic carries.
+snapshot, which is written once and left. Opening an archive is two writes and
+they are ordered — the comment first, the ledger's own edit second — whether a
+block is moving out of the ledger or a refused write is rotating into a fresh
+archive, so an interruption leaves an archive nothing points at rather than an
+index naming one that was never written. An archive the ledger does not list is
+then the same fault as a second ledger marker: repaired before the next chip
+goes up, by reading that list against what the epic carries.
 
 ## What it holds
 
