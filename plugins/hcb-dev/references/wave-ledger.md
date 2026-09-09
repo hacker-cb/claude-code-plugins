@@ -37,18 +37,19 @@ states resolves to neither.
 **A refused write archives and retries, and asks nothing.** The cap announces
 itself by refusing a write, never by a number carried here, and that refusal is
 answered in the same step rather than reported — by which comment refused. A
-refused **ledger** write moves the oldest closed unit out and writes the entry
-again, as many times over as it takes to fit: what leaves is the journal while
-it is still inline, and after that a closed wave, one whose batches have all
-reached a terminal state with nothing of theirs left standing and whose gates
-are spent. A refused write to the **journal archive** taking new entries opens
-the next archive and writes there instead — moving anything out of the ledger
-would not free a byte of the comment that refused. All of it is bookkeeping and
-not a decision: it needs no permission, and it is reported in one line once done
-rather than announced while it is still coming. What is still open never leaves,
-and nothing is shortened to fit — a section summarised is a section that will be
-believed in its summarised form. A refused ledger write with nothing closed left
-to move is the one case that stops and goes to the user.
+refused **ledger** write moves the oldest archivable block out and writes the
+entry again, as many times over as it takes to fit. Two things are archivable,
+in this order: the journal while it is still inline, and after that a closed
+wave — one whose batches have all reached a terminal state with nothing of
+theirs left standing and whose gates are spent. A refused write to the **journal
+archive** taking new entries opens the next archive and writes there instead —
+moving anything out of the ledger would not free a byte of the comment that
+refused. All of it is bookkeeping and not a decision: it needs no permission,
+and it is reported in one line once done rather than announced while it is still
+coming. What is still open never leaves, and nothing is shortened to fit — a
+section summarised is a section that will be believed in its summarised form. A
+refused ledger write with nothing archivable left, the journal already out and
+no wave closed, is the one case that stops and goes to the user.
 
 **An archive is a comment, and the ledger indexes it.** What leaves goes
 verbatim under the marker `<!-- wave-journal-<n> -->`, which carries no part of
