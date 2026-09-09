@@ -157,7 +157,7 @@ see are chased by the comms ladder, not assumed dead.
 
 Verify the epic against the ledger — every batch ended, whether released,
 withdrawn, or failed with what it left standing accounted for; every issue at
-its recorded end state; every mandate met — then report to the user per
+the end state the ledger now records for it; every mandate met — then report to the user per
 [`../../references/report-format.md`](../../references/report-format.md), the
 run here being the epic. Offer `/hcb-dev:git-cleanup` for the residue — offer,
 never run — naming its reach honestly: worktrees the host leased to other
