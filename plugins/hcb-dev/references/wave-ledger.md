@@ -34,24 +34,30 @@ epic continues the comment its predecessor wrote. Two comments bearing the
 marker are repaired before the next chip goes up: a coordinate resolving to two
 states resolves to neither.
 
-**Only the journal moves out when the ledger outgrows a comment.** The forge's
-cap announces itself by refusing a write, never by a number carried here;
-answer that refusal by moving the journal into comments of its own — marked
+**A refused write archives and retries, and asks nothing.** The cap announces
+itself by refusing a write, never by a number carried here, and that refusal is
+answered in the same step rather than reported: the oldest closed unit moves
+out, and the entry is written after it. What leaves is the journal while it is
+still inline, and after that a closed wave — its batches released, its gates
+spent. It goes verbatim into a comment of its own marked
 `<!-- wave-journal-<n> -->`, which carries no part of the ledger's own marker,
-so the search above still finds one comment — listed in the ledger, the last of
-them taking new entries. Where the state itself meets the cap with the journal
-already out, what leaves is a closed wave — its batches released, its gates
-spent — archived the same way and listed the same way, and what is still open
-never leaves. Nothing is shortened to fit: a section summarised is a section
-that will be believed in its summarised form.
+so the search above still finds one comment; it is listed in the ledger, the
+last of them takes new entries, and a pointer stands where the text did. This
+is bookkeeping and not a decision — it needs no permission, and it is reported
+in one line once done rather than announced while it is still coming. What is
+still open never leaves, and nothing is shortened to fit: a section summarised
+is a section that will be believed in its summarised form. A refusal with
+nothing closed left to move is the one case that stops and goes to the user.
 
 ## What it holds
 
+What is still acted on. How it came to be known belongs to the journal, and the
+test on a passage is whether deleting it changes what anyone does next.
+
 1. **Header** — the epic, the master's name — rewritten whenever it changes —
-   the current
-   wave's base pin (`<remote>/<branch>@<sha>`), the epic's merge authority as
-   the user settled it ([`slice-completion.md`](slice-completion.md)), when last
-   updated.
+   the current wave's base pin (`<remote>/<branch>@<sha>`), the epic's merge
+   authority as the user settled it
+   ([`slice-completion.md`](slice-completion.md)), when last updated.
 2. **Batches** — one row each: id, topic, issues, the order's ask and terminal
    deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the order's base pin, chip, the
@@ -62,11 +68,14 @@ that will be believed in its summarised form.
    or end at `withdrawn(<reason>)` or `failed(<what stands>)` — a state is
    advanced, never skipped silently.
 3. **Decisions** — every fork settled during the epic: who asked, what was
-   decided, where it is recorded (issue, change request).
+   decided, where it is recorded (issue, change request) — the decision, not the
+   case that was made for it.
 4. **Standing constraints** — what no batch may violate while the epic runs: a
    change request that must not merge, a foreign stash, a pinned version. A
    return whose claims touch one of these is checked against it before either
-   is believed.
+   is believed. Each is written as the rule a batch acts on; how it came to be
+   known is journal, and a constraint carrying its own derivation is where the
+   ledger grows.
 5. **Merge queue and gates** — the order inside the current wave, each batch
    whose authority the header's policy was narrowed for and why, which batch
    stands ready and waiting for its slot, in either mode (written the moment
@@ -76,7 +85,10 @@ that will be believed in its summarised form.
    tail left standing; and what opens each later wave.
 6. **Expectations** — what is awaited from whom: unconfirmed batches, answers
    owed, mandates given with the order's authorization and not yet met.
-7. **Journal** — one line per event, terse, newest last.
+7. **Journal** — one line per event, terse, newest last; and the account behind
+   a constraint or a decision, at the length it takes. The ledger carries what
+   is acted on and the journal how it was arrived at — and the journal is what
+   moves out first.
 
 ## Discipline
 
