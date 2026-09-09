@@ -197,8 +197,9 @@ is not free until the master accepts.
 
 Acceptance is
 [`../../references/order-return.md`](../../references/order-return.md)'s, and
-it ends in words the worker is waiting for: accepted — the batch closed, the
-session free — or reopened, naming what is missing. Confirming the follow-up
+it ends in words the worker is waiting for: accepted — the work taken and the
+session free, the batch standing at `accepted` until the master releases it — or
+reopened, naming what is missing. Confirming the follow-up
 issues a return proposes is part of acceptance, on the authorization the order
 itself carried.
 
