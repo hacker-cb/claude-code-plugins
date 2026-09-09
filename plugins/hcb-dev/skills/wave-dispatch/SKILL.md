@@ -51,7 +51,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check what is already out**: a chip still pending for the same batch is
   withdrawn (`dismiss_task`) before a replacement goes up, and a batch already
   running in a session is not chipped again.
-- **Chips go up for the wave whose gate is clear.** A later wave's batch is not
+- **Chips go up for the wave whose gate is clear, in the number its launch
+  order allows** — a staged wave hangs one, and the next only once the one
+  before it has merged. A later wave's batch is not
   hung early — a hanging chip invites a click, and a click before the gate
   starts the batch on a base its dependency never reached. The order's `Start:`
   slot says the same to a receiver started by hand.
@@ -69,8 +71,9 @@ One chip per batch, through the host's chip tool (`spawn_task`):
   that rather than trust it.
 - **prompt** — the wave order below.
 
-The click is the user's: how many batches run in parallel, and when, is their
-call. Say so in the launch report rather than waiting silently.
+The click is the user's, and its timing with it; how many batches stand
+clickable at once is the plan's launch order. Say both in the launch report
+rather than waiting silently.
 
 ## The wave order
 

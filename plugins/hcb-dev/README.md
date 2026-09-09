@@ -210,7 +210,8 @@ wave is the set of batches launched together once its gate clears.
   protocol. Pins one base per wave, reports blocked
   batches instead of hanging them, withdraws chips the plan obsoleted, and falls
   back to pasteable fenced orders where chips are unavailable. The click stays
-  with you — how many batches run in parallel is your call.
+  with you; how many batches stand clickable at once is the plan's launch
+  order.
 - **`wave-worker`** — `/hcb-dev:wave-worker`
   The receiving side, governing the engagement around the build: title the
   session with the batch id, re-verify the order's premises before anything rests
