@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Stands in for git against the marketplace checkout. `-C <path>` is how the script
+# addresses that checkout; the path is kept, because one case asks git where the real
+# repository root is and gets a different answer.
+set -u
+touch "${STUB_MARKER_FILE:-/dev/null}"
+
+loc=""
+args=("$@")
+if [ "${args[0]:-}" = "-C" ]; then
+  loc="${args[1]}"
+  args=("${args[@]:2}")
+fi
+
+case "${args[0]:-}" in
+  rev-parse)
+    # A checkout that merely sits inside someone else's repository answers with that
+    # repository's root instead of its own path.
+    if [ -n "${STUB_GIT_FOREIGN:-}" ]; then
+      echo "tests/suites/plugin-versions"
+    else
+      echo "$loc"
+    fi ;;
+  remote)
+    echo "origin" ;;
+  ls-remote)
+    printf 'ref: refs/heads/main\tHEAD\n0123456789abcdef0123456789abcdef01234567\tHEAD\n' ;;
+  fetch)
+    if [ "${STUB_GIT_FAIL:-}" = "fetch" ]; then
+      echo "fatal: could not read from remote repository" >&2
+      exit 128
+    fi
+    # Where the case pins a ref, only that ref is fetchable: reaching for the remote's
+    # default branch instead is the mistake this answers.
+    # `${args[-1]}` is a bash 4.3 spelling, and macOS ships 3.2 as /bin/bash.
+    last=$(( ${#args[@]} - 1 ))
+    if [ -n "${STUB_GIT_BRANCH:-}" ] && [ "${args[$last]}" != "$STUB_GIT_BRANCH" ]; then
+      echo "fatal: couldn't find remote ref ${args[$last]}" >&2
+      exit 128
+    fi ;;
+  show)
+    # `FETCH_HEAD:<path>` — the path is what the envelope is keyed by.
+    path="${args[1]#*:}"
+    jq -e -c --arg p "$path" '.git_show[$p] // empty' "$STUB_ENVELOPE" \
+      || { echo "fatal: path '$path' does not exist" >&2; exit 128; } ;;
+  *)
+    echo "stub git: unexpected invocation: $*" >&2
+    exit 64 ;;
+esac

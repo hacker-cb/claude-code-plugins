@@ -35,6 +35,7 @@ session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (b
 backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
 master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
+session-plugin-refresh ────────────────── when the plugin moves under a running session
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
 
@@ -224,6 +225,21 @@ the plan stages them.
   staying engaged until the master accepts. The building itself runs through
   whatever workflow the order names, usually `implementation-workflow`.
 
+### Staying current with the plugin
+
+- **`session-plugin-refresh`** — `/hcb-dev:session-plugin-refresh`
+  A session acts under the text it was handed at launch, so a plugin that moves
+  under it leaves it working from the old copy. This re-reads what is current —
+  the skills in use and the transitive closure of the references they name, each
+  file whole — and reconciles what the session already did with what those files
+  now say. Reports four versions: the one this session is running, the one
+  installed, the floor it can diff against, and the one the marketplace's own
+  repository carries. Divergences are ranked by what they can still reach and
+  each ends in one of four — repaired here, standing from here on, owed to
+  someone downstream (a coordinating session's batches are running under their
+  own copies), or a decision for the addressee. It installs and updates nothing;
+  `/reload-plugins` stays yours.
+
 ### Cleaning up
 
 - **`git-cleanup`** — `/hcb-dev:git-cleanup` (manual-only)
@@ -324,6 +340,11 @@ is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without
 other. What it buys differs per skill: an issue read, a change request opened, a
 squash-merge that git alone cannot see. Where a skill can go on without it, it says
 what it loses rather than stopping.
+
+**`node` and the `claude` CLI itself** are `session-plugin-refresh`'s alone: it
+resolves the versions from the plugin's own manifest, `claude plugin list`, and
+the marketplace's git checkout — the last read with `git`, so a marketplace on
+any host answers the same way.
 
 **Titling a session is the host's**, and most of this pipeline leans on it
 ([`references/session-naming.md`](references/session-naming.md)):

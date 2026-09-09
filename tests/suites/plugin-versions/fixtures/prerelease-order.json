@@ -1,0 +1,32 @@
+{
+  "plugin_list": [
+    {
+      "id": "codex@openai-codex",
+      "version": "1.0.6",
+      "scope": "user",
+      "installPath": "/cache/openai-codex/codex/1.0.6"
+    }
+  ],
+  "marketplace_list": [
+    {
+      "name": "hacker-cb-plugins",
+      "source": "github",
+      "repo": "hacker-cb/claude-code-plugins",
+      "installLocation": "tests/suites/plugin-versions/fixtures"
+    }
+  ],
+  "git_show": {
+    ".claude-plugin/marketplace.json": {
+      "plugins": [
+        {
+          "name": "hcb-dev",
+          "source": "./plugins/hcb-dev"
+        }
+      ]
+    },
+    "plugins/hcb-dev/.claude-plugin/plugin.json": {
+      "name": "hcb-dev",
+      "version": "0.49.0"
+    }
+  }
+}

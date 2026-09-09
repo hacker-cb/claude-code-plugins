@@ -63,6 +63,12 @@ holds, and what it stops is named in the return as the gap it is.
 
 ## While building
 
+- **A plugin that moved under this session does not amend the order.** Refresh
+  per `hcb-dev:session-plugin-refresh` — on the master's word or on the user's —
+  and where the text now reads against what the order asks for, that divergence
+  goes to the master with a recommendation. The order's ask and its terminal
+  deliverable are the row the return is judged against, and rewriting them from
+  here leaves the master accepting against something else.
 - **The order's facts are re-verified before anything rests on them**: read
   the delta from the order's base pin to the tip they are read against as the
   list of the order's facts to re-check — this session refreshing a base itself

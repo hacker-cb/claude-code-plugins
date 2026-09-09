@@ -22,8 +22,13 @@ set -u
 ROOT=$(cd -- "$(dirname -- "$0")/.." && pwd)
 SUITES="$ROOT/tests/suites"
 
-# Every script under test parses JSON by hand, and without jq each would fail in
-# its own words several layers down. Say it once, here.
+# The repository root is what a case's arguments are resolved against: a fixture tree
+# named in cases.tsv is then one path whatever directory the runner was called from,
+# and a script reading a git checkout finds the same one every time.
+cd "$ROOT" || exit 1
+
+# jq is what the scripts under test and the stand-ins beside them read JSON with, and
+# without it each would fail in its own words several layers down. Say it once, here.
 command -v jq >/dev/null 2>&1 || { echo "tests need jq on PATH"; exit 1; }
 
 want_suites=()
@@ -136,6 +141,15 @@ for suite in "${all_suites[@]}"; do
     suite_failure "$suite" "suite.conf names no script"; continue; }
   script="$ROOT/$suite_script"
   [ -f "$script" ] || { suite_failure "$suite" "not found: $suite_script"; continue; }
+  # The suffix picks the interpreter, not the exec bit: a plugin's scripts are invoked the
+  # same way where they ship (`bash <script>`, `node <script>`), and the mode bits of a
+  # copy in the plugin cache are not something a suite can stand on.
+  case "$suite_script" in
+    *.mjs|*.js) runner=node ;;
+    *)          runner=bash ;;
+  esac
+  command -v "$runner" >/dev/null 2>&1 || {
+    suite_failure "$suite" "$suite_script needs $runner on PATH"; continue; }
   manifest="$dir/cases.tsv"
   [ -f "$manifest" ] || { suite_failure "$suite" "no cases.tsv beside suite.conf"; continue; }
   fixtures="$dir/fixtures"
@@ -234,7 +248,7 @@ for suite in "${all_suites[@]}"; do
     out=$(env ${suite_env[@]+"${suite_env[@]}"} ${stub_env[@]+"${stub_env[@]}"} \
               STUB_ENVELOPE="$envelope" STUB_MARKER_FILE="$marker" \
               PATH="$stubs:$PATH" \
-              bash "$script" ${suite_argv[@]+"${suite_argv[@]}"} \
+              "$runner" "$script" ${suite_argv[@]+"${suite_argv[@]}"} \
               ${extra[@]+"${extra[@]}"} 2>&1 </dev/null)
     got=$?
     [ -z "$touched" ] || rm -f "$touched"
