@@ -7,8 +7,9 @@ vocabulary and the split method; launching what it produces is
 ## Vocabulary
 
 A **batch** is one session's worth of work — one chip, one worktree, one
-return. A **wave** is the set of batches launched together once its **gate** —
-the merges or decisions it waits on — has cleared. A wave of one is an ordinary
+return. A **wave** is the set of batches its **gate** — the merges or decisions
+it waits on — releases: launched together, or one at a time where the plan
+stages them. A wave of one is an ordinary
 outcome: what earns a second batch its place beside the first is the three axes
 below, all of them, never the mere absence of an edge between the two.
 
@@ -16,7 +17,9 @@ below, all of them, never the mere absence of an edge between the two.
 
 Every split is drawn on all three, and two batches stand side by side only
 where each holds. Where one fails they are a chain: the later batch is planned
-behind the earlier one's merge, and the plan names the axis that put it there.
+behind what settles the earlier one — its merge, or the decision recorded where
+that batch has no merge to give — and the plan names the axis that put it
+there.
 
 - **Seams.** Each batch owns a set of files; the map of who owns what is
   written into every order's `Boundaries:`. A seam is whatever both batches
@@ -33,9 +36,9 @@ behind the earlier one's merge, and the plan names the axis that put it there.
   that order, not a wave of three; the blocked remainder waits behind the gate
   its vertex clears. An artefact and its first consumer are an edge no issue
   needs to draw: the artefact is built by the batch that consumes it, or by the
-  one merging directly ahead of that batch. What exposes an artefact placed
-  earlier than either is the harness written for its own sake — a peer, a stub,
-  a fixture standing in for a consumer that does not exist yet.
+  one merging directly ahead of that batch. Anything earlier is too early, and
+  what gives it away is the harness the batch must invent to test it at all — a
+  peer, a stub, a fixture standing in for a consumer that does not exist yet.
 - **Blind form.** Whether each batch can be built right without seeing the
   other. A batch whose own shape is settled by what the parallel batch turns
   out to choose — the layer beneath both, the format they share, the entry
@@ -70,10 +73,10 @@ behind the earlier one's merge, and the plan names the axis that put it there.
   current with it: nothing at merge time reads the seam's two sides together, so
   the displaced batch owes its rebase before its own merge, not after.
 - **The launch order inside a wave is part of it too**: every chip at once, or
-  staged — one chip, the next hung on the merge of the one before it. Staged is
-  what a wave takes wherever its batches cleared the axes only through a split
-  the plan had to draw: a seam divided per file, a form one batch fixes for the
-  next.
+  staged — one chip, the next hung on the landing of the one before it. Staged
+  is what a wave takes wherever its batches cleared the axes only through a
+  split the plan had to draw: a seam divided per file. Each step of a staged
+  wave is pinned and hung when its predecessor lands, not at the wave's open.
 - A batch is planned but not launched while anything holds it — an environment
   blocker, an issue whose body a survey ruled `needs rewrite`; what holds it and
   the condition that releases it are written beside it.

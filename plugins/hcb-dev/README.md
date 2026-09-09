@@ -185,7 +185,8 @@ work is **done** — not how the ask is worded.
 
 A coordinating (master) session that split an epic into batches launches and
 collects them with a dedicated pair. A batch is one session's worth of work; a
-wave is the set of batches launched together once its gate clears.
+wave is the set of batches its gate releases — together, or one at a time where
+the plan stages them.
 
 - **`master-session`** — `/hcb-dev:master-session`
   The coordinating role itself: assume it on assignment (title the session per

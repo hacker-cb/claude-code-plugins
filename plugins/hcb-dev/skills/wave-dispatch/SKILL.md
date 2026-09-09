@@ -16,9 +16,10 @@ description: >-
 
 # Wave dispatch
 
-A batch is one session's worth of work; a wave is the set of batches launched
-together once its gate clears. This skill takes batches already planned — by
-the coordinating session's own analysis — and launches them. The order it
+A batch is one session's worth of work; a wave is the set of batches its gate
+releases — together, or one at a time where the plan stages them. This skill
+takes batches already planned — by the coordinating session's own analysis —
+and launches them. The order it
 writes obeys [`../../references/session-prompts.md`](../../references/session-prompts.md),
 settles every slot of [`../../references/order-anatomy.md`](../../references/order-anatomy.md),
 and addresses its receiver per [`../../references/session-comms.md`](../../references/session-comms.md).
@@ -28,7 +29,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Pin the base**: resolve it per
   [`../../references/base-resolution.md`](../../references/base-resolution.md),
   refresh it, and write the pin as `<remote>/<branch>@<sha>` — one pin, shared
-  by every batch of the wave.
+  by every batch hung together. A staged wave pins again at each step, on the
+  tip its predecessor's landing left.
 - **Read this session's own name** — as the channels here show it, never
   assumed from what this session set — before it goes into the `Master:` slot;
   `session-comms.md` says what that slot carries where none of them names it.
@@ -182,6 +184,11 @@ is not free until the master accepts.
   naming the file and its new owner, before the asking batch builds on the
   change. The launch-time order is not the last
   word on a shared file.
+- **A staged wave's next chip goes up when the one before it lands** — the
+  preflight above run again for that step alone, its own pin included. A step
+  whose predecessor reached a terminal state without landing waits for nothing:
+  the wave is replanned from there. A staged wave whose next step is
+  never hung is a stall, not a finished launch.
 - **A batch whose start report never arrives is unreached**, whatever its chip
   says — check on it rather than assuming the name made contact.
 
@@ -204,8 +211,8 @@ the receiver verify its worktree instead of trusting how it was launched.
 ## Afterwards
 
 Report the launch to the user as a table — batch id, topic, chip, boundaries
-shared with whom — with the launch-order advice the plan implies (which batch
-must not go last, which pair is best together). Record each batch beside its
+shared with whom — naming the plan's launch order and, for a staged wave, which
+step this is and what has to land before the next chip goes up. Record each batch beside its
 tag in the coordinating session's own record, per `order-anatomy.md`. When the
 plan changes, withdraw the chips it obsoleted (`dismiss_task`) and say so.
 

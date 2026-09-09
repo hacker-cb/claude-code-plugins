@@ -76,13 +76,13 @@ In this order, each section explicit even when empty:
    [`../../references/wave-planning.md`](../../references/wave-planning.md) rules
    sequential).
 4. **The parallel layout** — candidate batches in the columns of
-   `wave-planning.md`'s closing table, each pair placed side by side carrying
-   what clears it on every axis that file draws and each pair kept apart the
-   axis that separates it, and the gates the dependencies imply. What a verdict past `current`
-   does to a batch is said where that batch stands: `needs rewrite` holds it,
-   written beside it with the rewrite that releases it, the way
-   `wave-planning.md` already holds a blocked batch; `stale` takes the issue out
-   of the layout, its closure being the hygiene plan's to propose;
+   `wave-planning.md`'s closing table, every pair carrying what that file's
+   axes say of it — what clears the ones placed side by side, what separates
+   the ones kept apart — and the gates the dependencies imply. What a verdict
+   past `current` does to a batch is said where that batch stands:
+   `needs rewrite` holds it, written beside it with the rewrite that releases
+   it, the way `wave-planning.md` already holds a blocked batch; `stale` takes
+   the issue out of the layout, its closure being the hygiene plan's to propose;
    `unverifiable` keeps it out of every wave, with that as the reason. What a
    builder reads is the tracker's body, never this report.
 5. **What to take next** — one recommendation with its rationale and the
