@@ -40,16 +40,16 @@ answered in the same step rather than reported — by which comment refused. A
 refused **ledger** write moves the oldest archivable block out and writes the
 entry again, as many times over as it takes to fit. Two things are archivable,
 in this order: the journal while it is still inline, and after that a closed
-wave — one whose batches have all reached a terminal state with nothing of
-theirs left standing and whose gates are spent. A refused write to the **journal
-archive** taking new entries opens the next archive and writes there instead —
-moving anything out of the ledger would not free a byte of the comment that
-refused. All of it is bookkeeping and not a decision: it needs no permission,
-and it is reported in one line once done rather than announced while it is still
-coming. What is still open never leaves, and nothing is shortened to fit — a
-section summarised is a section that will be believed in its summarised form. A
-refused ledger write with nothing archivable left, the journal already out and
-no wave closed, is the one case that stops and goes to the user.
+wave — one whose batches have all ended, with anything they left standing
+accounted for outside it, and whose gates are spent. A refused write to the
+**journal archive** taking new entries opens the next archive and writes there
+instead — moving anything out of the ledger would not free a byte of the comment
+that refused. All of it is bookkeeping and not a decision: it needs no
+permission, and it is reported in one line once done rather than announced while
+it is still coming. What is still open never leaves, and nothing is shortened to
+fit — a section summarised is a section that will be believed in its summarised
+form. A refused ledger write with nothing archivable left, the journal already
+out and no wave closed, is the one case that stops and goes to the user.
 
 **An archive is a comment, and the ledger indexes it.** What leaves goes
 verbatim under the marker `<!-- wave-journal-<n> -->`, which carries no part of
@@ -75,15 +75,24 @@ test on a passage is whether deleting it changes what anyone does next.
    the base pin the wave's live step was hung on (`<remote>/<branch>@<sha>`),
    the epic's merge authority as the user settled it
    ([`slice-completion.md`](slice-completion.md)), when last updated.
-2. **Batches** — one row each: id, topic, issues, the order's ask and terminal
-   deliverable in its own words (the acceptance contract — a return is judged
-   against this row, not against recall), the order's base pin, chip, the
-   session's name, state, result coordinates. States:
+2. **Batches** — one row each: id, topic, the issues and where each of them now
+   stands, the order's ask and terminal deliverable in its own words (the
+   acceptance contract — a return is judged against this row, not against
+   recall), the order's base pin, chip, the
+   session's name, state, result coordinates. A batch runs
    `planned → chipped → started → confirmed → building → completed(<mode> —
    request merged, merged locally, tracker state delivered, verdict delivered)
-   → accepted → released`; a batch can instead stand at `blocked(<condition>)`
-   or end at `withdrawn(<reason>)` or `failed(<what stands>)` — a state is
-   advanced, never skipped silently.
+   → accepted`, standing at `blocked(<condition>)` for as long as something
+   holds it; a state is advanced, never skipped silently. It **ends** in one of
+   three, and the three carry equal weight:
+   - `released` — acceptance passed, the work landed, the batch was let go;
+   - `withdrawn(<reason>)` — called off, from wherever it stood;
+   - `failed(<what stands>)` — it did not come off, from wherever it stood, and
+     what is still standing is named.
+
+   A rule asking whether a batch is finished says which of the three it counts,
+   and answers the question it actually needs: what landed is one question, what
+   has nothing outstanding is another, and `released` alone is neither.
 3. **Decisions** — every fork settled during the epic: who asked, what was
    decided, where it is recorded (issue, change request) — the decision, not the
    case that was made for it.
@@ -116,5 +125,5 @@ test on a passage is whether deleting it changes what anyone does next.
 - **Read it first after any restart or compaction**, before the live registry
   is even listed: the ledger says who is expected to exist; the live registry
   only says who answers right now.
-- A batch released and a wave closed are written as such; the epic's closing
-  line is the ledger's last edit.
+- A batch's ending is written as such whichever of the three it is, and so is a
+  wave closed; the epic's closing line is the ledger's last edit.

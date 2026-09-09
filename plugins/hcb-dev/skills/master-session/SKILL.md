@@ -95,8 +95,11 @@ checked on — is part of this role's loop, not a one-time launch step.
   request is harmless") is verified in the tree and the tracker before either
   the claim or the constraint is believed. Acceptance ends in the words the
   worker waits for — accepted and free, or reopened naming the gap — and in
-  the ledger row advancing. A return that answers what a gate waits on is
-  checked against the gates as a landing is.
+  the ledger row advancing to `accepted`, which frees the session and not yet
+  the batch. The row reaches `released` once nothing of that batch is
+  outstanding — its landing accounted for, its candidates ruled by the pass
+  below — and a row left at `accepted` holds the epic open. A return that
+  answers what a gate waits on is checked against the gates as a landing is.
 - **New issues born mid-epic are classified by this session itself**
   (`hcb-dev:issue-tracking`) — a worker's proposed milestone or label is a
   claim to verify, not a decision to adopt.
@@ -155,8 +158,10 @@ see are chased by the comms ladder, not assumed dead.
 
 ## Closing the epic
 
-Verify the epic against the ledger — every batch released, every issue at its
-recorded end state, every mandate met — then report to the user per
+Verify the epic against the ledger — every batch ended, released, withdrawn or
+failed alike, with whatever any of them left standing accounted for; every issue
+at the end state the ledger now records for it; every mandate met — then report
+to the user per
 [`../../references/report-format.md`](../../references/report-format.md), the
 run here being the epic. Offer `/hcb-dev:git-cleanup` for the residue — offer,
 never run — naming its reach honestly: worktrees the host leased to other
