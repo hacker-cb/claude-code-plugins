@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Stands in for the Claude Code CLI. The script under test makes exactly two readings
+# through it, and anything else is a mistake worth naming rather than answering.
+set -u
+touch "${STUB_MARKER_FILE:-/dev/null}"
+
+case "$*" in
+  "plugin list --json")
+    if [ "${STUB_LIST_EXIT:-0}" != 0 ]; then
+      echo "claude: not logged in" >&2
+      exit "${STUB_LIST_EXIT}"
+    fi
+    # What the CLI prints without --json: a reading that parses as anything but a list.
+    if [ -n "${STUB_LIST_RAW:-}" ]; then
+      echo "Installed plugins:"
+      exit 0
+    fi
+    jq -c '.plugin_list' "$STUB_ENVELOPE" ;;
+  "plugin marketplace list --json")
+    jq -c '.marketplace_list' "$STUB_ENVELOPE" ;;
+  *)
+    echo "stub claude: unexpected invocation: $*" >&2
+    exit 64 ;;
+esac

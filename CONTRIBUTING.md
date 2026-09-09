@@ -107,8 +107,9 @@ CI runs the same structural validation and the same tests, plus the official
 The tests are grouped into suites — one directory under `tests/suites/` per script
 under test, holding its cases, its fixtures and the stubs that stand in for the
 commands it shells out to. They cover what must not vary: how a script reads what its
-engine returned and what it therefore tells the caller. They need `jq` and a git
-checkout, and nothing else: no engine, no account, no network. What each case holds,
+engine returned and what it therefore tells the caller. They need `jq`, a git
+checkout, and whatever the script under test runs under — `bash`, or `node` for one
+written in JavaScript — and nothing else: no engine, no account, no network. What each case holds,
 and the rules for adding a case or a whole suite, are in
 [`tests/README.md`](tests/README.md).
 

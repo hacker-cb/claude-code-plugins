@@ -40,7 +40,9 @@ it accepts their returns per
    named epic does.
 3. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
    else is decided; from here on, every event lands in it before the
-   conversation moves on.
+   conversation moves on. Its header carries the plugin version this role is
+   running, resolved rather than recalled
+   (`hcb-dev:session-plugin-refresh`).
 
 ## Planning
 
@@ -137,6 +139,12 @@ checked on — is part of this role's loop, not a one-time launch step.
   table in its body, not only the ledger comment.
 - **A lesson one batch paid for is told to the batches it can still bite**,
   the moment it is learned.
+- **A plugin that moved under this session moved under its batches too.**
+  Refresh here first (`hcb-dev:session-plugin-refresh`), then send every batch
+  still engaged the word that theirs moved as well — each is running under the
+  copy it loaded, and a batch never told goes on building against text this
+  session has already replaced. What that refresh changes for a batch already
+  building travels as an amendment (`session-comms.md`), not as a new order.
 - **The user outranks the loop**: irreversible and outward-facing actions, and
   every fork `architecture-decisions.md` routes to a person, go to the user —
   with this session's recommendation first.

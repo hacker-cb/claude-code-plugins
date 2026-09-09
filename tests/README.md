@@ -11,7 +11,8 @@ bash tests/run.sh quota org                # only cases whose name contains "quo
 bash tests/run.sh --suite claude-review    # only that suite
 ```
 
-Needs `jq`, `bash`, and a git checkout to run in. Nothing else: no engine, no network,
+Needs `jq`, a git checkout, and whatever the scripts under test run under (`bash`, and
+`node` for one written in JavaScript). Nothing else: no engine, no network,
 no account, no history beyond the current commit — the runs are pinned to an empty
 range on purpose, since what is under test is the classification and not the count.
 
@@ -33,7 +34,7 @@ one `key value` per line, paths relative to the repo root:
 
 | key | |
 |---|---|
-| `script` | the script under test; required |
+| `script` | the script under test; required. Its suffix picks the interpreter — `.mjs` and `.js` run under `node`, anything else under `bash` |
 | `args` | what every case of this suite is invoked with, before its own `args` column |
 | `env` | a `NAME=value` put in every run's environment; may repeat |
 
@@ -68,7 +69,9 @@ Three things meet for each one, all inside the suite:
   at all.
 - `cases.tsv` — one row of five columns: the fixture, what the case adds to the
   invocation, the exit status, the fragments the output must contain, and what the
-  case is there to hold.
+  case is there to hold. A path written into that second column is relative to the
+  repository root, which is where the runner works from whatever directory it was
+  called in.
 - `stub/<command>` — the stand-in engine, named for the command it replaces. It
   prints the named envelope, and on request records the argv it was given, writes to
   stderr, touches a file in the tree, or exits non-zero — so a case can assert what

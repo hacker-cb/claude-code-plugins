@@ -1,0 +1,23 @@
+# One row per case, five tab-separated columns:
+#
+#   fixture   the envelope in this suite's fixtures/, or `-` for a run that must be
+#             refused before either stand-in is reached
+#   args      what this case adds to the invocation; a NAME=value word is put in the
+#             run's environment instead, which is how a case reaches a stub's refusal
+#   exit      the status the caller reads: 0 an answer, 2 a call this script cannot act on
+#   expect    `|`-separated fragments the output must contain
+#   note      what the case is here to hold
+#
+registry-ahead	--root tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.41.0	0	installed=0.48.0|installed_source=registry|read_root=tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.48.0|reload_needed=yes	an update landed mid-session: the tree to re-read is the installed one, not the loaded one
+predecessor-below-loaded	--root tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.48.0	0	loaded=0.48.0|predecessor=0.41.0|reload_needed=no	the predecessor is the highest version STRICTLY below the loaded one, never itself
+registry-silent	--root tests/suites/plugin-versions/fixtures/trees/order/hacker-cb-plugins/hcb-dev/0.48.0	0	installed=0.48.0|installed_source=cache|predecessor=0.10.0|--plugin-dir is not listed	versions rank by semver, not alphabetically (0.9.0 sorts above 0.10.0 as text)
+loaded-ahead	--root tests/suites/plugin-versions/fixtures/trees/dev/hcb-dev	0	cache=absent|reload_needed=no|the loaded tree is ahead of what is installed|predecessor=unknown	a working copy runs ahead of the registry: nothing to reload, nothing to diff against
+one-version	--root tests/suites/plugin-versions/fixtures/trees/lonely/hacker-cb-plugins/hcb-dev/0.41.0	0	predecessor=unknown|no earlier version is left in the cache	a swept predecessor is an ordinary answer, not a failure
+list-refused	STUB_LIST_EXIT=1 --root tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.41.0	0	installed=0.48.0|installed_source=cache|claude plugin list:	the registry could not answer: fall back to the cache and say which source answered
+list-not-json	STUB_LIST_RAW=1 --root tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.41.0	0	did not answer a JSON list|installed_source=cache	output that is not a JSON list is a reason, not a parse that yields nothing
+fetch-refused	STUB_GIT_FAIL=fetch --root tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.41.0	0	upstream=unknown|upstream_reason=fetch origin main|update_pending=unknown	an unreachable forge never reads as agreement with what is installed
+source-not-a-path	--root tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.41.0	0	upstream=1.2.3|update_pending=yes	a source that is not a path in the marketplace repo falls back to the entry's own version
+marketplace-gone	--root tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.41.0	0	upstream=unknown|is not configured here	a marketplace no longer configured leaves upstream unknown, with the reason
+-	--root	2	--root needs a value	a flag without its value is a call this script cannot act on, before any stand-in runs
+-	--nope	2	unknown argument '--nope'	an unknown flag stops rather than being read as a root
+-	--root tests/suites/plugin-versions/fixtures	2	not a plugin root	a directory holding no manifest is a caller's mistake, not an unknown version

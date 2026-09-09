@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Stands in for git against the marketplace checkout. `-C <path>` is how the script
+# addresses that checkout; the stub answers for any path, so it skips the pair rather
+# than checking it.
+set -u
+touch "${STUB_MARKER_FILE:-/dev/null}"
+
+args=("$@")
+if [ "${args[0]:-}" = "-C" ]; then
+  args=("${args[@]:2}")
+fi
+
+case "${args[0]:-}" in
+  remote)
+    echo "origin" ;;
+  ls-remote)
+    printf 'ref: refs/heads/main\tHEAD\n0123456789abcdef0123456789abcdef01234567\tHEAD\n' ;;
+  fetch)
+    if [ "${STUB_GIT_FAIL:-}" = "fetch" ]; then
+      echo "fatal: could not read from remote repository" >&2
+      exit 128
+    fi ;;
+  show)
+    # `<sha>:<path>` — the path is what the envelope is keyed by.
+    path="${args[1]#*:}"
+    jq -e -c --arg p "$path" '.git_show[$p] // empty' "$STUB_ENVELOPE" \
+      || { echo "fatal: path '$path' does not exist" >&2; exit 128; } ;;
+  *)
+    echo "stub git: unexpected invocation: $*" >&2
+    exit 64 ;;
+esac
