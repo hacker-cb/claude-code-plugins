@@ -72,8 +72,8 @@ What is still acted on. How it came to be known belongs to the journal, and the
 test on a passage is whether deleting it changes what anyone does next.
 
 1. **Header** — the epic, the master's name — rewritten whenever it changes —
-   the current wave's base pin (`<remote>/<branch>@<sha>`), the epic's merge
-   authority as the user settled it
+   the base pin the wave's live step was hung on (`<remote>/<branch>@<sha>`),
+   the epic's merge authority as the user settled it
    ([`slice-completion.md`](slice-completion.md)), when last updated.
 2. **Batches** — one row each: id, topic, issues, the order's ask and terminal
    deliverable in its own words (the acceptance contract — a return is judged
@@ -93,7 +93,8 @@ test on a passage is whether deleting it changes what anyone does next.
    is believed. Each is written as the rule a batch acts on, together with what
    would lift it; how it came to be known is journal, and a constraint carrying
    its own derivation is where the ledger grows.
-5. **Merge queue and gates** — the order inside the current wave, each batch
+5. **Merge queue and gates** — the current wave's launch order (at once, or
+   staged with what each step waits on), the merge order inside it, each batch
    whose authority the header's policy was narrowed for and why, which batch
    stands ready and waiting for its slot, in either mode (written the moment
    the report arrives — a restart must not lose a batch holding on the queue);

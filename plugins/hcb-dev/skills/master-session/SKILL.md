@@ -119,7 +119,8 @@ checked on — is part of this role's loop, not a one-time launch step.
   `ask` reaches the user through this session, its recommendation first, and the
   answer travels back down as that batch's go.
   Each landing is checked against the gates: a wave whose gate
-  just cleared goes back to Launching. What advances the queue is a batch's
+  just cleared goes back to Launching, and so does a landing that opens the next
+  step of a staged wave already running. What advances the queue is a batch's
   readiness report, in whichever words its order gave it for the mode it runs
   in (`hcb-dev:wave-dispatch`). Where the epic stands at `ask` and the plan
   fixes a landing order, the order is held here: a later batch's question waits

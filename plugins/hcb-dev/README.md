@@ -185,7 +185,8 @@ work is **done** — not how the ask is worded.
 
 A coordinating (master) session that split an epic into batches launches and
 collects them with a dedicated pair. A batch is one session's worth of work; a
-wave is the set of batches launched together once its gate clears.
+wave is the set of batches its gate releases — together, or one at a time where
+the plan stages them.
 
 - **`master-session`** — `/hcb-dev:master-session`
   The coordinating role itself: assume it on assignment (title the session per
@@ -207,10 +208,12 @@ wave is the set of batches launched together once its gate clears.
   wave order as the prompt: the slots of `references/order-anatomy.md` plus this
   batch's boundaries, fork routing, the master's own coordinates, the start
   report that precedes the build, the status milestones and the return
-  protocol. Pins one base per wave, reports blocked
+  protocol. Pins one base for the batches hung together and again at each step
+  of a staged wave, reports held
   batches instead of hanging them, withdraws chips the plan obsoleted, and falls
   back to pasteable fenced orders where chips are unavailable. The click stays
-  with you — how many batches run in parallel is your call.
+  with you; how many batches stand clickable at once is the plan's launch
+  order.
 - **`wave-worker`** — `/hcb-dev:wave-worker`
   The receiving side, governing the engagement around the build: title the
   session with the batch id, re-verify the order's premises before anything rests
