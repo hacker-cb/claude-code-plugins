@@ -321,6 +321,10 @@ if (registryEntry && typeof registryEntry.scope === 'string') set('installed_sco
 // still worth reporting, but it is not what a restart here would load.
 const entryPath = registryEntry && typeof registryEntry.installPath === 'string' ? registryEntry.installPath : null;
 const registryBacked = inCache || samePath(entryPath, root);
+if (!registryBacked) {
+  facts.set('loaded_reason',
+    'read from a tree the host does not manage — an edit in place since this session loaded it would not show here');
+}
 
 // The registry carries the path it installed to; the cache layout is what answers when it
 // could not be read, and neither is trusted past the directory actually being there.
@@ -479,8 +483,15 @@ if (pinned) {
 }
 
 const behind = upstream.version && installed ? compareVersions(upstream.version, installed) : null;
-set('update_pending', behind === null ? 'unknown' : (behind === 1 ? 'yes' : 'no'),
-  behind === null ? 'the installed and upstream versions cannot be compared' : null);
+let pendingReason = null;
+if (behind === null) {
+  pendingReason = 'the installed and upstream versions cannot be compared';
+} else if (behind === -1) {
+  pendingReason = `nothing to pull: the marketplace carries ${upstream.version}, behind the installed ${installed}`;
+} else if (behind === 0 && upstream.version !== installed) {
+  pendingReason = `the two differ only in build metadata: ${upstream.version} against ${installed}`;
+}
+set('update_pending', behind === null ? 'unknown' : (behind === 1 ? 'yes' : 'no'), pendingReason);
 
 // ------------------------------------------------------------------ report
 

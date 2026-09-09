@@ -36,7 +36,10 @@ report rather than something to work around.
   either way what a restart lands on is the installed one. Reading it by path is
   what fixes *this* session, while
   hooks, MCP servers and monitors keep the old path until the user runs
-  `/reload-plugins` or restarts. Say so; neither is yours to run. `unknown` there
+  `/reload-plugins` or restarts. Say so; neither is yours to run — and say it for a
+  tree that changed **in place** too, where the path and the version can both hold
+  still while the content moved: those components keep what they loaded until the
+  same reload. `unknown` there
   is the registry not settling it — two applicable installs disagreeing, or no
   answer from it at all — and the reason says which: read from `read_root` and
   carry that into the report rather than picking a version for it.
