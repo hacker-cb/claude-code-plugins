@@ -261,14 +261,18 @@ if (!listed.ok) {
     });
     // A cache directory is shared between projects, so the loaded tree's path says which
     // plugin this is and nothing about whose install it is: applicability is the scope's.
-    const mine = named.filter((e) =>
+    const applicable = named.filter((e) =>
       e.scope === 'user' || e.scope === 'managed'
       || (typeof e.projectPath === 'string' && within(e.projectPath)));
+    // A disabled install is not one a restart loads, whatever version it carries.
+    const mine = applicable.filter((e) => e.enabled !== false);
 
     if (named.length === 0) {
       registryReason = `no entry for '${plugin}' — a plugin loaded with --plugin-dir is not listed`;
-    } else if (mine.length === 0) {
+    } else if (applicable.length === 0) {
       registryReason = `${named.length} entries for '${plugin}', none of them installed for this project`;
+    } else if (mine.length === 0) {
+      registryReason = `every applicable entry for '${plugin}' is disabled`;
     } else {
       const markets = [...new Set(mine
         .map((e) => (typeof e.id === 'string' ? e.id.split('@')[1] : null))
@@ -302,12 +306,14 @@ if (!listed.ok) {
   }
 }
 
-const fromCache = highest(siblings);
-const installed = registry || fromCache || loaded;
+// Only the registry says what is installed. The cache deliberately keeps orphaned versions,
+// so its highest is a candidate and never the answer: after a rollback it names the tree a
+// restart will not load.
+const installed = registry;
+const candidates = siblings.length ? ` — the cache holds ${siblings.join(', ')}` : '';
 set('installed', installed || 'unknown',
-  installed ? registryAmbiguity : (registryReason || 'no version could be resolved'));
-set('installed_source', registry ? 'registry' : (fromCache ? 'cache' : 'loaded'),
-  registry ? null : registryReason);
+  installed ? registryAmbiguity : `${registryReason || 'no version could be resolved'}${candidates}`);
+set('installed_source', installed ? 'registry' : 'unknown');
 if (registryEntry && typeof registryEntry.scope === 'string') set('installed_scope', registryEntry.scope);
 
 // A root outside the plugin cache is not a tree the host swaps under this session: a
@@ -441,9 +447,13 @@ if (!registryBacked) {
 // the session reading text a restart has already replaced. A tree the host did not install
 // reads itself — nothing swaps it — and where the installed one cannot be found the report
 // says so rather than letting the fallback pass for it.
-set('read_root', registryBacked ? (installedRoot || root) : root,
-  !registryBacked || installedRoot || sameVersion ? null
-    : `the ${installed} tree could not be found — this is the loaded tree, not the installed one`);
+let readReason = null;
+if (registryBacked && !installedRoot) {
+  readReason = installed
+    ? (sameVersion ? null : `the ${installed} tree could not be found — this is the loaded tree, not the installed one`)
+    : 'the installed version is unknown — this is the loaded tree';
+}
+set('read_root', registryBacked ? (installedRoot || root) : root, readReason);
 
 // The floor a diff stands on is the tree this session has been acting under. A version the
 // caller pinned answers that outright; absent one, still running older text makes it the
