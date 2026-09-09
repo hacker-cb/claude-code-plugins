@@ -75,9 +75,10 @@ test on a passage is whether deleting it changes what anyone does next.
    the base pin the wave's live step was hung on (`<remote>/<branch>@<sha>`),
    the epic's merge authority as the user settled it
    ([`slice-completion.md`](slice-completion.md)), when last updated.
-2. **Batches** — one row each: id, topic, issues, the order's ask and terminal
-   deliverable in its own words (the acceptance contract — a return is judged
-   against this row, not against recall), the order's base pin, chip, the
+2. **Batches** — one row each: id, topic, the issues and where each of them now
+   stands, the order's ask and terminal deliverable in its own words (the
+   acceptance contract — a return is judged against this row, not against
+   recall), the order's base pin, chip, the
    session's name, state, result coordinates. A batch runs
    `planned → chipped → started → confirmed → building → completed(<mode> —
    request merged, merged locally, tracker state delivered, verdict delivered)
