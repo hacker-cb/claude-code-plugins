@@ -101,12 +101,10 @@ function parseJsonText(text) {
   }
 }
 
-// A cache directory is "named for the resolved version", which is a semver string for a
-// plugin declaring one and a bare commit sha for one that does not. At least one dot is
-// required so an all-numeric sha is not read as a major version — a sha carries no order,
-// and is left out of every comparison rather than sorted as text.
+// A cache directory is named for the version it holds. Anything that is not a version this
+// can rank is left out of every comparison rather than sorted as text.
 function parseVersion(value) {
-  const m = /^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(value || '');
+  const m = /^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(value || '');
   if (!m) return null;
   return { nums: [m[1], m[2], m[3]].map((n) => (n === undefined ? 0 : Number(n))), pre: m[4] || '' };
 }
@@ -137,9 +135,6 @@ function comparePrerelease(a, b) {
 // null where either side is unorderable — the caller drops that candidate instead of
 // ranking it, which is what keeps a sha-named sibling out of the maximum.
 function compareVersions(a, b) {
-  // Two identical strings are the same version whether or not either parses — a plugin
-  // versioned by a bare commit sha is still not two different versions.
-  if (a && a === b) return 0;
   const pa = parseVersion(a);
   const pb = parseVersion(b);
   if (!pa || !pb) return null;
@@ -286,13 +281,8 @@ if (!listed.ok) {
         // ranking: it says what this project resolved to, whatever a wider scope installed.
         const exact = mine.find((e) => samePath(e.installPath, root));
         const versions = [...new Set(mine.map((e) => e.version).filter((v) => typeof v === 'string'))];
-        // A lone version needs no ordering to be the answer — a plugin versioned by a bare
-        // commit sha has exactly one, and discarding it would report nothing installed.
-        registry = exact && typeof exact.version === 'string' ? exact.version
-          : (highest(versions) || (versions.length === 1 ? versions[0] : null));
-        if (!registry) registryReason = versions.length > 1
-          ? 'the applicable entries carry no orderable version'
-          : 'the applicable entries carry no version';
+        registry = exact && typeof exact.version === 'string' ? exact.version : highest(versions);
+        if (!registry) registryReason = 'the applicable entries carry no orderable version';
         else {
           registryEntry = exact
             || mine.find((e) => e.version === registry && existsSync(e.installPath || ''))
@@ -431,9 +421,9 @@ if (upstream.ref) set('upstream_ref', upstream.ref);
 
 // ----------------------------------------------------------------- derived
 
-// Reload turns on identity, not on order: two versions that cannot be ranked can still be
-// told apart, and a different one installed is a different tree a restart would load. What
-// settles it first is whether the host installed this tree at all.
+// What settles a reload first is whether the host installed this tree at all; after that it
+// is simply whether the installed version is the loaded one, in either direction — an
+// update and a rollback both leave the session holding text a restart would replace.
 const sameVersion = Boolean(loaded) && loaded === installed;
 if (!registryBacked) {
   set('reload_needed', 'no', 'the loaded tree is not one the host installed here — a restart loads this same tree');
