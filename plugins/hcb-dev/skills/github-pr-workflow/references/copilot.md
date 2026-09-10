@@ -361,24 +361,27 @@ iteration budget: that is there for what blocks the exit, and a `Minor` never do
 Only what the reference turns down goes into the end-of-session report (Step 7),
 under its category so the user sees it.
 
-**An approval that arrives carrying a finding is a fork, not a cost.** This
-reviewer approves and names a finding in the same review, so its body is read for
-findings like any other — and where the base dismisses stale reviews on push, the
-push that fixes one of them removes the approval that named it, with nothing saying
-the next review gives it back. The two sides are a nit closed against an approval
-already in hand, and what the finding is rated decides who weighs them:
+**A push that would spend a standing approval is a fork, not a cost.** Where the
+base dismisses stale reviews on push and that approval is what closes its approval
+requirement, the next push takes the approval with it, and nothing says the next
+review gives it back. This reviewer makes the case vivid — it approves and names a
+finding in one review, so the fix for its own finding is what costs its own
+approval — but the fork is the same wherever an approval is standing, whoever gave
+it. What the finding is rated decides who weighs the two sides:
 
 - **Critical or Important** — fixed, and the approval spent on it. Nothing is being
   weighed here: merging it was never on the table.
 - **A `Minor` that reference routes to a fix** — the fork proper, and not the
   loop's to settle on its own. Put both sides to the addressee `merge-auth` names,
-  recommendation first: spend a standing approval on a nit, or take the finding's
-  other exit and merge the head that carries the approval.
+  recommendation first: spend the approval on the nit, or turn the finding down
+  here — answered and resolved where it opened a thread, and in the end-of-session
+  report either way — and merge the head that carries the approval.
 
-The fork is only there while nothing else is going up. Where a substantive push is
-coming anyway the approval goes with it whatever the `Minor` does, so the `Minor`
-rides along and costs nothing of its own — and where no approval is standing, a
-push spends none.
+**Three things collapse the fork, and each is read rather than assumed.** A base
+that does not dismiss stale reviews on push, and one whose approval requirement
+this approval does not close: the push costs nothing either way. And a substantive
+push coming anyway: the approval goes with that push whatever the `Minor` does, so
+the `Minor` rides along.
 
 **What you *fix* and what you *resolve* are different questions.** A thread this
 reviewer opened ends resolved once it has its answer — the fix is in, or the
