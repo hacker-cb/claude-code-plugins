@@ -1,0 +1,41 @@
+{
+  "plugin_list": [
+    {
+      "id": "hcb-dev@hacker-cb-plugins",
+      "version": "0.41.0",
+      "scope": "user",
+      "enabled": true,
+      "installPath": "tests/suites/plugin-versions/fixtures/trees/cache/hacker-cb-plugins/hcb-dev/0.41.0"
+    },
+    {
+      "id": "hcb-dev@hacker-cb-plugins",
+      "version": "0.10.0",
+      "scope": "project",
+      "enabled": true,
+      "installPath": "tests/suites/plugin-versions/fixtures/trees/order/hacker-cb-plugins/hcb-dev/0.10.0",
+      "projectPath": "/tmp/nowhere"
+    }
+  ],
+  "marketplace_list": [
+    {
+      "name": "hacker-cb-plugins",
+      "source": "github",
+      "repo": "hacker-cb/claude-code-plugins",
+      "installLocation": "tests/suites/plugin-versions/fixtures"
+    }
+  ],
+  "git_show": {
+    ".claude-plugin/marketplace.json": {
+      "plugins": [
+        {
+          "name": "hcb-dev",
+          "source": "./plugins/hcb-dev"
+        }
+      ]
+    },
+    "plugins/hcb-dev/.claude-plugin/plugin.json": {
+      "name": "hcb-dev",
+      "version": "0.49.0"
+    }
+  }
+}

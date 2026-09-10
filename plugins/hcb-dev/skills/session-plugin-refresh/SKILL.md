@@ -30,8 +30,9 @@ It prints `key=value` lines and never fails on a number it cannot resolve: an
 `unknown` carries a `<key>_reason` beside it, and that reason is a line of the
 report rather than something to work around.
 
-- **`read_root` is what everything below is read from** — the installed tree, not
-  the loaded one. Where `reload_needed` is `yes`, the tree this session holds is
+- **`read_root` is what everything below is read from** — the installed tree where
+  the registry installed this one, the loaded tree where it did not.
+  Where `reload_needed` is `yes`, the tree this session holds is
   not the installed one — older after an update, newer after a rollback, and
   either way what a restart lands on is the installed one. Reading it by path is
   what fixes *this* session, while
@@ -40,17 +41,20 @@ report rather than something to work around.
   tree that changed **in place** too, where the path and the version can both hold
   still while the content moved: those components keep what they loaded until the
   same reload. `unknown` there
-  is the registry not settling it — two applicable installs disagreeing, or no
-  answer from it at all — and the reason says which: read from `read_root` and
+  is the registry not settling it — two applicable installs disagreeing, no
+  answer from it at all, or a tree it never installed, whose next start belongs
+  to whatever host keeps that copy and can move it in place under one path — and
+  the reason says which: read from `read_root` and
   carry that into the report rather than picking a version for it.
   A `read_root_reason` means the installed tree is not on disk at all, so what
   follows is the loaded tree read against itself — a missing delta, reported as
   such and never as "nothing changed".
-- **`update_pending=yes` means the update did not fully land** — what is
-  installed is behind the marketplace's repository. Report it with the command
-  that closes it (`/plugin marketplace update <marketplace>`, then the plugin's
-  own update), and say plainly that everything below is judged against what is
-  installed here.
+- **`update_pending=yes` means the marketplace's repository carries more than the
+  tree this run reads.** Report it with the command that closes it (`/plugin
+  marketplace update <marketplace>`, then the plugin's own update), and say
+  plainly that everything below is judged against `read_root`. Where the
+  registry's own install is a tree apart from that one, the reason names it: what
+  waits there waits for the sessions that load from it, not for this one.
 - **The numbers never gate the re-read.** Versions that match mean the memory is
   wrong or the tree is a working copy edited in place — read anyway. The user's
   word that the plugin moved is the trigger; the numbers are the report.

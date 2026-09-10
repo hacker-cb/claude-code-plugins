@@ -194,7 +194,7 @@ set('loaded_root', root);
 
 // The cache names each version's directory for the version itself, so a root whose own name
 // is that version is one of those directories — and a root named anything else (a checkout,
-// a --plugin-dir tree, a skills directory) has no siblings to compare or diff against.
+// a --plugin-dir tree, a copy another host keeps for its own sessions) is not one.
 const pluginDir = dirname(root);
 const inCache = Boolean(loaded) && basename(root) === loaded;
 set('cache', inCache ? 'present' : 'absent',
@@ -203,19 +203,6 @@ set('plugin', inCache ? basename(pluginDir) : (manifest.name || basename(root)))
 if (inCache) set('marketplace', basename(dirname(pluginDir)));
 
 const plugin = facts.get('plugin');
-
-let siblings = [];
-let cacheReason = null;
-if (inCache) {
-  try {
-    siblings = readdirSync(pluginDir, { withFileTypes: true })
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name)
-      .filter((n) => existsSync(join(pluginDir, n, '.claude-plugin', 'plugin.json')));
-  } catch (e) {
-    cacheReason = `the cache directory could not be listed: ${e.code || e.message}`;
-  }
-}
 
 // ------------------------------------------------- what the registry installed
 
@@ -234,6 +221,7 @@ const within = (parent) => {
 
 let registry = null;
 let registryEntry = null;
+let registryNamed = [];
 let registryReason = null;
 let registryAmbiguity = null;
 let registryUnsettled = false;
@@ -259,6 +247,7 @@ if (!listed.ok) {
       // catalog's plugin of the same name is a different plugin at a different version.
       return known ? market === known : true;
     });
+    registryNamed = named;
     // A cache directory is shared between projects, so the loaded tree's path says which
     // plugin this is and nothing about whose install it is: applicability is the scope's.
     const applicable = named.filter((e) =>
@@ -296,13 +285,62 @@ if (!listed.ok) {
           // rather than settled, whichever of them was picked to stand in the answer.
           registryUnsettled = !exact && versions.length > 1;
           if (versions.length > 1) {
-            registryAmbiguity = `${versions.length} installs apply here and disagree (`
+            // The line lists the installs, so the count is of installs: counting the
+            // versions among them names three records as two.
+            registryAmbiguity = `${mine.length} installs apply here and disagree (`
               + `${mine.map((e) => `${e.scope || 'unknown'}:${e.version}`).join(', ')}) — `
               + (exact ? 'the one this session loaded is reported' : 'the highest is reported');
           }
         }
       }
     }
+  }
+}
+
+// --------------------------------------------- where the versions are kept
+
+// One directory per version, named for it, grouped by marketplace and plugin — and the
+// loaded root is one way to reach that directory, not the only one. A session reading a
+// tree the registry never installed (another host's copy of the plugin, a working
+// checkout) has the cache beside it all the same, and the registry carries the path it
+// installs into. A floor resolves against that directory whatever the root is, and where
+// no directory can be named, the reason says that rather than that the cache is empty.
+let cacheDir = inCache ? pluginDir : null;
+let cacheDirReason = null;
+if (!cacheDir) {
+  const market = facts.get('marketplace');
+  const dirs = new Map();
+  for (const e of registryNamed) {
+    if (typeof e.installPath !== 'string' || typeof e.version !== 'string') continue;
+    // Only an entry whose directory is named for the version it holds says where the
+    // versions are kept; one of any other shape names a single tree and no siblings.
+    if (basename(e.installPath) !== e.version) continue;
+    if (market && typeof e.id === 'string' && e.id.split('@')[1] !== market) continue;
+    const dir = dirname(e.installPath);
+    if (!dirs.has(canonical(dir))) dirs.set(canonical(dir), dir);
+  }
+  const found = [...dirs.values()];
+  // Which of several a version belongs to is not something this can settle, and picking
+  // the first would resolve a floor to a tree from somewhere else entirely.
+  if (found.length === 1) [cacheDir] = found;
+  else if (found.length > 1) {
+    cacheDirReason = `the registry installs '${plugin}' into several directories: ${found.join(', ')}`;
+  } else {
+    cacheDirReason = 'the root is outside the plugin cache, and no registry entry names a version directory';
+  }
+}
+
+let siblings = [];
+let listReason = null;
+if (cacheDir) {
+  try {
+    // The manifest inside is what proves a name is a version tree, so the entry's own type
+    // is not read: a development checkout symlinked in as a version entry is a directory
+    // to everything that follows it, and a dirent that reports itself a link.
+    siblings = readdirSync(cacheDir)
+      .filter((n) => existsSync(join(cacheDir, n, '.claude-plugin', 'plugin.json')));
+  } catch (e) {
+    listReason = `the cache directory could not be listed: ${e.code || e.message}`;
   }
 }
 
@@ -316,24 +354,24 @@ set('installed', installed || 'unknown',
 set('installed_source', installed ? 'registry' : 'unknown');
 if (registryEntry && typeof registryEntry.scope === 'string') set('installed_scope', registryEntry.scope);
 
-// A root outside the plugin cache is not a tree the host swaps under this session: a
-// --plugin-dir run, a skills directory, a working copy. What is installed elsewhere is
-// still worth reporting, but it is not what a restart here would load.
+// A root the registry has no record of is a tree it says nothing about: a --plugin-dir run,
+// a skills directory, a working copy, another host's own copy. What is installed elsewhere
+// is still worth reporting, but it is not the tree this session reads.
 const entryPath = registryEntry && typeof registryEntry.installPath === 'string' ? registryEntry.installPath : null;
 const registryBacked = inCache || samePath(entryPath, root);
 if (!registryBacked) {
   facts.set('loaded_reason',
-    'read from a tree the host does not manage — an edit in place since this session loaded it would not show here');
+    'read from a tree the registry did not install — a move in place since this session loaded it shows here as the loaded version');
 }
 
 // The registry carries the path it installed to; the cache layout is what answers when it
 // could not be read, and neither is trusted past the directory actually being there.
 const installedRoot = (entryPath && existsSync(entryPath) ? entryPath : null)
-  || (installed && siblings.includes(installed) ? join(pluginDir, installed) : null);
+  || (installed && siblings.includes(installed) ? join(cacheDir, installed) : null);
 set('installed_root', installedRoot || 'unknown',
   installedRoot ? null
-    : (!inCache && !entryPath ? 'the root is outside the plugin cache'
-      : (installed ? `nothing on disk at the ${installed} installation` : 'no installed version to point at')));
+    : (!installed ? 'no installed version to point at'
+      : (cacheDir ? `nothing on disk at the ${installed} installation` : cacheDirReason)));
 
 // ------------------------------------------------------------- predecessor
 
@@ -343,9 +381,8 @@ const below = loaded ? siblings.filter((v) => compareVersions(v, loaded) === -1)
 const predecessor = highest(below);
 set('predecessor', predecessor || 'unknown',
   predecessor ? null
-    : (!inCache ? 'the root is outside the plugin cache'
-      : (cacheReason || 'no earlier version is left in the cache')));
-if (predecessor) set('predecessor_root', join(pluginDir, predecessor));
+    : (cacheDir ? (listReason || 'no earlier version is left in the cache') : cacheDirReason));
+if (predecessor) set('predecessor_root', join(cacheDir, predecessor));
 
 // ---------------------------------------------------------------- upstream
 
@@ -431,12 +468,17 @@ if (upstream.ref) set('upstream_ref', upstream.ref);
 
 // ----------------------------------------------------------------- derived
 
-// What settles a reload first is whether the host installed this tree at all; after that it
-// is simply whether the installed version is the loaded one, in either direction — an
+// What settles a reload first is whether the registry installed this tree at all; after that
+// it is simply whether the installed version is the loaded one, in either direction — an
 // update and a rollback both leave the session holding text a restart would replace.
+//
+// A tree it did not install is not thereby a tree nothing swaps: another host keeps its own
+// copies and moves them in place, under one path, while the sessions holding the old text go
+// on running. Neither side of that is readable here, so neither is answered.
 const sameVersion = Boolean(loaded) && loaded === installed;
 if (!registryBacked) {
-  set('reload_needed', 'no', 'the loaded tree is not one the host installed here — a restart loads this same tree');
+  set('reload_needed', 'unknown',
+    'the registry did not install this tree — what a restart lands on is the business of whatever host keeps it, and nothing here records what this session loaded');
 } else if (!loaded || !installed) {
   set('reload_needed', 'unknown', 'one of the two versions is unknown');
 } else if (sameVersion) {
@@ -448,26 +490,39 @@ if (!registryBacked) {
 }
 
 // The tree to re-read from is the installed one: an update that landed mid-session leaves
-// the session reading text a restart has already replaced. A tree the host did not install
-// reads itself — nothing swaps it — and where the installed one cannot be found the report
-// says so rather than letting the fallback pass for it.
+// the session reading text a restart has already replaced. A tree the registry did not
+// install reads itself — there is no second copy of it to prefer — and where the installed
+// one cannot be found the report says so rather than letting the fallback pass for it.
 let readReason = null;
 if (registryBacked && !installedRoot) {
   readReason = installed
     ? (sameVersion ? null : `the ${installed} tree could not be found — this is the loaded tree, not the installed one`)
     : 'the installed version is unknown — this is the loaded tree';
 }
-set('read_root', registryBacked ? (installedRoot || root) : root, readReason);
+const readRoot = registryBacked ? (installedRoot || root) : root;
+// Everything below is read from that tree, so everything below is said about its version —
+// which is the installed one only where the tree read is the installed one.
+const readVersion = readRoot === root ? loaded : installed;
+set('read_root', readRoot, readReason);
 
 // The floor a diff stands on is the tree this session has been acting under. A version the
 // caller pinned answers that outright; absent one, still running older text makes it the
 // loaded tree itself, and already being on the installed one makes it the version before
 // that, where the cache kept it.
-const pinnedRoot = pinned && siblings.includes(pinned) ? join(pluginDir, pinned) : null;
+const pinnedInCache = pinned && cacheDir && siblings.includes(pinned) ? join(cacheDir, pinned) : null;
+// A version the cache no longer keeps can still be on disk where the registry installed it.
+const pinnedEntry = pinned && !pinnedInCache
+  ? registryNamed.find((e) => e.version === pinned && typeof e.installPath === 'string'
+    && existsSync(e.installPath))
+  : null;
+const pinnedRoot = pinnedInCache || (pinnedEntry ? pinnedEntry.installPath : null);
 if (pinned) {
   set('floor', pinned);
   set('floor_root', pinnedRoot || 'unknown',
-    pinnedRoot ? null : `no ${pinned} tree in the cache — the pin has nothing left to diff against`);
+    pinnedRoot ? null
+      : (cacheDir
+        ? `no ${pinned} tree in the cache at ${cacheDir} — the pin has nothing left to diff against`
+        : `${cacheDirReason} — the pin resolves to no tree`));
   set('floor_source', 'pinned');
 } else if (facts.get('reload_needed') === 'yes') {
   set('floor', loaded);
@@ -475,21 +530,30 @@ if (pinned) {
   set('floor_source', 'loaded');
 } else if (predecessor) {
   set('floor', predecessor);
-  set('floor_root', join(pluginDir, predecessor));
+  set('floor_root', join(cacheDir, predecessor));
   set('floor_source', 'predecessor');
 } else {
   set('floor', 'unknown', facts.get('predecessor_reason') || 'no earlier tree to diff against');
   set('floor_source', 'none');
 }
 
-const behind = upstream.version && installed ? compareVersions(upstream.version, installed) : null;
+// What is left to pull is measured against the tree this run reads, not against a record of
+// an install it does not read: a session on a copy that already carries what the marketplace
+// carries is not waiting for the update some other copy of the plugin is.
+const behind = upstream.version && readVersion ? compareVersions(upstream.version, readVersion) : null;
 let pendingReason = null;
 if (behind === null) {
-  pendingReason = 'the installed and upstream versions cannot be compared';
+  pendingReason = 'the read and upstream versions cannot be compared';
 } else if (behind === -1) {
-  pendingReason = `nothing to pull: the marketplace carries ${upstream.version}, behind the installed ${installed}`;
-} else if (behind === 0 && upstream.version !== installed) {
-  pendingReason = `the two differ only in build metadata: ${upstream.version} against ${installed}`;
+  pendingReason = `nothing to pull: the marketplace carries ${upstream.version}, behind the ${readVersion} this run reads`;
+} else if (behind === 0 && upstream.version !== readVersion) {
+  pendingReason = `the two differ only in build metadata: ${upstream.version} against ${readVersion}`;
+}
+// The registry's own install is a second tree with its own lag, and sessions that load from
+// it read that one: where the two part company, the verdict says which it answered for.
+if (installed && readVersion && readVersion !== installed) {
+  const aside = `judged against the ${readVersion} this run reads, not the ${installed} the registry installed`;
+  pendingReason = pendingReason ? `${pendingReason}; ${aside}` : aside;
 }
 set('update_pending', behind === null ? 'unknown' : (behind === 1 ? 'yes' : 'no'), pendingReason);
 
