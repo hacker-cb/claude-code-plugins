@@ -309,8 +309,8 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 ## Step 4 — The fix loop (until GitHub says mergeable)
 
 Loop until the PR is **both mergeable by GitHub and clean by your own bar** —
-every required check green, the thread-resolution requirement satisfied, and,
-where the base requires approvals, one standing on the head about to merge, plus —
+every required check green, the thread-resolution requirement satisfied, and the
+approval requirement met where the base carries one, plus —
 always, whatever the repo does or doesn't enforce — CI genuinely green, the PR
 body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
@@ -348,13 +348,18 @@ Step 6 finds it.
 
 **The approval is the exit item no iteration of this loop produces.** Every other
 one answers to a push; that one answers to a reviewer, and all a round can do is
-remove reasons to withhold it. So when the head's review has settled without
-approving and the rest of the exit is met, read which of the two kinds of review
-that is (`references/copilot.md`, *What the review lands as*) before spending
-another iteration. Findings still outstanding are this loop's work. A reviewer
-handing the decision to a human is not: **stop and ask the addressee `merge-auth`
-names**, recommendation first, carrying the reason the review gave and what would
-answer it. Another round against that buys another review of the same kind.
+remove reasons to withhold it. So read it before spending an iteration against it,
+and read the **requirement** rather than one reviewer's verdict: a base asking for
+no approval, or one already satisfied by somebody else, leaves nothing outstanding
+however Copilot's own review landed.
+
+Where the requirement *is* outstanding and the head's review has settled without
+closing it, which of the two kinds of review that is
+(`references/copilot.md`, *What the review lands as*) decides the step. Findings
+still outstanding are this loop's work. A reviewer handing the decision to a human
+is not: **stop and ask the addressee `merge-auth` names**, recommendation first,
+carrying the reason the review gave and what would answer it. Another round against
+that buys another review of the same kind.
 
 1. **Read the live state:** `gh pr checks <pr>` plus
    `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP

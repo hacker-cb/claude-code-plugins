@@ -129,9 +129,9 @@ Read what the sentence under the assessment is *about*:
   human, and another round buys another review of the same kind.
 
 Confirm the second on the head you are handing in rather than from the sentence
-alone: both readings under *Finding the findings* come back empty, and every thread
-is answered. That is a finished review that is not an approval, and what is left is
-a decision rather than a fix — the main skill's Step 4 stop is where it goes.
+alone: neither reading under *Finding the findings* leaves a finding unanswered.
+That is a finished review that is not an approval, and what is left is a decision
+rather than a fix — the main skill's Step 4 stop is where it goes.
 
 **Read it as a fact about this head, never as a prediction about the pull request.**
 A change cut down, or simply pushed again, earns an approval from the reviewer that
@@ -307,19 +307,30 @@ Read the body of **every** review on the head you are handing in — several run
 review one commit, and a later one carries findings the earlier one did not:
 
 ```bash
+HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
+# Unset it and the filter below keeps every review ever posted — an old head's
+# suppressed block then reads as this head's finding, said by an empty variable
+[ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — the bodies are unread, not clean"; exit 1; }
+export HEAD_SHA
 gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | {at: .submitted_at, state, head: .commit_id,
-           assessment: (((.body? // "") | split("\n")[0] // "") | gsub("^#+ *|[[:space:]]+$"; "")),
+        | select(.commit_id == env.HEAD_SHA)
+        # markup stripped before either count is read: both labels arrive as a heading
+        # or a bold run as often as plain text, and GitHub may reword either of them
+        | ((.body? // "") | gsub("<[^>]*>"; " ") | gsub("[*_#]"; " ")) as $b
+        | {at: .submitted_at, state,
+           opening: (((.body? // "") | split("\n")[0] // "") | gsub("^#+ *|[[:space:]]+$"; "")),
            # `// "none"` and not `// "0"`: a body carrying no such block and a block
            # reporting none are different readings, and they take different next steps
-           suppressed: (((.body? // "") | capture("Suppressed comments \\((?<n>[0-9]+)\\)").n) // "none"),
-           threads_opened: (((.body? // "") | capture("Comments generated:\\*\\* (?<n>[0-9]+)").n) // "none")}
+           suppressed: (($b | capture("[Ss]uppressed[^(]{0,40}\\((?<n>[0-9]+)\\)").n) // "none"),
+           threads_opened: (($b | capture("[Cc]omments generated[^0-9]{0,20}(?<n>[0-9]+)").n) // "none")}
         | @json'
 ```
 
 That says *whether* to read a body, never *what* it found — read the ones it names
-in full.
+in full. `opening` is the body's first line and nothing more: it is where the
+assessment sits when the review carries one, and a pointer to the body rather than
+a substitute for reading it.
 
 **The count the body reports is a count of threads, not of findings.** It says what
 the review opened, and a review whose findings all went to the suppressed block
@@ -342,9 +353,9 @@ otherwise rate it yourself by that reference.
 
 **Critical** and **Important** are fixed in the loop unconditionally. A `Minor` is
 not left alone by its rating either — put it through that same reference and fix
-here whatever passes. It rides up with the next substantive push wherever one is
-still to come, rather than taking one of its own, and takes the re-review wait that
-push costs. What it never does is spend the loop's iteration budget: that is there
+here whatever passes. It goes up like any other fix — riding the next substantive
+push where one is still to come, and taking one of its own where none is — and
+takes the re-review wait that push costs. What it never does is spend the loop's iteration budget: that is there
 for what blocks the exit, and a `Minor` never does. Only what the reference turns
 down goes into the end-of-session report (Step 7), under its category so the user
 sees it.
@@ -385,14 +396,20 @@ loop and keeps the review thread honest.
   review summary carries no thread and needs no resolving. (See *Classifying
   severity*.)
 
-**A thread this reviewer resolved is not an answered thread.** Copilot closes its
-own, under the *other* of the logins it writes under — which is why the test is the
-pair from *Identifying Copilot* and never a literal. So judge each thread by
-`resolvedBy` and `isOutdated`, not by the bare `isResolved`: one this reviewer
-closed is an open finding wearing the resolved badge, and
-`required_review_thread_resolution` is satisfied the whole time it stands. Its
-resolve also lands *after* your reply rather than with it, so a list taken as you
-answer is honest and already stale — retake it on the head you hand in.
+**A thread this reviewer resolved is not by itself an answered thread.** Copilot
+closes its own, under a login other than the one it commented under. The pair from
+*Identifying Copilot* has nothing to test here — `resolvedBy` is typed as a plain
+user and carries no field distinguishing a bot from a person — so this is the one
+place the `^copilot` prefix stands alone, case-insensitively, which is what covers
+every spelling it resolves under.
+
+**What that match means turns on whether your reply is already in the thread**, and
+the query above returns both. A thread this reviewer closed with no answer of yours
+in it is an open finding wearing the resolved badge, and
+`required_review_thread_resolution` is satisfied the whole time it stands. One you
+answered and it then closed is settled: its resolve lands *after* the reply rather
+than with it, so a list taken as you answer is honest and already stale — retake it
+on the head you hand in rather than answering twice.
 
 Reply + resolve via:
 ```bash
