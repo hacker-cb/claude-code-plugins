@@ -69,7 +69,13 @@ mode once, at the gate, and threads it down; the mechanics live in
   `current` is never trivial, whatever the edit it implies: it carries a fork,
   and a fork is the gate. Skipping the gate skips the **asking**, never the
   **threading**: settlements the invocation carried travel on to
-  `hcb-dev:shipping-workflow` exactly as they arrived.
+  `hcb-dev:shipping-workflow` exactly as they arrived. What no invocation
+  carried arrives there unsettled, and `slice-completion.md`'s ladders answer it:
+  the mode from the user's phrasing, else `request`; `merge-auth` from a phrase
+  about the merge itself, else `ask` — nothing was approved here, so nothing
+  authorizes a merge, and the trivial change parks at ready for the user's word
+  where a gated run would have merged on green. Say so in the one line that
+  narrates the edit; a user who wants the merge names it in the ask.
 
 ## Phase 1 — The planning gate
 
@@ -126,7 +132,7 @@ Settle, in one gate:
 
 | Tier | Work | Gate | Persistence |
 |---|---|---|---|
-| 0 | trivial, 1 slice, no arch forks | none (skip) | none |
+| 0 | trivial, 1 slice, no arch forks | none (skip) — nothing approved, so `merge-auth` falls to `ask` | none |
 | 1 | a slice or two | a brief inline confirm | native task-list |
 | 2 | multi-slice, real forks | native plan mode | plan-doc under the resolved plans dir + task-list |
 | 3 | large / team / multi-session | plan mode | + an optional forge tracking issue (offer) |
