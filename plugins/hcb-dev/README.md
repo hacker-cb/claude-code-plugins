@@ -267,7 +267,9 @@ the plan stages them.
   other sessions' leftovers included). **Branches** are the bulk of it — no host
   cleanup touches those. A worktree Claude Code created for another session it
   reports rather than removes: the host leases those to sessions that outlive
-  their processes, so an idle one is routinely still someone's.
+  their processes, so an idle one is routinely still someone's. The verdict
+  tables it classifies by are
+  [`skills/git-cleanup/references/verdicts.md`](skills/git-cleanup/references/verdicts.md).
 
 ## Shared references
 
