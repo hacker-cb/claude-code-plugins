@@ -95,8 +95,9 @@ separates the branches, so that is what the fragments hold.
 
 ## Where the envelopes come from
 
-This is [`suites/claude-review/fixtures`](suites/claude-review/fixtures), the one
-suite that reads envelopes so far. Six are verbatim captures of real runs — a full
+Two suites read them, by different routes.
+[`suites/claude-review/fixtures`](suites/claude-review/fixtures) is captured:
+six are verbatim captures of real runs — a full
 report, a clean working tree, a run that found nothing, a connection refused inside
 the local command, a rejected login, and a CLI with no login at all. They are kept
 whole, down to the fields nothing reads, because they are the evidence of what an
@@ -110,6 +111,11 @@ list rather than paraphrased — a fixture worded from memory would let a phrase
 look confirmed by data it was itself written from. The verdicts are what reviews of
 this repository actually write, which is the point: a review of the quota branch
 quotes every phrase a quota notice contains.
+
+[`suites/plugin-versions/fixtures`](suites/plugin-versions/fixtures) is written
+rather than captured: each envelope is the registry and marketplace answer one
+case needs, and the version trees those answers point at sit beside them under
+`trees/`, which is where a case's `--root` and the paths it expects come from.
 
 ## Adding a case
 
