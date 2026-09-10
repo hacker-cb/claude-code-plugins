@@ -72,9 +72,9 @@ shape you do not control, has nothing else checking it (no tests that run, no
 types, no compiler), removes a guard, an error path or a test, or touches paths
 the project marks sensitive (`CLAUDE.md`, `CODEOWNERS`, `SECURITY.md`). High risk
 holds both engines at or above their start; mechanics with no behavior change
-lower both, and leave whether either runs at all to the cost question in the next
-step — which is where a skip is decided, and recorded with its reason. An
-explicit instruction from the caller wins.
+lower both — the rung is where a change's breadth is paid for, and an installed,
+applicable engine is never skipped for cost. An explicit instruction from the
+caller wins.
 
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
@@ -89,14 +89,12 @@ what is untracked still gets named.
 
 ## 2. Pick
 
-Four questions per reviewer, in order:
+Three questions per reviewer, in order:
 
 - **Available?** If not, record `UNAVAILABLE` with the reason; do not launch it.
 - **Applicable?** When the scope asks for something a reviewer cannot do, skip it
-  with a recorded reason — `n/a`.
-- **Worth its cost on this change?** They do not cost the same, and the expensive
-  one is not owed a run just for existing — see *What each run costs* below. A
-  skip here is `n/a` with the reason in its row, same as any other.
+  with a recorded reason — `n/a`. These two are the only grounds for not running
+  a reviewer; cost is paid in the rung, never by a skip.
 - **At what level?** Pass the level Scope fixed for that reviewer explicitly —
   never a machine-local default, since this skill runs on other people's
   machines.
@@ -120,17 +118,12 @@ exactly what the security review is for. `n/a` only when the honest answer to *w
 behaves differently now* is "nothing" — and say that reason in the row, since `n/a`
 is the one status the coverage gate does not treat as a gap.
 
-### What each run costs
-
-| Reviewer | A run costs | Earns it when |
-|---|---|---|
-| `codex-review` | one pass by one reviewer, long — but detached, so it overlaps the others | always, while it is installed — it is the floor the other two build on |
-| `claude-review` | what its rung buys, detached like the one above: a single pass at the bottom, a fan-out of angles further up | always, while it is installed — and the rung is where the change's breadth gets paid for. Documentation is squarely its business: it is the only reviewer reading `CLAUDE.md` compliance |
-| `security-review` | inline, plus its own filtering pass | something now executes differently (above) |
-
-The two engines are independent: a finding both reach on their own is stronger
-evidence than either one restating itself, which is what a run of both buys over
-a deeper run of one.
+The two engines are independent, and detached, so they overlap each other: a
+finding both reach on their own is stronger evidence than either one restating
+itself, which is what a run of both buys over a deeper run of one.
+`codex-review` is the floor the other two build on; documentation is squarely
+`claude-review`'s business — it is the only reviewer reading `CLAUDE.md`
+compliance.
 
 **Size is a signal, not a threshold.** Two thousand lines of regenerated fixture
 hide less than twenty inside an auth check. Ask what the change could be
