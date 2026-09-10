@@ -134,8 +134,7 @@ Settle, in one gate:
 |---|---|---|---|
 | 0 | trivial, 1 slice, no arch forks | none (skip) — nothing approved, so `merge-auth` falls to `ask` | none |
 | 1 | a slice or two | a brief inline confirm | native task-list |
-| 2 | multi-slice, real forks | native plan mode | plan-doc under the resolved plans dir + task-list |
-| 3 | large / team / multi-session | plan mode | + an optional forge tracking issue (offer) |
+| 2 | multi-slice, real forks | native plan mode | plan-doc under the resolved plans dir + task-list; where the work is large, shared with a team or spread over sessions, offer a forge tracking issue as well |
 
 For anything multi-slice, **persist the plan and the captured authorizations** so
 a long autonomous run survives context compaction — track slice progress on the
