@@ -320,7 +320,11 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 - Body: what changed and why, in the user's own framing if known; a short summary
   and a bullet list of notable changes, plus `Closes #N` — that English keyword
   verbatim, whatever language the body is written in — for every issue this PR
-  settles. GitHub acts on that keyword only for a PR whose base is the default
+  settles. Which those are is the flow upstream's where it threaded `issues` in
+  (`slice-completion.md`): an orchestrated slice names the issues it alone
+  settles, the set's final request the set's — never an issue whose other slices
+  are still open, which Step 6's explicit close would otherwise close early.
+  GitHub acts on that keyword only for a PR whose base is the default
   branch, so on any other base — a slice PR onto its feature branch, a repo whose
   PRs target another trunk — the issue is closed explicitly after the merge lands
   (`hcb-dev:issue-tracking`).

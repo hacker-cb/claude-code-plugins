@@ -166,7 +166,13 @@ other):
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
    commit this slice was cut from — only the orchestrator knows it),
-   `merge-strategy` and `merge-auth` with the addressee it names.
+   `merge-strategy`, `merge-auth` with the addressee it names, and `issues` —
+   the ones this slice **alone** settles, so the change request it opens carries
+   a closing keyword for those and no other. An issue the whole set settles is
+   closed by the final integration request, never by a slice's: a slice's request
+   targets the feature branch, where the forge does not act on the keyword and
+   the driver's post-merge check would close the issue while the rest of the set
+   is still open.
 
 **Autonomy is "no routine questions", not "never pauses".** The legitimate stops
 remain and are honored — this skill does not waive the downstream skills' own
@@ -195,7 +201,8 @@ land as a whole — and this is where `local` and `request` diverge:
 - **`request`** — the per-slice change requests have stacked on the feature
   branch; now open and drive the final `feature → base` change request through the
   forge driver (`hcb-dev:github-pr-workflow` on GitHub), with the gate's
-  `merge-strategy` and `merge-auth`, addressee included. This is **completion,
+  `merge-strategy` and `merge-auth`, addressee included, and the `issues` the
+  set settles, whose closing keywords its body carries. This is **completion,
   not an offer** —
   request mode was chosen, so the integration change request is driven like any
   other, or the set's work is left stranded on the feature branch.

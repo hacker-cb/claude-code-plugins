@@ -43,6 +43,10 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
   step 0 renamed it locally, where there was one; empty otherwise. The request
   driver retires that ref once the new name is published; local completion
   leaves it and reports it standing.
+- `issues` — the issues this slice **alone** settles, where the caller knows
+  them: the change request's closing keywords name these and no other, and the
+  `issues` output below reports on them. An orchestrated slice never carries an
+  issue its set settles as a whole; that one rides the final integration request.
 - `merge-strategy` — the shown-and-approved gate default, **mode-dependent**: in
   `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
   the **final** `feature → base` strategy only (*Multi-slice topology* below).
@@ -238,8 +242,8 @@ Publishing is the escalation offer below, and only by consent.
   remote's host (`gh auth status` → GitHub; `glab auth status` → GitLab), and name
   what a self-hosted instance cannot do rather than stalling on it.
 - **Dispatch** to the installed change-request driver, handing it `parent` as the
-  base plus `merge-strategy`, `merge-auth`, and `old-name` where step 0 recorded
-  one: GitHub → `hcb-dev:github-pr-workflow`;
+  base plus `merge-strategy`, `merge-auth`, `issues`, and `old-name` where step 0
+  recorded one: GitHub → `hcb-dev:github-pr-workflow`;
   GitLab → `hcb-dev:gitlab-mr-workflow` once it exists (deferred — until then
   GitLab falls to the inline fallback below).
 - **No driver installed** — normalize the branch name **first**
