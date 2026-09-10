@@ -291,3 +291,9 @@ its current tip**: a slice still open against it, or one already cut from it,
 whose base a rewrite would pull out from under it. Between slices, with every one
 of them landed, nothing is built on it and rebase is safe again. A slice itself
 rebases onto the feature branch.
+
+**When, and by whom**: the orchestrator, before each slice after the first is
+cut (`implementation-workflow` Phase 2), and the request driver once more before
+the final `feature → base` change request (its own re-sync step). Nothing else
+moves the feature branch, and a slice never does — its own landing is onto the
+feature branch, not the base.

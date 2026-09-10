@@ -150,9 +150,13 @@ other):
    sees the ones below it and conflicts less. Where that parent is the base,
    refresh it again here and take the cut point from `base-resolution.md`'s table
    — Phase 0's fetch does not still hold. The feature branch is cut the same way,
-   once, before the first slice; keeping it current after that is
-   `slice-completion.md`'s. Cut it under the name the gate showed
-   (`branch-naming.md`).
+   once, before the first slice. **Before each later slice is cut, bring it
+   current**: refresh the base again and, where it moved, take it onto the
+   feature branch by `slice-completion.md`'s rule — a rebase between slices,
+   when nothing is built on its tip — so the slice is cut from, reviewed against
+   and landed on a parent that already carries what the base does, and the final
+   integration absorbs one slice's drift rather than the whole set's. Cut it
+   under the name the gate showed (`branch-naming.md`).
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do. What the work turns up
    along the way goes through the test in
