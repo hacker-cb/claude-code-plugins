@@ -353,12 +353,36 @@ otherwise rate it yourself by that reference.
 
 **Critical** and **Important** are fixed in the loop unconditionally. A `Minor` is
 not left alone by its rating either — put it through that same reference and fix
-here whatever passes. It goes up like any other fix — riding the next substantive
-push where one is still to come, and taking one of its own where none is — and
-takes the re-review wait that push costs. What it never does is spend the loop's iteration budget: that is there
-for what blocks the exit, and a `Minor` never does. Only what the reference turns
-down goes into the end-of-session report (Step 7), under its category so the user
-sees it.
+here whatever passes. It goes up like any other fix, riding the next substantive
+push where one is still to come and taking the re-review wait that push costs.
+Whether it takes a push of its own where none is coming turns on what a push costs
+on this head — the paragraph below. What a `Minor` never does is spend the loop's
+iteration budget: that is there for what blocks the exit, and a `Minor` never does.
+Only what the reference turns down goes into the end-of-session report (Step 7),
+under its category so the user sees it.
+
+**A push that would spend a standing approval is a fork, not a cost.** Where the
+base dismisses stale reviews on push and that approval is what closes its approval
+requirement, the next push takes the approval with it, and nothing says the next
+review gives it back. This reviewer makes the case vivid — it approves and names a
+finding in one review, so the fix for its own finding is what costs its own
+approval — but the fork is the same wherever an approval is standing, whoever gave
+it. What the finding is rated decides who weighs the two sides:
+
+- **Critical or Important** — fixed, and the approval spent on it. Nothing is being
+  weighed here: merging it was never on the table.
+- **A `Minor` the reference routes to a fix** — the fork proper, and not the
+  loop's to settle on its own. Put both sides to the addressee `merge-auth` names,
+  recommendation first: spend the approval on the nit, or turn the finding down
+  here — answered and resolved where it opened a thread, and in the end-of-session
+  report either way — and merge the head that carries the approval.
+
+**Three things collapse the fork, any one of them on its own, and each is read
+rather than assumed.** The base does not dismiss stale reviews on push, so the
+approval survives it. The standing approval does not close the base's approval
+requirement, so spending it costs the merge nothing. A substantive push is coming
+anyway, so the approval goes with that push whatever the `Minor` does and the
+`Minor` rides along.
 
 **What you *fix* and what you *resolve* are different questions.** A thread this
 reviewer opened ends resolved once it has its answer — the fix is in, or the
