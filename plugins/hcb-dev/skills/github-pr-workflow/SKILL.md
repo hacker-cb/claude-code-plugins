@@ -67,6 +67,8 @@ flow upstream named another — when:
   of them is a gate no iteration closes: an approval the base requires that no
   reviewer has given (Step 4)
 - A Critical/Important finding requires a product/design decision you can't make
+- A standing approval would be spent to fix a `Minor` that nothing else is
+  pushing (`references/copilot.md`)
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it

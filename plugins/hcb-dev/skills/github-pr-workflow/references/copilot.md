@@ -353,12 +353,32 @@ otherwise rate it yourself by that reference.
 
 **Critical** and **Important** are fixed in the loop unconditionally. A `Minor` is
 not left alone by its rating either — put it through that same reference and fix
-here whatever passes. It goes up like any other fix — riding the next substantive
-push where one is still to come, and taking one of its own where none is — and
-takes the re-review wait that push costs. What it never does is spend the loop's iteration budget: that is there
-for what blocks the exit, and a `Minor` never does. Only what the reference turns
-down goes into the end-of-session report (Step 7), under its category so the user
-sees it.
+here whatever passes. It goes up like any other fix, riding the next substantive
+push where one is still to come and taking the re-review wait that push costs.
+Whether it takes a push of its own where none is coming turns on what a push costs
+on this head — the paragraph below. What a `Minor` never does is spend the loop's
+iteration budget: that is there for what blocks the exit, and a `Minor` never does.
+Only what the reference turns down goes into the end-of-session report (Step 7),
+under its category so the user sees it.
+
+**An approval that arrives carrying a finding is a fork, not a cost.** This
+reviewer approves and names a finding in the same review, so its body is read for
+findings like any other — and where the base dismisses stale reviews on push, the
+push that fixes one of them removes the approval that named it, with nothing saying
+the next review gives it back. The two sides are a nit closed against an approval
+already in hand, and what the finding is rated decides who weighs them:
+
+- **Critical or Important** — fixed, and the approval spent on it. Nothing is being
+  weighed here: merging it was never on the table.
+- **A `Minor` that reference routes to a fix** — the fork proper, and not the
+  loop's to settle on its own. Put both sides to the addressee `merge-auth` names,
+  recommendation first: spend a standing approval on a nit, or take the finding's
+  other exit and merge the head that carries the approval.
+
+The fork is only there while nothing else is going up. Where a substantive push is
+coming anyway the approval goes with it whatever the `Minor` does, so the `Minor`
+rides along and costs nothing of its own — and where no approval is standing, a
+push spends none.
 
 **What you *fix* and what you *resolve* are different questions.** A thread this
 reviewer opened ends resolved once it has its answer — the fix is in, or the
