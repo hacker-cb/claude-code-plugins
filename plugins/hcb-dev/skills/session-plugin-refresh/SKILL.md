@@ -50,9 +50,11 @@ report rather than something to work around.
   follows is the loaded tree read against itself — a missing delta, reported as
   such and never as "nothing changed".
 - **`update_pending=yes` means the marketplace's repository carries more than the
-  tree this run reads.** Report it with the command that closes it (`/plugin
-  marketplace update <marketplace>`, then the plugin's own update), and say
-  plainly that everything below is judged against `read_root`. Where the
+  tree this run reads.** Where that tree is one the registry installed, report the
+  command that closes it (`/plugin marketplace update <marketplace>`, then the
+  plugin's own update); where it is not, those commands move a copy this session
+  never reads, so name the host keeping this one as what has to update instead.
+  Say plainly that everything below is judged against `read_root`, and where the
   registry's own install is a tree apart from that one, the reason names it: what
   waits there waits for the sessions that load from it, not for this one.
 - **The numbers never gate the re-read.** Versions that match mean the memory is
@@ -69,7 +71,10 @@ against, and one the invocation itself named — and either is handed to the scr
 as `--floor`, which resolves the tree that version occupies and says so when the
 cache no longer holds it. `floor_source` names which of the three answered. A
 floor buys a diff and nothing else, so a wrong one widens the reading rather than
-changing a verdict.
+changing a verdict — except where the script says it inferred one over a tree the
+registry did not install: that floor can stand above the text this session holds,
+and its diff then shows less than changed, which is what the whole-file reading
+below covers.
 
 ```bash
 diff -ru <floor_root>/skills <read_root>/skills

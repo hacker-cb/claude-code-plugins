@@ -204,6 +204,15 @@ if (inCache) set('marketplace', basename(dirname(pluginDir)));
 
 const plugin = facts.get('plugin');
 
+// A plugin name belongs to its marketplace, so an entry from another one names a different
+// plugin's tree, whatever it is called. Read late, because the marketplace is resolved below
+// for a root that carries no cache path of its own; an entry with no id at all is one matched
+// by its path, which is evidence about this tree rather than a name to rank.
+const ofMarketplace = (e) => {
+  const market = facts.get('marketplace');
+  return !market || typeof e.id !== 'string' || e.id.split('@')[1] === market;
+};
+
 // ------------------------------------------------- what the registry installed
 
 // The registry is the authority on what is installed: the cache also holds versions an
@@ -222,6 +231,7 @@ const within = (parent) => {
 let registry = null;
 let registryEntry = null;
 let registryNamed = [];
+let registryRead = false;
 let registryReason = null;
 let registryAmbiguity = null;
 let registryUnsettled = false;
@@ -236,6 +246,7 @@ if (!listed.ok) {
   if (!entries) {
     registryReason = 'claude plugin list did not answer a JSON list';
   } else {
+    registryRead = true;
     const known = facts.get('marketplace');
     const named = entries.filter((e) => {
       if (!e || typeof e !== 'object') return false;
@@ -308,14 +319,13 @@ if (!listed.ok) {
 let cacheDir = inCache ? pluginDir : null;
 let cacheDirReason = null;
 if (!cacheDir) {
-  const market = facts.get('marketplace');
   const dirs = new Map();
   for (const e of registryNamed) {
     if (typeof e.installPath !== 'string' || typeof e.version !== 'string') continue;
     // Only an entry whose directory is named for the version it holds says where the
     // versions are kept; one of any other shape names a single tree and no siblings.
     if (basename(e.installPath) !== e.version) continue;
-    if (market && typeof e.id === 'string' && e.id.split('@')[1] !== market) continue;
+    if (!ofMarketplace(e)) continue;
     const dir = dirname(e.installPath);
     if (!dirs.has(canonical(dir))) dirs.set(canonical(dir), dir);
   }
@@ -325,8 +335,12 @@ if (!cacheDir) {
   if (found.length === 1) [cacheDir] = found;
   else if (found.length > 1) {
     cacheDirReason = `the registry installs '${plugin}' into several directories: ${found.join(', ')}`;
-  } else {
+  } else if (registryRead) {
     cacheDirReason = 'the root is outside the plugin cache, and no registry entry names a version directory';
+  } else {
+    // A registry that never answered has named nothing, which is not the same as naming
+    // none: read as the second, "no earlier tree" would be a verdict nobody reached.
+    cacheDirReason = `the root is outside the plugin cache, and the registry could not be read: ${registryReason}`;
   }
 }
 
@@ -501,8 +515,10 @@ if (registryBacked && !installedRoot) {
 }
 const readRoot = registryBacked ? (installedRoot || root) : root;
 // Everything below is read from that tree, so everything below is said about its version —
-// which is the installed one only where the tree read is the installed one.
-const readVersion = readRoot === root ? loaded : installed;
+// which is the installed one only where the tree read is the installed one. Compared by
+// path and not by spelling: the registry's absolute path and a relative `--root` are one
+// tree, and read as two the manifest gives way to a registry record that has moved on.
+const readVersion = samePath(readRoot, root) ? loaded : installed;
 set('read_root', readRoot, readReason);
 
 // The floor a diff stands on is the tree this session has been acting under. A version the
@@ -510,10 +526,12 @@ set('read_root', readRoot, readReason);
 // loaded tree itself, and already being on the installed one makes it the version before
 // that, where the cache kept it.
 const pinnedInCache = pinned && cacheDir && siblings.includes(pinned) ? join(cacheDir, pinned) : null;
-// A version the cache no longer keeps can still be on disk where the registry installed it.
+// A version the cache no longer keeps can still be on disk where the registry installed it —
+// installed for this plugin, which is what the marketplace filter settles: a same-named
+// plugin from another catalog would hand the diff a tree with nothing to do with this one.
 const pinnedEntry = pinned && !pinnedInCache
   ? registryNamed.find((e) => e.version === pinned && typeof e.installPath === 'string'
-    && existsSync(e.installPath))
+    && ofMarketplace(e) && existsSync(e.installPath))
   : null;
 const pinnedRoot = pinnedInCache || (pinnedEntry ? pinnedEntry.installPath : null);
 if (pinned) {
@@ -529,7 +547,13 @@ if (pinned) {
   set('floor_root', root);
   set('floor_source', 'loaded');
 } else if (predecessor) {
-  set('floor', predecessor);
+  // Over a tree the registry did not install, the version before it is an inference and not
+  // a record: nothing here says what this session loaded, so the floor can stand ABOVE it
+  // and the diff then shows less than changed. Said out loud, since a floor is otherwise
+  // read as only ever widening the reading.
+  set('floor', predecessor,
+    registryBacked ? null
+      : 'inferred from the cache: nothing records what this session loaded from a tree the registry did not install, so this floor can be newer than that text and its diff narrower than the change');
   set('floor_root', join(cacheDir, predecessor));
   set('floor_source', 'predecessor');
 } else {
