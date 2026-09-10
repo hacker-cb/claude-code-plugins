@@ -169,7 +169,14 @@ Three outcomes, and only one of them means current:
 A consumer that only **reads** the base brings nothing over: it reads against
 the ref, and a claim it makes about the tree names the revision it was read at.
 The checkout it stands in may be older than that ref, and where it is, what the
-base moved past is unread rather than absent.
+base moved past is unread rather than absent. So read the base's own objects
+rather than the files on disk — a working tree answers a search either way, and
+one on a feature branch or behind the base answers it wrongly without saying so:
+
+```bash
+git show "<remote>/<base>:<path>"                     # the file as the base has it
+git grep -n <pattern> "<remote>/<base>" -- <pathspec> # a search across the base
+```
 
 Then bring the local side to what arrived:
 

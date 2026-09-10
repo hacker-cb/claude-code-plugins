@@ -47,8 +47,10 @@ it accepts their returns per
 ## Planning
 
 Draw the split per `wave-planning.md` — where no survey of the slice exists
-yet, `hcb-dev:backlog-survey` produces its input first — and hand the user its
-closing table. **The preconditions that table carries go up with it** — a batch
+yet, `hcb-dev:backlog-survey` produces its input first, and a plan redrawn
+mid-epic starts from `hcb-dev:wave-refresh` rather than from a second survey —
+and hand the user its closing table. **The preconditions that table carries go
+up with it** — a batch
 standing on an issue the survey ruled `needs rewrite`
 ([`../../references/issue-currency.md`](../../references/issue-currency.md)) is
 planned and held, and the rewrite releasing it is a tracker edit like any other:
@@ -130,6 +132,11 @@ checked on — is part of this role's loop, not a one-time launch step.
   in (`hcb-dev:wave-dispatch`). Where the epic stands at `ask` and the plan
   fixes a landing order, the order is held here: a later batch's question waits
   until the earlier one has landed, rather than reaching the user beside it.
+- **Free capacity is recomputed, not recalled** (`hcb-dev:wave-refresh`) —
+  when a landing frees ground, and when the user asks what else can run beside
+  what is running, what blocks, or what to take next. It reads the delta since
+  the pin it last recorded rather than the backlog again, and what it frees
+  goes back to Launching behind the user's word on its layout.
 - **A landing that happened without this session's go still reaches its batch
   first** — a request merged from outside the queue, by another session or by
   the user. The

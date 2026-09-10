@@ -13,7 +13,8 @@ description: >-
   only on the user's word, item by item through `hcb-dev:issue-tracking`.
   Not for one issue's mechanics (`hcb-dev:issue-tracking`); the ask to split
   into waves AND run them is `hcb-dev:master-session`'s — this skill surveys
-  and recommends.
+  and recommends. A slice already under a ledger, with a pin to diff from, is
+  recomputed by `hcb-dev:wave-refresh` instead.
 ---
 
 # Backlog survey
@@ -79,12 +80,9 @@ In this order, each section explicit even when empty:
    `wave-planning.md`'s closing table, every pair carrying what that file's
    axes say of it — what clears the ones placed side by side, what separates
    the ones kept apart — and the gates the dependencies imply. What a verdict
-   past `current` does to a batch is said where that batch stands:
-   `needs rewrite` holds it, written beside it with the rewrite that releases
-   it, the way `wave-planning.md` already holds a blocked batch; `stale` takes
-   the issue out of the layout, its closure being the hygiene plan's to propose;
-   `unverifiable` keeps it out of every wave, with that as the reason. What a
-   builder reads is the tracker's body, never this report.
+   past `current` does to a batch is `wave-planning.md`'s, written where that
+   batch stands; a `stale` issue's closure is then the hygiene plan's to
+   propose. What a builder reads is the tracker's body, never this report.
 5. **What to take next** — one recommendation with its rationale and the
    cut to start with, the declared priorities of what it names among its
    reasons where they weigh; alternatives only where the choice genuinely
