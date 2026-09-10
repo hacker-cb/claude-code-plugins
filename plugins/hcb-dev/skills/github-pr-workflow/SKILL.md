@@ -74,7 +74,8 @@ flow upstream named another — when:
   the addressee's call
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
-  (shared branch) — fall back to a merge instead of rebase and note it
+  — a shared branch, per `slice-completion.md` — fall back to a merge instead of
+  rebase and note it
 - A stop that outranks an authorization applies, Step 2's unreviewed rebase
   resolution among them (`slice-completion.md`)
 
@@ -292,12 +293,10 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   cannot run, or a finding of that weight left open, is the Autonomy model's stop:
   ask before merging, whatever authorization was threaded in.
 - After a successful rebase, push with `--force-with-lease`.
-- **Exception:** if the branch is shared, do NOT rebase — merge base into the
-  branch instead and note why. Shared means anything is built on its current tip:
-  others have commits, another open PR references it, or — a set's feature branch —
-  a slice is still open against it or already cut from it. Once every slice has
-  landed and its PR is closed, the branch is yours again and rebase is the default
-  as usual.
+- **Exception:** a shared branch is not rebased — merge base into it instead and
+  note why. What shared means, when a set's feature branch stops being shared,
+  and what to do where it cannot be read are `slice-completion.md`'s, read there
+  rather than here.
 - **Whether staying up to date is itself a merge gate is the base's answer, not
   this step's.** Where the base requires the branch current with it, every later
   `BEHIND` (base moved while the PR was open, including right before merge) is

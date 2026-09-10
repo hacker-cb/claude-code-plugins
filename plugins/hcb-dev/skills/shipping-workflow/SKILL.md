@@ -102,9 +102,9 @@ titles itself — the session, not the branch of step 0 — per
    the slice sits on whatever that branch is behind by. **Both modes** — the write
    is local, and publishing a rewritten history is step 7's driver's.
 
-   Rebase by default; merge where the driver's shared test says the history is not
-   yours alone to rewrite (`github-pr-workflow` Step 2), and where neither is open,
-   that test's stop is this step's: ask. Merge too where the branch's own history
+   Rebase by default; merge where the branch is shared — what shared means is
+   `slice-completion.md`'s, read there rather than here — and where that cannot
+   be read, ask. Merge too where the branch's own history
    carries a merge whose content is in neither parent — a rebase drops the merge,
    and a resolution living only there goes silently with it:
 

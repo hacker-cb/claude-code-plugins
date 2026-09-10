@@ -290,14 +290,25 @@ already merged locally, with nothing left to drive.
 ## Keeping the feature branch current — both modes
 
 Where the base moves while a set is still in flight, the feature branch takes it
-the way any branch does — **rebase by default, merge while something is built on
-its current tip**: a slice still open against it, or one already cut from it,
-whose base a rewrite would pull out from under it. Between slices, with every one
-of them landed, nothing is built on it and rebase is safe again. A slice itself
-rebases onto the feature branch.
+the way any branch does: **rebase, unless it is shared** (next section) — and a
+slice still open against it, or one already cut from it, is what shares it.
+Between slices, with every one of them landed, nothing is built on it and rebase
+is safe again. A slice itself rebases onto the feature branch.
 
 **When, and by whom**: the orchestrator, before each slice after the first is
 cut (`implementation-workflow` Phase 2), and the request driver once more before
 the final `feature → base` change request (its own re-sync step). Nothing else
 moves the feature branch, and a slice never does — its own landing is onto the
 feature branch, not the base.
+
+## A shared branch is merged, never rebased — both modes
+
+**Shared** means something is built on the branch's current tip: another
+contributor's commits on it, an open change request that references it, or — a
+set's feature branch — a slice still open against it or already cut from it. A
+shared branch takes its base by merge, and the report says why. Once every slice
+has landed and its request is closed, the branch is yours again and rebase is
+the default as usual. Where whether the branch is shared cannot be read — a
+remote that does not answer, a tip nobody here can vouch for — that is a stop,
+never a guess. The test lives here alone: `shipping-workflow` step 3 and the
+request driver's own re-sync both read it from this section.
