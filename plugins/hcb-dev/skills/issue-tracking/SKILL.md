@@ -106,10 +106,10 @@ not for one targeting a feature branch or any other trunk the repository merges
 into. Write the keyword anyway; where the forge will not act on it, and wherever
 the work completes with no change request at all, close or link the issue
 explicitly once the work lands, with the user's go-ahead. In a set, each child
-closes as its slice lands on its parent branch, and the issue the set settles as
-a whole with the change request that integrates it
+closes as its slice lands on its parent branch. The issue the whole set settles
+closes with the change request that integrates the set
 ([`../../references/slice-completion.md`](../../references/slice-completion.md)),
-never with the last slice. A follow-up the
+never with the last slice to land. A follow-up the
 work raised is opened in the same effort, on the answer that authorizes any
 tracker write (`../../references/findings.md`).
 
