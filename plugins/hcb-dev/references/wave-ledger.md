@@ -78,10 +78,10 @@ test on a passage is whether deleting it changes what anyone does next.
    issue closes without a commit (`hcb-dev:wave-refresh`),
    the epic's merge authority as the user settled it
    ([`slice-completion.md`](slice-completion.md)), the plugin version this role
-   last reconciled against — which is what a later refresh diffs from and not
-   necessarily what the session is running, since a refresh re-reads without
-   reloading; it starts as the running version and `hcb-dev:session-plugin-refresh`
-   moves it — when last updated.
+   last reconciled against — which is what a later **plugin** refresh diffs from
+   and not necessarily what the session is running, since that pass re-reads
+   without reloading; it starts as the running version and
+   `hcb-dev:session-plugin-refresh` moves it — when last updated.
 2. **Batches** — one row each: id, topic, the issues and where each of them now
    stands, the order's ask and terminal deliverable in its own words (the
    acceptance contract — a return is judged against this row, not against
