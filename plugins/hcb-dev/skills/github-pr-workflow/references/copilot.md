@@ -114,8 +114,29 @@ the base requires — that read is
 **The body's verdict is not the review's state.** Every Copilot review opens with
 an approval *assessment* — a line saying whether it considers the PR ready to
 approve — and a review carrying the most favourable such line still lands
-`COMMENTED` when it did not actually approve. Route on `.state`; the assessment is
-prose to read, never a signal to act on.
+`COMMENTED` when it did not actually approve. Route the approval question on
+`.state`, never on that line.
+
+**But the assessment is what tells a round you can finish from one you cannot.** A
+review that did not approve is one of two things, and they take opposite steps.
+Read what the sentence under the assessment is *about*:
+
+- **The findings** — some number of them outstanding, named or counted. That is the
+  fix loop's own case: fix, push, take the wait, and the next review can approve.
+- **The change itself** — its breadth, the planes it crosses, what it commits the
+  product to, or something the reviewer could not reach and so could not judge.
+  Nothing in the diff is being asked for. The reviewer is handing the decision to a
+  human, and another round buys another review of the same kind.
+
+Confirm the second on the head you are handing in rather than from the sentence
+alone: both readings under *Finding the findings* come back empty, and every thread
+is answered. That is a finished review that is not an approval, and what is left is
+a decision rather than a fix — the main skill's Step 4 stop is where it goes.
+
+**Read it as a fact about this head, never as a prediction about the pull request.**
+A change cut down, or simply pushed again, earns an approval from the reviewer that
+declined to judge it before — so a deferral is grounds to raise the question now,
+never grounds to declare the approval unreachable.
 
 Whether Copilot may approve at all, whether its approval counts toward the merge
 requirements, and which changed paths it may count for are repository settings
@@ -232,7 +253,13 @@ thread-resolution rule can no longer block them.
 Do this after *every* push, the last one included — its review is the easiest to
 skip and the most likely to be missed.
 
-## Finding the comments
+## Finding the findings — two readings, not one
+
+A review puts its findings in **two** places, and only one of them opens threads.
+Both are read, every round: one of them alone is half the review, and the half it
+drops is the half nothing else catches — no thread, no gate, no count.
+
+### Reading 1 — the threads
 
 Use whichever source is available (in priority order):
 
@@ -245,12 +272,15 @@ Use whichever source is available (in priority order):
    # review threads with resolution state (GraphQL). Select the thread `id` and each
    # comment's `databaseId` — you need them below: `id` is the `<thread_node_id>` for
    # resolveReviewThread, `databaseId` is the `<comment_id>` for the replies endpoint.
+   # `resolvedBy` and `isOutdated` are what *Replying* judges a thread by; `isResolved`
+   # alone cannot tell one you answered from one the reviewer closed itself.
    gh api graphql -f query='
      query($owner:String!,$repo:String!,$pr:Int!){
        repository(owner:$owner,name:$repo){
          pullRequest(number:$pr){
            reviewThreads(first:100){
-             nodes{ id isResolved comments(first:100){ nodes{ databaseId author{login __typename} body path line } } }
+             nodes{ id isResolved isOutdated resolvedBy{ login }
+                    comments(first:100){ nodes{ databaseId author{login __typename} body path line } } }
            }
          }
        }
@@ -261,9 +291,46 @@ Use whichever source is available (in priority order):
 
 Filter all three by the pair from *Identifying Copilot*, never by a login you saw
 on another surface: on `/comments` the login is a bare `Copilot`, and in GraphQL it
-carries no `[bot]` suffix. Include any review summary it posts alongside the inline
-comments — that one is a *review* body, so it comes from `/reviews`, not from
-either comment source.
+carries no `[bot]` suffix.
+
+### Reading 2 — the review bodies
+
+Findings that opened no thread are in the **review body itself**, under a
+suppressed-comments heading: a file and a line, the finding, and the code it sits
+on — everything an inline comment carries except the comment. Having no thread is
+what makes every habit built around threads miss them at once. The comment sources
+above return nothing of them, `required_review_thread_resolution` does not hold
+them, and the check that unresolved threads are zero reads a clean field while they
+stand.
+
+Read the body of **every** review on the head you are handing in — several runs can
+review one commit, and a later one carries findings the earlier one did not:
+
+```bash
+gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
+  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
+        | {at: .submitted_at, state, head: .commit_id,
+           assessment: (((.body? // "") | split("\n")[0] // "") | gsub("^#+ *|[[:space:]]+$"; "")),
+           # `// "none"` and not `// "0"`: a body carrying no such block and a block
+           # reporting none are different readings, and they take different next steps
+           suppressed: (((.body? // "") | capture("Suppressed comments \\((?<n>[0-9]+)\\)").n) // "none"),
+           threads_opened: (((.body? // "") | capture("Comments generated:\\*\\* (?<n>[0-9]+)").n) // "none")}
+        | @json'
+```
+
+That says *whether* to read a body, never *what* it found — read the ones it names
+in full.
+
+**The count the body reports is a count of threads, not of findings.** It says what
+the review opened, and a review whose findings all went to the suppressed block
+opened none — so zero there is this class's *signature*, never evidence against it.
+And this holds whatever the verdict says: an approving review carries a suppressed
+block as readily as a declining one, and its body is read like any other.
+
+A suppressed finding carries no `comment_id`, so there is no thread to answer in and
+none to resolve. It ends in the fix, and is named — fixed, or turned down with its
+reason — in the pull request's conversation, which is where *Replying* would
+otherwise have put it.
 
 ## Classifying severity
 
@@ -275,11 +342,12 @@ otherwise rate it yourself by that reference.
 
 **Critical** and **Important** are fixed in the loop unconditionally. A `Minor` is
 not left alone by its rating either — put it through that same reference and fix
-here whatever passes. Push it like any other fix — where it is the only thing to
-go up, it still goes up — and take the re-review wait that push costs. What it
-never does is spend the loop's iteration budget: that is there for what blocks the
-exit, and a `Minor` never does. Only what the reference turns down goes into the
-end-of-session report (Step 7), under its category so the user sees it.
+here whatever passes. It rides up with the next substantive push wherever one is
+still to come, rather than taking one of its own, and takes the re-review wait that
+push costs. What it never does is spend the loop's iteration budget: that is there
+for what blocks the exit, and a `Minor` never does. Only what the reference turns
+down goes into the end-of-session report (Step 7), under its category so the user
+sees it.
 
 **What you *fix* and what you *resolve* are different questions.** A thread this
 reviewer opened ends resolved once it has its answer — the fix is in, or the
@@ -291,9 +359,14 @@ nit blocks the merge just as hard as a Critical one.
 ## Fixing
 
 - Address the root cause, not just the symptom Copilot pointed at.
+- **Where a round comes back to prose rather than to behaviour, cut the surface
+  instead of rewording it.** Text a change does not require is text that can drift
+  from the code, and the reviewer keeps finding it however carefully it is
+  rephrased; removing it ends the class, while a better wording buys another round.
 - Make each fix a focused commit (or a small logical group); clear messages.
 - Batch fixes into as few pushes as is reasonable — each push costs another
-  re-review wait.
+  re-review wait, and, where the base dismisses stale reviews on push, the approval
+  standing on the head it leaves behind.
 - Re-run/observe CI after pushing.
 
 ## Replying — reply to EVERY Copilot comment
@@ -311,6 +384,15 @@ loop and keeps the review thread honest.
   says what was actually settled rather than what the repo happens to enforce. A
   review summary carries no thread and needs no resolving. (See *Classifying
   severity*.)
+
+**A thread this reviewer resolved is not an answered thread.** Copilot closes its
+own, under the *other* of the logins it writes under — which is why the test is the
+pair from *Identifying Copilot* and never a literal. So judge each thread by
+`resolvedBy` and `isOutdated`, not by the bare `isResolved`: one this reviewer
+closed is an open finding wearing the resolved badge, and
+`required_review_thread_resolution` is satisfied the whole time it stands. Its
+resolve also lands *after* your reply rather than with it, so a list taken as you
+answer is honest and already stale — retake it on the head you hand in.
 
 Reply + resolve via:
 ```bash

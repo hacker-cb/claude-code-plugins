@@ -63,7 +63,9 @@ is always yours.
 
 Also stop and ask — the addressee `merge-auth` names, which is the user unless a
 flow upstream named another — when:
-- The required gates will not go green within Step 4's iteration budget
+- The required gates will not go green within Step 4's iteration budget — or one
+  of them is a gate no iteration closes: an approval the base requires that no
+  reviewer has given (Step 4)
 - A Critical/Important finding requires a product/design decision you can't make
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
@@ -307,13 +309,15 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 ## Step 4 — The fix loop (until GitHub says mergeable)
 
 Loop until the PR is **both mergeable by GitHub and clean by your own bar** —
-every required check green and the thread-resolution requirement satisfied, plus —
+every required check green, the thread-resolution requirement satisfied, and,
+where the base requires approvals, one standing on the head about to merge, plus —
 always, whatever the repo does or doesn't enforce — CI genuinely green, the PR
 body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
 `gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the
-current head** settled — its Critical/Important findings fixed, every comment it
-left answered, and every thread it opened resolved (`references/copilot.md`;
+current head** settled — its Critical/Important findings fixed on both of the
+readings that carry them, every comment it left answered, and every thread it
+opened resolved (`references/copilot.md`;
 `references/merge-gates.md`, *When there are no gates, or they can't be
 trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
 merge, your bar decides *readiness*; when they diverge, the stricter one wins —
@@ -342,6 +346,16 @@ Neither answer is free: a re-sync is a push, which restarts the checks and the
 review; a skipped one that was needed puts the break in the base, where only
 Step 6 finds it.
 
+**The approval is the exit item no iteration of this loop produces.** Every other
+one answers to a push; that one answers to a reviewer, and all a round can do is
+remove reasons to withhold it. So when the head's review has settled without
+approving and the rest of the exit is met, read which of the two kinds of review
+that is (`references/copilot.md`, *What the review lands as*) before spending
+another iteration. Findings still outstanding are this loop's work. A reviewer
+handing the decision to a human is not: **stop and ask the addressee `merge-auth`
+names**, recommendation first, carrying the reason the review gave and what would
+answer it. Another round against that buys another review of the same kind.
+
 1. **Read the live state:** `gh pr checks <pr>` plus
    `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP
    equivalents). `reviewThreads` is **not** a `gh pr view --json` field — for
@@ -354,14 +368,17 @@ Step 6 finds it.
    ever starting — because the forge is degraded wants no change at all, so read
    what it reports before touching code and attribute it per
    *When the platform is down, the red check is not yours*.
-3. **Read Copilot findings** (MCP → `gh pr view --comments` → API) and classify
-   them — see `references/copilot.md`.
+3. **Read Copilot's findings — the threads and the review bodies both** — and
+   classify them; `references/copilot.md` owns where each of the two lives and how
+   to reach it.
 4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
    as few pushes as is reasonable — under `review_on_push` every push re-requests
    Copilot and costs
    another wait at step 6, whether or not a new review actually follows.
 5. **Reply to every Copilot comment, and resolve every thread it opened** —
-   `references/copilot.md` owns the reply + resolve protocol.
+   `references/copilot.md` owns the reply + resolve protocol, what answers a
+   finding that opened no thread, and how to tell a thread you answered from one
+   the reviewer closed itself.
 6. **After pushing — whichever step pushed — bring the body back to what is
    landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
    Copilot's review of the new head**: never evaluate
