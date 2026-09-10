@@ -78,8 +78,23 @@ there.
   split the plan had to draw: a seam divided per file. Each step of a staged
   wave is pinned and hung when its predecessor lands, not at the wave's open.
 - A batch is planned but not launched while anything holds it — an environment
-  blocker, an issue whose body a survey ruled `needs rewrite`; what holds it and
-  the condition that releases it are written beside it.
+  blocker, an issue whose body was ruled `needs rewrite`; what holds it and the
+  condition that releases it are written beside it.
+
+## What a verdict past `current` does to a batch
+
+The verdicts are [`issue-currency.md`](issue-currency.md)'s; where the issue
+carrying one stands in the layout is here, so a survey and a refresh place it
+the same way:
+
+- **`needs rewrite`** — the batch is planned and **held**, with the rewrite that
+  releases it written beside it. Nothing else releases it.
+- **`stale`** — the issue leaves the layout; what to do with it is a tracker
+  proposal, not a batch.
+- **`unverifiable`** — the issue stays out of every wave, with that as the
+  written reason.
+
+A batch left holding no `current` issue is not a batch.
 
 ## What the plan hands over
 

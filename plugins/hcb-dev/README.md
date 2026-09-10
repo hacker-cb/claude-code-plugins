@@ -207,15 +207,18 @@ the plan stages them.
   What can start right now, recomputed rather than recalled: pin and refresh the
   base and read every fact through that ref rather than through a working tree,
   measure the ground the running batches hold from three sources at once (the
-  ledger's rows, the live registry, the files their open change requests touch),
-  take the delta since the pin the last refresh recorded, then rule the
-  candidates that clear the ground — verdicts per
-  `references/issue-currency.md`, the pairing per `references/wave-planning.md`.
-  Reports the capacity that is actually free against the capacity you asked for,
-  and names what holds every batch that is missing rather than filling the
-  number. Differential where `backlog-survey` is exhaustive: use the survey
-  where no ledger and no pin exist yet. Ends by handing what is free to
-  `wave-dispatch` and the pass to the ledger.
+  ledger's rows, the live registry, the files their open change requests touch)
+  and read a zone they disagree about the safer way, take the delta in both its
+  halves — what landed since the last pin, and what the tracker did since the
+  moment that refresh read it — then rule what clears the ground: verdicts per
+  `references/issue-currency.md`, where each verdict leaves its batch and how
+  the survivors pair per `references/wave-planning.md`. Reports the capacity
+  that is actually free against the capacity you asked for, and names what holds
+  every batch that is missing rather than filling the number. Differential where
+  `backlog-survey` is exhaustive: use the survey where nothing records a point
+  to diff from. Writes the pass to the ledger, then hands what you approve to
+  `wave-dispatch` — the capacity you named is a ceiling, not the word that
+  launches.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   One chip per batch — title per `references/session-naming.md` (the launched
   session is asked to wear it; what later messages match on is what its start
