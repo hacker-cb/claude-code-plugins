@@ -73,6 +73,8 @@ test on a passage is whether deleting it changes what anyone does next.
 
 1. **Header** — the epic, the master's name — rewritten whenever it changes —
    the base pin the wave's live step was hung on (`<remote>/<branch>@<sha>`),
+   the pin the last capacity refresh ran on, which is where the next one
+   takes its delta from (`hcb-dev:wave-refresh`),
    the epic's merge authority as the user settled it
    ([`slice-completion.md`](slice-completion.md)), the plugin version this role
    last reconciled against — which is what a later refresh diffs from and not
@@ -82,7 +84,8 @@ test on a passage is whether deleting it changes what anyone does next.
 2. **Batches** — one row each: id, topic, the issues and where each of them now
    stands, the order's ask and terminal deliverable in its own words (the
    acceptance contract — a return is judged against this row, not against
-   recall), the order's base pin, chip, the
+   recall), the file zone its order drew — the ground a capacity refresh
+   measures free work against — the order's base pin, chip, the
    session's name, state, result coordinates. A batch runs
    `planned → chipped → started → confirmed → building → completed(<mode> —
    request merged, merged locally, tracker state delivered, verdict delivered)

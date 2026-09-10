@@ -35,6 +35,7 @@ session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (b
 backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
 master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
+               └─▶ wave-refresh ─▶ (occupied ground · delta · free capacity) ─▶ back to wave-dispatch
 session-plugin-refresh ────────────────── when the plugin moves under a running session
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
@@ -202,6 +203,19 @@ the plan stages them.
   sent.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
+- **`wave-refresh`** — `/hcb-dev:wave-refresh`
+  What can start right now, recomputed rather than recalled: pin and refresh the
+  base and read every fact through that ref rather than through a working tree,
+  measure the ground the running batches hold from three sources at once (the
+  ledger's rows, the live registry, the files their open change requests touch),
+  take the delta since the pin the last refresh recorded, then rule the
+  candidates that clear the ground — verdicts per
+  `references/issue-currency.md`, the pairing per `references/wave-planning.md`.
+  Reports the capacity that is actually free against the capacity you asked for,
+  and names what holds every batch that is missing rather than filling the
+  number. Differential where `backlog-survey` is exhaustive: use the survey
+  where no ledger and no pin exist yet. Ends by handing what is free to
+  `wave-dispatch` and the pass to the ledger.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   One chip per batch — title per `references/session-naming.md` (the launched
   session is asked to wear it; what later messages match on is what its start
@@ -387,6 +401,10 @@ Per skill, on top of those:
 - **`backlog-survey`**: the forge CLI (`gh` / `glab`) to list and read the
   slice's issues; nothing else — the hygiene it proposes runs through
   `issue-tracking` on your word.
+- **`wave-refresh`**: `git` against the resolved base — every fact it rules on
+  is read from that ref, not from a working tree — plus the forge CLI for the
+  running batches' change requests and the live registry for who is still
+  running. It hangs nothing itself; `wave-dispatch` does that.
 - **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
   Code's own cross-session tools — the chip tool for launching
   (`spawn_task`/`dismiss_task`, the desktop app's) and, for coordination, the
