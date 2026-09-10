@@ -67,8 +67,9 @@ form: you paste every one of them yourself.
   through development and `shipping-workflow` autonomously — closing with a
   per-slice report. Titles the session by the work it took in, per
   `references/session-naming.md`, so a long run is findable in a list of
-  sessions. Calls `shipping-workflow` per slice; not for work that is already
-  finished (that is `shipping-workflow` directly).
+  sessions. After a restart it resumes from the plan-doc and the task list, read
+  against the tree rather than trusted. Calls `shipping-workflow` per slice; not
+  for work that is already finished (that is `shipping-workflow` directly).
 
 ### Tracking deferred work
 

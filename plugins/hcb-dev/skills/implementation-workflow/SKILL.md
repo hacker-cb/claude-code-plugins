@@ -220,6 +220,21 @@ completed straight onto the base in Phase 2.
   merge took or retirement kept standing: point at `/hcb-dev:git-cleanup` (it is
   manual-only; suggest, don't run it).
 
+## After a restart or compaction
+
+The plan-doc and the task list are what survived, so they are read before
+anything rests on memory: the plan-doc for the gate's settlements — the slices,
+the mode, `merge-strategy`, `merge-auth` with its addressee — and the task list
+for which slice is in flight. Then the tree is read against them, and it outranks
+both: which slice branches exist, which have landed on their parent (`git branch
+--merged` against the parent's ref per `base-resolution.md`, and the forge's
+merged requests in `request` mode), and where the slice in flight stands — cut
+only, developed, or already handed to `hcb-dev:shipping-workflow`, whose own step
+is resumed rather than started over. What the task list says and the tree does
+not confirm is unknown, not done. A run below Tier 2 kept no plan-doc, so its
+branch is the record: resume from what is committed and say what may have been
+lost. A title this session gave itself stands as it was.
+
 ## Reference files
 
 - [`../../references/slice-completion.md`](../../references/slice-completion.md) —
