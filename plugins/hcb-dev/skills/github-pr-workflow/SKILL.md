@@ -69,6 +69,9 @@ flow upstream named another — when:
 - A Critical/Important finding requires a product/design decision you can't make
 - A standing approval would be spent to fix a `Minor` that nothing else is
   pushing (`references/copilot.md`)
+- Copilot's review of the head has not settled by the wait's ceiling
+  (`references/copilot.md`) — the head is unreviewed, and merging past that is
+  the addressee's call
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - A git operation would lose work or rewrite history that others may have pulled
   (shared branch) — fall back to a merge instead of rebase and note it
@@ -390,7 +393,8 @@ that buys another review of the same kind.
    landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
    Copilot's review of the new head**: never evaluate
    exit until its verdict on the head is settled; `references/copilot.md` owns the
-   wait and defines what settles it. Then re-read from this loop's step 1 (the
+   wait, defines what settles it, and names the ceiling at which the wait becomes
+   one of the Autonomy model's stops. Then re-read from this loop's step 1 (the
    live-state read), not the top-level Step 1.
 
 ## Step 5 — Merge (only with explicit authorization)

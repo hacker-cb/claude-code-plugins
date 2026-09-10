@@ -238,11 +238,20 @@ After each push:
    that ran before the request was registered. Step 1's timeline query is what tells
    the three apart.
 4. **A review of an earlier commit is not a decline.** It consumes the request and
-   leaves the head unreviewed, so re-request — step 2's case — and keep waiting. For
-   the same reason no elapsed time settles anything: while Copilot is still a
-   requested reviewer, hold, and say the head review is outstanding.
+   leaves the head unreviewed, so re-request — step 2's case — and keep waiting.
+   Elapsed time settles nothing either: while Copilot is still a requested
+   reviewer, hold, and say the head review is outstanding.
+5. **The wait has a ceiling, and reaching it is a stop, not a verdict.** An hour on
+   the clock from the push, with the request still standing and no review of the
+   head, ends the wait the way an unreturned run ends
+   [`../../../references/review-runs.md`](../../../references/review-runs.md)'s: record the head as
+   unreviewed by this reviewer, and stop at the addressee `merge-auth` names,
+   recommendation first — wait another window, re-request and wait again, or merge
+   with the head unreviewed by Copilot and say so in the report. The clock decides
+   none of that; the addressee does.
 
-**Merge only once the head's review has settled.** Nothing the repository enforces
+**Merge only once the head's review has settled** — or the ceiling above was
+reached and the addressee said to merge past it. Nothing the repository enforces
 can be relied on to hold the merge for it: a status check standing in for the
 review is already satisfied by a review of any earlier commit, and an approval
 requirement holds only where this repo counts Copilot's approval at all. So a
