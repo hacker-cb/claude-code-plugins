@@ -37,7 +37,8 @@ calls, and skips nothing below. Steps 0–6 are identical in
 both **completion modes** — `local` (merge into the parent, no forge) and
 `request` (a change request) — because the mode is read only at step 7. When
 driven by the orchestrator, the caller threads the completion signals as
-invocation prose: `mode`, `parent`, `diff-base`, `merge-strategy` and `merge-auth`.
+invocation prose: `mode`, `parent`, `diff-base`, `issues`, `merge-strategy` and
+`merge-auth`.
 Standalone, they default — mode and
 `parent` by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md),
@@ -53,12 +54,9 @@ titles itself — the session, not the branch of step 0 — per
    (a host session's `claude/…`, a `wip`) to the shape in
    [`../../references/branch-naming.md`](../../references/branch-naming.md),
    **first and in both modes** — the local half of that reference only, since
-   nothing before step 7 writes to the network. Where the old name is already
-   published, it does not vanish with the local rename: read it before renaming
-   (`git ls-remote --heads <push-remote> refs/heads/<old>`, the push remote per
-   `base-resolution.md`) and carry it to step 7 as `old-name`
-   (`slice-completion.md`) — the request driver retires that ref once the new
-   name is up, and local completion reports it standing.
+   nothing before step 7 writes to the network. Carry the name renamed away to
+   step 7 as `old-name` (`slice-completion.md`): what stands published under it
+   is read there, by whoever can reach the remote.
 1. **Refresh the base** — what this work is ranged against and lands on: the
    threaded `diff-base` and `parent` where a caller handed them down, otherwise
    what the ladder in
@@ -102,18 +100,8 @@ titles itself — the session, not the branch of step 0 — per
    the slice sits on whatever that branch is behind by. **Both modes** — the write
    is local, and publishing a rewritten history is step 7's driver's.
 
-   Rebase by default; merge where the branch is shared — what shared means is
-   `slice-completion.md`'s, read there rather than here — and where that cannot
-   be read, ask. Merge too where the branch's own history
-   carries a merge whose content is in neither parent — a rebase drops the merge,
-   and a resolution living only there goes silently with it:
-
-   ```bash
-   # Non-empty combined diff = a merge that wrote something of its own → merge, not rebase.
-   for m in $(git rev-list --merges "<diff-base>..HEAD"); do
-     [ -n "$(git show --format= "$m")" ] && echo "$m carries content of its own"
-   done
-   ```
+   Rebase by default; merge where `slice-completion.md` puts this branch in one
+   of its merge-never-rebase cases, and where that cannot be read, ask.
 
    Landing re-cuts the slice, so `diff-base` moves to the tip landed on
    (`slice-completion.md`); step 4 gets the moved value.
@@ -181,8 +169,9 @@ titles itself — the session, not the branch of step 0 — per
    write;
    `request` hands to the forge's change-request driver
    (`hcb-dev:github-pr-workflow` on GitHub), passing `parent` as the base plus
-   `merge-strategy` and `merge-auth` — the authorization with the addressee it
-   names, never the value alone. Nothing in steps 0–6 changes with the mode.
+   `merge-strategy`, `merge-auth` — the authorization with the addressee it
+   names, never the value alone — `issues`, and `old-name` where step 0 renamed.
+   Nothing in steps 0–6 changes with the mode.
 
 ## The coverage gate
 

@@ -36,7 +36,11 @@ below are this session's — a reader's summary is input, not a verdict.
 ## Read against the code, not against the tracker
 
 Every issue in the slice carries a verdict, reached per
-[`../../references/issue-currency.md`](../../references/issue-currency.md) — and
+[`../../references/issue-currency.md`](../../references/issue-currency.md), and
+carrying the coordinate it stands on together with the base pin
+(`<remote>/<branch>@<sha>`) and the tracker moment the slice was read at — the
+survey's whole reading dates to those two, and a session that adopts this layout
+records them ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — and
 one whose parked reason still holds stays out of every "ready" tier below,
 whatever that verdict was.
 

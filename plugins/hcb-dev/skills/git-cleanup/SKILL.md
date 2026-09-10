@@ -148,7 +148,8 @@ report says unknown rather than somebody else's work. An empty `$D` is unknown
 for every branch — the check cannot run at all, which is what step 1 leaves
 behind wherever the base did not verify.
 
-**Spell every branch `refs/heads/<branch>`**, here and in step 5's rows. A tag of
+**Spell every branch `refs/heads/<branch>`**, here and in the verdict rows step 5
+classifies by. A tag of
 the same short name wins the lookup, so the bare form measures the tag and routes
 the branch to deletion on a proof that never described it.
 
@@ -158,11 +159,10 @@ status: surface it, never delete it.
 ## Step 5 — Classification
 
 Classify every worktree, then every branch, by the tables in
-[`references/verdicts.md`](references/verdicts.md) — worktrees by occupancy first
-and git state second, branches by the proof each row names. Rows overlap, and
-that file says which wins. Every verdict lands in one of its three risk classes —
-1, nothing is lost; 2, recoverable; 3, irreversible — and the class, never the
-mode, decides the gate below.
+[`references/verdicts.md`](references/verdicts.md), which also says which row
+wins where two match. A verdict that deletes something carries a risk class,
+and the class — never the mode — decides its gate below; a `keep` or
+`never touch` deletes nothing and takes the kept section instead.
 
 ## Step 6 — The gate
 
@@ -222,12 +222,13 @@ git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's
 
 **`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks
 against `PROJECT`'s HEAD, or the branch's own upstream where it has one — never
-against `$D` — so it deletes what these rows keep and refuses what they proved.
+against `$D` — so it deletes what the verdict rows keep and refuses what they proved.
 What `-D` does carry is what no plumbing deletion has: it refuses a branch checked
 out in another worktree, resolves the branch ref rather than a symref's target,
 and drops `branch.<name>.*` with it — so the deletion stays `-D`, and the object
 it takes is pinned by re-reading `$OID` in the same chain. What authorizes a
-deletion is the re-proof the branch's own row calls for, **run here and not read
+deletion is the re-proof the branch's own verdict row calls for
+(`references/verdicts.md`), **run here and not read
 off step 4**: step 6 waits on a human, and both what the branch carries and what
 the forge says about it can move while it waits. A branch with no proof of its own
 is not deleted at all — report it instead.

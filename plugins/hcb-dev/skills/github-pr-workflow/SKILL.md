@@ -69,13 +69,13 @@ flow upstream named another — when:
 - A Critical/Important finding requires a product/design decision you can't make
 - A standing approval would be spent to fix a `Minor` that nothing else is
   pushing (`references/copilot.md`)
-- Copilot's review of the head has not settled by the wait's ceiling
+- Copilot's review of the head has not settled and the wait has run out
   (`references/copilot.md`) — the head is unreviewed, and merging past that is
   the addressee's call
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
-- A git operation would lose work or rewrite history that others may have pulled
-  — a shared branch, per `slice-completion.md` — fall back to a merge instead of
-  rebase and note it
+- Whether the branch may be rebased at all cannot be read — a remote that does
+  not answer whether anything stands on its tip (`slice-completion.md`); a
+  branch that reference says to merge is merged and noted, never asked about
 - A stop that outranks an authorization applies, Step 2's unreviewed rebase
   resolution among them (`slice-completion.md`)
 
@@ -160,11 +160,13 @@ apply it here, and leave a
 name that already describes the change alone.
 
 On a run driven from upstream the **rename** is usually a no-op:
-`hcb-dev:shipping-workflow` step 0 normalized the name locally. Where that name
-had already been published, step 0 threads it down as `old-name`
-(`slice-completion.md`), and retiring that ref is this step's — after the push
-below, under the same guard as a name this step renamed itself: never while a PR
-heads it. The **publish** is not a no-op. The push below is the only place this skill puts
+`hcb-dev:shipping-workflow` step 0 normalized the name locally and threads the
+name it renamed away as `old-name` (`slice-completion.md`). One thing about that
+name is this step's, before anything is published: a PR that heads it pins it —
+the rename is undone and the branch ships under the old name, a state that
+cannot be read counting as pinned, the same as for a rename made here. What is
+published under the old name is retired in Step 2, under the proof that step
+names. The **publish** is not a no-op. The push below is the only place this skill puts
 the branch on the remote, and without it Step 2's `--force-with-lease`
 dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
 ref at all — so skip the rename when the name is already right, and never skip the
@@ -183,12 +185,31 @@ Fill the three values at the top; everything under them is live.
 ```bash
 PUSH_REMOTE="<resolved per base-resolution.md, before any rename>"
 NEW="<the name from branch-naming.md — MAY equal the current one>"
-OLD_NAME="<the old-name shipping-workflow step 0 threaded in — EMPTY where none was>"
+OLD_NAME="<the bare old-name shipping-workflow step 0 threaded in — EMPTY where nothing was renamed>"
 
 # Detached HEAD has no branch to rename or push, and an empty $cur would silently
 # turn a `branch.<name>.*` lookup into `branch..*`. Say so instead.
 cur="$(git symbolic-ref --short -q HEAD)" \
   || { echo "DETACHED HEAD — check out a branch before shipping"; exit 1; }
+# A PR heading the name a caller renamed away pins that name: the rename closed
+# nothing yet — only the local ref moved — so it is undone and the branch ships
+# under the old name. Unknown state reads as pinned, as the probe below reads it.
+if [ -n "$OLD_NAME" ] && [ "$OLD_NAME" != "$cur" ]; then
+  if old_pr="$(gh pr list --head "$OLD_NAME" --state open --json number -q '.[].number' 2>/dev/null)"; then
+    old_known=1
+  else
+    old_known=0
+  fi
+  if [ "$old_known" = 0 ] || [ -n "$old_pr" ]; then
+    if git branch -m "$OLD_NAME"; then
+      echo "note: PR on $OLD_NAME open or unknown — renamed back; that name stays"
+      cur="$OLD_NAME"; NEW="$OLD_NAME"
+    else
+      echo "RENAME BACK FAILED — keeping $cur; refs/heads/$OLD_NAME stays, a PR may head it"
+    fi
+    OLD_NAME=""
+  fi
+fi
 # An open PR pins the name: renaming deletes the head ref below, closing the PR and
 # its review threads. This probe must fail CLOSED — empty output covers both "no PR"
 # and "gh could not tell me", and the second read as the first closes a PR unseen.
@@ -239,17 +260,6 @@ if [ "$cur" != "$NEW" ]; then
   # reaches that tag where the branch was never pushed under the old name at all.
   git push "$PUSH_REMOTE" --delete "refs/heads/$cur" || true
 fi
-# The name a caller renamed away before this step ran: published under it, and
-# nothing after this line retires it. Same guards as above — never the name just
-# pushed, and never a ref a PR may still head, unknown state included.
-if [ -n "$OLD_NAME" ] && [ "$OLD_NAME" != "$NEW" ]; then
-  if old_pr="$(gh pr list --head "$OLD_NAME" --state open --json number -q '.[].number' 2>/dev/null)" \
-     && [ -z "$old_pr" ]; then
-    git push "$PUSH_REMOTE" --delete "refs/heads/$OLD_NAME" || true
-  else
-    echo "keeping refs/heads/$OLD_NAME on $PUSH_REMOTE — a PR may head it, or its state is unknown"
-  fi
-fi
 ```
 
 ## Step 2 — Bring the branch up to date with base
@@ -269,7 +279,8 @@ reports `BEHIND` at merge time. What the fetch's outcomes mean is
 base whose age is unknown is not one to rebase onto, while one the fetch confirms
 is already current is exactly what this step wants.
 
-Fill the two values at the top; everything under them is live.
+Fill the two values at the top; everything under them is live, and so are
+Step 1's — `PUSH_REMOTE`, `NEW` and `OLD_NAME` as that step left them.
 
 ```bash
 BASE_REMOTE="<resolved per base-resolution.md>"
@@ -293,10 +304,9 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   cannot run, or a finding of that weight left open, is the Autonomy model's stop:
   ask before merging, whatever authorization was threaded in.
 - After a successful rebase, push with `--force-with-lease`.
-- **Exception:** a shared branch is not rebased — merge base into it instead and
-  note why. What shared means, when a set's feature branch stops being shared,
-  and what to do where it cannot be read are `slice-completion.md`'s, read there
-  rather than here.
+- **Exception:** a branch `slice-completion.md` says to merge rather than rebase
+  — read the cases there — takes the base by merge instead, and the report says
+  which case it was.
 - **Whether staying up to date is itself a merge gate is the base's answer, not
   this step's.** Where the base requires the branch current with it, every later
   `BEHIND` (base moved while the PR was open, including right before merge) is
@@ -305,6 +315,38 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   further re-sync is Step 4's call, taken on a drift it measures itself. Either
   way this step's own rebase stands: what CI reads must be the code that is going
   to land.
+
+**Then retire what `old-name` names** — the ref the branch was published under
+before `hcb-dev:shipping-workflow` step 0 renamed it — now that the new name is
+up and the base is fetched. Three proofs, all required, and a proof that cannot
+run keeps the ref: the name is neither this branch's nor the base's; the tip the
+remote carries under it is this branch's own — in its history, or in its reflog,
+which `git branch -m` carried across and a rebase leaves it in; and that tip is
+not already contained in the base, since a ref carrying nothing past the base was
+never a publication of this branch's work. Delete under a lease on the tip just
+read, and say why wherever the ref stays — the report needs the reason.
+
+```bash
+if [ -n "$OLD_NAME" ] && [ "$OLD_NAME" != "$NEW" ] && [ "$OLD_NAME" != "$BASE" ]; then
+  # Exit status kept: an empty answer means 'not there' only when the remote answered.
+  if old_line="$(git ls-remote --heads "$PUSH_REMOTE" "refs/heads/$OLD_NAME" 2>/dev/null)"; then
+    old_tip="${old_line%%[[:space:]]*}"
+    if [ -z "$old_tip" ]; then
+      echo "refs/heads/$OLD_NAME is not on $PUSH_REMOTE — nothing to retire"
+    elif ! { git merge-base --is-ancestor "$old_tip" HEAD 2>/dev/null \
+             || git rev-list -g "refs/heads/$NEW" | grep -qx "$old_tip"; }; then
+      echo "NOT RETIRED: refs/heads/$OLD_NAME on $PUSH_REMOTE is at $old_tip, which this branch never held — someone's work; leave it and report it"
+    elif git merge-base --is-ancestor "$old_tip" "$BASE_REMOTE/$BASE" 2>/dev/null; then
+      echo "NOT RETIRED: refs/heads/$OLD_NAME holds nothing past $BASE — not this branch's publication; leave it and report it"
+    else
+      git push --force-with-lease="refs/heads/$OLD_NAME:$old_tip" "$PUSH_REMOTE" --delete "refs/heads/$OLD_NAME" \
+        || echo "NOT RETIRED: the delete of refs/heads/$OLD_NAME was refused — a stale lease or a deletion rule; read the remote and report it"
+    fi
+  else
+    echo "NOT RETIRED: $PUSH_REMOTE did not answer for refs/heads/$OLD_NAME — report it as possibly standing"
+  fi
+fi
+```
 
 ## Step 3 — Open the PR (if not already open)
 
@@ -319,11 +361,8 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 - Body: what changed and why, in the user's own framing if known; a short summary
   and a bullet list of notable changes, plus `Closes #N` — that English keyword
   verbatim, whatever language the body is written in — for every issue this PR
-  settles. Which those are is the flow upstream's where it threaded `issues` in
-  (`slice-completion.md`): an orchestrated slice names the issues it alone
-  settles, the set's final request the set's — never an issue whose other slices
-  are still open, which Step 6's explicit close would otherwise close early.
-  GitHub acts on that keyword only for a PR whose base is the default
+  settles: the `issues` a flow upstream threaded in (`slice-completion.md`), or
+  on a direct entry the ones the user names. GitHub acts on that keyword only for a PR whose base is the default
   branch, so on any other base — a slice PR onto its feature branch, a repo whose
   PRs target another trunk — the issue is closed explicitly after the merge lands
   (`hcb-dev:issue-tracking`).
@@ -338,7 +377,8 @@ always, whatever the repo does or doesn't enforce — CI genuinely green, the PR
 body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
 `gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the
-current head** settled — its Critical/Important findings fixed on both of the
+current head** settled — or, where its wait ran out, the addressee's word to merge
+with the head unreviewed by Copilot, said in the report — its Critical/Important findings fixed on both of the
 readings that carry them, every comment it left answered, and every thread it
 opened resolved (`references/copilot.md`;
 `references/merge-gates.md`, *When there are no gates, or they can't be
@@ -525,8 +565,13 @@ that, never the merge command's exit status:
   ```
 
   That list is what the forge parsed out of the body, not what the work settles —
-  read it against the issues this PR set out to close. Close what is still open
-  explicitly (`hcb-dev:issue-tracking`); carry into Step 7 what stays open.
+  read it against the `issues` threaded in, which are what this PR set out to
+  close. On a direct entry with none threaded, the body's own keywords are the
+  list — and where this PR's base is not the default branch, a claim to put to
+  the user before anything is closed, never a list to close on: a slice's request
+  onto a feature branch is where a set's issue gets closed early. Close what is
+  still open explicitly (`hcb-dev:issue-tracking`); carry into Step 7 what stays
+  open.
 - On `MERGED`, retire the branch — both the local ref and the one on the remote —
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
 

@@ -69,12 +69,9 @@ mode once, at the gate, and threads it down; the mechanics live in
   `current` is never trivial, whatever the edit it implies: it carries a fork,
   and a fork is the gate. Skipping the gate skips the **asking**, never the
   **threading**: settlements the invocation carried travel on to
-  `hcb-dev:shipping-workflow` exactly as they arrived. What no invocation
-  carried arrives there unsettled, and `slice-completion.md`'s ladders answer it:
-  the mode from the user's phrasing, else `request`; `merge-auth` from a phrase
-  about the merge itself, else `ask` — nothing was approved here, so nothing
-  authorizes a merge, and the trivial change parks at ready for the user's word
-  where a gated run would have merged on green. Say so in the one line that
+  `hcb-dev:shipping-workflow` exactly as they arrived; what none carried,
+  `slice-completion.md`'s ladders settle there, and nothing was approved here,
+  so no approval is what those ladders read. Say the result in the one line that
   narrates the edit; a user who wants the merge names it in the ask.
 
 ## Phase 1 — The planning gate
@@ -132,13 +129,14 @@ Settle, in one gate:
 
 | Tier | Work | Gate | Persistence |
 |---|---|---|---|
-| 0 | trivial, 1 slice, no arch forks | none (skip) — nothing approved, so `merge-auth` falls to `ask` | none |
-| 1 | a slice or two | a brief inline confirm | native task-list |
+| 0 | trivial, 1 slice, no arch forks | none (skip) — `merge-auth` falls to `slice-completion.md`'s ladder | none |
+| 1 | a slice or two | a brief inline confirm | native task-list; a plan-doc where there is more than one slice |
 | 2 | multi-slice, real forks | native plan mode | plan-doc under the resolved plans dir + task-list; where the work is large, shared with a team or spread over sessions, offer a forge tracking issue as well |
 
 For anything multi-slice, **persist the plan and the captured authorizations** so
 a long autonomous run survives context compaction — track slice progress on the
-native task list, and keep the plan (mode, merge authorization, strategy) in a
+native task list, and keep the plan (mode, merge authorization, strategy, and
+each slice's cut point as it is cut) in a
 durable plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans` (resolve the
 path from the variable; never hardcode `~/.claude`).
 
@@ -155,13 +153,12 @@ other):
    sees the ones below it and conflicts less. Where that parent is the base,
    refresh it again here and take the cut point from `base-resolution.md`'s table
    — Phase 0's fetch does not still hold. The feature branch is cut the same way,
-   once, before the first slice. **Before each later slice is cut, bring it
-   current**: refresh the base again and, where it moved, take it onto the
-   feature branch by `slice-completion.md`'s rule — a rebase between slices,
-   when nothing is built on its tip — so the slice is cut from, reviewed against
-   and landed on a parent that already carries what the base does, and the final
-   integration absorbs one slice's drift rather than the whole set's. Cut it
-   under the name the gate showed (`branch-naming.md`).
+   once, before the first slice — and in `request` mode published then, since
+   the first slice's request targets it on the remote. **Before each later slice
+   is cut, bring the feature branch current** per `slice-completion.md`: from
+   the worktree that holds it, to its remote tip first, then the base merged in,
+   then pushed forward in `request` mode. Cut the slice under the name the gate
+   showed (`branch-naming.md`), and record its cut point in the plan-doc.
 2. **Develop the slice** — the normal coding work; `dependency-versions` and
    `seeding-gitignore` apply exactly as they always do. What the work turns up
    along the way goes through the test in
@@ -172,12 +169,7 @@ other):
    completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
    commit this slice was cut from — only the orchestrator knows it),
    `merge-strategy`, `merge-auth` with the addressee it names, and `issues` —
-   the ones this slice **alone** settles, so the change request it opens carries
-   a closing keyword for those and no other. An issue the whole set settles is
-   closed by the final integration request, never by a slice's: a slice's request
-   targets the feature branch, where the forge does not act on the keyword and
-   the driver's post-merge check would close the issue while the rest of the set
-   is still open.
+   the ones this slice alone settles (`slice-completion.md`).
 
 **Autonomy is "no routine questions", not "never pauses".** The legitimate stops
 remain and are honored — this skill does not waive the downstream skills' own
@@ -240,21 +232,24 @@ completed straight onto the base in Phase 2.
 
 The plan-doc and the task list are what survived, so they are read before
 anything rests on memory: the plan-doc for the gate's settlements — the slices,
-the mode, `merge-strategy`, `merge-auth` with its addressee — and the task list
-for which slice is in flight. Then the tree is read against them, and it outranks
-both: which slice branches exist, which have landed on their parent (`git branch
---merged` against the parent's ref per `base-resolution.md`, and the forge's
-merged requests in `request` mode), and where the slice in flight stands — cut
-only, developed, or already handed to `hcb-dev:shipping-workflow`, whose own step
-is resumed rather than started over. What the task list says and the tree does
-not confirm is unknown, not done. A run below Tier 2 kept no plan-doc, so its
-branch is the record: resume from what is committed and say what may have been
-lost. A title this session gave itself stands as it was.
+the mode, `merge-strategy`, `merge-auth` with its addressee, each slice's cut
+point — and the task list for which slice is in flight. Then the tree is read
+against them, and it outranks both: for each slice the plan names, the parent's
+own history says whether it landed — the merge or squash commit that took it —
+and in `request` mode so does its request (`gh pr list --head <slice> --state
+merged`); the slice in flight stands where its branch does — cut only,
+developed, or handed to `hcb-dev:shipping-workflow`, whose committed steps (the
+commit, the landing, committed fixes) are resumed past and whose review is run
+again: a coverage record that lived only in the lost context is no record, and
+the gate has nothing else to read. What the task list says and the tree does not
+confirm is unknown, not done. Where no plan-doc was kept — a single-slice run —
+the branch and the task list are the record: resume from what is committed and
+say what may have been lost. A title this session gave itself stands as it was.
 
 ## Reference files
 
 - [`../../references/slice-completion.md`](../../references/slice-completion.md) —
-  read before Phase 2's handoff.
+  read at Phase 0's Tier 0 call, and before Phase 2's first cut.
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
   — read before Phase 1.
 - [`../../references/report-format.md`](../../references/report-format.md) — the

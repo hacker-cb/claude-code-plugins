@@ -8,8 +8,8 @@ description: >-
   when a coordinating session tells its batches that the wave's plugin moved.
   It re-reads and reports only: it never installs or updates a plugin, and
   `/reload-plugins` stays the user's to run. Not recovery after a restart or
-  compaction — that is the resuming role's own step (`hcb-dev:master-session`,
-  `hcb-dev:wave-worker`).
+  compaction — that is the resuming role's own step
+  (`hcb-dev:master-session`, `hcb-dev:implementation-workflow`).
 ---
 
 # Session plugin refresh

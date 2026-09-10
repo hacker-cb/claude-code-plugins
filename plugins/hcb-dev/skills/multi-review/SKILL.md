@@ -72,9 +72,8 @@ shape you do not control, has nothing else checking it (no tests that run, no
 types, no compiler), removes a guard, an error path or a test, or touches paths
 the project marks sensitive (`CLAUDE.md`, `CODEOWNERS`, `SECURITY.md`). High risk
 holds both engines at or above their start; mechanics with no behavior change
-lower both — the rung is where a change's breadth is paid for, and an installed,
-applicable engine is never skipped for cost. An explicit instruction from the
-caller wins.
+lower both — the rung is where a change's breadth is paid for. An explicit
+instruction from the caller wins.
 
 **Uncommitted work.** When `git status --short` or
 `git ls-files --others --exclude-standard` shows anything belonging to the change,
@@ -93,8 +92,9 @@ Three questions per reviewer, in order:
 
 - **Available?** If not, record `UNAVAILABLE` with the reason; do not launch it.
 - **Applicable?** When the scope asks for something a reviewer cannot do, skip it
-  with a recorded reason — `n/a`. These two are the only grounds for not running
-  a reviewer; cost is paid in the rung, never by a skip.
+  with a recorded reason — `n/a`. So does a reviewer the caller asked to leave
+  out, the caller's words being the reason in its row. Nothing else earns a skip:
+  cost is paid in the rung.
 - **At what level?** Pass the level Scope fixed for that reviewer explicitly —
   never a machine-local default, since this skill runs on other people's
   machines.
@@ -118,12 +118,9 @@ exactly what the security review is for. `n/a` only when the honest answer to *w
 behaves differently now* is "nothing" — and say that reason in the row, since `n/a`
 is the one status the coverage gate does not treat as a gap.
 
-The two engines are independent, and detached, so they overlap each other: a
-finding both reach on their own is stronger evidence than either one restating
-itself, which is what a run of both buys over a deeper run of one.
-`codex-review` is the floor the other two build on; documentation is squarely
-`claude-review`'s business — it is the only reviewer reading `CLAUDE.md`
-compliance.
+A change that is documentation alone is `claude-review`'s: it is the only
+reviewer reading `CLAUDE.md` compliance, so applicability never turns it down
+for carrying no code.
 
 **Size is a signal, not a threshold.** Two thousand lines of regenerated fixture
 hide less than twenty inside an auth check. Ask what the change could be
