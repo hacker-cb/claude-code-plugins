@@ -99,10 +99,16 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
 
 ## Ruling the candidates
 
-1. **Verdict.** `issue-currency.md`, on every candidate in the slice — it is
-   what establishes the coordinates the work actually stands on, and a body
-   naming a path the tree moved past is exactly what it catches. What each
-   verdict past `current` does to the batch is `wave-planning.md`'s.
+1. **Verdict.** `issue-currency.md` — it is what establishes the coordinates
+   the work actually stands on, and a body naming a path the tree moved past is
+   exactly what it catches. It is re-derived only where the delta reaches: a
+   candidate the tracker half changed, one whose coordinates the base half moved
+   past, and every candidate about to be placed in this round's layout. Every
+   other candidate carries the verdict its last reading recorded — the survey's,
+   or the previous refresh's — with the coordinate that verdict stood on, and
+   one with no recorded verdict is read now. The report says which verdicts are
+   fresh. What each verdict past `current` does to the batch is
+   `wave-planning.md`'s.
 2. **Ground.** From those coordinates, never from the paths a body happens to
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
