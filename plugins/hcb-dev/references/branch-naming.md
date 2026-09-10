@@ -185,7 +185,10 @@ git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
   closes the request. Resolve the push remote *before* renaming — the ambiguity
   path exits, and exiting after `git branch -m` leaves a branch renamed locally
   with nothing pushed — per [`base-resolution.md`](base-resolution.md) ("Pushing is
-  a different question").
+  a different question"). Where the rename and the publication happen in
+  different steps — `shipping-workflow` step 0 renames, the request driver
+  publishes — the old name travels between them as `old-name`
+  ([`slice-completion.md`](slice-completion.md)), and the driver deletes it.
 - **Never `git branch -M`.** The force form overwrites an existing branch of that
   name — someone else's work, silently. On a collision pick a different name.
 

@@ -52,7 +52,13 @@ titles itself — the session, not the branch of step 0 — per
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
    (a host session's `claude/…`, a `wip`) to the shape in
    [`../../references/branch-naming.md`](../../references/branch-naming.md),
-   **first and in both modes**.
+   **first and in both modes** — the local half of that reference only, since
+   nothing before step 7 writes to the network. Where the old name is already
+   published, it does not vanish with the local rename: read it before renaming
+   (`git ls-remote --heads <push-remote> refs/heads/<old>`, the push remote per
+   `base-resolution.md`) and carry it to step 7 as `old-name`
+   (`slice-completion.md`) — the request driver retires that ref once the new
+   name is up, and local completion reports it standing.
 1. **Refresh the base** — what this work is ranged against and lands on: the
    threaded `diff-base` and `parent` where a caller handed them down, otherwise
    what the ladder in

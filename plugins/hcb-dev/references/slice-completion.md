@@ -39,6 +39,10 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
   range). **Landing the slice on `parent` moves it** to the tip landed on — the
   slice is cut from there now, and the threaded value names a commit `parent` has
   grown past.
+- `old-name` — the name a published branch carried before `shipping-workflow`
+  step 0 renamed it locally, where there was one; empty otherwise. The request
+  driver retires that ref once the new name is published; local completion
+  leaves it and reports it standing.
 - `merge-strategy` — the shown-and-approved gate default, **mode-dependent**: in
   `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
   the **final** `feature → base` strategy only (*Multi-slice topology* below).
@@ -173,10 +177,11 @@ Publishing is the escalation offer below, and only by consent.
   arriving here still carrying an auto-generated name means step 0 was skipped:
   rename it before merging (`branch-naming.md`) — the local
   half of that reference and nothing more: a bare `git branch -m`, no network. If
-  the branch was pushed at some earlier point, the stale remote ref **stays**;
-  removing it is an outward write, so it rides with the consented escalation offer
-  below and the report says the old name is still on the remote until then. Local
-  mode does not reach for the network to tidy up a name.
+  the branch was pushed at some earlier point, the stale remote ref **stays**,
+  under the `old-name` step 0 recorded; removing it is an outward write, so it
+  rides with the consented escalation offer below — the request driver retires it
+  there — and the report says the old name is still on the remote until then.
+  Local mode does not reach for the network to tidy up a name.
 - **The merge runs from wherever `parent` is checked out — find that first.**
   `git merge` lands into whatever is checked out, and on arrival that is the slice.
   A slice cut in a linked worktree is the normal case, and there the parent is
@@ -233,7 +238,8 @@ Publishing is the escalation offer below, and only by consent.
   remote's host (`gh auth status` → GitHub; `glab auth status` → GitLab), and name
   what a self-hosted instance cannot do rather than stalling on it.
 - **Dispatch** to the installed change-request driver, handing it `parent` as the
-  base plus `merge-strategy` and `merge-auth`: GitHub → `hcb-dev:github-pr-workflow`;
+  base plus `merge-strategy`, `merge-auth`, and `old-name` where step 0 recorded
+  one: GitHub → `hcb-dev:github-pr-workflow`;
   GitLab → `hcb-dev:gitlab-mr-workflow` once it exists (deferred — until then
   GitLab falls to the inline fallback below).
 - **No driver installed** — normalize the branch name **first**

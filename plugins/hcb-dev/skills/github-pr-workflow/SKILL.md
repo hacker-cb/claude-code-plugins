@@ -159,8 +159,11 @@ apply it here, and leave a
 name that already describes the change alone.
 
 On a run driven from upstream the **rename** is usually a no-op:
-`hcb-dev:shipping-workflow` step 0 normalized the name before the branch was ever
-pushed. The **publish** is not. The push below is the only place this skill puts
+`hcb-dev:shipping-workflow` step 0 normalized the name locally. Where that name
+had already been published, step 0 threads it down as `old-name`
+(`slice-completion.md`), and retiring that ref is this step's — after the push
+below, under the same guard as a name this step renamed itself: never while a PR
+heads it. The **publish** is not a no-op. The push below is the only place this skill puts
 the branch on the remote, and without it Step 2's `--force-with-lease`
 dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
 ref at all — so skip the rename when the name is already right, and never skip the
@@ -174,11 +177,12 @@ branch that may already be on a remote, and publishing it under the final name.
 question** — resolve it there, and resolve it **before** renaming, reading
 `branch.<name>.pushRemote` under the branch's current name.
 
-Fill the two values at the top; everything under them is live.
+Fill the three values at the top; everything under them is live.
 
 ```bash
 PUSH_REMOTE="<resolved per base-resolution.md, before any rename>"
 NEW="<the name from branch-naming.md — MAY equal the current one>"
+OLD_NAME="<the old-name shipping-workflow step 0 threaded in — EMPTY where none was>"
 
 # Detached HEAD has no branch to rename or push, and an empty $cur would silently
 # turn a `branch.<name>.*` lookup into `branch..*`. Say so instead.
@@ -233,6 +237,17 @@ if [ "$cur" != "$NEW" ]; then
   # The full refname: a bare one is ambiguous where a tag shares the name, and
   # reaches that tag where the branch was never pushed under the old name at all.
   git push "$PUSH_REMOTE" --delete "refs/heads/$cur" || true
+fi
+# The name a caller renamed away before this step ran: published under it, and
+# nothing after this line retires it. Same guards as above — never the name just
+# pushed, and never a ref a PR may still head, unknown state included.
+if [ -n "$OLD_NAME" ] && [ "$OLD_NAME" != "$NEW" ]; then
+  if old_pr="$(gh pr list --head "$OLD_NAME" --state open --json number -q '.[].number' 2>/dev/null)" \
+     && [ -z "$old_pr" ]; then
+    git push "$PUSH_REMOTE" --delete "refs/heads/$OLD_NAME" || true
+  else
+    echo "keeping refs/heads/$OLD_NAME on $PUSH_REMOTE — a PR may head it, or its state is unknown"
+  fi
 fi
 ```
 
