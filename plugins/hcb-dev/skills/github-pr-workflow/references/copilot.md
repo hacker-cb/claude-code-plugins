@@ -371,17 +371,18 @@ it. What the finding is rated decides who weighs the two sides:
 
 - **Critical or Important** — fixed, and the approval spent on it. Nothing is being
   weighed here: merging it was never on the table.
-- **A `Minor` that reference routes to a fix** — the fork proper, and not the
+- **A `Minor` the reference routes to a fix** — the fork proper, and not the
   loop's to settle on its own. Put both sides to the addressee `merge-auth` names,
   recommendation first: spend the approval on the nit, or turn the finding down
   here — answered and resolved where it opened a thread, and in the end-of-session
   report either way — and merge the head that carries the approval.
 
-**Three things collapse the fork, and each is read rather than assumed.** A base
-that does not dismiss stale reviews on push, and one whose approval requirement
-this approval does not close: the push costs nothing either way. And a substantive
-push coming anyway: the approval goes with that push whatever the `Minor` does, so
-the `Minor` rides along.
+**Three things collapse the fork, any one of them on its own, and each is read
+rather than assumed.** The base does not dismiss stale reviews on push, so the
+approval survives it. The standing approval does not close the base's approval
+requirement, so spending it costs the merge nothing. A substantive push is coming
+anyway, so the approval goes with that push whatever the `Minor` does and the
+`Minor` rides along.
 
 **What you *fix* and what you *resolve* are different questions.** A thread this
 reviewer opened ends resolved once it has its answer — the fix is in, or the
