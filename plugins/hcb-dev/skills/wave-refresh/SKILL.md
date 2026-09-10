@@ -99,16 +99,27 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
 
 ## Ruling the candidates
 
-1. **Verdict.** `issue-currency.md`, on every candidate in the slice — it is
-   what establishes the coordinates the work actually stands on, and a body
-   naming a path the tree moved past is exactly what it catches. What each
-   verdict past `current` does to the batch is `wave-planning.md`'s.
+1. **Verdict.** `issue-currency.md` — it is what establishes the coordinates
+   the work actually stands on, and a body naming a path the tree moved past is
+   exactly what it catches. It is re-derived where the delta reaches: a candidate
+   the tracker half changed, and one whose coordinates the base half moved past.
+   Every other candidate carries the verdict the ledger's verdicts section
+   records for it, with the coordinate it stood on; one the section does not
+   carry is read now, and what is re-read is written back there. The report says
+   which verdicts this pass read and which it carried. What each verdict past
+   `current` does to the batch is `wave-planning.md`'s.
 2. **Ground.** From those coordinates, never from the paths a body happens to
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
    whatever holds that ground, and the report names the batch it waits on.
 3. **The three axes.** `wave-planning.md`, each survivor against the occupied
    ground and against every other survivor.
+4. **The placed candidates, on this pass's own reading.** Nothing is launched on
+   a verdict older than this pin: every candidate the layout holds whose verdict
+   was carried rather than read here is read now, and one whose coordinate moves
+   goes back through 2 and 3 — where it may displace another, which is read the
+   same way. Repeat until every placed candidate carries a verdict read on this
+   pass; each round reads at least one, so it ends.
 
 A slice small enough to read here is read here; one that is not fans out to
 reader subagents, each handed a sub-slice and this pin, with every conclusion
@@ -140,8 +151,9 @@ In this order, each section explicit even when empty:
 ## After the report
 
 - **The ledger takes the pass before anything else moves**: the pin and tracker
-  moment this refresh ran on, the layout it produced, and what it ruled about
-  the sources that disagreed.
+  moment this refresh ran on, every verdict this pass read into its verdicts
+  section, the layout it produced, and what it ruled about the sources that
+  disagreed.
 - **Tracker edits execute on the user's word**, item by item through
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
 - **The layout is launched on the user's word, and only then** — the capacity in

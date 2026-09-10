@@ -8,7 +8,10 @@ outside any one skill because a copy per engine drifts, and a coverage rule that
 drifted is one that reports a review nobody performed.
 
 What stays with each engine is its own: the command, its flags, its ladder, and the
-shape of its findings.
+shape of its findings. The waiting rules below — the windows, what the wait is
+spent on, the ceiling — are read as well by whatever waits on a reviewer it did
+not launch, a forge's own reviewer among them; nothing else here is that
+reviewer's.
 
 ## The base
 

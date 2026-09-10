@@ -39,6 +39,15 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
   range). **Landing the slice on `parent` moves it** to the tip landed on — the
   slice is cut from there now, and the threaded value names a commit `parent` has
   grown past.
+- `old-name` — the name the branch carried before `shipping-workflow` step 0
+  renamed it, threaded on every rename as a bare branch name; empty where
+  nothing was renamed. What is published under it is the request driver's to
+  retire, once it has proved the ref carried this branch's work; local
+  completion names it as possibly standing.
+- `issues` — the issues this slice **alone** settles, where the caller knows
+  them: the change request's closing keywords name these and no other, and the
+  `issues` output below reports on them. An orchestrated slice never carries an
+  issue its set settles as a whole; that one rides the final integration request.
 - `merge-strategy` — the shown-and-approved gate default, **mode-dependent**: in
   `local` mode the per-slice merge shape (`--no-ff` by default); in `request` mode
   the **final** `feature → base` strategy only (*Multi-slice topology* below).
@@ -172,11 +181,12 @@ Publishing is the escalation offer below, and only by consent.
   request's branch, which does not outlive the merge, that line stays for good. A slice
   arriving here still carrying an auto-generated name means step 0 was skipped:
   rename it before merging (`branch-naming.md`) — the local
-  half of that reference and nothing more: a bare `git branch -m`, no network. If
-  the branch was pushed at some earlier point, the stale remote ref **stays**;
-  removing it is an outward write, so it rides with the consented escalation offer
-  below and the report says the old name is still on the remote until then. Local
-  mode does not reach for the network to tidy up a name.
+  half of that reference and nothing more: a bare `git branch -m`, no network —
+  and record the name renamed away as `old-name`, as step 0 would have. A ref
+  published under that name at any earlier point **stays**: local mode writes
+  nothing to the network, and no later step of it removes the ref — the report
+  names it as possibly standing, and removing it is the user's, by hand or by a
+  request-mode completion of that branch.
 - **The merge runs from wherever `parent` is checked out — find that first.**
   `git merge` lands into whatever is checked out, and on arrival that is the slice.
   A slice cut in a linked worktree is the normal case, and there the parent is
@@ -219,7 +229,8 @@ Publishing is the escalation offer below, and only by consent.
   just a reversible local commit.)
 - **After the merge, the offer** — offer, never force, to open a change request on
   the landed work. Accepting it is the consented **exit** from local mode: it
-  pushes `parent` and hands to the request backend. The escalated change request
+  pushes `parent` and hands to the request backend, with the set's `issues` so
+  the request's body carries their closing keywords. The escalated change request
   carries `merge-auth` `ask`, addressed to whoever accepted the offer:
   accepting it authorizes the change request, never the merge behind it.
   **One offer per run**: after a set, it is made once on the whole feature at
@@ -233,22 +244,27 @@ Publishing is the escalation offer below, and only by consent.
   remote's host (`gh auth status` → GitHub; `glab auth status` → GitLab), and name
   what a self-hosted instance cannot do rather than stalling on it.
 - **Dispatch** to the installed change-request driver, handing it `parent` as the
-  base plus `merge-strategy` and `merge-auth`: GitHub → `hcb-dev:github-pr-workflow`;
+  base plus `merge-strategy`, `merge-auth`, `issues`, and `old-name` where step 0
+  renamed: GitHub → `hcb-dev:github-pr-workflow`;
   GitLab → `hcb-dev:gitlab-mr-workflow` once it exists (deferred — until then
   GitLab falls to the inline fallback below).
 - **No driver installed** — normalize the branch name **first**
   (`branch-naming.md`): this path has no driver Step 1 behind
   it to catch an auto-generated name, and once the change request is open the name
   is fixed for good — renaming means deleting the old head ref, which closes the
-  request. Then push the branch and open the change request inline, mirrored:
+  request. Then push the branch and open the change request inline, mirrored,
+  with a body written per [`merge-message.md`](merge-message.md) that carries the
+  closing keywords `issues` names — a body filled from the commits carries none:
   ```bash
   # GitHub
-  gh pr create   --base <parent> --head <branch> --fill
+  gh pr create   --base <parent> --head <branch> --title "<title>" --body "<body>"
   # GitLab
-  glab mr create --target-branch <parent> --source-branch <branch> --fill
+  glab mr create --target-branch <parent> --source-branch <branch> --title "<title>" --description "<body>"
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md) — the
   installed CLI's `--help` first, since it is the one that describes this build.
+  A ref published under `old-name` stays on this path — nothing here proves it
+  this branch's — and the report names it as standing.
   Opening it is **all** the inline path does — say so. No review-and-merge loop is
   being driven (no CI/automated-review fix loop, no merge), so nobody who asked to
   "ship it" assumes the change is on its way to merge while it actually sits open.
@@ -279,9 +295,47 @@ already merged locally, with nothing left to drive.
 
 ## Keeping the feature branch current — both modes
 
-Where the base moves while a set is still in flight, the feature branch takes it
-the way any branch does — **rebase by default, merge while something is built on
-its current tip**: a slice still open against it, or one already cut from it,
-whose base a rewrite would pull out from under it. Between slices, with every one
-of them landed, nothing is built on it and rebase is safe again. A slice itself
-rebases onto the feature branch.
+Where the base moves while a set is still in flight, the feature branch takes
+it **by merge, never by rebase** — its history is not a slice's: in `local`
+mode it carries the slices' `--no-ff` merges, in `request` mode it is published
+and is the base every slice's request targets, and the section below forbids
+rewriting either. So: from the worktree that holds it (`git worktree list
+--porcelain` names it; a branch another session holds is not moved), bring it
+to its remote tip first where one exists (`git merge --ff-only
+<remote>/<feature>`), then `git merge <remote>/<base>` into it, then, in
+`request` mode, push it fast-forward — the remote copy is what the next slice's
+request diffs against. A slice itself rebases onto the feature branch, as any
+branch onto its parent.
+
+**When, and by whom**: the orchestrator — which cut the feature branch, and in
+`request` mode publishes it when it cuts it, since the first slice's request
+needs it on the remote — before each slice after the first is cut; and the
+request driver once more before the final `feature → base` change request, by
+its own re-sync step, which merges rather than rebases a branch this section
+names. A slice never moves the feature branch: its own landing is onto the
+feature branch, not the base.
+
+## A branch that is merged, never rebased — both modes
+
+Three cases; each takes its base by merge, and the report says which:
+
+- **Shared** — something is built on the branch's current tip: another
+  contributor's commits on it, a change request **other than the branch's own**
+  that stacks on it or targets it, or — a set's feature branch — a slice still
+  open against it or already cut from it. The branch's own request is not one of
+  these: it heads the branch and stacks on nothing. Once every slice has landed
+  and its request is closed, nothing shares a feature branch, though the last
+  case below still holds for it.
+- **A history carrying a merge whose content is in neither parent** — a rebase
+  drops the merge, and a resolution living only there goes silently with it:
+
+  ```bash
+  # Non-empty combined diff = a merge that wrote something of its own → merge, not rebase.
+  for m in $(git rev-list --merges "<base>..HEAD"); do
+    [ -n "$(git show --format= "$m")" ] && echo "$m carries content of its own"
+  done
+  ```
+- **A set's feature branch**, whichever mode — the section above.
+
+Where none of the three can be read — a remote that does not answer, a tip
+nobody here can vouch for — that is a stop, never a guess.

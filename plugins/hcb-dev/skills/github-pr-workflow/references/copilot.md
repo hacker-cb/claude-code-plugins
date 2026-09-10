@@ -182,8 +182,9 @@ gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
 ```
 
 Copilot does not re-review every push — one that only applies its own suggestions
-often earns none — so the wait ends on the **requested-reviewer state**, never on a
-clock, and never on the repository's checks: a status check that stands in for
+often earns none — so the wait ends on the **requested-reviewer state** — never on
+the repository's checks, and on the clock only where step 5 says the wait has run
+out: a status check that stands in for
 Copilot's review is satisfied by *a* review of the pull request, not by one of the
 current head, and CI is usually green before Copilot has posted. **Green checks with
 no review of the head are the normal state right after a push, not a lost request.**
@@ -238,11 +239,26 @@ After each push:
    that ran before the request was registered. Step 1's timeline query is what tells
    the three apart.
 4. **A review of an earlier commit is not a decline.** It consumes the request and
-   leaves the head unreviewed, so re-request — step 2's case — and keep waiting. For
-   the same reason no elapsed time settles anything: while Copilot is still a
-   requested reviewer, hold, and say the head review is outstanding.
+   leaves the head unreviewed, so re-request — step 2's case — and keep waiting.
+   Elapsed time settles nothing: while Copilot is still a requested reviewer,
+   hold — in the windows and up to the ceiling of step 5 — and say the head
+   review is outstanding.
+5. **The wait runs, and runs out, the way a review run's does.** It is waited on
+   in the blocking windows of
+   [`../../../references/review-runs.md`](../../../references/review-runs.md),
+   spent on what does not depend on it — the loop's live-state read, its drift
+   measure — and it runs out at that file's ceiling, counted from the request's
+   own `review_requested` event (the timeline query above returns it) rather
+   than from the push; or at once where nothing is left to wait on: no request
+   standing on this head and none this driver can place — a rule that skipped
+   the head on a server where step 2 cannot request one. Running out is a stop,
+   not a verdict: record the head as unreviewed by this reviewer, and stop at the
+   addressee `merge-auth` names, recommendation first — another window,
+   re-request and wait again, or merge with the head unreviewed by Copilot and
+   say so in the report. The clock decides none of that; the addressee does.
 
-**Merge only once the head's review has settled.** Nothing the repository enforces
+**Merge only once the head's review has settled** — or the ceiling above was
+reached and the addressee said to merge past it. Nothing the repository enforces
 can be relied on to hold the merge for it: a status check standing in for the
 review is already satisfied by a review of any earlier commit, and an approval
 requirement holds only where this repo counts Copilot's approval at all. So a

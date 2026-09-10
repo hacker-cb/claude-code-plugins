@@ -67,8 +67,9 @@ form: you paste every one of them yourself.
   through development and `shipping-workflow` autonomously — closing with a
   per-slice report. Titles the session by the work it took in, per
   `references/session-naming.md`, so a long run is findable in a list of
-  sessions. Calls `shipping-workflow` per slice; not for work that is already
-  finished (that is `shipping-workflow` directly).
+  sessions. After a restart it resumes from the plan-doc and the task list, read
+  against the tree rather than trusted. Calls `shipping-workflow` per slice; not
+  for work that is already finished (that is `shipping-workflow` directly).
 
 ### Tracking deferred work
 
@@ -127,7 +128,8 @@ form: you paste every one of them yourself.
   leaves the caller's title standing.
 - **`github-pr-workflow`** — `/hcb-dev:github-pr-workflow`
   Drive a GitHub pull request from a finished branch to a merged PR: rename an
-  auto-generated branch, rebase onto base, open the PR ready-for-review, loop on
+  auto-generated branch and retire what it was published under, rebase onto base,
+  open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
   clean, then merge on the authority it was handed — `ask` by default, so it
   stops at ready and asks — monitor, watch the base's own checks on the merge
@@ -266,7 +268,9 @@ the plan stages them.
   other sessions' leftovers included). **Branches** are the bulk of it — no host
   cleanup touches those. A worktree Claude Code created for another session it
   reports rather than removes: the host leases those to sessions that outlive
-  their processes, so an idle one is routinely still someone's.
+  their processes, so an idle one is routinely still someone's. The verdict
+  tables it classifies by are
+  [`skills/git-cleanup/references/verdicts.md`](skills/git-cleanup/references/verdicts.md).
 
 ## Shared references
 
@@ -278,8 +282,9 @@ saying something else. Each file opens by saying what it owns.
   base branch and its remote without guessing either name. Read wherever a base
   or a remote is resolved.
 - [`references/review-runs.md`](references/review-runs.md) — what a review engine
-  launched outside the current session owes whoever launched it. Read wherever a
-  review runs as its own process.
+  launched outside the current session owes whoever launched it, and how any
+  reviewer's answer is waited on. Read wherever a review runs as its own
+  process, and wherever one is waited for.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name, a commit subject and a change-request title take. Read wherever a
   branch is named, renamed or landed under its name.
