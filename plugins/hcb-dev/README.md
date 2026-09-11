@@ -33,7 +33,8 @@ issue-tracking ─────────────────────�
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
 backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
-               └─▶ master-session (the layout, once the hygiene it proposed ran)
+               ├─▶ master-session (the layout, once the hygiene it proposed ran)
+               └─▶ implementation-workflow (one batch, with nothing holding it)
 master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
                └─▶ wave-refresh ─▶ (occupied ground · delta · free capacity) ─▶ back to wave-dispatch

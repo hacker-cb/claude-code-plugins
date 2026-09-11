@@ -9,12 +9,13 @@ description: >-
   "изучи все issues", "раздели по важности", "что брать в работу", "разложи
   бэклог", "перепроверь все issues вехи/метки" — and before an epic is split
   into waves when no survey exists yet. Report-first: every tracker edit it
-  proposes (bodies to rewrite, issues to close, milestones to move) executes
-  only on the user's word, item by item through `hcb-dev:issue-tracking`.
+  proposes executes only on the user's word, item by item through
+  `hcb-dev:issue-tracking`.
   Not for one issue's mechanics (`hcb-dev:issue-tracking`); the ask to split
   into waves AND run them is `hcb-dev:master-session`'s — this skill surveys
   and recommends. A slice already under a ledger, with a pin to diff from, is
-  recomputed by `hcb-dev:wave-refresh` instead.
+  recomputed by `hcb-dev:wave-refresh` instead — a survey run over one hands
+  its reading to the session holding it.
 ---
 
 # Backlog survey

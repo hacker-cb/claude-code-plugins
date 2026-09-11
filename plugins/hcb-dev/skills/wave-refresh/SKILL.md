@@ -92,7 +92,9 @@ slice the ledger records — a refresh's own pin and tracker moment, or a
 survey's, whichever read the slice later; else the pin the ledger's header
 carries for the wave's live step; else the newest pin among the orders the
 ledger records, ended batches included. Where none of the three answers, this is
-a survey rather than a refresh — say so and stop.
+a survey rather than a refresh — say so and stop. A rung carrying no tracker
+moment fixes the base half alone: the tracker half is then read over the slice
+whole, and the report says which half was a delta.
 
 A premise a landing knocked out — an issue whose blocker is now closed, whose
 coordinate moved, whose defect is gone — takes its verdict into the layout by
@@ -153,9 +155,11 @@ In this order, each section explicit even when empty:
 ## After the report
 
 - **The ledger takes the pass before anything else moves**: the pin and tracker
-  moment this refresh ran on and the ground it covered, every verdict this pass
-  read into its verdicts section, the layout it produced, and what it ruled
-  about the sources that disagreed.
+  moment this refresh ran on and the ground it covered — which takes the
+  header's slot only where that ground was the ledger's whole slice, a narrower
+  pass leaving the reading that stands there — every verdict this pass read into
+  its verdicts section, the layout it produced, and what it ruled about the
+  sources that disagreed.
 - **Tracker edits execute on the user's word**, item by item through
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
 - **The layout is launched on the user's word, and only then** — the capacity in
