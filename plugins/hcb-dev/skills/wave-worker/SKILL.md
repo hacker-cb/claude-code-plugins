@@ -33,10 +33,15 @@ holds, and what it stops is named in the return as the gap it is.
 
 ## On arrival — before the named workflow starts
 
-1. **Be findable.** The title is the batch shape of
-   [`../../references/session-naming.md`](../../references/session-naming.md);
-   a chip-born session already carries it — verify rather than assume, and set
-   it where it is missing.
+1. **Be findable.** The title is the one the order's first line names — the
+   batch shape of
+   [`../../references/session-naming.md`](../../references/session-naming.md),
+   composed there already. Set exactly that string rather than a title of this
+   session's own making, and take the step without first establishing what this
+   session wears: re-setting a title already worn changes nothing, and what the
+   channels this session is reached on answer about it is an address rather than
+   that title (`session-comms.md`) — evidence about the address, and none about
+   the title.
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip

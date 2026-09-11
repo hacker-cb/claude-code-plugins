@@ -246,11 +246,11 @@ the plan stages them.
   with you; how many batches stand clickable at once is the plan's launch
   order.
 - **`wave-worker`** — `/hcb-dev:wave-worker`
-  The receiving side, governing the engagement around the build: title the
-  session with the batch id, re-verify the order's premises before anything rests
-  on them, report the scope it found to the master before the first write, route
-  "agree first" forks there before building, push statuses with their coordinates
-  at the named milestones, finish a landing even where
+  The receiving side, governing the engagement around the build: wear the title
+  the order's first line carries, re-verify the order's premises before anything
+  rests on them, report the scope it found to the master before the first write,
+  route "agree first" forks there before building, push statuses with their
+  coordinates at the named milestones, finish a landing even where
   another session took it, and close with the return —
   staying engaged until the master accepts. The building itself runs through
   whatever workflow the order names, usually `implementation-workflow`.
