@@ -539,35 +539,24 @@ that, never the merge command's exit status:
   printf '%s\n%s\n' "$RUNS" "$STATUSES"
   ```
 
-  Poll each feed on its own, on Step 4's budget and its escalation: the two
-  register independently, so what one carries says nothing about whether the
-  other has anything to post, and neither settles for the other. A feed with a
-  row still unfinished is not settled, and neither is an empty one by itself.
+  Poll while any row is unfinished, on Step 4's budget and its escalation.
   **Nothing returned is not green**: a run registers after the push that triggers
-  it, so an empty read right after the merge is the answer arriving, not the
-  answer, and a rollup of `pending` over zero statuses is that same emptiness
-  rather than a run in flight — the rollup says something only beside a non-empty
-  list.
+  it, so an empty pair of reads right after the merge is the answer arriving, not
+  the answer. A rollup of `pending` over zero statuses is that same emptiness and
+  not a run in flight — the rollup says something only beside a non-empty list.
+  Tell that apart from a base that runs nothing at all by reading the same two
+  feeds on the commit the base carried *before* this merge — where that one has
+  rows, keep polling; where it has none either, say the base is unchecked and
+  that this step guaranteed nothing. A budget that runs out with a row still
+  unfinished is not waited out, with what the feeds showed when the waiting
+  stopped; and a read that did not succeed is neither of those — unread is not
+  empty, and it takes the platform path above rather than any verdict about this
+  base.
 
-  **What the base declares required is what the wait is bound to.** Those
-  contexts are the ones `merge-gates.md` read for Step 2, and the base lists them
-  before they ever run — so one posting on this event for the first time is
-  waited for like any other: poll while any of them is missing from both feeds or
-  still unfinished, whichever feed it turns up on. Past them, an empty feed is
-  settled by that same feed on the commit the base carried *before* this merge —
-  rows there and none here is one still registering, keep polling; none there
-  either and it posts nothing on this base, settling as soon as the **other** one
-  has, so a repository using a single feed answers on the feed it uses. Where
-  both stand that way, neither has the other to settle against and the budget is
-  the wait: run it out, and only then is the base unchecked and this step
-  guaranteed nothing. A budget that runs out with a required context still
-  missing, or a feed still unsettled, is not waited out, with what each feed
-  showed when the waiting stopped. A read that did not succeed is none of these —
-  unread is not empty, and it takes the platform path above rather than any
-  verdict about this base. What the bound does not cover is a **non-required**
-  status posting on this event for the first time: it can land after the report,
-  which is why the report says the read covered what the base requires rather
-  than that the base is quiet.
+  **What the report claims is what these two reads saw**, never that the base is
+  quiet: a check that registers after them, and one that runs for the pull
+  request and not for the push that landed it, are both outside what they can
+  see.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
   on that previous commit too is not this merge's, and neither is a degraded forge
@@ -632,11 +621,10 @@ Then give the user a short report:
    than one — including the case where the reference ruled Copilot out of this
    repo's flow, which is said here instead of a verdict.
 2. **The base's own checks on the merge commit**, as Step 6 read them — green,
-   saying it covers the contexts the base requires and whatever else had posted;
-   red, with every failing row and what each was attributed to (this merge's,
-   the commit before it, a degraded forge, a known flake); unchecked, with what
-   that left unguaranteed; or not waited out, with the state at the moment the
-   waiting stopped. Under an orchestrator this line is the `base_checks` its
+   over the rows those reads actually saw; red, with every failing row and what
+   each was attributed to (this merge's, the commit before it, a degraded forge,
+   a known flake); unchecked, with what that left unguaranteed; or not waited
+   out, with the state at the moment the waiting stopped. Under an orchestrator this line is the `base_checks` its
    completion carries onward (`slice-completion.md`).
 3. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
