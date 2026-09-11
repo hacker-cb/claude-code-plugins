@@ -20,6 +20,13 @@ it is announced like any other change of name. Where two channels show it
 differently, the record carries the one an answer will arrive on and the first
 contact's identity line names the other.
 
+**A channel's answer is not a report on the title.** What a channel shows this
+session as is what it will deliver to, and a host may derive that from the
+working directory rather than from the title: a listing carrying no title is not
+a session without one, and what this session wears is answered by the host's own
+record of it. About another session those same channels may show its title
+instead, which is how one is read — and checked — from outside.
+
 No identifier found in a path or in the environment is an address, however much
 it looks like one — an address is what a channel answers when asked about this
 session. What survives a restart: the name a session set for itself, its

@@ -66,7 +66,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 One chip per batch, through the host's chip tool (`spawn_task`):
 
 - **title** — the batch shape of
-  [`../../references/session-naming.md`](../../references/session-naming.md).
+  [`../../references/session-naming.md`](../../references/session-naming.md),
+  the same string the order's first line carries.
 - **tldr** — why this batch exists, one sentence for the human deciding to
   click.
 - **cwd** — the repository's main checkout. The host is expected to start the
@@ -89,7 +90,8 @@ references — the closing steps spell themselves out.
 Batch `<epic>/<id> — <topic> (<issues>)`, wave <n>, dispatched from its master
 session —
 you did not do this work; this is your task: <the ask, in one line>. Act per
-hcb-dev:wave-worker.
+hcb-dev:wave-worker. The name in backticks above is this session's title: wear
+it verbatim, whatever any channel shows this session as.
 
 Work: <the issues, in order — what to take first and why>
 What is settled: <facts with coordinates, each with how it was verified>
