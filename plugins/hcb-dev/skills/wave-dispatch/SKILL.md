@@ -56,7 +56,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   running in a session is not chipped again.
 - **Chips go up for the wave whose gate is clear, in the number its launch
   order allows** — a staged wave hangs one, and the next only once the one
-  before it has merged. A later wave's batch is not
+  before it has merged and that landing's checks have been read (the master's
+  landing row). A later wave's batch is not
   hung early — a hanging chip invites a click, and a click before the gate
   starts the batch on a base its dependency never reached. The order's `Start:`
   slot says the same to a receiver started by hand.
@@ -191,8 +192,9 @@ is not free until the master accepts.
   naming the file and its new owner, before the asking batch builds on the
   change. The launch-time order is not the last
   word on a shared file.
-- **A staged wave's next chip goes up when the one before it lands** — the
-  preflight above is run again for that step alone, its own pin included. A step
+- **A staged wave's next chip goes up when the one before it lands and that
+  landing's checks are read** — the preflight above is run again for that step
+  alone, its own pin included. A step
   whose predecessor reached a terminal state without landing waits for nothing:
   the wave is replanned from there. A staged wave whose next step is
   never hung is a stall, not a finished launch.
