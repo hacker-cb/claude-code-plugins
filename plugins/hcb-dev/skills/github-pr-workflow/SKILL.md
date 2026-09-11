@@ -546,6 +546,10 @@ that, never the merge command's exit status:
   Step 7 and fix it forward on a branch cut from the base, through this skill from
   Step 1. Where the base does require branches current, this read confirms rather
   than guards — take it either way.
+
+  **Step 7 carries this read whichever way it came out** — green, the red rows
+  that survived attribution, or unchecked — and none of the three is left to be
+  inferred from the absence of the others.
 - **On `MERGED`, check that every issue this PR was to close is closed.** Read the
   state of each, against its own repository where it lives in another:
 
@@ -594,16 +598,20 @@ Then give the user a short report:
    means, and what this line says when that head carries no review at all or more
    than one — including the case where the reference ruled Copilot out of this
    repo's flow, which is said here instead of a verdict.
-2. **Additional findings from this session**, grouped by category (e.g.
+2. **The base's own checks on the merge commit**, as Step 6 read them — green,
+   the red rows it attributed to this merge and what each one is, or unchecked
+   with what that left unguaranteed. Under an orchestrator this line is the
+   `base_checks` its completion carries onward (`slice-completion.md`).
+3. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
    lower-severity items you deliberately skipped during the loop. Each goes through
    [`../../references/findings.md`](../../references/findings.md), as
    the late review's findings above do. Where nothing called this driver, this
    report ends the session and that reference says what ends there; under an
    orchestrator it ends a slice, and the run's own report is the end.
-3. **Issues this PR was to close**, at the state Step 6 read — closed, or still
+4. **Issues this PR was to close**, at the state Step 6 read — closed, or still
    open and what closing one now waits on.
-4. **Suggested next steps** — tech debt to track, tests to add, or related work
+5. **Suggested next steps** — tech debt to track, tests to add, or related work
    that surfaced.
 
 Keep it scannable: short grouped bullets, not an essay.

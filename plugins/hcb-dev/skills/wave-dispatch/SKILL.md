@@ -155,10 +155,12 @@ foresaw. Then build: you do not wait for an answer to the report itself, and
 nothing of yours rests on a divergence in it until the master answers that.
 Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
-start report; in either mode you land it or it lands without you; you are
+start report; in either mode you land it or it lands without you; the checks on
+that landing settle, which the landing status does not wait for; you are
 stuck>, each carrying the coordinate that lets the master check it without
-asking back: the change request by number and URL, a landing by its commit, a
-stall by what it waits on.
+asking back: the change request by number and URL, a landing by its commit, its
+checks by that same commit, a stall by what it waits on. An outcome you promised
+is reported whichever way it came out.
 Questions go to the master — the forks above, and every architectural one this
 order did not foresee, before your own reading of it goes into the tree. An
 answer you are still waiting for parks you and does not stop you: say in one

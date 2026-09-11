@@ -153,6 +153,16 @@ the two; three things follow, and none of them is optional:
   demonstration behind it: neither registry resolves the counterpart, or the
   channel itself reported it could not deliver, or the parking below has run out
   of use.
+- **Silence carries nothing, so never make it carry a result.** A check or a
+  measurement promised to a counterpart closes with its outcome whichever way it
+  came out — clean, red with what is red, or not waited out and the state it
+  stood at when the waiting stopped — and a protocol announced as "only if it
+  goes wrong" is that same silence with permission: nothing there tells a clean
+  result apart from one never taken, from a session that ended between the
+  measurement and the message, or from a message the channel dropped, so the
+  reader takes the most favourable. Sparing the channel is what the coordinate
+  above is for — the outcome written there and the message shrunk to a pointer at
+  it — never the outcome left unsent.
 - **A send is not a delivery.** What proves the message arrived is the other
   side acting on it — an answer, a commit, a comment, a status that changed.
   Until then it stands in this session's own record as owed, whatever the send
