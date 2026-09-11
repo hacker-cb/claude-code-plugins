@@ -9,12 +9,13 @@ description: >-
   "изучи все issues", "раздели по важности", "что брать в работу", "разложи
   бэклог", "перепроверь все issues вехи/метки" — and before an epic is split
   into waves when no survey exists yet. Report-first: every tracker edit it
-  proposes (bodies to rewrite, issues to close, milestones to move) executes
-  only on the user's word, item by item through `hcb-dev:issue-tracking`.
+  proposes executes only on the user's word, item by item through
+  `hcb-dev:issue-tracking`.
   Not for one issue's mechanics (`hcb-dev:issue-tracking`); the ask to split
   into waves AND run them is `hcb-dev:master-session`'s — this skill surveys
   and recommends. A slice already under a ledger, with a pin to diff from, is
-  recomputed by `hcb-dev:wave-refresh` instead.
+  recomputed by `hcb-dev:wave-refresh` instead — a survey run over one hands
+  its reading to the session holding it.
 ---
 
 # Backlog survey
@@ -108,3 +109,19 @@ In this order, each section explicit even when empty:
   closing-table columns as candidates. When the user says to run them, the
   session assumes `hcb-dev:master-session` — or hands the table to the session
   that will.
+- **The executed hygiene is read back, and it settles the handover** — what the
+  user took, never what this report proposed: an issue closed or moved out of
+  the slice leaves the layout, a rewritten body releases the batch its verdict
+  held once `issue-currency.md` rules it `current` on the body it now has, a
+  corrected link moves an edge. What that leaves is handed over on the user's
+  word:
+  - **to the session holding the ledger**, where one already stands over the
+    slice — the waves behind the hygiene are redrawn there, from the newest
+    reading that session holds rather than from the backlog again
+    (`hcb-dev:master-session`, reached through `hcb-dev:session-handoff` where
+    that session is not this one);
+  - **to one master session over the cut the user takes** otherwise, carrying
+    the epic it hangs on; the themes it leaves are named as the epics that
+    follow it, never as masters to run beside it. A layout of one batch nothing
+    holds goes to `hcb-dev:implementation-workflow` instead, and carries no
+    epic.

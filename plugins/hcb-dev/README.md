@@ -33,6 +33,8 @@ issue-tracking ─────────────────────�
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
 backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
+               ├─▶ master-session (the layout, once the hygiene it proposed ran)
+               └─▶ implementation-workflow (one batch, with nothing holding it)
 master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
                └─▶ wave-refresh ─▶ (occupied ground · delta · free capacity) ─▶ back to wave-dispatch
@@ -181,6 +183,12 @@ work is **done** — not how the ask is worded.
   lane, as what holds the batch until the tracker edit releasing it is made.
   Every such edit — those and the closing hygiene plan alike — it asks you about
   and makes only on your word, item by item through `issue-tracking`.
+  Once the hygiene you approved has run, it reads back what actually changed and
+  hands the layout on: to the session holding the wave ledger where one stands
+  over the slice, else to one master session over the cut you take — with the
+  epic that master hangs on, and the themes it leaves named as the epics that
+  follow rather than masters to run beside it. A layout of one batch nothing
+  holds goes to `implementation-workflow` instead, and carries no epic.
   Titles the session by the slice it surveys, per
   `references/session-naming.md`. Scales by fanning readers out as subagents
   when the slice runs to hundreds; its lanes are the wave plan's input.
@@ -199,10 +207,11 @@ the plan stages them.
   get the user's word on the table — the epic's merge authority settled with
   it — launch through `wave-dispatch`, then run the
   loop — answering batch questions only after re-verifying against the tree,
-  accepting returns against the ledger's standing constraints, and opening each
-  wave as its gate clears. Never takes a merge itself — that is the batch's, and
-  a landing that arrived some other way reaches the batch before anything else is
-  sent.
+  accepting returns against the ledger's standing constraints, recomputing what
+  an executed tracker edit moved in the slice, keeping the epic's own wave table
+  level with every redraw, and opening each wave as its gate clears. Never takes
+  a merge itself — that is the batch's, and a landing that arrived some other way
+  reaches the batch before anything else is sent.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
@@ -212,7 +221,9 @@ the plan stages them.
   ledger's rows, the live registry, the files their open change requests touch)
   and read a zone they disagree about the safer way, take the delta in both its
   halves — what landed since the last pin, and what the tracker did since the
-  moment that refresh read it — then rule what clears the ground: verdicts per
+  moment that reading read it — a refresh's own reading, or a survey's where
+  that one read the whole slice later — then rule what clears the ground:
+  verdicts per
   `references/issue-currency.md`, where each verdict leaves its batch and how
   the survivors pair per `references/wave-planning.md`. Reports the capacity
   that is actually free against the capacity you asked for, and names what holds
