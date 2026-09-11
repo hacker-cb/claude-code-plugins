@@ -120,11 +120,15 @@ holds, and what it stops is named in the return as the gap it is.
   mode opens one; the readiness report a `queued` merge authority obliges, in
   the words the order gives it (the batch then waits for the master's go —
   readiness is not the slot);
-  merged by this session or landed without it; the session stuck; the scope
+  merged by this session or landed without it; the checks on that landing when
+  they settle — or when the waiting stops first, said with the state they stood
+  at then — which the landing status never waits for, the queue moving on that
+  one; the session stuck; the scope
   moving off the start report; a boundary change agreed with the master
   mid-flight — one line each, the first line self-contained, and each carrying
   the coordinate it is checked at: the change request by number and URL, a
-  landing by its commit, a stall by what it waits on.
+  landing by its commit, its checks by that same commit, a stall by what it waits
+  on.
 - **A landing this session did not take is still its landing to finish.** Work
   found already landed, in either mode, is never landed a second time: confirm
   the merge, retire the branch per

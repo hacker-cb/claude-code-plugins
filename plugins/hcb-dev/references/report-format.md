@@ -12,9 +12,10 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 1. **Per-slice outcome** — one row per slice: what it did, how it completed
    (merged locally into `<parent>`, or the change-request URL and whether it
-   merged), and its state (done / partial / skipped). A set that ended partway —
-   a slice failed or was skipped — says so here plainly; never let a summary read
-   as complete when it isn't.
+   merged), what the checks on that landing showed (`base_checks` — green, red
+   with what, not waited out, unchecked, or none), and its state (done / partial
+   / skipped). A set that ended partway — a slice failed or was skipped — says so
+   here plainly; never let a summary read as complete when it isn't.
 
 2. **The issues the run settles, at their state now** — one line each: closed, or
    still open and why. A merged slice row does not say what became of the issue
@@ -50,7 +51,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 | Slice | What | Completion | State |
 |---|---|---|---|
-| <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) | done\|partial\|skipped |
+| <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) · checks <green\|red: each row + what it is attributed to\|not waited out: state at <when>\|unchecked: what is left unguaranteed\|none> | done\|partial\|skipped |
 
 **Issues** — <one line per issue the run settles: closed, or open with why; or "none">
 

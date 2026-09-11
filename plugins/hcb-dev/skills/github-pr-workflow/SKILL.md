@@ -520,24 +520,44 @@ that, never the merge command's exit status:
   # and re-poll: an empty SHA builds a URL that 404s, and a 404 prints no rows —
   # which the reading below would take for a base with nothing to run.
   [ -n "$MERGE_SHA" ] || { echo "merge commit not published yet — re-poll"; exit 1; }
-  gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
-    --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"'
+  # Captured with their exit status, never piped straight out: a call that failed
+  # prints no rows, exactly as a base with nothing to run does, and the two take
+  # different steps.
+  if ! RUNS="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
+    --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"')"; then
+    echo "CANNOT READ the check-runs feed — unread, not unchecked"; exit 1
+  fi
   # Checks API and the older statuses are separate feeds; an external CI posting only
   # the latter leaves the call above empty however red it is. This one answers with an
   # object, so its verdict is the rolled-up `.state` the server computes over every
-  # status — take that, and read `.statuses[]` as detail that a long list may cut off.
-  gh api "repos/$REPO/commits/$MERGE_SHA/status" \
-    --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")'
+  # status — take that, and read `.statuses[]` as the rows Step 7 reports in full,
+  # which is why it paginates; the rollup line then repeats once per page, identically.
+  if ! STATUSES="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/status" \
+    --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")')"; then
+    echo "CANNOT READ the status feed — unread, not unchecked"; exit 1
+  fi
+  printf '%s\n%s\n' "$RUNS" "$STATUSES"
   ```
 
   Poll while any row is unfinished, on Step 4's budget and its escalation.
   **Nothing returned is not green**: a run registers after the push that triggers
   it, so an empty pair of reads right after the merge is the answer arriving, not
   the answer. A rollup of `pending` over zero statuses is that same emptiness and
-  not a run in flight — the rollup says something only beside a non-empty list. Tell that apart from a base that runs nothing at all by reading the
-  same two feeds on the commit the base carried *before* this merge — where that
-  one has rows, keep polling; where it has none either, say the base is unchecked
-  and that this step guaranteed nothing.
+  not a run in flight — the rollup says something only beside a non-empty list.
+  Tell that apart from a base that runs nothing at all by reading the same two
+  feeds on the commit the base carried *before* this merge — where that one has
+  rows, keep polling; where it has none either, say the base is unchecked and
+  that this step guaranteed nothing. A budget that runs out while this step is
+  still polling — a row unfinished, or rows the commit before carried and this
+  one still lacks — is not waited out, with what the feeds showed when the
+  waiting stopped, empty included; and a read that did not succeed is neither of
+  those — unread is not empty, and it takes the platform path above rather than
+  any verdict about this base.
+
+  **What the report claims is what these two reads saw**, never that the base is
+  quiet: a check that registers after them, and one that runs for the pull
+  request and not for the push that landed it, are both outside what they can
+  see.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
   on that previous commit too is not this merge's, and neither is a degraded forge
@@ -546,6 +566,13 @@ that, never the merge command's exit status:
   Step 7 and fix it forward on a branch cut from the base, through this skill from
   Step 1. Where the base does require branches current, this read confirms rather
   than guards — take it either way.
+
+  **Step 7 carries what these feeds showed, whichever way it came out** — green;
+  red, with every failing row and what each was attributed to; unchecked; or the
+  wait stopped before the rows finished, with the state they stood at then.
+  Attribution decides what you fix, never what gets reported: rows attributed
+  away are still rows, and dropping them leaves a report saying the base passed.
+  None of the four is inferred from the absence of the others.
 - **On `MERGED`, check that every issue this PR was to close is closed.** Read the
   state of each, against its own repository where it lives in another:
 
@@ -594,16 +621,22 @@ Then give the user a short report:
    means, and what this line says when that head carries no review at all or more
    than one — including the case where the reference ruled Copilot out of this
    repo's flow, which is said here instead of a verdict.
-2. **Additional findings from this session**, grouped by category (e.g.
+2. **The base's own checks on the merge commit**, as Step 6 read them — green,
+   over the rows those reads actually saw; red, with every failing row and what
+   each was attributed to (this merge's, the commit before it, a degraded forge,
+   a known flake); unchecked, with what that left unguaranteed; or not waited
+   out, with the state at the moment the waiting stopped. Under an orchestrator this line is the `base_checks` its
+   completion carries onward (`slice-completion.md`).
+3. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
    lower-severity items you deliberately skipped during the loop. Each goes through
    [`../../references/findings.md`](../../references/findings.md), as
    the late review's findings above do. Where nothing called this driver, this
    report ends the session and that reference says what ends there; under an
    orchestrator it ends a slice, and the run's own report is the end.
-3. **Issues this PR was to close**, at the state Step 6 read — closed, or still
+4. **Issues this PR was to close**, at the state Step 6 read — closed, or still
    open and what closing one now waits on.
-4. **Suggested next steps** — tech debt to track, tests to add, or related work
+5. **Suggested next steps** — tech debt to track, tests to add, or related work
    that surfaced.
 
 Keep it scannable: short grouped bullets, not an essay.

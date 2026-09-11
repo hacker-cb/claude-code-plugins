@@ -56,7 +56,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   running in a session is not chipped again.
 - **Chips go up for the wave whose gate is clear, in the number its launch
   order allows** — a staged wave hangs one, and the next only once the one
-  before it has merged. A later wave's batch is not
+  before it has merged and the master's landing row has cleared that landing
+  against its checks — a read outcome is not a cleared one. A later wave's batch is not
   hung early — a hanging chip invites a click, and a click before the gate
   starts the batch on a base its dependency never reached. The order's `Start:`
   slot says the same to a receiver started by hand.
@@ -155,10 +156,13 @@ foresaw. Then build: you do not wait for an answer to the report itself, and
 nothing of yours rests on a divergence in it until the master answers that.
 Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
-start report; in either mode you land it or it lands without you; you are
+start report; in either mode you land it or it lands without you; the checks on
+that landing settle or your waiting on them stops first, neither of which the
+landing status waits for; you are
 stuck>, each carrying the coordinate that lets the master check it without
-asking back: the change request by number and URL, a landing by its commit, a
-stall by what it waits on.
+asking back: the change request by number and URL, a landing by its commit, its
+checks by that same commit, a stall by what it waits on. An outcome you promised
+is reported whichever way it came out.
 Questions go to the master — the forks above, and every architectural one this
 order did not foresee, before your own reading of it goes into the tree. An
 answer you are still waiting for parks you and does not stop you: say in one
@@ -188,8 +192,9 @@ is not free until the master accepts.
   naming the file and its new owner, before the asking batch builds on the
   change. The launch-time order is not the last
   word on a shared file.
-- **A staged wave's next chip goes up when the one before it lands** — the
-  preflight above is run again for that step alone, its own pin included. A step
+- **A staged wave's next chip goes up when the one before it lands and the
+  master has cleared that landing against its checks** — the preflight above is
+  run again for that step alone, its own pin included. A step
   whose predecessor reached a terminal state without landing waits for nothing:
   the wave is replanned from there. A staged wave whose next step is
   never hung is a stall, not a finished launch.

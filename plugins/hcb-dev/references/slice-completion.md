@@ -86,7 +86,11 @@ step 6), so it never re-checks coverage; it simply carries whatever noted
 `landed_at` (local: the merge commit on `parent`; request: the change-request URL,
 plus a merge commit if it was driven to merge), `mode_used`, `retired` (what became
 of the branch, on each side it stood — gone, or standing with the reason
-`branch-retirement.md` names),
+`branch-retirement.md` names), `base_checks` (what the checks on that landing
+showed afterwards — green; red, with the failing rows and what each was
+attributed to; unchecked, with what that leaves unguaranteed; or the waiting
+stopped first, with the state it stood at then; `none` where nothing reports
+over such a landing, or nothing landed),
 `uncovered` (coverage
 gaps carried into the report), `issues` (what became of each issue this slice
 settles — closed, or open with why), `incidental` (surfaced-not-fixed findings,
