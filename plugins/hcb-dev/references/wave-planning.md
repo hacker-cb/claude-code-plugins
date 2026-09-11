@@ -74,10 +74,10 @@ there.
   the displaced batch owes its rebase before its own merge, not after.
 - **The launch order inside a wave is part of it too**: every chip at once, or
   staged — one chip, the next hung on the landing of the one before it, once
-  that landing's checks are read. Staged
+  that landing is cleared against its checks. Staged
   is what a wave takes wherever its batches cleared the axes only through a
   split the plan had to draw: a seam divided per file. Each step of a staged
-  wave is pinned and hung once its predecessor's landing is read, not at the
+  wave is pinned and hung once its predecessor's landing is cleared, not at the
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
   blocker, an issue whose body was ruled `needs rewrite`; what holds it and the
