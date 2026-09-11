@@ -530,14 +530,20 @@ that, never the merge command's exit status:
     --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")'
   ```
 
-  Poll while any row is unfinished, on Step 4's budget and its escalation.
+  Poll while any row is unfinished — and while both feeds are empty, which is a
+  state to wait out rather than to conclude from — on Step 4's budget and its
+  escalation.
   **Nothing returned is not green**: a run registers after the push that triggers
   it, so an empty pair of reads right after the merge is the answer arriving, not
   the answer. A rollup of `pending` over zero statuses is that same emptiness and
   not a run in flight — the rollup says something only beside a non-empty list. Tell that apart from a base that runs nothing at all by reading the
   same two feeds on the commit the base carried *before* this merge — where that
-  one has rows, keep polling; where it has none either, say the base is unchecked
-  and that this step guaranteed nothing.
+  one has rows, keep polling. Where it has none either, that is a hint and not a
+  verdict: a check that runs for this event alone, and one added since that
+  commit, leave the older one exactly as empty. So say the base is unchecked —
+  and that this step guaranteed nothing — only once the budget has run out with
+  both feeds on the merge commit still empty; stopped before that, the answer is
+  not waited out, with what the feeds showed when the waiting stopped.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
   on that previous commit too is not this merge's, and neither is a degraded forge
