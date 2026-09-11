@@ -120,8 +120,9 @@ holds, and what it stops is named in the return as the gap it is.
   mode opens one; the readiness report a `queued` merge authority obliges, in
   the words the order gives it (the batch then waits for the master's go —
   readiness is not the slot);
-  merged by this session or landed without it; the checks on that landing once
-  they settle, which the landing status never waits for — the queue moves on that
+  merged by this session or landed without it; the checks on that landing when
+  they settle — or when the waiting stops first, said with the state they stood
+  at then — which the landing status never waits for, the queue moving on that
   one; the session stuck; the scope
   moving off the start report; a boundary change agreed with the master
   mid-flight — one line each, the first line self-contained, and each carrying

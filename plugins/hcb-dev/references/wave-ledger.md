@@ -126,8 +126,9 @@ test on a passage is whether deleting it changes what anyone does next.
    the report arrives — a restart must not lose a batch holding on the queue);
    each landing
    with whoever took it — its batch, another session, or the user — what its
-   tail left standing, and what the checks on it said, an unread one recorded as
-   unread rather than as nothing; and what opens each later wave.
+   tail left standing, and what the checks on it showed — nothing running over
+   it and a base that runs none are answers, and one nobody has read yet is
+   recorded as unread rather than as either; and what opens each later wave.
 7. **Expectations** — what is awaited from whom: unconfirmed batches, answers
    owed, mandates given with the order's authorization and not yet met.
 8. **Journal** — one line per event, terse, newest last; and the account behind

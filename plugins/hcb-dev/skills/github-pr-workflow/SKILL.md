@@ -547,9 +547,12 @@ that, never the merge command's exit status:
   Step 1. Where the base does require branches current, this read confirms rather
   than guards — take it either way.
 
-  **Step 7 carries this read whichever way it came out** — green, the red rows
-  that survived attribution, or unchecked — and none of the three is left to be
-  inferred from the absence of the others.
+  **Step 7 carries what these feeds showed, whichever way it came out** — green;
+  red, with every failing row and what each was attributed to; unchecked; or the
+  wait stopped before the rows finished, with the state they stood at then.
+  Attribution decides what you fix, never what gets reported: rows attributed
+  away are still rows, and dropping them leaves a report saying the base passed.
+  None of the four is inferred from the absence of the others.
 - **On `MERGED`, check that every issue this PR was to close is closed.** Read the
   state of each, against its own repository where it lives in another:
 
@@ -598,10 +601,12 @@ Then give the user a short report:
    means, and what this line says when that head carries no review at all or more
    than one — including the case where the reference ruled Copilot out of this
    repo's flow, which is said here instead of a verdict.
-2. **The base's own checks on the merge commit**, as Step 6 read them — green,
-   the red rows it attributed to this merge and what each one is, or unchecked
-   with what that left unguaranteed. Under an orchestrator this line is the
-   `base_checks` its completion carries onward (`slice-completion.md`).
+2. **The base's own checks on the merge commit**, as Step 6 read them — green;
+   red, with every failing row and what each was attributed to (this merge's,
+   the commit before it, a degraded forge, a known flake); unchecked, with what
+   that left unguaranteed; or not waited out, with the state at the moment the
+   waiting stopped. Under an orchestrator this line is the `base_checks` its
+   completion carries onward (`slice-completion.md`).
 3. **Additional findings from this session**, grouped by category (e.g.
    Security, Correctness, Performance, Maintainability, Tests) — the
    lower-severity items you deliberately skipped during the loop. Each goes through

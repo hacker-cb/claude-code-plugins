@@ -156,7 +156,8 @@ nothing of yours rests on a divergence in it until the master answers that.
 Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
 start report; in either mode you land it or it lands without you; the checks on
-that landing settle, which the landing status does not wait for; you are
+that landing settle or your waiting on them stops first, neither of which the
+landing status waits for; you are
 stuck>, each carrying the coordinate that lets the master check it without
 asking back: the change request by number and URL, a landing by its commit, its
 checks by that same commit, a stall by what it waits on. An outcome you promised
