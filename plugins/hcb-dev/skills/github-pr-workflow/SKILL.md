@@ -547,11 +547,12 @@ that, never the merge command's exit status:
   Tell that apart from a base that runs nothing at all by reading the same two
   feeds on the commit the base carried *before* this merge — where that one has
   rows, keep polling; where it has none either, say the base is unchecked and
-  that this step guaranteed nothing. A budget that runs out with a row still
-  unfinished is not waited out, with what the feeds showed when the waiting
-  stopped; and a read that did not succeed is neither of those — unread is not
-  empty, and it takes the platform path above rather than any verdict about this
-  base.
+  that this step guaranteed nothing. A budget that runs out while this step is
+  still polling — a row unfinished, or rows the commit before carried and this
+  one still lacks — is not waited out, with what the feeds showed when the
+  waiting stopped, empty included; and a read that did not succeed is neither of
+  those — unread is not empty, and it takes the platform path above rather than
+  any verdict about this base.
 
   **What the report claims is what these two reads saw**, never that the base is
   quiet: a check that registers after them, and one that runs for the pull
