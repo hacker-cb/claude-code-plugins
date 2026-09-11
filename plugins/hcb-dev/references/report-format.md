@@ -51,7 +51,7 @@ Keep it scannable: short grouped bullets, a small table, not an essay.
 
 | Slice | What | Completion | State |
 |---|---|---|---|
-| <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) · checks <green\|red: what\|not waited out\|unchecked\|none> | done\|partial\|skipped |
+| <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) · checks <green\|red: each row + what it is attributed to\|not waited out: state at <when>\|unchecked: what is left unguaranteed\|none> | done\|partial\|skipped |
 
 **Issues** — <one line per issue the run settles: closed, or open with why; or "none">
 

@@ -88,8 +88,9 @@ plus a merge commit if it was driven to merge), `mode_used`, `retired` (what bec
 of the branch, on each side it stood — gone, or standing with the reason
 `branch-retirement.md` names), `base_checks` (what the checks on that landing
 showed afterwards — green; red, with the failing rows and what each was
-attributed to; unchecked; or the waiting stopped first, with the state it stood
-at then; `none` where nothing reports over such a landing, or nothing landed),
+attributed to; unchecked, with what that leaves unguaranteed; or the waiting
+stopped first, with the state it stood at then; `none` where nothing reports
+over such a landing, or nothing landed),
 `uncovered` (coverage
 gaps carried into the report), `issues` (what became of each issue this slice
 settles — closed, or open with why), `incidental` (surfaced-not-fixed findings,
