@@ -520,14 +520,23 @@ that, never the merge command's exit status:
   # and re-poll: an empty SHA builds a URL that 404s, and a 404 prints no rows —
   # which the reading below would take for a base with nothing to run.
   [ -n "$MERGE_SHA" ] || { echo "merge commit not published yet — re-poll"; exit 1; }
-  gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
-    --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"'
+  # Captured with their exit status, never piped straight out: a call that failed
+  # prints no rows, exactly as a base with nothing to run does, and the two take
+  # different steps.
+  if ! RUNS="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
+    --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"')"; then
+    echo "CANNOT READ the check-runs feed — unread, not unchecked"; exit 1
+  fi
   # Checks API and the older statuses are separate feeds; an external CI posting only
   # the latter leaves the call above empty however red it is. This one answers with an
   # object, so its verdict is the rolled-up `.state` the server computes over every
-  # status — take that, and read `.statuses[]` as detail that a long list may cut off.
-  gh api "repos/$REPO/commits/$MERGE_SHA/status" \
-    --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")'
+  # status — take that, and read `.statuses[]` as the rows Step 7 reports in full,
+  # which is why it paginates; the rollup line then repeats once per page, identically.
+  if ! STATUSES="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/status" \
+    --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")')"; then
+    echo "CANNOT READ the status feed — unread, not unchecked"; exit 1
+  fi
+  printf '%s\n%s\n' "$RUNS" "$STATUSES"
   ```
 
   Poll while any row is unfinished — and while both feeds are empty, which is a
@@ -543,7 +552,9 @@ that, never the merge command's exit status:
   commit, leave the older one exactly as empty. So say the base is unchecked —
   and that this step guaranteed nothing — only once the budget has run out with
   both feeds on the merge commit still empty; stopped before that, the answer is
-  not waited out, with what the feeds showed when the waiting stopped.
+  not waited out, with what the feeds showed when the waiting stopped. A read
+  that did not succeed is neither answer — unread is not empty, and it takes the
+  platform path above rather than any verdict about this base.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
   on that previous commit too is not this merge's, and neither is a degraded forge
