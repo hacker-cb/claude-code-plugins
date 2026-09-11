@@ -38,9 +38,10 @@ holds, and what it stops is named in the return as the gap it is.
    [`../../references/session-naming.md`](../../references/session-naming.md),
    composed there already. Set exactly that string rather than a title of this
    session's own making, and take the step without first establishing what this
-   session wears: re-setting a title already worn changes nothing, and the
-   channels this session is reached on show it an address rather than that title
-   (`session-comms.md`), so nothing they show is evidence either way.
+   session wears: re-setting a title already worn changes nothing, and what the
+   channels this session is reached on answer about it is an address rather than
+   that title (`session-comms.md`) — evidence about the address, and none about
+   the title.
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip
@@ -55,8 +56,7 @@ holds, and what it stops is named in the return as the gap it is.
    not landed on.
 4. **Report that scope to the master, before the first write**: which batch this
    session is, the name it answers to — read back from the channels it can be
-   reached on, never built from what a neighbour's looks like and never read off
-   the title of step 1 (`session-comms.md`) — what the work
+   reached on, never built from what a neighbour's looks like — what the work
    turned out to be: the
    files and the issues it touches, what taking it involves, the order it will
    be taken in — and everything that came back different from the order: a

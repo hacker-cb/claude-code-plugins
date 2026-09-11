@@ -66,8 +66,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 One chip per batch, through the host's chip tool (`spawn_task`):
 
 - **title** — the batch shape of
-  [`../../references/session-naming.md`](../../references/session-naming.md),
-  the same string the order's first line carries.
+  [`../../references/session-naming.md`](../../references/session-naming.md), as
+  that reference leaves it under the titling tool's cap; the order's first line
+  carries that same string.
 - **tldr** — why this batch exists, one sentence for the human deciding to
   click.
 - **cwd** — the repository's main checkout. The host is expected to start the
