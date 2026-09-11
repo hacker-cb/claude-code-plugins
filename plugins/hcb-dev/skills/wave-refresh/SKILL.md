@@ -153,9 +153,9 @@ In this order, each section explicit even when empty:
 ## After the report
 
 - **The ledger takes the pass before anything else moves**: the pin and tracker
-  moment this refresh ran on, every verdict this pass read into its verdicts
-  section, the layout it produced, and what it ruled about the sources that
-  disagreed.
+  moment this refresh ran on and the ground it covered, every verdict this pass
+  read into its verdicts section, the layout it produced, and what it ruled
+  about the sources that disagreed.
 - **Tracker edits execute on the user's word**, item by item through
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
 - **The layout is launched on the user's word, and only then** — the capacity in

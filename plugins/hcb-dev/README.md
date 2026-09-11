@@ -186,7 +186,8 @@ work is **done** — not how the ask is worded.
   hands the layout on: to the session holding the wave ledger where one stands
   over the slice, else to one master session over the cut you take — with the
   epic that master hangs on, and the themes it leaves named as the epics that
-  follow rather than masters to run beside it.
+  follow rather than masters to run beside it. A layout of one batch nothing
+  holds goes to `implementation-workflow` instead, and carries no epic.
   Titles the session by the slice it surveys, per
   `references/session-naming.md`. Scales by fanning readers out as subagents
   when the slice runs to hundreds; its lanes are the wave plan's input.
@@ -219,8 +220,9 @@ the plan stages them.
   ledger's rows, the live registry, the files their open change requests touch)
   and read a zone they disagree about the safer way, take the delta in both its
   halves — what landed since the last pin, and what the tracker did since the
-  moment that reading read it, a survey's where it read the slice later than any
-  refresh — then rule what clears the ground: verdicts per
+  moment that reading read it — a refresh's own reading, or a survey's where
+  that one read the whole slice later — then rule what clears the ground:
+  verdicts per
   `references/issue-currency.md`, where each verdict leaves its batch and how
   the survivors pair per `references/wave-planning.md`. Reports the capacity
   that is actually free against the capacity you asked for, and names what holds
