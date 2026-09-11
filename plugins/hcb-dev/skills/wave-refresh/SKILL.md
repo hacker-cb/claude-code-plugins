@@ -80,9 +80,8 @@ Two halves, because an issue closes without a commit:
 
 - **the base**, from the pin the point below names to the pin taken now:
   what landed, and which premises those landings moved;
-- **the tracker**, from the moment that point read it: what closed,
-  reopened, changed body, gained or lost a dependency, or entered or left the
-  slice.
+- **the tracker**, from the moment that point read it: every change a verdict
+  reads (`issue-currency.md`), and what entered or left the slice.
 
 Both together are the re-verification list — not the slice, which is what makes
 this pass cheap.
