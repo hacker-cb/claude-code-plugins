@@ -208,7 +208,7 @@ the plan stages them.
   it — launch through `wave-dispatch`, then run the
   loop — answering batch questions only after re-verifying against the tree,
   accepting returns against the ledger's standing constraints, recomputing what
-  a tracker edit the plan waited on released, keeping the epic's own wave table
+  an executed tracker edit moved in the slice, keeping the epic's own wave table
   level with every redraw, and opening each wave as its gate clears. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
