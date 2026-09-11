@@ -3,7 +3,7 @@ name: wave-refresh
 description: >-
   Recompute what parallel work can safely start right now: pin the base and the
   moment the tracker was read, measure the ground the running batches hold, take
-  the delta since the last refresh, rule what clears it, and say how many
+  the delta since the last reading, rule what clears it, and say how many
   batches are actually free — then hand what the user approves to the launcher.
   Use when a coordinating session is asked "что ещё можно взять параллельно",
   "что блокирует", "что делать дальше", "какая следующая волна", "освежи и
@@ -74,23 +74,24 @@ occupied to the union of both, and a session whose zone no source gives holds
 **everything a candidate would touch**, since an unknown zone is unbounded and
 not empty.
 
-## The delta since the last refresh
+## The delta since the last reading
 
 Two halves, because an issue closes without a commit:
 
-- **the base**, from the pin the last refresh recorded to the pin taken now:
+- **the base**, from the pin the point below names to the pin taken now:
   what landed, and which premises those landings moved;
-- **the tracker**, from the moment the last refresh read it: what closed,
+- **the tracker**, from the moment that point read it: what closed,
   reopened, changed body or gained a dependency in the slice.
 
 Both together are the re-verification list — not the slice, which is what makes
 this pass cheap.
 
-**The point to diff from, first that answers**: the last refresh's own pin and
-tracker moment; else the pin the ledger's header carries for the wave's live
-step; else the newest pin among the orders the ledger records, ended batches
-included. Where none of the three answers, this is a survey rather than a
-refresh — say so and stop.
+**The point to diff from, first that answers**: the newest whole reading of the
+slice the ledger records — a refresh's own pin and tracker moment, or a
+survey's, whichever read the slice later; else the pin the ledger's header
+carries for the wave's live step; else the newest pin among the orders the
+ledger records, ended batches included. Where none of the three answers, this is
+a survey rather than a refresh — say so and stop.
 
 A premise a landing knocked out — an issue whose blocker is now closed, whose
 coordinate moved, whose defect is gone — takes its verdict into the layout by
@@ -138,7 +139,7 @@ outside it as its own choice for the user, not as part of this slice's layout.
 In this order, each section explicit even when empty:
 
 1. **The front** — batches running, the ground each holds, what landed since the
-   last refresh.
+   last reading.
 2. **What moved** — premises knocked out, blockers lifted, tracker changes in
    the slice, and every disagreement the three ground sources showed.
 3. **The candidates** — the columns of `wave-planning.md`'s closing table, plus
