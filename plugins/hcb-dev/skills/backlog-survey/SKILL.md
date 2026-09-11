@@ -116,7 +116,8 @@ In this order, each section explicit even when empty:
   - **to the session holding the ledger**, where one already stands over the
     slice — the waves behind the hygiene are redrawn there, from what this
     survey read rather than from the backlog again (`hcb-dev:master-session`);
-  - **to one master session over the cut recommended above** otherwise,
-    carrying the epic it hangs on; the themes it leaves are named as the epics
-    that follow it, never as masters to run beside it. A layout of one batch
-    goes to `hcb-dev:implementation-workflow` instead, and carries no epic.
+  - **to one master session over the cut the user takes** otherwise, carrying
+    the epic it hangs on; the themes it leaves are named as the epics that
+    follow it, never as masters to run beside it. A layout of one batch nothing
+    holds goes to `hcb-dev:implementation-workflow` instead, and carries no
+    epic.

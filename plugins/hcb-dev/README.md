@@ -184,8 +184,8 @@ work is **done** — not how the ask is worded.
   and makes only on your word, item by item through `issue-tracking`.
   Once the hygiene you approved has run, it reads back what actually changed and
   hands the layout on: to the session holding the wave ledger where one stands
-  over the slice, else to one master session over the cut it recommended — with
-  the epic that master hangs on, and the themes it leaves named as the epics that
+  over the slice, else to one master session over the cut you take — with the
+  epic that master hangs on, and the themes it leaves named as the epics that
   follow rather than masters to run beside it.
   Titles the session by the slice it surveys, per
   `references/session-naming.md`. Scales by fanning readers out as subagents
