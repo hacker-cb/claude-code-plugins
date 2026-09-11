@@ -111,8 +111,9 @@ In this order, each section explicit even when empty:
 - **The executed hygiene is read back, and it settles the handover** — what the
   user took, never what this report proposed: an issue closed or moved out of
   the slice leaves the layout, a rewritten body releases the batch its verdict
-  held, a corrected link moves an edge. What that leaves is handed over on the
-  user's word:
+  held once `issue-currency.md` rules it `current` on the body it now has, a
+  corrected link moves an edge. What that leaves is handed over on the user's
+  word:
   - **to the session holding the ledger**, where one already stands over the
     slice — the waves behind the hygiene are redrawn there, from what this
     survey read rather than from the backlog again (`hcb-dev:master-session`);

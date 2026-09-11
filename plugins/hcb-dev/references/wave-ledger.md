@@ -74,9 +74,10 @@ test on a passage is whether deleting it changes what anyone does next.
 1. **Header** — the epic, the master's name — rewritten whenever it changes —
    the base pin the wave's live step was hung on (`<remote>/<branch>@<sha>`),
    the pin of the last whole reading of the slice — a capacity refresh's or a
-   survey's, and never one that read less than the slice — together with the
-   moment it read the tracker at, the two halves the next refresh takes its
-   delta from, since an issue closes without a commit (`hcb-dev:wave-refresh`),
+   survey's — together with the moment it read the tracker at and the ground it
+   covered, the two halves the next refresh takes its delta from, since an
+   issue closes without a commit (`hcb-dev:wave-refresh`); a reading of less
+   than this slice does not take the slot,
    the epic's merge authority as the user settled it
    ([`slice-completion.md`](slice-completion.md)), the plugin version this role
    last reconciled against — which is what a later **plugin** refresh diffs from
