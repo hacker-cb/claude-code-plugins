@@ -549,17 +549,25 @@ that, never the merge command's exit status:
   rather than a run in flight — the rollup says something only beside a non-empty
   list.
 
-  What settles an empty feed is that same feed on the commit the base carried
-  *before* this merge. Rows there and none here is a feed still registering —
-  keep polling. None there either and that feed posts nothing on this base: it
-  settles once the **other** feed has settled, so a repository using one feed
-  alone answers on that one instead of waiting out the budget. Where both stand
-  that way, neither has the other to settle against and the budget is the wait:
-  run it out, and only then is the base unchecked and this step guaranteed
-  nothing. A budget that runs out with a feed still unsettled is not waited out,
-  with what each feed showed when the waiting stopped. A read that did not
-  succeed is none of these — unread is not empty, and it takes the platform path
-  above rather than any verdict about this base.
+  **What the base declares required is what the wait is bound to.** Those
+  contexts are the ones `merge-gates.md` read for Step 2, and the base lists them
+  before they ever run — so one posting on this event for the first time is
+  waited for like any other: poll while any of them is missing from both feeds or
+  still unfinished, whichever feed it turns up on. Past them, an empty feed is
+  settled by that same feed on the commit the base carried *before* this merge —
+  rows there and none here is one still registering, keep polling; none there
+  either and it posts nothing on this base, settling as soon as the **other** one
+  has, so a repository using a single feed answers on the feed it uses. Where
+  both stand that way, neither has the other to settle against and the budget is
+  the wait: run it out, and only then is the base unchecked and this step
+  guaranteed nothing. A budget that runs out with a required context still
+  missing, or a feed still unsettled, is not waited out, with what each feed
+  showed when the waiting stopped. A read that did not succeed is none of these —
+  unread is not empty, and it takes the platform path above rather than any
+  verdict about this base. What the bound does not cover is a **non-required**
+  status posting on this event for the first time: it can land after the report,
+  which is why the report says the read covered what the base requires rather
+  than that the base is quiet.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
   on that previous commit too is not this merge's, and neither is a degraded forge
@@ -623,7 +631,8 @@ Then give the user a short report:
    means, and what this line says when that head carries no review at all or more
    than one — including the case where the reference ruled Copilot out of this
    repo's flow, which is said here instead of a verdict.
-2. **The base's own checks on the merge commit**, as Step 6 read them — green;
+2. **The base's own checks on the merge commit**, as Step 6 read them — green,
+   saying it covers the contexts the base requires and whatever else had posted;
    red, with every failing row and what each was attributed to (this merge's,
    the commit before it, a degraded forge, a known flake); unchecked, with what
    that left unguaranteed; or not waited out, with the state at the moment the
