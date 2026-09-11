@@ -155,8 +155,9 @@ the two; three things follow, and none of them is optional:
   of use.
 - **Silence carries nothing, so never make it carry a result.** A check or a
   measurement promised to a counterpart closes with its outcome whichever way it
-  came out — clean, red with what is red, or not waited out and the state it
-  stood at when the waiting stopped — and a protocol announced as "only if it
+  came out — clean; red, with what is red; nothing there to measure, with what
+  that leaves unguaranteed; or not waited out, with the state it stood at when
+  the waiting stopped — and a protocol announced as "only if it
   goes wrong" is that same silence with permission: nothing there tells a clean
   result apart from one never taken, from a session that ended between the
   measurement and the message, or from a message the channel dropped, so the
