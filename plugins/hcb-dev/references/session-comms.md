@@ -163,7 +163,10 @@ the two; three things follow, and none of them is optional:
   measurement and the message, or from a message the channel dropped, so the
   reader takes the most favourable. Sparing the channel is what the coordinate
   above is for — the outcome written there and the message shrunk to a pointer at
-  it — never the outcome left unsent.
+  it — never the outcome left unsent. A measurement that could not be read at all
+  closes nothing: it goes out as unread, with what stands in the way, and stays
+  owed until it can be taken — reported as any of the outcomes above, it is the
+  same favourable reading by another route.
 - **A send is not a delivery.** What proves the message arrived is the other
   side acting on it — an answer, a commit, a comment, a status that changed.
   Until then it stands in this session's own record as owed, whatever the send

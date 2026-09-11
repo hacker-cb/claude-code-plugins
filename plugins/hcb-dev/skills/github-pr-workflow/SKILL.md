@@ -539,9 +539,11 @@ that, never the merge command's exit status:
   printf '%s\n%s\n' "$RUNS" "$STATUSES"
   ```
 
-  Poll while any row is unfinished — and while both feeds are empty, which is a
-  state to wait out rather than to conclude from — on Step 4's budget and its
-  escalation.
+  Poll each feed on its own, on Step 4's budget and its escalation: one carrying
+  a row still unfinished is not settled, and neither is one still empty, which is
+  a state to wait out rather than to conclude from. The two register
+  independently, so what one of them carries says nothing about whether the other
+  has anything to post — neither settles for the other.
   **Nothing returned is not green**: a run registers after the push that triggers
   it, so an empty pair of reads right after the merge is the answer arriving, not
   the answer. A rollup of `pending` over zero statuses is that same emptiness and
