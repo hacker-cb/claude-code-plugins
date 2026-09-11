@@ -539,24 +539,27 @@ that, never the merge command's exit status:
   printf '%s\n%s\n' "$RUNS" "$STATUSES"
   ```
 
-  Poll each feed on its own, on Step 4's budget and its escalation: one carrying
-  a row still unfinished is not settled, and neither is one still empty, which is
-  a state to wait out rather than to conclude from. The two register
-  independently, so what one of them carries says nothing about whether the other
-  has anything to post — neither settles for the other.
+  Poll each feed on its own, on Step 4's budget and its escalation: the two
+  register independently, so what one carries says nothing about whether the
+  other has anything to post, and neither settles for the other. A feed with a
+  row still unfinished is not settled, and neither is an empty one by itself.
   **Nothing returned is not green**: a run registers after the push that triggers
-  it, so an empty pair of reads right after the merge is the answer arriving, not
-  the answer. A rollup of `pending` over zero statuses is that same emptiness and
-  not a run in flight — the rollup says something only beside a non-empty list. Tell that apart from a base that runs nothing at all by reading the
-  same two feeds on the commit the base carried *before* this merge — where that
-  one has rows, keep polling. Where it has none either, that is a hint and not a
-  verdict: a check that runs for this event alone, and one added since that
-  commit, leave the older one exactly as empty. So say the base is unchecked —
-  and that this step guaranteed nothing — only once the budget has run out with
-  both feeds on the merge commit still empty; stopped before that, the answer is
-  not waited out, with what the feeds showed when the waiting stopped. A read
-  that did not succeed is neither answer — unread is not empty, and it takes the
-  platform path above rather than any verdict about this base.
+  it, so an empty read right after the merge is the answer arriving, not the
+  answer, and a rollup of `pending` over zero statuses is that same emptiness
+  rather than a run in flight — the rollup says something only beside a non-empty
+  list.
+
+  What settles an empty feed is that same feed on the commit the base carried
+  *before* this merge. Rows there and none here is a feed still registering —
+  keep polling. None there either and that feed posts nothing on this base: it
+  settles once the **other** feed has settled, so a repository using one feed
+  alone answers on that one instead of waiting out the budget. Where both stand
+  that way, neither has the other to settle against and the budget is the wait:
+  run it out, and only then is the base unchecked and this step guaranteed
+  nothing. A budget that runs out with a feed still unsettled is not waited out,
+  with what each feed showed when the waiting stopped. A read that did not
+  succeed is none of these — unread is not empty, and it takes the platform path
+  above rather than any verdict about this base.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
   on that previous commit too is not this merge's, and neither is a degraded forge
