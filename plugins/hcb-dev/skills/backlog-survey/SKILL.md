@@ -118,7 +118,8 @@ In this order, each section explicit even when empty:
   - **to the session holding the ledger**, where one already stands over the
     slice — the waves behind the hygiene are redrawn there, from the newest
     reading that session holds rather than from the backlog again
-    (`hcb-dev:master-session`);
+    (`hcb-dev:master-session`, reached through `hcb-dev:session-handoff` where
+    that session is not this one);
   - **to one master session over the cut the user takes** otherwise, carrying
     the epic it hangs on; the themes it leaves are named as the epics that
     follow it, never as masters to run beside it. A layout of one batch nothing
