@@ -53,33 +53,39 @@ back, not the exit status.
 ## Resolve the mechanism — first hit wins
 
 Availability carries nothing: a native field expresses a role here only where
-this repository's issues are carrying it in one. Resolve role by role.
+this repository's issues are carrying it in one, or where it was adopted for
+them. Resolve role by role.
 
-1. **What the newest issues carry.** Read them — the top of a list ordered by
+1. **What the user adopted** — the mechanism named by an explicit word of the
+   user's, or by a rule of the project's own naming it: the field, the family, or
+   both. It stands whatever the issues carry, and it is the only thing that adopts
+   a field nothing carries yet. A word given in conversation holds for that
+   session; ask for it in the project's own rules where it is to outlive one.
+2. **What the newest issues carry.** Read them — the top of a list ordered by
    creation date, open and closed alike — for what each role is carried in: a
    native field's value that names the role (the type an issue carries merely by
    being an issue names none), a label from a family, or both. What they carry it
    in **as a rule** is what carries it here: the field alone, and nothing is
    labelled for it; the family alone; or both, one value in each, and say the
    repository runs that role two ways. What only a few carry, as an exception,
-   carries nothing and leaves those issues out of line (below); in doubt, the
-   field is the one not adopted.
-2. **A label family the set declares** — where the newest issues carry the role
+   decides nothing; in doubt, the field is the one not adopted.
+3. **A label family the set declares** — where the newest issues carry the role
    as a rule in neither.
-3. **Neither** — apply what exists, and name the roles this repository has no
+4. **Neither** — apply what exists, and name the roles this repository has no
    vocabulary for. Never invent one silently. An available native field is not
-   vocabulary: it is adopted on the user's explicit word, or a project rule that
-   names it, and until then it is offered where a set is proposed below rather
-   than applied for being there.
+   vocabulary until rung 1 adopts it; until then it is offered where a set is
+   proposed below rather than applied for being there.
 
 GitHub issue types belong to organisation-owned repositories and hold one type
 per issue; GitLab's configurable work item types are a paid-tier feature
-configured on the top-level group. Whether the installed CLI's `issue` commands
-reach the value is its `--help`'s to say; the definitions sit past them, and
-[`forge-docs.md`](forge-docs.md) has the entry points. A `404` from a definitions
-endpoint reads the same whether the feature is absent or merely invisible to this
-token, so treat it as absent only once something else confirms the token reaches
-this repository, and say which of the two you concluded.
+configured on the top-level group. What the installed CLI's `issue` commands
+carry of either is its `--help`'s to say — and a flag of theirs naming the type an
+issue is merely filed under is not this value, whatever that flag is called;
+[`forge-docs.md`](forge-docs.md) has the entry points, to the values as well as to
+the definitions. A `404` from a definitions endpoint reads the same whether the
+feature is absent or merely invisible to this token, so treat it as absent only
+once something else confirms the token reaches this repository, and say which of
+the two you concluded.
 
 Reading one issue, the role is what that issue carries it in, whatever the
 repository runs: where its field and its label disagree, the role is unresolved
@@ -97,9 +103,9 @@ untriaged and never the one that means a human accepted it.
 
 ## An issue out of line
 
-One carrying a role outside the mechanism the repository runs it in — a native
-field nobody adopted, a family the repository has moved off. Align it: add the
-value in each mechanism the role runs in and the issue lacks, then clear what it
+One carrying a role outside the mechanism resolved for it above — a native field
+nobody adopted, a family the repository has moved off. Align it: add the value in
+each mechanism that resolution names and the issue lacks, then clear what it
 carries outside them; where the two disagree, or nothing in the mechanism means
 what the stray value says, the value is the user's. It is a tracker edit —
 proposed, and made only on the answer that authorizes one (`findings.md`), never

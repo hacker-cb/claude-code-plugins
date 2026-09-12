@@ -99,8 +99,9 @@ In this order, each section explicit even when empty:
    line. Where it leaves any, the rest of the repository's carrying that same
    value ride the item with them — closed ones included, found by the value
    itself rather than by reading the closed backlog, and counted rather than
-   listed. What a batch above stands on is not filed here; this section holds
-   up nothing.
+   listed, save the ones carrying a second value that contradicts it: those are
+   named one by one, the value on them being the user's. What a batch above
+   stands on is not filed here; this section holds up nothing.
 
 ## After the report
 
