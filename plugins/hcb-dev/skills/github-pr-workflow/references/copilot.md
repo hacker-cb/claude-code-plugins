@@ -95,12 +95,18 @@ through none:
 # Copilot has never been asked on this pull request. `copilot_work_started` is
 # deliberately not among them: a run beginning is neither the request nor what
 # settles it. The line carries the time step 5 counts its ceiling from.
-gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
+# Captured with its exit status rather than piped straight into `tail`, which
+# exits 0 over a call that failed — and a read that failed prints exactly what a
+# pull request Copilot has never been asked on prints.
+if ! moves="$(gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
   --jq '.[] | (.event? // "") as $e
         | select(($e | test("^(review_requested|review_request_removed|reviewed)$"))
                  and ((.requested_reviewer // .user // {})
                       | (.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i"))))
-        | {event: $e, at: (.created_at // .submitted_at)} | @json' | tail -1
+        | {event: $e, at: (.created_at // .submitted_at)} | @json')"; then
+  echo "TIMELINE UNREAD — no verdict about Copilot, and not an absent one"; exit 1
+fi
+printf '%s\n' "$moves" | tail -1
 ```
 
 Only when all three say no is Copilot genuinely not part of this repo's flow — then
@@ -211,27 +217,30 @@ After each push:
 1. **Watch the request appear for this head — do not place one.** Under
    `review_on_push` the rule registers the request itself, asynchronously, some time
    after the push has *landed* (a pre-push hook delays the landing, not the request),
-   and until it has, the timeline carries nothing of this head's — absence there is
-   "not yet", never "not requested". **Read the request on the timeline, never in
+   and until it has, the timeline carries no request of this head's — absence there
+   is "not yet", never "not requested". **Read the request on the timeline, never in
    the request list**: `requested_reviewers` and `gh pr view --json reviewRequests`
    can both read empty from the moment a Copilot request registers until its review
    posts, so a wait built on either never arms. The timeline carries it as events
    instead — its `review_requested`, and a `review_request_removed`, which is the
-   decline step 3 reads. Those events carry no SHA, so bound the query by the time
-   you pushed, or an earlier round's event reads as this one's:
+   decline step 3 reads. Those events carry no SHA, so what makes one this head's is
+   that the timeline did not carry it before: take this reading before you push, and
+   again after.
    ```bash
-   # `--jq` is gh's own filter and takes no `--arg`; a variable reaches it through
-   # the environment. The comparison is lexicographic, so the value has to be in the
-   # API's own form — `date -u +%Y-%m-%dT%H:%M:%SZ` — or it matches by accident, and
-   # it is `>=`: that form is whole seconds, and the event can land inside the very
-   # second the bound was snapped in.
-   SINCE="<that timestamp, snapped before the push>" \
-   gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
+   # What is already there, counted — not a moment off the clock: `created_at` is
+   # whole seconds, so a timestamp bound drops the event that lands inside the very
+   # second it was taken in, and admits one that was already there.
+   # Captured with its exit status: a call that failed prints no events, exactly as
+   # a pull request with none does.
+   if ! requests="$(gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
      --jq '.[] | select((.event? // "") | test("^review_request"))
-           | select((.created_at? // "") >= env.SINCE)
            | select((.requested_reviewer // {})
                     | (.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i")))
-           | {event, at: .created_at} | @json'
+           | {event, at: .created_at} | @json')"; then
+     echo "TIMELINE UNREAD — neither a request nor its absence"; exit 1
+   fi
+   # One more than before the push is this head's, and the last line is it.
+   printf '%s\n' "$requests" | grep -c .
    ```
 2. **Request one yourself only when the rule did not — and never over a request
    already standing.** A push landing while an earlier head's review is still to
@@ -247,22 +256,21 @@ After each push:
    hold above was in force, those checks settled while the earlier review was being
    written and say nothing about this head: restart step 1's watch from the moment
    the hold released, and give the rule the seconds its deferred request takes. A
-   request of your own goes only to a head whose watch stays empty past that. Snap
-   the moment first, then place it:
+   request of your own goes only to a head whose watch stays empty past that. Take
+   step 1's reading first, then place it:
    ```bash
-   SINCE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
    # The login the reviews surface carries, `[bot]` and all — not the `Copilot` the
    # timeline reads back.
    gh api --silent -X POST repos/{owner}/{repo}/pulls/<pr>/requested_reviewers \
      -f 'reviewers[]=copilot-pull-request-reviewer[bot]'
    ```
    **Then confirm it registered — what the call answers with cannot say.** The
-   request is placed once step 1's query, run with that `SINCE`, returns its
-   `review_requested`; a call that registered nothing exits 0 and answers with the
-   same pull request, and the request list reads empty either way. Registering takes
-   its own moment, so an empty read is "not yet" until the first of step 5's windows
-   is out — and empty at the end of that one is no request, whatever the call
-   returned: step 5's case of nothing left to wait on. **A request placed while one
+   request is placed once step 1's reading carries one more than it did before the
+   call; a call that registered nothing exits 0 and answers with the same pull
+   request, and the request list reads empty either way. Registering takes its own
+   moment, so a reading that has not grown is "not yet" until the first of step 5's
+   windows is out — and one that has not grown by the end of that window is no
+   request, whatever the call returned: step 5's case of nothing left to wait on. **A request placed while one
    is pending, or after the head's review has posted, buys a second review of the
    same commit** — one more set of threads to answer, and, placed late enough, a
    review that lands after the merge with its findings orphaned on a closed pull
