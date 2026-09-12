@@ -87,7 +87,9 @@ issue is merely filed under is not this value, whatever that flag is called;
 the definitions. A `404` from a definitions endpoint reads the same whether the
 feature is absent or merely invisible to this token, so treat it as absent only
 once something else confirms the token reaches this repository, and say which of
-the two you concluded.
+the two you concluded. A field standing here whose values nothing available can
+read is not a field the issues carry nothing in: say so and leave the role
+unresolved, rather than settle it a rung down on evidence nobody could read.
 
 Reading one issue, the role is what that issue carries it in, whatever the
 repository runs: where its field and its label disagree, the role is unresolved

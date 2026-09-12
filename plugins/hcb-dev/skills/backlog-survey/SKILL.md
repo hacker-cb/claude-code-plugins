@@ -97,10 +97,10 @@ In this order, each section explicit even when empty:
    plan: bodies to rewrite, issues to close or re-milestone, links to fix, and
    the issues read here that `../../references/classification.md` leaves out of
    line. Where it leaves any, the rest of the repository's carrying that same
-   value ride the item with them — closed ones included, found by a filter on the
-   value itself, the family's own label or the field's own value and never a text
-   search a title can answer, rather than by reading the closed backlog, and
-   counted rather than
+   value ride the item with them — closed ones included, found by filtering on the
+   value itself in every mechanism the role runs in, the family's label and the
+   field's value alike, never by a text search a title can answer and never by
+   reading the closed backlog, and counted rather than
    listed, save the ones carrying a second value that contradicts it: those are
    named one by one, the value on them being the user's. The count is what the
    item proposes — taking it enumerates them, each edit going through the tracker
