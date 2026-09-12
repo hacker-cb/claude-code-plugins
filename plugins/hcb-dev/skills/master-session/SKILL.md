@@ -115,8 +115,8 @@ this role settles is which size an event earns.
 | a wave launched, or closed with another still to come; an ask that holds work appearing; a departure from what the user approved; a batch withdrawn or failed; this session recovering from a restart; the user asking where things stand | a wave report |
 | the last wave closed | the final report (`Closing the epic`), and not the row above |
 
-An ask holding nothing waits for the next wave report rather than riding every
-line — and a tracker write the next wave stands on holds work whatever its
+An ask holding nothing waits for the next wave report — or for the final one,
+where the last wave has closed — rather than riding every line — and a tracker write the next wave stands on holds work whatever its
 rating, so it stands in that group until it is answered or the user defers it. The block carrying them is the ledger's expectations addressed to the user
 (`wave-ledger.md`), read first against what the batches have reported: a word the
 user gave a batch in that batch's own chat reaches this session only through it,

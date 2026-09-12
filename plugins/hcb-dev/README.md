@@ -217,7 +217,9 @@ the plan stages them.
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
   Reports in the sizes `references/report-format.md` fixes: a wave report when a
-  wave moves or an ask that holds work appears, and the final report at the end —
+  wave moves, an ask that holds work appears, something departs from what you
+  approved, a batch is withdrawn or fails, the session recovers from a restart or
+  you ask where things stand — and the final report at the end —
   each closing with the one block carrying everything waiting on you — while an
   event that changes nothing for you gets a bare status line instead, with no
   block and no frame.

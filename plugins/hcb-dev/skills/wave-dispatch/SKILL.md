@@ -57,9 +57,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   since a hung chip is clickable before any report arrives. The launch report
   carries it again at the top, once the chips are up. The
   narrowing and the landing order a corrected seam implies are the steps below
-  settling it, named in that report; what goes back to the user instead of being
-  hung is a correction moving an issue between batches, or changing which batches
-  the wave holds.
+  settling it, named in that report. A correction moving an issue between batches,
+  or changing which batches the wave holds, goes back to the user as an ask that
+  holds the wave: nothing is hung until it is answered.
 - **Settle each batch's merge authority** from the epic's policy — which this
   session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).

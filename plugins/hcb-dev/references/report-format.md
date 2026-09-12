@@ -66,8 +66,8 @@ you" is written only where this block is empty, and a chip nobody has clicked �
 or an approval the repository's gates or the merge authorization actually leave
 outstanding — is not empty. An ask leaves the block only with an
 outcome — answered, deferred by the reader's word (which stops it holding work),
-withdrawn, or overtaken by something that settles it — said in the line that
-drops it. Where the session keeps a record of what it awaits — a
+withdrawn, failed with what still stands, or overtaken by something that settles
+it — said in the line that drops it. Where the session keeps a record of what it awaits — a
 coordinating one keeps it in [`wave-ledger.md`](wave-ledger.md) — the block
 prints that record rather than recall.
 
