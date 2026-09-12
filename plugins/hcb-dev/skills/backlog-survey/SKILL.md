@@ -94,8 +94,13 @@ In this order, each section explicit even when empty:
    turns on what the user wants next.
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
-   plan: bodies to rewrite, issues to close or re-milestone, links to fix. What
-   a batch above stands on is not filed here; this section holds up nothing.
+   plan: bodies to rewrite, issues to close or re-milestone, links to fix, and
+   the issues read here that `../../references/classification.md` leaves out of
+   line. Where it leaves any, the rest of the repository's carrying that same
+   value ride the item with them — closed ones included, found by the value
+   itself rather than by reading the closed backlog, and counted rather than
+   listed. What a batch above stands on is not filed here; this section holds
+   up nothing.
 
 ## After the report
 

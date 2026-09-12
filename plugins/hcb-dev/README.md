@@ -79,7 +79,7 @@ form: you paste every one of them yourself.
   The backlog side of the pipeline, on GitHub and GitLab alike: what earns an
   issue and what does not, searching the tracker, the shape of the issue body,
   and the three moments worth consulting open issues at. Classification against
-  what the repository itself defines is `references/classification.md`. Called by `implementation-workflow` at intake and in its report, and by
+  what the repository itself defines and uses is `references/classification.md`. Called by `implementation-workflow` at intake and in its report, and by
   `github-pr-workflow` after a merge.
 
 ### Preparing a change
@@ -182,7 +182,10 @@ work is **done** — not how the ask is worded.
   A verdict past current on an issue its lanes hold is written beside that
   lane, as what holds the batch until the tracker edit releasing it is made.
   Every such edit — those and the closing hygiene plan alike — it asks you about
-  and makes only on your word, item by item through `issue-tracking`.
+  and makes only on your word, item by item through `issue-tracking`. Where the
+  slice turns up issues classified outside the mechanism the repository actually
+  uses, that plan reaches past the slice: the rest of the repository's carrying
+  the same value, closed ones included.
   Once the hygiene you approved has run, it reads back what actually changed and
   hands the layout on: to the session holding the wave ledger where one stands
   over the slice, else to one master session over the cut you take — with the
@@ -338,8 +341,9 @@ saying something else. Each file opens by saying what it owns.
   issue is still true of the tree, and the four verdicts that say so. Read
   wherever an issue is surveyed or taken in as the spec of work about to start.
 - [`references/classification.md`](references/classification.md) — how an issue
-  gets classified against what the repository itself defines. Read wherever an
-  issue is classified or a backlog is read by what its tracker declares.
+  gets classified against what the repository itself defines and actually uses,
+  and what to do with one classified outside it. Read wherever an issue is
+  classified or a backlog is read by what its tracker declares.
 - [`references/findings.md`](references/findings.md) — how a finding is rated,
   whether it is fixed in the work that found it, whether it is worth a tracker
   entry at all, and the closed list of outcomes one can end in. Read wherever a
