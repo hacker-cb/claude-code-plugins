@@ -52,19 +52,48 @@ back, not the exit status.
 
 ## Resolve the mechanism — first hit wins
 
-1. **A native field.** GitHub issue types belong to organisation-owned
-   repositories and hold one type per issue; GitLab's configurable work item types
-   are a paid-tier feature configured on the top-level group. A `404` from either
-   endpoint reads the same whether the feature is absent or merely invisible to
-   this token, so treat it as absent only once something else confirms the token
-   reaches this repository, and say which of the two you concluded. Where a native
-   field carries a role, nothing is labelled for it. Neither forge's `issue`
-   commands reach these —
-   [`forge-docs.md`](forge-docs.md) has the
-   entry points.
-2. **A label family** — the set read above.
-3. **Neither** — apply what exists, and name the roles this repository has no
-   vocabulary for. Never invent one silently.
+Availability carries nothing: a native field expresses a role here only where
+this repository's issues are carrying it in one, or where it was adopted for
+them. Resolve role by role.
+
+1. **What the user adopted** — the mechanism named by an explicit word of the
+   user's, or by a rule of the project's own naming it: the field, the family, or
+   both. It stands whatever the issues carry, and it is the only thing that adopts
+   a field nothing carries yet. A word given in conversation holds for that
+   session; ask for it in the project's own rules where it is to outlive one.
+2. **What the newest issues carry.** Read them — the top of a list ordered by
+   creation date, open and closed alike — for what each role is carried in: a
+   native field's value that names the role (the type an issue carries merely by
+   being an issue names none), a label from a family, or both. What they carry it
+   in **as a rule** is what carries it here: the field alone, and nothing is
+   labelled for it; the family alone; or both, one value in each, and say the
+   repository runs that role two ways. What only a few carry, as an exception,
+   decides nothing, and a reading where neither is plainly the rule adopts no
+   field at all: it falls to the rungs below, which is what keeps a doubt from
+   moving the repository onto one.
+3. **A label family the set declares** — where the newest issues carry the role
+   as a rule in neither.
+4. **Neither** — apply what exists, and name the roles this repository has no
+   vocabulary for. Never invent one silently. An available native field is not
+   vocabulary until rung 1 adopts it; until then it is offered where a set is
+   proposed below rather than applied for being there.
+
+GitHub issue types belong to organisation-owned repositories and hold one type
+per issue; GitLab's configurable work item types are a paid-tier feature
+configured on the top-level group. What the installed CLI's `issue` commands
+carry of either is its `--help`'s to say — and a flag of theirs naming the type an
+issue is merely filed under is not this value, whatever that flag is called;
+[`forge-docs.md`](forge-docs.md) has the entry points, to the values as well as to
+the definitions. A `404` from a definitions endpoint reads the same whether the
+feature is absent or merely invisible to this token, so treat it as absent only
+once something else confirms the token reaches this repository, and say which of
+the two you concluded. A field standing here whose values nothing available can
+read is not a field the issues carry nothing in: say so and leave the role
+unresolved, rather than settle it a rung down on evidence nobody could read.
+
+Reading one issue, the role is what that issue carries it in, whatever the
+repository runs: where its field and its label disagree, the role is unresolved
+on that issue — say so rather than pick one.
 
 **Hold the cardinality yourself wherever the platform will not.** GitHub enforces
 none of it. GitLab enforces one-value-per-key for `key::value` labels on a paid
@@ -76,13 +105,27 @@ family: read the issue's current labels, drop the sibling, then add.
 Where the repository has a triage-state family, apply the value that means
 untriaged and never the one that means a human accepted it.
 
+## An issue out of line
+
+One carrying a role outside the mechanism resolved for it above — a native field
+nobody adopted, a family the repository has moved off — one carrying it in a
+mechanism that resolution names but not in another it names as well, and one
+carrying two values for it that contradict each other. An issue carrying the role
+nowhere is not out of line but unclassified. Align it to a single value, carried in
+every mechanism that resolution names and in none it does not: added where it is
+missing, cleared where it stands outside them, and put in place of a value that
+contradicts it. Which value that is, is the user's wherever the two disagree or
+nothing in the resolved mechanism means what a stray one says. It is a tracker edit —
+proposed, and made only on the answer that authorizes one (`findings.md`), never
+as a side effect of classifying something else.
+
 ## Proposing a set the repository does not have
 
 Only where a role has no vocabulary and this issue needs it.
 
-1. **Strike off what the platform already carries** — the native fields resolved
-   above, and anything the tracker models as a field of its own: assignee,
-   milestone or iteration, open/closed state and its reason.
+1. **Strike off what the platform already carries** — the native fields the
+   repository runs a role in (above), and anything the tracker models as a field
+   of its own: assignee, milestone or iteration, open/closed state and its reason.
 2. **Propose only the roles this issue needs**, in order: the kind of work, the
    component it lands in, then a parked reason or the security flag where either
    is true. A priority family only where the user asks for one.
@@ -92,13 +135,16 @@ Only where a role has no vocabulary and this issue needs it.
 4. **One proposal, one approval.** Each row: the name, a colour, and a one-line
    description saying *when* to apply it. In the same message name the roles the
    native fields carry, the roles nothing enforces here, and any role left
-   unexpressed. The approval covers that batch and nothing later.
+   unexpressed — and where an available field could carry a role being proposed
+   for, name it as the alternative: taking it is the word that adopts it, and
+   silence is never that word. The approval covers that batch and nothing later.
 5. **Create it in the forge's own spelling** — six hex digits, bare on GitHub and
    `#`-led on GitLab, and always explicit: an omitted colour is chosen at random.
 
-Never create a label that duplicates a native field, a variant spelling of one the
-forge's own tooling matches by exact string, a component that does not exist yet,
-or anything as a side effect of applying a label.
+Never create a label that duplicates a native field the repository runs that role
+in, a variant spelling of one the forge's own tooling matches by exact string, a
+component that does not exist yet, or anything as a side effect of applying a
+label.
 
 **Never delete or rename** — propose either and let the user run it.
 
