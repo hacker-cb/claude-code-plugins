@@ -131,7 +131,16 @@ test on a passage is whether deleting it changes what anyone does next.
    yet is recorded as unread rather than as either; and what opens each later
    wave.
 7. **Expectations** — what is awaited from whom: unconfirmed batches, answers
-   owed, mandates given with the order's authorization and not yet met.
+   owed, mandates given with the order's authorization and not yet met. Each
+   carries who owes it, the moment it was first asked, and whether work stands on
+   it — a chip hung and not yet clicked is owed by the user, the click being
+   theirs, while one already clicked is awaited from the batch instead. The ones the user owes are what a report's ask block prints
+   ([`report-format.md`](report-format.md)), so each of those carries what that
+   block prints — the ask in full, where it is acted on, the recommendation with
+   what it turns down, what it stands behind, and what stops until it is answered
+   — or the coordinate where that text is written. A row leaves only with its outcome — answered or met, deferred by
+   the user's word, withdrawn, failed with what still stands, or overtaken by
+   something that settles it, named in the line that drops it.
 8. **Journal** — one line per event, terse, newest last; and the account behind
    a constraint or a decision, at the length it takes. The ledger carries what
    is acted on and the journal how it was arrived at — and the journal is what

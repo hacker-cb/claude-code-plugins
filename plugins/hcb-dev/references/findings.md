@@ -197,12 +197,16 @@ test not written, a duplication, a TODO, an assumption that did not hold.
 
 ## Prepare the proposal before making it
 
-Both of these happen before the finding is proposed, not after it is accepted:
+All three happen before the finding is proposed, not after it is accepted:
 
 - **Search the tracker**, closed entries included
   ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — it
   runs on what the lineage above leaves, and its result decides which of the three
   states below applies.
+- **Re-measure it** at its coordinate on the tree the work stands on — the base
+  where the code is in it already, the branch carrying it where it is not — with
+  whatever will judge it there: the run, the gate, the tool, reading only where
+  reading is that instrument.
 - **Read the repository's own classification**
   ([`classification.md`](classification.md)),
   once for the run rather than once per finding, so the proposal already carries
@@ -210,7 +214,8 @@ Both of these happen before the finding is proposed, not after it is accepted:
   and offer nothing for it.
 
 Where there is no tracker to reach — no remote at all, or none a forge answers
-for — neither is possible, and the finding still surfaces: as an observation with
+for — the search is not possible and the classification reaches only what the
+project itself states, while the re-measure still runs, and the finding surfaces: as an observation with
 no proposal attached, saying there is nowhere to file it.
 
 ## The form
@@ -230,6 +235,9 @@ autonomous run is never interrupted to ask. One line each:
   **INTO #N** or **DROP**;
 - **tracked as it stands** → no entry; say so where it came up.
 
+Where the response wears a report's frame (`report-format.md`), the proposals
+stand in its ask block and the observations in its body.
+
 A line in a report is not this. Naming a finding among the things left undone
 records it; it does not put the decision to anyone, and a finding recorded that
 way ends with the response.
@@ -243,6 +251,19 @@ and an order naming none leaves the user. Opening or updating anything waits for
 it, every time. **A standing instruction to work autonomously is not that
 answer** — it authorizes the work, not the tracker — and an approval covers the
 batch it was given for, never what turns up afterwards.
+
+**The answer takes the form the person gives it**, and three forms of it answer:
+agreement with what was recommended, which settles each item in the outcome
+recommended for it; a bar — "file the important ones" — which settles every
+candidate of the pass it was given for that clears this file's bar once
+re-measured — what a re-measure turns up that was not among them is a new
+candidate, proposed rather than filed; and a delegation of the ruling. What no form of it moves is the **target** and the
+**outcome**: content the re-measure corrected is written, and the correction
+named in the report (`report-format.md`), while a changed
+target or outcome — narrowed to closed, **INTO** to **OPEN**, one issue to
+another — waits for a new answer, except under a delegation, the one form that
+carries it. An answer by numbers that passes over one of
+them leaves that one unanswered: ask it again rather than filling it in.
 
 Where no answer comes, the finding stays undecided rather than dropped:
 re-surface it at the natural end of the session, once the primary work is done.

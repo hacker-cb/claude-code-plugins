@@ -43,6 +43,23 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   whose body still says otherwise holds its batch exactly as the blocker above
   does — **not hung**, reported with that rewrite as the condition that releases
   it. Nothing else releases it, a verdict carried in the order included.
+- **Check the round that cleared this wave's gate is closed** — its returns
+  accepted, their candidates ruled, and the tracker writes on which this wave
+  stands executed or deferred by the user's word
+  (`hcb-dev:master-session`). A wave no round opened — an epic's first, or ground
+  a capacity pass freed — has none to close. A batch one of those writes still
+  holds is **not hung**: report it with that write as the condition releasing it.
+- **A layout this preflight corrects after the user's word on it** — a zone
+  redrawn, a seam found or dissolved — is corrected here, before the steps below
+  read it, and goes out as its own message **before the first chip goes up** —
+  the frame's `Without your word` and nothing else
+  ([`../../references/report-format.md`](../../references/report-format.md)) —
+  since a hung chip is clickable before any report arrives. The launch report
+  carries it again at the top, once the chips are up. The
+  narrowing and the landing order a corrected seam implies are the steps below
+  settling it, named in that report. A correction moving an issue between batches,
+  or changing which batches the wave holds, goes back to the user as an ask that
+  holds the wave: nothing is hung until it is answered.
 - **Settle each batch's merge authority** from the epic's policy — which this
   session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).
@@ -158,7 +175,9 @@ Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
 start report; in either mode you land it or it lands without you; the checks on
 that landing settle or your waiting on them stops first, neither of which the
-landing status waits for; you are
+landing status waits for; a word your own user gives you that touches this epic,
+which the master cannot see — quoted in full and written at the coordinate this
+order names, so it survives a restart; you are
 stuck>, each carrying the coordinate that lets the master check it without
 asking back: the change request by number and URL, a landing by its commit, its
 checks by that same commit, a stall by what it waits on. An outcome you promised
@@ -198,6 +217,10 @@ is not free until the master accepts.
   whose predecessor reached a terminal state without landing waits for nothing:
   the wave is replanned from there. A staged wave whose next step is
   never hung is a stall, not a finished launch.
+- **A chip the base has moved past is withdrawn before it is read** —
+  `dismiss_task` first, since a chip left hanging is clickable while the delta
+  from its pin is still being verified; then re-issue on a fresh pin, and the row
+  carrying it names that pin.
 - **A batch whose start report never arrives is unreached**, whatever its chip
   says — check on it rather than assuming the name made contact.
 
@@ -220,11 +243,16 @@ the receiver verify its worktree instead of trusting how it was launched.
 
 ## Afterwards
 
-Report the launch to the user as a table — batch id, topic, chip, boundaries
-shared with whom — naming the plan's launch order and, for a staged wave, which
-step this is and what has to land before the next chip goes up. Record each batch beside its
-tag in the coordinating session's own record, per `order-anatomy.md`. When the
-plan changes, withdraw the chips it obsoleted (`dismiss_task`) and say so.
+The launch goes to the user as a wave report (`report-format.md`), after the
+correction the preflight already owed them: the
+chips stand in its rows — batch id, topic, what each waits on, the boundaries it
+shares and with whom — naming the plan's launch order and, for a staged wave,
+which step this is and what has to land before the next chip goes up. Record each
+batch beside its tag in the coordinating session's own record, per
+`order-anatomy.md`. A preflight that held every batch hangs no chip, and that
+report still goes out — each held batch carrying the condition that releases it.
+When the plan changes, withdraw the chips it obsoleted (`dismiss_task`) and say
+so.
 
 ## Reference files
 

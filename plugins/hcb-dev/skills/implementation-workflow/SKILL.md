@@ -212,14 +212,17 @@ completed straight onto the base in Phase 2.
 ## Phase 3 — Report and offers
 
 - **The report** — [`../../references/report-format.md`](../../references/report-format.md):
-  per-slice outcomes, review coverage and what stayed uncovered, incidental
-  findings rated by importance (or an explicit "none").
+  its frame, and the final report's body under it — per-slice outcomes, review
+  coverage and what stayed uncovered, incidental findings rated by importance (or
+  an explicit "none").
 - **After a local set** — offer, never force, **one** whole-feature
   `feature → base` change request on the feature branch. This is the consented
-  exit from local mode.
-- **Issues output** — the incidental findings and the follow-ups reach the user as
-  proposals, per `findings.md`; `hcb-dev:issue-tracking` owns the
-  tracker operations their answer authorizes. In local mode no change request
+  exit from local mode, and the offer is an ask: it stands in the report's block
+  rather than beside it.
+- **Issues output** — the incidental findings whose outcome is still the user's to
+  give, and the follow-ups, reach the user as proposals in the report's ask block,
+  per `findings.md`;
+  `hcb-dev:issue-tracking` owns the tracker operations their answer authorizes. In local mode no change request
   closes the intake issue, so closing or linking it rides with that handoff or the
   issue is left open against work that landed.
 - **Cleanup** — a branch retires with the merge that landed it

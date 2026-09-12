@@ -138,7 +138,11 @@ outside it as its own choice for the user, not as part of this slice's layout.
 
 ## The report
 
-In this order, each section explicit even when empty:
+The frame is
+[`../../references/report-format.md`](../../references/report-format.md)'s: its
+first line, and its ask block last, carrying the tracker edits the candidates
+stand on and the word the layout launches on. Between them, in this order, each
+section explicit even when empty:
 
 1. **The front** — batches running, the ground each holds, what landed since the
    last reading.
@@ -170,6 +174,7 @@ In this order, each section explicit even when empty:
 
 - [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)
+- [`../../references/report-format.md`](../../references/report-format.md)
 - [`../../references/issue-currency.md`](../../references/issue-currency.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)
