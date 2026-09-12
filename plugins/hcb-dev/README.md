@@ -78,8 +78,9 @@ form: you paste every one of them yourself.
 - **`issue-tracking`** — `/hcb-dev:issue-tracking`
   The backlog side of the pipeline, on GitHub and GitLab alike: what earns an
   issue and what does not, searching the tracker, the shape of the issue body,
-  and the three moments worth consulting open issues at. Classification against
-  what the repository itself defines and uses is `references/classification.md`. Called by `implementation-workflow` at intake and in its report, and by
+  and the three moments worth consulting open issues at. Classification against the
+  mechanism you adopted, else against what the repository itself defines and
+  uses, is `references/classification.md`. Called by `implementation-workflow` at intake and in its report, and by
   `github-pr-workflow` after a merge.
 
 ### Preparing a change
@@ -341,8 +342,9 @@ saying something else. Each file opens by saying what it owns.
   issue is still true of the tree, and the four verdicts that say so. Read
   wherever an issue is surveyed or taken in as the spec of work about to start.
 - [`references/classification.md`](references/classification.md) — how an issue
-  gets classified against what the repository itself defines and actually uses,
-  and what to do with one classified outside it. Read wherever an issue is
+  gets classified — against the mechanism the user adopted, else against what the
+  repository itself defines and actually uses — and what to do with one
+  classified outside it. Read wherever an issue is
   classified or a backlog is read by what its tracker declares.
 - [`references/findings.md`](references/findings.md) — how a finding is rated,
   whether it is fixed in the work that found it, whether it is worth a tracker

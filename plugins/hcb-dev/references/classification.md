@@ -106,10 +106,12 @@ untriaged and never the one that means a human accepted it.
 ## An issue out of line
 
 One carrying a role outside the mechanism resolved for it above — a native field
-nobody adopted, a family the repository has moved off. Align it: add the value in
-each mechanism that resolution names and the issue lacks, then clear what it
-carries outside them; where the two disagree, or nothing in the mechanism means
-what the stray value says, the value is the user's. It is a tracker edit —
+nobody adopted, a family the repository has moved off — and one carrying two
+values for it that contradict each other. Align it to a single value, carried in
+every mechanism that resolution names and in none it does not: added where it is
+missing, cleared where it stands outside them, and put in place of a value that
+contradicts it. Which value that is, is the user's wherever the two disagree or
+nothing in the resolved mechanism means what a stray one says. It is a tracker edit —
 proposed, and made only on the answer that authorizes one (`findings.md`), never
 as a side effect of classifying something else.
 
