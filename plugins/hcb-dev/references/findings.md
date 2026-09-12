@@ -235,9 +235,8 @@ autonomous run is never interrupted to ask. One line each:
   **INTO #N** or **DROP**;
 - **tracked as it stands** → no entry; say so where it came up.
 
-Where the response wears a report's frame
-([`report-format.md`](report-format.md)), the proposals stand in its ask block
-and the observations in its body.
+Where the response wears a report's frame (`report-format.md`), the proposals
+stand in its ask block and the observations in its body.
 
 A line in a report is not this. Naming a finding among the things left undone
 records it; it does not put the decision to anyone, and a finding recorded that
@@ -260,7 +259,7 @@ candidate of the pass it was given for that clears this file's bar once
 re-measured — what a re-measure turns up that was not among them is a new
 candidate, proposed rather than filed; and a delegation of the ruling. What no form of it moves is the **target** and the
 **outcome**: content the re-measure corrected is written, and the correction
-named in the report ([`report-format.md`](report-format.md)), while a changed
+named in the report (`report-format.md`), while a changed
 target or outcome — narrowed to closed, **INTO** to **OPEN**, one issue to
 another — waits for a new answer, except under a delegation, the one form that
 carries it. An answer by numbers that passes over one of

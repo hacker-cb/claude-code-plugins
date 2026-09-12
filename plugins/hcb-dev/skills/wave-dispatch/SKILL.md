@@ -241,8 +241,7 @@ the receiver verify its worktree instead of trusting how it was launched.
 
 ## Afterwards
 
-The launch goes to the user as a wave report
-([`../../references/report-format.md`](../../references/report-format.md)): the
+The launch goes to the user as a wave report (`report-format.md`): the
 chips stand in its rows — batch id, topic, what each waits on, the boundaries it
 shares and with whom — naming the plan's launch order and, for a staged wave,
 which step this is and what has to land before the next chip goes up. Record each

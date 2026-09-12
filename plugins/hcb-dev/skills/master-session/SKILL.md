@@ -105,15 +105,14 @@ user — with this session's recommendation first.
 
 ## Reporting to the user
 
-The shape is
-[`../../references/report-format.md`](../../references/report-format.md)'s; what
-this role settles is which size an event earns.
+The shape is `report-format.md`'s; what this role settles is which size an event
+earns.
 
 | What happened | What goes out |
 |---|---|
-| a start report answered, a change request opened, a status read at its coordinate, a question this session settled itself | one line: what happened, the coordinate it was read at, and what still waits on the user — named, never counted |
-| a wave launched or closed; an ask that holds work appearing; a departure from what the user approved; a batch withdrawn or failed; this session recovering from a restart; the user asking where things stand | a wave report |
-| the last wave closed | the final report (`Closing the epic`) |
+| a start report answered, a change request opened, a status read at its coordinate, a question this session settled itself | one line, which is not a report and wears no frame: what happened, the coordinate it was read at, and what still waits on the user — named rather than counted |
+| a wave launched, or closed with another still to come; an ask that holds work appearing; a departure from what the user approved; a batch withdrawn or failed; this session recovering from a restart; the user asking where things stand | a wave report |
+| the last wave closed | the final report (`Closing the epic`), and not the row above |
 
 An ask holding nothing waits for the next wave report rather than riding every
 line — and a tracker write the next wave stands on holds work whatever its

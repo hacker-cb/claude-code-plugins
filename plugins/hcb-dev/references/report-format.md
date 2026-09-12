@@ -34,7 +34,11 @@ Two kinds, a line each, before the first table, chip or link the report offers:
   that.
 
 Neither is a question: the answer to both is a veto, and a veto needs the item in
-front of the reader.
+front of the reader. An empty section is left out — it is the ask block below that
+is never omitted. Where a report's body keeps these in rows of its own — an
+outcome column, a list of divergences — that is where they stand: what the frame
+fixes is that they reach the reader ahead of anything to act on, not the heading
+they sit under.
 
 ### The body
 
@@ -111,10 +115,10 @@ Next wave opens on: <the gate>.
 ## Needs your word
 **Holding work**
 1. [<where it is acted on>] <the ask, in full> — recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: <what stops>.
-2. [<where>] <the ask, in full> — behind 1. <recommendation, standing>
+2. [<where>] <the ask, in full> — behind 1; recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: <what stops>.
 
 **Holding nothing**
-3. [<where>] <the ask, in full> — open since <when>. Standing: <nothing stops>.
+3. [<where>] <the ask, in full> — open since <when>; recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: nothing stops.
 
 <how to answer>
 ```
@@ -128,7 +132,7 @@ between the frame's halves:
 1. **Per-slice outcome** — one row per slice: what it did, how it completed
    (merged locally into `<parent>`, or the change-request URL and whether it
    merged), what the checks on that landing showed (`base_checks`, whose values
-   [`slice-completion.md`](slice-completion.md) names), and its
+   `slice-completion.md` names), and its
    state (done / partial / skipped). An epic groups its rows by wave and ends each
    in what the ledger records for that batch — `released`, `withdrawn(<reason>)`
    or `failed(<what stands>)`. A set that ended partway — a slice failed or was
@@ -182,7 +186,7 @@ rather than put again.
 
 **Coverage** — <per-slice coverage lines; name any gap; "fully covered" if clean>
 
-**Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above, each with its outcome; or "none">
+**Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above, each with its outcome; the ones whose outcome is yours stand in the block below; or "none">
 
 **What it leaves** — <refs left standing, worktrees, sessions to archive, an offer turned down, cleanup pointer; or "nothing">
 
