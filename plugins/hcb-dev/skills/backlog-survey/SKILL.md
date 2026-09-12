@@ -100,8 +100,11 @@ In this order, each section explicit even when empty:
    value ride the item with them — closed ones included, found by the value
    itself rather than by reading the closed backlog, and counted rather than
    listed, save the ones carrying a second value that contradicts it: those are
-   named one by one, the value on them being the user's. What a batch above
-   stands on is not filed here; this section holds up nothing.
+   named one by one, the value on them being the user's. The count is what the
+   item proposes — taking it enumerates them, each edit going through the tracker
+   as any other, and where the forge answers for no such value the item says so
+   instead of standing on a number nobody read. What a batch above stands on is
+   not filed here; this section holds up nothing.
 
 ## After the report
 
