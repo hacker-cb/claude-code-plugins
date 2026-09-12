@@ -222,10 +222,11 @@ After each push:
    the request list**: `requested_reviewers` and `gh pr view --json reviewRequests`
    can both read empty from the moment a Copilot request registers until its review
    posts, so a wait built on either never arms. The timeline carries it as events
-   instead — its `review_requested`, and a `review_request_removed`, which is the
-   decline step 3 reads. Those events carry no SHA, so what makes one this head's is
-   that the timeline did not carry it before: take this reading before you push, and
-   again after.
+   instead — its `review_requested`. A `review_request_removed` is the decline
+   step 3 reads, and it belongs to the latest-move read rather than to this count,
+   which a removal would grow exactly as a request does. The event carries no SHA,
+   so what makes one this head's is that the timeline did not carry it before: take
+   this reading before you push, and again after.
    ```bash
    # What is already there, counted — not a moment off the clock: `created_at` is
    # whole seconds, so a timestamp bound drops the event that lands inside the very
@@ -233,7 +234,7 @@ After each push:
    # Captured with its exit status: a call that failed prints no events, exactly as
    # a pull request with none does.
    if ! requests="$(gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
-     --jq '.[] | select((.event? // "") | test("^review_request"))
+     --jq '.[] | select((.event? // "") == "review_requested")
            | select((.requested_reviewer // {})
                     | (.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i")))
            | {event, at: .created_at} | @json')"; then
