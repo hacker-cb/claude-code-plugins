@@ -244,11 +244,12 @@ After each push:
            | {event, at: .created_at} | @json')"; then
      echo "TIMELINE UNREAD — neither a request nor its absence"; exit 1
    fi
-   # One more than before the push is a request that registered after it, and the
-   # last line is that request. Counted with `awk`, which succeeds over no lines at
-   # all — `grep -c` exits 1 there, and none is the baseline this reading exists to
-   # state, not a failure.
+   # One more than before the push is a request that registered after it. Counted
+   # with `awk`, which succeeds over no lines at all — `grep -c` exits 1 there, and
+   # none is the baseline this reading exists to state, not a failure.
    printf '%s\n' "$requests" | awk 'NF { n++ } END { print n + 0 }'
+   # And the newest of them: its `at` is what step 5 counts the ceiling from.
+   printf '%s\n' "$requests" | tail -1
    ```
 2. **Request one yourself only when the rule did not — and never over a request
    already standing.** A push landing while an earlier head's review is still to
@@ -265,12 +266,18 @@ After each push:
    written and say nothing about this head: restart step 1's watch from the moment
    the hold released, and give the rule the seconds its deferred request takes. A
    request of your own goes only to a head whose watch stays empty past that. Take
-   step 1's reading first, then place it:
+   step 1's reading first, and read Copilot's latest move once more right before the
+   call, holding if a `review_requested` has landed since the watch last looked —
+   nothing makes the read and the call one step, so this narrows that window rather
+   than closing it, and a request placed over one standing still buys the second
+   review warned of below. Then place it:
    ```bash
    # The login the reviews surface carries, `[bot]` and all — not the `Copilot` the
-   # timeline reads back.
+   # timeline reads back. The status is checked: a call that failed placed nothing,
+   # and is not a request still on its way to registering.
    gh api --silent -X POST repos/{owner}/{repo}/pulls/<pr>/requested_reviewers \
-     -f 'reviewers[]=copilot-pull-request-reviewer[bot]'
+     -f 'reviewers[]=copilot-pull-request-reviewer[bot]' \
+     || { echo "REQUEST NOT PLACED — step 5's case of nothing left to wait on"; exit 1; }
    ```
    **Then confirm it registered — what the call answers with cannot say.** The
    request is placed once step 1's reading carries one more than it did before the
