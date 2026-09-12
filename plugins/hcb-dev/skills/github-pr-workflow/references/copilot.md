@@ -240,8 +240,10 @@ After each push:
            | {event, at: .created_at} | @json')"; then
      echo "TIMELINE UNREAD — neither a request nor its absence"; exit 1
    fi
-   # One more than before the push is this head's, and the last line is it.
-   printf '%s\n' "$requests" | grep -c .
+   # One more than before the push is this head's, and the last line is it. Counted
+   # with `awk`, which succeeds over no lines at all — `grep -c` exits 1 there, and
+   # none is the baseline this reading exists to state, not a failure.
+   printf '%s\n' "$requests" | awk 'NF { n++ } END { print n + 0 }'
    ```
 2. **Request one yourself only when the rule did not — and never over a request
    already standing.** A push landing while an earlier head's review is still to
@@ -277,11 +279,14 @@ After each push:
    review that lands after the merge with its findings orphaned on a closed pull
    request. It never buys a faster one.
 3. **Wait until it settles**, which is one of exactly two things: a Copilot review
-   whose `commit_id == $head`, or a `review_request_removed` with no such review — a
-   decline, which the report says out loud rather than implying it reviewed. Nothing
-   else settles it: a request stands until its review posts, and a
-   `copilot_work_finished_failure` along the way does not end it — the review that
-   run was writing still posts.
+   whose `commit_id == $head`, or a `review_request_removed` that follows this
+   head's own `review_requested` with no such review between them — a decline, which
+   the report says out loud rather than implying it reviewed. A removal with no
+   request of this head's behind it is an earlier head's being cleared, and the wait
+   goes on: the events carry no SHA, so step 1's reading is what says which head a
+   request belonged to. Nothing else settles it either — a request stands until its
+   review posts, and a `copilot_work_finished_failure` along the way does not end
+   it: the review that run was writing still posts.
 4. **A review of an earlier commit is not a decline.** It consumes the request and
    leaves the head unreviewed, so re-request — step 2's case, on step 2's terms —
    and keep waiting. Elapsed time settles nothing: while Copilot's latest move is
