@@ -45,15 +45,20 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   it. Nothing else releases it, a verdict carried in the order included.
 - **Check the round that cleared this wave's gate is closed** — its returns
   accepted, their candidates ruled, and the tracker writes those rulings ask for
-  executed or deferred by the user's word (`hcb-dev:master-session`).
+  that this wave stands on executed or deferred by the user's word
+  (`hcb-dev:master-session`). A wave no round opened — an epic's first, or ground
+  a capacity pass freed — has none to close. A batch one of those writes still
+  holds is **not hung**: report it with that write as the condition releasing it.
 - **A layout this preflight corrects after the user's word on it** — a zone
   redrawn, a seam found or dissolved — is corrected here, before the steps below
-  read it, and the correction leads the launch report ahead of the chips it
-  changed
-  ([`../../references/report-format.md`](../../references/report-format.md)). One
-  that moves an issue between batches, changes which batches the wave holds, the
-  order they land in, or the authority one runs under goes back to the user
-  instead of being hung.
+  read it, and the correction reaches the user **before the first chip goes up**:
+  a hung chip can be clicked before any report arrives. It leads the launch
+  report as well
+  ([`../../references/report-format.md`](../../references/report-format.md)). The
+  narrowing and the landing order a corrected seam implies are the steps below
+  settling it, named in that report; what goes back to the user instead of being
+  hung is a correction moving an issue between batches, or changing which batches
+  the wave holds.
 - **Settle each batch's merge authority** from the epic's policy — which this
   session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).

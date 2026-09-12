@@ -217,7 +217,8 @@ completed straight onto the base in Phase 2.
   an explicit "none").
 - **After a local set** — offer, never force, **one** whole-feature
   `feature → base` change request on the feature branch. This is the consented
-  exit from local mode.
+  exit from local mode, and the offer is an ask: it stands in the report's block
+  rather than beside it.
 - **Issues output** — the incidental findings and the follow-ups reach the user as
   proposals in the report's ask block, per `findings.md`;
   `hcb-dev:issue-tracking` owns the tracker operations their answer authorizes. In local mode no change request

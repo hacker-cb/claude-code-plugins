@@ -203,9 +203,10 @@ All three happen before the finding is proposed, not after it is accepted:
   ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — it
   runs on what the lineage above leaves, and its result decides which of the three
   states below applies.
-- **Re-measure it** at its coordinate on the base as it now stands, with whatever
-  will judge it — the run, the gate, the tool — reading only where reading is
-  that instrument.
+- **Re-measure it** at its coordinate on the tree the work stands on — the base
+  where the code is in it already, the branch carrying it where it is not — with
+  whatever will judge it there: the run, the gate, the tool, reading only where
+  reading is that instrument.
 - **Read the repository's own classification**
   ([`classification.md`](classification.md)),
   once for the run rather than once per finding, so the proposal already carries
@@ -261,7 +262,8 @@ candidate, proposed rather than filed; and a delegation of the ruling. What no f
 **outcome**: content the re-measure corrected is written, and the correction
 named in the report ([`report-format.md`](report-format.md)), while a changed
 target or outcome — narrowed to closed, **INTO** to **OPEN**, one issue to
-another — waits for a new answer. An answer by numbers that passes over one of
+another — waits for a new answer, except under a delegation, the one form that
+carries it. An answer by numbers that passes over one of
 them leaves that one unanswered: ask it again rather than filling it in.
 
 Where no answer comes, the finding stays undecided rather than dropped:

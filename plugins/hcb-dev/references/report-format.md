@@ -98,7 +98,7 @@ An event that changes nothing for the reader earns no report: one line carries i
 - Settled here: <what>, inside <the authority it holds>. Undo: <how>.
 
 ## What happened
-- <event> — verified <how> at <coordinate>; checks <green | red: <rows> | not waited out: <state> | unchecked: <what is unguaranteed> | none>.
+- <event> — verified <how> at <coordinate>; checks <the `base_checks` value, as `slice-completion.md` gives it>.
 - Candidates of the round — <what was ruled, re-measured against what>; dropped: <what, and why>.
 
 ## Where it stands

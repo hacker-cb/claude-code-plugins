@@ -217,8 +217,8 @@ the plan stages them.
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
   Reports in the sizes `references/report-format.md` fixes: one line where the
-  event changes nothing for you, a wave report when a wave moves or an ask
-  appears, the final report at the end — each closing with the one block that
+  event changes nothing for you, a wave report when a wave moves or an ask that
+  holds work appears, the final report at the end — each closing with the one block that
   carries everything waiting on you.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
