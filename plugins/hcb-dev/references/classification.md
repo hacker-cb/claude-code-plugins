@@ -68,7 +68,9 @@ them. Resolve role by role.
    in **as a rule** is what carries it here: the field alone, and nothing is
    labelled for it; the family alone; or both, one value in each, and say the
    repository runs that role two ways. What only a few carry, as an exception,
-   decides nothing; in doubt, the field is the one not adopted.
+   decides nothing, and a reading where neither is plainly the rule adopts no
+   field at all: it falls to the rungs below, which is what keeps a doubt from
+   moving the repository onto one.
 3. **A label family the set declares** — where the newest issues carry the role
    as a rule in neither.
 4. **Neither** — apply what exists, and name the roles this repository has no
