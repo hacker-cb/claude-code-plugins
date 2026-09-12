@@ -137,8 +137,8 @@ test on a passage is whether deleting it changes what anyone does next.
    theirs. The ones the user owes are what a report's ask block prints
    ([`report-format.md`](report-format.md)), so each of those carries what that
    block prints — the ask in full, where it is acted on, the recommendation with
-   what it turns down, what it stands behind — or the coordinate where that text
-   is written. A row leaves only with its outcome — answered or met, deferred by
+   what it turns down, what it stands behind, and what stops until it is answered
+   — or the coordinate where that text is written. A row leaves only with its outcome — answered or met, deferred by
    the user's word, withdrawn, or overtaken by something that settles it, named in
    the line that drops it.
 8. **Journal** — one line per event, terse, newest last; and the account behind

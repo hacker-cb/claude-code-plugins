@@ -216,10 +216,11 @@ the plan stages them.
   level with every redraw, and opening each wave as its gate clears. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
-  Reports in the sizes `references/report-format.md` fixes: one line where the
-  event changes nothing for you, a wave report when a wave moves or an ask that
-  holds work appears, the final report at the end — each closing with the one block that
-  carries everything waiting on you.
+  Reports in the sizes `references/report-format.md` fixes: a wave report when a
+  wave moves or an ask that holds work appears, and the final report at the end —
+  each closing with the one block carrying everything waiting on you — while an
+  event that changes nothing for you gets a bare status line instead, with no
+  block and no frame.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`

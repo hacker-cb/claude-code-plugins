@@ -121,7 +121,8 @@ rating, so it stands in that group until it is answered or the user defers it. T
 (`wave-ledger.md`), read first against what the batches have reported: a word the
 user gave a batch in that batch's own chat reaches this session only through it,
 and goes up as a confirmation of what was reported — never as the same question
-asked again.
+asked again — with the expectation it answers marked at its coordinate before
+that confirmation goes out, so no later report prints it again.
 
 ## After a restart or compaction
 

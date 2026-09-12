@@ -87,8 +87,9 @@ Two sections between the frame's halves:
    in the ask block and the dropped ones named with their reason.
 2. **Where it stands** — one row per batch: id, issues, state in the ledger's
    vocabulary, and what it waits on — nothing, its slot, the reader's approval,
-   the reader's click with the age of the chip and the pin it stands on, or
-   another batch. Then the gate the next wave opens on.
+   the reader's click with the age of the chip and the pin it stands on, another
+   batch, or the condition holding it back, named: a blocker, a body to rewrite,
+   a tracker write. Then the gate the next wave opens on.
 
 An event that changes nothing for the reader earns no report: one line carries it
 (`hcb-dev:master-session`).
@@ -109,7 +110,7 @@ An event that changes nothing for the reader earns no report: one line carries i
 ## Where it stands
 | batch | issues | state | waiting on |
 |---|---|---|---|
-| <id> | <…> | <ledger state> | <nothing · its slot · your approval · your click (chip <age>, pin <sha>) · batch <id>> |
+| <id> | <…> | <ledger state> | <nothing · its slot · your approval · your click (chip <age>, pin <sha>) · batch <id> · <the condition holding it>> |
 
 Next wave opens on: <the gate>.
 

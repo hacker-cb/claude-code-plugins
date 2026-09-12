@@ -214,8 +214,8 @@ All three happen before the finding is proposed, not after it is accepted:
   and offer nothing for it.
 
 Where there is no tracker to reach — no remote at all, or none a forge answers
-for — the search and the classification are not possible, the re-measure still
-is, and the finding surfaces: as an observation with
+for — the search is not possible and the classification reaches only what the
+project itself states, while the re-measure still runs, and the finding surfaces: as an observation with
 no proposal attached, saying there is nowhere to file it.
 
 ## The form

@@ -175,7 +175,8 @@ under a queued authority, the readiness report above; the scope moving off your
 start report; in either mode you land it or it lands without you; the checks on
 that landing settle or your waiting on them stops first, neither of which the
 landing status waits for; a word your own user gives you that touches this epic,
-which the master cannot see; you are
+which the master cannot see — quoted in full and written at the coordinate this
+order names, so it survives a restart; you are
 stuck>, each carrying the coordinate that lets the master check it without
 asking back: the change request by number and URL, a landing by its commit, its
 checks by that same commit, a stall by what it waits on. An outcome you promised
@@ -241,7 +242,8 @@ the receiver verify its worktree instead of trusting how it was launched.
 
 ## Afterwards
 
-The launch goes to the user as a wave report (`report-format.md`): the
+The launch goes to the user as a wave report (`report-format.md`) once the chips
+are up — after the correction the preflight already owed them: the
 chips stand in its rows — batch id, topic, what each waits on, the boundaries it
 shares and with whom — naming the plan's launch order and, for a staged wave,
 which step this is and what has to land before the next chip goes up. Record each
