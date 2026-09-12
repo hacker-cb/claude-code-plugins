@@ -105,9 +105,10 @@ In this order, each section explicit even when empty:
    listed, save the ones carrying a second value that contradicts it: those are
    named one by one, the value on them being the user's. The count is what the
    item proposes — taking it enumerates them, each edit going through the tracker
-   as any other, and where the forge answers for no such value the item says so
-   instead of standing on a number nobody read. What a batch above stands on is
-   not filed here; this section holds up nothing.
+   as any other, and what the enumeration finds past that count goes back to the
+   user before it is touched; where the forge answers for no such value the item
+   says so instead of standing on a number nobody read. What a batch above stands
+   on is not filed here; this section holds up nothing.
 
 ## After the report
 
