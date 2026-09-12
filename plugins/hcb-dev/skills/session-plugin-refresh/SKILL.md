@@ -131,6 +131,7 @@ is a fork for them, not a rule to apply silently.
 ## The report
 
 ```markdown
+**<what this refresh found, in a phrase> · needs you: <k>**
 **Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
 **Re-read** — <skills> + <references>, <n> files, <m> changed, <k> gone
 1..N. <the rule, quoted or named> — <what this session did> — <what it now does> — [outcome]

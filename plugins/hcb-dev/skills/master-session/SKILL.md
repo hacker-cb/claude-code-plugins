@@ -116,7 +116,8 @@ this role settles is which size an event earns.
 | the last wave closed | the final report (`Closing the epic`) |
 
 An ask holding nothing waits for the next wave report rather than riding every
-line. The block carrying them is the ledger's expectations addressed to the user
+line — and a tracker write the round's close waits on holds work whatever its
+rating, so it stands in that group until it is answered or the user defers it. The block carrying them is the ledger's expectations addressed to the user
 (`wave-ledger.md`), read first against what the batches have reported: a word the
 user gave a batch in that batch's own chat reaches this session only through it,
 and goes up as a confirmation of what was reported — never as the same question

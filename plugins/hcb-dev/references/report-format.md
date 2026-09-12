@@ -56,8 +56,9 @@ message. Each carries:
 Two groups — what holds work, in the order dependency puts them in, then what
 holds nothing — and a closing line saying how an answer can be given. A click, an
 approval and an archival are asks exactly as a question is: "nothing waits on
-you" is written only where this block is empty, and a chip nobody has clicked or
-a request nobody has approved is not empty. An ask leaves the block only with an
+you" is written only where this block is empty, and a chip nobody has clicked —
+or an approval the repository's gates or the merge authorization actually leave
+outstanding — is not empty. An ask leaves the block only with an
 outcome — answered, withdrawn, or overtaken by something that settles it, said in
 the line that drops it. Where the session keeps a record of what it awaits — a
 coordinating one keeps it in [`wave-ledger.md`](wave-ledger.md) — the block
@@ -75,10 +76,8 @@ what the reader decides.
 Two sections between the frame's halves:
 
 1. **What happened** — the events since the last report, each with the coordinate
-   it was verified at and, over a landing, what its checks showed: green; red,
-   with the rows and what each is attributed to; not waited out, with the state
-   they stood at; unread, with what stands in the way; or none, where nothing
-   reports over that landing. The round's candidates stand here too — what was
+   it was verified at and, over a landing, what its checks showed — `base_checks`,
+   whose values [`slice-completion.md`](slice-completion.md) names. The round's candidates stand here too — what was
    ruled and what it was re-measured against — with the ones needing the reader
    in the ask block and the dropped ones named with their reason.
 2. **Where it stands** — one row per batch: id, issues, state in the ledger's
@@ -99,7 +98,7 @@ An event that changes nothing for the reader earns no report: one line carries i
 - Settled here: <what>, inside <the authority it holds>. Undo: <how>.
 
 ## What happened
-- <event> — verified <how> at <coordinate>; checks <green | red: <rows> | not waited out: <state> | unread: <what blocks it> | none>.
+- <event> — verified <how> at <coordinate>; checks <green | red: <rows> | not waited out: <state> | unchecked: <what is unguaranteed> | none>.
 - Candidates of the round — <what was ruled, re-measured against what>; dropped: <what, and why>.
 
 ## Where it stands
@@ -128,8 +127,8 @@ between the frame's halves:
 
 1. **Per-slice outcome** — one row per slice: what it did, how it completed
    (merged locally into `<parent>`, or the change-request URL and whether it
-   merged), what the checks on that landing showed (`base_checks`, in the values
-   the wave report's list above gives), and its
+   merged), what the checks on that landing showed (`base_checks`, whose values
+   [`slice-completion.md`](slice-completion.md) names), and its
    state (done / partial / skipped). An epic groups its rows by wave and ends each
    in what the ledger records for that batch — `released`, `withdrawn(<reason>)`
    or `failed(<what stands>)`. A set that ended partway — a slice failed or was
@@ -157,12 +156,13 @@ between the frame's halves:
 
 5. **What the run leaves** — any ref a completion could not retire and why
    ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions
-   this run is done with (which can be archived, and which cannot with why), and
-   a pointer to `/hcb-dev:git-cleanup`.
+   this run is done with (which can be archived, and which cannot with why), an
+   offer the user turned down (`declined_offer`), and a pointer to
+   `/hcb-dev:git-cleanup`.
 
-What could still be offered — a change request the run *could* have opened and
-the user turned down, a follow-up worth filing — is an ask, and stands in the
-block with everything else waiting on the reader.
+A follow-up worth filing is an ask and stands in the block with everything else
+waiting on the reader. An offer already answered is not one: it is recorded above
+rather than put again.
 
 ### Template
 
@@ -184,7 +184,7 @@ block with everything else waiting on the reader.
 
 **Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above, each with its outcome; or "none">
 
-**What it leaves** — <refs left standing, worktrees, sessions to archive, cleanup pointer; or "nothing">
+**What it leaves** — <refs left standing, worktrees, sessions to archive, an offer turned down, cleanup pointer; or "nothing">
 
 ## Needs your word
 <the frame's block; or "nothing waits on you">

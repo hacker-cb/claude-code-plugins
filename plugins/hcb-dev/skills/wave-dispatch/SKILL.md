@@ -43,6 +43,17 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   whose body still says otherwise holds its batch exactly as the blocker above
   does — **not hung**, reported with that rewrite as the condition that releases
   it. Nothing else releases it, a verdict carried in the order included.
+- **Check the round that cleared this wave's gate is closed** — its returns
+  accepted, their candidates ruled, and the tracker writes those rulings ask for
+  executed or deferred by the user's word (`hcb-dev:master-session`).
+- **A layout this preflight corrects after the user's word on it** — a zone
+  redrawn, a seam found or dissolved — is corrected here, before the steps below
+  read it, and the correction leads the launch report ahead of the chips it
+  changed
+  ([`../../references/report-format.md`](../../references/report-format.md)). One
+  that moves an issue between batches, changes which batches the wave holds, the
+  order they land in, or the authority one runs under goes back to the user
+  instead of being hung.
 - **Settle each batch's merge authority** from the epic's policy — which this
   session may narrow and never widen
   ([`../../references/slice-completion.md`](../../references/slice-completion.md)).
@@ -54,15 +65,6 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check what is already out**: a chip still pending for the same batch is
   withdrawn (`dismiss_task`) before a replacement goes up, and a batch already
   running in a session is not chipped again.
-- **Check the round that cleared this wave's gate is closed** — its returns
-  accepted, their candidates ruled, and the tracker writes those rulings ask for
-  executed or deferred by the user's word (`hcb-dev:master-session`).
-- **A layout this preflight corrects after the user's word on it** — a zone
-  redrawn, a seam found or dissolved, work moved between batches — is hung under
-  the correction, and the correction leads the launch report ahead of the chips
-  it changed
-  ([`../../references/report-format.md`](../../references/report-format.md)). One
-  that changes which batches the wave holds goes back to the user instead.
 - **Chips go up for the wave whose gate is clear, in the number its launch
   order allows** — a staged wave hangs one, and the next only once the one
   before it has merged and the master's landing row has cleared that landing

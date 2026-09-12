@@ -197,7 +197,7 @@ test not written, a duplication, a TODO, an assumption that did not hold.
 
 ## Prepare the proposal before making it
 
-Both of these happen before the finding is proposed, not after it is accepted:
+All three happen before the finding is proposed, not after it is accepted:
 
 - **Search the tracker**, closed entries included
   ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — it
@@ -213,7 +213,8 @@ Both of these happen before the finding is proposed, not after it is accepted:
   and offer nothing for it.
 
 Where there is no tracker to reach — no remote at all, or none a forge answers
-for — neither is possible, and the finding still surfaces: as an observation with
+for — the search and the classification are not possible, the re-measure still
+is, and the finding surfaces: as an observation with
 no proposal attached, saying there is nowhere to file it.
 
 ## The form
@@ -255,8 +256,8 @@ batch it was given for, never what turns up afterwards.
 agreement with what was recommended, which settles each item in the outcome
 recommended for it; a bar — "file the important ones" — which settles every
 candidate of the pass it was given for that clears this file's bar once
-re-measured, including what that same pass's re-measure turned up; and a
-delegation of the ruling. What no form of it moves is the **target** and the
+re-measured — what a re-measure turns up that was not among them is a new
+candidate, proposed rather than filed; and a delegation of the ruling. What no form of it moves is the **target** and the
 **outcome**: content the re-measure corrected is written, and the correction
 named in the report ([`report-format.md`](report-format.md)), while a changed
 target or outcome — narrowed to closed, **INTO** to **OPEN**, one issue to
