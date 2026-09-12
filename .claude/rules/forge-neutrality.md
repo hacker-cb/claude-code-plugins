@@ -21,9 +21,8 @@ Nothing in this plugin may assume a single forge or a single host.
   from the remote plus what actually responds there (`gh auth status`,
   `glab auth status`, the API root).
 - Self-hosted is feature-degraded: SaaS-only features may be missing (e.g.
-  requesting a Copilot review via `gh pr edit --add-reviewer "@copilot"` is not
-  supported on GHES). Name what is unavailable and continue — never let a
-  missing SaaS feature stall a flow.
+  Copilot code review does not exist on GHES). Name what is unavailable and
+  continue — never let a missing SaaS feature stall a flow.
 
 ## Three ways to stay forge-neutral — pick the cheapest that fits
 
