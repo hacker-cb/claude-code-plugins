@@ -105,8 +105,9 @@ user — with this session's recommendation first.
 
 ## Reporting to the user
 
-The shape is `report-format.md`'s; what this role settles is which size an event
-earns.
+The shape is
+[`../../references/report-format.md`](../../references/report-format.md)'s; what
+this role settles is which size an event earns.
 
 | What happened | What goes out |
 |---|---|
@@ -142,11 +143,9 @@ see are chased by the comms ladder, not assumed dead.
 Verify the epic against the ledger — every batch ended, released, withdrawn or
 failed alike, with whatever any of them left standing accounted for; every issue
 at the end state the ledger now records for it; every mandate met — then report
-to the user per
-[`../../references/report-format.md`](../../references/report-format.md), the
-run here being the epic — its rows grouped by wave, and the batch sessions this
-epic is done with among what it leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer,
-never run — naming its reach honestly: worktrees the host leased to other
+to the user per `report-format.md`, the run here being the epic — its rows
+grouped by wave, and the batch sessions this epic is done with among what it
+leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never run — naming its reach honestly: worktrees the host leased to other
 sessions it reports rather than removes, and each batch session's own residue
 is that session's to sweep. Write the ledger's closing line.
 

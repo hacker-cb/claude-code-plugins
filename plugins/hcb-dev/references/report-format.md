@@ -63,8 +63,9 @@ approval and an archival are asks exactly as a question is: "nothing waits on
 you" is written only where this block is empty, and a chip nobody has clicked —
 or an approval the repository's gates or the merge authorization actually leave
 outstanding — is not empty. An ask leaves the block only with an
-outcome — answered, withdrawn, or overtaken by something that settles it, said in
-the line that drops it. Where the session keeps a record of what it awaits — a
+outcome — answered, deferred by the reader's word (which stops it holding work),
+withdrawn, or overtaken by something that settles it — said in the line that
+drops it. Where the session keeps a record of what it awaits — a
 coordinating one keeps it in [`wave-ledger.md`](wave-ledger.md) — the block
 prints that record rather than recall.
 
@@ -114,8 +115,8 @@ Next wave opens on: <the gate>.
 
 ## Needs your word
 **Holding work**
-1. [<where it is acted on>] <the ask, in full> — recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: <what stops>.
-2. [<where>] <the ask, in full> — behind 1; recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: <what stops>.
+1. [<where it is acted on>] <the ask, in full> — open since <when>; recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: <what stops>.
+2. [<where>] <the ask, in full> — open since <when>, behind 1; recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: <what stops>.
 
 **Holding nothing**
 3. [<where>] <the ask, in full> — open since <when>; recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: nothing stops.
