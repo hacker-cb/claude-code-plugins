@@ -224,9 +224,13 @@ After each push:
    posts, so a wait built on either never arms. The timeline carries it as events
    instead — its `review_requested`. A `review_request_removed` is the decline
    step 3 reads, and it belongs to the latest-move read rather than to this count,
-   which a removal would grow exactly as a request does. The event carries no SHA,
-   so what makes one this head's is that the timeline did not carry it before: take
-   this reading before you push, and again after.
+   which a removal would grow exactly as a request does. Take the reading before you
+   push and again after: a count that has grown says a request registered after the
+   push, which is what tells the rule working from the rule skipping this head. **It
+   does not say which head the rule placed it for** — the event carries no SHA, and a
+   request the previous push earned can register after your reading just as readily.
+   The only signal that carries a SHA is the review's own `commit_id`, and step 4 is
+   what catches a request that turns out to have been an earlier head's.
    ```bash
    # What is already there, counted — not a moment off the clock: `created_at` is
    # whole seconds, so a timestamp bound drops the event that lands inside the very
@@ -240,9 +244,10 @@ After each push:
            | {event, at: .created_at} | @json')"; then
      echo "TIMELINE UNREAD — neither a request nor its absence"; exit 1
    fi
-   # One more than before the push is this head's, and the last line is it. Counted
-   # with `awk`, which succeeds over no lines at all — `grep -c` exits 1 there, and
-   # none is the baseline this reading exists to state, not a failure.
+   # One more than before the push is a request that registered after it, and the
+   # last line is that request. Counted with `awk`, which succeeds over no lines at
+   # all — `grep -c` exits 1 there, and none is the baseline this reading exists to
+   # state, not a failure.
    printf '%s\n' "$requests" | awk 'NF { n++ } END { print n + 0 }'
    ```
 2. **Request one yourself only when the rule did not — and never over a request
@@ -297,11 +302,14 @@ After each push:
    [`../../../references/review-runs.md`](../../../references/review-runs.md),
    spent on what does not depend on it — the loop's live-state read, its drift
    measure — and it runs out at that file's ceiling, counted from the
-   `review_requested` being waited on — this head's own, or the one still
-   standing from an earlier head, whose time the latest-move read carries —
-   rather than from the push; or at once where nothing is left to wait on: no
-   request standing on this head and none this driver can place — step 2's
-   request that registered nothing. Running out is a stop,
+   `review_requested` this head is waiting on, whose time step 1's reading
+   carries, rather than from the push. While step 2's hold is in force the wait
+   is the earlier head's round, spending that round's ceiling: this head's own
+   starts when the hold releases and its watch begins, so a round that has
+   already spent its ceiling never expires this one before it has waited at all.
+   Or it runs out at once, where nothing is left to wait on: no request standing
+   on this head and none this driver can place — step 2's request that registered
+   nothing. Running out is a stop,
    not a verdict: record the head as unreviewed by this reviewer, and stop at the
    addressee `merge-auth` names, recommendation first — another window,
    re-request and wait again, or merge with the head unreviewed by Copilot and
