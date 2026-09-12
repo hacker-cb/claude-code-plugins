@@ -51,3 +51,7 @@ When you add or change a plugin/skill, run `scripts/validate.sh` and keep `READM
 When you change a script under `plugins/*/skills/*/scripts/`, run `tests/run.sh` too, and add the case that would have caught what you fixed — [`tests/README.md`](tests/README.md) says what earns one. A script with no suite yet gets one: a suite is a directory under `tests/suites/`, and nothing registers it anywhere else.
 
 **Whenever you add or edit a link, run `lychee` online** — without `--offline` — so external URLs are actually fetched. CI splits the two: the per-PR job runs `--offline`, which skips every `http(s)` URL so a docs host having a bad afternoon cannot fail a pull request, and a weekly job checks the external ones. That means a broken external link you introduce today is nobody's error until the next Monday unless you check it yourself. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for step-by-step instructions.
+
+## Session transcripts
+
+Every Claude Code session on this machine — in this repo and in the projects the plugins run in — is kept under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/`: a directory per working directory, named after its path with `/` and `.` turned into `-` (so each worktree has its own), holding one `<session-id>.jsonl` per session. When the question is how a skill behaved in real use, look there — grep for a phrase from the session — instead of asking where the transcripts are. The directory names start with `-`: pass absolute paths, or `--`, to tools that parse options.
