@@ -1,7 +1,8 @@
 # Reporting to the user — one frame, two reports
 
-Read by whatever reports to the user on work it is running or has finished. One
-frame, and two bodies under it:
+Read by whatever reports to the user on a run of work — an epic in flight, a set
+of slices finished, or the analysis that precedes either. One frame, and two
+bodies under it:
 
 - **the wave report** — an epic in flight, written by the session coordinating it
   (`hcb-dev:master-session`) and by the one launching its batches
@@ -10,8 +11,9 @@ frame, and two bodies under it:
   (`hcb-dev:implementation-workflow`), or a whole epic.
 
 A change-request driver's report on one merged request sits at a different
-altitude and is its own; neither replaces the other. A skill whose report has a
-body of its own — a backlog survey, a capacity pass, a plugin refresh — writes
+altitude and keeps its own shape: this frame does not reach it, and neither
+replaces the other. Nor does it reach a step whose whole answer is a line — a
+cleanup verdict, a branch retired. A skill whose report has a body of its own — a backlog survey, a capacity pass, a plugin refresh — writes
 that body and wears this frame around it.
 
 Keep it scannable: short grouped bullets, a small table, not an essay.
@@ -162,9 +164,9 @@ between the frame's halves:
 
 5. **What the run leaves** — any ref a completion could not retire and why
    ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions
-   this run is done with (which can be archived, and which cannot with why), an
-   offer the user turned down (`declined_offer`), and a pointer to
-   `/hcb-dev:git-cleanup`.
+   this run is done with and which of them cannot be archived, with why —
+   archiving the rest is an ask and stands in the block — an offer the user turned
+   down (`declined_offer`), and a pointer to `/hcb-dev:git-cleanup`.
 
 A follow-up worth filing is an ask and stands in the block with everything else
 waiting on the reader. An offer already answered is not one: it is recorded above
@@ -182,7 +184,7 @@ rather than put again.
 
 | Slice | What | Completion | State |
 |---|---|---|---|
-| <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) · checks <green\|red: each row + what it is attributed to\|not waited out: state at <when>\|unchecked: what is left unguaranteed\|none> | done\|partial\|skipped |
+| <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) · checks <green\|red: each row + what it is attributed to\|not waited out: state at <when>\|unchecked: what is left unguaranteed\|none> | done\|partial\|skipped; an epic's row: released\|withdrawn(<reason>)\|failed(<what stands>) |
 
 **Issues** — <one line per issue the run settles: closed, or open with why; or "none">
 

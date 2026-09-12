@@ -51,10 +51,11 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   holds is **not hung**: report it with that write as the condition releasing it.
 - **A layout this preflight corrects after the user's word on it** — a zone
   redrawn, a seam found or dissolved — is corrected here, before the steps below
-  read it, and the correction reaches the user **before the first chip goes up**:
-  a hung chip can be clicked before any report arrives. It leads the launch
-  report as well
-  ([`../../references/report-format.md`](../../references/report-format.md)). The
+  read it, and goes out as its own message **before the first chip goes up** —
+  the frame's `Without your word` and nothing else
+  ([`../../references/report-format.md`](../../references/report-format.md)) —
+  since a hung chip is clickable before any report arrives. The launch report
+  carries it again at the top, once the chips are up. The
   narrowing and the landing order a corrected seam implies are the steps below
   settling it, named in that report; what goes back to the user instead of being
   hung is a correction moving an issue between batches, or changing which batches
@@ -216,10 +217,10 @@ is not free until the master accepts.
   whose predecessor reached a terminal state without landing waits for nothing:
   the wave is replanned from there. A staged wave whose next step is
   never hung is a stall, not a finished launch.
-- **A chip the base has moved past is not offered as it stands** — re-verify the
-  delta from its pin before it is put in front of the user again, or withdraw it
-  (`dismiss_task`) and re-issue on a fresh pin; the row carrying it names the pin
-  it stands on either way.
+- **A chip the base has moved past is withdrawn before it is read** —
+  `dismiss_task` first, since a chip left hanging is clickable while the delta
+  from its pin is still being verified; then re-issue on a fresh pin, and the row
+  carrying it names that pin.
 - **A batch whose start report never arrives is unreached**, whatever its chip
   says — check on it rather than assuming the name made contact.
 
