@@ -54,6 +54,15 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check what is already out**: a chip still pending for the same batch is
   withdrawn (`dismiss_task`) before a replacement goes up, and a batch already
   running in a session is not chipped again.
+- **Check the round that cleared this wave's gate is closed** — its returns
+  accepted, their candidates ruled, and the tracker writes those rulings ask for
+  executed or deferred by the user's word (`hcb-dev:master-session`).
+- **A layout this preflight corrects after the user's word on it** — a zone
+  redrawn, a seam found or dissolved, work moved between batches — is hung under
+  the correction, and the correction leads the launch report ahead of the chips
+  it changed
+  ([`../../references/report-format.md`](../../references/report-format.md)). One
+  that changes which batches the wave holds goes back to the user instead.
 - **Chips go up for the wave whose gate is clear, in the number its launch
   order allows** — a staged wave hangs one, and the next only once the one
   before it has merged and the master's landing row has cleared that landing
@@ -158,7 +167,8 @@ Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
 start report; in either mode you land it or it lands without you; the checks on
 that landing settle or your waiting on them stops first, neither of which the
-landing status waits for; you are
+landing status waits for; a word your own user gives you that touches this epic,
+which the master cannot see; you are
 stuck>, each carrying the coordinate that lets the master check it without
 asking back: the change request by number and URL, a landing by its commit, its
 checks by that same commit, a stall by what it waits on. An outcome you promised
@@ -198,6 +208,10 @@ is not free until the master accepts.
   whose predecessor reached a terminal state without landing waits for nothing:
   the wave is replanned from there. A staged wave whose next step is
   never hung is a stall, not a finished launch.
+- **A chip the base has moved past is not offered as it stands** — re-verify the
+  delta from its pin before it is put in front of the user again, or withdraw it
+  (`dismiss_task`) and re-issue on a fresh pin; the row carrying it names the pin
+  it stands on either way.
 - **A batch whose start report never arrives is unreached**, whatever its chip
   says — check on it rather than assuming the name made contact.
 
@@ -220,11 +234,14 @@ the receiver verify its worktree instead of trusting how it was launched.
 
 ## Afterwards
 
-Report the launch to the user as a table — batch id, topic, chip, boundaries
-shared with whom — naming the plan's launch order and, for a staged wave, which
-step this is and what has to land before the next chip goes up. Record each batch beside its
-tag in the coordinating session's own record, per `order-anatomy.md`. When the
-plan changes, withdraw the chips it obsoleted (`dismiss_task`) and say so.
+The launch goes to the user as a wave report
+([`../../references/report-format.md`](../../references/report-format.md)): the
+chips stand in its rows — batch id, topic, what each waits on, the boundaries it
+shares and with whom — naming the plan's launch order and, for a staged wave,
+which step this is and what has to land before the next chip goes up. Record each
+batch beside its tag in the coordinating session's own record, per
+`order-anatomy.md`. When the plan changes, withdraw the chips it obsoleted
+(`dismiss_task`) and say so.
 
 ## Reference files
 

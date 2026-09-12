@@ -203,6 +203,9 @@ Both of these happen before the finding is proposed, not after it is accepted:
   ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — it
   runs on what the lineage above leaves, and its result decides which of the three
   states below applies.
+- **Re-measure it** at its coordinate on the base as it now stands, with whatever
+  will judge it — the run, the gate, the tool — reading only where reading is
+  that instrument.
 - **Read the repository's own classification**
   ([`classification.md`](classification.md)),
   once for the run rather than once per finding, so the proposal already carries
@@ -230,6 +233,10 @@ autonomous run is never interrupted to ask. One line each:
   **INTO #N** or **DROP**;
 - **tracked as it stands** → no entry; say so where it came up.
 
+Where the response wears a report's frame
+([`report-format.md`](report-format.md)), the proposals stand in its ask block
+and the observations in its body.
+
 A line in a report is not this. Naming a finding among the things left undone
 records it; it does not put the decision to anyone, and a finding recorded that
 way ends with the response.
@@ -243,6 +250,18 @@ and an order naming none leaves the user. Opening or updating anything waits for
 it, every time. **A standing instruction to work autonomously is not that
 answer** — it authorizes the work, not the tracker — and an approval covers the
 batch it was given for, never what turns up afterwards.
+
+**The answer takes the form the person gives it**, and three forms of it answer:
+agreement with what was recommended, which settles each item in the outcome
+recommended for it; a bar — "file the important ones" — which settles every
+candidate of the pass it was given for that clears this file's bar once
+re-measured, including what that same pass's re-measure turned up; and a
+delegation of the ruling. What no form of it moves is the **target** and the
+**outcome**: content the re-measure corrected is written, and the correction
+named in the report ([`report-format.md`](report-format.md)), while a changed
+target or outcome — narrowed to closed, **INTO** to **OPEN**, one issue to
+another — waits for a new answer. An answer by numbers that passes over one of
+them leaves that one unanswered: ask it again rather than filling it in.
 
 Where no answer comes, the finding stays undecided rather than dropped:
 re-surface it at the natural end of the session, once the primary work is done.

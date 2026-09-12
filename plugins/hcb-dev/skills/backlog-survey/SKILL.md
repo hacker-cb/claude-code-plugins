@@ -60,7 +60,11 @@ them where no scale resolved at all.
 
 ## The report
 
-In this order, each section explicit even when empty:
+The frame is
+[`../../references/report-format.md`](../../references/report-format.md)'s: its
+first line, and its ask block last, carrying the hygiene this report asks for and
+the cut it recommends. Between them, in this order, each section explicit even
+when empty:
 
 1. **The picture** — the slice by milestone or theme: open counts, what each
    group is, where the current front line runs.

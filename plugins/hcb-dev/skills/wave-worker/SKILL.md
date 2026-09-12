@@ -123,7 +123,8 @@ holds, and what it stops is named in the return as the gap it is.
   merged by this session or landed without it; the checks on that landing when
   they settle — or when the waiting stops first, said with the state they stood
   at then — which the landing status never waits for, the queue moving on that
-  one; the session stuck; the scope
+  one; a word this session's own user gives it that touches the epic, which the
+  master cannot see; the session stuck; the scope
   moving off the start report; a boundary change agreed with the master
   mid-flight — one line each, the first line self-contained, and each carrying
   the coordinate it is checked at: the change request by number and URL, a

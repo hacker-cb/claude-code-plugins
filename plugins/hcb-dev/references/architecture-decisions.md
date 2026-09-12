@@ -37,9 +37,16 @@ lets them agree in one word or correct with a target. The recommendation must be
 grounded in the code and the constraints, not asserted; "I'd do A because the schema already
 does A elsewhere" beats "A (recommended)".
 
+**A recommendation is an answer, not a menu.** Options are worth setting side by
+side only where each of them is defensible; where one is wrong by construction,
+say which and why instead of offering it beside the others. Whatever is turned
+down is named with what it costs, in the words of someone who has not read the
+code.
+
 Every stop-and-ask point inherits this rule — a finding that needs a product
 decision, a coverage gap, an ambiguous merge strategy: present the options with a
-recommendation, not an open question.
+recommendation, not an open question. **Several forks in one message stand in one
+block**, shaped by [`report-format.md`](report-format.md).
 
 ## 3. Follow the project's rules — but flag when one fights good architecture
 
