@@ -44,8 +44,8 @@ down is named with what it costs, in the words of someone who has not read the
 code.
 
 Every stop-and-ask point inherits this rule — a finding that needs a product
-decision, a coverage gap, an ambiguous merge strategy: present the options with a
-recommendation, not an open question. **Several forks in one message stand in one
+decision, a coverage gap, an ambiguous merge strategy: present the defensible
+options with a recommendation, not an open question. **Several forks in one message stand in one
 block**, shaped by [`report-format.md`](report-format.md).
 
 ## 3. Follow the project's rules — but flag when one fights good architecture

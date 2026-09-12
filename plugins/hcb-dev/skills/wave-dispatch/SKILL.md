@@ -44,8 +44,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   does — **not hung**, reported with that rewrite as the condition that releases
   it. Nothing else releases it, a verdict carried in the order included.
 - **Check the round that cleared this wave's gate is closed** — its returns
-  accepted, their candidates ruled, and the tracker writes those rulings ask for
-  that this wave stands on executed or deferred by the user's word
+  accepted, their candidates ruled, and the tracker writes on which this wave
+  stands executed or deferred by the user's word
   (`hcb-dev:master-session`). A wave no round opened — an epic's first, or ground
   a capacity pass freed — has none to close. A batch one of those writes still
   holds is **not hung**: report it with that write as the condition releasing it.
@@ -243,14 +243,16 @@ the receiver verify its worktree instead of trusting how it was launched.
 
 ## Afterwards
 
-The launch goes to the user as a wave report (`report-format.md`) once the chips
-are up — after the correction the preflight already owed them: the
+The launch goes to the user as a wave report (`report-format.md`), after the
+correction the preflight already owed them: the
 chips stand in its rows — batch id, topic, what each waits on, the boundaries it
 shares and with whom — naming the plan's launch order and, for a staged wave,
 which step this is and what has to land before the next chip goes up. Record each
 batch beside its tag in the coordinating session's own record, per
-`order-anatomy.md`. When the plan changes, withdraw the chips it obsoleted
-(`dismiss_task`) and say so.
+`order-anatomy.md`. A preflight that held every batch hangs no chip, and that
+report still goes out — each held batch carrying the condition that releases it.
+When the plan changes, withdraw the chips it obsoleted (`dismiss_task`) and say
+so.
 
 ## Reference files
 

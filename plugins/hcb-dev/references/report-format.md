@@ -101,7 +101,7 @@ An event that changes nothing for the reader earns no report: one line carries i
 ```markdown
 **Wave <n>: <what changed, in a phrase> · needs you: <k>, holding work: <m>**
 
-## Without your word
+## Without your word   <— the section stands only where something belongs in it>
 - Departed from what you approved: <what stood> → <what stands now>, because <why>. Undo: <how>.
 - Settled here: <what>, inside <the authority it holds>. Undo: <how>.
 

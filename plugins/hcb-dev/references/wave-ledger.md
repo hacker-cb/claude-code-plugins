@@ -133,8 +133,8 @@ test on a passage is whether deleting it changes what anyone does next.
 7. **Expectations** — what is awaited from whom: unconfirmed batches, answers
    owed, mandates given with the order's authorization and not yet met. Each
    carries who owes it, the moment it was first asked, and whether work stands on
-   it — a chip hung and not yet started is owed by the user, the click being
-   theirs. The ones the user owes are what a report's ask block prints
+   it — a chip hung and not yet clicked is owed by the user, the click being
+   theirs, while one already clicked is awaited from the batch instead. The ones the user owes are what a report's ask block prints
    ([`report-format.md`](report-format.md)), so each of those carries what that
    block prints — the ask in full, where it is acted on, the recommendation with
    what it turns down, what it stands behind, and what stops until it is answered

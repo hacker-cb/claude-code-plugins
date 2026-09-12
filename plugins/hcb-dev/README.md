@@ -341,8 +341,8 @@ saying something else. Each file opens by saying what it owns.
   into batches and waves. Read by whatever partitions work into parallel sessions.
 - [`references/wave-ledger.md`](references/wave-ledger.md) — the master's durable
   state. Read on every event it records, and first after any restart.
-- [`references/report-format.md`](references/report-format.md) — the frame every
-  report to you wears, and the two bodies under it: a wave report while an epic
+- [`references/report-format.md`](references/report-format.md) — the frame a
+  whole-run report wears, and the two bodies under it: a wave report while an epic
   runs, the final report once a run is done. Read where work is reported to you —
   a different altitude from a driver's report on one merged change request, and
   the two do not replace each other.
