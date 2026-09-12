@@ -139,8 +139,8 @@ test on a passage is whether deleting it changes what anyone does next.
    block prints — the ask in full, where it is acted on, the recommendation with
    what it turns down, what it stands behind, and what stops until it is answered
    — or the coordinate where that text is written. A row leaves only with its outcome — answered or met, deferred by
-   the user's word, withdrawn, or overtaken by something that settles it, named in
-   the line that drops it.
+   the user's word, withdrawn, failed with what still stands, or overtaken by
+   something that settles it, named in the line that drops it.
 8. **Journal** — one line per event, terse, newest last; and the account behind
    a constraint or a decision, at the length it takes. The ledger carries what
    is acted on and the journal how it was arrived at — and the journal is what
