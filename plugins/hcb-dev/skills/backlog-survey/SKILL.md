@@ -98,9 +98,10 @@ In this order, each section explicit even when empty:
    the issues read here that `../../references/classification.md` leaves out of
    line. Where it leaves any, the rest of the repository's carrying that same
    value ride the item with them — closed ones included, found by filtering on the
-   value itself in every mechanism the role runs in, the family's label and the
-   field's value alike, never by a text search a title can answer and never by
-   reading the closed backlog, and counted rather than
+   value itself in every mechanism that can carry it, the stray one as much as the
+   ones the resolution names, and over every state rather than the open ones a
+   listing answers with by default; never by a text search a title can answer, and
+   never by reading the closed backlog through. They are counted rather than
    listed, save the ones carrying a second value that contradicts it: those are
    named one by one, the value on them being the user's. The count is what the
    item proposes — taking it enumerates them, each edit going through the tracker

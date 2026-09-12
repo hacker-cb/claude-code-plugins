@@ -108,8 +108,9 @@ untriaged and never the one that means a human accepted it.
 ## An issue out of line
 
 One carrying a role outside the mechanism resolved for it above — a native field
-nobody adopted, a family the repository has moved off — and one carrying two
-values for it that contradict each other. Align it to a single value, carried in
+nobody adopted, a family the repository has moved off — one missing it from a
+mechanism that resolution does name, and one carrying two values for it that
+contradict each other. Align it to a single value, carried in
 every mechanism that resolution names and in none it does not: added where it is
 missing, cleared where it stands outside them, and put in place of a value that
 contradicts it. Which value that is, is the user's wherever the two disagree or
