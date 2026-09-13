@@ -213,7 +213,12 @@ the plan stages them.
   loop — answering batch questions only after re-verifying against the tree,
   accepting returns against the ledger's standing constraints, recomputing what
   an executed tracker edit moved in the slice, keeping the epic's own wave table
-  level with every redraw, and opening each wave as its gate clears. Never takes
+  level with every redraw, and opening each wave as its gate clears. Inside the
+  epic it decides what the code, the plan and the ledger answer — the tracker
+  writes its own rulings produce, slots, corrected zones, the next wave of the
+  plan you approved — and brings you three things: an architectural fork that
+  changes what is built, the epic's composition, and a merge into the default
+  branch its authority did not carry. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
   Reports in the sizes `references/report-format.md` fixes: a wave report when a

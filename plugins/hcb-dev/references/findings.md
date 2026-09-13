@@ -246,11 +246,17 @@ way ends with the response.
 
 The answer is the user's, and where this session works to an order — one written
 by another session, whatever carried it here — it is whoever that order names
-**for writing to the tracker**; an addressee it names for its forks is not that,
-and an order naming none leaves the user. Opening or updating anything waits for
-it, every time. **A standing instruction to work autonomously is not that
-answer** — it authorizes the work, not the tracker — and an approval covers the
-batch it was given for, never what turns up afterwards.
+**for writing to the tracker** ([`order-anatomy.md`](order-anatomy.md)); an
+addressee it names for its forks is not that, and an order naming none leaves the
+user — save a wave's, which names its master whatever else it settles. Opening or
+updating anything waits for that answer, every time. **A session coordinating an
+epic holds the answer for its own slice**: the assignment authorizes the writes
+its own rulings produce
+([`../skills/master-session/SKILL.md`](../skills/master-session/SKILL.md), *Who
+decides*), and what that section leaves with a person waits for them like any
+other answer. Where no role carries it that way, **a standing instruction to work
+autonomously is not that answer** — it authorizes the work, not the tracker — and
+an approval covers the batch it was given for, never what turns up afterwards.
 
 **The answer takes the form the person gives it**, and three forms of it answer:
 agreement with what was recommended, which settles each item in the outcome

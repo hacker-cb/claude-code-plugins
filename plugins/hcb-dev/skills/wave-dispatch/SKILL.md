@@ -177,7 +177,8 @@ start report; in either mode you land it or it lands without you; the checks on
 that landing settle or your waiting on them stops first, neither of which the
 landing status waits for; a word your own user gives you that touches this epic,
 which the master cannot see — quoted in full and written at the coordinate this
-order names, so it survives a restart; you are
+order names, so it survives a restart; a candidate for the tracker, the moment it
+earns one rather than at your return; you are
 stuck>, each carrying the coordinate that lets the master check it without
 asking back: the change request by number and URL, a landing by its commit, its
 checks by that same commit, a stall by what it waits on. An outcome you promised

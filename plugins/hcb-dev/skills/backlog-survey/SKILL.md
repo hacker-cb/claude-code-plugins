@@ -116,8 +116,10 @@ when empty:
 
 ## After the report
 
-- **Every tracker edit executes on the user's word** — one this report **asks
-  for** where it is handed over, never one it merely displays and waits for —
+- **Every tracker edit executes on the word of whoever holds it** — the user, or
+  the session coordinating the epic where this survey runs under one
+  (`hcb-dev:master-session`, *Who decides*) — and on one this report **asks for**
+  where it is handed over, never one it merely displays and waits for —
   item by item through `hcb-dev:issue-tracking`; a survey that silently edits
   the tracker has outrun its mandate. What the layout's preconditions change is
   *when* that word is needed, never whether: they are asked with the layout, and

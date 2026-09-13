@@ -163,12 +163,16 @@ section explicit even when empty:
   pass leaving the reading that stands there — every verdict this pass read into
   its verdicts section, the layout it produced, and what it ruled about the
   sources that disagreed.
-- **Tracker edits execute on the user's word**, item by item through
+- **Tracker edits execute on the word of whoever holds it** — the user where this
+  pass stands alone, the session coordinating the epic where it runs under one
+  (`hcb-dev:master-session`, *Who decides*) — item by item through
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
-- **The layout is launched on the user's word, and only then** — the capacity in
-  the ask is not that word. What they approve goes to `hcb-dev:wave-dispatch`,
-  one chip per batch; the click that starts each one is the second gate and
-  stays theirs, and a batch held by a tracker edit is reported, never hung.
+- **A layout that changes what the approved plan holds is launched on the user's
+  word, and only then** — the capacity in the ask is not that word; one that only
+  opens the next wave of that plan is the coordinating session's to launch. What
+  is approved goes to `hcb-dev:wave-dispatch`, one chip per batch; the click that
+  starts each one is the second gate and stays the user's, and a batch held by a
+  tracker edit is reported, never hung.
 
 ## Reference files
 
