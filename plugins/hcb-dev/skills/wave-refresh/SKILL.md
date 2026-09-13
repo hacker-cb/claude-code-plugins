@@ -166,8 +166,9 @@ section explicit even when empty:
   its verdicts section, the layout it produced, and what it ruled about the
   sources that disagreed.
 - **Tracker edits execute on the word of whoever holds it** — the user where this
-  pass stands alone, the session coordinating the epic where it runs under one
-  (`hcb-dev:master-session`, *Who decides*) — item by item through
+  pass stands alone, the session coordinating the epic where it runs under one,
+  to the bounds that role draws (`hcb-dev:master-session`, *Who decides*) — item
+  by item through
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
 - **A layout that changes what the approved plan holds is launched on the user's
   word, and only then** — the capacity in the ask is not that word; one that only

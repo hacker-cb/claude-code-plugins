@@ -184,7 +184,9 @@ work is **done** — not how the ask is worded.
   lane, as what holds the batch until the tracker edit releasing it is made.
   Every such edit — those and the closing hygiene plan alike — it asks you about
   and makes only on the word that authorizes it — yours, or the master's for an
-  edit inside its epic's slice — item by item through `issue-tracking`. Where the
+  edit inside its epic's slice, to the bounds that role draws; closing an issue
+  or moving it between milestones stays yours, and so does anything reaching past
+  the slice — item by item through `issue-tracking`. Where the
   slice turns up issues classified outside the mechanism the repository actually
   uses, that plan reaches past the slice: the rest of the repository's carrying
   the same value, closed ones included.
@@ -218,8 +220,9 @@ the plan stages them.
   epic it decides what the code, the plan and the ledger answer — the tracker
   writes its own rulings produce, slots, corrected zones, the next wave of the
   plan you approved — and brings you a fork that changes what is built, the
-  epic's composition, a merge into the default branch its authority did not
-  carry, and anything else it cannot place inside the epic. Never takes
+  epic's composition (an issue closed or re-milestoned with it), a merge into the
+  default branch past what your merge-authority policy settled — a local one
+  regardless of it — and anything else it cannot place inside the epic. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
   Reports in the sizes `references/report-format.md` fixes: a wave report when a

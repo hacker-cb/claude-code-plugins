@@ -96,8 +96,10 @@ holds, and what it stops is named in the return as the gap it is.
   else": it goes to the master first, exactly as the agree-first forks do, and
   the master's side of the protocol carries it on to a person where that
   reference demands one.
-- **A finding does not become an issue here.** One that earns an issue goes to
-  the master as a candidate the moment it earns one — in the status that follows,
+- **A finding does not become an issue here.** One that earns an issue goes as a
+  candidate to the authority the order's own slot names — its master, or this
+  session's own user where the order names nobody (`order-anatomy.md`) — the
+  moment it earns one: in the status that follows,
   never held back for the return, since what it names can reach another batch or
   the next wave — with its outcome and its classification proposed, never
   applied, and ranked against this batch's others within whatever budget the

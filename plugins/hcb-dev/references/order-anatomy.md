@@ -63,9 +63,10 @@ a receiver told only what is known treats the rest as known.
   session that wrote the order
   ([`architecture-decisions.md`](architecture-decisions.md)).
 - **The tracker authority** — who answers for a write the work turns up
-  ([`findings.md`](findings.md)), which the decision points above do not settle:
-  in a wave it is the master, and an order naming none leaves the receiver's own
-  user.
+  ([`findings.md`](findings.md)), which the decision points above do not settle.
+  A wave's order names its master here like any other order names its holder; the
+  shape of the order never stands in for the slot, and one naming nobody leaves
+  the write with the receiver's own user.
 - **The negative constraint** — the envelope's, plus any workaround
   deliberately left in place elsewhere.
 - **The closing act** — never empty: the return of

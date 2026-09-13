@@ -609,7 +609,8 @@ merged head can post *after* the merge, orphaning its findings on the now-closed
 PR — behind a signal that read as a decline, or behind a merge taken outside this
 skill. If one appears, don't drop it: surface its findings in the report below and
 recommend a follow-up (issue or change request) as a next step; creating it is an
-outward action the user authorises, not one you take autonomously —
+outward action that waits for the word authorizing it, not one you take
+autonomously —
 [`../../references/findings.md`](../../references/findings.md) owns
 that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 

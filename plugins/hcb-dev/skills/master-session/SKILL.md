@@ -54,7 +54,8 @@ up with it** — a batch
 standing on an issue the survey ruled `needs rewrite`
 ([`../../references/issue-currency.md`](../../references/issue-currency.md)) is
 planned and held, and the rewrite releasing it is a tracker edit like any other:
-`hcb-dev:issue-tracking`, on that same word. The launch waits for their word on
+`hcb-dev:issue-tracking`, on the word *Who decides* leaves it with — the user's
+on this table, since the plan is not theirs to hold yet. The launch waits for their word on
 the table; the click that
 starts each chip is a second, separate gate — approval of the plan is not
 permission to hang chips for gated waves early.
@@ -113,12 +114,14 @@ Three things stay the user's, and go up with this session's recommendation first
 
 - a **fork that changes what is built** — that file's §1 test, never a judgement
   about how important the fork looks;
-- the **epic's composition and bounds** — which issues its waves hold, and every
-  redraw of that plan;
-- a **merge into the default branch** the epic's authority did not already carry
-  ([`../../references/slice-completion.md`](../../references/slice-completion.md)),
-  and everything else that reaches outside the epic — a thing being undoable is
-  no argument for taking it here.
+- the **epic's composition and bounds** — which issues its waves hold, every
+  redraw of that plan, and the tracker edits that move that line: an issue
+  closed, and one carried between milestones;
+- a **merge into the default branch** past what the epic's merge-authority policy
+  settled — and a local one whatever that policy says, the hard gate of
+  [`../../references/slice-completion.md`](../../references/slice-completion.md)
+  standing above any authority passed to it — and everything else that reaches
+  outside the epic, a thing being undoable being no argument for taking it here.
 
 Those three do not bound the authority; the epic does. An act this session cannot
 place inside it goes up the same way, whether or not one of the three names it.

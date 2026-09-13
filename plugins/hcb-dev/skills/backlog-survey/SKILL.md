@@ -117,9 +117,9 @@ when empty:
 ## After the report
 
 - **Every tracker edit executes on the word of whoever holds it** — the user, or,
-  for an edit inside the slice that epic holds, the session coordinating it
-  (`hcb-dev:master-session`, *Who decides*); one reaching past that slice, and one
-  that closes an issue or moves it between milestones, is the user's either way —
+  for an edit inside the slice that epic holds, the session coordinating it to
+  the bounds that role draws (`hcb-dev:master-session`, *Who decides*); one
+  reaching past that slice is the user's whatever those bounds say —
   and on one this report **asks for**
   where it is handed over, never one it merely displays and waits for —
   item by item through `hcb-dev:issue-tracking`; a survey that silently edits
@@ -131,11 +131,11 @@ when empty:
   session assumes `hcb-dev:master-session` — or hands the table to the session
   that will.
 - **The executed hygiene is read back, and it settles the handover** — what the
-  user took, never what this report proposed: an issue closed or moved out of
-  the slice leaves the layout, a rewritten body releases the batch its verdict
-  held once `issue-currency.md` rules it `current` on the body it now has, a
-  corrected link moves an edge. What that leaves is handed over on the user's
-  word:
+  word above actually took, never what this report proposed: an issue closed or
+  moved out of the slice leaves the layout, a rewritten body releases the batch
+  its verdict held once `issue-currency.md` rules it `current` on the body it now
+  has, a corrected link moves an edge. What that leaves is handed over on that
+  same word:
   - **to the session holding the ledger**, where one already stands over the
     slice — the waves behind the hygiene are redrawn there, from the newest
     reading that session holds rather than from the backlog again
