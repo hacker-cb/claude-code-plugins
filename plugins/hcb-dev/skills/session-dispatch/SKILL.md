@@ -75,6 +75,9 @@ or a stop above it leaves open — settled here too, both halves together, so
 don't default either. <Or: this order lands nothing and carries none.>
 Decide yourself: <forks>. Bring to your user: <forks>. Bring back to the
 session that wrote this order: <forks>.
+Tracker authority: <whom a write this work turns up waits on — the session that
+wrote this order, or your own user; stated either way, since an order silent here
+leaves it with your user>.
 
 Done means: <the terminal deliverable>
 

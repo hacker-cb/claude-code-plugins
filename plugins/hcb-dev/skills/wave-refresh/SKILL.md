@@ -4,7 +4,7 @@ description: >-
   Recompute what parallel work can safely start right now: pin the base and the
   moment the tracker was read, measure the ground the running batches hold, take
   the delta since the last reading, rule what clears it, and say how many
-  batches are actually free — then hand what the user approves to the launcher.
+  batches are actually free — then hand what is approved to the launcher.
   Use when a coordinating session is asked "что ещё можно взять параллельно",
   "что блокирует", "что делать дальше", "какая следующая волна", "освежи и
   спланируй заново", or is handed a capacity ("до N батчей"); and after a
@@ -22,7 +22,7 @@ plan drawn when the wave opened. The layout it produces is
 [`../../references/wave-planning.md`](../../references/wave-planning.md)'s, each
 issue's verdict is
 [`../../references/issue-currency.md`](../../references/issue-currency.md)'s,
-what the user approves goes out through `hcb-dev:wave-dispatch`, and the role
+what is approved goes out through `hcb-dev:wave-dispatch`, and the role
 around it is `hcb-dev:master-session`.
 
 **Differential by construction.** This pass reads a delta and the ground the
@@ -67,8 +67,9 @@ disagreement is itself a finding:
   [`../../references/forge-docs.md`](../../references/forge-docs.md) — what a
   batch is actually writing, which may reach past the zone its order drew.
 
-Every disagreement goes to the user — a request reaching past its zone, a row
-with no session, a session with no row. Until one is settled the ground is read
+Every disagreement goes to whoever holds the word — the user where this pass
+stands alone, the session coordinating the epic under one — a request reaching
+past its zone, a row with no session, a session with no row. Until one is settled the ground is read
 the **safer** way rather than the wider or the narrower: a zone read two ways is
 occupied to the union of both, and a session whose zone no source gives holds
 **everything a candidate would touch**, since an unknown zone is unbounded and
@@ -141,7 +142,8 @@ outside it as its own choice for the user, not as part of this slice's layout.
 The frame is
 [`../../references/report-format.md`](../../references/report-format.md)'s: its
 first line, and its ask block last, carrying the tracker edits the candidates
-stand on and the word the layout launches on. Between them, in this order, each
+stand on and, where the layout changes what the approved plan holds, the word it
+launches on. Between them, in this order, each
 section explicit even when empty:
 
 1. **The front** — batches running, the ground each holds, what landed since the

@@ -127,7 +127,8 @@ holds, and what it stops is named in the return as the gap it is.
   at then — which the landing status never waits for, the queue moving on that
   one; a word this session's own user gives it that touches the epic, which the
   master cannot see — quoted in full and written at the coordinate the order
-  names, so the master can check it and a restart cannot lose it; the session
+  names, so the master can check it and a restart cannot lose it; a candidate for
+  the tracker, the moment it earns one; the session
   stuck; the scope
   moving off the start report; a boundary change agreed with the master
   mid-flight — one line each, the first line self-contained, and each carrying
@@ -159,8 +160,9 @@ and where no master is left to answer, the return ends through the user, below.
 
 With the four parts travel the batch's own extras: findings surfaced but
 left (`../../references/findings.md`),
-hand-offs other batches need to hear about, and candidate issues awaiting the
-master's confirmation.
+hand-offs other batches need to hear about, and the candidates the master has not
+ruled yet — already sent, listed here as what is still outstanding rather than
+proposed a second time.
 
 The session is not free on sending: acceptance is the master's. A follow-up
 mandate that comes back with it is part of this engagement **when the order's

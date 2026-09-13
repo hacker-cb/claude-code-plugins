@@ -116,9 +116,11 @@ when empty:
 
 ## After the report
 
-- **Every tracker edit executes on the word of whoever holds it** — the user, or
-  the session coordinating the epic where this survey runs under one
-  (`hcb-dev:master-session`, *Who decides*) — and on one this report **asks for**
+- **Every tracker edit executes on the word of whoever holds it** — the user, or,
+  for an edit inside the slice that epic holds, the session coordinating it
+  (`hcb-dev:master-session`, *Who decides*); one reaching past that slice, and one
+  that closes an issue or moves it between milestones, is the user's either way —
+  and on one this report **asks for**
   where it is handed over, never one it merely displays and waits for —
   item by item through `hcb-dev:issue-tracking`; a survey that silently edits
   the tracker has outrun its mandate. What the layout's preconditions change is

@@ -183,8 +183,8 @@ work is **done** — not how the ask is worded.
   A verdict past current on an issue its lanes hold is written beside that
   lane, as what holds the batch until the tracker edit releasing it is made.
   Every such edit — those and the closing hygiene plan alike — it asks you about
-  and makes only on the word that authorizes it — yours, or the master's where a
-  survey runs under one — item by item through `issue-tracking`. Where the
+  and makes only on the word that authorizes it — yours, or the master's for an
+  edit inside its epic's slice — item by item through `issue-tracking`. Where the
   slice turns up issues classified outside the mechanism the repository actually
   uses, that plan reaches past the slice: the rest of the repository's carrying
   the same value, closed ones included.
@@ -217,9 +217,9 @@ the plan stages them.
   level with every redraw, and opening each wave as its gate clears. Inside the
   epic it decides what the code, the plan and the ledger answer — the tracker
   writes its own rulings produce, slots, corrected zones, the next wave of the
-  plan you approved — and brings you three things: an architectural fork that
-  changes what is built, the epic's composition, and a merge into the default
-  branch its authority did not carry. Never takes
+  plan you approved — and brings you a fork that changes what is built, the
+  epic's composition, a merge into the default branch its authority did not
+  carry, and anything else it cannot place inside the epic. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
   Reports in the sizes `references/report-format.md` fixes: a wave report when a

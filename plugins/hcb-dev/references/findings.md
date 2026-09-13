@@ -248,7 +248,8 @@ The answer is the user's, and where this session works to an order — one writt
 by another session, whatever carried it here — it is whoever that order names
 **for writing to the tracker** ([`order-anatomy.md`](order-anatomy.md)); an
 addressee it names for its forks is not that, and an order naming none leaves the
-user — save a wave's, which names its master whatever else it settles. Opening or
+user — a wave's order included, where that slot is stated like any other rather
+than read out of the order's shape. Opening or
 updating anything waits for that answer, every time. **A session coordinating an
 epic holds the answer for its own slice**: the assignment authorizes the writes
 its own rulings produce
