@@ -102,8 +102,8 @@ Every event lands in the ledger before the conversation moves on
 
 ## Who decides
 
-Inside the epic this role holds, it decides what the code, the plan and the
-ledger answer: the tracker writes its own rulings produce, a slot under the
+Inside the epic this role holds — the plan the user approved, never the one still
+being drawn — it decides what the code, the plan and the ledger answer: the tracker writes its own rulings produce, a slot under the
 epic's authority, a zone corrected, a chip re-issued, a body rewritten so a batch
 can read it, the next wave opened on the plan the user approved. What it settles
 that way is named in the report's `Without your word`, which is where a veto

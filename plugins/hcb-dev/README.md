@@ -182,11 +182,12 @@ work is **done** — not how the ask is worded.
   `references/wave-planning.md`, and one recommendation for what to take next.
   A verdict past current on an issue its lanes hold is written beside that
   lane, as what holds the batch until the tracker edit releasing it is made.
-  Every such edit — those and the closing hygiene plan alike — it asks you about
-  and makes only on the word that authorizes it — yours, or the master's for an
-  edit inside its epic's slice, to the bounds that role draws; closing an issue
-  or moving it between milestones stays yours, and so does anything reaching past
-  the slice — item by item through `issue-tracking`. Where the
+  Every such edit — those and the closing hygiene plan alike — it makes only on
+  the word that authorizes it, and asks whoever holds that word: yours, or the
+  master's for an edit inside the slice of an epic whose plan you have already
+  approved, to the bounds that role draws. Closing an issue or moving it between
+  milestones stays yours, and so does anything reaching past the slice — item by
+  item through `issue-tracking`. Where the
   slice turns up issues classified outside the mechanism the repository actually
   uses, that plan reaches past the slice: the rest of the repository's carrying
   the same value, closed ones included.
@@ -249,9 +250,10 @@ the plan stages them.
   that is actually free against the capacity you asked for, and names what holds
   every batch that is missing rather than filling the number. Differential where
   `backlog-survey` is exhaustive: use the survey where nothing records a point
-  to diff from. Writes the pass to the ledger, then hands what you approve to
-  `wave-dispatch` — the capacity you named is a ceiling, not the word that
-  launches.
+  to diff from. Writes the pass to the ledger, then hands the layout to
+  `wave-dispatch` — on your word where it changes what the plan you approved
+  holds, on the master's where it only opens that plan's next wave. The capacity
+  you named is a ceiling either way, never the word that launches.
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   One chip per batch — title per `references/session-naming.md` (the launched
   session is asked to wear it; what later messages match on is what its start

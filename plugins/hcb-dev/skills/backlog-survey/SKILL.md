@@ -118,9 +118,12 @@ when empty:
 
 - **Every tracker edit executes on the word of whoever holds it** — the user, or,
   for an edit inside the slice that epic holds, the session coordinating it to
-  the bounds that role draws (`hcb-dev:master-session`, *Who decides*); one
-  reaching past that slice is the user's whatever those bounds say —
-  and on one this report **asks for**
+  the bounds that role draws (`hcb-dev:master-session`, *Who decides*). Three
+  cases stay the user's whatever those bounds say: an edit reaching past the
+  slice; one that moves the epic's composition, an issue closed or carried
+  between milestones; and every edit at all where this survey is what the plan is
+  still being drawn from, the role holding nothing it has not been approved to
+  hold. The edit executes on one this report **asks for**
   where it is handed over, never one it merely displays and waits for —
   item by item through `hcb-dev:issue-tracking`; a survey that silently edits
   the tracker has outrun its mandate. What the layout's preconditions change is

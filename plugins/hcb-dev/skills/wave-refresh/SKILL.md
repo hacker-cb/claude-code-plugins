@@ -68,7 +68,8 @@ disagreement is itself a finding:
   batch is actually writing, which may reach past the zone its order drew.
 
 Every disagreement goes to whoever holds the word — the user where this pass
-stands alone, the session coordinating the epic under one — a request reaching
+stands alone, the session coordinating the epic under one, and the user again
+for a disagreement reaching past that epic's slice — a request reaching
 past its zone, a row with no session, a session with no row. Until one is settled the ground is read
 the **safer** way rather than the wider or the narrower: a zone read two ways is
 occupied to the union of both, and a session whose zone no source gives holds
