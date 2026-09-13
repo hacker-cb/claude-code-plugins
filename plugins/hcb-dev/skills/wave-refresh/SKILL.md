@@ -143,8 +143,9 @@ outside it as its own choice for the user, not as part of this slice's layout.
 The frame is
 [`../../references/report-format.md`](../../references/report-format.md)'s: its
 first line, and its ask block last, carrying the tracker edits the candidates
-stand on and, where the layout changes what the approved plan holds, the word it
-launches on. Between them, in this order, each
+stand on that *Who decides* leaves with the user — the rest are named as
+conditions below and executed on the word holding them, never asked for — and,
+where the layout changes what the approved plan holds, the word it launches on. Between them, in this order, each
 section explicit even when empty:
 
 1. **The front** — batches running, the ground each holds, what landed since the

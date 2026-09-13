@@ -221,7 +221,8 @@ completed straight onto the base in Phase 2.
   rather than beside it.
 - **Issues output** — the incidental findings whose outcome is not this run's to
   give, and the follow-ups, reach whoever holds that answer as proposals in the
-  report's ask block, per `findings.md`;
+  report's ask block, per `findings.md` — one an order above this run already
+  sent that holder standing there as outstanding rather than proposed again;
   `hcb-dev:issue-tracking` owns the tracker operations their answer authorizes. In local mode no change request
   closes the intake issue, so closing or linking it rides with that handoff or the
   issue is left open against work that landed.

@@ -250,13 +250,14 @@ by another session, whatever carried it here — it is whoever that order names
 addressee it names for its forks is not that, and an order naming none leaves the
 user — a wave's order included, where that slot is stated like any other rather
 than read out of the order's shape. Opening or
-updating anything waits for that answer, every time. **Where nothing named a
-holder, a session coordinating an epic holds the answer for its own slice, to
-the bounds that role draws** — an order naming one is that naming, and the role
-does not outrank it: the assignment authorizes the writes its own rulings produce
+updating anything waits for that answer, every time. **A session coordinating an
+epic holds the answer for the writes its own rulings produce**, to the bounds
+that role draws
 ([`../skills/master-session/SKILL.md`](../skills/master-session/SKILL.md), *Who
-decides*), and what that section leaves with a person waits for them like any
-other answer. Where no role carries it that way, **a standing instruction to work
+decides*) — its own assignment is what gives it that, and nothing else does: a
+session working to an order takes its holder from that order's slot however many
+coordinators stand above it, and what that section leaves with a person waits for
+them like any other answer. Where no role carries it that way, **a standing instruction to work
 autonomously is not that answer** — it authorizes the work, not the tracker — and
 an approval covers the batch it was given for, never what turns up afterwards.
 
