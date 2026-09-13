@@ -162,9 +162,9 @@ and where no master is left to answer, the return ends through the user, below.
 
 With the four parts travel the batch's own extras: findings surfaced but
 left (`../../references/findings.md`),
-hand-offs other batches need to hear about, and the candidates the master has not
-ruled yet — already sent, listed here as what is still outstanding rather than
-proposed a second time.
+hand-offs other batches need to hear about, and the candidates the order's
+tracker authority has not ruled yet — already sent there, listed here as what is
+still outstanding rather than proposed a second time.
 
 The session is not free on sending: acceptance is the master's. A follow-up
 mandate that comes back with it is part of this engagement **when the order's

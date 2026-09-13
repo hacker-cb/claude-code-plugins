@@ -154,8 +154,9 @@ to a person — settled here too, both halves. The merge is yours to take when i
 comes; narrowing what you were given is yours too, widening it never.
 Decide yourself: <forks>. Agree with the master BEFORE building: <forks>.
 Through the master to the user: <forks>.
-Tracker authority: the master above — a write your work turns up goes there as a
-candidate and is filed on its confirmation, never on your own word.
+Tracker authority: <the master's own name, written here rather than left to the
+addressee below> — a write your work turns up goes there as a candidate and is
+filed on its confirmation, never on your own word.
 
 Done means: <the terminal deliverable>
 
@@ -203,7 +204,10 @@ halts you until a person answers.
 Last: the return per hcb-dev:wave-worker — the full report to <the tracker
 coordinate — the epic, the batch's issues>, a short notice to the master.
 Filing a candidate you sent — in a status, or with your return — is authorized
-once the master confirms it. Your session
+once the master confirms it, which acceptance does not do: a candidate stands
+outstanding until the ruling pass at the round's close, so you file only what
+that pass ruled while you were still engaged, and the master opens the rest
+itself. Your session
 is not free until the master accepts.
 ```
 
