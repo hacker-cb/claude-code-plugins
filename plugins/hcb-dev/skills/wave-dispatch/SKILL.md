@@ -45,8 +45,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   it. Nothing else releases it, a verdict carried in the order included.
 - **Check the round that cleared this wave's gate is closed** — its returns
   accepted, their candidates ruled, and the tracker writes on which this wave
-  stands executed or deferred by the user's word
-  (`hcb-dev:master-session`). A wave no round opened — an epic's first, or ground
+  stands executed or deferred by whoever holds that word
+  (`hcb-dev:master-session`, *Who decides*). A wave no round opened — an epic's first, or ground
   a capacity pass freed — has none to close. A batch one of those writes still
   holds is **not hung**: report it with that write as the condition releasing it.
 - **A layout this preflight corrects after the user's word on it** — a zone

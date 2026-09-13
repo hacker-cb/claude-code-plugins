@@ -98,7 +98,7 @@ whole, and the report says which half was a delta.
 A premise a landing knocked out — an issue whose blocker is now closed, whose
 coordinate moved, whose defect is gone — takes its verdict into the layout by
 `wave-planning.md`, and the tracker edit that releases a held batch is
-`hcb-dev:issue-tracking`'s, on the user's word.
+`hcb-dev:issue-tracking`'s, on the word that authorizes it.
 
 ## Ruling the candidates
 

@@ -183,7 +183,8 @@ work is **done** — not how the ask is worded.
   A verdict past current on an issue its lanes hold is written beside that
   lane, as what holds the batch until the tracker edit releasing it is made.
   Every such edit — those and the closing hygiene plan alike — it asks you about
-  and makes only on your word, item by item through `issue-tracking`. Where the
+  and makes only on the word that authorizes it — yours, or the master's where a
+  survey runs under one — item by item through `issue-tracking`. Where the
   slice turns up issues classified outside the mechanism the repository actually
   uses, that plan reaches past the slice: the rest of the repository's carrying
   the same value, closed ones included.
@@ -440,7 +441,7 @@ Per skill, on top of those:
   session that receives one needs this plugin installed.
 - **`backlog-survey`**: the forge CLI (`gh` / `glab`) to list and read the
   slice's issues; nothing else — the hygiene it proposes runs through
-  `issue-tracking` on your word.
+  `issue-tracking` on the word that authorizes it.
 - **`wave-refresh`**: `git` against the resolved base — every fact it rules on
   is read from that ref, not from a working tree — plus the forge CLI for the
   running batches' change requests and the live registry for who is still

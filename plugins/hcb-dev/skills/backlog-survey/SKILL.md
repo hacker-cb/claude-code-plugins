@@ -9,7 +9,7 @@ description: >-
   "изучи все issues", "раздели по важности", "что брать в работу", "разложи
   бэклог", "перепроверь все issues вехи/метки" — and before an epic is split
   into waves when no survey exists yet. Report-first: every tracker edit it
-  proposes executes only on the user's word, item by item through
+  proposes runs on the word that authorizes it, item by item through
   `hcb-dev:issue-tracking`.
   Not for one issue's mechanics (`hcb-dev:issue-tracking`); the ask to split
   into waves AND run them is `hcb-dev:master-session`'s — this skill surveys
