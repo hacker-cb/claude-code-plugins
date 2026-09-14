@@ -238,9 +238,11 @@ Acceptance is
 [`../../references/order-return.md`](../../references/order-return.md)'s, and
 it ends in words the worker is waiting for: accepted — the work taken and the
 session free, the batch standing at `accepted` until the master releases it — or
-reopened, naming what is missing. Confirming the follow-up
-issues a return proposes is part of acceptance, on the authorization the order
-itself carried.
+reopened, naming what is missing. The candidates a return carries are recorded
+and acknowledged here, never ruled: acceptance judges the deliverable, and the
+ruling pass at the round's close settles them against each other. Filing what
+that pass ruled is part of acceptance where its ruling has already landed, on
+the authorization the order itself carried.
 
 ## Where chips are unavailable
 

@@ -84,6 +84,14 @@ checked on — is part of this role's loop, not a one-time launch step.
 Every event lands in the ledger before the conversation moves on
 (`wave-ledger.md`); the table says what each one takes besides.
 
+**A round** is one wave's traffic through this loop: it opens when that wave is
+launched and closes when every batch it holds has come back — each return
+accepted, each landing accounted for — whether or not another wave is running
+beside it. The wave is what a round is named by, and what the ledger records a
+candidate against; a candidate arriving after its wave's round closed is ruled by
+the next one to close, and one belonging to no closed round yet holds the batch
+that sent it out of `released`.
+
 | Event | Do | Ledger |
 |---|---|---|
 | a batch's **start report** | check it against the plan — a scope read wider or narrower than the batch was drawn, a boundary read differently, a premise it says fell — and answer what diverges ahead of that batch's other traffic, since the batch holds only the work the divergence touches. Where the report arrives bearing a title — one the batch itself cannot read, and one a channel need not show (`session-comms.md`) — check it against the title that batch's order carries in its first line, and answer a different one with that string; a label a channel derived and a variant a host handed back are neither | the row, carrying what the answer changed |

@@ -112,14 +112,19 @@ test on a passage is whether deleting it changes what anyone does next.
    carried by a batch that ended.
 4. **Candidates** — the tracker writes the batches have turned up that nothing
    has ruled yet: one line each, carrying the batch that sent it, the moment it
-   arrived, the outcome and the classification that batch proposed, and the round
-   whose close will rule it. The line is written when the candidate **arrives** —
-   in a status, or with a return, whichever came first — so a restart finds what
-   was sent before any return was. It leaves with its ruling: the outcome
-   [`findings.md`](findings.md) gave it, what was opened where that outcome opens
-   something, and the word that authorized the write. One the ruling leaves with a
-   person moves to **Expectations** rather than staying here, and a batch does not
-   reach `released` while a line of its own still stands.
+   arrived, the wave it arrived under — whose round is the one that will rule it —
+   and, as that batch proposed them, the outcome, the classification, and **the
+   coordinate the finding stands on** with the tracker write it asks for, since a
+   restart that cannot re-measure a candidate cannot rule it and cannot tell it
+   from one the backlog already holds. The line is written when the candidate
+   **arrives** — in a status, or with a return, whichever came first — so a
+   restart finds what was sent before any return was. It leaves with its ruling:
+   the outcome [`findings.md`](findings.md) gave it, what was opened where that
+   outcome opens something, and the word that authorized that write where one
+   happened — an outcome writing nothing carries none, and says so rather than
+   leaving the field to be read as unrecorded. A candidate whose ruling leaves it
+   with a person moves to **Expectations** and is answered there; a batch does not
+   reach `released` while a line of its own still stands in either place.
 5. **Decisions** — every fork settled during the epic: who asked, what was
    decided, where it is recorded (issue, change request) — the decision, not the
    case that was made for it.
