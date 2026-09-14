@@ -71,7 +71,10 @@ Three things meet for each one, all inside the suite:
   invocation, the exit status, the fragments the output must contain, and what the
   case is there to hold. A path written into that second column is relative to the
   repository root, which is where the runner works from whatever directory it was
-  called in.
+  called in. One word there is the runner's own rather than the script's:
+  `WORKTREE=1` runs that case from a fresh linked worktree of this repository — the
+  topology where a checkout's git directory and its common directory are different
+  paths — and removes it afterwards.
 - `stub/<command>` — the stand-in engine, named for the command it replaces. It
   prints the named envelope, and on request records the argv it was given, writes to
   stderr, checks the boundary it was launched inside, or exits non-zero — so a case

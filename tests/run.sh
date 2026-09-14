@@ -222,6 +222,7 @@ for suite in "${all_suites[@]}"; do
     # `-` means nothing added.
     extra=()
     stub_env=()
+    case_worktree=""
     if [ "$args" != "-" ]; then
       # Split, never globbed: a `[x]`, `*` or `?` in a word is text a case hands the
       # script on purpose, and must not turn into whatever path happens to match it.
@@ -229,11 +230,26 @@ for suite in "${all_suites[@]}"; do
       # shellcheck disable=SC2206 # deliberate: the manifest supplies separate words
       for word in $args; do
         case "$word" in
+          # The runner's own word, not an environment one: it says where the case
+          # runs. A linked worktree is the one topology in which a checkout's git
+          # directory and its common directory are different paths, and an assertion
+          # about both of them proves nothing in an ordinary checkout, where they are
+          # the same string.
+          WORKTREE=1) case_worktree="$WORK/wt.$suite.$suite_rows" ;;
           [A-Z]*=*) stub_env+=("$word") ;;
           *) extra+=("$word") ;;
         esac
       done
       set +f
+    fi
+    case_cwd="$ROOT"
+    if [ -n "$case_worktree" ]; then
+      if git -C "$ROOT" worktree add --detach -q "$case_worktree" HEAD 2>/dev/null; then
+        case_cwd="$case_worktree"
+      else
+        report_failure "$suite/$fixture" "could not add the linked worktree this case runs in" "$note"
+        suite_fail=$((suite_fail + 1)); continue
+      fi
     fi
     # Order is the guard, not a detail. The suite's own env comes first and the
     # case's next, so a case overrides its suite (that is how a case pins a locale of
@@ -241,12 +257,18 @@ for suite in "${all_suites[@]}"; do
     # them: a suite.conf line setting PATH would walk the stub directory off the
     # search path, and one setting STUB_MARKER_FILE would leave the marker
     # witnessing nothing, both while the suite went on reporting green.
-    out=$(env ${suite_env[@]+"${suite_env[@]}"} ${stub_env[@]+"${stub_env[@]}"} \
+    out=$(cd "$case_cwd" \
+          && env ${suite_env[@]+"${suite_env[@]}"} ${stub_env[@]+"${stub_env[@]}"} \
               STUB_ENVELOPE="$envelope" STUB_MARKER_FILE="$marker" \
               PATH="$stubs:$PATH" \
               "$runner" "$script" ${suite_argv[@]+"${suite_argv[@]}"} \
               ${extra[@]+"${extra[@]}"} 2>&1 </dev/null)
     got=$?
+    # Before the verdicts below, each of which continues past whatever follows it: a
+    # worktree left behind is admin state in this repository, not a file in $WORK.
+    [ -z "$case_worktree" ] \
+      || git -C "$ROOT" worktree remove --force "$case_worktree" >/dev/null 2>&1 \
+      || rm -rf "$case_worktree"
 
     if [ "$got" != "$want" ]; then
       report_failure "$suite/$fixture" "exit $got, wanted $want" "$note"
