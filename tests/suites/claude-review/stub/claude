@@ -14,10 +14,10 @@
 # A warning on stderr, which the script collects into its `run warnings:` block.
 [ -z "${STUB_STDERR:-}" ] || printf '%s\n' "$STUB_STDERR" >&2
 # The read-only boundary the run was launched inside, judged against the checkout it
-# runs in and reported on stderr like the warning above: writes denied to the tree and
-# both git directories, a filesystem layer the repository cannot switch off, no way
-# out of the sandbox, nothing approved outside it — an inherited allow rule included —
-# and the file tools denied.
+# runs in and reported on stderr like the warning above: writes denied to the tree,
+# both git directories and the run's own output, a filesystem layer the repository
+# cannot switch off, no way out of the sandbox, nothing approved outside it — an
+# inherited allow rule included — and the file tools denied.
 if [ -n "${STUB_CHECK_BOUNDARY:-}" ]; then
   settings="" mode="" allowed="" disallowed="" prev=""
   for arg in "$@"; do
@@ -33,12 +33,16 @@ if [ -n "${STUB_CHECK_BOUNDARY:-}" ]; then
   printf '%s' "$settings" | jq -e \
       --arg top "$(git rev-parse --show-toplevel)" \
       --arg common "$(git rev-parse --path-format=absolute --git-common-dir)" \
-      --arg gitdir "$(git rev-parse --absolute-git-dir)" '
+      --arg gitdir "$(git rev-parse --absolute-git-dir)" \
+      --arg tmp "$(cd "${TMPDIR:-/tmp}" && pwd -P)" '
     .sandbox as $s
+    | ($s.filesystem.denyWrite // []) as $denied
+    | [$denied[] | select(startswith($tmp + "/claude-review.") and (endswith(".log") | not))] as $out
     | $s.enabled == true and $s.failIfUnavailable == true
       and $s.allowUnsandboxedCommands == false and $s.filesystem.disabled == false
       and $s.autoAllowBashIfSandboxed == true and .env.GIT_OPTIONAL_LOCKS == "0"
-      and ([$top, $common, $gitdir] - ($s.filesystem.denyWrite // []) | length == 0)
+      and ([$top, $common, $gitdir] - $denied | length == 0)
+      and ($out | length == 1) and ($denied | index($out[0] + ".log") != null)
       and ((.permissions.ask // []) | index("Bash") != null)' \
       >/dev/null || broken="$broken settings"
   [ "$mode" = dontAsk ] || broken="$broken permission-mode"

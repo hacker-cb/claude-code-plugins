@@ -69,21 +69,29 @@ case "$MODEL" in *--*|"")
 # Every git read below, and the run's own, skips the index refresh it would otherwise
 # write: this script promises to change nothing either.
 export GIT_OPTIONAL_LOCKS=0
-# The paths the run is denied writes to, resolved before anything reads or creates.
-# Outside a git working tree there is no tree to hold read-only, nor anything to
-# review, so the run is refused rather than launched into a writable directory. The
-# sandbox reads `*`, `?` and `[` in a denied path as a pattern, and on Linux drops the
-# entry altogether, so a checkout or temp directory carrying one is refused too.
+# The paths the run is denied writes to, resolved before anything reads or creates —
+# and every one of them required, since an entry that failed to resolve is an entry
+# the boundary silently lacks. Outside a git working tree there is no tree to hold
+# read-only, nor anything to review, so the run is refused rather than launched into a
+# writable directory. The temp root is taken canonical: a relative or symlinked TMPDIR
+# would otherwise slip the run's output past the inside-the-repository guard below.
+# The sandbox reads `*`, `?` and `[` in a denied path as a pattern, and on Linux drops
+# the entry altogether, so a path carrying one is refused too.
 TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
 [ -n "$TOP" ] \
   || { echo "claude review failed: not inside a git working tree — there is no tree to review or to hold read-only"; exit 1; }
 GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
 GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
-for path in "${TMPDIR:-/tmp}" "$TOP" "$GITCOMMON" "$GITDIR"; do
+{ [ -n "$GITCOMMON" ] && [ -n "$GITDIR" ]; } \
+  || { echo "claude review failed: the git directories of $TOP could not be resolved, so they cannot be held read-only"; exit 1; }
+TMPROOT="$(cd "${TMPDIR:-/tmp}" 2>/dev/null && pwd -P)" || TMPROOT=""
+for path in "${TMPDIR:-/tmp}" "$TMPROOT" "$TOP" "$GITCOMMON" "$GITDIR"; do
   case "$path" in *[*?[]*)
     echo "claude review failed: '$path' holds a glob character, and the sandbox cannot deny writes to it"
     exit 1 ;; esac
 done
+[ -n "$TMPROOT" ] \
+  || { echo "claude review failed: the temp directory ${TMPDIR:-/tmp} does not resolve to a directory"; exit 1; }
 
 if [ -n "$BASE" ]; then
   # Empty covers both an unknown ref and no shared history, and the two are not
@@ -110,8 +118,8 @@ else
   OUTSIDE_NOTE="untracked path(s) are NOT reviewed — a diff does not show them"
 fi
 
-OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")" && [ -n "$OUT" ] \
-  || { echo "claude review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }
+OUT="$(mktemp "$TMPROOT/claude-review.XXXXXX")" && [ -n "$OUT" ] \
+  || { echo "claude review failed: could not create a temp file under $TMPROOT"; exit 1; }
 # Armed before the guard below, or that guard's exit leaves the file it just made.
 # The run publishes its own pid below, so a caller can stop it — and stopping it must
 # stop the engine too. On EXIT alone the temp files went and the child lived on,

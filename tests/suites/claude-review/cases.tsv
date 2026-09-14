@@ -100,6 +100,9 @@ report	STUB_CHECK_BOUNDARY=1	0	scope:|read-only boundary held	the run is launche
 -	TMPDIR=/tmp/claude-review-*glob	1	holds a glob character	and so is one carrying `*`
 -	TMPDIR=/tmp/claude-review-?glob	1	holds a glob character	and one carrying `?`
 -	GIT_DIR=/nonexistent/claude-review-not-a-repo	1	not inside a git working tree	a directory outside a git working tree is refused before the engine
+-	STUB_GIT_FAIL=--git-common-dir	1	could not be resolved	a git directory that does not resolve is refused, never left writable
+-	STUB_GIT_FAIL=--absolute-git-dir	1	could not be resolved	and so is the other one
+-	TMPDIR=.	1	TMPDIR is inside the repository under review	a relative temp root inside the checkout is caught once it is resolved
 #
 # The engine's own exit status, which the script currently ignores.
 report	STUB_EXIT=9	0	scope:	an engine that answered fully is judged by its envelope, not its status
