@@ -110,16 +110,26 @@ test on a passage is whether deleting it changes what anyone does next.
    what it re-read, and reads the rest from here rather than re-deriving them
    (`hcb-dev:wave-refresh`). A line leaves when its issue does — closed, or
    carried by a batch that ended.
-4. **Decisions** — every fork settled during the epic: who asked, what was
+4. **Candidates** — the tracker writes the batches have turned up that nothing
+   has ruled yet: one line each, carrying the batch that sent it, the moment it
+   arrived, the outcome and the classification that batch proposed, and the round
+   whose close will rule it. The line is written when the candidate **arrives** —
+   in a status, or with a return, whichever came first — so a restart finds what
+   was sent before any return was. It leaves with its ruling: the outcome
+   [`findings.md`](findings.md) gave it, what was opened where that outcome opens
+   something, and the word that authorized the write. One the ruling leaves with a
+   person moves to **Expectations** rather than staying here, and a batch does not
+   reach `released` while a line of its own still stands.
+5. **Decisions** — every fork settled during the epic: who asked, what was
    decided, where it is recorded (issue, change request) — the decision, not the
    case that was made for it.
-5. **Standing constraints** — what no batch may violate while the epic runs: a
+6. **Standing constraints** — what no batch may violate while the epic runs: a
    change request that must not merge, a foreign stash, a pinned version. A
    return whose claims touch one of these is checked against it before either
    is believed. Each is written as the rule a batch acts on, together with what
    would lift it; how it came to be known is journal, and a constraint carrying
    its own derivation is where the ledger grows.
-6. **Merge queue and gates** — the current wave's launch order (at once, or
+7. **Merge queue and gates** — the current wave's launch order (at once, or
    staged with what each step waits on), the merge order inside it, each batch
    whose authority the header's policy was narrowed for and why, which batch
    stands ready and waiting for its slot, in either mode (written the moment
@@ -130,7 +140,7 @@ test on a passage is whether deleting it changes what anyone does next.
    it and a base that runs no checks are both answers, and one nobody has read
    yet is recorded as unread rather than as either; and what opens each later
    wave.
-7. **Expectations** — what is awaited from whom: unconfirmed batches, answers
+8. **Expectations** — what is awaited from whom: unconfirmed batches, answers
    owed, mandates given with the order's authorization and not yet met. Each
    carries who owes it, the moment it was first asked, and whether work stands on
    it — a chip hung and not yet clicked is owed by the user, the click being
@@ -141,7 +151,7 @@ test on a passage is whether deleting it changes what anyone does next.
    — or the coordinate where that text is written. A row leaves only with its outcome — answered or met, deferred by
    the user's word, withdrawn, failed with what still stands, or overtaken by
    something that settles it, named in the line that drops it.
-8. **Journal** — one line per event, terse, newest last; and the account behind
+9. **Journal** — one line per event, terse, newest last; and the account behind
    a constraint or a decision, at the length it takes. The ledger carries what
    is acted on and the journal how it was arrived at — and the journal is what
    moves out first, so this section also indexes what has left: every archive in

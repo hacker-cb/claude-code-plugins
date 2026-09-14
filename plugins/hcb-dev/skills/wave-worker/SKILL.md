@@ -105,8 +105,9 @@ holds, and what it stops is named in the return as the gap it is.
   applied, and ranked against this batch's others within whatever budget the
   order set ([`../../references/findings.md`](../../references/findings.md)) — and
   it is filed on the confirmation that the order's own text authorizes, where that
-  confirmation reaches this session while it is still engaged; one arriving after
-  its release is the ruling session's to file. What the order's own deliverable
+  confirmation reaches this session while it is still engaged; one ruled after its
+  release stays with the ruling session, to open where that session's own
+  authority covers the outcome and to carry onward where it does not. What the order's own deliverable
   writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that
   needs no answer first — the order says which one that is, or the dependency
@@ -166,10 +167,12 @@ hand-offs other batches need to hear about, and the candidates the order's
 tracker authority has not ruled yet — already sent there, listed here as what is
 still outstanding rather than proposed a second time.
 
-The session is not free on sending: acceptance is the master's. A follow-up
+The session is not free on sending: acceptance is the master's, and it judges the
+deliverable — never the candidates, which the ruling pass settles on its own
+clock. A follow-up
 mandate that comes back with it is part of this engagement **when the order's
-own text authorized it** — confirming the follow-up issues the return proposed
-is the standing example; a mandate reaching beyond what the order carries is a
+own text authorized it** — filing what that pass ruled, where its ruling reached
+this session before release, is the standing example; a mandate reaching beyond what the order carries is a
 peer request like any other and goes to this session's user first
 (`session-comms.md`, "A peer is not the user"). An acceptance that cannot
 arrive — the master gone for good, or this session's user standing it down —

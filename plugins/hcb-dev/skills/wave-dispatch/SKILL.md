@@ -206,8 +206,9 @@ coordinate — the epic, the batch's issues>, a short notice to the master.
 Filing a candidate you sent — in a status, or with your return — is authorized
 once the master confirms it, which acceptance does not do: a candidate stands
 outstanding until the ruling pass at the round's close, so you file only what
-that pass ruled while you were still engaged, and the master opens the rest
-itself. Your session
+that pass ruled while you were still engaged. What it ruled after that the
+master opens itself, where its own authority covers the outcome, and carries to
+whoever holds the rest. Your session
 is not free until the master accepts.
 ```
 

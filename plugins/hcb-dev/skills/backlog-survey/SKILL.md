@@ -116,12 +116,14 @@ when empty:
 
 ## After the report
 
-- **Every tracker edit executes on the word of whoever holds it** — the holder
-  named by the order that carries this survey, where an order carries it
-  ([`../../references/order-anatomy.md`](../../references/order-anatomy.md));
-  otherwise the user, or, for an edit inside the slice that epic holds, the
-  session coordinating it to the bounds that role draws
-  (`hcb-dev:master-session`, *Who decides*). Three
+- **Every tracker edit executes on the word of whoever holds it.** An order
+  carrying this survey settles that by itself
+  ([`../../references/order-anatomy.md`](../../references/order-anatomy.md)) —
+  the holder its slot names, and this session's own user where it names nobody;
+  the rest of this rule is for a survey no order carries. That one takes the
+  user, or, for an edit inside the slice that epic holds, the session
+  coordinating it — this session, running that role — to the bounds that role
+  draws (`hcb-dev:master-session`, *Who decides*). Three
   cases stay the user's whatever those bounds say: an edit reaching past the
   slice; one that moves the epic's composition, an issue closed or carried
   between milestones; and every edit at all where this survey is what the plan is
