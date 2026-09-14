@@ -266,9 +266,14 @@ for suite in "${all_suites[@]}"; do
     got=$?
     # Before the verdicts below, each of which continues past whatever follows it: a
     # worktree left behind is admin state in this repository, not a file in $WORK.
-    [ -z "$case_worktree" ] \
-      || git -C "$ROOT" worktree remove --force "$case_worktree" >/dev/null 2>&1 \
-      || rm -rf "$case_worktree"
+    if [ -n "$case_worktree" ]; then
+      git -C "$ROOT" worktree remove --force "$case_worktree" >/dev/null 2>&1 \
+        || { rm -rf "$case_worktree"
+             # The directory is only half of it: the registration under the shared git
+             # directory outlives it, and every later worktree command reads it.
+             git -C "$ROOT" worktree prune >/dev/null 2>&1 \
+               || echo "could not prune the registration of $case_worktree"; }
+    fi
 
     if [ "$got" != "$want" ]; then
       report_failure "$suite/$fixture" "exit $got, wanted $want" "$note"

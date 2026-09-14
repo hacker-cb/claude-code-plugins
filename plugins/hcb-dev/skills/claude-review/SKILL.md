@@ -55,11 +55,14 @@ there: a finding that needs one of those to settle is the calling session's to c
 before acting on it. Started outside a git working tree it refuses to run.
 
 Settings still load the way they do in any session, the repository's own among them,
-so its `.mcp.json`, its `env` block and its `sandbox` entries reach the run as well —
-they can widen what the run reads, where it connects and what it writes outside the
-repository, never the repository itself — and a settings key whose value is a shell
-command runs where the sandbox does not reach. Hooks are the exception, switched off
-whatever source they come from. Reading outside the tree and the environment the run
+so its `env` block and its `sandbox` entries reach the run as well — they can widen
+what the run reads, where it connects and what it writes outside the repository, never
+the repository itself — and a settings key whose value is a shell command runs where
+the sandbox does not reach. Hooks are the exception, switched off whatever source they
+come from, and so are MCP servers: the run starts none, since a headless run would
+otherwise load the repository's own `.mcp.json` without asking and a server's command
+runs outside the sandbox. Where an enterprise MCP configuration forbids that, the run
+is refused rather than started carrying them, and §3's failure line says so. Reading outside the tree and the environment the run
 inherits stay open unless something among those same settings narrows them. Weigh all
 of it before pointing this at a repository nobody here wrote.
 

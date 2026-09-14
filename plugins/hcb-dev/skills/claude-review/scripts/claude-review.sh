@@ -198,10 +198,12 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # tools, so the MCP tools of whoever runs the review stay reachable — theirs is the
 # change request this run promises not to write to — and it does not reach a
 # subagent, which carries its own tool set. A deny rule holds in both places, and
-# outranks any allow rule the reviewed repository brings. `--strict-mcp-config` would
-# cover the first half more cheaply, by starting no servers at all, but the CLI
-# refuses it wherever an enterprise MCP config is present, and refuses the whole run
-# with it.
+# outranks any allow rule the reviewed repository brings. What it does not reach is a
+# server's own command: `-p` loads a project's `.mcp.json` without asking anyone, and
+# what that starts runs outside the sandbox — so `--strict-mcp-config` leaves the run
+# with no servers at all. The CLI refuses that flag under an enterprise MCP
+# configuration, and there the run is refused with it rather than started carrying
+# those servers; the branch below says so.
 # `CLAUDE_CODE_RETRY_WATCHDOG` is off for this run alone, whatever the settings that
 # reach it say. Where the account's quota is spent, that watchdog holds the process
 # until the limit resets instead of returning — which is right for an interactive
@@ -222,6 +224,7 @@ CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   "$@" --effort "$LEVEL" --output-format json \
   --permission-mode dontAsk \
+  --strict-mcp-config \
   --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
   --allowedTools "Read,Grep,Glob,Agent" \
@@ -231,6 +234,13 @@ ENGINE_PID=$!
 wait "$ENGINE_PID"
 ENGINE_PID=""
 
+# The refusal this script's own flag can earn: an enterprise MCP configuration does
+# not allow the flag that keeps the reviewed repository's servers out of the run, and
+# the run is refused rather than started carrying them.
+if grep -q 'enterprise MCP config' "$OUT.log" 2>/dev/null; then
+  echo "claude review failed: an enterprise MCP configuration forbids --strict-mcp-config on this machine, and this run does not start the reviewed repository's MCP servers instead"
+  tail -20 "$OUT.log"; exit 1
+fi
 # An envelope that was never written is its own case, and reaches none of the checks
 # below: every one of them reads a field, and a file with no fields answers each the
 # same way a healthy run would. Whatever the engine managed to say went to stderr.
