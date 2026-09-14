@@ -223,6 +223,9 @@ for suite in "${all_suites[@]}"; do
     extra=()
     stub_env=()
     if [ "$args" != "-" ]; then
+      # Split, never globbed: a `[x]`, `*` or `?` in a word is text a case hands the
+      # script on purpose, and must not turn into whatever path happens to match it.
+      set -f
       # shellcheck disable=SC2206 # deliberate: the manifest supplies separate words
       for word in $args; do
         case "$word" in
@@ -230,6 +233,7 @@ for suite in "${all_suites[@]}"; do
           *) extra+=("$word") ;;
         esac
       done
+      set +f
     fi
     # Order is the guard, not a detail. The suite's own env comes first and the
     # case's next, so a case overrides its suite (that is how a case pins a locale of

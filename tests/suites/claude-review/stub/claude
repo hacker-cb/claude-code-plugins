@@ -37,6 +37,7 @@ if [ -n "${STUB_CHECK_BOUNDARY:-}" ]; then
     .sandbox as $s
     | $s.enabled == true and $s.failIfUnavailable == true
       and $s.allowUnsandboxedCommands == false and $s.filesystem.disabled == false
+      and $s.autoAllowBashIfSandboxed == true and .env.GIT_OPTIONAL_LOCKS == "0"
       and ([$top, $common, $gitdir] - ($s.filesystem.denyWrite // []) | length == 0)
       and ((.permissions.ask // []) | index("Bash") != null)' \
       >/dev/null || broken="$broken settings"

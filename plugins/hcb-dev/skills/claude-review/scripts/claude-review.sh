@@ -66,6 +66,25 @@ case "$NARROW" in *--*)
 case "$MODEL" in *--*|"")
   echo "claude review failed: '$MODEL' is not a model"; exit 1 ;; esac
 
+# Every git read below, and the run's own, skips the index refresh it would otherwise
+# write: this script promises to change nothing either.
+export GIT_OPTIONAL_LOCKS=0
+# The paths the run is denied writes to, resolved before anything reads or creates.
+# Outside a git working tree there is no tree to hold read-only, nor anything to
+# review, so the run is refused rather than launched into a writable directory. The
+# sandbox reads `*`, `?` and `[` in a denied path as a pattern, and on Linux drops the
+# entry altogether, so a checkout or temp directory carrying one is refused too.
+TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
+[ -n "$TOP" ] \
+  || { echo "claude review failed: not inside a git working tree — there is no tree to review or to hold read-only"; exit 1; }
+GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
+GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
+for path in "${TMPDIR:-/tmp}" "$TOP" "$GITCOMMON" "$GITDIR"; do
+  case "$path" in *[*?[]*)
+    echo "claude review failed: '$path' holds a glob character, and the sandbox cannot deny writes to it"
+    exit 1 ;; esac
+done
+
 if [ -n "$BASE" ]; then
   # Empty covers both an unknown ref and no shared history, and the two are not
   # told apart here — unguarded either reaches the count and the target as a blank.
@@ -90,19 +109,6 @@ else
   # are what the diff behind it cannot show.
   OUTSIDE_NOTE="untracked path(s) are NOT reviewed — a diff does not show them"
 fi
-
-# The paths the run is denied writes to, below, resolved before anything is created.
-# The sandbox reads `*`, `?` and `[` in such a path as a pattern, and on Linux drops
-# the entry altogether, so a checkout or temp directory carrying one would leave the
-# boundary open without a word: refused instead.
-TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
-GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
-GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
-for path in "${TMPDIR:-/tmp}" "$TOP" "$GITCOMMON" "$GITDIR"; do
-  case "$path" in *[*?[]*)
-    echo "claude review failed: '$path' holds a glob character, and the sandbox cannot deny writes to it"
-    exit 1 ;; esac
-done
 
 OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")" && [ -n "$OUT" ] \
   || { echo "claude review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }

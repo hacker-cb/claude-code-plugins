@@ -49,9 +49,10 @@ here.
 
 The run is read-only: its sandbox denies writes to the working tree and both git
 directories, nothing outside that sandbox is approved, and the file-editing tools are
-off — so it changes nothing in the repository, uncommitted work included. Nor does it
-build, test or probe: a finding that needs one of those to settle is the calling
-session's to check before acting on it.
+off — so it changes nothing in the repository, uncommitted work included. It still
+runs commands, but a build, a test or a probe that has to write into the tree fails
+there: a finding that needs one of those to settle is the calling session's to check
+before acting on it. Started outside a git working tree it refuses to run.
 
 Settings still load the way they do in any session, the repository's own among them,
 so its `.mcp.json`, its `env` block and its `sandbox` entries reach the run as well —
