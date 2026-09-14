@@ -187,11 +187,6 @@ goes below the table; the cell stays short.
 **A model limit is recoverable now** — rerun on another family before recording
 `UNAVAILABLE`, and record which model was tried.
 
-**A reviewer that edited the tree says so, and that line is not coverage.** It
-belongs above the table with the findings, in the caller's own words: what a
-reviewer changed is not what a reviewer read, and the completion about to happen
-is the reason anyone needs to know before it does.
-
 **Less than the change is not a pass.** A reviewer that ran against the
 wrong base, or over only the committed half while the rest sat in the working
 tree, covered a nonzero number of the wrong files. That is `partial`, and it

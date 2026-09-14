@@ -4,8 +4,8 @@
 # network or an account behind it.
 #
 # Everything below is optional and driven by the case, so that a run's observable
-# surface — the flags it was launched with, what it wrote to stderr, whether it
-# touched the tree, how it exited — can be asserted instead of assumed.
+# surface — the flags it was launched with, what it wrote to stderr, the boundary it
+# was launched inside, how it exited — can be asserted instead of assumed.
 
 # Proof that THIS answered, rather than some `claude` further down PATH.
 [ -z "${STUB_MARKER_FILE:-}" ] || : > "$STUB_MARKER_FILE"
@@ -13,8 +13,39 @@
 [ -z "${STUB_ARGV_FILE:-}" ] || printf '%s\n' "$@" > "$STUB_ARGV_FILE"
 # A warning on stderr, which the script collects into its `run warnings:` block.
 [ -z "${STUB_STDERR:-}" ] || printf '%s\n' "$STUB_STDERR" >&2
-# A file written inside the reviewed tree, which is what `tree-warning:` detects.
-[ -z "${STUB_TOUCH:-}" ] || : > "$STUB_TOUCH"
+# The read-only boundary the run was launched inside, judged against the checkout it
+# runs in and reported on stderr like the warning above: writes denied to the tree and
+# both git directories, a filesystem layer the repository cannot switch off, no way
+# out of the sandbox, nothing approved outside it, and the file tools denied.
+if [ -n "${STUB_CHECK_BOUNDARY:-}" ]; then
+  settings="" mode="" allowed="" disallowed="" prev=""
+  for arg in "$@"; do
+    case "$prev" in
+      --settings) settings=$arg ;;
+      --permission-mode) mode=$arg ;;
+      --allowedTools) allowed=$arg ;;
+      --disallowedTools) disallowed=$arg ;;
+    esac
+    prev=$arg
+  done
+  broken=""
+  printf '%s' "$settings" | jq -e \
+      --arg top "$(git rev-parse --show-toplevel)" \
+      --arg common "$(git rev-parse --path-format=absolute --git-common-dir)" \
+      --arg gitdir "$(git rev-parse --absolute-git-dir)" '
+    .sandbox as $s
+    | $s.enabled == true and $s.failIfUnavailable == true
+      and $s.allowUnsandboxedCommands == false and $s.filesystem.disabled == false
+      and ([$top, $common, $gitdir] - ($s.filesystem.denyWrite // []) | length == 0)' \
+      >/dev/null || broken="$broken sandbox"
+  [ "$mode" = dontAsk ] || broken="$broken permission-mode"
+  case ",$allowed," in *,Bash*) broken="$broken allowedTools" ;; esac
+  for tool in Edit Write NotebookEdit; do
+    case ",$disallowed," in *",$tool,"*) ;; *) broken="$broken disallowedTools:$tool" ;; esac
+  done
+  if [ -z "$broken" ]; then echo "stub: read-only boundary held" >&2
+  else echo "stub: read-only boundary broken:$broken" >&2; fi
+fi
 
 [ -z "${STUB_ENVELOPE:-}" ] || cat "$STUB_ENVELOPE"
 exit "${STUB_EXIT:-0}"

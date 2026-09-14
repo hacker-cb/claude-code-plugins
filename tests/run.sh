@@ -216,24 +216,16 @@ for suite in "${all_suites[@]}"; do
     fi
 
     # `args` carries whatever this case adds to the suite's own invocation, so a case
-    # can pin an argument guard — the only thing standing between `--narrow` and a
-    # flag that would let the run edit the tree. A word shaped `NAME=value` is put in
-    # the run's environment instead, which is how a case reaches the stub's optional
-    # behaviour (stderr, a touched file, a non-zero exit). `-` means nothing added.
+    # can pin an argument guard, which keeps `--narrow` from smuggling in a flag. A word
+    # shaped `NAME=value` is put in the run's environment instead, which is how a case
+    # reaches the stub's optional behaviour (stderr, a boundary check, a non-zero exit).
+    # `-` means nothing added.
     extra=()
     stub_env=()
-    touched=""
     if [ "$args" != "-" ]; then
       # shellcheck disable=SC2206 # deliberate: the manifest supplies separate words
       for word in $args; do
         case "$word" in
-          STUB_TOUCH=repo)
-            # A tree edit has to land inside the repository or the warning it is meant
-            # to trigger cannot see it, so the path is made here and removed below —
-            # a file left behind would be part of the next case's starting state, and
-            # the case would then pass once and never again.
-            touched="$ROOT/engine-probe-$$.txt"
-            stub_env+=("STUB_TOUCH=$touched") ;;
           [A-Z]*=*) stub_env+=("$word") ;;
           *) extra+=("$word") ;;
         esac
@@ -251,7 +243,6 @@ for suite in "${all_suites[@]}"; do
               "$runner" "$script" ${suite_argv[@]+"${suite_argv[@]}"} \
               ${extra[@]+"${extra[@]}"} 2>&1 </dev/null)
     got=$?
-    [ -z "$touched" ] || rm -f "$touched"
 
     if [ "$got" != "$want" ]; then
       report_failure "$suite/$fixture" "exit $got, wanted $want" "$note"

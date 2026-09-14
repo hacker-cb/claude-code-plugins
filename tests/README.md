@@ -74,19 +74,19 @@ Three things meet for each one, all inside the suite:
   called in.
 - `stub/<command>` — the stand-in engine, named for the command it replaces. It
   prints the named envelope, and on request records the argv it was given, writes to
-  stderr, touches a file in the tree, or exits non-zero — so a case can assert what
-  the run did, not only what it returned. What a stub implements is its own suite's
-  business: [`suites/claude-review/stub/claude`](suites/claude-review/stub/claude)
-  answers on stdout because that script reads it there, while a script that takes an
-  output path needs a stub that writes to it.
+  stderr, checks the boundary it was launched inside, or exits non-zero — so a case
+  can assert what the run did, not only what it returned. What a stub implements is
+  its own suite's business:
+  [`suites/claude-review/stub/claude`](suites/claude-review/stub/claude) answers on
+  stdout because that script reads it there, while a script that takes an output path
+  needs a stub that writes to it.
 
 The exit statuses are the contract callers read: **0** a review, with a `scope:`
 record; **1** a failure, quoted; **3** a reviewer that could not run. A fourth, **2**,
 sits outside that contract on purpose — it means the script was *called* wrong (a flag
 without its value, an argument it does not know) and never reached an engine at all,
 which is a different thing from a run that reached one and failed. Cases pin it too,
-since an argument guard is the only thing standing between `--narrow` and a flag that
-would let the run write.
+since an argument guard is what keeps `--narrow` from smuggling in a flag.
 
 What each case must *print* is written out per row rather than derived from the
 status, because every failure opens with the same line: the status implies its line,

@@ -47,19 +47,20 @@ Start at `medium`. A caller — a person or another skill — may hand you the b
 the level, the model or a narrowing; an explicit one wins over anything resolved
 here.
 
-Inside the sandbox the run executes the reviewed repository's own code — its build,
-its tests, the probe that settles a finding — which is what a review at this rung is
-worth and also what makes that repository's contents something you are choosing to
-trust. That choice reaches past the code: settings load the way they do in any
-session, the repository's own among them, so its `.mcp.json`, its `env` block and
-its `sandbox` entries reach the run as well — what the run sets for itself is a
-floor those entries widen, network and filesystem alike, and a settings key whose
-value is a shell command runs where the sandbox does not reach. Hooks are the
-exception, switched off whatever source they come from. Writes land inside the working
-directory, and §3's `tree-warning:` is what that costs; reading outside the tree
-and the environment the run inherits stay open unless something among those same
-settings narrows them. Weigh all of it before pointing this at a repository
-nobody here wrote.
+The run is read-only: its sandbox denies writes to the working tree and both git
+directories, nothing outside that sandbox is approved, and the file-editing tools are
+off — so it changes nothing in the repository, uncommitted work included. Nor does it
+build, test or probe: a finding that needs one of those to settle is the calling
+session's to check before acting on it.
+
+Settings still load the way they do in any session, the repository's own among them,
+so its `.mcp.json`, its `env` block and its `sandbox` entries reach the run as well —
+they can widen what the run reads, where it connects and what it writes outside the
+repository, never the repository itself — and a settings key whose value is a shell
+command runs where the sandbox does not reach. Hooks are the exception, switched off
+whatever source they come from. Reading outside the tree and the environment the run
+inherits stay open unless something among those same settings narrows them. Weigh all
+of it before pointing this at a repository nobody here wrote.
 
 Where there is a base the script targets a **ref range**, which fixes what the run
 diffs; a working-tree review has no range to give, so its scope stays prose the run
@@ -73,12 +74,6 @@ until the run is done.
 
 What is this engine's own:
 
-- A `tree-warning:` line means the run edited the tree it was reviewing — a probe
-  left standing, or a fix applied against this skill's promise. The findings still
-  hold; what stops holding is that the change about to be shipped is the change that
-  was reviewed. Hand the line to the caller with them, and undo nothing yourself.
-  Its absence proves less than its presence: what the repository ignores is outside
-  the comparison, so a build directory rewritten under it stays unreported.
 - A `run warnings:` block means the run printed to stderr while still succeeding —
   a degradation rather than a failure, so read it before trusting what the scope
   line claims.

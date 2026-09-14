@@ -85,9 +85,10 @@ quota-under-blocking-limit	-	3	claude review unavailable:|resets 11:20pm	a spent
 denied-tool-calls	-	0	scope:|2 tool call(s) were denied	denied tool calls narrow the run, and the record says so
 #
 # What the run reports about itself, which nothing asserted before: a warning from
-# stderr, an edited tree, and a model that answered other than the one asked for.
+# stderr, the boundary it was launched inside, and a model that answered other than
+# the one asked for.
 report	STUB_STDERR=deprecation:_flag_renamed	0	scope:|run warnings:|deprecation	a degraded run still reports, with its stderr attached
-report	STUB_TOUCH=repo	0	tree-warning:|read git status	a run that edited the tree says so before its findings
+report	STUB_CHECK_BOUNDARY=1	0	scope:|read-only boundary held	the run is launched unable to write the repository it reviews
 #
 # The argument guards, which no envelope can reach: the run is refused before the
 # engine is launched, and `-` is how a case says so.

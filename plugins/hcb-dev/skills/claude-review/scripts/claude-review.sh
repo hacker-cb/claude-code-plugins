@@ -49,12 +49,12 @@ while [ $# -gt 0 ]; do
 done
 
 # Both values reach an argument string the command parses for flags — `--fix` alone
-# turns a review that promises to change nothing into one that edits the tree, and
-# `--comment` into one that writes to a change request. The level is checked against
-# the ladder; the narrowing is prose, so `--` is refused wherever it appears, which
-# covers every option the command takes without rejecting an ordinary hyphen — and
-# anywhere rather than after a space, since a tab or a newline separates a word just
-# as well, and a guard keyed to one separator is one the others walk past.
+# turns a review that promises to change nothing into one that sets out to edit the
+# tree, and `--comment` into one that sets out to write to a change request. The level
+# is checked against the ladder; the narrowing is prose, so `--` is refused wherever it
+# appears, which covers every option the command takes without rejecting an ordinary
+# hyphen — and anywhere rather than after a space, since a tab or a newline separates
+# a word just as well, and a guard keyed to one separator is one the others walk past.
 case "$LEVEL" in low|medium|high|xhigh|max) ;;
   *) echo "claude review failed: '$LEVEL' is not a rung"; exit 1 ;; esac
 case "$NARROW" in *--*)
@@ -118,60 +118,36 @@ fi
 # own timeout allows — meets a run with nobody to answer it, and hangs it.
 # Where the sandbox cannot start, the CLI warns and runs unsandboxed unless
 # `failIfUnavailable` says otherwise — the boundary this run promises would then be
-# gone behind a warning nobody reads. `denyWrite` covers this run's own output: the
-# temp directory is writable from inside the sandbox wherever `TMPDIR` is unset or
-# points at a shared one, and a verdict a reviewed repository can overwrite is a
-# verdict it can forge. Built with `jq`, so the paths are escaped rather than pasted.
-# `info/` in both git directories rides along: `info/exclude` decides what `git
-# status` shows, so a run able to write it can hide its own changes from the check
-# below. The index is deliberately not denied — git rewrites it while merely reading.
+# gone behind a warning nobody reads.
+# `denyWrite` is what makes the run read-only. It takes the working tree and both git
+# directories — the sandbox otherwise lets a command write there, a linked worktree's
+# shared `.git` included — and this run's own output, since the temp directory stays
+# writable and a verdict the reviewed repository can overwrite is a verdict it can
+# forge. That repository's own settings merge into the same lists but cannot re-open
+# a path denied here; what they could do is switch the filesystem layer off and take
+# every entry with it, which is why `disabled` is set as well. The index is denied
+# with the rest, so `GIT_OPTIONAL_LOCKS` keeps git's read commands from reaching for
+# its lock, and `autoAllowBashIfSandboxed` is set because the sandbox is the only
+# thing left that approves a command. Built with `jq`, so the paths are escaped
+# rather than pasted.
 GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
 GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
-SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
+SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg top "$TOP" \
+    --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
   disableAllHooks:true,
-  env:{CLAUDE_CODE_RETRY_WATCHDOG:"0"},
+  env:{CLAUDE_CODE_RETRY_WATCHDOG:"0", GIT_OPTIONAL_LOCKS:"0"},
   sandbox:{
     enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
+    autoAllowBashIfSandboxed:true,
     network:{strictAllowlist:true},
-    filesystem:{denyWrite:([$out,$log]
-      + ([$gc,$gd] | map(select(. != "") | . + "/info") | unique))}}}')" \
+    filesystem:{disabled:false,
+      denyWrite:([$out,$log,$top,$gc,$gd] | map(select(. != "")) | unique)}}}')" \
   || { echo "claude review failed: could not build the run settings"; exit 1; }
-# What the run leaves behind, to compare against below: this pass promises to
-# change nothing, and the sandbox permits writes inside the working directory.
-# Content, not status codes: a file already listed as modified stays listed as
-# modified however many times the run rewrites it, and a working-tree review is
-# exactly where every covered file is already in that state.
-# A loop, not `xargs`: an empty list must run nothing, and `git hash-object` with no
-# paths reads stdin instead of exiting. Untracked content is here because neither the
-# status line nor the diff carries it — the path appears identical however it changes.
-tree_state() {
-  # `for-each-ref`, not HEAD alone: in a linked worktree the sandbox may write to the
-  # main repository's shared .git, and a moved ref there shows up nowhere else here.
-  git for-each-ref --format='%(refname) %(objectname)'
-  git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD
-  # The names are already listed by `git status` above, so what is needed here is a
-  # snapshot of untracked CONTENT. One pass over the list and one `hash-object` for
-  # the batch, rather than a process per file: this runs twice per review, and
-  # spawning it per path put minutes into a tree that merely has an un-ignored build
-  # directory in it. Reading stays NUL-delimited, so a path with a newline in it is
-  # still seen — it just cannot travel in a batch `--stdin-paths` splits on newlines,
-  # so it gets a call of its own, and being vanishingly rare it costs nothing.
-  newline=$(printf '\n')
-  batched=""
-  while IFS= read -r -d "" f; do
-    case "$f" in
-      *"$newline"*) printf '%s ' "$f"; git hash-object -- "$f" ;;
-      *) batched="$batched$f$newline" ;;
-    esac
-  done < <(git ls-files --others --exclude-standard -z)
-  [ -z "$batched" ] || printf '%s' "$batched" | git hash-object --stdin-paths 2>/dev/null || true
-}
 # Positional parameters, not an interpolated string: a fallback naming the family
 # already requested is not a fallback, and dropping the flag is what says so.
 # Everything the flag parsing above read is consumed by now, so `$@` is free.
 set -- --model "$MODEL"
 [ "$FALLBACK" = "$MODEL" ] || set -- "$@" --fallback-model "$FALLBACK"
-BEFORE="$(tree_state)"
 # Printed before the engine starts, and this run's only output until it finishes: the
 # report below is buffered to the end, so an empty output file otherwise says both
 # "never launched" and "still reading", and the caller cannot tell those apart. What
@@ -181,21 +157,23 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # Settings load as they do in any session — the hooks among them switched off above,
 # and everything the reviewed repository sets arriving with them, this run's own
 # sandbox block included: list keys merge across sources, so what is set there is a
-# floor and not a ceiling.
+# floor for reading and the network, and never re-opens a write denied above.
 # What decides a call is the boundary rather than a prompt, because a prompt here has
-# nobody to answer it: the sandbox runs bash inside it and approves it there, which
-# is what lets the reviewer build, test and probe rather than only read; the git
-# allowlist rides ahead of the classifier for the reads every review makes; and
-# `auto` weighs the rest. A denial narrows the run — the coverage warning below
-# reports that — and enough of them end it, which lands in the failure branch.
-# The deny list is what holds this pass to reading. `--tools` reaches neither far
-# enough nor deep enough on its own: it selects among the built-in tools, so the MCP
-# tools of whoever runs the review stay reachable — theirs is the change request this
-# run promises not to write to — and it does not reach a subagent, which carries its
-# own tool set and edits the working directory under `auto` without asking. A deny
-# rule holds in both places. `--strict-mcp-config` would cover the first half more
-# cheaply, by starting no servers at all, but the CLI refuses it wherever an
-# enterprise MCP config is present, and refuses the whole run with it.
+# nobody to answer it: the sandbox runs bash inside it and approves it there, so the
+# reviewer reads freely and writes nothing in the repository, and
+# `dontAsk` denies every call the sandbox cannot hold — a command the settings
+# exclude from it included — where a classifier could have approved one. A denial
+# narrows the run — the coverage warning below reports that — and enough of them end
+# it, which lands in the failure branch.
+# The deny list holds the file tools, which the sandbox does not reach. `--tools`
+# reaches neither far enough nor deep enough on its own: it selects among the built-in
+# tools, so the MCP tools of whoever runs the review stay reachable — theirs is the
+# change request this run promises not to write to — and it does not reach a
+# subagent, which carries its own tool set. A deny rule holds in both places, and
+# outranks any allow rule the reviewed repository brings. `--strict-mcp-config` would
+# cover the first half more cheaply, by starting no servers at all, but the CLI
+# refuses it wherever an enterprise MCP config is present, and refuses the whole run
+# with it.
 # `CLAUDE_CODE_RETRY_WATCHDOG` is off for this run alone, whatever the settings that
 # reach it say. Where the account's quota is spent, that watchdog holds the process
 # until the limit resets instead of returning — which is right for an interactive
@@ -215,20 +193,16 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   "$@" --effort "$LEVEL" --output-format json \
-  --permission-mode auto \
+  --permission-mode dontAsk \
   --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
-  --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
+  --allowedTools "Read,Grep,Glob,Agent" \
   --disallowedTools "mcp__*,Edit,Write,NotebookEdit" \
   < /dev/null > "$OUT" 2> "$OUT.log" &
 ENGINE_PID=$!
 wait "$ENGINE_PID"
 ENGINE_PID=""
 
-# Before the branch below, not inside it: a run that edited the tree and then died
-# still edited the tree, and that is the case the warning exists for.
-[ "$BEFORE" = "$(tree_state)" ] \
-  || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
 # An envelope that was never written is its own case, and reaches none of the checks
 # below: every one of them reads a field, and a file with no fields answers each the
 # same way a healthy run would. Whatever the engine managed to say went to stderr.
