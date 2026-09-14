@@ -92,6 +92,15 @@ for path in "${TMPDIR:-/tmp}" "$TMPROOT" "$TOP" "$GITCOMMON" "$GITDIR"; do
 done
 [ -n "$TMPROOT" ] \
   || { echo "claude review failed: the temp directory ${TMPDIR:-/tmp} does not resolve to a directory"; exit 1; }
+# The report lives outside the repository under review — the working tree, where it
+# would become an untracked file the next run reads as part of the change, and either
+# git directory, which a linked worktree keeps outside that tree. Checked before the
+# file is created, since a denied path cannot hold a file that is already there.
+for guarded in "$TOP" "$GITCOMMON" "$GITDIR"; do
+  case "$TMPROOT/" in "$guarded"/*)
+    echo "claude review failed: TMPDIR is inside the repository under review ($guarded), so this run's own output cannot be kept outside the boundary"
+    exit 1 ;; esac
+done
 
 if [ -n "$BASE" ]; then
   # Empty covers both an unknown ref and no shared history, and the two are not
@@ -131,13 +140,6 @@ stop_engine() {
 trap 'stop_engine; rm -f "$OUT" "$OUT.log"' EXIT
 trap 'stop_engine; rm -f "$OUT" "$OUT.log"; exit 130' INT
 trap 'stop_engine; rm -f "$OUT" "$OUT.log"; exit 143' TERM
-# The report lives outside the repository under review; inside, it becomes an
-# untracked file the next run reads as part of the change. Through a variable: an
-# empty expansion inline would leave the pattern `/*`, matching every absolute path.
-if [ -n "$TOP" ]; then
-  case "$OUT" in "$TOP"/*)
-    echo "claude review failed: TMPDIR is inside the repository under review"; exit 1 ;; esac
-fi
 
 # `disableAllHooks` is what a detached run needs from this file: a `PermissionRequest`
 # hook — which any enabled plugin may install, and which blocks for as long as its
@@ -237,7 +239,8 @@ ENGINE_PID=""
 # The refusal this script's own flag can earn: an enterprise MCP configuration does
 # not allow the flag that keeps the reviewed repository's servers out of the run, and
 # the run is refused rather than started carrying them.
-if grep -q 'enterprise MCP config' "$OUT.log" 2>/dev/null; then
+if grep -qF 'You cannot use --strict-mcp-config when an enterprise MCP config is present' \
+     "$OUT.log" 2>/dev/null; then
   echo "claude review failed: an enterprise MCP configuration forbids --strict-mcp-config on this machine, and this run does not start the reviewed repository's MCP servers instead"
   tail -20 "$OUT.log"; exit 1
 fi

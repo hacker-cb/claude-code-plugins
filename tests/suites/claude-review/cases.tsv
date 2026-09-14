@@ -89,6 +89,7 @@ denied-tool-calls	-	0	scope:|2 tool call(s) were denied	denied tool calls narrow
 # the one asked for.
 report	STUB_STDERR=deprecation:_flag_renamed	0	scope:|run warnings:|deprecation	a degraded run still reports, with its stderr attached
 report	STUB_ENTERPRISE_MCP=1	1	enterprise MCP configuration forbids	an enterprise MCP configuration refuses the flag that keeps the repository's servers out, and the run is refused rather than carrying them
+report	STUB_MENTIONS_MCP=1	0	scope:|run warnings:|documents an enterprise MCP config	the same words in passing are a warning on a review, not that refusal
 report	STUB_CHECK_BOUNDARY=1	0	scope:|read-only boundary held	the run is launched unable to write the repository it reviews
 report	STUB_CHECK_BOUNDARY=1 WORKTREE=1	0	scope:|read-only boundary held	and in a linked worktree, where the git directory and the common one are different paths
 #

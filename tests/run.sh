@@ -69,7 +69,18 @@ for want in ${want_suites[@]+"${want_suites[@]}"}; do
 done
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/hcb-suite-tests.XXXXXX") || exit 1
-trap 'rm -rf "$WORK"' EXIT INT TERM
+# A case's linked worktree is registered in this repository's git directory, so a run
+# killed while one stands leaves admin state behind that `rm -rf "$WORK"` never sees.
+ACTIVE_WORKTREE=""
+retire_worktree() {
+  [ -n "$ACTIVE_WORKTREE" ] || return 0
+  git -C "$ROOT" worktree remove --force "$ACTIVE_WORKTREE" >/dev/null 2>&1 \
+    || { rm -rf "$ACTIVE_WORKTREE"
+         git -C "$ROOT" worktree prune >/dev/null 2>&1 \
+           || echo "could not prune the registration of $ACTIVE_WORKTREE"; }
+  ACTIVE_WORKTREE=""
+}
+trap 'retire_worktree; rm -rf "$WORK"' EXIT INT TERM
 
 pass=0 fail=0 skipped=0 selected=0
 report_failure() {
@@ -245,7 +256,7 @@ for suite in "${all_suites[@]}"; do
     case_cwd="$ROOT"
     if [ -n "$case_worktree" ]; then
       if git -C "$ROOT" worktree add --detach -q "$case_worktree" HEAD 2>/dev/null; then
-        case_cwd="$case_worktree"
+        case_cwd="$case_worktree"; ACTIVE_WORKTREE="$case_worktree"
       else
         report_failure "$suite/$fixture" "could not add the linked worktree this case runs in" "$note"
         suite_fail=$((suite_fail + 1)); continue
@@ -266,14 +277,7 @@ for suite in "${all_suites[@]}"; do
     got=$?
     # Before the verdicts below, each of which continues past whatever follows it: a
     # worktree left behind is admin state in this repository, not a file in $WORK.
-    if [ -n "$case_worktree" ]; then
-      git -C "$ROOT" worktree remove --force "$case_worktree" >/dev/null 2>&1 \
-        || { rm -rf "$case_worktree"
-             # The directory is only half of it: the registration under the shared git
-             # directory outlives it, and every later worktree command reads it.
-             git -C "$ROOT" worktree prune >/dev/null 2>&1 \
-               || echo "could not prune the registration of $case_worktree"; }
-    fi
+    retire_worktree
 
     if [ "$got" != "$want" ]; then
       report_failure "$suite/$fixture" "exit $got, wanted $want" "$note"
