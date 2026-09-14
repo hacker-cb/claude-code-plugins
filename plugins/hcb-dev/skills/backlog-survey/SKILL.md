@@ -117,10 +117,11 @@ when empty:
 ## After the report
 
 - **Every tracker edit executes on the word of whoever holds it.** An order
-  carrying this survey settles that by itself
+  carrying this survey settles that by itself, for the writes a slot can settle
   ([`../../references/order-anatomy.md`](../../references/order-anatomy.md)) —
-  the holder its slot names, and this session's own user where it names nobody;
-  the rest of this rule is for a survey no order carries. That one takes the
+  the holder its slot names, and this session's own user where it names nobody,
+  with the three cases below staying the user's through an order as through
+  anything else; the rest of this rule is for a survey no order carries. That one takes the
   user, or, for an edit inside the slice that epic holds, the session
   coordinating it — this session, running that role — to the bounds that role
   draws (`hcb-dev:master-session`, *Who decides*). Three

@@ -168,9 +168,11 @@ section explicit even when empty:
   its verdicts section, the layout it produced, and what it ruled about the
   sources that disagreed.
 - **Tracker edits execute on the word of whoever holds it.** An order carrying
-  this pass settles that by itself
+  this pass settles that by itself, for the writes a slot can settle
   ([`../../references/order-anatomy.md`](../../references/order-anatomy.md)) —
-  the holder its slot names, this session's own user where it names nobody. With
+  the holder its slot names, this session's own user where it names nobody, and
+  the user whatever the slot says for an edit *Who decides* reserves to a person:
+  an issue closed, one carried between milestones, anything past the slice. With
   no order over it: the user where this pass stands alone, and this session
   itself where it is the one coordinating the epic, to the bounds that role draws
   (`hcb-dev:master-session`, *Who decides*) — item
