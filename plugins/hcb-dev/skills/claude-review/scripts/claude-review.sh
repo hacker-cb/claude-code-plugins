@@ -91,6 +91,19 @@ else
   OUTSIDE_NOTE="untracked path(s) are NOT reviewed — a diff does not show them"
 fi
 
+# The paths the run is denied writes to, below, resolved before anything is created.
+# The sandbox reads `*`, `?` and `[` in such a path as a pattern, and on Linux drops
+# the entry altogether, so a checkout or temp directory carrying one would leave the
+# boundary open without a word: refused instead.
+TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
+GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
+GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
+for path in "${TMPDIR:-/tmp}" "$TOP" "$GITCOMMON" "$GITDIR"; do
+  case "$path" in *[*?[]*)
+    echo "claude review failed: '$path' holds a glob character, and the sandbox cannot deny writes to it"
+    exit 1 ;; esac
+done
+
 OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")" && [ -n "$OUT" ] \
   || { echo "claude review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }
 # Armed before the guard below, or that guard's exit leaves the file it just made.
@@ -107,7 +120,6 @@ trap 'stop_engine; rm -f "$OUT" "$OUT.log"; exit 143' TERM
 # The report lives outside the repository under review; inside, it becomes an
 # untracked file the next run reads as part of the change. Through a variable: an
 # empty expansion inline would leave the pattern `/*`, matching every absolute path.
-TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
 if [ -n "$TOP" ]; then
   case "$OUT" in "$TOP"/*)
     echo "claude review failed: TMPDIR is inside the repository under review"; exit 1 ;; esac
@@ -130,12 +142,11 @@ fi
 # its lock, and `autoAllowBashIfSandboxed` is set because the sandbox is the only
 # thing left that approves a command. Built with `jq`, so the paths are escaped
 # rather than pasted.
-GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
-GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
 SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg top "$TOP" \
     --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
   disableAllHooks:true,
   env:{CLAUDE_CODE_RETRY_WATCHDOG:"0", GIT_OPTIONAL_LOCKS:"0"},
+  permissions:{ask:["Bash"]},
   sandbox:{
     enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
     autoAllowBashIfSandboxed:true,
@@ -160,11 +171,14 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # floor for reading and the network, and never re-opens a write denied above.
 # What decides a call is the boundary rather than a prompt, because a prompt here has
 # nobody to answer it: the sandbox runs bash inside it and approves it there, so the
-# reviewer reads freely and writes nothing in the repository, and
-# `dontAsk` denies every call the sandbox cannot hold — a command the settings
-# exclude from it included — where a classifier could have approved one. A denial
-# narrows the run — the coverage warning below reports that — and enough of them end
-# it, which lands in the failure branch.
+# reviewer reads freely and writes nothing in the repository, and `dontAsk` denies
+# every call the sandbox cannot hold, where a classifier could have approved one. A
+# command the settings exclude from the sandbox is the one an allow rule among those
+# settings could still pass, which is what the bare `Bash` ask rule above is for: ask
+# outranks allow, the sandbox stands in for it wherever it holds the command, and
+# `dontAsk` turns it into a denial everywhere else. A denial narrows the run — the
+# coverage warning below reports that — and enough of them end it, which lands in the
+# failure branch.
 # The deny list holds the file tools, which the sandbox does not reach. `--tools`
 # reaches neither far enough nor deep enough on its own: it selects among the built-in
 # tools, so the MCP tools of whoever runs the review stay reachable — theirs is the

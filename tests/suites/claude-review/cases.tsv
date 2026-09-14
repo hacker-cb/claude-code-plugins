@@ -96,6 +96,7 @@ report	STUB_CHECK_BOUNDARY=1	0	scope:|read-only boundary held	the run is launche
 -	--level bogus	1	'bogus' is not a rung	a level off the ladder is refused
 -	--model --sneaky	1	is not a model	so is a model name shaped like a flag
 -	--bogus x	2	unknown argument	an unknown argument exits 2, distinct from a failed review
+-	TMPDIR=/tmp/claude-review-[glob]	1	holds a glob character	a path the sandbox would read as a pattern is refused before the engine
 #
 # The engine's own exit status, which the script currently ignores.
 report	STUB_EXIT=9	0	scope:	an engine that answered fully is judged by its envelope, not its status
