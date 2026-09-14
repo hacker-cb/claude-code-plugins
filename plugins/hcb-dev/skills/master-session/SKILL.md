@@ -90,7 +90,11 @@ accepted, each landing accounted for — whether or not another wave is running
 beside it. The wave is what a round is named by, and what the ledger records a
 candidate against; a candidate arriving after its wave's round closed is ruled by
 the next one to close, and one belonging to no closed round yet holds the batch
-that sent it out of `released`.
+that sent it out of `released`. Where no next round is coming — the epic's last
+wave is back, or the one that would have carried it is never launched — that
+candidate opens a ruling pass of its own, run exactly as a round's close runs it,
+and the epic does not close before that pass has: a candidate is never left
+holding a batch against a round that will not happen.
 
 | Event | Do | Ledger |
 |---|---|---|
@@ -123,8 +127,10 @@ Three things stay the user's, and go up with this session's recommendation first
 - a **fork that changes what is built** — that file's §1 test, never a judgement
   about how important the fork looks;
 - the **epic's composition and bounds** — which issues its waves hold, every
-  redraw of that plan, and the tracker edits that move that line: an issue
-  closed, and one carried between milestones;
+  redraw that moves an issue between waves or in and out of the epic, and the
+  tracker edits that move the same line: an issue closed, and one carried between
+  milestones. A correction leaving that membership as it stands — a zone, a seam,
+  a landing order — is not a redraw and belongs above;
 - a **merge into the default branch** past what the epic's merge-authority policy
   settled — and a local one whatever that policy says, the hard gate of
   [`../../references/slice-completion.md`](../../references/slice-completion.md)

@@ -112,11 +112,14 @@ test on a passage is whether deleting it changes what anyone does next.
    carried by a batch that ended.
 4. **Candidates** — the tracker writes the batches have turned up that nothing
    has ruled yet: one line each, carrying the batch that sent it, the moment it
-   arrived, the wave it arrived under — whose round is the one that will rule it —
-   and, as that batch proposed them, the outcome, the classification, and **the
-   coordinate the finding stands on** with the tracker write it asks for, since a
-   restart that cannot re-measure a candidate cannot rule it and cannot tell it
-   from one the backlog already holds. The line is written when the candidate
+   arrived, the wave it arrived under, **the pass that will rule it** — that
+   wave's round, the next round to close where that one closed already, or a pass
+   of its own where no next round is coming — and **the tracker authority its
+   order resolved to**, which a later pass cannot re-derive once the order is out
+   of reach; then, as that batch proposed them, the outcome, the classification,
+   and **the coordinate the finding stands on** with the tracker write it asks
+   for, since a restart that cannot re-measure a candidate cannot rule it and
+   cannot tell it from one the backlog already holds. The line is written when the candidate
    **arrives** — in a status, or with a return, whichever came first — so a
    restart finds what was sent before any return was. It leaves with its ruling:
    the outcome [`findings.md`](findings.md) gave it, what was opened where that
