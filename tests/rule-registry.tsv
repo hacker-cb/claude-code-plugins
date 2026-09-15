@@ -4,20 +4,20 @@
 # GONE FROM THE SOURCE FILE named above. Every other target must CONTAIN its assert.
 I6-01	pending	every stop carries its recommendation first	plugins/hcb-dev/references/architecture-decisions.md:33@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
 I9-01	pending	a file read in part is not read	plugins/hcb-dev/references/architecture-decisions.md:84@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
-I8-01	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/base-resolution.md:5@dc79f6c	(dropped)	prose copies drift
+I8-01	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/base-resolution.md:5@dc79f6c	(dropped)	prose copies drift
 I4-01	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:8@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
 I4-02	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:9@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
 I4-03	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:10@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
 I4-04	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:16@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
 I3-01	pending	read what happened, never predict it from configuration	plugins/hcb-dev/references/base-resolution.md:68@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
 I1-01	pending	an empty answer is not a negative one	plugins/hcb-dev/references/base-resolution.md:198@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
-I8-02	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/branch-naming.md:8@dc79f6c	(dropped)	prose copies drift
+I8-02	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/branch-naming.md:8@dc79f6c	(dropped)	prose copies drift
 I1-02	pending	an empty answer is not a negative one	plugins/hcb-dev/references/branch-retirement.md:92@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
-I8-03	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/classification.md:4@dc79f6c	(dropped)	a copy per reader drifts
+I8-03	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/classification.md:4@dc79f6c	(dropped)	a copy per reader drifts
 I9-02	pending	a file read in part is not read	plugins/hcb-dev/references/classification.md:26@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
 I10-01	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/classification.md:26@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
 I10-02	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/classification.md:37@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
-I8-04	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/claude-worktrees.md:5@dc79f6c	(dropped)	copies drift
+I8-04	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/claude-worktrees.md:5@dc79f6c	(dropped)	copies drift
 I10-03	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/forge-docs.md:16@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
 I10-04	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/forge-docs.md:18@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
 I7-01	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/references/order-anatomy.md:40@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
@@ -25,11 +25,11 @@ I7-02	pending	the invocation that started the run is the ask a subagent rule wai
 I5-01	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/order-anatomy.md:60@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
 I3-02	pending	read what happened, never predict it from configuration	plugins/hcb-dev/references/order-anatomy.md:71@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
 I1-03	pending	an empty answer is not a negative one	plugins/hcb-dev/references/report-format.md:67@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
-I8-05	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/review-runs.md:7@dc79f6c	(dropped)	a copy per engine drifts
+I8-05	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/review-runs.md:7@dc79f6c	(dropped)	a copy per engine drifts
 I1-04	pending	an empty answer is not a negative one	plugins/hcb-dev/references/session-comms.md:52@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
-I8-06	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/session-prompts.md:5@dc79f6c	(dropped)	drift apart
-I8-07	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:5@dc79f6c	(dropped)	drift apart
-I8-08	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:6@dc79f6c	(dropped)	prose copies drift
+I8-06	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/session-prompts.md:5@dc79f6c	(dropped)	drift apart
+I8-07	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:5@dc79f6c	(dropped)	drift apart
+I8-08	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:6@dc79f6c	(dropped)	prose copies drift
 I5-02	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:138@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
 I5-03	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:174@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
 I5-04	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:283@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down

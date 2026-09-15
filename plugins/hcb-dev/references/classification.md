@@ -1,8 +1,7 @@
 # Classifying an issue
 
 Read by anything that classifies an issue against what the repository itself
-defines. It lives outside any one skill because a copy per reader drifts, and a
-classification that drifted labels the same issue two ways.
+defines.
 
 The families as **roles**, the cardinality between them, how the set that carries
 each role is read, and how one is proposed where none exists. The roles are what

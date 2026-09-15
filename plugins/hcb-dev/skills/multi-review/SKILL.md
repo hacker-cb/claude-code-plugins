@@ -21,6 +21,9 @@ coverage silently disappears — most of this skill exists to keep it visible.
 
 Report-only. Never fix what comes back; hand findings and coverage to the caller.
 
+Read [`../../references/invariants.md`](../../references/invariants.md) first: every
+count, every empty answer and every reviewer that did not report is read by it.
+
 ## 1. Scope
 
 **Kind.** Default is the change itself. Two variations are available on request:

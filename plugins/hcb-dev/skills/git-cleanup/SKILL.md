@@ -350,6 +350,8 @@ without asking.
 
 ## Reference files
 
+- [`../../references/invariants.md`](../../references/invariants.md) — read once,
+  before the first read of anything a tool, a forge or another session answers.
 - [`references/verdicts.md`](references/verdicts.md) — read at step 5; the gate
   and step 7 route on the classes it assigns.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) —
