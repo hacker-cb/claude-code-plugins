@@ -38,7 +38,7 @@ const SHAPES = {
 const KEY_SHAPE = [
   [/(^|_)(sha|oid)$|^commit_id$|^head_sha$|^merge_commit_sha$|^squash_commit_sha$/i, 'sha'],
   [/^(login|user|actor|owner|author|assignee|committer)$|_login$/i, 'actor'],
-  [/^(full_name|nameWithOwner|repository)$/i, 'repo'],
+  [/^(full_name|nameWithOwner|repository|ruleset_source)$/i, 'repo'],
   [/^(ref|head_ref|base_ref|headRefName|baseRefName|branch|source_branch|target_branch)$/i, 'ref'],
   [/url$/i, 'url'],
 ];
@@ -114,11 +114,13 @@ function die(message) {
 
 const argv = process.argv.slice(2);
 let root = 'tests/suites';
+let rootWasGiven = false;
 for (let i = 0; i < argv.length; i += 1) {
   if (argv[i] === '--self-test') { selfTest(); }
   if (argv[i] !== '--dir') die(`unknown argument '${argv[i]}'`);
   if (argv[i + 1] === undefined) die('--dir needs a value');
   root = argv[i + 1];
+  rootWasGiven = true;
   i += 1;
 }
 
@@ -207,6 +209,15 @@ for (const { abs, captured } of fixtures) {
 
 process.stdout.write(`fixtures: ${fixtures.length} file(s) under ${root}`
   + `, ${capturedCount} captured\n`);
+
+// An explicit --dir naming a directory with no fixture in it is a question that went
+// unanswered, not a clean answer: the caller pointed at something it wanted checked.
+// Under the default root, zero is the honest state of a tree that has captured nothing
+// yet.
+if (rootWasGiven && fixtures.length === 0) {
+  process.stdout.write(`  FAIL  ${root} holds no fixture — nothing was checked\n`);
+  process.exit(1);
+}
 if (failures.length) {
   for (const f of failures) process.stdout.write(`  FAIL  ${f}\n`);
   process.stdout.write(`\n${failures.length} failure(s)\n`);

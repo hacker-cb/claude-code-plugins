@@ -3,7 +3,7 @@
   "plugin": "hcb-dev",
   "totals": {
     "files": 44,
-    "lines": 7514,
+    "lines": 7470,
     "words": 64232,
     "sentences": 2192,
     "fenced": 855,
@@ -12,202 +12,202 @@
   "skills": [
     {
       "name": "github-pr-workflow",
-      "own": 669,
+      "own": 668,
       "closureFiles": 24,
-      "closureLines": 4477
+      "closureLines": 4453
     },
     {
       "name": "git-cleanup",
-      "own": 359,
+      "own": 358,
       "closureFiles": 24,
-      "closureLines": 4163
+      "closureLines": 4139
     },
     {
       "name": "wave-dispatch",
-      "own": 266,
+      "own": 265,
       "closureFiles": 24,
-      "closureLines": 4121
+      "closureLines": 4097
     },
     {
       "name": "wave-refresh",
-      "own": 182,
+      "own": 181,
       "closureFiles": 24,
-      "closureLines": 4037
-    },
-    {
-      "name": "master-session",
-      "own": 163,
-      "closureFiles": 24,
-      "closureLines": 4018
+      "closureLines": 4013
     },
     {
       "name": "implementation-workflow",
-      "own": 272,
+      "own": 271,
       "closureFiles": 23,
-      "closureLines": 4017
+      "closureLines": 3994
+    },
+    {
+      "name": "master-session",
+      "own": 162,
+      "closureFiles": 24,
+      "closureLines": 3994
     },
     {
       "name": "backlog-survey",
-      "own": 145,
+      "own": 144,
       "closureFiles": 24,
-      "closureLines": 4000
+      "closureLines": 3976
     },
     {
       "name": "multi-review",
-      "own": 254,
+      "own": 253,
       "closureFiles": 23,
-      "closureLines": 3999
+      "closureLines": 3976
     },
     {
       "name": "shipping-workflow",
-      "own": 203,
+      "own": 202,
       "closureFiles": 23,
-      "closureLines": 3948
+      "closureLines": 3925
     },
     {
       "name": "wave-worker",
-      "own": 175,
+      "own": 174,
       "closureFiles": 23,
-      "closureLines": 3920
+      "closureLines": 3897
     },
     {
       "name": "session-plugin-refresh",
-      "own": 165,
+      "own": 164,
       "closureFiles": 23,
-      "closureLines": 3910
+      "closureLines": 3887
     },
     {
       "name": "session-handoff",
-      "own": 162,
+      "own": 161,
       "closureFiles": 23,
-      "closureLines": 3907
+      "closureLines": 3884
     },
     {
       "name": "session-dispatch",
-      "own": 130,
+      "own": 129,
       "closureFiles": 23,
-      "closureLines": 3875
+      "closureLines": 3852
     },
     {
       "name": "claude-review",
-      "own": 98,
+      "own": 97,
       "closureFiles": 23,
-      "closureLines": 3843
+      "closureLines": 3820
     },
     {
       "name": "codex-review",
-      "own": 66,
+      "own": 65,
       "closureFiles": 23,
-      "closureLines": 3811
+      "closureLines": 3788
     },
     {
       "name": "issue-tracking",
-      "own": 125,
+      "own": 124,
       "closureFiles": 22,
-      "closureLines": 3745
+      "closureLines": 3723
     },
     {
       "name": "seeding-gitignore",
-      "own": 88,
+      "own": 87,
       "closureFiles": 2,
-      "closureLines": 124
+      "closureLines": 122
     },
     {
       "name": "dependency-versions",
-      "own": 48,
+      "own": 47,
       "closureFiles": 2,
-      "closureLines": 104
+      "closureLines": 102
     }
   ],
   "overCeiling": [
     {
       "path": "plugins/hcb-dev/skills/github-pr-workflow/SKILL.md",
-      "lines": 669,
+      "lines": 668,
       "ceiling": 200
     },
     {
       "path": "plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md",
-      "lines": 570,
+      "lines": 569,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/skills/git-cleanup/SKILL.md",
-      "lines": 359,
+      "lines": 358,
       "ceiling": 200
     },
     {
       "path": "plugins/hcb-dev/references/slice-completion.md",
-      "lines": 346,
+      "lines": 345,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/skills/implementation-workflow/SKILL.md",
-      "lines": 272,
+      "lines": 271,
       "ceiling": 200
     },
     {
       "path": "plugins/hcb-dev/references/findings.md",
-      "lines": 270,
+      "lines": 269,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/skills/wave-dispatch/SKILL.md",
-      "lines": 266,
+      "lines": 265,
       "ceiling": 200
     },
     {
       "path": "plugins/hcb-dev/skills/multi-review/SKILL.md",
-      "lines": 254,
+      "lines": 253,
       "ceiling": 200
     },
     {
       "path": "plugins/hcb-dev/references/base-resolution.md",
-      "lines": 208,
-      "ceiling": 150
-    },
-    {
-      "path": "plugins/hcb-dev/references/branch-naming.md",
       "lines": 207,
       "ceiling": 150
     },
     {
+      "path": "plugins/hcb-dev/references/branch-naming.md",
+      "lines": 206,
+      "ceiling": 150
+    },
+    {
       "path": "plugins/hcb-dev/references/report-format.md",
-      "lines": 204,
+      "lines": 203,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/skills/shipping-workflow/SKILL.md",
-      "lines": 203,
+      "lines": 202,
       "ceiling": 200
     },
     {
       "path": "plugins/hcb-dev/references/session-comms.md",
-      "lines": 200,
+      "lines": 199,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/references/session-naming.md",
-      "lines": 198,
+      "lines": 197,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/references/review-runs.md",
-      "lines": 194,
+      "lines": 193,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/references/branch-retirement.md",
-      "lines": 190,
+      "lines": 189,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/references/classification.md",
-      "lines": 190,
+      "lines": 189,
       "ceiling": 150
     },
     {
       "path": "plugins/hcb-dev/references/wave-ledger.md",
-      "lines": 159,
+      "lines": 158,
       "ceiling": 150
     }
   ]

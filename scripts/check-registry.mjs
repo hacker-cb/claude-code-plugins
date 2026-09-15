@@ -57,7 +57,12 @@ readFileSync(registryAbs, 'utf8').split('\n').forEach((line, i) => {
   if (cells.length < 6) {
     die(`${registryPath}:${i + 1}: needs six tab-separated columns, got ${cells.length}`);
   }
-  const [id, state, rule, source, target, assertText] = cells;
+  // Trimmed: a CRLF checkout leaves `\r` on the last cell, and an assert compared with
+  // it never matches anything — a red that says nothing about the rule it guards.
+  const [id, state, rule, source, target, assertText] = cells.map((c) => c.trim());
+  // An empty assert passes every check there is (`includes('')` is always true), so a
+  // row carrying one asserts nothing while reading as green.
+  if (!assertText) die(`${registryPath}:${i + 1}: empty assert — the row would pass vacuously`);
   rows.push({ id, state, rule, source, target, assertText, line: i + 1 });
 });
 
@@ -89,11 +94,16 @@ for (const row of rows) {
   checked += 1;
 
   if (row.target === DROPPED) {
-    const survivors = [...pluginFiles]
-      .filter(([, text]) => text.includes(row.assertText))
-      .map(([path]) => path);
-    if (survivors.length) {
-      failures.push(`${row.id}: dropped text still present in ${survivors.join(', ')}`
+    // Against the source file alone, never the whole tree. The same wording can live
+    // elsewhere as ordinary prose a slice never touches — `plugins/hcb-dev/README.md`
+    // explains the same idea to a human reader — and searching everywhere would fail
+    // this row over text nobody asked it to remove, while telling us nothing about
+    // whether it left the file it was recorded in.
+    const sourceFile = row.source.replace(/:\d+@.*$/, '');
+    const text = pluginFiles.get(sourceFile);
+    if (text === undefined) continue;    // the file is gone: so is the text in it
+    if (text.includes(row.assertText)) {
+      failures.push(`${row.id}: ${sourceFile} still carries the dropped text`
         + ` — "${row.assertText}"`);
     }
     continue;

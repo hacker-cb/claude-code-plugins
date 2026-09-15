@@ -90,7 +90,10 @@ const source = opts.ref
 const stripFences = (text) => text.replace(/^```[\s\S]*?^```/gm, '');
 
 function measure(text) {
-  const lines = text.split('\n').length;
+  // What `wc -l` counts: a trailing newline ends the last line rather than starting an
+  // empty one. Counting the split's elements instead adds one per file, which inflates
+  // every total and puts a file exactly at its ceiling over it.
+  const lines = text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
   const prose = stripFences(text);
   const words = prose.split(/\s+/).filter(Boolean).length;
   // Sentence-enders followed by whitespace. Crude on purpose: what is compared is the
