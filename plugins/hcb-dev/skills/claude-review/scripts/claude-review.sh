@@ -49,12 +49,12 @@ while [ $# -gt 0 ]; do
 done
 
 # Both values reach an argument string the command parses for flags — `--fix` alone
-# turns a review that promises to change nothing into one that edits the tree, and
-# `--comment` into one that writes to a change request. The level is checked against
-# the ladder; the narrowing is prose, so `--` is refused wherever it appears, which
-# covers every option the command takes without rejecting an ordinary hyphen — and
-# anywhere rather than after a space, since a tab or a newline separates a word just
-# as well, and a guard keyed to one separator is one the others walk past.
+# turns a review that promises to change nothing into one that sets out to edit the
+# tree, and `--comment` into one that sets out to write to a change request. The level
+# is checked against the ladder; the narrowing is prose, so `--` is refused wherever it
+# appears, which covers every option the command takes without rejecting an ordinary
+# hyphen — and anywhere rather than after a space, since a tab or a newline separates
+# a word just as well, and a guard keyed to one separator is one the others walk past.
 case "$LEVEL" in low|medium|high|xhigh|max) ;;
   *) echo "claude review failed: '$LEVEL' is not a rung"; exit 1 ;; esac
 case "$NARROW" in *--*)
@@ -65,6 +65,49 @@ case "$NARROW" in *--*)
 # lands in is one flag away from the ones above.
 case "$MODEL" in *--*|"")
   echo "claude review failed: '$MODEL' is not a model"; exit 1 ;; esac
+
+# Every git read below, and the run's own, skips the index refresh it would otherwise
+# write: this script promises to change nothing either.
+export GIT_OPTIONAL_LOCKS=0
+# The paths the run is denied writes to, resolved before anything reads or creates —
+# and every one of them required, since an entry that failed to resolve is an entry
+# the boundary silently lacks. Outside a git working tree there is no tree to hold
+# read-only, nor anything to review, so the run is refused rather than launched into a
+# writable directory. The temp root is taken canonical: a relative or symlinked TMPDIR
+# would otherwise slip the run's output past the inside-the-repository guard below.
+# The sandbox reads `*`, `?` and `[` in a denied path as a pattern, and on Linux drops
+# the entry altogether, so a path carrying one is refused too.
+TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
+[ -n "$TOP" ] \
+  || { echo "claude review failed: not inside a git working tree — there is no tree to review or to hold read-only"; exit 1; }
+# The tree git names and the directory the run starts in are two questions, and
+# `GIT_DIR` with `GIT_WORK_TREE` can answer them differently: the boundary would then
+# deny writes to a checkout the engine never stands in, while the one it does stands
+# open.
+PWD_REAL="$(pwd -P)"
+case "$PWD_REAL/" in "$TOP"/*) ;;
+  *) echo "claude review failed: the working tree to review ($TOP) is not the directory this run starts in ($PWD_REAL)"; exit 1 ;; esac
+GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
+GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
+{ [ -n "$GITCOMMON" ] && [ -n "$GITDIR" ]; } \
+  || { echo "claude review failed: the git directories of $TOP could not be resolved, so they cannot be held read-only"; exit 1; }
+TMPROOT="$(cd "${TMPDIR:-/tmp}" 2>/dev/null && pwd -P)" || TMPROOT=""
+for path in "${TMPDIR:-/tmp}" "$TMPROOT" "$TOP" "$GITCOMMON" "$GITDIR"; do
+  case "$path" in *[*?[]*)
+    echo "claude review failed: '$path' holds a glob character, and the sandbox cannot deny writes to it"
+    exit 1 ;; esac
+done
+[ -n "$TMPROOT" ] \
+  || { echo "claude review failed: the temp directory ${TMPDIR:-/tmp} does not resolve to a directory"; exit 1; }
+# The report lives outside the repository under review — the working tree, where it
+# would become an untracked file the next run reads as part of the change, and either
+# git directory, which a linked worktree keeps outside that tree. Checked before the
+# file is created, since a denied path cannot hold a file that is already there.
+for guarded in "$TOP" "$GITCOMMON" "$GITDIR"; do
+  case "$TMPROOT/" in "$guarded"/*)
+    echo "claude review failed: TMPDIR is inside the repository under review ($guarded), so this run's own output cannot be kept outside the boundary"
+    exit 1 ;; esac
+done
 
 if [ -n "$BASE" ]; then
   # Empty covers both an unknown ref and no shared history, and the two are not
@@ -91,8 +134,8 @@ else
   OUTSIDE_NOTE="untracked path(s) are NOT reviewed — a diff does not show them"
 fi
 
-OUT="$(mktemp "${TMPDIR:-/tmp}/claude-review.XXXXXX")" && [ -n "$OUT" ] \
-  || { echo "claude review failed: could not create a temp file under ${TMPDIR:-/tmp}"; exit 1; }
+OUT="$(mktemp "$TMPROOT/claude-review.XXXXXX")" && [ -n "$OUT" ] \
+  || { echo "claude review failed: could not create a temp file under $TMPROOT"; exit 1; }
 # Armed before the guard below, or that guard's exit leaves the file it just made.
 # The run publishes its own pid below, so a caller can stop it — and stopping it must
 # stop the engine too. On EXIT alone the temp files went and the child lived on,
@@ -104,74 +147,41 @@ stop_engine() {
 trap 'stop_engine; rm -f "$OUT" "$OUT.log"' EXIT
 trap 'stop_engine; rm -f "$OUT" "$OUT.log"; exit 130' INT
 trap 'stop_engine; rm -f "$OUT" "$OUT.log"; exit 143' TERM
-# The report lives outside the repository under review; inside, it becomes an
-# untracked file the next run reads as part of the change. Through a variable: an
-# empty expansion inline would leave the pattern `/*`, matching every absolute path.
-TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
-if [ -n "$TOP" ]; then
-  case "$OUT" in "$TOP"/*)
-    echo "claude review failed: TMPDIR is inside the repository under review"; exit 1 ;; esac
-fi
 
 # `disableAllHooks` is what a detached run needs from this file: a `PermissionRequest`
 # hook — which any enabled plugin may install, and which blocks for as long as its
 # own timeout allows — meets a run with nobody to answer it, and hangs it.
 # Where the sandbox cannot start, the CLI warns and runs unsandboxed unless
 # `failIfUnavailable` says otherwise — the boundary this run promises would then be
-# gone behind a warning nobody reads. `denyWrite` covers this run's own output: the
-# temp directory is writable from inside the sandbox wherever `TMPDIR` is unset or
-# points at a shared one, and a verdict a reviewed repository can overwrite is a
-# verdict it can forge. Built with `jq`, so the paths are escaped rather than pasted.
-# `info/` in both git directories rides along: `info/exclude` decides what `git
-# status` shows, so a run able to write it can hide its own changes from the check
-# below. The index is deliberately not denied — git rewrites it while merely reading.
-GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
-GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
-SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
+# gone behind a warning nobody reads.
+# `denyWrite` is what makes the run read-only. It takes the working tree and both git
+# directories — the sandbox otherwise lets a command write there, a linked worktree's
+# shared `.git` included — and this run's own output, since the temp directory stays
+# writable and a verdict the reviewed repository can overwrite is a verdict it can
+# forge. That repository's own settings merge into the same lists but cannot re-open
+# a path denied here; what they could do is switch the filesystem layer off and take
+# every entry with it, which is why `disabled` is set as well. The index is denied
+# with the rest, so `GIT_OPTIONAL_LOCKS` keeps git's read commands from reaching for
+# its lock, and `autoAllowBashIfSandboxed` is set because the sandbox is the only
+# thing left that approves a command. Built with `jq`, so the paths are escaped
+# rather than pasted.
+SETTINGS="$(jq -nc --arg out "$OUT" --arg log "$OUT.log" --arg top "$TOP" \
+    --arg gc "$GITCOMMON" --arg gd "$GITDIR" '{
   disableAllHooks:true,
-  env:{CLAUDE_CODE_RETRY_WATCHDOG:"0"},
+  env:{CLAUDE_CODE_RETRY_WATCHDOG:"0", GIT_OPTIONAL_LOCKS:"0"},
+  permissions:{ask:["Bash"]},
   sandbox:{
     enabled:true, failIfUnavailable:true, allowUnsandboxedCommands:false,
+    autoAllowBashIfSandboxed:true,
     network:{strictAllowlist:true},
-    filesystem:{denyWrite:([$out,$log]
-      + ([$gc,$gd] | map(select(. != "") | . + "/info") | unique))}}}')" \
+    filesystem:{disabled:false,
+      denyWrite:([$out,$log,$top,$gc,$gd] | map(select(. != "")) | unique)}}}')" \
   || { echo "claude review failed: could not build the run settings"; exit 1; }
-# What the run leaves behind, to compare against below: this pass promises to
-# change nothing, and the sandbox permits writes inside the working directory.
-# Content, not status codes: a file already listed as modified stays listed as
-# modified however many times the run rewrites it, and a working-tree review is
-# exactly where every covered file is already in that state.
-# A loop, not `xargs`: an empty list must run nothing, and `git hash-object` with no
-# paths reads stdin instead of exiting. Untracked content is here because neither the
-# status line nor the diff carries it — the path appears identical however it changes.
-tree_state() {
-  # `for-each-ref`, not HEAD alone: in a linked worktree the sandbox may write to the
-  # main repository's shared .git, and a moved ref there shows up nowhere else here.
-  git for-each-ref --format='%(refname) %(objectname)'
-  git rev-parse HEAD; git status --porcelain --untracked-files=all; git diff HEAD
-  # The names are already listed by `git status` above, so what is needed here is a
-  # snapshot of untracked CONTENT. One pass over the list and one `hash-object` for
-  # the batch, rather than a process per file: this runs twice per review, and
-  # spawning it per path put minutes into a tree that merely has an un-ignored build
-  # directory in it. Reading stays NUL-delimited, so a path with a newline in it is
-  # still seen — it just cannot travel in a batch `--stdin-paths` splits on newlines,
-  # so it gets a call of its own, and being vanishingly rare it costs nothing.
-  newline=$(printf '\n')
-  batched=""
-  while IFS= read -r -d "" f; do
-    case "$f" in
-      *"$newline"*) printf '%s ' "$f"; git hash-object -- "$f" ;;
-      *) batched="$batched$f$newline" ;;
-    esac
-  done < <(git ls-files --others --exclude-standard -z)
-  [ -z "$batched" ] || printf '%s' "$batched" | git hash-object --stdin-paths 2>/dev/null || true
-}
 # Positional parameters, not an interpolated string: a fallback naming the family
 # already requested is not a fallback, and dropping the flag is what says so.
 # Everything the flag parsing above read is consumed by now, so `$@` is free.
 set -- --model "$MODEL"
 [ "$FALLBACK" = "$MODEL" ] || set -- "$@" --fallback-model "$FALLBACK"
-BEFORE="$(tree_state)"
 # Printed before the engine starts, and this run's only output until it finishes: the
 # report below is buffered to the end, so an empty output file otherwise says both
 # "never launched" and "still reading", and the caller cannot tell those apart. What
@@ -181,21 +191,28 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # Settings load as they do in any session — the hooks among them switched off above,
 # and everything the reviewed repository sets arriving with them, this run's own
 # sandbox block included: list keys merge across sources, so what is set there is a
-# floor and not a ceiling.
+# floor for reading and the network, and never re-opens a write denied above.
 # What decides a call is the boundary rather than a prompt, because a prompt here has
-# nobody to answer it: the sandbox runs bash inside it and approves it there, which
-# is what lets the reviewer build, test and probe rather than only read; the git
-# allowlist rides ahead of the classifier for the reads every review makes; and
-# `auto` weighs the rest. A denial narrows the run — the coverage warning below
-# reports that — and enough of them end it, which lands in the failure branch.
-# The deny list is what holds this pass to reading. `--tools` reaches neither far
-# enough nor deep enough on its own: it selects among the built-in tools, so the MCP
-# tools of whoever runs the review stay reachable — theirs is the change request this
-# run promises not to write to — and it does not reach a subagent, which carries its
-# own tool set and edits the working directory under `auto` without asking. A deny
-# rule holds in both places. `--strict-mcp-config` would cover the first half more
-# cheaply, by starting no servers at all, but the CLI refuses it wherever an
-# enterprise MCP config is present, and refuses the whole run with it.
+# nobody to answer it: the sandbox runs bash inside it and approves it there, so the
+# reviewer reads freely and writes nothing in the repository, and `dontAsk` denies
+# every call the sandbox cannot hold, where a classifier could have approved one. A
+# command the settings exclude from the sandbox is the one an allow rule among those
+# settings could still pass, which is what the bare `Bash` ask rule above is for: ask
+# outranks allow, the sandbox stands in for it wherever it holds the command, and
+# `dontAsk` turns it into a denial everywhere else. A denial narrows the run — the
+# coverage warning below reports that — and enough of them end it, which lands in the
+# failure branch.
+# The deny list holds the file tools, which the sandbox does not reach. `--tools`
+# reaches neither far enough nor deep enough on its own: it selects among the built-in
+# tools, so the MCP tools of whoever runs the review stay reachable — theirs is the
+# change request this run promises not to write to — and it does not reach a
+# subagent, which carries its own tool set. A deny rule holds in both places, and
+# outranks any allow rule the reviewed repository brings. What it does not reach is a
+# server's own command: `-p` loads a project's `.mcp.json` without asking anyone, and
+# what that starts runs outside the sandbox — so `--strict-mcp-config` leaves the run
+# with no servers at all. The CLI refuses that flag under an enterprise MCP
+# configuration, and there the run is refused with it rather than started carrying
+# those servers; the branch below says so.
 # `CLAUDE_CODE_RETRY_WATCHDOG` is off for this run alone, whatever the settings that
 # reach it say. Where the account's quota is spent, that watchdog holds the process
 # until the limit resets instead of returning — which is right for an interactive
@@ -215,20 +232,25 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 CLAUDE_CODE_RETRY_WATCHDOG=0 \
 claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
   "$@" --effort "$LEVEL" --output-format json \
-  --permission-mode auto \
+  --permission-mode dontAsk \
+  --strict-mcp-config \
   --settings "$SETTINGS" \
   --tools "Bash,Read,Grep,Glob,Agent" \
-  --allowedTools "Read,Grep,Glob,Agent,Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git rev-parse *),Bash(git merge-base *),Bash(git ls-files *),Bash(git blame *)" \
+  --allowedTools "Read,Grep,Glob,Agent" \
   --disallowedTools "mcp__*,Edit,Write,NotebookEdit" \
   < /dev/null > "$OUT" 2> "$OUT.log" &
 ENGINE_PID=$!
 wait "$ENGINE_PID"
 ENGINE_PID=""
 
-# Before the branch below, not inside it: a run that edited the tree and then died
-# still edited the tree, and that is the case the warning exists for.
-[ "$BEFORE" = "$(tree_state)" ] \
-  || echo "tree-warning: the run edited the working tree — read git status before anything is committed"
+# The refusal this script's own flag can earn: an enterprise MCP configuration does
+# not allow the flag that keeps the reviewed repository's servers out of the run, and
+# the run is refused rather than started carrying them.
+if grep -qF 'You cannot use --strict-mcp-config when an enterprise MCP config is present' \
+     "$OUT.log" 2>/dev/null; then
+  echo "claude review failed: an enterprise MCP configuration forbids --strict-mcp-config on this machine, and this run does not start the reviewed repository's MCP servers instead"
+  tail -20 "$OUT.log"; exit 1
+fi
 # An envelope that was never written is its own case, and reaches none of the checks
 # below: every one of them reads a field, and a file with no fields answers each the
 # same way a healthy run would. Whatever the engine managed to say went to stderr.

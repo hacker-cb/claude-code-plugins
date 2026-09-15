@@ -69,7 +69,18 @@ for want in ${want_suites[@]+"${want_suites[@]}"}; do
 done
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/hcb-suite-tests.XXXXXX") || exit 1
-trap 'rm -rf "$WORK"' EXIT INT TERM
+# A case's linked worktree is registered in this repository's git directory, so a run
+# killed while one stands leaves admin state behind that `rm -rf "$WORK"` never sees.
+ACTIVE_WORKTREE=""
+retire_worktree() {
+  [ -n "$ACTIVE_WORKTREE" ] || return 0
+  git -C "$ROOT" worktree remove --force "$ACTIVE_WORKTREE" >/dev/null 2>&1 \
+    || { rm -rf "$ACTIVE_WORKTREE"
+         git -C "$ROOT" worktree prune >/dev/null 2>&1 \
+           || echo "could not prune the registration of $ACTIVE_WORKTREE"; }
+  ACTIVE_WORKTREE=""
+}
+trap 'retire_worktree; rm -rf "$WORK"' EXIT INT TERM
 
 pass=0 fail=0 skipped=0 selected=0
 report_failure() {
@@ -216,28 +227,40 @@ for suite in "${all_suites[@]}"; do
     fi
 
     # `args` carries whatever this case adds to the suite's own invocation, so a case
-    # can pin an argument guard — the only thing standing between `--narrow` and a
-    # flag that would let the run edit the tree. A word shaped `NAME=value` is put in
-    # the run's environment instead, which is how a case reaches the stub's optional
-    # behaviour (stderr, a touched file, a non-zero exit). `-` means nothing added.
+    # can pin an argument guard, which keeps `--narrow` from smuggling in a flag. A word
+    # shaped `NAME=value` is put in the run's environment instead, which is how a case
+    # reaches the stub's optional behaviour (stderr, a boundary check, a non-zero exit).
+    # `-` means nothing added.
     extra=()
     stub_env=()
-    touched=""
+    case_worktree=""
     if [ "$args" != "-" ]; then
+      # Split, never globbed: a `[x]`, `*` or `?` in a word is text a case hands the
+      # script on purpose, and must not turn into whatever path happens to match it.
+      set -f
       # shellcheck disable=SC2206 # deliberate: the manifest supplies separate words
       for word in $args; do
         case "$word" in
-          STUB_TOUCH=repo)
-            # A tree edit has to land inside the repository or the warning it is meant
-            # to trigger cannot see it, so the path is made here and removed below —
-            # a file left behind would be part of the next case's starting state, and
-            # the case would then pass once and never again.
-            touched="$ROOT/engine-probe-$$.txt"
-            stub_env+=("STUB_TOUCH=$touched") ;;
+          # The runner's own word, not an environment one: it says where the case
+          # runs. A linked worktree is the one topology in which a checkout's git
+          # directory and its common directory are different paths, and an assertion
+          # about both of them proves nothing in an ordinary checkout, where they are
+          # the same string.
+          WORKTREE=1) case_worktree="$WORK/wt.$suite.$suite_rows" ;;
           [A-Z]*=*) stub_env+=("$word") ;;
           *) extra+=("$word") ;;
         esac
       done
+      set +f
+    fi
+    case_cwd="$ROOT"
+    if [ -n "$case_worktree" ]; then
+      if git -C "$ROOT" worktree add --detach -q "$case_worktree" HEAD 2>/dev/null; then
+        case_cwd="$case_worktree"; ACTIVE_WORKTREE="$case_worktree"
+      else
+        report_failure "$suite/$fixture" "could not add the linked worktree this case runs in" "$note"
+        suite_fail=$((suite_fail + 1)); continue
+      fi
     fi
     # Order is the guard, not a detail. The suite's own env comes first and the
     # case's next, so a case overrides its suite (that is how a case pins a locale of
@@ -245,13 +268,16 @@ for suite in "${all_suites[@]}"; do
     # them: a suite.conf line setting PATH would walk the stub directory off the
     # search path, and one setting STUB_MARKER_FILE would leave the marker
     # witnessing nothing, both while the suite went on reporting green.
-    out=$(env ${suite_env[@]+"${suite_env[@]}"} ${stub_env[@]+"${stub_env[@]}"} \
+    out=$(cd "$case_cwd" \
+          && env ${suite_env[@]+"${suite_env[@]}"} ${stub_env[@]+"${stub_env[@]}"} \
               STUB_ENVELOPE="$envelope" STUB_MARKER_FILE="$marker" \
               PATH="$stubs:$PATH" \
               "$runner" "$script" ${suite_argv[@]+"${suite_argv[@]}"} \
               ${extra[@]+"${extra[@]}"} 2>&1 </dev/null)
     got=$?
-    [ -z "$touched" ] || rm -f "$touched"
+    # Before the verdicts below, each of which continues past whatever follows it: a
+    # worktree left behind is admin state in this repository, not a file in $WORK.
+    retire_worktree
 
     if [ "$got" != "$want" ]; then
       report_failure "$suite/$fixture" "exit $got, wanted $want" "$note"

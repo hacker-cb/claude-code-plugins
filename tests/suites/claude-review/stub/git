@@ -1,0 +1,21 @@
+#!/bin/sh
+# Stands in for git only as far as a case asks: with STUB_GIT_FAIL set, a call carrying
+# that argument fails the way a query git cannot answer does, and every other call is
+# the real git's, found past this directory on PATH.
+if [ -n "${STUB_GIT_FAIL:-}" ]; then
+  for arg in "$@"; do
+    [ "$arg" = "$STUB_GIT_FAIL" ] && exit 128
+  done
+fi
+# A working tree somewhere other than the directory the run stands in, which is what
+# `GIT_DIR` with `GIT_WORK_TREE` does to a real git and what no case can set up here.
+if [ -n "${STUB_GIT_TOP:-}" ]; then
+  for arg in "$@"; do
+    [ "$arg" = "--show-toplevel" ] && { echo "$STUB_GIT_TOP"; exit 0; }
+  done
+fi
+PATH="${PATH#"$(dirname "$0")":}"
+# Past this directory or nowhere: a git still resolving to this file would exec itself
+# for ever.
+[ "$(command -v git)" != "$0" ] || { echo "stub git: no real git past $(dirname "$0")" >&2; exit 127; }
+exec git "$@"

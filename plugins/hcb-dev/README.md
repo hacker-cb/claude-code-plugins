@@ -107,9 +107,9 @@ form: you paste every one of them yourself.
   nothing.
 - **`claude-review`** — `/hcb-dev:claude-review`
   The same shape with Claude's own reviewer: `claude -p "/code-review …"` in a
-  separate headless session, over a range and at a rung the caller fixes — which is
-  what a pipeline, a batch worker or a subagent needs from a review: a known range
-  in, a coverage record back. Review-only.
+  separate, read-only headless session, over a range and at a rung the caller
+  fixes — which is what a pipeline, a batch worker or a subagent needs from a
+  review: a known range in, a coverage record back. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
   Run several independent reviewers over one change at once — `codex-review`,
   `claude-review`, the built-in security review — then consolidate the findings

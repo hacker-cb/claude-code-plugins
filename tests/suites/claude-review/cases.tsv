@@ -4,8 +4,8 @@
 #             refused before the engine is ever reached
 #   args      what this case adds to the suite's own invocation (suite.conf); a
 #             NAME=value word is put in the run's environment instead (that is how
-#             a case reaches the stub's stderr, its touch, or a non-zero exit).
-#             `-` for none
+#             a case reaches the stub's stderr, its boundary check, or a non-zero
+#             exit). `-` for none
 #   exit      0 a review, 1 a failure, 3 a reviewer that could not run, and 2 for a
 #             call the script refused before reaching an engine at all
 #   expect    fragments that must appear in the output, separated by `|`. Written out
@@ -85,9 +85,13 @@ quota-under-blocking-limit	-	3	claude review unavailable:|resets 11:20pm	a spent
 denied-tool-calls	-	0	scope:|2 tool call(s) were denied	denied tool calls narrow the run, and the record says so
 #
 # What the run reports about itself, which nothing asserted before: a warning from
-# stderr, an edited tree, and a model that answered other than the one asked for.
+# stderr, the boundary it was launched inside, and a model that answered other than
+# the one asked for.
 report	STUB_STDERR=deprecation:_flag_renamed	0	scope:|run warnings:|deprecation	a degraded run still reports, with its stderr attached
-report	STUB_TOUCH=repo	0	tree-warning:|read git status	a run that edited the tree says so before its findings
+report	STUB_ENTERPRISE_MCP=1	1	enterprise MCP configuration forbids	an enterprise MCP configuration refuses the flag that keeps the repository's servers out, and the run is refused rather than carrying them
+report	STUB_MENTIONS_MCP=1	0	scope:|run warnings:|documents an enterprise MCP config	the same words in passing are a warning on a review, not that refusal
+report	STUB_CHECK_BOUNDARY=1	0	scope:|read-only boundary held	the run is launched unable to write the repository it reviews
+report	STUB_CHECK_BOUNDARY=1 WORKTREE=1	0	scope:|read-only boundary held	and in a linked worktree, where the git directory and the common one are different paths
 #
 # The argument guards, which no envelope can reach: the run is refused before the
 # engine is launched, and `-` is how a case says so.
@@ -95,6 +99,14 @@ report	STUB_TOUCH=repo	0	tree-warning:|read git status	a run that edited the tre
 -	--level bogus	1	'bogus' is not a rung	a level off the ladder is refused
 -	--model --sneaky	1	is not a model	so is a model name shaped like a flag
 -	--bogus x	2	unknown argument	an unknown argument exits 2, distinct from a failed review
+-	TMPDIR=/tmp/claude-review-[glob]	1	holds a glob character	a path the sandbox would read as a pattern is refused before the engine
+-	TMPDIR=/tmp/claude-review-*glob	1	holds a glob character	and so is one carrying `*`
+-	TMPDIR=/tmp/claude-review-?glob	1	holds a glob character	and one carrying `?`
+-	GIT_DIR=/nonexistent/claude-review-not-a-repo	1	not inside a git working tree	a directory outside a git working tree is refused before the engine
+-	STUB_GIT_TOP=/tmp	1	is not the directory this run starts in	a working tree git names elsewhere than the run stands in is refused, since the boundary would hold the wrong one
+-	STUB_GIT_FAIL=--git-common-dir	1	could not be resolved	a git directory that does not resolve is refused, never left writable
+-	STUB_GIT_FAIL=--absolute-git-dir	1	could not be resolved	and so is the other one
+-	TMPDIR=.	1	TMPDIR is inside the repository under review	a relative temp root inside the checkout is caught once it is resolved
 #
 # The engine's own exit status, which the script currently ignores.
 report	STUB_EXIT=9	0	scope:	an engine that answered fully is judged by its envelope, not its status
