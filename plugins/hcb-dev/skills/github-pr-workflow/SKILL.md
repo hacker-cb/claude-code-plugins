@@ -69,9 +69,9 @@ flow upstream named another — when:
 - A Critical/Important finding requires a product/design decision you can't make
 - A standing approval would be spent to fix a `Minor` that nothing else is
   pushing (`references/copilot.md`)
-- Copilot's review of the head has not settled and the wait has run out
-  (`references/copilot.md`) — the head is unreviewed, and merging past that is
-  the addressee's call
+- A Copilot review this driver waits for has not posted and the wait has run out
+  (`references/copilot.md`) — the head is unreviewed, and merging past that is the
+  addressee's call
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - Whether the branch may be rebased at all cannot be read — a remote that does
   not answer whether anything stands on its tip (`slice-completion.md`); a
@@ -376,11 +376,12 @@ approval requirement met where the base carries one, plus —
 always, whatever the repo does or doesn't enforce — CI genuinely green, the PR
 body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
-`gh pr edit <pr> --body "<body>"` rewrites it), and Copilot's review **of the
-current head** settled — or, where its wait ran out, the addressee's word to merge
-with the head unreviewed by Copilot, said in the report — its Critical/Important findings fixed on both of the
-readings that carry them, every comment it left answered, and every thread it
-opened resolved (`references/copilot.md`;
+`gh pr edit <pr> --body "<body>"` rewrites it), every Copilot review **this driver
+waits for** settled — or, where a wait ran out, the addressee's word to
+merge with the head unreviewed by Copilot, said in the report — and of every Copilot
+review that posted, the Critical/Important findings fixed on both of the readings
+that carry them, every comment answered, and every thread resolved
+(`references/copilot.md`;
 `references/merge-gates.md`, *When there are no gates, or they can't be
 trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
 merge, your bar decides *readiness*; when they diverge, the stricter one wins —
@@ -419,10 +420,13 @@ however Copilot's own review landed.
 Where the requirement *is* outstanding and the head's review has settled without
 closing it, which of the two kinds of review that is
 (`references/copilot.md`, *What the review lands as*) decides the step. Findings
-still outstanding are this loop's work. A reviewer handing the decision to a human
-is not: **stop and ask the addressee `merge-auth` names**, recommendation first,
-carrying the reason the review gave and what would answer it. Another round against
-that buys another review of the same kind.
+still outstanding are this loop's work where a rule in force reviews pushes or a
+request stands, since the next review can close the requirement; where neither
+holds, no next review comes.
+That, and a reviewer handing the decision to a human, are not this loop's work:
+**stop and ask the addressee `merge-auth` names**, recommendation first, carrying
+the reason the review gave and what would answer it. Another round against that
+buys another review of the same kind.
 
 1. **Read the live state:** `gh pr checks <pr>` plus
    `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP
@@ -440,18 +444,18 @@ that buys another review of the same kind.
    classify them; `references/copilot.md` owns where each of the two lives and how
    to reach it.
 4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
-   as few pushes as is reasonable — under `review_on_push` every push re-requests
-   Copilot and costs
-   another wait at step 6, whether or not a new review actually follows.
+   as few pushes as is reasonable — where a rule in force reviews pushes, every
+   push costs another wait at step 6, whether or not a new review actually follows.
 5. **Reply to every Copilot comment, and resolve every thread it opened** —
    `references/copilot.md` owns the reply + resolve protocol, what answers a
    finding that opened no thread, and how to tell a thread you answered from one
    the reviewer closed itself.
-6. **After pushing — whichever step pushed — bring the body back to what is
-   landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
-   Copilot's review of the new head**: never evaluate
-   exit until its verdict on the head is settled; `references/copilot.md` owns the
-   wait, defines what settles it, and names the ceiling at which the wait becomes
+6. **Wait for every Copilot review this driver waits for before exit is evaluated**
+   — on this loop's first pass for the one the PR earns by becoming reviewable, and
+   again after every push, whichever step pushed. After a push, bring the body back
+   to what is landing first (`merge-message.md`;
+   `gh pr edit <pr> --body "<body>"`). `references/copilot.md` owns which reviews
+   those are, the wait, what settles it, and the ceiling at which the wait becomes
    one of the Autonomy model's stops. Then re-read from this loop's step 1 (the
    live-state read), not the top-level Step 1.
 
@@ -604,10 +608,9 @@ that, never the merge command's exit status:
 
 ## Step 7 — Report and suggest next steps
 
-After the merge lands, check once more for a late review: Copilot's review of the
-merged head can post *after* the merge, orphaning its findings on the now-closed
-PR — behind a signal that read as a decline, or behind a merge taken outside this
-skill. If one appears, don't drop it: surface its findings in the report below and
+After the merge lands, check once more for a late review: any Copilot review still
+outstanding — of the merged head, or of an earlier commit — can post *after* the
+merge, orphaning its findings on the now-closed PR. If one appears, don't drop it: surface its findings in the report below and
 recommend a follow-up (issue or change request) as a next step; creating it is an
 outward action the user authorises, not one you take autonomously —
 [`../../references/findings.md`](../../references/findings.md) owns
@@ -615,12 +618,12 @@ that protocol, and the classification is `hcb-dev:issue-tracking`'s.
 
 Then give the user a short report:
 
-1. **Copilot's verdict on the head that merged** — the state its review of that
-   head actually carries, and the effort level each of its runs reported.
-   `references/copilot.md` owns where both are read from, what an unread level
-   means, and what this line says when that head carries no review at all or more
-   than one — including the case where the reference ruled Copilot out of this
-   repo's flow, which is said here instead of a verdict.
+1. **The gates the base enforces, and how each was met at the merge** — the ones
+   `references/merge-gates.md` read in Step 2: required checks, approvals, thread
+   resolution, and whatever else the base carries; a base with none says so.
+   Copilot's line among them is its review of the head that merged and the state
+   that review carries — or, where that head has none, the commit the last review
+   covered and why; `references/copilot.md` owns both.
 2. **The base's own checks on the merge commit**, as Step 6 read them — green,
    over the rows those reads actually saw; red, with every failing row and what
    each was attributed to (this merge's, the commit before it, a degraded forge,
