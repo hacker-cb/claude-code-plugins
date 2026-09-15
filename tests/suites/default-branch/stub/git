@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+real=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "^$(dirname "$0")$" | paste -sd: -) command -v git)
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+# The script's very first call. The runner clears its own marker between cases but
+# knows nothing of this one, so a fetch recorded by the previous case would still be
+# standing here and the next case would start with the ref already materialised.
+[ "$1 $2" = "rev-parse --git-dir" ] && rm -f "${STUB_MARKER_FILE:-/dev/null}.fetched"
+
+case "$1" in
+  symbolic-ref)
+    case "$2" in refs/remotes/*/HEAD)
+      v=$(ask '.pointer')
+      case "$v" in absent) exit 1 ;; "") ;; *) printf '%s\n' "$v"; exit 0 ;; esac
+    esac ;;
+  ls-remote)
+    v=$(ask '.ls_remote')
+    case "$v" in
+      silent) echo "fatal: could not read from remote repository" >&2; exit 128 ;;
+      "") exit 2 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  fetch)
+    [ "$(ask '.fetch')" = fail ] && { echo "fatal: refusing to fetch" >&2; exit 1; }
+    # A successful fetch MATERIALISES the ref, and the script checks again afterwards.
+    # Without recording that, the stub would model a fetch that reports success and
+    # changes nothing — which no real git does, and which would make the script look
+    # broken for refusing.
+    : > "${STUB_MARKER_FILE:-/dev/null}.fetched"
+    exit 0 ;;
+  rev-parse)
+    # The existence probe is the envelope's; everything else is real. `have_ref: no`
+    # means the ref is absent UNTIL the fetch above brings it — after that the probe
+    # must succeed, or the stub models a fetch that changes nothing and the script looks
+    # broken for refusing what it correctly refused.
+    if [ "$2" = "--verify" ]; then
+      case "$(ask '.have_ref')" in
+        # Answered here rather than by the real git: `actions/checkout` fetches the PR's
+        # merge ref and no `refs/remotes/<remote>/<default>`, so a case falling through
+        # would test the checkout's shape instead of the script.
+        yes) exit 0 ;;
+        no) [ -e "${STUB_MARKER_FILE:-/dev/null}.fetched" ] && exit 0; exit 1 ;;
+      esac
+    fi ;;
+esac
+exec "$real" "$@"

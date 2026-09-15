@@ -1,0 +1,10 @@
+# fixture	args	want	expect	note
+confirmed	-	0	"resolved": true|"confirmed": true|"source": "confirmed"	the remote named the same branch the pointer claims — the only answer a caller may act on unsaid
+renamed-on-forge	-	0	"confirmed": true|"name": "mainline"|was renamed	a pointer at a ref that still EXISTS is the case verification cannot catch: the remote decides
+remote-silent	-	0	"confirmed": false|"source": "local-pointer"|could not confirm	a silent remote leaves the pointer unconfirmed rather than promoting it to the answer
+pointer-stale	-	0	"confirmed": true|"source": "remote-head"|no longer exists	a pointer at a deleted ref is a claim that failed — the remote answers instead
+no-pointer-remote-answers	-	0	"confirmed": true|"name": "trunk"	no pointer at all: the remote is the only thing that knows
+no-pointer-remote-silent	-	0	"resolved": false|did not answer	nothing local and nothing from the remote is unresolved, never a popular name
+offline-with-pointer	--no-network	0	"resolved": true|"confirmed": false|unconfirmed by the remote	offline still answers, and says plainly that nothing confirmed it
+offline-no-pointer	--no-network	0	"resolved": false|--no-network forbids asking	offline with no pointer refuses rather than falling back to a popular name
+fetch-refused	-	0	"resolved": false|could not be fetched	a ref the remote names but the fetch cannot bring is unresolved, not assumed present
