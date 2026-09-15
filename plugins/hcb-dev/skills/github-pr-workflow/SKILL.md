@@ -450,12 +450,13 @@ buys another review of the same kind.
    `references/copilot.md` owns the reply + resolve protocol, what answers a
    finding that opened no thread, and how to tell a thread you answered from one
    the reviewer closed itself.
-6. **After pushing — whichever step pushed — bring the body back to what is
-   landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
-   every Copilot review this driver waits for**, the one the PR's opening earns
-   included: never evaluate exit while one is outstanding; `references/copilot.md`
-   owns which reviews those are, the wait, what settles it, and the ceiling at which
-   the wait becomes one of the Autonomy model's stops. Then re-read from this loop's step 1 (the
+6. **Wait for every Copilot review this driver waits for before exit is evaluated**
+   — on this loop's first pass for the one the PR earns by becoming reviewable, and
+   again after every push, whichever step pushed. After a push, bring the body back
+   to what is landing first (`merge-message.md`;
+   `gh pr edit <pr> --body "<body>"`). `references/copilot.md` owns which reviews
+   those are, the wait, what settles it, and the ceiling at which the wait becomes
+   one of the Autonomy model's stops. Then re-read from this loop's step 1 (the
    live-state read), not the top-level Step 1.
 
 ## Step 5 — Merge (only with explicit authorization)
@@ -621,8 +622,9 @@ Then give the user a short report:
 1. **The gates the base enforces, and how each was met at the merge** — the ones
    `references/merge-gates.md` read in Step 2: required checks, approvals, thread
    resolution, and whatever else the base carries; a base with none says so.
-   Copilot's line among them is the commit its last review covered and, where that
-   is not the head that merged, why — `references/copilot.md` owns both.
+   Copilot's line among them is the commit its last review covered, the state that
+   review carries, and — where that commit is not the head that merged — why;
+   `references/copilot.md` owns all three.
 2. **The base's own checks on the merge commit**, as Step 6 read them — green,
    over the rows those reads actually saw; red, with every failing row and what
    each was attributed to (this merge's, the commit before it, a degraded forge,
