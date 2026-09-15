@@ -202,9 +202,10 @@ resolved like any other.
 
 ## Wait for the review of the CURRENT head
 
-This section applies after a push wherever a rule in force reviews pushes
-(`review_on_push: true`), and wherever a request is standing; anywhere else there is
-nothing to wait for — go on.
+This section applies once the PR opens ready for review wherever a rule is in force,
+after a push wherever a rule in force reviews pushes (`review_on_push: true`), and
+wherever a request is standing; anywhere else there is nothing to wait for — go on.
+In the steps below, the PR's opening counts as its first push.
 
 The trap that silently drops findings: right after you push a fix, the PR briefly
 looks finished — CI goes green, the previous review's threads are all resolved,
@@ -374,22 +375,19 @@ above return nothing of them, `required_review_thread_resolution` does not hold
 them, and the check that unresolved threads are zero reads a clean field while they
 stand.
 
-Read the body of **every** review on the head you are handing in — several runs can
-review one commit, and a later one carries findings the earlier one did not:
+Read the body of **every** Copilot review that posted, whichever commit it covers —
+the head you hand in may never get a review of its own while an earlier commit's
+review still carries its findings, and several runs can review one commit, a later
+one carrying findings the earlier one did not. A body whose findings the PR's
+conversation already names was read in an earlier round:
 
 ```bash
-HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
-# Unset it and the filter below keeps every review ever posted — an old head's
-# suppressed block then reads as this head's finding, said by an empty variable
-[ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — the bodies are unread, not clean"; exit 1; }
-export HEAD_SHA
 gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | select(.commit_id == env.HEAD_SHA)
         # markup stripped before either count is read: both labels arrive as a heading
         # or a bold run as often as plain text, and GitHub may reword either of them
         | ((.body? // "") | gsub("<[^>]*>"; " ") | gsub("[*_#]"; " ")) as $b
-        | {at: .submitted_at, state,
+        | {at: .submitted_at, commit: ((.commit_id // "")[:7]), state,
            opening: (((.body? // "") | split("\n")[0] // "") | gsub("^#+ *|[[:space:]]+$"; "")),
            # `// "none"` and not `// "0"`: a body carrying no such block and a block
            # reporting none are different readings, and they take different next steps
@@ -532,14 +530,18 @@ HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
 # unreviewed", said by a variable that never got a value rather than by the PR.
 [ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — report no Copilot line"; exit 1; }
 export HEAD_SHA
-# `| @json` pins each review to one line, and the rows come back in the order they
-# were published, so `tail -1` is the last review.
-gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
+# Captured with its exit status: a call that failed prints no review, exactly as a
+# PR Copilot never reviewed does. The rows come back in the order they were
+# published, so the last line is the last review.
+if ! rows="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | {commit_id, state, head: (.commit_id == env.HEAD_SHA)} | @json' | tail -1
+        | {commit_id, state, head: (.commit_id == env.HEAD_SHA)} | @json')"; then
+  echo "REVIEWS UNREAD — no Copilot line, and not an absent one"; exit 1
+fi
+printf '%s\n' "$rows" | tail -1
 ```
 
-No line at all is a PR Copilot never reviewed — say that instead of a commit.
+An empty line is a PR Copilot never reviewed — say that instead of a commit.
 `head: false` has four causes, and they take different steps — report which it was:
 
 - **the repository requested no review of the later commits** — no rule in force,

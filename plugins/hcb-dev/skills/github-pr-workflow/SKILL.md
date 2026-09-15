@@ -69,9 +69,9 @@ flow upstream named another — when:
 - A Critical/Important finding requires a product/design decision you can't make
 - A standing approval would be spent to fix a `Minor` that nothing else is
   pushing (`references/copilot.md`)
-- A Copilot review the repository requested has not posted and the wait has run
-  out (`references/copilot.md`) — the head is unreviewed, and merging past that is
-  the addressee's call
+- A Copilot review this driver waits for has not posted and the wait has run out
+  (`references/copilot.md`) — the head is unreviewed, and merging past that is the
+  addressee's call
 - The merge strategy is genuinely ambiguous (see below) and you can't pick
 - Whether the branch may be rebased at all cannot be read — a remote that does
   not answer whether anything stands on its tip (`slice-completion.md`); a
@@ -376,8 +376,8 @@ approval requirement met where the base carries one, plus —
 always, whatever the repo does or doesn't enforce — CI genuinely green, the PR
 body describing the head that is about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md);
-`gh pr edit <pr> --body "<body>"` rewrites it), every Copilot review **the
-repository requested** settled — or, where a wait ran out, the addressee's word to
+`gh pr edit <pr> --body "<body>"` rewrites it), every Copilot review **this driver
+waits for** settled — or, where a wait ran out, the addressee's word to
 merge with the head unreviewed by Copilot, said in the report — and of every Copilot
 review that posted, the Critical/Important findings fixed on both of the readings
 that carry them, every comment answered, and every thread resolved
@@ -420,10 +420,12 @@ however Copilot's own review landed.
 Where the requirement *is* outstanding and the head's review has settled without
 closing it, which of the two kinds of review that is
 (`references/copilot.md`, *What the review lands as*) decides the step. Findings
-still outstanding are this loop's work. A reviewer handing the decision to a human
-is not: **stop and ask the addressee `merge-auth` names**, recommendation first,
-carrying the reason the review gave and what would answer it. Another round against
-that buys another review of the same kind.
+still outstanding are this loop's work where a rule in force reviews pushes, since
+the next review can close the requirement; where none does, no next review comes.
+That, and a reviewer handing the decision to a human, are not this loop's work:
+**stop and ask the addressee `merge-auth` names**, recommendation first, carrying
+the reason the review gave and what would answer it. Another round against that
+buys another review of the same kind.
 
 1. **Read the live state:** `gh pr checks <pr>` plus
    `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP
@@ -449,10 +451,10 @@ that buys another review of the same kind.
    the reviewer closed itself.
 6. **After pushing — whichever step pushed — bring the body back to what is
    landing** (`merge-message.md`; `gh pr edit <pr> --body "<body>"`), **and wait for
-   the Copilot review the repository requests for the new head, where it requests
-   one**: never evaluate exit while one is outstanding; `references/copilot.md` owns
-   whether one is requested, the wait, what settles it, and the ceiling at which the
-   wait becomes one of the Autonomy model's stops. Then re-read from this loop's step 1 (the
+   every Copilot review this driver waits for**, the one the PR's opening earns
+   included: never evaluate exit while one is outstanding; `references/copilot.md`
+   owns which reviews those are, the wait, what settles it, and the ceiling at which
+   the wait becomes one of the Autonomy model's stops. Then re-read from this loop's step 1 (the
    live-state read), not the top-level Step 1.
 
 ## Step 5 — Merge (only with explicit authorization)
