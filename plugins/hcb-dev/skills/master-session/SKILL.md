@@ -152,6 +152,8 @@ is that session's to sweep. Write the ledger's closing line.
 
 ## Reference files
 
+- [`../../references/invariants.md`](../../references/invariants.md) — read once,
+  before the first read of anything a tool, a forge or another session answers.
 - [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)

@@ -1,9 +1,7 @@
 # Resolving the base branch and its remote
 
 Read by anything in this plugin that needs a base to diff against, a default
-branch to reason about, or a remote to push to. It lives here, not in any one
-skill, because prose copies drift: a fix lands in some and the rest go on saying
-something else.
+branch to reason about, or a remote to push to.
 
 The one rule everything below serves: **never guess a name.** `master`, `main`,
 `dev`, `develop`, `trunk` — every repo picks its own, and `origin` is the same

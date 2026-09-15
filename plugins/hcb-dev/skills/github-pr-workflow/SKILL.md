@@ -646,6 +646,8 @@ Keep it scannable: short grouped bullets, not an essay.
 
 ## Reference files
 
+- [`../../references/invariants.md`](../../references/invariants.md) — read once,
+  before the first read of anything a tool, a forge or another session answers.
 - [`references/merge-gates.md`](references/merge-gates.md) — read it before Step 2.
 - [`references/copilot.md`](references/copilot.md) — read it before Step 4, and
   again before Step 7.

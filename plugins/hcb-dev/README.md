@@ -301,6 +301,11 @@ Guidance more than one skill needs is kept in one place rather than copied into
 each — copies drift, and a fix then lands in some of them while the rest go on
 saying something else. Each file opens by saying what it owns.
 
+- [`references/invariants.md`](references/invariants.md) — how a signal is read,
+  and what an authority permits. Twelve rules that hold wherever a tool, a forge,
+  a remote or another session answers: an empty result is not a negative one, an
+  unread one is not empty, configuration predicts nothing, an authority narrows
+  and never widens. Read once per run, by every skill here.
 - [`references/base-resolution.md`](references/base-resolution.md) — resolving a
   base branch and its remote without guessing either name. Read wherever a base
   or a remote is resolved.

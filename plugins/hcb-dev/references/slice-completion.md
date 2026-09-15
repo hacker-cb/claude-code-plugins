@@ -1,10 +1,7 @@
 # Completing a slice — the local and change-request backends
 
 Read by whatever *finishes* a slice. It owns the one place the completion **mode**
-changes anything — so the front half stays mode-blind and the two backends cannot
-drift apart across skills. It lives here, not in any one of them, for the same
-reason [`base-resolution.md`](base-resolution.md) does: prose copies drift, and a
-fix then lands in one and the other goes on saying something else.
+changes anything, which is what keeps the front half mode-blind.
 
 A slice arrives here already **committed, reviewed, and past the coverage gate**.
 Completion never reviews, commits, or re-runs the gate — all of that happened
@@ -22,7 +19,8 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
 - `parent` — the branch this slice lands on, as a **bare local name**, carried
   alongside the `<remote>/<name>` ref it was reduced from. It is a destination, not
   a ref to read: the local backend checks it out and merges into it, and
-  `base-resolution.md` shows what a `<remote>/<name>` does there — `checkout`
+  [`base-resolution.md`](base-resolution.md) shows what a `<remote>/<name>` does
+  there — `checkout`
   detaches HEAD quietly and the merge then lands nowhere. Keep the ref too, because
   the name alone does not say which tip was resolved: with the same branch on two
   remotes, or a local copy behind its remote, merging into the name lands somewhere

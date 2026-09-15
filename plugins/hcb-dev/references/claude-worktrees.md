@@ -1,8 +1,8 @@
 # Claude Code's own worktrees and sessions
 
 Read by anything that acts on a worktree or on a branch a session may be standing
-in. It describes **Claude Code**, not this plugin: it changes on the host's release
-schedule, and asserting it in more than one skill is how the copies drift apart.
+in. It describes **Claude Code**, not this plugin, and changes on the host's
+release schedule.
 
 Most of it is **internal and undocumented**. Treat every shape below as a hint that
 may be gone tomorrow, and let a failed probe mean *unknown* rather than *nothing

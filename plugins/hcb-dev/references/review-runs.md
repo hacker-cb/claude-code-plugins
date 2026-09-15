@@ -3,9 +3,7 @@
 Read by anything that launches a review **engine of its own** — a separate process
 or session that builds its own diff and answers with findings. It owns what is the
 same whichever engine runs: which base the run is given, what that diff structurally
-cannot see, how the run is launched, and the coverage record it hands back. It lives
-outside any one skill because a copy per engine drifts, and a coverage rule that
-drifted is one that reports a review nobody performed.
+cannot see, how the run is launched, and the coverage record it hands back.
 
 What stays with each engine is its own: the command, its flags, its ladder, and the
 shape of its findings. The waiting rules below — the windows, what the wait is
