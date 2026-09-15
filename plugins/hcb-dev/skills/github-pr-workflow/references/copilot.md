@@ -173,10 +173,10 @@ That is a finished review that is not an approval, and what is left is a decisio
 rather than a fix — the main skill's Step 4 stop is where it goes.
 
 **Read it as a fact about this head, never as a prediction about the pull request.**
-Where a rule reviews pushes, a change cut down, or simply pushed again, earns an
-approval from the reviewer that declined to judge it before — so a deferral is
-grounds to raise the question now, never grounds to declare the approval
-unreachable.
+Where a review of a later head is still to come, a change cut down, or simply pushed
+again, can earn an approval from the reviewer that declined to judge it before — so
+a deferral is grounds to raise the question now, never grounds to declare the
+approval unreachable.
 
 Whether Copilot may approve at all, whether its approval counts toward the merge
 requirements, and which changed paths it may count for are repository settings
@@ -203,10 +203,11 @@ resolved like any other.
 
 ## Wait for the review of the CURRENT head
 
-This section applies once the PR opens ready for review wherever a rule is in force,
-after a push wherever a rule in force reviews pushes (`review_on_push: true`), and
+This section applies once the PR is one a rule in force reviews — ready for review,
+or still a draft where that rule carries `review_draft_pull_requests: true` — after
+a push wherever a rule in force reviews pushes (`review_on_push: true`), and
 wherever a request is standing; anywhere else there is nothing to wait for — go on.
-In the steps below, the PR's opening counts as its first push.
+In the steps below, the moment the PR became reviewable counts as its first push.
 
 The trap that silently drops findings: right after you push a fix, the PR briefly
 looks finished — CI goes green, the previous review's threads are all resolved,
