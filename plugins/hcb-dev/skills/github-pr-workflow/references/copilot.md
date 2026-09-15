@@ -228,15 +228,19 @@ head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
 export head
 # Selected on the head rather than taken off the end: a later review of an earlier
 # commit would otherwise stand where the head's own review already is.
-gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
+if ! fresh="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | select(.commit_id == env.head) | {commit_id, submitted_at} | @json' | tail -1
+        | select(.commit_id == env.head) | {commit_id, submitted_at} | @json')"; then
+  echo "REVIEWS UNREAD — not a head without one"; exit 1
+fi
+printf '%s\n' "$fresh" | tail -1
 # a line is the head's own review; none is a head still unreviewed
 ```
 
 The rule's request for a push can be late, and on some pushes it never registers,
-so the wait ends on **the request's own events on the timeline** — never on the repository's checks, and on
-the clock only where step 5 says the wait has run out: a status check that stands
+so the wait ends on **the request's own events on the timeline** — never on a
+repository check, which step 2's cutoff reads for a different question, and on the
+clock only where that cutoff or step 5's ceiling says so: a status check that stands
 in for Copilot's review is satisfied by *a* review of the pull request, not by one
 of the current head, and CI is usually green before Copilot has posted. **Green checks with
 no review of the head are the normal state right after a push, not a lost request.**
@@ -538,17 +542,22 @@ HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
 # unreviewed", said by a variable that never got a value rather than by the PR.
 [ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — report no Copilot line"; exit 1; }
 export HEAD_SHA
-# The rows come back in the order they were published, so the last is the last review.
 if ! rows="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         | {commit_id, state, head: (.commit_id == env.HEAD_SHA)} | @json')"; then
   echo "REVIEWS UNREAD — no Copilot line, and not an absent one"; exit 1
 fi
+# The merged head's own review, where it has one — reviews publish out of commit
+# order, so the last row is a different question. Rows come in publication order.
+printf '%s\n' "$rows" | grep '"head":true' | tail -1
 printf '%s\n' "$rows" | tail -1
 ```
 
-An empty line is a PR Copilot never reviewed — say that instead of a commit.
-`head: false` has four causes, and they take different steps — report which it was:
+The first line is the report's, where there is one. Where it is empty, the second
+says which commit the last review covered, and no review of the head exists — for
+one of four reasons, which take different steps, so report which it was. Both empty
+is a PR with no Copilot review at all, pending or never asked, which the timeline's
+latest move tells apart:
 
 - **the repository requested no review of the later commits** — no rule in force,
   none that reviews pushes, or a head that reached the cutoff with no request of its
