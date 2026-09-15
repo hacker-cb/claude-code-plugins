@@ -15,22 +15,26 @@
 // Usage: node scripts/check-fixtures.mjs [--dir <fixtures root>]
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { isAbsolute, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 // The invented shapes. A sanitizer writes these; anything else is real data that leaked.
 const SHAPES = {
   // Commit ids: 40 hex, but always led by a marker no real sha carries by accident.
   sha: /^f1x7[0-9a-f]{36}$/,
-  // Anything naming a person, a bot, an owner or a repository. The bots below are kept
-  // verbatim by the collector — their exact logins are what a filter under test has to
-  // match, and they identify nobody — so the shape has to admit them too, or the gate
-  // rejects what the sanitizer is supposed to produce.
-  actor: /^(example|fixture|octo)[a-z0-9-]*(\[bot\])?$|^(copilot(-pull-request-reviewer)?|github-actions|dependabot)(\[bot\])?$/i,
+  // Anything naming a person, a bot, an owner or a repository. The collector writes
+  // `example-user-<8 hex>`, so the shape says exactly that rather than "starts with
+  // example": a prefix test passes `example-user-from-acme` and `octopus-inc` too, which
+  // is real data wearing the right first word. The bots are kept verbatim by the
+  // collector — their exact logins are what a filter under test has to match, and they
+  // identify nobody — so the shape admits them by name.
+  actor: /^(example|fixture|octo)-[a-z]+-[0-9a-f]{8}$|^(copilot(-pull-request-reviewer)?|github-actions|dependabot)(\[bot\])?$/i,
   // Repositories and their owners, written as one string.
   repo: /^(example|fixture)[a-z0-9-]*\/(example|fixture)[a-z0-9-]*$/i,
-  // Branch and ref names.
-  ref: /^(example|fixture|main|master|dev|HEAD)[a-z0-9\/_-]*$/i,
+  // Branch and ref names. Same reasoning as `actor`: the collector writes
+  // `example-branch-<8 hex>`, and a prefix test would pass `dev-acme-migration`, which
+  // names a customer while looking like a default branch.
+  ref: /^example-branch-[0-9a-f]{8}$|^(main|master|dev|HEAD)$/i,
   // URLs point at a host that does not exist.
   url: /^https:\/\/(github|gitlab)\.example(\/|$)/,
 };
@@ -84,9 +88,17 @@ const SELF_TEST = [
   ['a timestamp is not packed data', '2026-09-15T19:42:06Z', false, (v) => packedLeak(v) !== null],
   ['an invented id is not packed data', 'example-id-82b8fa89', false, (v) => packedLeak(v) !== null],
   ['a human login fails the actor shape', 'real-person-42', false, (v) => SHAPES.actor.test(v)],
-  ['an invented login passes', 'example-user-1a2b', true, (v) => SHAPES.actor.test(v)],
+  ['an invented login passes', 'example-user-1a2b3c4d', true, (v) => SHAPES.actor.test(v)],
   ['a bot login is kept verbatim', 'copilot-pull-request-reviewer[bot]', true,
     (v) => SHAPES.actor.test(v)],
+  // The prefix is not the shape: these wear the right first word and carry real names.
+  ['a real name behind the right prefix fails', 'example-user-from-acme', false,
+    (v) => SHAPES.actor.test(v)],
+  ['an org name starting with octo fails', 'octopus-inc', false, (v) => SHAPES.actor.test(v)],
+  ['a customer branch behind a default name fails', 'dev-acme-migration', false,
+    (v) => SHAPES.ref.test(v)],
+  ['a bare default branch passes', 'dev', true, (v) => SHAPES.ref.test(v)],
+  ['an invented branch passes', 'example-branch-1a2b3c4d', true, (v) => SHAPES.ref.test(v)],
 ];
 
 function selfTest() {
@@ -115,8 +127,11 @@ function die(message) {
 const argv = process.argv.slice(2);
 let root = 'tests/suites';
 let rootWasGiven = false;
+let wantSelfTest = false;
 for (let i = 0; i < argv.length; i += 1) {
-  if (argv[i] === '--self-test') { selfTest(); }
+  // Recorded, not run here: running it mid-parse exits before a --dir beside it is ever
+  // read, so `--dir X --self-test` would report success having inspected nothing in X.
+  if (argv[i] === '--self-test') { wantSelfTest = true; continue; }
   if (argv[i] !== '--dir') die(`unknown argument '${argv[i]}'`);
   if (argv[i + 1] === undefined) die('--dir needs a value');
   root = argv[i + 1];
@@ -124,11 +139,15 @@ for (let i = 0; i < argv.length; i += 1) {
   i += 1;
 }
 
+if (wantSelfTest && !rootWasGiven) selfTest();
+
 const repoRoot = (() => {
   const r = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' });
   if (r.status !== 0) die('not inside a git checkout');
   return r.stdout.trim();
 })();
+
+if (wantSelfTest) die('--self-test takes no --dir: it probes the detectors, not a tree');
 
 const rootAbs = isAbsolute(root) ? root : join(repoRoot, root);
 if (!existsSync(rootAbs)) die(`no directory at ${root}`);
@@ -136,18 +155,27 @@ if (!existsSync(rootAbs)) die(`no directory at ${root}`);
 // Two kinds of fixture, and they earn different checks. A fixture written by hand is
 // synthetic: it never touched a private repository, and holding it to the invented
 // shapes would fail honest names like `release/1.x`. A fixture CAPTURED from a real pull
-// request is the one this file exists for, and a `CAPTURED` marker beside it says so —
-// written by the collector, never by hand.
+// request is the one this file exists for, and a `CAPTURED` marker in its directory says
+// so — written by the collector, never by hand.
 //
-// The loose checks below run over both: a real commit id or a real forge host has no
+// **The marker decides, never the path.** Scoping by a `fixtures/` segment made the gate
+// blind to any other directory name: a capture under `captured/`, `data/` or `fixture/`
+// was walked past in silence, and an unsanitized file there passed CI green. The
+// collector accepts any `--out`, so that was not a hypothetical spelling — it was the
+// default outcome of naming the directory anything else.
+//
+// The loose checks run over both kinds: a real commit id or a real forge host has no
 // business in either, and that guard costs nothing.
 const fixtures = [];
+const capturedDirs = new Set();
 (function walk(dir) {
-  for (const entry of readdirSync(dir)) {
+  const entries = readdirSync(dir);
+  const captured = entries.includes('CAPTURED');
+  if (captured) capturedDirs.add(dir);
+  for (const entry of entries) {
     const abs = join(dir, entry);
     if (statSync(abs).isDirectory()) { walk(abs); continue; }
-    if (!entry.endsWith('.json') || !abs.includes(`${join('', 'fixtures')}/`)) continue;
-    const captured = existsSync(join(dir, 'CAPTURED'));
+    if (!entry.endsWith('.json')) continue;
     fixtures.push({ abs, captured });
   }
 }(rootAbs));
@@ -217,6 +245,15 @@ process.stdout.write(`fixtures: ${fixtures.length} file(s) under ${root}`
 if (rootWasGiven && fixtures.length === 0) {
   process.stdout.write(`  FAIL  ${root} holds no fixture — nothing was checked\n`);
   process.exit(1);
+}
+
+// A marker with nothing beside it is the same unanswered question, and this one fires
+// under the default root too: it is how a capture whose files were moved away, or
+// written under a name this walk cannot see, stops reading as "checked".
+for (const dir of capturedDirs) {
+  if (fixtures.some(({ abs, captured }) => captured && dirname(abs) === dir)) continue;
+  const rel = dir.startsWith(`${repoRoot}/`) ? dir.slice(repoRoot.length + 1) : dir;
+  failures.push(`${rel}: CAPTURED marker with no fixture beside it — nothing was checked`);
 }
 if (failures.length) {
   for (const f of failures) process.stdout.write(`  FAIL  ${f}\n`);

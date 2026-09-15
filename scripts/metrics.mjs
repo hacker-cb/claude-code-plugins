@@ -87,7 +87,10 @@ const source = opts.ref
     },
   };
 
-const stripFences = (text) => text.replace(/^```[\s\S]*?^```/gm, '');
+// Indented fences count too: a block inside a list item carries the same shell, and
+// leaving it in the prose totals inflates the word and sentence counts with code — then
+// shifts them again the day someone merely un-indents it.
+const stripFences = (text) => text.replace(/^[ \t]*```[\s\S]*?^[ \t]*```/gm, '');
 
 function measure(text) {
   // What `wc -l` counts: a trailing newline ends the last line rather than starting an
@@ -102,7 +105,7 @@ function measure(text) {
   let fenced = 0;
   let inFence = false;
   for (const line of text.split('\n')) {
-    if (/^```/.test(line)) { inFence = !inFence; fenced += 1; continue; }
+    if (/^[ \t]*```/.test(line)) { inFence = !inFence; fenced += 1; continue; }
     if (inFence) fenced += 1;
   }
   return { lines, words, sentences, fenced };

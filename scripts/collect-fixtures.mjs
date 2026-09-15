@@ -34,7 +34,10 @@ const KINDS = {
   timeline: (repo, pr) => ['api', '--paginate', `repos/${repo}/issues/${pr}/timeline`],
   checks: (repo, pr, sha) => ['api', '--paginate', `repos/${repo}/commits/${sha}/check-runs`],
   status: (repo, pr, sha) => ['api', '--paginate', `repos/${repo}/commits/${sha}/status`],
-  rules: (repo, pr, sha, base) => ['api', `repos/${repo}/rules/branches/${base}`],
+  // --paginate like the rest: a base carrying more than one page of rules would
+  // otherwise be captured as its first page, which is the "first page is not the list"
+  // invariant failing inside the tooling written to enforce it.
+  rules: (repo, pr, sha, base) => ['api', '--paginate', `repos/${repo}/rules/branches/${base}`],
 };
 
 // Only these reach the fixture. Anything else in the response is dropped outright: a
@@ -74,14 +77,21 @@ const PUBLIC_ACTORS = new Set([
   'github-actions[bot]', 'github-actions', 'dependabot[bot]', 'dependabot',
 ]);
 
-// Structural markers a review body carries that a script actually parses. Everything
-// else in the body is replaced.
+// Structural markers a review body carries that a script actually parses, each paired
+// with the canonical form written in its place.
+//
+// The canon is the point. Keeping the matched text looks safe and is not: two of these
+// anchors are a word, then arbitrary text, then a number — so `suppressed for
+// northwind-bank (2)` matches, and the customer's name rides along inside the match.
+// The parser downstream reads the number and the anchor, never the middle
+// (`copilot.md`'s body reader captures `(?<n>[0-9]+)` alone), so rebuilding the marker
+// from the capture loses nothing and carries nothing.
 const BODY_MARKERS = [
-  /comments? generated[^0-9]{0,20}\d+/i,
-  /suppressed[^(]{0,40}\(\d+\)/i,
-  /needs? a closer look/i,
-  /final human review/i,
-  /no (new )?comments/i,
+  [/comments?\s+generated\D{0,20}?(\d+)/i, (m) => `Comments generated: ${m[1]}`],
+  [/suppressed\D{0,40}?\((\d+)\)/i, (m) => `suppressed (${m[1]})`],
+  [/needs?\s+a\s+closer\s+look/i, () => 'Needs a closer look'],
+  [/final\s+human\s+review/i, () => 'final human review'],
+  [/no\s+(?:new\s+)?comments/i, () => 'No comments'],
 ];
 
 const USAGE = 'usage: node scripts/collect-fixtures.mjs --repo <owner/name> --pr <n>'
@@ -114,7 +124,14 @@ for (const k of kinds) if (!KINDS[k]) die(`unknown kind '${k}' (known: ${Object.
 const saltPath = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'),
   'hcb-collect-fixtures-salt');
 const salt = (() => {
-  if (existsSync(saltPath)) return readFileSync(saltPath, 'utf8').trim();
+  if (existsSync(saltPath)) {
+    const stored = readFileSync(saltPath, 'utf8').trim();
+    // An empty file — truncated, or created by `touch` — would leave the digest
+    // unsalted and every pseudonym guessable again, silently. Refuse rather than
+    // degrade: the salt is the whole of what stops the fixture being an oracle.
+    if (!stored) die(`the salt at ${saltPath} is empty — delete it to have a new one written`);
+    return stored;
+  }
   const fresh = randomBytes(32).toString('hex');
   mkdirSync(dirname(saltPath), { recursive: true });
   writeFileSync(saltPath, `${fresh}\n`, { mode: 0o600 });
@@ -146,14 +163,13 @@ function sanitizeBody(body) {
   if (typeof body !== 'string' || body === '') return body;
   const kept = [];
   for (const line of body.split('\n')) {
-    for (const marker of BODY_MARKERS) {
+    // Every marker on the line, not the first. A body reporting `Comments generated: 0;
+    // Suppressed comments (2)` carries two signals the parser reads separately, and
+    // stopping at the first publishes a fixture that says the suppressed block is
+    // absent — a fixture asserting the opposite of what was measured.
+    for (const [marker, canon] of BODY_MARKERS) {
       const hit = line.match(marker);
-      // The MATCH, never the line it sat on. A marker is an ordinary English phrase —
-      // "no comments", "final human review" — so a reviewer writing one beside an
-      // internal hostname, an address or a customer's name puts both on the same line,
-      // and keeping the line publishes the half that was supposed to be dropped.
-      // Structural parsers read the marker; nothing downstream reads its neighbours.
-      if (hit) { kept.push(hit[0].trim()); break; }
+      if (hit) kept.push(canon(hit));
     }
   }
   // The marker says something stood here, so an empty body and a redacted one stay

@@ -81,6 +81,11 @@ const pluginFiles = new Map();
   }
 }('plugins'));
 
+// Markdown wraps, so a phrase measured on one line can end up split across two without
+// a word of it changing. Compared raw, `prose copies drift` then "is not there" while it
+// plainly is — a false green in the one check that is supposed to prove a removal.
+const flatten = (text) => text.replace(/\s+/g, ' ');
+
 const failures = [];
 let checked = 0;
 let pending = 0;
@@ -101,8 +106,15 @@ for (const row of rows) {
     // whether it left the file it was recorded in.
     const sourceFile = row.source.replace(/:\d+@.*$/, '');
     const text = pluginFiles.get(sourceFile);
-    if (text === undefined) continue;    // the file is gone: so is the text in it
-    if (text.includes(row.assertText)) {
+    if (text === undefined) {
+      // "The file is not there" is not "the text is gone": this refactor renames and
+      // moves files, so the wording may have travelled with one. A typo in the path
+      // reads identically. Either way the row proves nothing and must not pass.
+      failures.push(`${row.id}: source ${sourceFile} is not in the tree — renamed, moved`
+        + ', or a typo; re-point the row at where the text lives now');
+      continue;
+    }
+    if (flatten(text).includes(flatten(row.assertText))) {
       failures.push(`${row.id}: ${sourceFile} still carries the dropped text`
         + ` — "${row.assertText}"`);
     }
