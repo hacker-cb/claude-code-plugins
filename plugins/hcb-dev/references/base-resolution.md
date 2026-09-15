@@ -73,33 +73,14 @@ stake of the two.
    If one non-default base dominates, use it and name it in the report. The
    winner is a bare branch name too — normalize it exactly as rung 2 does.
 
-4. **The repo default branch**, in two steps that answer different questions.
-
-   `git symbolic-ref --short refs/remotes/<remote>/HEAD` hands back a ready
-   `<remote>/<name>`, but it only *reads* the pointer without dereferencing it:
-   after the forge renames its default branch this keeps printing the old name
-   with status 0 forever. Verify the ref it names still exists before trusting
-   it.
-
-   That check catches a pointer at a **deleted** ref, not one at a
-   **stale-but-present** one — before a `fetch --prune` the old `<remote>/<name>`
-   is still there and passes. The base is then merely older than the real one, so
-   a review widens rather than breaks. A run scoped to a branch the repo no longer
-   has is this case: `git remote set-head <remote> --auto`.
-
-   Absent or dead, ask the remote — it is the only thing that knows:
-   ```bash
-   git ls-remote --symref <remote> HEAD \
-     | sed -n 's|^ref:[[:space:]]*refs/heads/\([^[:space:]]*\)[[:space:]]*HEAD$|\1|p' | head -1
-   # raw: "ref: refs/heads/<name>\tHEAD" plus a sha line
-   ```
-   Pair the bare name with the remote you asked. Never fall back to a list of
-   popular names.
-
-   **Parse it with `sed`, not `awk`** — awk's field references are rewritten where
-   a skill is substituted, so the program silently compares the wrong things.
-   `head -1` rather than a bare `q`, which would quit on the first *input* line
-   whether or not it matched — the symref line is not guaranteed to be first.
+4. **The repo default branch.** A question narrow enough to have its own script:
+   `scripts/default-branch.mjs`, which the calling **skill** invokes — skill content is
+   where the plugin root is substituted, while here the placeholder would stay literal
+   text. It reads `<remote>/HEAD` without dereferencing it (after a rename that pointer
+   keeps printing the old name with status 0 forever), verifies the ref it claims, asks
+   the remote where the pointer is absent or dead, and materialises the tracking ref
+   before answering. It refuses rather than guessing, and a refusal is "the question
+   cannot be answered", never "nothing matched".
 
 5. **`@{upstream}`** — last resort. When the branch tracks its own remote
    counterpart this narrows the range to unpushed commits only.
@@ -113,7 +94,10 @@ A resolved default gets used two ways, and they want opposite forms:
 | a **ref** to read | `<remote>/<default>` | `diff`, `merge-base`, `rev-list`, `branch --merged`, `--set-upstream-to` |
 | a **name** to become, merge into, or compare | bare `<default>` | `git switch`, `git merge`'s destination, `[ "$cur" = "$default" ]` |
 
-Hand on **both** — the ref, and `${ref#*/}` beside it — because each direction of
+Hand on **both**, and take each from the resolver's own answer rather than trimming
+one out of the other — `${ref#*/}` over a fully qualified `refs/remotes/<remote>/<name>`
+yields `remotes/origin/<name>`, which compares equal to nothing. Both are needed because
+each direction of
 the mistake fails differently and only one of them tells you.
 
 **A bare name where a ref belongs is loud** — in a clone that never checked out the
@@ -158,7 +142,7 @@ Three outcomes, and only one of them means current:
   freshness as unknown.
 - **`couldn't find remote ref`.** Where the base was resolved *from* that remote,
   the branch has been renamed or deleted since: re-resolve it by the ladder — rung
-  4's `git remote set-head <remote> --auto` is what retires the pointer, and a
+  `git remote set-head <remote> --auto` is what retires the pointer, and a
   refspec-restricted fetch prunes nothing — rather than carrying one at a branch
   nobody has. Where the base never had a remote counterpart — a local-only parent,
   a repo with no remote — nothing is missing: it is as current as it can be, and

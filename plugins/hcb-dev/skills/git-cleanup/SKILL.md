@@ -20,16 +20,27 @@ git worktree list --porcelain | head -1        # 'worktree <path>' — the PRIMA
 `PROJECT` is that primary worktree path, **not** cwd: running from inside a
 worktree still means cleaning the repository as a whole.
 
-**The default branch and its remote come from
-[`../../references/base-resolution.md`](../../references/base-resolution.md)** —
-its rung 4 answers this. Resolve it there, then carry two values into the rest of
-the sweep:
+**The default branch and its remote** are what this sweep measures everything
+against, and that is a narrower question than "what should this change be diffed
+against" — the base of whatever request happens to be open is not the default, and
+deleting by it deletes branches merged somewhere else.
+[`../../references/base-resolution.md`](../../references/base-resolution.md) owns
+the wider question; this one has a script:
 
 ```bash
-D="<the remote-tracking ref, per base-resolution.md — EMPTY unless it resolved AND
-    that reference's refresh verified it>"
-DEF="${D#*/}"   # bare name — ONLY for comparing against a branch name, never as a ref
-[ -n "$D" ] || echo "DEFAULT-UNRESOLVED"
+DB="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/default-branch.mjs")"
+# BOTH flags gate this, and each covers a different failure. Without `.confirmed` the
+# answer may be this checkout's own pointer, which a rename on the forge leaves standing
+# and healthy-looking — acting on it compares every branch against a name that is no
+# longer the default. Without `.resolved` the name may be one whose ref was never
+# brought, and every command below then fails with a fatal, which is the same shape as
+# "nothing is merged" without being it.
+# Both values come from the answer itself. Never derive one from the other by
+# trimming: `${D#*/}` over a fully qualified ref yields `remotes/origin/master`,
+# and the comparison below then never matches the branch it is meant to protect.
+D="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .ref  else "" end')"   # a ref to READ
+DEF="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .name else "" end')" # a name to COMPARE
+[ -n "$D" ] || echo "DEFAULT-UNRESOLVED: $(printf '%s' "$DB" | jq -r '.reason // (.notes | join("; "))')"
 ```
 
 **`DEFAULT-UNRESOLVED` is not "nothing is merged"** — it is "the merge question
@@ -243,9 +254,10 @@ Three things come first, in this order, on every branch reaching this step:
   or differing from the one the gate's row named, it is a branch that moved while
   the gate waited: the row's restore command describes an object the deletion
   would no longer take, so surface it and ask again over the tip as it stands.
-- **Re-resolve `$D` and `$DEF` together**, through `base-resolution.md`. The
-  repair block at the end of this step reads `$DEF`, so a `$D` emptied here and a
-  `$DEF` left standing sends every surviving branch through `--unset-upstream`.
+- **Re-resolve `$D` and `$DEF` together**, by running step 1's block again — the same
+  script, not the wider ladder, which would answer with the base of whatever request is
+  open. The repair block at the end of this step reads `$DEF`, so a `$D` emptied here
+  and a `$DEF` left standing sends every surviving branch through `--unset-upstream`.
 - **Re-ask step 4's query on the tip as it stands now**, wherever a forge CLI
   answered it there. A tip that moved while the gate waited belongs to no merged
   request, so the answer that authorized the deletion is simply gone; an open
