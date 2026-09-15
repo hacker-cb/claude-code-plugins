@@ -251,6 +251,8 @@ say what may have been lost. A title this session gave itself stands as it was.
 
 ## Reference files
 
+- [`../../references/invariants.md`](../../references/invariants.md) — read once,
+  before the first read of anything a tool, a forge or another session answers.
 - [`../../references/slice-completion.md`](../../references/slice-completion.md) —
   read at Phase 0's Tier 0 call, and before Phase 2's first cut.
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)

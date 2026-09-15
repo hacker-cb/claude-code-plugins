@@ -1,9 +1,8 @@
 # Prompts that cross between sessions
 
 Read by whatever produces a prompt that crosses into another session. It owns
-the envelope — what holds for any such prompt, whichever direction it travels —
-so the directions do not drift apart. What fills the slots belongs to the skill
-that produces the prompt.
+the envelope — what holds for any such prompt, whichever direction it travels.
+What fills the slots belongs to the skill that produces the prompt.
 
 ## Three carriers, one envelope
 

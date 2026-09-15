@@ -18,6 +18,10 @@ description: >-
 
 # Shipping workflow
 
+Read [`../../references/invariants.md`](../../references/invariants.md) first: the
+gate below, the fix rounds and the completion all turn on reading an answer for what
+it says.
+
 Finished work completes automatically. Do not ask for confirmation **about the
 steps below**; the coverage gate is the one exception in the shared front half,
 and local completion (step 7) adds its own, mode-specific: a stop before merging

@@ -2,11 +2,7 @@
 
 Read by anything that *creates* a branch, *normalizes* one it was handed,
 *publishes* one, or writes the subject of a commit or the title of a change
-request. It lives here, not in any one skill, because the shape of a name is
-**forge-independent** — the repo's own authoring rule names branch naming as
-exactly the kind of thing that belongs in one shared reference, since
-prose copies drift and a fix then lands in some of them while the rest go on
-saying something else.
+request. The shape of a name is **forge-independent**.
 
 The one rule everything below serves: **the name describes the change, and it is
 chosen before anything reads it** — the merge commit, the change request, someone
