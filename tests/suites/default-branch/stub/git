@@ -10,6 +10,15 @@ ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 [ "$1 $2" = "rev-parse --git-dir" ] && rm -f "${STUB_MARKER_FILE:-/dev/null}.fetched"
 
 case "$1" in
+  remote)
+    # Fixture data, not the runner's checkout: in a fork clone the real answer is
+    # `origin upstream`, the script then picks `upstream`, and every pointer fixture
+    # naming `origin` is rejected — five cases failing over the contributor's config
+    # rather than over the script.
+    if [ -z "$2" ]; then
+      v=$(ask '.remotes'); [ -n "$v" ] && { printf '%s\n' "$v"; exit 0; }
+      printf 'origin\n'; exit 0
+    fi ;;
   symbolic-ref)
     case "$2" in refs/remotes/*/HEAD)
       v=$(ask '.pointer')

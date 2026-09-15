@@ -29,15 +29,17 @@ the wider question; this one has a script:
 
 ```bash
 DB="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/default-branch.mjs")"
-# `.confirmed` is the gate, not `.resolved`. An unconfirmed answer is this checkout's
-# own pointer, which a rename on the forge leaves standing and healthy-looking: acting
-# on it compares every branch against a name that is no longer the default, and the
-# real one then reads as an ordinary branch with nothing on it.
+# BOTH flags gate this, and each covers a different failure. Without `.confirmed` the
+# answer may be this checkout's own pointer, which a rename on the forge leaves standing
+# and healthy-looking — acting on it compares every branch against a name that is no
+# longer the default. Without `.resolved` the name may be one whose ref was never
+# brought, and every command below then fails with a fatal, which is the same shape as
+# "nothing is merged" without being it.
 # Both values come from the answer itself. Never derive one from the other by
 # trimming: `${D#*/}` over a fully qualified ref yields `remotes/origin/master`,
 # and the comparison below then never matches the branch it is meant to protect.
-D="$(printf '%s' "$DB" | jq -r 'if .confirmed then .ref  else "" end')"   # a ref to READ
-DEF="$(printf '%s' "$DB" | jq -r 'if .confirmed then .name else "" end')" # a name to COMPARE
+D="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .ref  else "" end')"   # a ref to READ
+DEF="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .name else "" end')" # a name to COMPARE
 [ -n "$D" ] || echo "DEFAULT-UNRESOLVED: $(printf '%s' "$DB" | jq -r '.reason // (.notes | join("; "))')"
 ```
 

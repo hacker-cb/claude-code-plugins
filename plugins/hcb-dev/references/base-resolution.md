@@ -142,8 +142,7 @@ Three outcomes, and only one of them means current:
   freshness as unknown.
 - **`couldn't find remote ref`.** Where the base was resolved *from* that remote,
   the branch has been renamed or deleted since: re-resolve it by the ladder — rung
-  the default-branch script's own `git remote set-head <remote> --auto` note is what
-  retires the pointer, and a
+  `git remote set-head <remote> --auto` is what retires the pointer, and a
   refspec-restricted fetch prunes nothing — rather than carrying one at a branch
   nobody has. Where the base never had a remote counterpart — a local-only parent,
   a repo with no remote — nothing is missing: it is as current as it can be, and

@@ -129,22 +129,30 @@ if (!name) {
 answer.name = name;
 answer.ref = qualified(name);
 answer.short = `${remote}/${name}`;
-answer.confirmed = Boolean(remoteSaid);
 
-// Materialise the tracking ref before answering. A clone that fetched only feature
-// branches has no `<remote>/<default>` at all, and a caller handed a ref that is not
-// there gets a fatal from every consumer — which is the same shape as "nothing is
-// merged" and is not it.
-if (!haveRef(answer.ref)) {
-  if (!network) {
-    refuse(`${answer.ref} is not in this checkout and --no-network forbids fetching it`);
-  }
+// Refresh the tracking ref, whether or not it is already here. Its mere existence says
+// nothing about its age: a `<remote>/<default>` a week old still resolves, and after a
+// revert or a force-push on the default it names commits the branch no longer carries —
+// which is how a cleanup reads a branch as merged into something that has moved out
+// from under it. Absent, the fetch is also what materialises it: a caller handed a ref
+// that is not there gets a fatal from every consumer, and that is the same shape as
+// "nothing is merged" without being it.
+if (network) {
+  const had = haveRef(answer.ref);
   const f = run('git', ['fetch', remote, `+refs/heads/${name}:${answer.ref}`], 120000);
   if (!f.ok || !haveRef(answer.ref)) {
     refuse(`${answer.ref} could not be fetched (${f.err.split('\n')[0] || 'no detail'})`);
   }
-  answer.notes.push(`${answer.short} was not in this checkout; fetched it`);
+  if (!had) answer.notes.push(`${answer.short} was not in this checkout; fetched it`);
+} else if (!haveRef(answer.ref)) {
+  refuse(`${answer.ref} is not in this checkout and --no-network forbids fetching it`);
+} else {
+  answer.notes.push(`--no-network: ${answer.short} is whatever the last fetch left`);
 }
 
+// Set last, and only here. Every refusal above returns with it false, so a caller
+// gating on it can never be handed a name whose ref was never brought — which is the
+// same defect, one field over, as gating on `resolved` and getting a stale pointer.
+answer.confirmed = Boolean(remoteSaid);
 answer.resolved = true;
 finish();

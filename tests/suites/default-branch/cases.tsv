@@ -7,4 +7,6 @@ no-pointer-remote-answers	-	0	"confirmed": true|"name": "trunk"	no pointer at al
 no-pointer-remote-silent	-	0	"resolved": false|did not answer	nothing local and nothing from the remote is unresolved, never a popular name
 offline-with-pointer	--no-network	0	"resolved": true|"confirmed": false|unconfirmed by the remote	offline still answers, and says plainly that nothing confirmed it
 offline-no-pointer	--no-network	0	"resolved": false|--no-network forbids asking	offline with no pointer refuses rather than falling back to a popular name
-fetch-refused	-	0	"resolved": false|could not be fetched	a ref the remote names but the fetch cannot bring is unresolved, not assumed present
+fetch-refused	-	0	"resolved": false|"confirmed": false|could not be fetched	a ref the remote names but the fetch cannot bring is unresolved, not assumed present
+existing-ref-refreshed	-	0	"resolved": false|could not be fetched	a ref already here is refreshed too — its existence says nothing about its age
+fork-checkout	-	0	"remote": "upstream"|"name": "mainline"|"confirmed": true	upstream outranks origin in a fork, and the fixture decides the remotes, not the runner's clone
