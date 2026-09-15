@@ -306,6 +306,10 @@ saying something else. Each file opens by saying what it owns.
   a remote or another session answers: an empty result is not a negative one, an
   unread one is not empty, configuration predicts nothing, an authority narrows
   and never widens. Read once per run, by every skill here.
+- [`references/forge-behaviour.md`](references/forge-behaviour.md) — what a
+  forge actually does, measured: which signals lie, when, and what to measure
+  instead. Read wherever a skill acts on what a forge reports. A new
+  measurement is a row here, never a paragraph elsewhere.
 - [`references/base-resolution.md`](references/base-resolution.md) — resolving a
   base branch and its remote without guessing either name. Read wherever a base
   or a remote is resolved.

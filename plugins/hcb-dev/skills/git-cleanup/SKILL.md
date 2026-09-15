@@ -350,6 +350,8 @@ without asking.
 
 ## Reference files
 
+- [`../../references/forge-behaviour.md`](../../references/forge-behaviour.md) — read it before
+  acting on any check, rollup or merge setting the forge reports.
 - [`../../references/invariants.md`](../../references/invariants.md) — read once,
   before the first read of anything a tool, a forge or another session answers.
 - [`references/verdicts.md`](references/verdicts.md) — read at step 5; the gate
