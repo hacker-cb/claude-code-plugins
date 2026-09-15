@@ -225,6 +225,7 @@ with the PR head:
 
 ```bash
 head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
+[ -n "$head" ] || { echo "HEAD SHA UNREAD — the head is unread, not unreviewed"; exit 1; }
 export head
 # Selected on the head rather than taken off the end: a later review of an earlier
 # commit would otherwise stand where the head's own review already is.
@@ -531,10 +532,10 @@ Or the equivalent MCP tools if available.
 ## What the report says about this reviewer
 
 The end-of-session report (main skill Step 7) gives Copilot one line among the
-gates: **the commit its last review covered**, the `state` that review carries, and
-— where that commit is not the head that merged — why no review of the head exists.
-Read the head first: `headRefOid` survives both the merge and the deletion of the
-branch, so this works after Step 6 as well as before it.
+gates: **the review of the head that merged** and the `state` it carries — or, where
+that head has none, the commit the last review covered and why. Read the head
+first: `headRefOid` survives both the merge and the deletion of the branch, so this
+works after Step 6 as well as before it.
 
 ```bash
 HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
@@ -555,14 +556,13 @@ printf '%s\n' "$rows" | tail -1
 
 The first line is the report's, where there is one. Where it is empty, the second
 says which commit the last review covered, and no review of the head exists — for
-one of four reasons, which take different steps, so report which it was. Both empty
+one of three reasons, which take different steps, so report which it was. Both empty
 is a PR with no Copilot review at all, pending or never asked, which the timeline's
 latest move tells apart:
 
-- **the repository requested no review of the later commits** — no rule in force,
-  none that reviews pushes, or a head that reached the cutoff with no request of its
-  own (*Wait for the review of the CURRENT head*, step 2);
-- **a request removed** without a review;
+- **no request reached the later commits** — no rule in force, none that reviews
+  pushes, or what the wait recorded at its cutoff for this head, a removal included
+  (*Wait for the review of the CURRENT head*, step 2);
 - **the ceiling reached**, and the addressee's word to merge past it;
 - **a review still outstanding** — Copilot's latest move on the timeline tells that
   one, and after a merge it is the late review the main skill's Step 7 goes back

@@ -621,9 +621,9 @@ Then give the user a short report:
 1. **The gates the base enforces, and how each was met at the merge** — the ones
    `references/merge-gates.md` read in Step 2: required checks, approvals, thread
    resolution, and whatever else the base carries; a base with none says so.
-   Copilot's line among them is the commit its last review covered, the state that
-   review carries, and — where that commit is not the head that merged — why;
-   `references/copilot.md` owns all three.
+   Copilot's line among them is its review of the head that merged and the state
+   that review carries — or, where that head has none, the commit the last review
+   covered and why; `references/copilot.md` owns both.
 2. **The base's own checks on the merge commit**, as Step 6 read them — green,
    over the rows those reads actually saw; red, with every failing row and what
    each was attributed to (this merge's, the commit before it, a degraded forge,
