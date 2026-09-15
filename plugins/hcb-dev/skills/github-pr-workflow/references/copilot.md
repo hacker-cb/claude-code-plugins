@@ -89,11 +89,15 @@ still carry one, and its comments go unread if either of those is taken for "nev
 involved". Count before concluding there is nothing to read:
 
 ```bash
+# Captured with its exit status: a call that failed prints no number at all, which
+# the sum below would otherwise report as a PR carrying no Copilot review.
+if ! counts="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
+  --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length')"; then
+  echo "REVIEWS UNREAD — no count, and not a count of none"; exit 1
+fi
 # --paginate applies --jq per page, so a bare `length` prints one number *per
 # page* — sum them, or a PR with >100 reviews answers with several numbers.
-gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
-  --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length' \
-  | awk '{ n += $1 } END { print n + 0 }'
+printf '%s\n' "$counts" | awk '{ n += $1 } END { print n + 0 }'
 ```
 
 Whether a request stands is Copilot's latest move on the pull request's timeline —
@@ -203,10 +207,11 @@ resolved like any other.
 
 ## Wait for the review of the CURRENT head
 
-This section applies once the PR is one a rule in force reviews — ready for review,
-or still a draft where that rule carries `review_draft_pull_requests: true` — after
-a push wherever a rule in force reviews pushes (`review_on_push: true`), and
-wherever a request is standing; anywhere else there is nothing to wait for — go on.
+This section applies once a rule in force reviews this PR — once it is ready for
+review, or while it is still a draft where that rule carries
+`review_draft_pull_requests: true` — after a push wherever a rule in force reviews
+pushes (`review_on_push: true`), and wherever a request is standing; anywhere else
+there is nothing to wait for — go on.
 In the steps below, the moment the PR became reviewable counts as its first push.
 
 The trap that silently drops findings: right after you push a fix, the PR briefly
@@ -384,7 +389,9 @@ one carrying findings the earlier one did not. A body whose findings the PR's
 conversation already names was read in an earlier round:
 
 ```bash
-gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
+# Captured with its exit status: a call that failed prints no summary, exactly as a
+# set of reviews with nothing in their bodies does.
+if ! bodies="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         # markup stripped before either count is read: both labels arrive as a heading
         # or a bold run as often as plain text, and GitHub may reword either of them
@@ -395,7 +402,10 @@ gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
            # reporting none are different readings, and they take different next steps
            suppressed: (($b | capture("[Ss]uppressed[^(]{0,40}\\((?<n>[0-9]+)\\)").n) // "none"),
            threads_opened: (($b | capture("[Cc]omments generated[^0-9]{0,20}(?<n>[0-9]+)").n) // "none")}
-        | @json'
+        | @json')"; then
+  echo "REVIEW BODIES UNREAD — not a set of reviews with nothing to read"; exit 1
+fi
+printf '%s\n' "$bodies"
 ```
 
 That says *whether* to read a body, never *what* it found — read the ones it names
