@@ -48,8 +48,13 @@ plain `/rulesets` listing does neither.
 ```bash
 # One line per rule in force on the base branch. `ruleset_source_type` says
 # whether it came from this repo or from an org-level ruleset.
-gh api repos/{owner}/{repo}/rules/branches/<base> \
-  --jq '.[] | select(.type=="copilot_code_review") | .parameters | @json'
+# Captured with its exit status: `jq` succeeds over a call that failed, and no line
+# is what says no rule applies — the reading everything below routes on.
+if ! rules="$(gh api repos/{owner}/{repo}/rules/branches/<base> \
+  --jq '.[] | select(.type=="copilot_code_review") | .parameters | @json')"; then
+  echo "RULES UNREAD — not a base without the rule"; exit 1
+fi
+printf '%s\n' "$rules"
 ```
 
 Several lines is normal — a repo can carry the rule in more than one ruleset that
@@ -59,7 +64,8 @@ Copilot on its default branch and nothing at all on a side branch.
 
 - **No line** — wait for no Copilot review.
 - **Lines, none of them `review_on_push: true`** — wait for the review the rule
-  requests when the PR opens ready for review, and for none after a push.
+  requests when the PR becomes one it reviews, opened ready or opened as a draft it
+  carries `review_draft_pull_requests: true` for, and for none after a push.
 - **Any line with `review_on_push: true`** — the rule requests Copilot again on
   every push, so every push in the fix loop may owe you a review to wait for and
   read before you call the PR done. *Wait for the review of the CURRENT head* below
