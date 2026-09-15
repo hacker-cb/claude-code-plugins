@@ -159,8 +159,9 @@ Read what the sentence under the assessment is *about*:
 
 - **The findings** — some number of them outstanding, named or counted. That is the
   fix loop's own case: fix and push; where a rule reviews pushes, take the wait, and
-  the next review can approve — where none does, no next review comes, and an
-  approval the base still requires is the main skill's Step 4 stop.
+  the next review can approve — where none does and no request stands, no next
+  review comes, and an approval the base still requires is the main skill's Step 4
+  stop.
 - **The change itself** — its breadth, the planes it crosses, what it commits the
   product to, or something the reviewer could not reach and so could not judge.
   Nothing in the diff is being asked for. The reviewer is handing the decision to a
@@ -192,9 +193,9 @@ now about to merge, and does not settle the aggregate either: under
 `require_last_push_approval` that surviving review stops satisfying the gate and
 `reviewDecision` goes back to `REVIEW_REQUIRED`. Read the field; never infer it
 from this one parameter. Either way what settles the head is the next section,
-never the approval standing. And where no rule in force reviews pushes, nothing
-brings a dismissed approval back: a requirement it was closing stays open, which is
-the main skill's Step 4 stop.
+never the approval standing. And where no rule in force reviews pushes and no
+request stands, nothing brings a dismissed approval back: a requirement it was
+closing stays open, which is the main skill's Step 4 stop.
 
 Neither state settles your own bar. `APPROVED` is not "no findings": an approving
 review can still carry comments, and every one of them is read, answered and
@@ -227,8 +228,8 @@ gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
 # fresh iff commit_id == $head
 ```
 
-The rule does not request a review of every push, so the wait ends on **the
-request's own events on the timeline** — never on the repository's checks, and on
+The rule's request for a push can be late, and on some pushes it never registers,
+so the wait ends on **the request's own events on the timeline** — never on the repository's checks, and on
 the clock only where step 5 says the wait has run out: a status check that stands
 in for Copilot's review is satisfied by *a* review of the pull request, not by one
 of the current head, and CI is usually green before Copilot has posted. **Green checks with
@@ -313,7 +314,7 @@ After each push:
    another window, or merge with the head unreviewed by Copilot and say so in the
    report. The clock decides none of that; the addressee does.
 
-**Merge only once every review the repository requested has settled** — or the
+**Merge only once every review this driver waits for has settled** — or the
 ceiling above was reached and the addressee said to merge past it. Nothing the
 repository enforces can be relied on to hold the merge for it: a status check standing in for the
 review is already satisfied by a review of any earlier commit, and an approval

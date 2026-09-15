@@ -420,8 +420,9 @@ however Copilot's own review landed.
 Where the requirement *is* outstanding and the head's review has settled without
 closing it, which of the two kinds of review that is
 (`references/copilot.md`, *What the review lands as*) decides the step. Findings
-still outstanding are this loop's work where a rule in force reviews pushes, since
-the next review can close the requirement; where none does, no next review comes.
+still outstanding are this loop's work where a rule in force reviews pushes or a
+request stands, since the next review can close the requirement; where neither
+holds, no next review comes.
 That, and a reviewer handing the decision to a human, are not this loop's work:
 **stop and ask the addressee `merge-auth` names**, recommendation first, carrying
 the reason the review gave and what would answer it. Another round against that
