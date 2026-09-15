@@ -33,9 +33,12 @@ none. That is the same silent-empty failure by another route.
 ## What the repository asks of Copilot
 
 Two questions, and neither answers the other: which Copilot reviews this driver
-**waits** for, and which ones it **reads**. **It never requests a review itself** —
-not after a push, not for a head the rule passed over, not in place of a review that
-did not come: every review it waits for is one already requested.
+**waits** for, and which ones it **reads**. **It never requests one itself** —
+every review it waits for is one already requested.
+
+Every read below is captured with its exit status rather than piped onward: a call
+that failed prints exactly what a repository with nothing to show prints, and the
+two take different steps.
 
 ### What to wait for — the rules in force on the base
 
@@ -48,8 +51,6 @@ plain `/rulesets` listing does neither.
 ```bash
 # One line per rule in force on the base branch. `ruleset_source_type` says
 # whether it came from this repo or from an org-level ruleset.
-# Captured with its exit status: `jq` succeeds over a call that failed, and no line
-# is what says no rule applies — the reading everything below routes on.
 if ! rules="$(gh api repos/{owner}/{repo}/rules/branches/<base> \
   --jq '.[] | select(.type=="copilot_code_review") | .parameters | @json')"; then
   echo "RULES UNREAD — not a base without the rule"; exit 1
@@ -63,18 +64,15 @@ a different statement from "this repo has no such rule": the same repo can enfor
 Copilot on its default branch and nothing at all on a side branch.
 
 - **No line** — wait for no Copilot review.
-- **Lines, none of them `review_on_push: true`** — wait for the review the rule
-  requests when the PR becomes one it reviews, opened ready or opened as a draft it
-  carries `review_draft_pull_requests: true` for, and for none after a push.
+- **Lines, none with `review_on_push: true`** — wait for the review the rule
+  requests once the PR is one it reviews, and for none after a push.
 - **Any line with `review_on_push: true`** — the rule requests Copilot again on
-  every push, so every push in the fix loop may owe you a review to wait for and
-  read before you call the PR done. *Wait for the review of the CURRENT head* below
-  is what that costs you, and says when a head's request is not coming.
+  every push; *Wait for the review of the CURRENT head* below is what that costs,
+  and when a head's request is not coming.
 - **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
   the PR ready-for-review (main skill Step 3), or Copilot never runs.
 
-Whichever line applies, a request already standing is waited for too, whoever
-placed it.
+A request already standing is waited for too, whoever placed it.
 
 **The rule requests the review; whether that review gates the merge is settled
 elsewhere** — *What the review lands as* below. The rule's own parameters say
@@ -88,15 +86,12 @@ below.
 
 ### What to read — every review that posted
 
-Every Copilot review on the PR is read, whatever the rules say — one someone
-requested by hand on a base without the rule included. A review that has already
-posted **consumes its request**, so a PR with no rule and no request standing can
-still carry one, and its comments go unread if either of those is taken for "never
-involved". Count before concluding there is nothing to read:
+Every Copilot review on the PR is read, whatever the rules say — one requested by
+hand on a base without the rule included. A posted review **consumes its request**,
+so a PR with no rule and nothing standing can still carry one. Count before
+concluding there is nothing to read:
 
 ```bash
-# Captured with its exit status: a call that failed prints no number at all, which
-# the sum below would otherwise report as a PR carrying no Copilot review.
 if ! counts="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length')"; then
   echo "REVIEWS UNREAD — no count, and not a count of none"; exit 1
@@ -213,12 +208,10 @@ resolved like any other.
 
 ## Wait for the review of the CURRENT head
 
-This section applies once a rule in force reviews this PR — once it is ready for
-review, or while it is still a draft where that rule carries
-`review_draft_pull_requests: true` — after a push wherever a rule in force reviews
-pushes (`review_on_push: true`), and wherever a request is standing; anywhere else
-there is nothing to wait for — go on.
-In the steps below, the moment the PR became reviewable counts as its first push.
+This section applies once a rule in force reviews this PR, again after a push where
+that rule reviews pushes, and wherever a request is standing; anywhere else there is
+nothing to wait for — go on. Below, the moment the PR became reviewable counts as
+its first push.
 
 The trap that silently drops findings: right after you push a fix, the PR briefly
 looks finished — CI goes green, the previous review's threads are all resolved,
@@ -232,12 +225,13 @@ with the PR head:
 
 ```bash
 head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
-# `| @json` pins each review to exactly one line, so `tail -1` is the last review
-# and not whatever gh's output formatting happened to put on the last line.
+export head
+# Selected on the head rather than taken off the end: a later review of an earlier
+# commit would otherwise stand where the head's own review already is.
 gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | {commit_id, submitted_at} | @json' | tail -1
-# fresh iff commit_id == $head
+        | select(.commit_id == env.head) | {commit_id, submitted_at} | @json' | tail -1
+# a line is the head's own review; none is a head still unreviewed
 ```
 
 The rule's request for a push can be late, and on some pushes it never registers,
@@ -291,12 +285,11 @@ After each push:
    with no `review_requested` of its own is waiting rather than passed over. So hold
    while Copilot's latest move (*What to read* above) is `review_requested`.
 
-   **A head with no request of its own is ruled not requested only once both
-   hold**: its checks have settled, **and** at least a couple of minutes have passed
-   since the push landed — or, where the hold above was in force, since it
-   released. The minutes are for a CI that settles before the rule registers its
-   request. At that point the repository chose not to review this head: go on, and
-   record it for the report. Never place a request in its place.
+   **A head with no request of its own is ruled unrequested only once both hold**:
+   its checks have settled, **and** at least a couple of minutes have passed since
+   the push landed — or, where the hold above was in force, since it released. At
+   that cutoff no request stands on this head: go on, and say so in the report —
+   never requested, or requested and removed. Never place one in its stead.
 3. **Wait until it settles — on a Copilot review whose `commit_id == $head`, and on
    nothing else.** A `review_request_removed` ends the request it removes, never this
    head's wait: the event carries no SHA, and an earlier head's request can register
@@ -389,14 +382,11 @@ them, and the check that unresolved threads are zero reads a clean field while t
 stand.
 
 Read the body of **every** Copilot review that posted, whichever commit it covers —
-the head you hand in may never get a review of its own while an earlier commit's
-review still carries its findings, and several runs can review one commit, a later
-one carrying findings the earlier one did not. A body whose findings the PR's
-conversation already names was read in an earlier round:
+the head you hand in may never earn one of its own, and a later run carries findings
+the earlier one did not. A body the PR's conversation already answers was read in an
+earlier round:
 
 ```bash
-# Captured with its exit status: a call that failed prints no summary, exactly as a
-# set of reviews with nothing in their bodies does.
 if ! bodies="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         # markup stripped before either count is read: both labels arrive as a heading
@@ -548,9 +538,7 @@ HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
 # unreviewed", said by a variable that never got a value rather than by the PR.
 [ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — report no Copilot line"; exit 1; }
 export HEAD_SHA
-# Captured with its exit status: a call that failed prints no review, exactly as a
-# PR Copilot never reviewed does. The rows come back in the order they were
-# published, so the last line is the last review.
+# The rows come back in the order they were published, so the last is the last review.
 if ! rows="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
   --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
         | {commit_id, state, head: (.commit_id == env.HEAD_SHA)} | @json')"; then
