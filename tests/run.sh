@@ -31,6 +31,33 @@ cd "$ROOT" || exit 1
 # without it each would fail in its own words several layers down. Say it once, here.
 command -v jq >/dev/null 2>&1 || { echo "tests need jq on PATH"; exit 1; }
 
+# Two repository-level checks run before any suite, because what they guard is not a
+# script's behaviour but the tree's: that no rule the refactor moved went missing, and
+# that no private data reached a fixture. Neither drives an engine, so neither is a suite
+# — a suite's shape is a stand-in CLI answering a saved envelope, and these read files.
+#
+# --self-test first: it proves the leak detectors still read both ways. A detector that
+# quietly stopped matching would otherwise report a clean tree, which is the failure mode
+# the whole check exists to prevent.
+if command -v node >/dev/null 2>&1; then
+  for guard in \
+    "check-fixtures.mjs --self-test" \
+    "check-fixtures.mjs" \
+    "check-registry.mjs"
+  do
+    # shellcheck disable=SC2086 # deliberate: the entry supplies script plus its flags
+    if ! out=$(node "$ROOT/scripts/"$guard 2>&1); then
+      printf '%-16s %s\n' "${guard%% *}" "FAILED"
+      printf '%s\n' "$out" | sed 's/^/         /'
+      exit 1
+    fi
+    printf '%-16s %s\n' "${guard%% *}" "$(printf '%s' "$out" | tail -1)"
+  done
+else
+  echo "node not on PATH — skipping the registry and fixture guards"
+fi
+echo
+
 want_suites=()
 want_names=()
 while [ "$#" -gt 0 ]; do
