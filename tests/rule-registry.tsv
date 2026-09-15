@@ -1,0 +1,112 @@
+# id	state	rule	source	target	assert
+# state: pending — not moved yet, not checked; done — checked on every run.
+# target "(dropped)" means the text is removed outright: its assert must then be
+# GONE FROM THE SOURCE FILE named above. Every other target must CONTAIN its assert.
+I6-01	pending	every stop carries its recommendation first	plugins/hcb-dev/references/architecture-decisions.md:33@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I9-01	pending	a file read in part is not read	plugins/hcb-dev/references/architecture-decisions.md:84@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
+I8-01	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/base-resolution.md:5@dc79f6c	(dropped)	prose copies drift
+I4-01	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:8@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
+I4-02	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:9@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
+I4-03	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:10@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
+I4-04	pending	never guess a branch, remote, label or check name	plugins/hcb-dev/references/base-resolution.md:16@dc79f6c	plugins/hcb-dev/references/invariants.md	Never guess a name
+I3-01	pending	read what happened, never predict it from configuration	plugins/hcb-dev/references/base-resolution.md:68@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I1-01	pending	an empty answer is not a negative one	plugins/hcb-dev/references/base-resolution.md:198@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I8-02	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/branch-naming.md:8@dc79f6c	(dropped)	prose copies drift
+I1-02	pending	an empty answer is not a negative one	plugins/hcb-dev/references/branch-retirement.md:92@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I8-03	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/classification.md:4@dc79f6c	(dropped)	a copy per reader drifts
+I9-02	pending	a file read in part is not read	plugins/hcb-dev/references/classification.md:26@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
+I10-01	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/classification.md:26@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I10-02	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/classification.md:37@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I8-04	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/claude-worktrees.md:5@dc79f6c	(dropped)	copies drift
+I10-03	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/forge-docs.md:16@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I10-04	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/forge-docs.md:18@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I7-01	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/references/order-anatomy.md:40@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I7-02	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/references/order-anatomy.md:41@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I5-01	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/order-anatomy.md:60@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
+I3-02	pending	read what happened, never predict it from configuration	plugins/hcb-dev/references/order-anatomy.md:71@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I1-03	pending	an empty answer is not a negative one	plugins/hcb-dev/references/report-format.md:67@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I8-05	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/review-runs.md:7@dc79f6c	(dropped)	a copy per engine drifts
+I1-04	pending	an empty answer is not a negative one	plugins/hcb-dev/references/session-comms.md:52@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I8-06	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/session-prompts.md:5@dc79f6c	(dropped)	drift apart
+I8-07	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:5@dc79f6c	(dropped)	drift apart
+I8-08	pending	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:6@dc79f6c	(dropped)	prose copies drift
+I5-02	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:138@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
+I5-03	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:174@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
+I5-04	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:283@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
+I3-03	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/dependency-versions/SKILL.md:16@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I3-04	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/dependency-versions/references/dependabot.md:25@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I1-05	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/git-cleanup/SKILL.md:48@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I10-05	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/git-cleanup/SKILL.md:118@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I10-06	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/git-cleanup/SKILL.md:123@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I10-07	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/git-cleanup/SKILL.md:128@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I1-06	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/git-cleanup/SKILL.md:332@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I5-05	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:61@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
+I6-02	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:82@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I1-07	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:214@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I2-01	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:236@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I6-03	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:427@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I3-05	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:492@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I3-06	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:493@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I1-08	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:524@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I2-02	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:527@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I1-09	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:528@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I10-08	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:530@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I2-03	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:532@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-09	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:539@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I2-04	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:541@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I1-10	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:547@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I1-11	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:558@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I2-05	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:558@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I2-06	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/SKILL.md:588@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I1-12	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:18@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I2-07	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:39@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I2-08	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:56@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-10	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:95@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I1-13	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:97@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I2-09	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:97@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-11	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:99@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I2-10	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:115@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I2-11	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:116@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-12	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:118@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I1-14	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:124@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I2-12	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:124@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I3-07	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:190@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I3-08	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:199@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I2-13	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:228@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-13	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:232@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I2-14	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:235@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I2-15	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:271@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-14	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:273@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I2-16	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:278@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I6-04	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:323@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I10-15	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:395@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I2-17	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:407@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I6-05	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:458@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I3-09	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:463@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I2-18	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:544@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-16	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:546@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I1-15	pending	an empty answer is not a negative one	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:549@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I2-19	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/copilot.md:549@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I10-17	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/github-pr-workflow/references/merge-gates.md:18@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I2-20	pending	a read that failed is not a read that came back empty	plugins/hcb-dev/skills/github-pr-workflow/references/platform-status.md:45@dc79f6c	plugins/hcb-dev/references/invariants.md	Unread is not empty
+I7-03	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/implementation-workflow/SKILL.md:24@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I6-06	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/implementation-workflow/SKILL.md:81@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I10-18	pending	the first page of a listing is not the listing	plugins/hcb-dev/skills/issue-tracking/SKILL.md:41@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
+I5-06	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/skills/master-session/SKILL.md:67@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
+I6-07	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/master-session/SKILL.md:92@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I6-08	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/master-session/SKILL.md:94@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I6-09	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/master-session/SKILL.md:104@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I7-04	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/multi-review/SKILL.md:149@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I7-05	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/session-dispatch/SKILL.md:66@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I9-03	pending	a file read in part is not read	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:97@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
+I9-04	pending	a file read in part is not read	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:98@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
+I6-10	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:124@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I7-06	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/shipping-workflow/SKILL.md:34@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I7-07	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/shipping-workflow/SKILL.md:35@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I6-11	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/shipping-workflow/SKILL.md:194@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I5-07	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/skills/wave-dispatch/SKILL.md:64@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
+I7-08	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/wave-dispatch/SKILL.md:143@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I3-10	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/wave-dispatch/SKILL.md:225@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I3-11	pending	read what happened, never predict it from configuration	plugins/hcb-dev/skills/wave-refresh/SKILL.md:53@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I7-09	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/wave-worker/SKILL.md:29@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
+I7-10	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/wave-worker/SKILL.md:31@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
