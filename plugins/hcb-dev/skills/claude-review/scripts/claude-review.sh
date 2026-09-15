@@ -80,6 +80,13 @@ export GIT_OPTIONAL_LOCKS=0
 TOP="$(git rev-parse --show-toplevel 2>/dev/null)" || TOP=""
 [ -n "$TOP" ] \
   || { echo "claude review failed: not inside a git working tree — there is no tree to review or to hold read-only"; exit 1; }
+# The tree git names and the directory the run starts in are two questions, and
+# `GIT_DIR` with `GIT_WORK_TREE` can answer them differently: the boundary would then
+# deny writes to a checkout the engine never stands in, while the one it does stands
+# open.
+PWD_REAL="$(pwd -P)"
+case "$PWD_REAL/" in "$TOP"/*) ;;
+  *) echo "claude review failed: the working tree to review ($TOP) is not the directory this run starts in ($PWD_REAL)"; exit 1 ;; esac
 GITCOMMON="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || GITCOMMON=""
 GITDIR="$(git rev-parse --absolute-git-dir 2>/dev/null)" || GITDIR=""
 { [ -n "$GITCOMMON" ] && [ -n "$GITDIR" ]; } \

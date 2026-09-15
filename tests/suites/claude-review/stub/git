@@ -7,6 +7,13 @@ if [ -n "${STUB_GIT_FAIL:-}" ]; then
     [ "$arg" = "$STUB_GIT_FAIL" ] && exit 128
   done
 fi
+# A working tree somewhere other than the directory the run stands in, which is what
+# `GIT_DIR` with `GIT_WORK_TREE` does to a real git and what no case can set up here.
+if [ -n "${STUB_GIT_TOP:-}" ]; then
+  for arg in "$@"; do
+    [ "$arg" = "--show-toplevel" ] && { echo "$STUB_GIT_TOP"; exit 0; }
+  done
+fi
 PATH="${PATH#"$(dirname "$0")":}"
 # Past this directory or nowhere: a git still resolving to this file would exec itself
 # for ever.
