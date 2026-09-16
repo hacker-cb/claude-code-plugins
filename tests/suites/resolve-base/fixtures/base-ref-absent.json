@@ -2,5 +2,5 @@
  "remotes": "origin\nupstream",
  "branch": "feat/example-export",
  "base_present": "no",
- "fetch_default": "fail"
+ "ls_remote_default": "silent"
 }

@@ -3,5 +3,5 @@
  "branch": "feat/example-export",
  "base_present": "yes",
  "pr_list": "dev",
- "request_base": ""
+ "request_base": "[]"
 }

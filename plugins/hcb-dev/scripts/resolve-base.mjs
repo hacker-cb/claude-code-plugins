@@ -85,15 +85,17 @@ const all = list.out.split('\n').map((r) => r.trim()).filter(Boolean);
 // Whole names, never prefixes: a remote called `origin2` is neither mistaken for the real
 // one nor dropped off the tail of the ranking.
 const PREFERRED = ['upstream', 'origin'];
+// Kept exactly. `text()` bounds prose at 200 characters, and this list is the probe
+// order itself — a remote name past that bound becomes a different, nonexistent remote.
 answer.remotes.ranked = [
   ...PREFERRED.filter((r) => all.includes(r)),
   ...all.filter((r) => !PREFERRED.includes(r)),
-].map(text);
+];
 
 const preferred = PREFERRED.find((r) => all.includes(r)) || null;
 if (preferred) answer.remotes.read = preferred;
 else if (all.length === 1) {
-  answer.remotes.read = text(all[0]);
+  answer.remotes.read = all[0];
   answer.notes.push(`${all[0]} is the only remote, whatever it is called`);
 } else if (all.length === 0) {
   answer.remotes.readReason = 'this checkout has no remote at all';
@@ -120,7 +122,7 @@ const configured = [
 ].filter(Boolean).find(([, v]) => v);
 if (configured) {
   const [source, value] = configured;
-  if (all.includes(value)) { answer.remotes.push = text(value); answer.remotes.pushSource = source; }
+  if (all.includes(value)) { answer.remotes.push = value; answer.remotes.pushSource = source; }
   else {
     // A configured route naming something that is not a remote here — a deleted remote, a
     // bare url — STOPS the routing. Falling past it to `origin` answers with the one
@@ -130,7 +132,7 @@ if (configured) {
       + ' resolve, the answer is not the next rung down';
   }
 } else if (all.includes('origin')) { answer.remotes.push = 'origin'; answer.remotes.pushSource = 'origin'; }
-else if (all.length === 1) { answer.remotes.push = text(all[0]); answer.remotes.pushSource = 'the only remote'; }
+else if (all.length === 1) { answer.remotes.push = all[0]; answer.remotes.pushSource = 'the only remote'; }
 else {
   answer.remotes.pushReason = all.length
     ? 'git routes a push nowhere here, and the higher stake of the two is not one to guess at'
@@ -144,6 +146,30 @@ if (opts.forge && !opts.network) {
   answer.requestBase.reason = 'the network was not asked';
   answer.landings.reason = 'the network was not asked';
 }
+// One head branch can head several open requests, and they need not target the same
+// base. Taking the first in API order picks one of them silently; the rung is the
+// caller's to settle where they disagree.
+const takeRequestBase = (bases) => {
+  const clean = [];
+  let unreadable = 0;
+  for (const b of bases) {
+    const n = name(b);
+    if (n === null) unreadable += 1;
+    else if (!clean.includes(n)) clean.push(n);
+  }
+  if (unreadable) {
+    answer.requestBase.reason = `${unreadable} open request(s) named a base this cannot read`;
+    return;
+  }
+  if (clean.length > 1) {
+    answer.requestBase.reason = `open requests on this branch target ${clean.join(' and ')}`
+      + ' — which of them is the base is the caller\'s to name';
+    return;
+  }
+  answer.requestBase.read = true;
+  answer.requestBase.name = clean.length ? clean[0] : null;
+};
+
 if (opts.forge && opts.network) {
   const cli = runner(cwd, opts.forge);
   const repoArgs = opts.repo ? ['--repo', opts.repo] : [];
@@ -153,13 +179,21 @@ if (opts.forge && opts.network) {
     // prints the same failure a forge that could not answer does. The list form answers
     // `[]` and exit 0, so "there is none" stays an answer. It also takes `--repo` without
     // a positional, which `view` does not.
+    // `--head` filters by branch NAME alone and matches across forks — measured on public
+    // repositories, where an outsider's same-named branch is listed. A base taken from one
+    // is a base somebody else chose, and rung 2 outranks the two below it.
     const v = branch
-      ? cli(['pr', 'list', '--head', branch, '--state', 'open', '--json', 'baseRefName',
-        '-q', '.[].baseRefName', ...repoArgs])
+      ? cli(['pr', 'list', '--head', branch, '--state', 'open',
+        '--json', 'baseRefName,isCrossRepository', ...repoArgs])
       : null;
     if (v === null) answer.requestBase.reason = 'HEAD is detached, so there is no branch to ask about';
-    else if (v.ok) { answer.requestBase.read = true; answer.requestBase.name = v.out ? name(v.out.split('\n')[0]) : null; }
-    else answer.requestBase.reason = `the open request's base could not be read (${v.line()})`;
+    else if (!v.ok) answer.requestBase.reason = `the open request's base could not be read (${v.line()})`;
+    else {
+      let rows = null;
+      try { rows = JSON.parse(v.out || '[]'); } catch { rows = null; }
+      if (!Array.isArray(rows)) answer.requestBase.reason = 'the open requests came back in a shape this cannot read';
+      else takeRequestBase(rows.filter((r) => r?.isCrossRepository !== true).map((r) => r?.baseRefName));
+    }
     const m = cli(['pr', 'list', '--state', 'merged', '--limit', '10', '--json', 'baseRefName',
       '-q', '.[].baseRefName', ...repoArgs]);
     if (m.ok) {
@@ -181,8 +215,11 @@ if (opts.forge && opts.network) {
       let rows = null;
       try { rows = JSON.parse(v.out); } catch { rows = null; }
       if (Array.isArray(rows)) {
-        answer.requestBase.read = true;
-        answer.requestBase.name = rows.length ? name(rows[0]?.target_branch) : null;
+        // A merge request from a fork is listed in the parent project too, and its source
+        // project is not this one.
+        takeRequestBase(rows.filter((r) => r?.source_project_id === undefined
+          || r?.target_project_id === undefined || r.source_project_id === r.target_project_id)
+          .map((r) => r?.target_branch));
       } else answer.requestBase.reason = 'the open request came back in a shape this cannot read';
     } else answer.requestBase.reason = `the open request's base could not be read (${v.line()})`;
     const m = cli(['mr', 'list', '--merged', '--output', 'json', ...repoArgs]);
@@ -205,77 +242,128 @@ if (opts.forge && opts.network) {
 
 // --- a name turned into a ref that is current
 if (opts.base !== null) {
-  // PROBED down the ranking, not asked of the one remote picked outright: a base lives on
-  // whichever remote carries it, and in a fork checkout a stack's parent is often on
-  // `origin` while `upstream` has never heard of it. Picking one outright is the separate
-  // question `remotes.read` answers, and a run with no preferred remote can still probe.
-  const probe = answer.remotes.ranked.length ? answer.remotes.ranked : [];
-  if (!probe.length) {
-    answer.base.reason = 'this checkout has no remote at all, and a ref composed from an'
-      + ' empty name is a ref to nothing';
-  } else if (!opts.network) {
-    const remote = answer.remotes.read || probe[0];
-    const ref = `refs/remotes/${remote}/${opts.base}`;
-    if (git(['rev-parse', '--verify', '-q', `${ref}^{commit}`]).ok) {
-      answer.base.remote = text(remote);
-      answer.base.ref = ref;
-      answer.base.short = `${remote}/${opts.base}`;
+  const localRef = `refs/heads/${opts.base}`;
+  const haveLocal = git(['rev-parse', '--verify', '-q', `${localRef}^{commit}`]).ok;
+  const trackingOf = (remote) => `refs/remotes/${remote}/${opts.base}`;
+  const cached = (remote) => git(['rev-parse', '--verify', '-q', `${trackingOf(remote)}^{commit}`]).ok;
+  const settle = (remote, outcome) => {
+    answer.base.remote = remote;
+    answer.base.ref = trackingOf(remote);
+    answer.base.short = `${remote}/${opts.base}`;
+    answer.base.outcome = outcome;
+  };
+  // A base with no remote counterpart is not a base that went missing: a stack's parent
+  // before its first push, a repository with no remote at all. Nothing is missing there,
+  // and saying so once is the whole step.
+  const localOnly = () => {
+    if (!haveLocal) return false;
+    answer.base.ref = localRef;
+    answer.base.short = opts.base;
+    answer.base.outcome = 'local';
+    answer.base.current = true;
+    answer.notes.push(`${opts.base} is a local branch with no remote counterpart — as`
+      + ' current as it can be');
+    return true;
+  };
+  // The ambiguity `remotes.read` refuses does not stop at that field: taking the first
+  // remote of a ranking none of which is preferred is the alphabetical pick by another
+  // route, and `base.ref` is the field a caller actually diffs against.
+  const unpreferred = answer.remotes.read === null && answer.remotes.ranked.length > 1;
+
+  if (!answer.remotes.ranked.length) {
+    if (!localOnly()) {
+      answer.base.reason = 'this checkout has no remote at all, and a ref composed from an'
+        + ' empty name is a ref to nothing';
     }
-    answer.base.reason = 'the network was not asked, so whatever the last fetch left is'
-      + ' all this ref says — its age is unknown, which is not the same as unchanged';
+  } else if (!opts.network) {
+    // The cached refs, probed the same way the remotes are: a stack's parent often has a
+    // tracking ref only under the fork.
+    const holders = answer.remotes.ranked.filter(cached);
+    if (holders.length === 1 || (holders.length > 1 && !unpreferred)) {
+      settle(holders[0], 'silent');
+      answer.base.reason = 'the network was not asked, so whatever the last fetch left is'
+        + ' all this ref says — its age is unknown, which is not the same as unchanged';
+    } else if (holders.length > 1) {
+      answer.base.outcome = 'silent';
+      answer.base.reason = `${holders.join(', ')} each carry a ${opts.base} and none of them`
+        + ' is preferred — which one this is meant to be is the caller\'s to name';
+    } else if (!localOnly()) {
+      answer.base.outcome = 'silent';
+      answer.base.reason = `nothing cached for ${opts.base} under any remote, and the`
+        + ' network was not asked';
+    }
   } else {
-    const tried = [];
-    for (const remote of probe) {
-      const ref = `refs/remotes/${remote}/${opts.base}`;
+    // Asked of the remote itself rather than read out of git's prose: `ls-remote
+    // --exit-code` answers 0 for "there", 2 for "I answered and have no such ref", and
+    // anything else for "I could not say". git TRANSLATES the sentence that used to carry
+    // this, so the classification was right on an English machine and silently wrong on
+    // the next one — measured.
+    const carriers = [];
+    let silentAt = null;
+    for (const remote of answer.remotes.ranked) {
+      const ls = git(['ls-remote', '--exit-code', '--heads', '--end-of-options', remote, localRef], 120000);
+      if (ls.code === 2) continue;                       // answered, and has no such branch
+      if (!ls.ok) { silentAt = remote; break; }          // could not say — go no further
+      carriers.push(remote);
+      // Preference is meaningful only where one exists; where none does, every carrier has
+      // to be found before any of them can be called the one.
+      if (!unpreferred) break;
+    }
+    if (silentAt !== null) {
+      // A higher-ranked remote that did not ANSWER is not one that lacks the branch, so a
+      // lower-ranked copy is not a substitute for it: the answer stays uncertain, and the
+      // stale ref named is that remote's own.
+      answer.base.outcome = 'silent';
+      answer.base.reason = `${silentAt} did not answer for ${opts.base}, so the age of`
+        + ' anything here is unknown — not unchanged, and not a reason to take a copy from'
+        + ' a remote further down the ranking';
+      if (cached(silentAt)) {
+        answer.base.remote = silentAt;
+        answer.base.ref = trackingOf(silentAt);
+        answer.base.short = `${silentAt}/${opts.base}`;
+      }
+    } else if (carriers.length > 1) {
+      answer.base.outcome = 'silent';
+      answer.base.reason = `${carriers.join(', ')} each carry a ${opts.base} and none of`
+        + ' them is preferred — which one this is meant to be is the caller\'s to name';
+    } else if (carriers.length === 1) {
+      const remote = carriers[0];
       // `--end-of-options` first: a remote NAME comes out of this repository's own config,
-      // where a line written by hand can begin with a dash and be read by git as an option
-      // rather than as the remote to fetch from.
+      // where a line written by hand can begin with a dash and be read by git as an option.
       // The explicit refspec, never a bare name: where the remote's configured refspec
       // does not cover this branch, the bare form updates FETCH_HEAD alone and never
       // writes the ref every consumer actually reads.
-      const f = git(['fetch', '--end-of-options', remote, `+refs/heads/${opts.base}:${ref}`], 120000);
-      if (f.ok) {
-        answer.base.remote = text(remote);
-        answer.base.ref = ref;
-        answer.base.short = `${remote}/${opts.base}`;
-        answer.base.current = true;
-        answer.base.outcome = 'refreshed';
-        break;
+      const f = git(['fetch', '--end-of-options', remote, `+${localRef}:${trackingOf(remote)}`], 120000);
+      if (f.ok) { settle(remote, 'refreshed'); answer.base.current = true; }
+      else {
+        answer.base.outcome = 'silent';
+        answer.base.reason = `${remote} listed ${opts.base} and then would not hand it over`
+          + ` (${f.line()}), so the age of anything here is unknown`;
+        if (cached(remote)) settle(remote, 'silent');
       }
-      // A remote that ANSWERED and has no such branch is a different outcome from one that
-      // did not answer: the first says re-resolve by the ladder, the second says the age
-      // of whatever is here is unknown. Told apart by what git itself says.
-      tried.push({ remote: text(remote), gone: /couldn't find remote ref|no such ref/i.test(f.err), why: f.line() });
-    }
-    if (answer.base.outcome === null) {
-      const gone = tried.every((t) => t.gone);
-      answer.base.outcome = gone ? 'gone' : 'silent';
-      answer.base.reason = gone
-        ? `no remote carries ${opts.base} any more — it was renamed or deleted, so re-resolve`
-          + ' it by the ladder rather than carrying a name nobody has'
-        : `${tried.map((t) => t.remote).join(', ')} did not answer for ${opts.base}`
-          + ` (${tried[tried.length - 1].why}), so the age of anything here is unknown — not unchanged`;
-      // Named anyway where a stale copy is standing, so a caller can say what it is
-      // reading and how old that is, rather than being handed nothing.
-      const fallback = answer.remotes.read || probe[0];
-      const ref = `refs/remotes/${fallback}/${opts.base}`;
-      if (!gone && git(['rev-parse', '--verify', '-q', `${ref}^{commit}`]).ok) {
-        answer.base.remote = text(fallback);
-        answer.base.ref = ref;
-        answer.base.short = `${fallback}/${opts.base}`;
-      }
+    } else if (!localOnly()) {
+      answer.base.outcome = 'gone';
+      answer.base.reason = `every remote answered and none carries ${opts.base} — it was`
+        + ' renamed or deleted, so re-resolve it by the ladder rather than carrying a name'
+        + ' nobody has';
     }
   }
+
   if (answer.base.ref !== null) {
-    if (branch !== null || git(['rev-parse', '--verify', '-q', 'HEAD^{commit}']).ok) {
-      // An unrelated base is worse than none: every range against it is the whole history
-      // of both sides, and the reviewer reads a diff nobody wrote.
-      const mb = git(['merge-base', answer.base.ref, 'HEAD']);
-      answer.base.sharesHistory = mb.ok && mb.out !== '';
-      if (answer.base.sharesHistory === false) {
-        answer.notes.push(`${answer.base.short} shares no history with HEAD — every range`
-          + ' against it is the whole of both sides');
-      }
+    // An unrelated base is worse than none: every range against it is the whole history of
+    // both sides, and the reviewer reads a diff nobody wrote. Three answers, though — git
+    // says "no merge base" with 1 and "I could not answer" with anything else, and an
+    // unborn branch is the second.
+    const mb = git(['merge-base', answer.base.ref, 'HEAD']);
+    if (mb.ok && mb.out !== '') answer.base.sharesHistory = true;
+    else if (mb.code === 1) {
+      answer.base.sharesHistory = false;
+      answer.notes.push(`${answer.base.short} shares no history with HEAD — every range`
+        + ' against it is the whole of both sides');
+    } else {
+      answer.base.sharesHistory = null;
+      answer.notes.push(`whether ${answer.base.short} shares history with HEAD could not be`
+        + ` read (${mb.line()}) — unknown, which is not unrelated`);
     }
   }
 }

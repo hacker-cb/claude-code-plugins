@@ -2,8 +2,8 @@
  "remotes": "origin\nupstream",
  "branch": "feat/example-export",
  "base_present": "yes",
- "fetch": {
-  "upstream": "gone"
- },
- "want_base": "dev"
+ "want_base": "dev",
+ "ls_remote": {
+  "upstream": "missing"
+ }
 }

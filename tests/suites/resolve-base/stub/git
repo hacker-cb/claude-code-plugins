@@ -7,11 +7,13 @@ fail() { echo "${1:-fatal: stub git refused}" >&2; exit "${2:-1}"; }
 case "$1 $2" in
   "rev-parse --git-dir") echo ".git"; exit 0 ;;
   "rev-parse --verify")
-    # `$4` is `<rev>^{commit}`. Two questions reach here: whether the base's tracking ref
-    # is in this checkout, and whether HEAD is a commit at all.
+    # `$4` is `<rev>^{commit}`. Three questions reach here, and they are different ones: is
+    # HEAD a commit, is a REMOTE's copy cached here, and is there a LOCAL branch of this
+    # name — a base with no remote counterpart is not a base that went missing.
     case "$4" in
-      HEAD*) case "$(ask '.head_absent')" in yes) exit 1 ;; esac ;;
-      *)     case "$(ask '.base_present')" in no) exit 1 ;; esac ;;
+      HEAD*)          case "$(ask '.head_absent')" in yes) exit 1 ;; esac ;;
+      refs/remotes/*) k=${4%^*}; case "$(ask ".cached[\"$k\"] // .base_present")" in no) exit 1 ;; esac ;;
+      refs/heads/*)   case "$(ask '.local_base')" in yes) ;; *) exit 1 ;; esac ;;
     esac
     echo cafe; exit 0 ;;
   "symbolic-ref --short")
@@ -21,10 +23,23 @@ case "$1 $2" in
     v=$(ask ".config[\"$3\"]"); [ -z "$v" ] && exit 1
     printf '%s\n' "$v"; exit 0 ;;
   "merge-base "*)
-    case "$(ask '.shares_history')" in no) exit 1 ;; esac
+    # git says "no merge base" with 1 and "I could not answer" with 128, and reading the
+    # second as the first calls an unreadable history an unrelated one.
+    case "$(ask '.shares_history')" in no) exit 1 ;; unread) fail "fatal: bad object" 128 ;; esac
     echo "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"; exit 0 ;;
 esac
 case "$1" in
+  ls-remote)
+    # Asked of the remote itself rather than read out of git's prose: exit 0 is "there",
+    # exit 2 is "I answered and have no such ref", anything else is "I could not say".
+    for a in "$@"; do [ "$a" = "--end-of-options" ] && found=1; done
+    [ "${found:-0}" = 1 ] || fail "fatal: the remote name was read as an option" 129
+    r=$5
+    case "$(ask ".ls_remote[\"$r\"] // .ls_remote_default")" in
+      ""|present) echo "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/dev"; exit 0 ;;
+      missing) exit 2 ;;
+      *) fail "fatal: could not read from remote repository" 128 ;;
+    esac ;;
   remote)
     case "$(ask '.remotes_fail')" in yes) fail "fatal: could not read the config" 128 ;; esac
     v=$(ask '.remotes')

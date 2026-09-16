@@ -6,8 +6,6 @@ say() {
   case "$1" in silent) echo "that list could not be read" >&2; exit 1 ;; esac
   printf '%s' "$1"; [ -n "$1" ] && echo; exit 0
 }
-# Both rungs are `pr list` now, told apart by `--head`: rung 2 asks about one branch,
-# rung 3 about what the merged ones targeted.
 if [ "$1 $2" = "pr list" ]; then
   case " $* " in
     *" --head "*) say "$(ask '.request_base')" ;;
