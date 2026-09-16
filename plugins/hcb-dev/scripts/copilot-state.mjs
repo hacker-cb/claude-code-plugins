@@ -92,6 +92,7 @@ answer.draft = Boolean(pr.isDraft);
 // The rules IN FORCE on the base, never the repo's ruleset listing: this endpoint has
 // already applied each ruleset's `ref_name` conditions and includes rules inherited
 // from an organization-level ruleset, and a plain listing does neither.
+const inForce = [];
 const rules = gh(['api', '--paginate', `repos/${repo}/rules/branches/${encodeURIComponent(base)}`]);
 if (!rules.ok) {
   // Measured on the neighbouring endpoint and true here too: it answers `[]` with
@@ -108,23 +109,25 @@ if (!rules.ok) {
       if (!rule || rule.type !== 'copilot_code_review') continue;
       const p = (rule.parameters && typeof rule.parameters === 'object') ? rule.parameters : {};
       answer.expects.rule = true;
-      // Several matching rulesets is normal, and the looser answer wins: a rule
-      // reviewing pushes anywhere means pushes are reviewed.
+      // Kept per RULE, not merged field by field. Several matching rulesets is normal,
+      // and the looser answer wins across them — but taking the loosest of each field
+      // separately invents a rule nobody wrote: one ruleset reviewing pushes but not
+      // drafts, beside one reviewing drafts but not pushes, would read as a rule that
+      // reviews pushes on drafts, which neither of them does.
+      inForce.push({
+        onPush: p.review_on_push === true,
+        drafts: typeof p.review_draft_pull_requests === 'boolean'
+          ? p.review_draft_pull_requests : true,
+      });
       if (p.review_on_push === true) answer.expects.onPush = true;
       if (typeof p.review_draft_pull_requests === 'boolean') {
-        // The looser answer wins, like `onPush` beside it: every rule in force applies,
-        // so one ruleset reviewing drafts means drafts are reviewed however strict its
-        // neighbour is.
         answer.expects.drafts = answer.expects.drafts === true
           ? true : p.review_draft_pull_requests;
       }
     }
   }
 }
-if (answer.draft && answer.expects.rule && answer.expects.drafts === false) {
-  answer.notes.push('this request is a draft and the rule does not review drafts —'
-    + ' nothing is coming until it is opened ready for review');
-}
+
 
 // --- every Copilot review that posted, whatever the rules say
 // One requested by hand on a base without the rule counts: a posted review CONSUMES
@@ -184,19 +187,32 @@ if (!timeline.ok) refuse(`the timeline could not be read (${timeline.line()})`);
 }
 
 // --- is another review coming at all
+// A rule can place a request for THIS state of the request: it applies to a draft only
+// if it reviews drafts, and it places one after a push only if it reviews pushes — both
+// read from the SAME rule, never from the loosest of each across rulesets.
+const canAct = inForce.filter((r) => !answer.draft || r.drafts);
 if (answer.latestMove === 'review_requested') {
   answer.expects.more = true;                       // one is on its way
-} else if (answer.draft && answer.expects.drafts === false) {
-  answer.expects.more = false;                      // not until it is opened ready
-} else if (answer.expects.rule && answer.expects.onPush) {
-  answer.expects.more = true;                       // every push earns one
-} else if (answer.expects.rule && answer.reviews.length === 0) {
-  answer.expects.more = true;                       // the first one has not come yet
-} else {
-  // Two ways to get here and one answer: a rule that does not review pushes whose
-  // review has posted, and no rule at all. Either way nothing further is on its way,
-  // and a caller waiting out a cutoff for it waits for nothing.
+} else if (canAct.length === 0) {
+  // No rule applies to the request as it stands. A draft the rules all skip is the
+  // usual way here, and the caller opens it ready rather than waiting.
   answer.expects.more = false;
+} else if (!answer.headReview) {
+  // A rule applies and the head carries no review of its own. Whether the request is
+  // still to come is not something this can settle — a review already on the request
+  // may have been asked for by hand, and consuming the rule's request is not the same
+  // as having been placed by it. It answers TRUE and lets the caller's cutoff decide:
+  // waiting out a couple of minutes for nothing costs a couple of minutes, and going
+  // on without a review that was coming costs its findings.
+  answer.expects.more = true;
+} else {
+  // The head has its own review and nothing stands. Another comes only from a push,
+  // and only where a rule that applies here reviews them.
+  answer.expects.more = canAct.some((r) => r.onPush);
+}
+if (answer.draft && canAct.length === 0 && answer.latestMove !== 'review_requested') {
+  answer.notes.push('this request is a draft and no rule in force reviews drafts —'
+    + ' nothing is coming until it is opened ready for review');
 }
 
 // --- the verdict, computed once here rather than reassembled at every call site
