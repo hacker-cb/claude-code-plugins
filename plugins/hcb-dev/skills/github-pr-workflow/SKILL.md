@@ -47,22 +47,15 @@ Run autonomously, WITHOUT asking, for these safe, reversible actions:
   platform is down, the red check is not yours* below)
 
 **Merging is the one action this skill never takes on its own authority.** It is
-autonomous exactly as far as the authorization it was handed reaches, and no
-further. What governs it is `merge-auth` — a value and the addressee it names
-(`slice-completion.md`):
-`on-green` merges at Step 4's exit, `queued` reports readiness to the addressee
-and holds for its go, `ask` puts the question to the addressee and waits.
+autonomous exactly as far as the authorization it was handed reaches and no further.
+`merge-auth` — a value and the addressee it names — governs it, and
+[`../../references/slice-completion.md`](../../references/slice-completion.md) owns both
+the three values and the order that decides which one is in force. What is this skill's
+own: never merge on your own initiative, and never widen an authorization you were
+handed; narrowing one and saying so is always yours.
 
-Which value governs — one a flow upstream threaded in
-(`hcb-dev:shipping-workflow`, or `hcb-dev:implementation-workflow`'s planning
-gate), one the user's own phrasing settles here, or the fallback — is that
-contract's order to decide, and reading it is how this skill answers the
-question. What is this skill's own: never merge on your own initiative, and
-never widen an authorization you were handed; narrowing one and saying you did
-is always yours.
-
-Also stop and ask — the addressee `merge-auth` names, which is the user unless a
-flow upstream named another — when:
+Also stop and ask — the addressee `merge-auth` names, which is the user unless a flow
+upstream named another — when:
 - The required gates will not go green within Step 4's iteration budget — or one
   of them is a gate no iteration closes: an approval the base requires that no
   reviewer has given (Step 4)
@@ -79,43 +72,25 @@ flow upstream named another — when:
 - A stop that outranks an authorization applies, Step 2's unreviewed rebase
   resolution among them (`slice-completion.md`)
 
-Each of those stops shows your recommended option **first**, with a one-line
-reason grounded in the code **and the constraints** — half these stops turn on
-neither the diff nor the code (a ruleset's allowed merge methods, what the CI logs
-say), and a reason invented to look code-shaped is worse than the bare question it
-replaced. That and the split above are per
-[`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
+Each of those stops shows your recommended option **first**, with a one-line reason
+grounded in the code **and the constraints** — half of them turn on neither the diff nor
+the code (a ruleset's allowed merge methods, what the CI logs say), and a reason invented
+to look code-shaped is worse than the bare question it replaced
+([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
+When you do act autonomously, narrate what you did and why in a short line.
 
-When you do act autonomously, narrate what you did and why in a short line, so the
-user can follow along.
-
-## Tooling: detect what's available
-
-Findings and PR operations can come from several sources. Pick the first that
-works, in this order:
-
-1. **GitHub MCP server** — if MCP tools for GitHub are connected, prefer them for
-   reading PR review comments and findings (richest structured data).
-2. **`gh` CLI** — used for almost everything: `gh pr create`,
-   `gh pr view --comments`, `gh pr checks`, `gh pr merge`, and `gh api` for
-   anything the porcelain commands don't cover.
-3. **GitHub REST API** via `gh api` or `curl` with a token — fallback for review
-   threads, comment replies, and resolving conversations.
-
-Plain `git` handles the local branch/rebase/push operations.
+**Reading order.** A forge MCP server where one is connected, `gh` otherwise, and
+`gh api` for what the porcelain does not cover. Plain `git` does the local work.
 
 ## The merge gates belong to the base branch — discover them, don't assume
 
-What blocks a merge — required checks, thread resolution, allowed merge methods,
-being current with base — is configured **per base branch** and enforced by
-GitHub. Two bases of one repository answer differently, and a slice's feature
-branch often carries no rules at all, leaving Step 4's bar the only one — but that
-is a reading, never a presumption: a `feature/**` pattern or an org-level rule on
-every ref covers one just as well.
-**Read the configuration of the base this PR targets**, every time, and never
-carry over what another base of the same repo required, what some *other* repo
-required, or what a check was called there. These signals already fold in whatever
-is enforced, by any mechanism:
+What blocks a merge is configured **per base branch**, so read the configuration of the
+base this PR targets, every time, and never carry over what another base of the same
+repository required, what some other repository required, or what a check was called
+there. A feature branch often carries no rules at all, leaving Step 4's bar the only
+one — but that is a reading, never a presumption: a `feature/**` pattern or an org-level
+rule on every ref covers one just as well. Two scripts fold in whatever is enforced, by
+whatever mechanism:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr>   # the merge verdict, and why
@@ -127,20 +102,16 @@ the repo enforces, and where the repo enforces nothing, becomes the only one.
 **Never merge on a bypass**: where you are allowed to skip the gates,
 `mergeStateStatus` reads `CLEAN` because of that, not because they passed.
 
-[`references/merge-gates.md`](references/merge-gates.md) owns the rest — the rules
-behind those signals, the per-base read that resolves them, the `mergeStateStatus`
-values Step 4 routes on, and how to tell absent gates from unread ones. **Read it
-before Step 2**, which is where the first of those values is routed on. One answer
-from that read — whether this base requires the branch current with it — is routed
-on by Steps 2, 4 and 6 alike, so resolve it there, once.
+[`references/merge-gates.md`](references/merge-gates.md) owns the rest, and is **read
+before Step 2**. One answer from it — whether this base requires the branch current with
+it — is routed on by Steps 2, 4 and 6 alike, so resolve it there, once.
 
 ## When the platform is down, the red check is not yours
 
-A degraded forge fails the way a broken diff does: jobs queue and never start, a
-runner dies mid-job, a check reports an internal error, the API answers 5xx. No
-code change repairs any of it. So attribute a red or stuck check before fixing it,
-and once the platform owns the failure, park the run on it — attribution, the wait
-and the resume are
+A degraded forge fails the way a broken diff does — jobs that queue and never start, a
+runner that dies mid-job, a check reporting an internal error — and no code change
+repairs any of it. So attribute a red or stuck check before fixing it, and park the run
+on the platform once it owns the failure:
 [`references/platform-status.md`](references/platform-status.md).
 
 What that costs the steps below, for as long as the outage is what blocks the run:
@@ -153,32 +124,22 @@ What that costs the steps below, for as long as the outage is what blocks the ru
 
 ## Step 1 — Branch naming
 
-The shape a name takes, what counts as auto-generated, and the cases where a
-rename is *not* allowed all live in
-[`../../references/branch-naming.md`](../../references/branch-naming.md) —
-apply it here, and leave a
-name that already describes the change alone.
+[`../../references/branch-naming.md`](../../references/branch-naming.md) owns the shape a
+name takes and where a rename is refused; this step owns the mechanics it points back at —
+renaming a branch that may already be on a remote, and publishing it under the final name.
 
-On a run driven from upstream the **rename** is usually a no-op:
-`hcb-dev:shipping-workflow` step 0 normalized the name locally and threads the
-name it renamed away as `old-name` (`slice-completion.md`). One thing about that
-name is this step's, before anything is published: a PR that heads it pins it —
-the rename is undone and the branch ships under the old name, a state that
-cannot be read counting as pinned, the same as for a rename made here. What is
-published under the old name is retired in Step 2, under the proof that step
-names. The **publish** is not a no-op. The push below is the only place this skill puts
-the branch on the remote, and without it Step 2's `--force-with-lease`
-dies on "no upstream branch" while Step 3's `gh pr create --head` finds no head
-ref at all — so skip the rename when the name is already right, and never skip the
-push.
-
-What this step owns is the mechanics that reference points back at: renaming a
-branch that may already be on a remote, and publishing it under the final name.
+**The rename is often a no-op and the publish never is.** Upstream normalized the name
+already and threads what it renamed away as `old-name`
+([`../../references/slice-completion.md`](../../references/slice-completion.md)); a PR
+heading that name pins it, and the rename is undone. The push below is the only place
+this skill puts the branch on a remote, and without it Step 2's `--force-with-lease` dies
+on "no upstream branch" and Step 3's `--head` finds no ref — so skip the rename where the
+name is already right, and never skip the push.
 
 **Which remote to push to is
-[`../../references/base-resolution.md`](../../references/base-resolution.md)'s
-question** — resolve it there, and resolve it **before** renaming, reading
-`branch.<name>.pushRemote` under the branch's current name.
+[`../../references/base-resolution.md`](../../references/base-resolution.md)'s question**,
+resolved **before** renaming, since `branch.<name>.pushRemote` is read under the name the
+branch carries now.
 
 Fill the three values at the top; everything under them is live.
 
@@ -264,23 +225,19 @@ fi
 
 ## Step 2 — Bring the branch up to date with base
 
-The base branch and the remote carrying it both come from `base-resolution.md`:
-rung 2, the open PR's own base, answers it here, and the reference's remote ranking
-says which remote actually holds that branch — `upstream` can exist while *this*
-base lives only on `origin`, in a fork whose PR targets the fork itself. Then
-rebase onto it; rebase is the default (cleaner history, plays well with squash).
+The base branch and the remote carrying it both come from `base-resolution.md` — rung 2,
+the open PR's own base, and that reference's remote ranking, since `upstream` can exist
+while *this* base lives only on `origin`. Then rebase onto it: rebase is the default,
+being cleaner history and friendlier to a squash.
 
-One thing this step must not take on trust: **check the fetch, not just the ref.**
-Whichever remote you picked, you picked it *because* `<base-remote>/<base>` is
-already there — so an existence test passes just as happily against a week-old
-copy, and a rebase onto that copy has this step report "up to date" while GitHub
-reports `BEHIND` at merge time. What the fetch's outcomes mean is
-`base-resolution.md`'s; here, a fetch that did not succeed stops this step — a
-base whose age is unknown is not one to rebase onto, while one the fetch confirms
-is already current is exactly what this step wants.
+**Check the fetch, not just the ref.** You picked that remote *because*
+`<base-remote>/<base>` is already there, so an existence test passes just as happily
+against a week-old copy — and a rebase onto that copy reports "up to date" here while the
+forge reports `BEHIND` at merge time. A fetch that did not succeed stops this step: a base
+whose age is unknown is not one to rebase onto.
 
-Fill the two values at the top; everything under them is live, and so are
-Step 1's — `PUSH_REMOTE`, `NEW` and `OLD_NAME` as that step left them.
+Fill the two values at the top; everything under them is live, and so are Step 1's —
+`PUSH_REMOTE`, `NEW` and `OLD_NAME` as that step left them.
 
 ```bash
 BASE_REMOTE="<resolved per base-resolution.md>"
@@ -316,15 +273,10 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   way this step's own rebase stands: what CI reads must be the code that is going
   to land.
 
-**Then retire what `old-name` names** — the ref the branch was published under
-before `hcb-dev:shipping-workflow` step 0 renamed it — now that the new name is
-up and the base is fetched. Three proofs, all required, and a proof that cannot
-run keeps the ref: the name is neither this branch's nor the base's; the tip the
-remote carries under it is this branch's own — in its history, or in its reflog,
-which `git branch -m` carried across and a rebase leaves it in; and that tip is
-not already contained in the base, since a ref carrying nothing past the base was
-never a publication of this branch's work. Delete under a lease on the tip just
-read, and say why wherever the ref stays — the report needs the reason.
+**Then retire what `old-name` names**, now that the new name is up and the base is
+fetched. Three proofs, all required, and one that cannot run keeps the ref — the block
+below is each of them in order, and every path out of it says why the ref stayed, because
+the report needs the reason.
 
 ```bash
 if [ -n "$OLD_NAME" ] && [ "$OLD_NAME" != "$NEW" ] && [ "$OLD_NAME" != "$BASE" ]; then
@@ -488,11 +440,9 @@ met, the value decides:
   satisfied) and put the go-ahead to the addressee, with your recommendation
   first. Do not merge until it comes back.
 
-Choose the strategy — a `merge-strategy` threaded in from the planning gate wins
-if one was passed (the user's shown-and-approved choice), always **filtered to the
-repo's allowed merge methods** (from the ruleset; `gh pr merge` will reject a
-disallowed one, so fall back within the allowed set and say so). Absent a threaded
-strategy, pick from the allowed set:
+Choose the strategy. One threaded in from the planning gate wins, and every choice is
+**filtered to the repo's allowed merge methods** — a disallowed one is rejected, so fall
+back within the allowed set and say so. Absent a threaded strategy, pick from that set:
 
 - **A PR whose base is a feature branch is a slice, and a slice always squashes**
   — one commit — regardless of the gate's `merge-strategy`, which governs the
@@ -543,24 +493,21 @@ that, never the merge command's exit status:
     || echo "CALLED WRONG: $AFTER"
   ```
 
-  **`--require-from-gates` is why no check name appears above.** The names come out of
-  the base's own gates — a ruleset and classic branch protection, which are separate
-  mechanisms and are both read ([`references/merge-gates.md`](references/merge-gates.md))
-  — and travel from one forge response into the next as data. A workflow may be called
-  `Team's CI`, or carry a `$` or a backtick, and a name composed into a command line has
-  to be quoted exactly right every single time. `.gates` is what the base actually
-  requires; `null` there means the question was never asked, which is not an empty list.
+  **`--require-from-gates` is why no check name appears above**: the names come out of
+  the base's own gates and travel between forge responses as data, never through a
+  command line, where a workflow called `Team's CI` has to be quoted exactly right every
+  time ([`references/merge-gates.md`](references/merge-gates.md)). `.gates` is what the
+  base requires, and `null` there is a question never asked rather than an empty list.
 
   **Read `BEFORE` before believing what it lacks.** An unread answer carries empty `runs`
   and `statuses` too, so "the base does not run this" and "nothing was read" look
-  identical in the rows. `BEFORE.verdict` tells them apart, and only a `BEFORE` that was
-  actually read may say the base runs nothing on a push.
+  identical in the rows — only a `BEFORE` whose `verdict` says it was read may say the
+  base runs nothing on a push.
 
-  Captured in variables, never redirected to a file: Step 6 runs inside the user's
-  checkout, where a stray `merged.json` is an untracked file that Step 7, `git-cleanup`
-  and branch retirement all read as work in progress. **A non-zero exit is the
-  invocation being wrong**, never a state to retry — it is the one outcome that carries
-  no JSON, so it is read from the status rather than from the body.
+  Captured in variables, never redirected to a file: this runs inside the user's checkout,
+  where a stray `merged.json` is an untracked file Step 7, `git-cleanup` and branch
+  retirement all read as work in progress. **A non-zero exit is the invocation being
+  wrong**, never a state to retry.
 
   Otherwise route on `.verdict`, which is the one field this answer is designed to be
   read by — the rollup the server computes can say `failure` over rows that all passed,
