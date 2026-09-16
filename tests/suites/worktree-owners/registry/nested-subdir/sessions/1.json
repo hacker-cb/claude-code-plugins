@@ -1,0 +1,9 @@
+{
+ "pid": 1,
+ "cwd": "/tmp/example-checkout/.claude/worktrees/example-slice-a1b2c3/plugins/hcb-dev",
+ "kind": "interactive",
+ "entrypoint": "example-client",
+ "name": "example-session",
+ "startedAt": "2026-01-01T00:00:00.000Z",
+ "pidDomain": "darwin"
+}

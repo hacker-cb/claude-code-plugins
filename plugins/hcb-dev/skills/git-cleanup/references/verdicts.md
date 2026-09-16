@@ -9,14 +9,12 @@ and every step number below is the skill's.
 
 | Signal | Verdict |
 |---|---|
-| primary worktree | never touch |
-| the current session's own worktree | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
-| path is a live session's `cwd` | keep — someone is working there |
-| **another** worktree the host made — a `claude/…` branch, or a directory in the host's own worktree dir — **that is still on disk** | **surface, never remove** — its lease survives the process and is unreadable from here ([`../../../references/claude-worktrees.md`](../../../references/claude-worktrees.md)). A registration whose directory is already gone is not this case: nothing is left to destroy, so it falls to the `prunable` rows below |
+| `owner` is not `you`, or any `blockers` stand | keep — `worktree-owners.mjs` has already told the two apart, and its blocker is the row's reason. `the host` is **surface, never remove**: that lease survives the process and is unreadable from here. A registration whose directory is already gone is not that case — nothing is left to destroy, so it falls to the `prunable` rows below |
+| `owner: you` with no blocker | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
 | `locked` | keep — Claude Code locks a worktree while its agent runs |
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
-| clean, its branch merged, and **this session cut it** | `remove` (class 2) |
+| in `unsettled`, clean, its branch merged, and **this session cut it** | `remove` (class 2) — the memory is the answer the script says it cannot have |
 | a populated submodule, or a `modules` directory in its admin dir | surface (class 3) — the removal takes whatever history that git dir holds, and nothing here proves it empty |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |

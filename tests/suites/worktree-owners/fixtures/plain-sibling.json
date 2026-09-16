@@ -1,0 +1,4 @@
+{
+ "here": "/tmp/example-checkout/.claude/worktrees/example-slice-a1b2c3",
+ "worktrees": "worktree /tmp/example-checkout\nHEAD f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nbranch refs/heads/master\n\nworktree /tmp/example-checkout/.claude/worktrees/example-slice-a1b2c3\nHEAD f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nbranch refs/heads/feat-example\n\nworktree /tmp/example-checkout-sibling\nHEAD f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nbranch refs/heads/feat-plain\n"
+}

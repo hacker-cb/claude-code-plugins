@@ -1,0 +1,4 @@
+{
+ "here": "/tmp/example-checkout",
+ "worktrees": "worktree /tmp/example-checkout\nHEAD f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nbranch refs/heads/master\n"
+}

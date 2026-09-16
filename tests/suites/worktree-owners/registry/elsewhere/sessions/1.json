@@ -1,0 +1,9 @@
+{
+ "pid": 1,
+ "cwd": "/tmp/another-project",
+ "kind": "interactive",
+ "entrypoint": "example-client",
+ "name": "example-session",
+ "startedAt": "2026-01-01T00:00:00.000Z",
+ "pidDomain": "darwin"
+}

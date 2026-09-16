@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Stubbed outright, not proxied: every question below would otherwise answer about the
+# runner's own checkout, and a case resting on that tests the clone rather than the script.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+case "$1 $2" in
+  "rev-parse --git-dir") case "$(ask '.no_repo')" in yes) exit 128 ;; esac; echo ".git"; exit 0 ;;
+  "rev-parse --show-toplevel")
+    v=$(ask '.here')
+    case "$v" in ""|fail) echo "fatal: not a git repository" >&2; exit 128 ;;
+      *) printf '%s\n' "$v"; exit 0 ;; esac ;;
+  "worktree list")
+    v=$(ask '.worktrees')
+    case "$v" in ""|fail) echo "fatal: could not list worktrees" >&2; exit 128 ;;
+      *) printf '%s\n' "$v"; exit 0 ;; esac ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3

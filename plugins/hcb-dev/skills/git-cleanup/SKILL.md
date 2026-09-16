@@ -52,21 +52,27 @@ If there is no remote at all, ask the user — nothing local names the default.
 
 ## Step 2 — Who is still working here
 
-A worktree with a live session in it must not be removed, and git alone cannot
-tell you. Run the probe from
-[`../../references/claude-worktrees.md`](../../references/claude-worktrees.md) and
-carry its answer into step 5 — **in one direction only.** A live session proves
-the worktree is in use. Its absence proves nothing: the host leases worktrees to
-*sessions*, not to processes, and a session that was merely closed keeps its lease
-until it is archived. The lease is not readable from here.
+A worktree with a live session in it must not be removed, and git alone cannot tell you.
+One script reads every worktree of the repository at once:
 
-So a worktree the host created for another session is never this skill's to
-remove, running or not. What is left after that is still worth the sweep:
-worktrees you cut yourself, and — the larger share — **branches**, which no host
-cleanup touches.
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/worktree-owners.mjs" --repo-dir "$PROJECT"
+```
 
-Where the probe itself failed (no registry, or no `cwd` lines while session files
-exist) say so once and treat every worktree but the current one as in use.
+Carry its `owner` and `blockers` into step 5, and read them **in one direction only**: a
+live session proves a worktree is in use, and its absence proves nothing. The host leases
+worktrees to *sessions*, not to processes, so a worktree it created for another session
+is never this skill's to remove, running or not —
+[`../../references/claude-worktrees.md`](../../references/claude-worktrees.md) owns why,
+and the answer's `unsettled` list is the one question it leaves you: **did this session
+cut that worktree**, which is your own memory of this conversation.
+
+`"probeFailed": true` is not "nobody is working" — it is no registry, or records that
+would not read. Say so once, and every worktree but the current one is unknown rather
+than free.
+
+What is left after that is still worth the sweep: worktrees you cut yourself, and — the
+larger share — **branches**, which no host cleanup touches.
 
 ## Step 3 — The mode
 
