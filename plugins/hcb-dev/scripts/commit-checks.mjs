@@ -92,7 +92,7 @@ if (!opts.pr && SYMBOLIC.includes(opts.sha)) {
 // `<sha>^` is refused HERE rather than 404ing as a failed read, because the two mean
 // different things to a caller: one is an argument to fix, the other a forge to retry.
 // A caller wanting a parent resolves it with git and passes the oid.
-const SEGMENT = /^[^/\\\s?#%~^:*[\]]+$/;
+const SEGMENT = /^[^/\\\s?#%~^:*[\]{}]+$/;
 // The type is checked first, and that is not defensiveness about argv — the forge's own
 // answer comes through here too. A `headRefOid` that arrives as a number or an array
 // makes `.includes` throw, which exits 1 with nothing on stdout: no JSON, no verdict, and
@@ -111,7 +111,12 @@ const repoOk = (v) => { const p = v.split('/'); return p.length === 2 && p.every
 // read into a refusal on every repository that targets one, taking the whole step with
 // it. Each segment is held to the same rule instead, so nothing steers the url and every
 // real branch name still reaches it.
-const refOk = (v) => typeof v === 'string' && v !== '' && v.split('/').every(readable);
+// `{` and `}` are excluded above for a reason that is not about urls: `gh api`
+// substitutes `{owner}`, `{repo}` and `{branch}` from the repository of the CURRENT
+// directory, so a branch actually named `{repo}` would send the request somewhere else
+// — and in a fork checkout, somewhere else is another repository.
+const refOk = (v) => typeof v === 'string' && v !== ''
+  && v.split('/').every((seg) => readable(seg) && seg !== '.');
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
 const cwd = opts.repoDir || process.cwd();
@@ -130,7 +135,10 @@ const answer = {
   // combination gets missed — a server rollup of `failure` beside rows that all passed,
   // for one, which the counts alone report as green.
   // Precedence: unread > retry > failing > running > empty > green.
-  verdict: 'unread', complete: true,
+  verdict: 'unread',
+  // `null` until a gate source is actually asked — "not asked" is not "asked and whole",
+  // the same distinction `gates: null` keeps one field over.
+  complete: null,
   // A refusal splits two ways a caller must not conflate: `retry` says the answer is
   // simply not published yet and the same call will work shortly, while a refusal
   // without it says the read failed. Routing on the reason's prose would make a caller
@@ -236,72 +244,86 @@ answer.repo = repo;
 // The base's gates are also the right authority for WHICH check gates a merge: a name
 // typed by a caller is that caller's belief about the ruleset.
 if (opts.fromGates) {
-  // Composed into a url, so held to the same bound as every other value that is —
-  // including this one, which the forge supplied rather than the caller.
   if (!refOk(baseRef)) refuse(`the pull request named '${baseRef}' as its base branch, which is not a ref this can read`);
-  const r = gh(['api', '--paginate', `repos/${repo}/rules/branches/${baseRef}`]);
-  if (!r.ok) {
-    // 404 is a normal answer — a branch with no ruleset — and `gh` exits non-zero on it.
-    // Everything else is a read that failed, and the two must not share a path.
-    if (/404|not found/i.test(r.err)) {
-      answer.notes.push(`${baseRef} has no ruleset, so the gates name no required check`);
-    } else {
-      refuse(`could not read the gates on ${baseRef} (${r.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
-    }
-  } else {
+  // ONE path parameter, encoded. A branch name may carry slashes, and in
+  // `branches/<branch>/protection/...` the name sits in the middle of the path — so a
+  // literal slash makes the router read a different branch, or none, and the 404 that
+  // follows is indistinguishable from a branch that simply is not protected.
+  const branch = encodeURIComponent(baseRef);
+  const fromGates = [];
+
+  // SOURCE ONE — rulesets.
+  const r = gh(['api', '--paginate', `repos/${repo}/rules/branches/${branch}`]);
+  if (r.ok) {
     const pages = parsePages(r.out);
-    if (pages === null) refuse(`the gates on ${baseRef} did not come back as JSON`);
-    for (const page of pages) {
-      for (const rule of Array.isArray(page) ? page : []) {
-        if (!rule || rule.type !== 'required_status_checks') continue;
-        const checks = (rule.parameters && rule.parameters.required_status_checks) || [];
-        for (const c of checks) {
-          if (c && typeof c.context === 'string' && c.context.trim()) opts.require.push(c.context);
+    if (pages === null) answer.gatesUnknown.push(`the ruleset on ${baseRef} did not come back as JSON`);
+    else {
+      for (const page of pages) {
+        // A page that is not a list of rules is a response this cannot read, not a base
+        // with no rules — an error body from a proxy is valid JSON too.
+        if (!Array.isArray(page)) {
+          answer.gatesUnknown.push(`the ruleset on ${baseRef} came back in a shape this cannot read`);
+          continue;
+        }
+        for (const rule of page) {
+          if (!rule || rule.type !== 'required_status_checks') continue;
+          for (const c of (rule.parameters && rule.parameters.required_status_checks) || []) {
+            if (c && typeof c.context === 'string' && c.context.trim()) fromGates.push(c.context);
+          }
         }
       }
     }
+  } else if (/404|not found/i.test(r.err)) {
+    // No ruleset on this branch — the ordinary answer, and `gh` exits non-zero on it.
+  } else {
+    answer.gatesUnknown.push(`the ruleset on ${baseRef} (${r.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
   }
 
-  // A SECOND source, and both have to be read. Rulesets and classic branch protection
-  // are different mechanisms with different endpoints ([merge-gates.md]), and a repo on
-  // the classic one has an empty ruleset — so a gate list built from rulesets alone
-  // comes back short there, and `AFTER` reports green before a required check has
-  // registered.
-  const prot = gh(['api', `repos/${repo}/branches/${baseRef}/protection/required_status_checks`]);
+  // SOURCE TWO — classic branch protection, a different mechanism with its own endpoint
+  // ([merge-gates.md]). A repository on it has an empty ruleset, so a list built from
+  // source one alone comes back short and a merge commit reads green before a required
+  // check has registered.
+  const prot = gh(['api', `repos/${repo}/branches/${branch}/protection/required_status_checks`]);
   if (prot.ok) {
     let p;
     try { p = JSON.parse(prot.out); } catch { p = null; }
-    if (p === null) answer.gatesUnknown.push('classic protection did not come back as JSON');
-    else {
-      for (const c of Array.isArray(p.contexts) ? p.contexts : []) {
-        if (typeof c === 'string' && c.trim()) opts.require.push(c);
-      }
-      for (const c of Array.isArray(p.checks) ? p.checks : []) {
-        if (c && typeof c.context === 'string' && c.context.trim()) opts.require.push(c.context);
+    const contexts = p && Array.isArray(p.contexts) ? p.contexts : null;
+    const checks = p && Array.isArray(p.checks) ? p.checks : null;
+    if (contexts === null && checks === null) {
+      answer.gatesUnknown.push(`classic protection on ${baseRef} came back in a shape this cannot read`);
+    } else {
+      for (const c of contexts || []) if (typeof c === 'string' && c.trim()) fromGates.push(c);
+      for (const c of checks || []) {
+        if (c && typeof c.context === 'string' && c.context.trim()) fromGates.push(c.context);
       }
     }
-  } else if (/404|not protected|not found/i.test(prot.err)) {
-    // "Branch not protected" — the ordinary answer on a repository using rulesets, or
-    // none. Measured: that is exactly what the endpoint says.
+  } else if (/branch not protected|not enabled/i.test(prot.err)) {
+    // Measured, and the wording is the whole distinction: "Branch not protected" is this
+    // endpoint saying the answer is none. A BARE "Not Found" is not — GitHub hides a
+    // resource the credentials may not see behind exactly that, so reading it as absence
+    // is how an unread source becomes a complete-looking green.
+  } else if (/branch not found/i.test(prot.err)) {
+    answer.gatesUnknown.push(`${baseRef} is not a branch on ${repo} — its gates were never read`);
   } else {
-    // Anything else — 403 above all, which is what a non-admin reads — is a source that
-    // did not answer. Not a refusal: the check feeds are still readable and useful. But
-    // the gate list is then INCOMPLETE, and a caller told `green` over an incomplete list
-    // has been told something the read cannot support.
     answer.gatesUnknown.push(`classic protection on ${baseRef} (${prot.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
   }
 
-  opts.require = [...new Set(opts.require)];
-  answer.gates = [...opts.require];
-  if (answer.gates.length === 0 && answer.gatesUnknown.length === 0) {
+  // What the GATES name, and nothing else. `opts.require` also holds whatever the caller
+  // typed, and reporting those as the base's requirements passes one person's belief off
+  // as the ruleset — while hiding the one signal that says the base requires nothing.
+  answer.gates = [...new Set(fromGates)];
+  opts.require = [...new Set([...opts.require, ...fromGates])];
+  // Settled here, beside the reads it speaks for. It is the one field that would
+  // otherwise carry an optimistic default out through a later refusal.
+  answer.complete = answer.gatesUnknown.length === 0;
+  if (answer.gates.length === 0 && answer.complete) {
     answer.notes.push(`${baseRef} requires no status check — neither a ruleset nor classic`
       + ' protection names one');
   }
-  if (answer.gatesUnknown.length) {
+  if (!answer.complete) {
     answer.notes.push(`the gate list is incomplete: ${answer.gatesUnknown.join('; ')}`);
   }
 }
-
 answer.sha = sha;
 
 // Both feeds paginate. Both are captured with their exit status rather than piped
@@ -428,9 +450,6 @@ if (answer.counts.failing > 0 || rollupRed) answer.verdict = 'failing';
 else if (answer.counts.unfinished > 0 || requiredWaiting) answer.verdict = 'running';
 else if (answer.empty) answer.verdict = 'empty';
 else answer.verdict = 'green';
-// A verdict is only as complete as the gate list behind it. Green over a list that could
-// not be fully read is green as far as anyone looked, which is a different claim.
-answer.complete = answer.gatesUnknown.length === 0;
 if (rollupRed && answer.counts.failing === 0) {
   answer.notes.push(`every row read passed, but the feed's own rollup says '${answer.rollup}'`
     + ' — the rollup is over what the server holds, not over what this call captured');

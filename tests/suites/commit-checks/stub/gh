@@ -38,6 +38,11 @@ case "$1 $2" in
         case "$v" in
           ""|absent) echo "gh: Branch not protected (HTTP 404)" >&2; exit 1 ;;
           forbidden) echo "gh: Resource not accessible by integration (HTTP 403)" >&2; exit 1 ;;
+          # What GitHub answers for a resource the credentials may not see. Measured
+          # beside it: an unprotected branch says "Branch not protected", and a missing
+          # one "Branch not found" — three different 404s, three different steps.
+          hidden) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+          missing) echo "gh: Branch not found (HTTP 404)" >&2; exit 1 ;;
           *) printf '%s\n' "$v"; exit 0 ;;
         esac ;;
     esac ;;
@@ -47,6 +52,10 @@ case "$1 $2" in
       */rules/branches/*)
         v=$(ask '.gates')
         case "$v" in
+          # Hands the PATH back as a check name, which is how a case observes what the
+          # script actually sent — a branch name is a url path PARAMETER, and one segment
+          # of it, so a non-ASCII or slashed name has to arrive percent-encoded.
+          echo-path) printf '[{"type":"required_status_checks","parameters":{"required_status_checks":[{"context":"%s"}]}}]\n' "${3#*/rules/branches/}"; exit 0 ;;
           ""|absent) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
           fail) echo "gh: Bad credentials (HTTP 401)" >&2; exit 1 ;;
           *) printf '%s\n' "$v"; exit 0 ;;

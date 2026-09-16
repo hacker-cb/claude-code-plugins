@@ -9,5 +9,21 @@
   }
  },
  "gates": "fail",
- "classic": "absent"
+ "classic": "absent",
+ "checks": {
+  "total_count": 1,
+  "check_runs": [
+   {
+    "id": "example-id-1",
+    "name": "unit-tests",
+    "status": "completed",
+    "conclusion": "success"
+   }
+  ]
+ },
+ "status": {
+  "state": "pending",
+  "statuses": [],
+  "total_count": 0
+ }
 }
