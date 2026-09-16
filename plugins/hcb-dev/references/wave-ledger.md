@@ -26,7 +26,7 @@ node <plugin root>/scripts/ledger.mjs --issue <n> [--repo <owner/name>] [--forge
 |---|---|
 | `read` | the comment feed answered. `false` is unread, never "no ledger there" |
 | `ledger.found` / `.id` / `.nodeId` / `.chars` / `.mine` | whether one is open, which comment it is — `id` for a REST edit, `nodeId` for GraphQL — how large it stands, and whose it is: `mine` is three-valued, and `null` is *not attributable* rather than somebody else's |
-| `ledger.ambiguous` | **two comments carry the marker and neither is ours alone** — a coordinate resolving to two states resolves to neither |
+| `ledger.ambiguous` | **two comments carry the marker** — a coordinate resolving to two states resolves to neither, whoever wrote them |
 | `archives[]` | one row per `<!-- wave-journal-<n> -->` comment, with its own size |
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
 | `write.fits` / `.headroom` | whether a body handed in `--body-file` fits under the cap, and by how much |
@@ -40,10 +40,10 @@ what the epic looks like. An epic with no umbrella issue is an umbrella not yet 
 repository without a tracker. Where there is none, the role does not begin, and what was
 established goes to the user in those words.
 
-**One epic, one ledger.** The marker is an HTML comment, invisible in the UI and free for anyone
-to write, so authorship is what breaks a tie: where exactly one of two marked comments is ours, it
-is the ledger and the other is a fault. Otherwise **no** coordinate is published and the ids
-travel; an archive nothing indexes is the same kind of fault, all repaired before the next chip.
+**One epic, one ledger.** The marker is an HTML comment, free for anyone to write and invisible in
+either UI, so each marked comment travels with whose it is: a lone foreign one says so instead of
+passing as this session's state, and two publish **no** coordinate whoever wrote them — a tie-break
+would drop the older ledger. An archive nothing indexes is the same fault, repaired before the chip.
 
 ## Archiving — what leaves, and in what order
 

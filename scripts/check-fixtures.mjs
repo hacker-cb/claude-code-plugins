@@ -92,7 +92,11 @@ function packedLeak(value) {
 // about provenance rather than about content. Two in one object, because a single one is
 // something a hand-written envelope legitimately spells (`node_id: "IC_1"` names a comment
 // in half the suites here), while two together is the shape of a reply nobody cleaned.
-const FORGE_NOISE = /^(gravatar_id|site_admin|received_events_url|organizations_url|subscriptions_url|starred_url|following_url|followers_url|gists_url|events_url|repos_url|node_id|path_with_namespace|http_url_to_repo|ssh_url_to_repo|namespace_id|web_url)$/;
+// Both forges, and enough of each. A GitLab note's author object carries `web_url` and
+// `avatar_url` and little else from this list — one key alone would have let an entire raw
+// `/notes` reply through, and on a self-hosted instance the loose host check does not fire
+// either, so the usernames and bodies in it would have passed a green gate.
+const FORGE_NOISE = /^(gravatar_id|site_admin|received_events_url|organizations_url|subscriptions_url|starred_url|following_url|followers_url|gists_url|events_url|repos_url|node_id|path_with_namespace|http_url_to_repo|ssh_url_to_repo|namespace_id|web_url|avatar_url|noteable_type|noteable_iid)$/;
 const forgeNoise = (node) => (node === null || typeof node !== 'object' || Array.isArray(node)
   ? [] : Object.keys(node).filter((k) => FORGE_NOISE.test(k)));
 
@@ -220,6 +224,12 @@ const SELF_TEST = [
   ['and the envelope this suite writes by hand is not',
     '{"comments":"[{\\"id\\":1,\\"body\\":\\"chatter\\"}]"}', false,
     (v) => rawReplyIn(JSON.parse(v)) !== null],
+  // A GitLab note from a self-hosted instance: no `github.com`, no `node_id`, and a plain
+  // username the actor shape would never see, because nothing marked this as a capture.
+  ['a raw GitLab note is recognised too',
+    '{"id":9,"body":"x","author":{"username":"realperson","state":"active",'
+    + '"avatar_url":"https://forge.internal/uploads/a.png","web_url":"https://forge.internal/realperson"}}',
+    true, (v) => rawReplyIn(JSON.parse(v)) !== null],
   ['json carried as a string is unpacked', '[{"body":"x"}]', true, (v) => nestedJson(v) !== null],
   ['prose that opens with a brace is not json', '{not json at all', false,
     (v) => nestedJson(v) !== null],

@@ -139,11 +139,13 @@ string a stub prints is parsed and walked like any other document, which is wher
 shapes used to stop — a marked capture's envelope is now held to the invented shapes through
 the string as well.
 
-**What it cannot recognise is a reply somebody trimmed by hand.** Strip the bookkeeping and
-what is left — a login, a branch naming a customer, a repository path — is exactly what a
-hand-written fixture legitimately spells however it likes. So the rule stands ahead of the
-gate: **never paste a forge's answer into a fixture.** Run the collector, which marks what it
-writes, or write the envelope yourself with invented values.
+**What it cannot recognise is a reply somebody trimmed by hand,** and the key list is a list
+rather than a law — a shape neither forge writes today is a shape this does not know. Strip the
+bookkeeping and what is left — a login, a branch naming a customer, a repository path — is
+exactly what a hand-written fixture legitimately spells however it likes, and on a self-hosted
+instance the host check does not fire either. So the rule stands ahead of the gate: **never
+paste a forge's answer into a fixture.** Run the collector, which marks what it writes, or write
+the envelope yourself with invented values.
 
 ## Adding a case
 
