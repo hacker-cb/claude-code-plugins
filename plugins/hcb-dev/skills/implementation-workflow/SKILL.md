@@ -78,16 +78,17 @@ mode once, at the gate, and threads it down; the mechanics live in
 
 The one interactive point. Present the whole plan and take a single approval,
 deciding everything foreseeable at once so Phase 2 has no routine questions left.
-Every fork carries a **recommendation shown first**, never a bare question, and a
-project rule that fights good architecture gets flagged — see
-[`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
+Every fork carries a **recommendation shown first** (*Every stop carries its
+recommendation first*), and a project rule that fights good architecture gets
+flagged
+([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 
-**A settlement the invocation carried is shown, not asked.** Where this session
-was started by an order
+**A settlement the invocation carried is shown, not asked.** Where this session was
+started by an order
 ([`../../references/order-anatomy.md`](../../references/order-anatomy.md)), its
-completion mode and merge authority arrive settled: display them with the plan
-and act on them. Re-asking re-opens what the order closed. Everything the order
-left open is settled here as usual.
+completion mode and merge authority arrive settled: display them with the plan and
+act on them — re-asking re-opens what the order closed. Everything it left open is
+settled here as usual.
 
 Settle, in one gate:
 

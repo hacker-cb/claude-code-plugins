@@ -33,25 +33,22 @@ narrowed (a path, or a focus such as "only error handling") and working-tree-onl
 each reviewer builds a diff and reviews nothing when that diff is empty. Say so
 and stop, rather than quietly reviewing the last commit instead.
 
-**Base.** Resolve it by the shared ladder in
-[`../../references/base-resolution.md`](../../references/base-resolution.md),
-which owns all of it. Read it; don't re-derive any of it here.
+**Base.** Resolve it by the ladder in
+[`../../references/base-resolution.md`](../../references/base-resolution.md), which
+owns all of it. Three things that reference cannot enforce from where it sits:
 
-Three things this skill must not let the reference's authority hide:
-
-- **Whatever resolves is handed to the reviewers explicitly**, and an explicit
-  base wins over any resolution they would do themselves — so a lossy answer here
-  is the last word, with nothing downstream to catch it.
+- **Whatever resolves is handed to the reviewers explicitly**, and an explicit base
+  wins over any resolution they would do themselves — so a lossy answer here is the
+  last word.
 - **A base a caller hands down is a name, and a name is not a ref.** Refresh it
-  through the reference before passing it on, same as one you resolved yourself.
-- **Confirm the base shares history with `HEAD` before passing it on** —
-  `git merge-base <base> HEAD` non-empty (the reference explains why an unrelated
-  base is worse than none). Empty → don't pass it, and **don't quietly fall to
-  `@{upstream}`**: on an already-pushed branch that range is near-empty, so every
-  reviewer returns a small nonzero count, the zero-file check passes, and the
-  coverage gate records no gap while most of the branch went unread. Say the base
-  could not be resolved, review the working tree alone, and record `partial` with
-  the commits left unread. If nothing resolves at all, ask before launching anyone.
+  before passing it on, same as one you resolved yourself.
+- **Confirm the base shares history with `HEAD`** — `git merge-base <base> HEAD`
+  non-empty. Empty → don't pass it, and **don't quietly fall to `@{upstream}`**: on
+  an already-pushed branch that range is near-empty, so every reviewer returns a
+  small nonzero count, the zero-file check passes, and the coverage gate records no
+  gap while most of the branch went unread. Say the base could not be resolved,
+  review the working tree alone, and record `partial` with the commits left unread.
+  If nothing resolves at all, ask before launching anyone.
 
 **Range.** Base → working tree, so one pass covers the branch's commits together
 with the uncommitted edits sitting on top of them.
