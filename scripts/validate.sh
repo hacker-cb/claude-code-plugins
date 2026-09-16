@@ -493,20 +493,42 @@ done < <(
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case "$f" in plugins/*) ;; *) continue ;; esac
-    # A fence opens with three or more backticks or tildes, and closes with at least as many
-    # of the SAME character: a block opened with four passes a gate that knows only three, and
-    # the language label sits on the opening line either way.
+    # Markdown fences, by their own rules rather than by a pattern that happens to fit the
+    # blocks here today. An opener is three or more backticks or tildes; what closes it is a
+    # run of the SAME character, at least as long, carrying nothing else. Everything between
+    # is content — including a shorter fence, which is how this repo writes a template that
+    # shows a bash block. Tracking only shell fences read that inner one as a real block and
+    # failed the template; tracking the enclosing one is what tells them apart.
+    #
+    # The language is the first word of the info string, lowercased: ```Bash and
+    # ```bash title="x" both render as shell, and a gate one relabel walks around is not a
+    # gate. A block with no language is deliberately left alone — that is a template or a
+    # transcript, not machinery.
     awk -v file="$f" -v cap="$fence_ceiling" '
-      !inb && match($0, /^[[:space:]]*(`{3,}|~{3,})[[:space:]]*(bash|sh|shell|zsh|console)[[:space:]]*$/) {
-        fence = $0; sub(/^[[:space:]]*/, "", fence); sub(/[^`~].*$/, "", fence)
-        inb = 1; n = 0; start = NR; next
+      function flush(  msg) {
+        if (inb && shell && n > cap)
+          printf "%s:%d: a shell block of %d lines — that is machinery, and it belongs in a script with a suite\n", file, start, n
       }
-      inb && match($0, /^[[:space:]]*(`{3,}|~{3,})[[:space:]]*$/) \
-        && index($0, fence) > 0 && substr(fence, 1, 1) == substr($0, index($0, substr(fence, 1, 1)), 1) {
-        if (n > cap) printf "%s:%d: a shell block of %d lines — that is machinery, and it belongs in a script with a suite\n", file, start, n
-        inb = 0; next
+      !inb && match($0, /^[[:space:]]*(`{3,}|~{3,})/) {
+        fence = substr($0, RSTART, RLENGTH); sub(/^[[:space:]]*/, "", fence)
+        info = substr($0, RSTART + RLENGTH); sub(/^[[:space:]]+/, "", info)
+        lang = info; sub(/[[:space:]].*$/, "", lang); lang = tolower(lang)
+        inb = 1; n = 0; start = NR
+        shell = (lang == "bash" || lang == "sh" || lang == "shell" || lang == "zsh" || lang == "console")
+        next
       }
-      inb { n++ }
+      inb {
+        # A closer is the same character, no shorter, and nothing else on the line.
+        if (match($0, /^[[:space:]]*(`{3,}|~{3,})[[:space:]]*$/)) {
+          close_run = $0; sub(/^[[:space:]]*/, "", close_run); sub(/[[:space:]]*$/, "", close_run)
+          if (substr(close_run, 1, 1) == substr(fence, 1, 1) && length(close_run) >= length(fence)) {
+            flush(); inb = 0; next
+          }
+        }
+        n++
+      }
+      # An unclosed fence runs to the end of the file, and markdown reads it that way too.
+      END { flush() }
     ' "$f"
   done < <(md_files)
 )

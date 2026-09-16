@@ -160,11 +160,15 @@ if (!res.ok) {
   // case, not a contrived one. Matched there, a failure to finish reading reports as a
   // coordinate to correct, which is the mistake this branch exists to prevent.
   const status = /\(HTTP (\d{3})\)/.exec(res.err);
-  // `404 Project Not Found` is the project, not the issue — and the probe above already proved
-  // the project answers, so this is a race (a rename, another cwd) rather than a wrong number.
+  // GitLab says which thing was not found — `404 Project Not Found` is the project, and the
+  // probe above already proved the project answers, so that one is a race. GitHub says only
+  // `Not Found`, so a repository renamed between the probe and this read is indistinguishable
+  // from a wrong issue number: the line names both rather than sending the caller to fix a
+  // number that may be right.
   const aboutProject = /project not found/i.test(res.err);
   answer.reason = status?.[1] === '404' && !aboutProject
-    ? text(`no issue ${opts.issue} here, or this token cannot see it: ${res.line()}`)
+    ? text(`no issue ${opts.issue} here — the repository answered the probe, so it is the issue,`
+      + ` this token's view of it, or a rename in between: ${res.line()}`)
     : text(`the comment feed could not be read: ${res.line()}`);
   out();
 }
