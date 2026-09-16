@@ -4,14 +4,21 @@ env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 case "$1 $2" in
   "rev-parse --verify")
-    case "$(ask '.base_present')" in no) exit 1 ;; esac
-    printf '%s\n' "f1x70000000000000000000000000000000000aa"; exit 0 ;;
+    # $4 is `<rev>^{commit}`; an envelope lists what this checkout carries, so a head the
+    # request names and a checkout standing elsewhere are two different answers.
+    want=${4%^\{commit\}}
+    case "$(ask '.base_present')" in no) case "$want" in refs/*) exit 1 ;; esac ;; esac
+    case " $(ask '.absent') " in *" $want "*) exit 1 ;; esac
+    printf '%s\n' "$want"; exit 0 ;;
   "rev-list --count")
-    v=$(ask '.behind')
+    # The RANGE is the question: a drift measured from the wrong commit is still a number.
+    v=$(ask ".counts[\"$3\"] // .behind")
     case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;;
       "") printf '0\n'; exit 0 ;; *) printf '%s\n' "$v"; exit 0 ;; esac ;;
   "diff --name-only")
-    v=$(ask '.moved')
+    # Two dots and three are different questions, and the stub answers them differently —
+    # a stub blind to the difference makes the wrong one look right.
+    v=$(ask ".moved_by_range[\"$3\"] // .moved")
     case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;;
       *) printf '%s\n' "$v"; exit 0 ;; esac ;;
 esac

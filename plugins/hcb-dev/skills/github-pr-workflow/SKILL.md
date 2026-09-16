@@ -118,8 +118,8 @@ required, or what a check was called there. These signals already fold in whatev
 is enforced, by any mechanism:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr>          # the merge verdict, and why
-node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --require-from-gates
+node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr>   # the merge verdict, and why
+node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates
 ```
 
 **Gates are a floor, never a ceiling** — Step 4's bar applies on top of whatever
@@ -423,11 +423,16 @@ buys another review of the same kind.
    other and may carry spaces.
 
    ```bash
-   git fetch -q "$BASE_REMOTE" "+refs/heads/$BASE:refs/remotes/$BASE_REMOTE/$BASE" \
-     || echo "FETCH FAILED — drift unknown, do not rule the head current"
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr> \
-     --base-ref "refs/remotes/$BASE_REMOTE/$BASE"
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --require-from-gates
+   # The fetch STOPS the drift read where it fails: an older tracking ref measures
+   # cleanly and answers `behind: 0`, which is the one wrong answer this cannot give.
+   if git fetch -q "$BASE_REMOTE" "+refs/heads/$BASE:refs/remotes/$BASE_REMOTE/$BASE"; then
+     node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr> \
+       --base-ref "refs/remotes/$BASE_REMOTE/$BASE"
+   else
+     echo "FETCH FAILED — drift unknown, do not rule the head current"
+     node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr>
+   fi
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates
    node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-state.mjs" --pr <pr>
    ```
 

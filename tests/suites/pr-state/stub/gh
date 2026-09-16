@@ -2,7 +2,7 @@
 [ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
-case "$1 $2" in
+case "$1 ${2:-}" in
   "pr view")
     v=$(ask '.pr_view')
     case "$v" in
@@ -10,7 +10,15 @@ case "$1 $2" in
       notjson) printf 'not json\n'; exit 0 ;;
       *) printf '%s\n' "$v"; exit 0 ;;
     esac ;;
-  "api graphql")
+  "api graphql"|"api --hostname"*|"api "*)
+    # A case can require the host: `pr view` finds an enterprise request through the
+    # remote while `api` defaults to the SaaS, and asking the wrong one is silent.
+    want=$(ask '.require_host')
+    if [ -n "$want" ]; then
+      prev="" got=""
+      for a in "$@"; do [ "$prev" = "--hostname" ] && got=$a; prev=$a; done
+      [ "$got" = "$want" ] || { echo "gh: asked $got, this instance is $want" >&2; exit 1; }
+    fi
     v=$(ask '.threads')
     case "$v" in
       fail) echo "gh: GraphQL error" >&2; exit 1 ;;
