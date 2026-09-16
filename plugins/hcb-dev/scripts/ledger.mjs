@@ -15,7 +15,9 @@
 import { readFileSync } from 'node:fs';
 import { writeAll, runner, parsePages, repoOk, hostOk, text } from './lib/forge.mjs';
 
-const LEDGER = '<!-- wave-ledger -->';
+// Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
+// is the same marker, and a ledger this misses is a second ledger the caller then opens.
+const LEDGER = /<!--\s*wave-ledger\s*-->/;
 // `<n>` is the series; the pattern deliberately does not admit the ledger's own marker, so a
 // search for one never returns the other however the two are spelled.
 const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
@@ -54,20 +56,23 @@ if (opts.repo !== null && !repoOk(opts.repo) && !/^[A-Za-z0-9._~@+-]+(\/[A-Za-z0
 }
 if (opts.forge !== null && opts.forge !== 'gh' && opts.forge !== 'glab') die('--forge takes gh or glab');
 if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
-if (String(opts.limit) !== String(DEFAULT_LIMIT)) {
-  // A count, and nothing about how big a sensible one is: what a forge accepts is the
-  // caller's to know, and a range invented here would refuse a cap somebody measured.
-  if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a character count');
-  opts.limit = Number(opts.limit);
-}
+// A count, and nothing about how big a sensible one is: what a forge accepts is the caller's
+// to know, and a range invented here would refuse a cap somebody measured. Converted whatever
+// it came as, so `limit` is a number in the answer even when the caller passed the default.
+if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a character count');
+opts.limit = Number(opts.limit);
 
 const answer = {
   read: false,
   forge: null,
-  ledger: { found: false, id: null, url: null, chars: null, utf16: null, ambiguous: false, at: null },
+  // `id` is what a REST edit takes and `nodeId` what GraphQL takes: one is not the other, and a
+  // caller handed the wrong one gets a 404 on the comment it just read.
+  ledger: { found: false, id: null, nodeId: null, url: null, chars: null, utf16: null,
+    ambiguous: false, at: null },
   archives: [],
   index: { listed: null, present: [], missing: [], unlisted: [] },
   write: { asked: false, chars: null, utf16: null, fits: null, headroom: null, limit: opts.limit },
+  me: null,
   faults: [],
   reason: null,
 };
@@ -84,15 +89,23 @@ if (opts.bodyFile !== null) {
 }
 
 const forge = opts.forge || (() => {
-  // Which CLI answers HERE, never the hostname: a self-hosted instance lives on an arbitrary
-  // domain, and the remote's url says nothing about which forge serves it.
-  for (const [cmd, name] of [['gh', 'gh'], ['glab', 'glab']]) {
-    const probe = runner(opts.dir, cmd)(['auth', 'status'], 60000);
-    if (probe.ok) return name;
+  // Which CLI answers for THIS REPOSITORY, never which one has an account. `auth status`
+  // succeeds wherever a login exists on any host, so a machine logged into both would take
+  // `gh` for a GitLab epic and read an unrelated issue of the same number on GitHub — a
+  // plausible ledger out of the wrong repository. The probe is a real read of the repository
+  // itself, and only a repository that answers picks its CLI.
+  for (const [cmd, path] of [
+    ['gh', opts.repo ? `repos/${opts.repo}` : 'repos/{owner}/{repo}'],
+    ['glab', `projects/${opts.repo ? encodeURIComponent(opts.repo) : ':fullpath'}`],
+  ]) {
+    const args = ['api'];
+    if (opts.host) args.push('--hostname', opts.host);
+    args.push(path);
+    if (runner(opts.dir, cmd)(args, 60000).ok) return cmd;
   }
   return null;
 })();
-if (forge === null) { answer.reason = 'no forge CLI answered here'; out(); }
+if (forge === null) { answer.reason = 'no forge CLI answered for this repository'; out(); }
 answer.forge = forge;
 
 const cli = runner(opts.dir, forge);
@@ -142,38 +155,51 @@ const marked = [];
 for (const c of rows) {
   const b = typeof c?.body === 'string' ? c.body : null;
   if (b === null) continue;
-  const id = c?.node_id ?? c?.id ?? null;
+  const id = c?.id ?? null;
+  const nodeId = typeof c?.node_id === 'string' ? text(c.node_id) : null;
   const at = text(c?.created_at ?? null);
   const url = text(c?.html_url ?? c?.url ?? null);
-  if (b.includes(LEDGER)) {
+  if (LEDGER.test(b)) {
     // The ledger's own INDEX is written in these same markers — a pointer standing where the
     // text used to be. A comment carrying the ledger marker is the ledger, and the archive
     // markers in it are what it lists, never archives of its own.
-    marked.push({ kind: 'ledger', id: text(String(id)), url, at, body: b });
+    marked.push({ kind: 'ledger', id: text(String(id)), nodeId, url, at, body: b });
     continue;
   }
   ARCHIVE.lastIndex = 0;
+  const ns = new Set();
   let m;
-  while ((m = ARCHIVE.exec(b)) !== null) {
-    marked.push({ kind: 'archive', n: Number(m[1]), id: text(String(id)), url, at, body: b });
+  while ((m = ARCHIVE.exec(b)) !== null) ns.add(Number(m[1]));
+  if (ns.size === 0) continue;
+  // One archive per comment is the shape. A body carrying two of them — an archive quoting the
+  // markers of the ones before it is the ordinary way that happens — is malformed rather than
+  // two archives, and counted as two it invents a duplicate of a number nobody wrote twice.
+  if (ns.size > 1) {
+    marked.push({ kind: 'malformed', ns: [...ns].sort((x, y) => x - y), id: text(String(id)) });
+    continue;
   }
+  marked.push({ kind: 'archive', n: [...ns][0], id: text(String(id)), url, at, body: b });
 }
 
 const ledgers = marked.filter((m) => m.kind === 'ledger');
 const archives = marked.filter((m) => m.kind === 'archive');
+for (const bad of marked.filter((m) => m.kind === 'malformed')) {
+  answer.faults.push({ fault: `one comment carries the archive markers ${bad.ns.join(', ')}`,
+    ids: [bad.id] });
+}
 
 if (ledgers.length > 1) {
+  // A coordinate resolving to two states resolves to neither, so NO coordinate is published:
+  // `found` stays false and the ids travel in the fault. Publishing the first one would hand
+  // the next write a comment picked by age out of two nobody has reconciled.
   answer.ledger.ambiguous = true;
-  // A coordinate resolving to two states resolves to neither: the caller repairs before the
-  // next write, and nothing here picks one of them to go on with.
   answer.faults.push({ fault: 'two comments carry the ledger marker',
     ids: ledgers.map((l) => l.id) });
-}
-if (ledgers.length >= 1) {
+} else if (ledgers.length === 1) {
   const l = ledgers[0];
   const m = measure(l.body);
-  answer.ledger = { found: true, id: l.id, url: l.url, chars: m.chars, utf16: m.utf16,
-    ambiguous: ledgers.length > 1, at: l.at };
+  answer.ledger = { found: true, id: l.id, nodeId: l.nodeId, url: l.url, chars: m.chars,
+    utf16: m.utf16, ambiguous: false, at: l.at };
 }
 
 // One archive per comment is the shape; a comment carrying two markers is a fault rather than
@@ -193,21 +219,25 @@ answer.index.present = answer.archives.map((a) => a.n);
 // What the ledger SAYS it has archived, against what the issue actually carries. Read out of
 // the ledger's own text: the index is a list of the same markers, written inline where the
 // block used to stand.
+const listed = new Set();
 if (answer.ledger.found) {
-  const l = ledgers[0].body;
-  const listed = new Set();
   ARCHIVE.lastIndex = 0;
   let m;
-  while ((m = ARCHIVE.exec(l)) !== null) listed.add(Number(m[1]));
+  while ((m = ARCHIVE.exec(ledgers[0].body)) !== null) listed.add(Number(m[1]));
   answer.index.listed = [...listed].sort((x, y) => x - y);
   answer.index.missing = answer.index.listed.filter((n) => !byN.has(n));
-  answer.index.unlisted = answer.index.present.filter((n) => !listed.has(n));
   for (const n of answer.index.missing) {
     answer.faults.push({ fault: `the ledger lists archive ${n}, and no comment carries it` });
   }
-  for (const n of answer.index.unlisted) {
-    answer.faults.push({ fault: `archive ${n} stands on the issue and the ledger does not list it` });
-  }
+}
+// Reconciled whether or not a ledger stands: one deleted, or two of them, leaves its archives
+// on the issue, and `listed` empty then is "nothing indexes these" rather than "nothing to
+// check". A caller reading no fault there opens a fresh ledger over archives nobody indexes.
+answer.index.unlisted = answer.index.present.filter((n) => !listed.has(n));
+for (const n of answer.index.unlisted) {
+  answer.faults.push({ fault: answer.ledger.found
+    ? `archive ${n} stands on the issue and the ledger does not list it`
+    : `archive ${n} stands on the issue and no ledger indexes it` });
 }
 
 if (answer.write.asked) {
