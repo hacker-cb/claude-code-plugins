@@ -231,23 +231,25 @@ gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<bod
 
 ## Step 4 — The fix loop (until GitHub says mergeable)
 
-Loop until the PR is **both mergeable by GitHub and clean by your own bar** —
-every required check green, the thread-resolution requirement satisfied, and the
-approval requirement met where the base carries one, plus —
-always, whatever the repo does or doesn't enforce — CI genuinely green, the PR
-body describing the head that is about to land
-([`../../references/merge-message.md`](../../references/merge-message.md);
-`gh pr edit <pr> --body "<body>"` rewrites it), every Copilot review **this driver
-waits for** settled — or, where a wait ran out, the addressee's word to
-merge with the head unreviewed by Copilot, said in the report — and of every Copilot
-review that posted, the Critical/Important findings fixed on both of the readings
-that carry them, every comment answered, and every thread resolved
-(`references/copilot.md`;
-`references/merge-gates.md`, *When there are no gates, or they can't be
-trusted*). Up to ~5 iterations, then escalate. Gates decide *permission* to
-merge, your bar decides *readiness*; when they diverge, the stricter one wins —
-save for the one item below, whose answer is the base's. The severity
-classification only decides what you *fix*, never when you're *done*.
+Loop until the PR is **both mergeable by GitHub and clean by your own bar**. Up to ~5
+iterations, then escalate. Gates decide *permission* to merge, your bar decides
+*readiness*; where they diverge the stricter wins — save for the one item below, whose
+answer is the base's. Severity decides what you *fix*, never when you are *done*.
+
+The bar, whatever the repo enforces:
+
+- every required check green, and CI genuinely green;
+- the thread-resolution requirement satisfied, and the approval requirement met where
+  the base carries one (`references/merge-gates.md`, *When there are no gates, or they
+  can't be trusted*);
+- the PR body describing the head about to land
+  ([`../../references/merge-message.md`](../../references/merge-message.md);
+  `gh pr edit <pr> --body "<body>"` rewrites it);
+- every Copilot review **this driver waits for** settled — or, where a wait ran out, the
+  addressee's word to merge with the head unreviewed, said in the report;
+- of every review that posted, the Critical and Important findings fixed on both of the
+  readings that carry them, every comment answered, every thread resolved
+  (`references/copilot.md`).
 
 **Being current with base is that item.** Where the base requires it, `BEHIND` is a gate.
 Where it does not, **that enum never arrives** — nothing is blocking the merge, so a head
@@ -264,10 +266,9 @@ one that was needed puts the break in the base, where only Step 6 finds it.
 **The approval is the exit item no iteration of this loop produces.** Every other one
 answers to a push; that one answers to a reviewer, and all a round can do is remove
 reasons to withhold it. So read it before spending an iteration against it, and read the
-**requirement** rather than one reviewer's verdict. `reviewDecision` is not that
-requirement — an empty one is not a base that asks for nothing
-([`references/merge-gates.md`](references/merge-gates.md), which owns where the
-requirement is read and why that field cannot stand in for it).
+**requirement** rather than one reviewer's verdict —
+[`references/merge-gates.md`](references/merge-gates.md) owns where that requirement is
+read.
 
 Where the requirement *is* outstanding and the head's review has settled without
 closing it, which of the two kinds of review that is
@@ -299,17 +300,9 @@ buys another review of the same kind.
    node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-findings.mjs" --pr <pr>
    ```
 
-   - **`pr-state.mjs`** — what the forge says about the request: its own enums, the
-     review threads no `pr view` field carries, and the drift. `mayMerge` is
-     **permission**, never readiness, and `blockers` says what is outstanding.
-   - **`commit-checks.mjs`** — what the two check feeds say about this head
-     (`references/merge-gates.md`). Poll on its `verdict` while runs are in flight;
-     `running` is not `failing` and neither is `empty`.
-   - **`copilot-state.mjs`** — the head's own review, what the base's rules ask, and what
-     stands right now (`references/copilot.md`). Route on its `verdict` per that file.
-   - **`copilot-findings.mjs`** — what that reviewer actually said, in both of the places
-     it says it, and what is still owed. `read: false` there is half a review, and the
-     half it drops is the one no gate holds.
+   Route on `pr-state.mjs`'s `blockers` and `drift`, on `commit-checks.mjs`'s `verdict`
+   (`references/merge-gates.md`), and on the two Copilot answers per
+   `references/copilot.md`. `mayMerge` is **permission**, never readiness.
 
    `"read": false` from any of them is a reading that could not be taken, never a state
    to act on; a non-zero exit is the invocation being wrong, never a state to retry.
@@ -408,51 +401,9 @@ that, never the merge command's exit status:
     || echo "CALLED WRONG: $AFTER"
   ```
 
-  **`--require-from-gates` is why no check name appears above**: the names come out of
-  the base's own gates and travel between forge responses as data, never through a
-  command line, where a workflow called `Team's CI` has to be quoted exactly right every
-  time ([`references/merge-gates.md`](references/merge-gates.md)). `.gates` is what the
-  base requires, and `null` there is a question never asked rather than an empty list.
-
-  **Read `BEFORE` before believing what it lacks.** An unread answer carries empty `runs`
-  and `statuses` too, so "the base does not run this" and "nothing was read" look
-  identical in the rows — only a `BEFORE` whose `verdict` says it was read may say the
-  base runs nothing on a push.
-
-  Captured in variables, never redirected to a file: this runs inside the user's checkout,
-  where a stray `merged.json` is an untracked file Step 7, `git-cleanup` and branch
-  retirement all read as work in progress. **A non-zero exit is the invocation being
-  wrong**, never a state to retry.
-
-  Otherwise route on `.verdict`, which is the one field this answer is designed to be
-  read by — the rollup the server computes can say `failure` over rows that all passed,
-  so a caller assembling a verdict out of the counts reports green on a red base:
-
-  | `.verdict` | the step |
-  |---|---|
-  | `retry` | the answer is not published yet — re-poll the same call; a merge commit appears late behind a queue or a replica |
-  | `unread` | the feeds were not read: unread, never unchecked — take the platform path above and claim nothing about this base |
-  | `running` | poll, on Step 4's budget and its escalation |
-  | `failing` | attribute, then report |
-  | `empty` | nothing registered yet where `BEFORE` has rows; where `BEFORE` is `empty` too, this base runs nothing on a push — say it is unchecked and that this step guaranteed nothing |
-  | `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, and `null` that none was ever asked, so a required check may exist that this run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
-
-  **Wait by name, never for the count to settle**, which is what `--require-from-gates`
-  does: the aggregate registers after the checks it aggregates, so the moment every check
-  has finished is a moment it does not exist. One name it brings needs judgement, though
-  — a gate belonging to a `pull_request`-only workflow never appears on a merge commit,
-  so `AFTER` stays `running` on it while every push check is green. `BEFORE` is what
-  settles that: a required name absent from `BEFORE` is absent from the base's pushes,
-  and waiting for it on `AFTER` spends the budget for nothing. Report that the guarantee
-  is the weaker one rather than waiting it out.
-
-  A budget that runs out mid-poll is not waited out: report the state the feeds stood
-  at, empty included.
-
-  **What the report claims is what these reads saw**, never that the base is
-  quiet: a check that registers after them, and one that runs for the pull
-  request and not for the push that landed it, are both outside what they can
-  see.
+  [`references/merge-gates.md`](references/merge-gates.md) owns what those two answers
+  mean and what each `verdict` asks of this step — what `BEFORE` settles that `AFTER`
+  cannot among them, and the one required name that never reaches a merge commit at all.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
   on `BEFORE` too is not this merge's, and neither is a degraded forge
