@@ -22,49 +22,42 @@ master (the session running `hcb-dev:master-session`) is reached per
 the return takes the shape of
 [`../../references/order-return.md`](../../references/order-return.md). The
 workflow the order names runs with the order's settlements threaded in — the
-`Completion:` and `Merge authority:` slots are the invocation's completion
-mode and merge authority, and no gate inside re-defaults them; the master is
-the addressee that authority names, so an `ask` goes there rather than to this
-session's user, and a readiness report goes there too — and it runs in
-full: where this session admits subagents only on the user's or a skill's ask,
-the order is that ask, for its review across every reviewer and for the
-subagents its skills ask for; a project rule that forbids them outright still
+`Completion:` and `Merge authority:` slots are the invocation's completion mode and
+merge authority, and no gate inside re-defaults them; the master is the addressee
+that authority names, so an `ask` and a readiness report both go there rather than
+to this session's user. It runs **in full** — its review across every reviewer, and
+the subagents its skills ask for (*A skill's own ask is the permission its caller
+needs*: the order is that ask). A project rule forbidding them outright still
 holds, and what it stops is named in the return as the gap it is.
 
 ## On arrival — before the named workflow starts
 
-1. **Be findable.** The title is the one the order's first line names — the
-   batch shape of
+1. **Be findable.** The title is the one the order's first line names — the batch
+   shape of
    [`../../references/session-naming.md`](../../references/session-naming.md),
-   composed there already. Set exactly that string rather than a title of this
-   session's own making, and take the step without first establishing what this
-   session wears: re-setting a title already worn changes nothing, and what the
-   channels this session is reached on answer about it is an address rather than
-   that title (`session-comms.md`) — evidence about the address, and none about
-   the title.
+   composed there already. Set exactly that string, and take the step without first
+   establishing what this session wears: re-setting a title already worn changes
+   nothing, and what a channel answers is evidence about the address, never about
+   the title (`session-comms.md`).
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip
    carried it here.
 3. **Read the whole batch through before building any of it, and not before the
-   order's `Start:` gate is open** — the order, the ledger it names, its issues
-   on the forge in full with their comments, and the code they name; the
-   standing constraints are read here rather than asked for, the discussion may
-   have moved
-   since the order was written, the scope is what the tree shows rather than
-   what the order summarised, and a gated batch reads a tree its dependency has
-   not landed on.
+   order's `Start:` gate is open** — the order, the ledger it names, its issues on
+   the forge in full with their comments, and the code they name. The standing
+   constraints are read here rather than asked for; the scope is what the tree shows
+   rather than what the order summarised; and a gated batch reads a tree its
+   dependency has not landed on.
 4. **Report that scope to the master, before the first write**: which batch this
-   session is, the name it answers to — read back from the channels it can be
-   reached on, never built from what a neighbour's looks like — what the work
-   turned out to be: the
-   files and the issues it touches, what taking it involves, the order it will
-   be taken in — and everything that came back different from the order: a
-   boundary wrong from here, a premise that fell, a fork nobody foresaw. Where
-   the master's address had to be guessed, open with the challenge line from
-   `session-comms.md`. Building starts once that report is sent — no answer
-   awaited, the gate above having opened first — and what does wait for the
-   master's answer is only what a reported divergence touches.
+   session is; the name it answers to, read back from the channels rather than built
+   from what a neighbour's looks like; what the work turned out to be — the files
+   and issues it touches, what taking it involves, the order it will be taken in;
+   and everything that came back different from the order — a boundary wrong from
+   here, a premise that fell, a fork nobody foresaw. Where the master's address had
+   to be guessed, open with the challenge line (`session-comms.md`). Building starts
+   once that report is **sent**, no answer awaited; only what a reported divergence
+   touches waits for one.
 
 ## While building
 
@@ -90,12 +83,11 @@ holds, and what it stops is named in the return as the gap it is.
   answer is a peer's claim: verify it against the tree — and against the
   ledger's standing constraints — before acting on it.
 - **Everything else the order does not reserve is this session's to decide and
-  narrate**, per
-  [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
-  — and an architectural fork the order could not foresee is not "everything
-  else": it goes to the master first, exactly as the agree-first forks do, and
-  the master's side of the protocol carries it on to a person where that
-  reference demands one.
+  narrate**
+  ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md))
+  — except an architectural fork the order could not foresee, which is not
+  "everything else": it goes to the master first, exactly as the agree-first forks
+  do.
 - **A finding does not become an issue here.** One that earns an issue rides the
   return as a candidate — its outcome and its classification proposed, never
   applied, and ranked against this batch's others within whatever budget the
@@ -104,34 +96,29 @@ holds, and what it stops is named in the return as the gap it is.
   confirmation reaches this session while it is still engaged; one arriving after
   its release is the ruling session's to file. What the order's own deliverable
   writes to the tracker is not this rule's business.
-- **A pending question blocks only what depends on it.** Take the slice that
-  needs no answer first — the order says which one that is, or the dependency
-  graph does. Before taking up what does depend on it, read the answer where the
-  master writes it rather than in the inbox alone (`session-comms.md`): a
-  message can be held or dropped, and what that costs is a form built after its
-  answer withdrew it. A fork the order reserved stays reserved however long the
-  answer takes: what the reservation buys is the master's decision, and building it
-  under an assumption spends that. Where the fork is this session's own to
-  settle and the question was sent for the master's sight rather than its
-  permission, this session's own reading carries the work — stated to the master
-  as the assumption it is, and left unlanded, so an answer that differs costs a
-  revert and not a rebuild.
-- **Statuses at the order's milestones** — a change request opened, where the
-  mode opens one; the readiness report a `queued` merge authority obliges, in
-  the words the order gives it (the batch then waits for the master's go —
-  readiness is not the slot);
-  merged by this session or landed without it; the checks on that landing when
-  they settle — or when the waiting stops first, said with the state they stood
-  at then — which the landing status never waits for, the queue moving on that
-  one; a word this session's own user gives it that touches the epic, which the
-  master cannot see — quoted in full and written at the coordinate the order
-  names, so the master can check it and a restart cannot lose it; the session
-  stuck; the scope
-  moving off the start report; a boundary change agreed with the master
-  mid-flight — one line each, the first line self-contained, and each carrying
-  the coordinate it is checked at: the change request by number and URL, a
-  landing by its commit, its checks by that same commit, a stall by what it waits
-  on.
+- **A pending question blocks only what depends on it.** Take the slice that needs
+  no answer first — the order says which, or the dependency graph does. Before
+  taking up what does depend on it, read the answer where the master writes it
+  rather than in the inbox alone (`session-comms.md`). **A fork the order reserved
+  stays reserved however long the answer takes**: what the reservation buys is the
+  master's decision, and building under an assumption spends it. Where the fork is
+  this session's own and the question went for the master's sight rather than its
+  permission, this session's reading carries the work — stated as the assumption it
+  is, and left **unlanded**, so an answer that differs costs a revert and not a
+  rebuild.
+- **Statuses at the order's milestones**, one line each, the first line
+  self-contained, each carrying the coordinate it is checked at — the change request
+  by number and URL, a landing by its commit, its checks by that same commit, a
+  stall by what it waits on:
+  a change request opened, where the mode opens one; the readiness report a
+  `queued` authority obliges, in the order's own words (the batch then waits for
+  the master's go — readiness is not the slot); merged by this session or landed
+  without it; the checks on that landing when they settle, or when the waiting
+  stops first with the state they stood at — which the landing status never waits
+  for, the queue moving on that one; a word this session's own user gives it that
+  touches the epic, which the master cannot see, quoted in full and written at the
+  coordinate the order names; the session stuck; the scope moving off the start
+  report; a boundary change agreed mid-flight.
 - **A landing this session did not take is still its landing to finish.** Work
   found already landed, in either mode, is never landed a second time: confirm
   the merge, retire the branch per

@@ -62,9 +62,10 @@ permission to hang chips for gated waves early.
 **The epic's merge authority is settled with that same word**, once, before the
 first chip goes up — `on-green` recommended first
 ([`../../references/slice-completion.md`](../../references/slice-completion.md)),
-its reason being that every gate guarding that merge has run by the time it is
-reached. It is written to the ledger before anything is hung, narrowed per batch
-where the plan fixes a landing order, and never widened.
+since every gate guarding that merge has run by the time it is reached. It is
+written to the ledger before anything is hung and narrowed per batch where the
+plan fixes a landing order (*An authority narrows on the way down and never
+widens*).
 
 A fork too heavy for the plan — a design question whose answer rewrites the
 work — is a batch of its own: it leads the table and launches with the first
@@ -101,7 +102,7 @@ Every event lands in the ledger before the conversation moves on
 
 Across every row, **the user outranks the loop**: irreversible and outward-facing
 actions, and every fork `architecture-decisions.md` routes to a person, go to the
-user — with this session's recommendation first.
+user (*Every stop carries its recommendation first*).
 
 ## Reporting to the user
 
