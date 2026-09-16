@@ -19,16 +19,19 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { writeAll, readable, refOk, repoOk, runner, text, worktrees } from './lib/forge.mjs';
+import {
+  writeAll, readable, refOk, refNameOk, nameSafe, repoOk, runner, parsePages, text,
+  worktrees,
+} from './lib/forge.mjs';
 
 const USAGE = 'usage: node cleanup-scan.mjs [--default <name>] [--default-ref <ref>]'
   + ' [--repo-dir <path>] [--repo <owner/name>] [--no-forge]\n';
 const die = (m) => { writeAll(2, `cleanup-scan: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { base: null, baseRef: null, repoDir: null, repo: null, forge: true };
+const opts = { base: null, baseRef: null, repoDir: null, repo: null, forge: true, cli: null };
 const FLAGS = { '--default': 'base', '--default-ref': 'baseRef',
-  '--repo-dir': 'repoDir', '--repo': 'repo' };
+  '--repo-dir': 'repoDir', '--repo': 'repo', '--forge': 'cli' };
 for (let i = 0; i < argv.length; i += 1) {
   if (argv[i] === '--no-forge') { opts.forge = false; continue; }
   const key = FLAGS[argv[i]];
@@ -36,9 +39,10 @@ for (let i = 0; i < argv.length; i += 1) {
   if (argv[i + 1] === undefined) die(`${argv[i]} needs a value`);
   opts[key] = argv[i += 1];
 }
-if (opts.base && !refOk(opts.base)) die(`--default '${opts.base}' is not a branch name`);
+if (opts.base && !refNameOk(opts.base)) die(`--default '${opts.base}' is not a branch name`);
 if (opts.baseRef && !refOk(opts.baseRef)) die(`--default-ref '${opts.baseRef}' is not a ref`);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
+if (opts.cli && !['gh', 'glab'].includes(opts.cli)) die(`--forge '${opts.cli}' is not gh or glab`);
 // A ref to READ and a name to COMPARE are two values, and neither is the other trimmed:
 // `${D#*/}` over a fully qualified ref yields `remotes/origin/master`, and the comparison
 // guarding the default branch itself then never matches again.
@@ -48,7 +52,51 @@ if (opts.baseRef && !opts.base) {
 
 const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
-const gh = runner(cwd);
+
+// Two CLIs, mirrored, because the same question has two answers and neither forge is
+// assumed. Which one this repository speaks is whichever RESPONDS here — a hostname
+// cannot say it, since a self-hosted instance answers on an arbitrary domain.
+const READERS = {
+  gh: {
+    // Positionally, because this command has no `--repo`: passing one fails with
+    // `unknown flag`, the probe then answers nothing, and the host goes unresolved.
+    probe: (repo) => ['repo', 'view', ...(repo ? [repo] : []), '--json', 'url'],
+    // The host this repository actually lives on, read from its own url: a self-hosted
+    // instance asked of the SaaS answers about somebody else, or about nothing.
+    host: (out) => { try { return new URL(JSON.parse(out).url).host; } catch { return null; } },
+    path: (repo, oid) => `repos/${repo || '{owner}/{repo}'}/commits/${oid}/pulls`,
+    // `--paginate` here prints ONE DOCUMENT PER PAGE, concatenated; `parsePages` splits
+    // them. Parsed as one document it is a syntax error, and as the first page it is the
+    // first page — the failure this whole reader exists to avoid.
+    read: (out) => { const p = parsePages(out); return p === null ? null : p.flat(); },
+    // `state` is open or closed, and `merged_at` is what tells a merged request from a
+    // dropped one.
+    row: (q) => ({
+      number: Number.isInteger(q.number) ? q.number : null,
+      state: q.state === 'open' ? 'open' : q.merged_at ? 'merged' : 'closed',
+      mergeCommit: refOk(q.merge_commit_sha || '') ? q.merge_commit_sha : null,
+    }),
+  },
+  glab: {
+    // No url to read: this CLI takes the host from the checkout itself.
+    probe: (repo) => ['api', `projects/${repo ? encodeURIComponent(repo) : ':id'}`],
+    host: () => null,
+    path: (repo, oid) => `projects/${repo ? encodeURIComponent(repo) : ':id'}`
+      + `/repository/commits/${oid}/merge_requests`,
+    // `--paginate` here merges every page into ONE array — measured against the CLI's
+    // own help, and the opposite of the other one.
+    read: (out) => {
+      try { const v = JSON.parse(out); return Array.isArray(v) ? v : null; } catch { return null; }
+    },
+    // `state` carries `merged` outright, and either commit field can hold the landing.
+    row: (q) => ({
+      number: Number.isInteger(q.iid) ? q.iid : null,
+      state: q.state === 'opened' ? 'open' : q.state === 'merged' ? 'merged' : 'closed',
+      mergeCommit: refOk(q.merge_commit_sha || '') ? q.merge_commit_sha
+        : refOk(q.squash_commit_sha || '') ? q.squash_commit_sha : null,
+    }),
+  },
+};
 
 const answer = {
   read: false,
@@ -57,7 +105,7 @@ const answer = {
   base: { name: opts.base, ref: opts.baseRef, usable: false },
   // `answered: false` beside `asked: true` is a forge that did not reply. The scan gets
   // NARROWER then, never wider: a squash-merged branch it cannot see stays standing.
-  forge: { asked: false, answered: false, reason: null },
+  forge: { asked: false, cli: null, answered: false, reason: null },
   worktrees: [], branches: [],
   reason: null, notes: [],
 };
@@ -79,7 +127,26 @@ if (opts.baseRef) {
 const listed = worktrees(git);
 if (listed.trees === null) refuse(`could not list this repository's worktrees (${listed.error})`);
 for (const w of listed.trees) {
-  const t = { ...w, dirty: null, submodules: null, modulesDir: null, blockers: [] };
+  const t = { ...w, onDisk: null, dirty: null, submodules: null,
+    modulesDir: null, blockers: [] };
+  if (w.prunable) {
+    // git's word for the registration, and its PROSE is free to change: `gitdir file
+    // points to non-existent location` is what it writes for a worktree whose directory
+    // was deleted — measured — while `gitdir file does not exist` names a directory that
+    // may still be full of work. Matching either is matching wording. The path is the
+    // question.
+    t.onDisk = existsSync(w.path);
+    if (!t.onDisk) {
+      // Nothing left to destroy, and asking git about a directory that is gone only
+      // produces failures to report. It takes a prune, and `verdicts.md` routes it.
+      answer.worktrees.push(t);
+      continue;
+    }
+    // Still there, which is exactly what an unmounted volume looks like — pruning that
+    // strands the work it holds.
+    t.blockers.push('git calls it prunable although its path is still there, which is'
+      + ' what an unmounted volume looks like');
+  }
   // `worktree list` never mentions modified or untracked files, so without this there is
   // no clean/dirty signal at all, and a removable worktree cannot be told from one
   // holding work.
@@ -101,12 +168,6 @@ for (const w of listed.trees) {
   if (t.submodules || t.modulesDir) {
     t.blockers.push('it holds a submodule, or a git directory for one — the removal takes'
       + ' whatever history that holds, and nothing here proves it empty');
-  }
-  if (t.prunable && t.pruneReason && /not.*exist|unreachable|no such/i.test(t.pruneReason)) {
-    // An unmounted volume prints what a deleted directory prints, and pruning strands
-    // the work the first one still holds.
-    t.blockers.push('git calls it prunable because its path does not answer, which an'
-      + ' unmounted volume does too');
   }
   answer.worktrees.push(t);
 }
@@ -145,7 +206,9 @@ for (const rec of listing.out.split(REC)) {
   // whichever that is, since the counted form has one more.
   const f = rec.replace(/\n$/, '').split(SEP);
   const name = (f[0] || '').trim();
-  if (!refOk(name)) {
+  // By GIT's rules: `feature#123` and `feature%123` are branches a URL-segment class
+  // refuses, and a sweep that cannot read them leaves them out of its own answer.
+  if (!refNameOk(name)) {
     answer.notes.push(`a branch name this cannot read was skipped: ${text(name) || 'unnamed'}`);
     continue;
   }
@@ -158,12 +221,18 @@ for (const rec of listing.out.split(REC)) {
     // ref was deleted may hold the only copy of its commits.
     gone: (f[5] || '').includes('[gone]'),
     isDefault: opts.base ? name === opts.base : null,
+    // git accepts `$ ( ) ; & | ' \" < >` in a branch name. `false` here does not stop the
+    // branch being read — it says this name reaches a command through a VARIABLE, never
+    // through the text of one.
+    nameSafe: nameSafe(name),
     ownCommits: null, merged: null,
     requests: null, openRequest: null,
     proof: null, keeps: [], unproven: [], verdict: null, class: null,
     // What a branch that SURVIVES still needs done to it. A keep promises the branch
     // stays, never that nothing touches it.
     repair: null,
+    // The worktree that is the ONLY thing keeping it, where there is one.
+    freedBy: null,
   };
   if (counted) {
     const ahead = Number.parseInt((f[6] || '').trim().split(/\s+/)[0], 10);
@@ -179,44 +248,50 @@ for (const rec of listing.out.split(REC)) {
 // --- what the forge says about each tip, which is the only place a squash merge shows
 if (opts.forge && answer.branches.length) {
   answer.forge.asked = true;
-  const repoArgs = opts.repo ? ['--repo', opts.repo] : [];
-  let hostArgs = [];
-  const view = gh(['repo', 'view', '--json', 'url', ...repoArgs]);
-  if (view.ok) {
-    try {
-      const { url } = JSON.parse(view.out);
-      const host = typeof url === 'string' ? new URL(url).host : null;
-      // The host this repository actually lives on: a self-hosted instance asked of
-      // github.com answers about somebody else's repository, or about nothing at all.
-      if (host && readable(host)) hostArgs = ['--hostname', host];
-    } catch { /* an unreadable url leaves the CLI to resolve its own host */ }
+  let reader = null;
+  let probe = null;
+  for (const cli of opts.cli ? [opts.cli] : ['gh', 'glab']) {
+    const p = runner(cwd, cli)(READERS[cli].probe(opts.repo));
+    if (!p.ok) { if (!answer.forge.reason) answer.forge.reason = `${cli}: ${p.line()}`; continue; }
+    answer.forge.cli = cli; reader = READERS[cli]; probe = p.out; break;
   }
-  for (const b of answer.branches) {
-    if (!b.oid || !refOk(b.oid)) continue;
-    // By TIP, never by name: a merged `fix/login` may have come from a fork, and the
-    // local branch of that name may have been recreated since. `--paginate`, or an open
-    // request on page two is one the sweep deletes over.
-    const r = gh(['api', ...hostArgs, '--paginate',
-      `repos/{owner}/{repo}/commits/${b.oid}/pulls`, '--jq',
-      '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv']);
-    if (!r.ok) {
-      if (!answer.forge.reason) answer.forge.reason = r.line();
-      continue;
-    }
-    answer.forge.answered = true;
-    b.requests = r.out.split('\n').filter(Boolean).map((line) => {
-      const [number, state, mergedAt, mergeCommit] = line.split('\t');
-      return { number: Number.parseInt(number, 10) || null, state: text(state),
-        merged: Boolean(mergedAt), mergeCommit: refOk(mergeCommit || '') ? mergeCommit : null,
-        mergeInBase: null };
-    });
-    b.openRequest = b.requests.some((q) => q.state === 'open');
-    for (const q of b.requests) {
-      if (!q.merged || !q.mergeCommit || !answer.base.usable) continue;
-      // Where the merge LANDED settles it. An object this repository does not carry makes
-      // the check die rather than answer no, and that is unknown, not unmerged.
-      if (!git(['rev-parse', '--verify', '-q', `${q.mergeCommit}^{commit}`]).ok) continue;
-      q.mergeInBase = git(['merge-base', '--is-ancestor', q.mergeCommit, opts.baseRef]).ok;
+  if (reader) {
+    answer.forge.reason = null;
+    const forge = runner(cwd, answer.forge.cli);
+    const host = reader.host(probe);
+    const hostArgs = host && readable(host) ? ['--hostname', host] : [];
+    for (const b of answer.branches) {
+      if (!b.oid || !refOk(b.oid)) continue;
+      // By TIP, never by name: a merged `fix/login` may have come from a fork, and the
+      // local branch of that name may have been recreated since. `--paginate`, or an open
+      // request on page two is one the sweep deletes over. The repository goes in the
+      // PATH, because neither CLI's `api` takes a `--repo` — it would read the one the
+      // working directory names and answer about somebody else's requests.
+      const r = forge(['api', ...hostArgs, '--paginate', reader.path(opts.repo, b.oid)]);
+      if (!r.ok) {
+        if (!answer.forge.reason) answer.forge.reason = r.line();
+        continue;
+      }
+      const rows = reader.read(r.out);
+      if (rows === null) {
+        if (!answer.forge.reason) answer.forge.reason = 'the answer was not JSON';
+        continue;
+      }
+      answer.forge.answered = true;
+      b.requests = rows.filter((q) => q && typeof q === 'object').map((q) => (
+        { ...reader.row(q), mergeInBase: null }));
+      b.openRequest = b.requests.some((q) => q.state === 'open');
+      for (const q of b.requests) {
+        if (q.state !== 'merged' || !q.mergeCommit || !answer.base.usable) continue;
+        // Where the merge LANDED settles it. An object this repository does not carry
+        // makes the check die rather than answer no — unknown, which is not unmerged.
+        // `rev-parse` resolves a NAME as readily as an id, so a forge answering
+        // `master` where a merge commit belongs would clear the guard and prove the
+        // branch landed. An id is a prefix of what it resolves to; a name is not.
+        const at = git(['rev-parse', '--verify', '-q', `${q.mergeCommit}^{commit}`]);
+        if (!at.ok || !at.out.toLowerCase().startsWith(q.mergeCommit.toLowerCase())) continue;
+        q.mergeInBase = git(['merge-base', '--is-ancestor', q.mergeCommit, opts.baseRef]).ok;
+      }
     }
   }
   if (!answer.forge.answered && !answer.forge.reason) {
@@ -229,8 +304,9 @@ for (const b of answer.branches) {
   if (b.isDefault) b.keeps.push("it is this repository's default branch");
   // Checked out anywhere is kept, and git says the same: `branch -D` refuses a branch
   // another worktree holds. Whether that worktree goes in this same run is not this
-  // script's to know — who is in it is `worktree-owners.mjs`'s answer — so the branch is
-  // named with its worktree and deleted after that worktree is gone, or not at all.
+  // script's to know — who is in it is `worktree-owners.mjs`'s answer — so the branch
+  // says WHICH worktree holds it, and `freedBy` below says that is the only thing
+  // holding it.
   if (b.worktree) b.keeps.push(`it is checked out in a worktree: ${b.worktree}`);
   if (b.openRequest) b.keeps.push('a change request on its tip is still open');
   if (answer.forge.asked && b.openRequest === null) {
@@ -243,9 +319,9 @@ for (const b of answer.branches) {
   if (!b.proof) {
     const q = b.requests || [];
     if (b.merged === null) b.unproven.push('the base could not be read, so containment is unknown');
-    else if (q.some((r) => r.merged && r.mergeInBase === false)) {
+    else if (q.some((r) => r.state === 'merged' && r.mergeInBase === false)) {
       b.unproven.push('a merged request carries its tip, and that merge is not in the base');
-    } else if (q.some((r) => r.merged && r.mergeInBase === null)) {
+    } else if (q.some((r) => r.state === 'merged' && r.mergeInBase === null)) {
       b.unproven.push('a merged request carries its tip, and where it landed cannot be read here');
     } else if (b.gone) {
       b.unproven.push('its upstream is gone and nothing proves it landed — it may hold the only copy');
@@ -256,6 +332,14 @@ for (const b of answer.branches) {
   // and the absence of one surfaces it. No other field is a second gate.
   b.verdict = b.keeps.length ? 'keep' : b.proof ? 'delete' : 'surface';
   b.class = b.verdict === 'delete' ? 2 : b.verdict === 'surface' ? 3 : null;
+  // The common case, and the one a flat `keep` loses: a branch kept ONLY because a
+  // worktree holds it, where that worktree is itself going. Remove the worktree, run
+  // this again, and the branch answers `delete` on the proof it already has — so the
+  // gate presents it with the deletions rather than among the things that stay.
+  if (b.verdict === 'keep' && b.proof && b.keeps.length === 1 && b.worktree
+    && b.keeps[0].endsWith(b.worktree)) {
+    b.freedBy = b.worktree;
+  }
 
   // Tracking, for the branches that stay. The default branch points at the base; any
   // other whose upstream is gone drops it, because a ref that no longer exists is not
@@ -265,6 +349,21 @@ for (const b of answer.branches) {
     if (b.isDefault && answer.base.usable && b.upstreamRef !== answer.base.ref) {
       b.repair = 'set-upstream';
     } else if (b.gone && !b.isDefault) b.repair = 'unset-upstream';
+  }
+}
+
+// A worktree's own git state is not the whole of what keeps it: removing one destroys
+// the working copy of whatever is checked out there, so a branch that must stay keeps
+// its worktree too. The pass runs last, after every branch has a verdict, and adds only
+// to the worktree — nothing above reads these, so there is no circle.
+const byPath = new Map(answer.worktrees.map((w) => [w.path, w]));
+for (const b of answer.branches) {
+  const w = b.worktree ? byPath.get(b.worktree) : null;
+  if (!w) continue;
+  if (b.openRequest) {
+    w.blockers.push(`a change request on its branch is still open: ${b.name}`);
+  } else if (b.verdict === 'surface') {
+    w.blockers.push(`its branch has no proof it landed: ${b.name}`);
   }
 }
 

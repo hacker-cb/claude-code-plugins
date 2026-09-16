@@ -10,6 +10,6 @@
  "repo_view": "{\"url\": \"https://forge.example/example-org/example-repo\"}",
  "pulls_default": "none",
  "pulls": {
-  "f1x73333333333333333333333333333333333dd": "42\tclosed\t2026-01-02T00:00:00Z\tf1x7bbbb1111111111111111111111111111111f"
+  "f1x73333333333333333333333333333333333dd": "[{\"number\": 42, \"state\": \"closed\", \"merged_at\": \"2026-01-02T00:00:00Z\", \"merge_commit_sha\": \"f1x7bbbb1111111111111111111111111111111f\"}]"
  }
 }

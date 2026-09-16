@@ -45,6 +45,27 @@ export const readable = (v) => typeof v === 'string' && SEGMENT.test(v)
 // same rule; what keeps it inside the url is `encodeURIComponent` at the call site.
 export const refOk = (v) => typeof v === 'string' && v !== ''
   && v.split('/').every((seg) => readable(seg) && seg !== '.');
+// A LOCAL ref name, by GIT's rules rather than a URL's. `git check-ref-format` is the
+// authority and this mirrors the part of it a branch name can reach: git accepts `#` and
+// `%`, which a URL-segment class refuses, and a sweep that cannot read those names simply
+// leaves those branches out of the answer.
+export const refNameOk = (v) => {
+  if (typeof v !== 'string' || v === '' || v === '@') return false;
+  if (v.startsWith('-') || v.startsWith('/') || v.endsWith('/')) return false;
+  if (v.endsWith('.')) return false;
+  if (/[\u0000-\u001f\u007f ~^:?*[\\]/.test(v)) return false;
+  if (v.includes('..') || v.includes('//') || v.includes('@{')) return false;
+  return v.split('/').every((c) => c !== '' && !c.startsWith('.') && !c.endsWith('.lock'));
+};
+
+// Safe to hand to a SHELL, which is a narrower question than either of the two above:
+// git accepts `$ ( ) ` ; & | ' " < >` in a branch name, a caller pastes the name into a
+// command, and the quoting is then the attacker's to choose. `false` does not stop a
+// branch being read — it says the name has to reach the command through a variable
+// rather than through the text of it.
+export const nameSafe = (v) => typeof v === 'string' && v !== ''
+  && !v.startsWith('-') && /^[A-Za-z0-9._/+#%@-]+$/.test(v);
+
 export const repoOk = (v) => {
   if (typeof v !== 'string') return false;
   const p = v.split('/');

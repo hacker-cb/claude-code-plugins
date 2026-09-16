@@ -11,5 +11,7 @@
  "pulls_default": "none",
  "pulls": {
   "f1x73333333333333333333333333333333333dd": "[{\"number\": 42, \"state\": \"closed\", \"merged_at\": \"2026-01-02T00:00:00Z\", \"merge_commit_sha\": \"f1x7aaaa0000000000000000000000000000000f\"}]"
- }
+ },
+ "require_repo": "example-org/example-repo",
+ "require_host": "forge.example"
 }

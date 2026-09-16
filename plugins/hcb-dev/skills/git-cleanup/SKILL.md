@@ -86,15 +86,18 @@ step 6 puts the whole list in front of the user before a single deletion.
 ## Step 4 — Discovery (read-only, one call)
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-scan.mjs" \
-  --repo-dir "$PROJECT" --default "$DEF" --default-ref "$D"
+SCAN="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-scan.mjs" \
+  --repo-dir "$PROJECT" --default "$DEF" --default-ref "$D")"
+printf '%s\n' "$SCAN"
 ```
 
-It answers both halves and keeps them apart, because they fail apart: the git state every
-worktree is in, and what proof every branch has that its work landed. Add `--no-forge`
-where no forge CLI is authed here.
+It speaks both forge CLIs and picks whichever answers here; `--forge gh|glab` settles it
+where both do. `--no-forge` where neither is authed.
 
-Three answers it gives that a caller reading git alone gets wrong:
+It answers both halves and keeps them apart, because they fail apart: the git state every
+worktree is in, and what proof every branch has that its work landed.
+
+Four answers it gives that a caller reading git alone gets wrong:
 
 - **`"usable": false`** — the base could not be read, so every branch's merge question is
   UNKNOWN. That is not "nothing is merged": nothing is deleted, everything surfaces. Drop
@@ -104,6 +107,10 @@ Three answers it gives that a caller reading git alone gets wrong:
   carries the reason.
 - **`"read": false`** — it classified nothing at all. Its `reason` names the reading that
   could not be taken, and the empty lists beside it are not an empty repository.
+- **`"nameSafe": false`** — git accepts `$ ( ) ; & | ' " < >` in a branch name, and this
+  one carries something a quoted template would not hold. It changes no verdict; it says
+  the name reaches a command through a variable, which step 7 does for every branch
+  anyway.
 
 ## Step 5 — Classification
 
@@ -126,7 +133,10 @@ kept one included: the gate is the whole plan, not the part that deletes.
 
 1. **Proceeding without asking — nothing is lost** (class 1): item, what it is, action.
 2. **Deleting — recoverable** (class 2): item, state, how to get it back. The restore
-   command carries the tip as it stands now, so the row alone undoes the deletion.
+   command carries the tip as it stands now, so the row alone undoes the deletion. A
+   branch whose `freedBy` names a worktree in this same section belongs **here**, not
+   among the kept: removing that worktree is what makes it deletable, and the user is
+   approving both at once.
 3. **Needs an explicit yes — irreversible** (class 3): item, state, what disappears —
    the files, a branch's only copy, the submodule git dir that lives in that worktree
    alone.
@@ -141,51 +151,65 @@ unasked. Wait for an explicit answer; a subset means only that subset.
 ## Step 7 — Execute, in this order
 
 ```bash
-git -C "$PROJECT" worktree remove "<path>"         # 1. --force ONLY on a confirmed class-3
-                                                   #    item: a dirty worktree, or one the
-                                                   #    removal refuses over a submodule.
-                                                   #    Plain remove re-checks clean at
-                                                   #    execution time; --force does not
-rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
-git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
-                                                   #    orphaned still blocks its branch
-git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY on a branch the re-proof below
-                                                   #    still calls `delete`
+git -C "$PROJECT" worktree remove "$WT"      # 1. --force ONLY on a confirmed class-3 item:
+                                             #    a dirty worktree, or one the removal
+                                             #    refuses over a submodule. Plain remove
+                                             #    re-checks clean now; --force does not
+rm -rf "$WT"                                 # 2. approved class-3 items only
+git -C "$PROJECT" worktree prune --verbose   # 3. AFTER the rm, or the entry it just
+                                             #    orphaned still blocks its branch
 ```
 
-**The proof is re-taken here, never read off step 4.** Step 6 waits on a human, and both
+`$WT` is read out of the answer, never pasted in: a path can carry anything a filesystem
+allows, and the same holds for the branch names below.
+
+**Re-take the proof here, never read it off step 4.** Step 6 waits on a human, and both
 what a branch carries and what the forge says about it move while it waits. Re-run step
-4's call — and step 1's, since the default can be renamed under you and the repair block
-below reads both its values — then act on the fresh answer alone. A branch whose `verdict`
-is no longer `delete`, or whose `oid` differs from the one the gate's row named, is a
-branch that moved: surface it and ask again over the tip as it stands. Name in the report
-which `proof` each deletion stood on.
+1's call and step 4's — in that order, and **after the worktree removals above**, which
+is what turns a branch whose only keep was `freedBy` into a `delete`. Then act on the
+fresh answer alone, and name in the report which `proof` each deletion stood on.
+
+Then, per branch it still calls `delete`, with `<n>` its index in that fresh answer:
+
+```bash
+BR="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].name')"
+OID="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].oid')"
+# The ref as it stands THIS instant, not as the scan found it: the forge reads above take
+# time, and a branch can advance inside them. `--verify -q` for the empty answer and
+# `|| true` for the exit status, so a vanished ref leaves a value to test.
+NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/$BR" || true)"
+if [ "$NOW" = "$OID" ]; then
+  git -C "$PROJECT" branch -D -- "$BR"
+else
+  echo "moved or gone while the gate waited: $BR — surface it, and ask again over its tip"
+fi
+```
 
 **`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks against
 `PROJECT`'s HEAD, or the branch's own upstream where it has one — never against the base —
 so it deletes what the verdicts keep and refuses what they proved. What `-D` carries is
 what no plumbing deletion has: it refuses a branch checked out in another worktree,
 resolves the branch ref rather than a symref's target, and drops `branch.<name>.*` with
-it. So the deletion stays `-D`, and what authorizes it is the verdict, not the command.
+it. So the deletion stays `-D`, and what authorizes it is the verdict.
 
 To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
 
 ```bash
 cd "<PROJECT>"                                 # a separate Bash call — cwd must truly change
-git -C "<PROJECT>" worktree remove "<old-cwd>"
+git -C "<PROJECT>" worktree remove "$WT"
 ```
 
 Then tell the user cwd moved to `PROJECT` — their old path no longer exists.
 
 **Last, repair the tracking**, one branch at a time and only on branches that survived.
 Which branches, and which of the two, is the scan's `repair` field — a branch it left
-`null` is one that needs neither, and acting on a name instead is how every surviving
-branch loses its upstream on the one run that could not answer.
+`null` needs neither, and acting on a name instead is how every surviving branch loses
+its upstream on the one run that could not answer.
 
 ```bash
-git -C "$PROJECT" branch --set-upstream-to="$D" "<branch>"   # repair: set-upstream
-git -C "$PROJECT" branch --unset-upstream "<branch>"         # repair: unset-upstream
+git -C "$PROJECT" branch --set-upstream-to="$D" -- "$BR"   # repair: set-upstream
+git -C "$PROJECT" branch --unset-upstream -- "$BR"         # repair: unset-upstream
 ```
 
 The second is recoverable: the next `git push -u <remote> <branch>` restores it, and the

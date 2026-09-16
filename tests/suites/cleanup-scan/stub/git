@@ -20,9 +20,13 @@ case "$1 $2" in
       *) printf '%s\n' "$v"; exit 0 ;;
     esac ;;
   "rev-parse --verify")
-    # $4 is `<rev>^{commit}`; the envelope lists the objects this checkout carries.
+    # $4 is `<rev>^{commit}`; the envelope lists the objects this checkout carries. Real
+    # `rev-parse` PRINTS what it resolved, and the script compares that against what it
+    # asked for — an object id is a prefix of its own answer and a branch name is not.
     want=${4%^\{commit\}}
-    case " $(ask '.objects') " in *" $want "*) exit 0 ;; esac
+    case " $(ask '.objects') " in *" $want "*)
+      v=$(ask ".resolves[\"$want\"]"); printf '%s\n' "${v:-$want}"; exit 0 ;;
+    esac
     exit 1 ;;
   "worktree list")
     v=$(ask '.worktrees')

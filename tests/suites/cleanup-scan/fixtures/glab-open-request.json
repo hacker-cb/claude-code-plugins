@@ -10,6 +10,7 @@
  "repo_view": "{\"url\": \"https://forge.example/example-org/example-repo\"}",
  "pulls_default": "none",
  "pulls": {
-  "f1x73333333333333333333333333333333333dd": "[{\"number\": 42, \"state\": \"closed\", \"merged_at\": \"2026-01-02T00:00:00Z\", \"merge_commit_sha\": \"f1x7aaaa0000000000000000000000000000000f\"}]"
- }
+  "f1x73333333333333333333333333333333333dd": "[{\"iid\": 42, \"state\": \"opened\"}]"
+ },
+ "gh_probe": "fail"
 }
