@@ -1,0 +1,185 @@
+#!/usr/bin/env node
+// copilot-state.mjs — what is Copilot's state on this pull request's CURRENT head?
+// Prints JSON on stdout.
+//
+// This is deliberately ONE question, and it is a question about a commit rather than
+// about a pull request: "does a Copilot review exist" is what silently drops findings.
+// Right after a push the request looks finished — CI green, the previous review's
+// threads resolved, the forge reporting it mergeable — while the review of the push
+// just made has not posted. Each review carries the sha it reviewed in `commit_id`,
+// and that is the only signal here that carries one.
+//
+// What this does NOT decide: how long to wait, when a head with no request of its own
+// is finally ruled unrequested, and what to do when a wait runs out. Those are policy
+// — a clock and an addressee — and they stay with the skill.
+//
+// Usage: node copilot-state.mjs --pr <n> [--repo <owner/name>] [--repo-dir <path>]
+//
+// Exit 0 either way: `"read": true` with the state, or `"read": false` with a
+// `reason`. Exit 2 only for a call this script cannot act on at all.
+
+import { writeAll, parsePages, readable, refOk, repoOk, runner, isCopilot }
+  from './lib/forge.mjs';
+
+const USAGE = 'usage: node copilot-state.mjs --pr <n> [--repo <owner/name>]'
+  + ' [--repo-dir <path>]\n';
+const die = (m) => { writeAll(2, `copilot-state: ${m}\n${USAGE}`); process.exit(2); };
+
+const argv = process.argv.slice(2);
+const opts = { pr: null, repo: null, repoDir: null };
+for (let i = 0; i < argv.length; i += 1) {
+  const flag = argv[i];
+  const value = argv[i + 1];
+  if (!['--pr', '--repo', '--repo-dir'].includes(flag)) die(`unknown argument '${flag}'`);
+  if (value === undefined) die(`${flag} needs a value`);
+  opts[flag === '--repo-dir' ? 'repoDir' : flag.slice(2)] = value;
+  i += 1;
+}
+if (!opts.pr) die('--pr is required');
+if (!/^[1-9][0-9]{0,9}$/.test(opts.pr)) die(`--pr '${opts.pr}' is not a request number`);
+if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
+
+const gh = runner(opts.repoDir || process.cwd());
+
+const answer = {
+  // `read` is the only field a caller may act on without saying it did not look: every
+  // feed this needs answered. Set last, after everything that can refuse has refused.
+  read: false, repo: null, pr: Number(opts.pr), head: null, base: null, draft: null,
+  // What the base's rules ask of Copilot — `rule: false` means no rule applies TO THIS
+  // BASE, which is not "this repo has no such rule".
+  expects: { rule: false, onPush: false, drafts: null },
+  reviews: [], headReview: null,
+  requests: 0, newestRequestAt: null, latestMove: 'none',
+  verdict: 'unread', reason: null, notes: [],
+};
+const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
+const refuse = (reason) => { answer.reason = reason; finish(); };
+
+// --- the request itself
+const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,baseRefName,isDraft',
+  ...(opts.repo ? ['--repo', opts.repo] : [])]);
+if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.line()})`);
+let pr;
+try { pr = JSON.parse(view.out); } catch { refuse('the pull request view was not JSON'); }
+
+// The request's OWN repository, taken from its url — never gh's default, which in a
+// fork checkout is the parent, where every read below 404s into a silence that looks
+// exactly like a pull request Copilot was never asked on. The host is stripped rather
+// than matched: an Enterprise instance serves its own.
+let repo = opts.repo;
+if (!repo) {
+  const m = String(pr.url || '').match(/^https?:\/\/[^/]+\/(.+?)\/pull\/\d+/);
+  if (!m) refuse(`could not read the repository out of the pull request url '${pr.url}'`);
+  repo = m[1];
+}
+if (!repoOk(repo)) refuse(`the pull request's url gave '${repo}', which is not owner/name`);
+const head = pr.headRefOid || '';
+const base = pr.baseRefName || '';
+if (!readable(head)) refuse(`pull request ${opts.pr} reports no head commit`);
+if (!refOk(base)) refuse(`pull request ${opts.pr} named '${base}' as its base branch`);
+answer.repo = repo; answer.head = head; answer.base = base;
+answer.draft = Boolean(pr.isDraft);
+
+// --- what the base asks of Copilot
+// The rules IN FORCE on the base, never the repo's ruleset listing: this endpoint has
+// already applied each ruleset's `ref_name` conditions and includes rules inherited
+// from an organization-level ruleset, and a plain listing does neither.
+const rules = gh(['api', '--paginate', `repos/${repo}/rules/branches/${encodeURIComponent(base)}`]);
+if (!rules.ok) {
+  // Measured on the neighbouring endpoint and true here too: it answers `[]` with
+  // status 200 for a branch with no rules, so a non-zero exit is the repository
+  // failing to read rather than a base without the rule.
+  refuse(`the rules on ${base} could not be read (${rules.line()})`);
+}
+{
+  const pages = parsePages(rules.out);
+  if (pages === null) refuse(`the rules on ${base} did not come back as JSON`);
+  for (const page of pages) {
+    if (!Array.isArray(page)) refuse(`the rules on ${base} came back in a shape this cannot read`);
+    for (const rule of page) {
+      if (!rule || rule.type !== 'copilot_code_review') continue;
+      const p = (rule.parameters && typeof rule.parameters === 'object') ? rule.parameters : {};
+      answer.expects.rule = true;
+      // Several matching rulesets is normal, and the looser answer wins: a rule
+      // reviewing pushes anywhere means pushes are reviewed.
+      if (p.review_on_push === true) answer.expects.onPush = true;
+      if (typeof p.review_draft_pull_requests === 'boolean') {
+        answer.expects.drafts = answer.expects.drafts === false
+          ? false : p.review_draft_pull_requests;
+      }
+    }
+  }
+}
+if (answer.draft && answer.expects.rule && answer.expects.drafts === false) {
+  answer.notes.push('this request is a draft and the rule does not review drafts —'
+    + ' nothing is coming until it is opened ready for review');
+}
+
+// --- every Copilot review that posted, whatever the rules say
+// One requested by hand on a base without the rule counts: a posted review CONSUMES
+// its request, so a request with no rule and nothing standing can still carry one.
+const reviews = gh(['api', '--paginate', `repos/${repo}/pulls/${opts.pr}/reviews`]);
+if (!reviews.ok) refuse(`the reviews could not be read (${reviews.line()})`);
+{
+  const pages = parsePages(reviews.out);
+  if (pages === null) refuse('the reviews did not come back as JSON');
+  for (const page of pages) {
+    if (!Array.isArray(page)) refuse('a page of reviews came back in a shape this cannot read');
+    for (const r of page) {
+      if (!r || !isCopilot(r.user)) continue;
+      answer.reviews.push({
+        id: r.id ?? null,
+        commitId: typeof r.commit_id === 'string' ? r.commit_id : null,
+        state: r.state ?? null,
+        submittedAt: r.submitted_at ?? null,
+      });
+    }
+  }
+}
+// Selected on the head rather than taken off the end: a later review of an EARLIER
+// commit would otherwise stand where the head's own review should be.
+const ofHead = answer.reviews.filter((r) => r.commitId === head);
+answer.headReview = ofHead.length ? ofHead[ofHead.length - 1] : null;
+
+// --- what stands now, read from the timeline
+// Never the request list: `requested_reviewers` and `reviewRequests` both read empty
+// from the moment a Copilot request registers until its review posts, so a wait built
+// on either never arms.
+const timeline = gh(['api', '--paginate', `repos/${repo}/issues/${opts.pr}/timeline`]);
+if (!timeline.ok) refuse(`the timeline could not be read (${timeline.line()})`);
+{
+  const pages = parsePages(timeline.out);
+  if (pages === null) refuse('the timeline did not come back as JSON');
+  const MOVES = new Set(['review_requested', 'review_request_removed', 'reviewed']);
+  for (const page of pages) {
+    if (!Array.isArray(page)) refuse('a page of the timeline came back in a shape this cannot read');
+    for (const e of page) {
+      if (!e || !MOVES.has(e.event)) continue;
+      // The actor sits under a different key per event kind. `copilot_work_started` is
+      // deliberately not among the moves: a run beginning is neither the request nor
+      // what settles it.
+      if (!isCopilot(e.requested_reviewer) && !isCopilot(e.user)) continue;
+      answer.latestMove = e.event;
+      if (e.event === 'review_requested') {
+        answer.requests += 1;
+        answer.newestRequestAt = e.created_at ?? answer.newestRequestAt;
+      }
+    }
+  }
+}
+
+// --- the verdict, computed once here rather than reassembled at every call site
+if (answer.headReview) answer.verdict = 'reviewed';
+else if (answer.latestMove === 'review_requested') answer.verdict = 'waiting';
+else if (answer.expects.rule || answer.reviews.length || answer.latestMove !== 'none') {
+  // A head with no review of its own and no request standing. Whether that is final
+  // is the skill's cutoff to judge — this says only that nothing is outstanding here.
+  answer.verdict = 'unrequested';
+} else {
+  // No rule on this base, no request ever, no review ever: Copilot is not part of
+  // this request's flow.
+  answer.verdict = 'not-expected';
+}
+
+answer.read = true;
+finish();

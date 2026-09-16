@@ -2,131 +2,50 @@
 
 How to find, classify, fix, and respond to GitHub Copilot's PR review findings.
 
-## Identifying Copilot — never match one literal
+## The state is read by a script, not by hand
 
-One actor, a different login on **every** surface:
+`scripts/copilot-state.mjs` answers one question — **what is Copilot's state on this
+pull request's current head** — and the skill invokes it (skill content is where the
+plugin root is substituted; here the placeholder would stay literal text). It reads
+the rules in force on the base, every Copilot review that posted, and the request's
+own timeline, and returns:
 
-| Surface | `login` | the type field |
-|---|---|---|
-| REST `…/pulls/<pr>/reviews` | `copilot-pull-request-reviewer[bot]` | `.user.type` |
-| REST `…/pulls/<pr>/comments` | `Copilot` | `.user.type` |
-| REST `…/issues/<pr>/timeline` → `requested_reviewer`, a review's `user` | `Copilot` | `.type` |
-| GraphQL `author` — reviews, comments | `copilot-pull-request-reviewer` | `__typename` |
+| field | what it settles |
+|---|---|
+| `read` | every feed answered. `false` is unread, never "nothing there" |
+| `expects.rule` / `.onPush` / `.drafts` | what the base's rules ask of Copilot — `rule: false` means no rule applies **to this base**, which is not "this repo has no such rule" |
+| `verdict` | `reviewed` — a review whose `commit_id` is the head; `waiting` — a request stands; `unrequested` — no review of the head and nothing standing; `not-expected` — no rule, no request ever, no review ever |
+| `headReview`, `reviews` | the head's own review, and every Copilot review on the request |
+| `latestMove`, `requests`, `newestRequestAt` | read from the timeline, never from the request list |
+| `draft` | beside `expects.drafts: false`, nothing is coming until the request is opened ready for review |
 
-So a filter pinned to any one spelling matches nothing on the others, and the
-failure is **silent**: the inline comments are exactly what a `/comments` filter
-returns, and an empty result reads as "Copilot had no findings" rather than as a
-filter that missed. Match the pair instead — `Bot` **and** a case-insensitive
-`^copilot` prefix, which also survives GitHub renaming the bot again:
+Three things the script is built around, and a caller reading its answer relies on:
 
-```jq
-select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-```
+- **The test is never "does a Copilot review exist" but "has Copilot reviewed this
+  exact commit".** Right after a push the request looks finished — CI green, the
+  previous review's threads resolved, the forge reporting it mergeable — while the
+  review of the push just made has not posted. Acting there discards every comment it
+  was about to write. Measured on a real request: six Copilot reviews standing, none
+  of them of the head.
+- **One actor, a different login on every surface** — `copilot-pull-request-reviewer[bot]`
+  on the reviews feed, `Copilot` on comments and on the timeline,
+  `copilot-pull-request-reviewer` in GraphQL. The filter is the **pair**: type `Bot`
+  **and** a case-insensitive `^copilot`. A login test alone takes a person named
+  `copilot-…`; a type test alone takes `dependabot[bot]`. A filter pinned to one
+  spelling matches nothing on the others, and the failure is silent — an empty result
+  reads as "no findings" rather than as a filter that missed.
+- **The request list is not the request.** `requested_reviewers` and
+  `gh pr view --json reviewRequests` both read empty from the moment a request
+  registers until its review posts, so a wait built on either never arms.
 
-In GraphQL the same test reads `.author.__typename` and `.author.login`.
+**Never place a request** — every review waited for is one already requested.
 
-**Reach every field through `?` and `// ""`.** `test/1` raises on anything that is
-not a string, and a deleted account leaves `"user": null` behind — one such row
-aborts the whole `--jq` program, turning a PR full of findings into a PR with
-none. That is the same silent-empty failure by another route.
-
-## What the repository asks of Copilot
-
-Two questions, and neither answers the other: which Copilot reviews this driver
-**waits** for, and which ones it **reads**. **It never requests one itself** —
-every review it waits for is one already requested.
-
-Every read below is captured with its exit status rather than piped onward
-(*Unread is not empty*).
-
-### What to wait for — the rules in force on the base
-
-Copilot reviews a PR on its own when a `copilot_code_review` rule is in force **for
-that PR's base branch**. Ask for the rules in force on the base rather than listing
-the repo's rulesets: this endpoint has already applied each ruleset's `ref_name`
-conditions *and* includes rules inherited from an organization-level ruleset, and a
-plain `/rulesets` listing does neither.
-
-```bash
-# One line per rule in force on the base branch. `ruleset_source_type` says
-# whether it came from this repo or from an org-level ruleset.
-if ! rules="$(gh api repos/{owner}/{repo}/rules/branches/<base> \
-  --jq '.[] | select(.type=="copilot_code_review") | .parameters | @json')"; then
-  echo "RULES UNREAD — not a base without the rule"; exit 1
-fi
-printf '%s\n' "$rules"
-```
-
-Several lines is normal — a repo can carry the rule in more than one matching
-ruleset. No line means no rule applies **to this base**, which is not "this repo has
-no such rule": the same repo can enforce Copilot on its default branch and nothing
-on a side branch.
-
-- **No line** — wait for no Copilot review.
-- **Lines, none with `review_on_push: true`** — wait for the review the rule
-  requests once the PR is one it reviews, and for none after a push.
-- **Any line with `review_on_push: true`** — the rule requests Copilot again on
-  every push; *Wait for the review of the CURRENT head* below is what that costs,
-  and when a head's request is not coming.
-- **`review_draft_pull_requests: false`** — drafts are not reviewed at all. Open
-  the PR ready-for-review (main skill Step 3), or Copilot never runs.
-
-A request already standing is waited for too, whoever placed it.
-
-**The rule requests the review; whether that review gates the merge is settled
-elsewhere** — *What the review lands as* below. The rule's own parameters say
-nothing about it.
-
-A repo may separately mark some status check required that stands in for the
-review. You need not know which, or what it is called: it is just another context
-under `required_status_checks`, satisfied like any other. Never read such a check's
-green as proof that Copilot reviewed the *current* head — verify that yourself,
-below.
-
-### What to read — every review that posted
-
-Every Copilot review on the PR is read, whatever the rules say — one requested by
-hand on a base without the rule included. A posted review **consumes its request**,
-so a PR with no rule and nothing standing can still carry one. Count before
-concluding there is nothing to read:
-
-```bash
-if ! counts="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
-  --jq '[ .[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i"))) ] | length')"; then
-  echo "REVIEWS UNREAD — no count, and not a count of none"; exit 1
-fi
-# --paginate applies --jq per page, so a bare `length` prints one number *per
-# page* — sum them, or a PR with >100 reviews answers with several numbers.
-printf '%s\n' "$counts" | awk '{ n += $1 } END { print n + 0 }'
-```
-
-Whether a request stands is Copilot's latest move on the pull request's timeline —
-never the request list, which reads empty through a live request as readily as
-through none:
-
-```bash
-# The timeline lists events oldest first, so the last line is Copilot's latest move:
-# `review_requested` — a request standing, which it does until its review posts;
-# `reviewed` or `review_request_removed` — nothing standing; no line at all —
-# Copilot has never been asked on this pull request. `copilot_work_started` is
-# deliberately not among them: a run beginning is neither the request nor what
-# settles it. The line carries the time step 5 counts its ceiling from.
-# Captured with its exit status rather than piped straight into `tail`, which
-# exits 0 over a call that failed — and a read that failed prints exactly what a
-# pull request Copilot has never been asked on prints.
-if ! moves="$(gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
-  --jq '.[] | (.event? // "") as $e
-        | select(($e | test("^(review_requested|review_request_removed|reviewed)$"))
-                 and ((.requested_reviewer // .user // {})
-                      | (.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i"))))
-        | {event: $e, at: (.created_at // .submitted_at)} | @json')"; then
-  echo "TIMELINE UNREAD — no verdict about Copilot, and not an absent one"; exit 1
-fi
-printf '%s\n' "$moves" | tail -1
-```
-
-No rule, no request standing and no review posted: Copilot is not part of this PR's
-flow — skip it and rely on the rest of your bar.
+**Reading the findings is still by hand** (*Finding the findings* below): the script
+answers about the head's state, not about what a review said. Both readings there
+use the same pair-filter, and reach every field through `?` and `// ""` — `test/1`
+raises on anything that is not a string, and a deleted account leaves `"user": null`,
+one such row aborting a whole `--jq` program and turning a request full of findings
+into one with none.
 
 ## What the review lands as
 
@@ -207,117 +126,57 @@ resolved like any other.
 
 ## Wait for the review of the CURRENT head
 
-This section applies once a rule in force reviews this PR, again after a push where
-that rule reviews pushes, and wherever a request is standing; anywhere else there is
-nothing to wait for — go on. Below, the moment the PR became reviewable counts as
-its first push.
+This section applies once a rule in force reviews this request, again after a push
+where that rule reviews pushes, and wherever a request is standing. Elsewhere there
+is nothing to wait for — `verdict: not-expected` says exactly that.
 
-The test is never "does a Copilot review exist" but "**has Copilot reviewed this
-exact commit**". Right after a push the PR looks finished — CI green, the previous
-review's threads resolved, GitHub reporting it mergeable — while the review of the
-push just made has not posted; acting in that window discards every comment it was
-about to write. Each review carries the SHA it reviewed in `commit_id`:
+**Route on `verdict`, and re-read it after every push:**
 
-```bash
-head=$(gh pr view <pr> --json headRefOid --jq .headRefOid)
-[ -n "$head" ] || { echo "HEAD SHA UNREAD — the head is unread, not unreviewed"; exit 1; }
-export head
-# Selected on the head rather than taken off the end: a later review of an earlier
-# commit would otherwise stand where the head's own review already is.
-if ! fresh="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
-  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | select(.commit_id == env.head) | {commit_id, submitted_at} | @json')"; then
-  echo "REVIEWS UNREAD — not a head without one"; exit 1
-fi
-printf '%s\n' "$fresh" | tail -1
-# a line is the head's own review; none is a head still unreviewed
-```
+| `verdict` | the step |
+|---|---|
+| `reviewed` | the head's own review is in hand — go to *Finding the findings* |
+| `waiting` | a request stands: wait, on the budget below |
+| `unrequested` | no review of the head and nothing standing — the cutoff below decides whether that is final |
+| `not-expected` | Copilot is not part of this request's flow; rely on the rest of your bar |
+| `read: false` | the feeds were not read — unread, never unreviewed; take the platform path (*When the platform is down, the red check is not yours*) |
 
-The rule's request for a push can be late, and on some pushes never registers, so
-the wait ends on **the request's own events on the timeline** — never on a
-repository check, which step 2's cutoff reads for a different question, and on the
-clock only where that cutoff or step 5's ceiling says so. A status check standing in
-for Copilot's review is satisfied by *a* review of the pull request, not by one of
-the head: **green checks with no review of the head are the normal state right
-after a push, not a lost request.** After each push:
+**The cutoff — when `unrequested` is final.** The rule registers a request
+asynchronously, some time after the push has *landed* (a pre-push hook delays the
+landing, not the request), so an `unrequested` head right after a push is "not yet"
+(*Empty is not negative*). It is ruled unrequested only once **both** hold: the
+head's checks have settled, **and** a couple of minutes have passed since the push
+landed — or, where a request for an earlier head was still standing, since that
+released. At that cutoff, go on and say so in the report: never requested, or
+requested and removed. Never place one in its stead.
 
-1. **Watch the request appear for this head — never place one.** The rule registers
-   it asynchronously, some time after the push has *landed* (a pre-push hook delays
-   the landing, not the request); until it has, the timeline carries no request of
-   this head's, and absence there is "not yet" (*Empty is not negative*).
-   **Read the request on the timeline, never in the request list**:
-   `requested_reviewers` and `gh pr view --json reviewRequests` can both read empty
-   from the moment a request registers until its review posts, so a wait built on
-   either never arms. The timeline carries `review_requested` events instead; a
-   `review_request_removed` belongs to the latest-move read rather than to this
-   count, which a removal would grow exactly as a request does. Take the reading
-   before the push and again after: a count that has grown says a request registered
-   after it. **It does not say which head the rule placed it for** — the event
-   carries no SHA, and only the review's own `commit_id` does, which is what step 4
-   catches an earlier head's request with.
-   ```bash
-   # What is already there, counted — not a moment off the clock: `created_at` is
-   # whole seconds, so a timestamp bound drops the event that lands inside the very
-   # second it was taken in, and admits one that was already there.
-   # Captured with its exit status: a call that failed prints no events, exactly as
-   # a pull request with none does.
-   if ! requests="$(gh api --paginate repos/{owner}/{repo}/issues/<pr>/timeline \
-     --jq '.[] | select((.event? // "") == "review_requested")
-           | select((.requested_reviewer // {})
-                    | (.type? // "") == "Bot" and ((.login? // "") | test("^copilot"; "i")))
-           | {event, at: .created_at} | @json')"; then
-     echo "TIMELINE UNREAD — neither a request nor its absence"; exit 1
-   fi
-   # One more than before the push is a request that registered after it. Counted
-   # with `awk`, which succeeds over no lines at all — `grep -c` exits 1 there, and
-   # none is the baseline this reading exists to state, not a failure.
-   printf '%s\n' "$requests" | awk 'NF { n++ } END { print n + 0 }'
-   # And the newest of them: its `at` is what step 5 counts the ceiling from.
-   printf '%s\n' "$requests" | tail -1
-   ```
-2. **Hold while a request stands, and rule a head unrequested only at the cutoff.**
-   A push landing while an earlier head's review is still to post gets its request
-   the moment that review posts: until then a head with no `review_requested` of its
-   own is waiting, not passed over. Hold while Copilot's latest move (*What to read*
-   above) is `review_requested`.
+**A review of an earlier commit is not a decline.** It consumes the request and
+leaves the head unreviewed; where a rule reviews pushes, the request for this head
+registers as that review posts. Elapsed time settles nothing — while `verdict` is
+`waiting`, wait.
 
-   **A head with no request of its own is ruled unrequested only once both hold**:
-   its checks have settled, **and** at least a couple of minutes have passed since
-   the push landed — or, where the hold above was in force, since it released. At
-   that cutoff no request stands on this head: go on, and say so in the report —
-   never requested, or requested and removed. Never place one in its stead.
-3. **Wait until it settles — on a Copilot review whose `commit_id == $head`, and on
-   nothing else.** A `review_request_removed` ends the request it removes, never this
-   head's wait: the event carries no SHA, so no removal says this head was declined.
-   What it leaves is a head with no request standing, which step 2's cutoff decides;
-   the report names removals as what Copilot did, never as a review. A
-   `copilot_work_finished_failure` ends nothing either — a request stands until its
-   review posts.
-4. **A review of an earlier commit is not a decline.** It consumes the request and
-   leaves the head unreviewed; where a rule reviews pushes, its request for this head
-   registers as that review posts — step 1's watch again, from that moment, up to
-   step 2's cutoff. Elapsed time settles nothing: while Copilot's latest move is
-   `review_requested`, hold — in the windows and up to the ceiling of step 5 — and
-   say the head review is outstanding.
-5. **The wait runs, and runs out, the way a review run's does.** Waited on in the
-   blocking windows of
-   [`../../../references/review-runs.md`](../../../references/review-runs.md),
-   spent on what does not depend on it, and run out at that file's ceiling —
-   counted from the `review_requested` this head is waiting on, whose time step 1's
-   reading carries, never from the push. While step 2's hold is in force the wait is
-   the earlier head's round, spending that round's ceiling; this head's own starts
-   when the hold releases. **Running out is a stop, not a verdict**: record the head
-   as unreviewed by this reviewer and stop at the addressee `merge-auth` names
-   (*Every stop carries its recommendation first*) — another window, or merge with
-   the head unreviewed and say so in the report. The clock decides none of it.
+**Never wait on a repository check instead.** A status check standing in for
+Copilot's review is satisfied by *a* review of the request, not by one of the head,
+and CI is usually green before Copilot has posted: **green checks with no review of
+the head are the normal state right after a push, not a lost request.**
+
+**The wait runs, and runs out, the way a review run's does.** Waited on in the
+blocking windows of
+[`../../../references/review-runs.md`](../../../references/review-runs.md), spent on
+what does not depend on it, and run out at that file's ceiling — counted from
+`newestRequestAt`, never from the push. While an earlier head's request is still
+standing the wait is that round's, spending that round's ceiling; this head's own
+starts when it releases. **Running out is a stop, not a verdict**: record the head as
+unreviewed by this reviewer and stop at the addressee `merge-auth` names (*Every stop
+carries its recommendation first*) — another window, or merge with the head
+unreviewed and say so in the report. The clock decides none of it.
 
 **Merge only once every review this driver waits for has settled** — or the ceiling
-above was reached and the addressee said to merge past it. Nothing the repository
-enforces holds the merge for it: a status check standing in for the review is
-already satisfied by a review of any earlier commit, and an approval requirement
-holds only where this repo counts Copilot's approval at all. A driver that merges on
-green without this wait merges before the review of what it merged, and the findings
-land on a closed pull request where thread resolution can no longer block them.
+was reached and the addressee said to merge past it. Nothing the repository enforces
+holds the merge for it: the status check above is already satisfied by a review of
+any earlier commit, and an approval requirement holds only where this repo counts
+Copilot's approval at all. A driver that merges on green without this wait merges
+before the review of what it merged, and the findings land on a closed request where
+thread resolution can no longer block them.
 
 Do this after *every* push, the last one included.
 

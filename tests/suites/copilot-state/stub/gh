@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Stands in for `gh`. Not a proxy: every call this script makes reaches a forge.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+suite=$(cd -- "$(dirname -- "$0")/.." && pwd)
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+# A capture is named by a path relative to the suite; anything else is the payload.
+emit() {
+  case "$1" in
+    ''|fail) return 1 ;;
+    empty) return 0 ;;
+    notjson) printf 'not json at all\n'; return 0 ;;
+    captured/*) cat "$suite/$1" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+case "$1 $2" in
+  "pr view")
+    v=$(ask '.pr_view')
+    case "$v" in
+      ""|fail) echo "gh: could not resolve to a PullRequest" >&2; exit 1 ;;
+      notjson) printf 'not json at all\n'; exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "api --paginate")
+    case "$3" in
+      */rules/branches/*) emit "$(ask '.rules')" && exit 0
+        echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+      */pulls/*/reviews)  emit "$(ask '.reviews')" && exit 0
+        echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+      */issues/*/timeline) emit "$(ask '.timeline')" && exit 0
+        echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+    esac ;;
+esac
+echo "stub gh: no envelope answer for: $*" >&2
+exit 3

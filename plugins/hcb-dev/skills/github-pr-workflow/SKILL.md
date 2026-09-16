@@ -433,6 +433,20 @@ buys another review of the same kind.
    equivalents). `reviewThreads` is **not** a `gh pr view --json` field — for
    thread-resolution state use the GraphQL `reviewThreads` query in
    `references/copilot.md`. Poll while checks are in progress.
+
+   **Copilot's state is read with the script, not by hand** — the head's own review,
+   what the base's rules ask, and what stands right now, in one answer
+   (`references/copilot.md`):
+
+   ```bash
+   # Quoted as one word: the plugin root is a path like any other and may carry spaces.
+   COP="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-state.mjs" --pr <pr>)" \
+     || echo "CALLED WRONG: $COP"
+   printf '%s' "$COP" | jq -r 'if .read then .verdict else "UNREAD: \(.reason)" end'
+   ```
+
+   Route on `.verdict` per that file; a non-zero exit is the invocation being wrong,
+   never a state to retry.
 2. **If a required check is red:** read the failing job's logs, fix the root
    cause, commit, push. Don't guess — read the actual failure. Not every red check
    wants a code change: one that stands in for a review is typically waiting on the

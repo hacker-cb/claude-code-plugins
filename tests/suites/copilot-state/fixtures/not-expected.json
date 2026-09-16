@@ -1,0 +1,11 @@
+{
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7cccccccccccccccccccccccccccccccccccc",
+  "baseRefName": "dev",
+  "isDraft": false
+ },
+ "rules": [],
+ "reviews": [],
+ "timeline": []
+}

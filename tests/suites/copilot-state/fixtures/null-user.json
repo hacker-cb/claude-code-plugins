@@ -1,0 +1,27 @@
+{
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7999999999999999999999999999999999999",
+  "baseRefName": "dev",
+  "isDraft": false
+ },
+ "rules": [],
+ "reviews": [
+  {
+   "id": 1,
+   "commit_id": "f1x7999999999999999999999999999999999999",
+   "state": "COMMENTED",
+   "user": null
+  },
+  {
+   "id": 2,
+   "commit_id": "f1x7999999999999999999999999999999999999",
+   "state": "COMMENTED",
+   "user": {
+    "type": "Bot",
+    "login": "copilot-pull-request-reviewer[bot]"
+   }
+  }
+ ],
+ "timeline": []
+}

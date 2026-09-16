@@ -1,0 +1,33 @@
+{
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "baseRefName": "dev",
+  "isDraft": false
+ },
+ "rules": [
+  {
+   "type": "copilot_code_review",
+   "parameters": {}
+  }
+ ],
+ "reviews": [],
+ "timeline": [
+  {
+   "event": "review_requested",
+   "created_at": "2026-09-16T10:00:00Z",
+   "requested_reviewer": {
+    "type": "Bot",
+    "login": "Copilot"
+   }
+  },
+  {
+   "event": "review_request_removed",
+   "created_at": "2026-09-16T10:05:00Z",
+   "requested_reviewer": {
+    "type": "Bot",
+    "login": "Copilot"
+   }
+  }
+ ]
+}
