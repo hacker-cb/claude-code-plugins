@@ -112,3 +112,54 @@ export const isCopilot = (who) => {
   const login = typeof who.login === 'string' ? who.login : '';
   return type === 'Bot' && /^copilot/i.test(login);
 };
+
+// Another process wrote it, so it is quoted rather than repeated: a string, with the
+// control characters that would end a line or a record taken out, and bounded — a value
+// of any length or shape would otherwise travel into a reader's context whole.
+export const text = (v) => (typeof v === 'string'
+  ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 200) : null);
+
+// What `git worktree list` says about each worktree, and nothing about who is in it.
+// `-z` because `--porcelain` alone does not escape a path: a worktree whose directory
+// carries a newline prints what reads as the start of another record. Older git does not
+// take the flag, so the line form is the fallback — the records are separated the same
+// way in both, by an empty one.
+//
+// `null` where the listing could not be read at all. An empty ARRAY would say this
+// repository has no worktrees, which is never true of one that answered.
+export function worktrees(git) {
+  let list = git(['worktree', 'list', '--porcelain', '-z']);
+  let records;
+  if (list.ok) records = `${list.out}\0`.split('\0');
+  else {
+    list = git(['worktree', 'list', '--porcelain']);
+    if (!list.ok) return { trees: null, error: list.line() };
+    records = `${list.out}\n`.split('\n');
+  }
+  const trees = [];
+  let wt = null;
+  const push = () => { if (wt) trees.push(wt); };
+  for (const line of records) {
+    if (line.startsWith('worktree ')) {
+      push();
+      wt = { path: line.slice('worktree '.length), branch: null, detached: false,
+        bare: false, locked: false, lockReason: null, prunable: false, pruneReason: null,
+        // The first entry `worktree list` prints is the main working tree, and
+        // `worktree remove` refuses it outright: `fatal: '<path>' is a main working tree`.
+        isPrimary: trees.length === 0 };
+    } else if (!wt) continue;
+    else if (line.startsWith('branch ')) wt.branch = line.slice('branch '.length);
+    else if (line === 'detached') wt.detached = true;
+    else if (line === 'bare') wt.bare = true;
+    else if (line === 'locked' || line.startsWith('locked ')) {
+      wt.locked = true;
+      wt.lockReason = line.length > 'locked '.length ? text(line.slice('locked '.length)) : null;
+    } else if (line === 'prunable' || line.startsWith('prunable ')) {
+      wt.prunable = true;
+      wt.pruneReason = line.length > 'prunable '.length
+        ? text(line.slice('prunable '.length)) : null;
+    }
+  }
+  push();
+  return { trees, error: null };
+}

@@ -1,0 +1,12 @@
+{
+ "worktrees": "worktree /tmp/example-checkout\nHEAD f1x70000000000000000000000000000000000aa\nbranch refs/heads/master\n\nworktree /tmp/example-checkout/.claude/worktrees/example-slice-a1b2c3\nHEAD f1x70000000000000000000000000000000000aa\nbranch refs/heads/feat-unmerged\n",
+ "status_default": "clean",
+ "submodules_default": "none",
+ "admin_default": "/tmp/example-checkout/.git",
+ "refs_counted": "\u0001R\u0001master\u0001f1x70000000000000000000000000000000000aa\u0001/tmp/example-checkout\u0001origin/master\u0001refs/remotes/origin/master\u0001\u00010 0\n\u0001R\u0001feat-merged\u0001f1x71111111111111111111111111111111111bb\u0001\u0001origin/feat-merged\u0001refs/remotes/origin/feat-merged\u0001\u00010 4\n\u0001R\u0001feat-unmerged\u0001f1x72222222222222222222222222222222222cc\u0001\u0001\u0001\u0001\u000111 2\n\u0001R\u0001feat-gone-unmerged\u0001f1x74444444444444444444444444444444444ee\u0001\u0001origin/feat-gone-unmerged\u0001refs/remotes/origin/feat-gone-unmerged\u0001[gone]\u00017 0\n\u0001R\u0001feat-gone-merged\u0001f1x71111111111111111111111111111111111bb\u0001\u0001origin/feat-gone-merged\u0001refs/remotes/origin/feat-gone-merged\u0001[gone]\u00010 9\n",
+ "refs": "\u0001R\u0001master\u0001f1x70000000000000000000000000000000000aa\u0001/tmp/example-checkout\u0001origin/master\u0001refs/remotes/origin/master\u0001\n\u0001R\u0001feat-merged\u0001f1x71111111111111111111111111111111111bb\u0001\u0001origin/feat-merged\u0001refs/remotes/origin/feat-merged\u0001\n\u0001R\u0001feat-unmerged\u0001f1x72222222222222222222222222222222222cc\u0001\u0001\u0001\u0001\n\u0001R\u0001feat-gone-unmerged\u0001f1x74444444444444444444444444444444444ee\u0001\u0001origin/feat-gone-unmerged\u0001refs/remotes/origin/feat-gone-unmerged\u0001[gone]\n\u0001R\u0001feat-gone-merged\u0001f1x71111111111111111111111111111111111bb\u0001\u0001origin/feat-gone-merged\u0001refs/remotes/origin/feat-gone-merged\u0001[gone]\n",
+ "objects": "refs/remotes/origin/master f1x70000000000000000000000000000000000aa f1x7aaaa0000000000000000000000000000000f f1x7bbbb1111111111111111111111111111111f",
+ "in_base": "f1x7aaaa0000000000000000000000000000000f",
+ "repo_view": "{\"url\": \"https://forge.example/example-org/example-repo\"}",
+ "pulls_default": "none"
+}

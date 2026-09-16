@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Stubbed outright, not proxied: every question below would otherwise answer about the
+# runner's own checkout, and a case resting on that tests the clone rather than the script.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+# `-C <path>` is how this script asks about one worktree: the rest of the argv is the
+# question, so it is stripped before matching and kept for the per-path answers.
+at=""
+if [ "$1" = "-C" ]; then at=$2; shift 2; fi
+
+case "$1 $2" in
+  "rev-parse --git-dir")
+    case "$(ask '.no_repo')" in yes) exit 128 ;; esac
+    echo ".git"; exit 0 ;;
+  "rev-parse --absolute-git-dir")
+    v=$(ask ".admin[\"$at\"] // .admin_default")
+    case "$v" in
+      ""|fail) echo "fatal: not a git repository" >&2; exit 128 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "rev-parse --verify")
+    # $4 is `<rev>^{commit}`; the envelope lists the objects this checkout carries.
+    want=${4%^\{commit\}}
+    case " $(ask '.objects') " in *" $want "*) exit 0 ;; esac
+    exit 1 ;;
+  "worktree list")
+    v=$(ask '.worktrees')
+    case "$v" in ""|fail) echo "fatal: could not list worktrees" >&2; exit 128 ;; esac
+    for a in "$@"; do
+      [ "$a" = "-z" ] && { printf '%s' "$v" | tr '\n' '\000'; exit 0; }
+    done
+    printf '%s\n' "$v"; exit 0 ;;
+  "status --porcelain")
+    v=$(ask ".status[\"$at\"] // .status_default")
+    case "$v" in
+      fail) echo "fatal: could not read status" >&2; exit 128 ;;
+      clean|"") exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "submodule status")
+    v=$(ask ".submodules[\"$at\"] // .submodules_default")
+    case "$v" in
+      fail) echo "fatal: could not read submodules" >&2; exit 128 ;;
+      none|"") exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "for-each-ref refs/heads/")
+    v=""
+    for a in "$@"; do
+      case "$a" in
+        *ahead-behind*)
+          # An envelope can refuse this form to play a git older than 2.41.
+          case "$(ask '.no_ahead_behind')" in
+            yes) echo "fatal: unknown field name: ahead-behind" >&2; exit 128 ;;
+          esac
+          v=$(ask '.refs_counted') ;;
+      esac
+    done
+    [ -n "$v" ] || v=$(ask '.refs')
+    case "$v" in ""|fail) echo "fatal: could not list refs" >&2; exit 128 ;; esac
+    # U+0001 stands in for the NUL the script asked for: a JSON envelope cannot hold a
+    # NUL, and a branch name can carry neither.
+    printf '%s' "$v" | tr '\001' '\000'; exit 0 ;;
+  "rev-list --count")
+    v=$(ask ".counts[\"$3\"] // .counts_default")
+    case "$v" in
+      ""|fail) echo "fatal: bad revision" >&2; exit 128 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "merge-base --is-ancestor")
+    case " $(ask '.in_base') " in *" $3 "*) exit 0 ;; esac
+    exit 1 ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3

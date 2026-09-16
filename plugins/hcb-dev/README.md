@@ -311,6 +311,9 @@ session's context — a skill invokes one and reads its answer.
   of this repository right now, read from Claude Code's live-session registry. Presence
   only: a live session proves a worktree is in use, and its absence proves nothing,
   because the host leases worktrees to sessions rather than to processes.
+- [`scripts/cleanup-scan.mjs`](scripts/cleanup-scan.mjs) — what a sweep would find in a
+  repository and what each thing carries: the git state of every worktree, and the proof
+  every branch has that its work landed. Classifies, and deletes nothing.
 - [`scripts/commit-checks.mjs`](scripts/commit-checks.mjs) — what the two check feeds
   say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
   reader of one is blind to the other, and answers with a single `verdict` so a caller
