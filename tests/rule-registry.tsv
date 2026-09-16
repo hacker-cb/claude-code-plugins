@@ -113,3 +113,6 @@ I7-10	done	the invocation that started the run is the ask a subagent rule waits 
 I5-11	done	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:132@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down and never widens
 I5-12	done	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:166@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down and never widens
 I8-09	done	meta-text restating a shared reference beside the link to it	plugins/hcb-dev/references/slice-completion.md:16@dc79f6c	(dropped)	detaches HEAD quietly and the merge then lands nowhere
+I2-21	done	a read that failed is not a read that came back empty	plugins/hcb-dev/references/branch-retirement.md:133@dc79f6c	plugins/hcb-dev/scripts/retire-check.mjs	endpoints.push({ url, has: null, error: r.line() })
+I1-16	done	an empty answer is not a negative one	plugins/hcb-dev/references/branch-retirement.md:144@dc79f6c	plugins/hcb-dev/scripts/retire-check.mjs	answer.remote.published = unknown.length ? null : live;
+I3-12	done	read what happened, never predict it from configuration	plugins/hcb-dev/references/branch-retirement.md:97@dc79f6c	plugins/hcb-dev/scripts/retire-check.mjs	so a branch pushed at some

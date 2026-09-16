@@ -633,6 +633,19 @@ that, never the merge command's exit status:
   open.
 - On `MERGED`, retire the branch — both the local ref and the one on the remote —
   [`../../references/branch-retirement.md`](../../references/branch-retirement.md).
+  The reading is the script's; the acting is this step's:
+
+  ```bash
+  RETIRE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/retire-check.mjs" \
+    --branch "<branch>" --pr <pr> --push-remote "<push-remote>")" \
+    || echo "CALLED WRONG: $RETIRE"
+  printf '%s' "$RETIRE" | jq -r 'if .read then
+      "local=\(.local.safe) remote=\(.remote.safe) published=\(.remote.published)"
+    else "UNREAD: \(.reason)" end'
+  ```
+
+  Each side acts only on its own `safe`, and every `false` carries its `blockers` into
+  Step 7 — a ref that stayed is a line in the report, never a silence.
 
 ## Step 7 — Report and suggest next steps
 

@@ -1,0 +1,14 @@
+{
+ "here": "/tmp/example-checkout",
+ "worktrees": "worktree /tmp/example-checkout\nbranch refs/heads/feat-example\n",
+ "branch_exists": "yes",
+ "tip_present": "yes",
+ "contained": "yes",
+ "dirty": "",
+ "push_urls": "https://forge.example/example-org/example-repo.git\nhttps://mirror.example/example-org/example-repo.git",
+ "ls_remote_default": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/feat-example",
+ "ls_remote": {
+  "https://forge.example/example-org/example-repo.git": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/feat-example",
+  "https://mirror.example/example-org/example-repo.git": "silent"
+ }
+}

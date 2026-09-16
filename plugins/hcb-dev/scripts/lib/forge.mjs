@@ -51,8 +51,11 @@ export const repoOk = (v) => {
   return p.length === 2 && p.every(readable);
 };
 
-export const runner = (cwd) => (args, timeout = 120000) => {
-  const r = spawnSync('gh', args, { cwd, encoding: 'utf8', timeout, maxBuffer: 32 * 1024 * 1024 });
+// `gh` by default because most callers ask a forge; `git` where the question is the
+// checkout's. Same three-part answer either way — a caller that cannot tell a failed
+// call from an empty one is the defect every script here is written against.
+export const runner = (cwd, cmd = 'gh') => (args, timeout = 120000) => {
+  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout, maxBuffer: 32 * 1024 * 1024 });
   return {
     ok: r.status === 0,
     out: (r.stdout || '').trim(),
