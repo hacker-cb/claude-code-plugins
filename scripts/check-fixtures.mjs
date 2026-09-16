@@ -86,6 +86,57 @@ function packedLeak(value) {
   return null;
 }
 
+// Keys a forge writes and nobody sits down and invents: the bookkeeping around the fields
+// a script actually reads. The collector keeps only what its allow-list names, so a
+// sanitized capture carries NONE of these — which is what makes their presence a reading
+// about provenance rather than about content. Two in one object, because a single one is
+// something a hand-written envelope legitimately spells (`node_id: "IC_1"` names a comment
+// in half the suites here), while two together is the shape of a reply nobody cleaned.
+const FORGE_NOISE = /^(gravatar_id|site_admin|received_events_url|organizations_url|subscriptions_url|starred_url|following_url|followers_url|gists_url|events_url|repos_url|node_id|path_with_namespace|http_url_to_repo|ssh_url_to_repo|namespace_id|web_url)$/;
+const forgeNoise = (node) => (node === null || typeof node !== 'object' || Array.isArray(node)
+  ? [] : Object.keys(node).filter((k) => FORGE_NOISE.test(k)));
+
+// Where a document first looks like a reply nobody cleaned, or `null`. Provenance, not
+// content: a file carrying a forge's own bookkeeping was not written by hand, and one that
+// was not written by hand and is not marked CAPTURED went through no sanitizer — so nothing
+// in it has been held to the invented shapes at all. Envelopes are opened on the way down,
+// since a reply pasted into one is exactly the case this reads for.
+function rawReplyIn(node, path = '$') {
+  if (node === null || node === undefined) return null;
+  if (typeof node === 'string') {
+    const nested = nestedJson(node);
+    return nested === null ? null : rawReplyIn(nested, `${path}<json>`);
+  }
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i += 1) {
+      const hit = rawReplyIn(node[i], `${path}[${i}]`);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  if (typeof node !== 'object') return null;
+  const keys = forgeNoise(node);
+  if (keys.length >= 2) return { path, keys };
+  for (const [key, value] of Object.entries(node)) {
+    const hit = rawReplyIn(value, `${path}.${key}`);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+// A fixture is often an ENVELOPE: the forge's reply carried as a STRING of JSON, which is
+// how a suite hands its stub what to print. The key shapes read key names, and a string has
+// none — so a reply pasted into an envelope by hand was checked for a bare commit id and a
+// bare host, and for nothing else. Parse what parses, and walk that too.
+function nestedJson(value) {
+  const t = value.trim();
+  if (t.length < 2 || (t[0] !== '{' && t[0] !== '[')) return null;
+  try {
+    const parsed = JSON.parse(t);
+    return parsed !== null && typeof parsed === 'object' ? parsed : null;
+  } catch { return null; }
+}
+
 // Every detector above is checked against a value that must trip it and one that must
 // not. A guard nothing can kill is a guard nobody proved, and these run in CI beside the
 // real check — where a regex quietly stopping matching would otherwise read as "clean".
@@ -153,6 +204,26 @@ const SELF_TEST = [
     (v) => SHAPES.ref.test(v)],
   ['a bare default branch passes', 'dev', true, (v) => SHAPES.ref.test(v)],
   ['an invented branch passes', 'example-branch-1a2b3c4d', true, (v) => SHAPES.ref.test(v)],
+  ['a raw forge reply is recognised by its bookkeeping',
+    '{"login":"x","node_id":"MDQ6","gravatar_id":"","site_admin":false}', true,
+    (v) => rawReplyIn(JSON.parse(v)) !== null],
+  ['one such key alone is a hand-written envelope', '{"id":1,"node_id":"IC_1","body":"x"}',
+    false, (v) => rawReplyIn(JSON.parse(v)) !== null],
+  ['a sanitized capture carries none of it',
+    '{"id":"example-id-a3f0919c","name":"CI success","conclusion":"success"}', false,
+    (v) => rawReplyIn(JSON.parse(v)) !== null],
+  // The case the marker rule was written for: a live reply pasted into a stub's envelope,
+  // where every key sits inside a string and the shapes never reached it.
+  ['a reply pasted into an envelope is found through the string',
+    '{"comments":"[{\\"node_id\\":\\"x\\",\\"gravatar_id\\":\\"\\"}]"}', true,
+    (v) => rawReplyIn(JSON.parse(v)) !== null],
+  ['and the envelope this suite writes by hand is not',
+    '{"comments":"[{\\"id\\":1,\\"body\\":\\"chatter\\"}]"}', false,
+    (v) => rawReplyIn(JSON.parse(v)) !== null],
+  ['json carried as a string is unpacked', '[{"body":"x"}]', true, (v) => nestedJson(v) !== null],
+  ['prose that opens with a brace is not json', '{not json at all', false,
+    (v) => nestedJson(v) !== null],
+  ['a scalar is not a document', '42', false, (v) => nestedJson(v) !== null],
 ];
 
 // Two of the probes below are about the WALK rather than a detector, so they need a
@@ -419,6 +490,11 @@ function inspect(node, path, file, keyName, captured) {
     failures.push(`${file}: ${path} decodes to ${packed} — "${node}"`);
     return;
   }
+  // An envelope's payload is a document in its own right: walked with a key name of its own
+  // rather than the string's, so the shapes read the forge's field names and not `comments`.
+  const nested = nestedJson(node);
+  if (nested !== null) inspect(nested, `${path}<json>`, file, null, captured);
+
   if (!captured || !keyName) return;
   for (const [keyPattern, shape] of KEY_SHAPE) {
     if (!keyPattern.test(keyName)) continue;
@@ -443,6 +519,15 @@ for (const { abs, captured } of fixtures) {
     continue;
   }
   inspect(parsed, '$', rel, null, captured);
+  // Asked once per file: a captured feed is a list, and one line per object would bury every
+  // other failure in the run.
+  const raw = captured ? null : rawReplyIn(parsed);
+  if (raw !== null) {
+    failures.push(`${rel}: ${raw.path} carries ${raw.keys.join(', ')} — a forge's own`
+      + ' bookkeeping, which a hand-written fixture does not invent and the collector strips.'
+      + ' Nothing here has been sanitized: take it with scripts/collect-fixtures.mjs, which'
+      + ' writes the CAPTURED marker this directory has not got.');
+  }
 }
 
 process.stdout.write(`fixtures: ${fixtures.length} file(s) under ${root}`

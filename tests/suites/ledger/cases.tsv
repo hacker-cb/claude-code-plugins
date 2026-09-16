@@ -43,3 +43,19 @@ issue-absent	--issue 42 --forge gh	0	no issue 42 here|this token's view of it, o
 page-two-died	--issue 42 --forge gh	0	the comment feed could not be read|NOT:no issue 42 here	a walk that died on page two carries every body it already read, and an epic discussing 404s is ordinary — the status is read out of stderr alone
 project-absent	--issue 42 --forge glab	0	the comment feed could not be read|NOT:no issue 42 here	GitLab names WHICH thing was not found, and the probe already proved the project answers — a race, not a wrong number
 issue-absent	--issue 42 --forge glab	0	no issue 42 here	the same 404 on the GitLab path, so the stub's own branch is exercised rather than assumed
+ledger-mine	--issue 42 --forge gh	0	"mine": true|"author": "example-user-00000001"|"me": "example-user-00000001"|"faults": []	the ledger is ours when the author the feed carries is the user this run reads itself as
+ledger-foreign	--issue 42 --forge gh	0	"found": true|"mine": false|the only ledger comment is not ours	a lone ledger is still the coordinate — the token may have changed since it was opened — and the caller is told whose it is
+ledger-author-null	--issue 42 --forge gh	0	"author": null|"mine": null|"faults": []	a comment whose author the feed does not name is UNKNOWN, never proved foreign: a deleted account is not a stranger
+two-ledgers-one-ours	--issue 42 --forge gh	0	"found": true|"id": "9"|"ambiguous": false|a comment that is not ours carries the ledger marker	the marker is invisible in the UI, so a planted comment used to stop the wave outright; ours breaks the tie and the other still travels
+two-ledgers-both-ours	--issue 42 --forge gh	0	"ambiguous": true|two comments of ours carry the ledger marker|"found": false	two of ours is a session that opened a second ledger over its own — a different repair from a tie
+two-ledgers-neither-ours	--issue 42 --forge gh	0	"ambiguous": true|none of them is ours|"found": false	both attributed and neither ours: a tie this run has no standing to break
+two-ledgers	--issue 42 --forge gh	0	cannot tell which is ours	authors the feed did not carry are unknown, and unknown never reads as none of them is ours
+two-ledgers-index-ours	--issue 42 --forge gh	0	"missing": []|"unlisted": []|NOT:the ledger lists archive 5	the index is read out of the body whose coordinate was published, not the first marked comment the feed carried
+archive-two-one-ours	--issue 42 --forge gh	0	two comments carry the archive marker 2|"id": "7"	an archive marker is as cheap to plant as the ledger's, so the row that stands is ours where exactly one of the two is
+identity-unread	--issue 42 --forge gh	0	"me": null|"mine": null|"found": true	a token that cannot name its own user attributes nothing — the authors it can read stay unjudged rather than becoming foreign
+identity-notjson	--issue 42 --forge gh	0	"me": null|"mine": null	an identity call that answered with something other than JSON is unread, which is the same three-valued answer as a refusal
+identity-flagged	--issue 42 --forge gh --me example-user-00000001	0	"me": "example-user-00000001"|"mine": true	a named login spends no round trip, which is what a run under a token that gets 403 from the identity call passes
+gh-author-in-glab-shape	--issue 42 --forge gh	0	"author": null|"mine": null	each forge names the field itself, and a login is never taken from whichever field happens to be present
+glab-author	--issue 42 --forge glab --repo team/app	0	"mine": true|"author": "example-user-00000001"	GitLab carries the author under its own name, read by the forge already resolved
+-	--issue 42 --me ../admin	2	is not a login	a login is neither a path segment nor a ref, and one that is neither is refused before any call
+-	--issue 42 --me	2	--me takes a value	a flag at the end of the line has no value, and an undefined identity would attribute nothing while looking read

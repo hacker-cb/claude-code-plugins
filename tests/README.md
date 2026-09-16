@@ -130,14 +130,20 @@ case needs, and the version trees those answers point at sit beside them under
 what it wrote. `scripts/check-fixtures.mjs` then holds everything under that marker to the
 invented shapes — an allow-list, so a value nobody thought of in advance fails too.
 
-**What the gate cannot do is recognise a capture nobody marked.** A forge response pasted into
-a `fixtures/` directory by hand is judged as a hand-written fixture: the loose probes still run
-over it, so a real commit id, a real forge host and a packed one inside a `node_id` are all
-caught, but a real login, a branch naming a customer or a repository path are not — those are
-exactly the values a hand-written fixture legitimately spells however it likes. So: **never
-paste a forge's answer into a fixture.** Run the collector, which marks what it writes, or
-write the envelope yourself with invented values. The gate is the second line here; this rule
-is the first.
+**An unmarked capture is recognised by its shape.** A forge's reply carries bookkeeping nobody
+sits down and invents — `node_id` beside `gravatar_id`, `site_admin`, the `*_url` fields — and
+the collector keeps only what its allow-list names, so none of it survives sanitizing. Two such
+keys in one object of an *unmarked* fixture is therefore a reply that went through no sanitizer
+at all, and the gate fails on it. It reads inside an envelope too: a reply pasted into the
+string a stub prints is parsed and walked like any other document, which is where the key
+shapes used to stop — a marked capture's envelope is now held to the invented shapes through
+the string as well.
+
+**What it cannot recognise is a reply somebody trimmed by hand.** Strip the bookkeeping and
+what is left — a login, a branch naming a customer, a repository path — is exactly what a
+hand-written fixture legitimately spells however it likes. So the rule stands ahead of the
+gate: **never paste a forge's answer into a fixture.** Run the collector, which marks what it
+writes, or write the envelope yourself with invented values.
 
 ## Adding a case
 
