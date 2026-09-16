@@ -43,6 +43,12 @@ if [ "$1" = "api" ]; then
   v=$(ask '.comments')
   case "$v" in
     ""|silent) echo "could not read the comment feed" >&2; exit 1 ;;
+    notfound) echo "$(basename "$0"): Not Found (HTTP 404)" >&2; exit 1 ;;
+    # A paginated walk prints the pages it DID get before dying on a later one, and an epic
+    # discussing a forge's 404s carries those words in a comment body.
+    halfway) printf '%s\n' '[{"id":1,"body":"the forge answered 404 Not Found here"}]'
+             echo "$(basename "$0"): Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+    noproject) echo "$(basename "$0"): 404 Project Not Found (HTTP 404)" >&2; exit 1 ;;
     *) printf '%s\n' "$v"; exit 0 ;;
   esac
 fi

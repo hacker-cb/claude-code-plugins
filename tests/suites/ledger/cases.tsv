@@ -39,3 +39,7 @@ mirrored-on-both	--issue 42 --repo team/app	0	both forges answer for this reposi
 mirrored-on-both	--issue 42 --repo team/app --forge glab	0	"forge": "glab"|"found": true	naming the forge settles it: an explicit answer is never overruled by a probe
 -	--issue 42 --forge gh --repo team/..	2	--repo takes|NOT:"read"	`repos/team/../issues/42` normalises into a request somewhere else entirely
 -	--issue 42 --forge gh --repo-dir	2	--repo-dir takes a value	a flag at the end of the line has no value, and undefined reaching cwd is silently this checkout
+issue-absent	--issue 42 --forge gh	0	no issue 42 here|this token's view of it, or a rename in between|"read": false	measured on both forges: a 404 is an answer — the coordinate is wrong, or invisible to this token — and neither is a silence to retry
+page-two-died	--issue 42 --forge gh	0	the comment feed could not be read|NOT:no issue 42 here	a walk that died on page two carries every body it already read, and an epic discussing 404s is ordinary — the status is read out of stderr alone
+project-absent	--issue 42 --forge glab	0	the comment feed could not be read|NOT:no issue 42 here	GitLab names WHICH thing was not found, and the probe already proved the project answers — a race, not a wrong number
+issue-absent	--issue 42 --forge glab	0	no issue 42 here	the same 404 on the GitLab path, so the stub's own branch is exercised rather than assumed

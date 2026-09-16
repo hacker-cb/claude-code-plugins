@@ -147,7 +147,31 @@ const feed = () => {
 };
 
 const res = feed();
-if (!res.ok) { answer.reason = text(`the comment feed could not be read: ${res.line()}`); out(); }
+if (!res.ok) {
+  // A 404 is an ANSWER, not a silence: measured on both forges — `gh: Not Found (HTTP 404)`
+  // and `glab: 404 Not found (HTTP 404)` — it says this issue is not there, which a caller
+  // fixes by correcting the coordinate rather than by retrying. It is also what either forge
+  // answers where the token cannot see the issue at all, and the two are indistinguishable
+  // from here, so the line says both.
+  //
+  // Read out of stderr ALONE, and by the parenthesised status rather than by the words. A
+  // paginated read prints the pages it already got to stdout, so a walk that died on page two
+  // carries every comment body with it — and an epic discussing a forge's 404s is the ordinary
+  // case, not a contrived one. Matched there, a failure to finish reading reports as a
+  // coordinate to correct, which is the mistake this branch exists to prevent.
+  const status = /\(HTTP (\d{3})\)/.exec(res.err);
+  // GitLab says which thing was not found — `404 Project Not Found` is the project, and the
+  // probe above already proved the project answers, so that one is a race. GitHub says only
+  // `Not Found`, so a repository renamed between the probe and this read is indistinguishable
+  // from a wrong issue number: the line names both rather than sending the caller to fix a
+  // number that may be right.
+  const aboutProject = /project not found/i.test(res.err);
+  answer.reason = status?.[1] === '404' && !aboutProject
+    ? text(`no issue ${opts.issue} here — the repository answered the probe, so it is the issue,`
+      + ` this token's view of it, or a rename in between: ${res.line()}`)
+    : text(`the comment feed could not be read: ${res.line()}`);
+  out();
+}
 
 const pages = parsePages(res.out);
 if (pages === null) { answer.reason = 'the comment feed was not JSON'; out(); }
