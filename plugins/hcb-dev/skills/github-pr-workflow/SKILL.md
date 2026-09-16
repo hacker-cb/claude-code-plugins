@@ -638,9 +638,8 @@ that, never the merge command's exit status:
   ```bash
   if RETIRE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/retire-check.mjs" \
       --branch "<branch>" --pr <pr> --push-remote "<push-remote>")"; then
-    printf '%s' "$RETIRE" | jq -r 'if .read then
-        "local=\(.deleteLocal) remote=\(.deleteRemote) published=\(.remote.published)"
-      else "UNREAD: \(.reason)" end'
+    printf '%s\n' "$RETIRE"   # the whole answer — a projection hides the field the
+                              # next action needs, and the lease is one of them
   else
     # A non-zero exit carries usage text, not JSON. Feeding it to `jq` prints a parse
     # error where the step needs a refusal, which reads as nothing having been said.
@@ -648,8 +647,9 @@ that, never the merge command's exit status:
   fi
   ```
 
-  Each side acts only on its own `safe`, and every `false` carries its `blockers` into
-  Step 7 — a ref that stayed is a line in the report, never a silence.
+  Each side acts only on its own verdict — `deleteLocal`, `deleteRemote` — and the
+  remote deletion leases against `request.headRefOid`. Every `false` carries its
+  `blockers` into Step 7: a ref that stayed is a line in the report, never a silence.
 
 ## Step 7 — Report and suggest next steps
 

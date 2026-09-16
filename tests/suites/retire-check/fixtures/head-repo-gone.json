@@ -7,6 +7,6 @@
  "dirty": "",
  "push_urls": "https://forge.example/example-org/example-repo.git",
  "ls_remote_default": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/feat-example",
- "pr_view": "{\"state\": \"MERGED\", \"headRefOid\": \"f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"headRepository\": {\"id\": \"R_kgexampleAAA\", \"nameWithOwner\": \"example-org/example-repo\"}}",
+ "pr_view": "{\"state\": \"MERGED\", \"headRefOid\": \"f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"headRepository\": null}",
  "pr_list": "[{\"number\": 7, \"headRepository\": {\"id\": \"R_kgexampleAAA\", \"nameWithOwner\": \"example-org/example-repo\"}}, {\"number\": 9, \"headRepository\": {\"id\": \"R_kgexampleAAA\", \"nameWithOwner\": \"example-org/example-repo\"}}]"
 }

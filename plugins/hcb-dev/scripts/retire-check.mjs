@@ -16,6 +16,7 @@
 // Exit 0 either way: `"read": true` with the two verdicts, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
 
+import { realpathSync } from 'node:fs';
 import { writeAll, readable, refOk, repoOk, runner } from './lib/forge.mjs';
 
 const USAGE = 'usage: node retire-check.mjs --branch <name> (--tip <ref> | --pr <n>)'
@@ -45,6 +46,33 @@ const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
 const gh = runner(cwd);
 
+// Where a request's head LIVES. Two requests carry the same branch NAME from different
+// repositories all the time — a fork's ref is not this one — so identity is what says
+// whether a deletion would reach it.
+const headRepo = (pr) => {
+  const r = pr && pr.headRepository;
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+  const id = typeof r.id === 'string' && r.id ? r.id : null;
+  const named = typeof r.nameWithOwner === 'string' && r.nameWithOwner ? r.nameWithOwner : null;
+  return id || named ? { id, nameWithOwner: named } : null;
+};
+// Three answers, and the third carries the weight: `null` is "cannot tell", which blocks
+// exactly as a match does. Compared key for key — an id against a name is not a
+// comparison, and reading it as a difference would clear the blocker it cannot see.
+const sameRepo = (a, b) => {
+  if (!a || !b) return null;
+  if (a.id && b.id) return a.id === b.id;
+  if (a.nameWithOwner && b.nameWithOwner) return a.nameWithOwner === b.nameWithOwner;
+  return null;
+};
+// A path answered by two git commands is not two spellings of two places: `/tmp` is a
+// symlink to `/private/tmp` on macOS, and comparing the strings reads the worktree you
+// stand in as somebody else's.
+const samePath = (a, b) => {
+  if (a === b) return true;
+  try { return realpathSync(a) === realpathSync(b); } catch { return false; }
+};
+
 const answer = {
   read: false, branch: opts.branch,
   // What containment is measured against and what the remote deletion LEASES — never
@@ -53,9 +81,11 @@ const answer = {
   // from there. The HEAD move uses the refreshed base; `base-resolution.md` owns it.
   measuredAgainst: null,
   // Request mode only. `state` and `headRefOid` are what every deletion rests on, and a
-  // run that could not read them retires nothing.
+  // run that could not read them retires nothing. `headRepo` is where that head LIVES,
+  // which is what tells a second request on this ref apart from a fork's same-named one.
   request: null,
-  local: { exists: false, contained: false, noRefProof: false, heldBy: null, dirty: false, blockers: [] },
+  local: { exists: false, contained: false, noRefProof: false, callerDecides: false,
+    heldBy: null, dirty: false, blockers: [] },
   // `published: null` is "the endpoints did not all answer" — never "no branch there".
   remote: { published: null, endpoints: [], blockers: [] },
   // Named apart on purpose: `safe` on both sides was one word at two levels, and a
@@ -71,7 +101,7 @@ if (!git(['rev-parse', '--git-dir']).ok) die('not inside a git checkout');
 // --- the tip: the state the merge produced
 let tip = opts.tip;
 if (opts.pr) {
-  const view = gh(['pr', 'view', opts.pr, '--json', 'state,headRefOid',
+  const view = gh(['pr', 'view', opts.pr, '--json', 'state,headRefOid,headRepository',
     ...(opts.repo ? ['--repo', opts.repo] : [])]);
   if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.line()})`);
   let pr;
@@ -79,7 +109,8 @@ if (opts.pr) {
   if (!pr || typeof pr !== 'object' || Array.isArray(pr)) {
     refuse('the pull request view came back in a shape this cannot read');
   }
-  answer.request = { state: pr.state ?? null, headRefOid: pr.headRefOid ?? null };
+  answer.request = { state: pr.state ?? null, headRefOid: pr.headRefOid ?? null,
+    headRepo: headRepo(pr) };
   if (answer.request.state !== 'MERGED') {
     // Not a refusal — the read succeeded. It is an answer, and it says retire nothing.
     answer.local.blockers.push(`the request is ${answer.request.state ?? 'in an unknown state'}, not merged`);
@@ -114,7 +145,7 @@ if (!answer.local.exists) {
   let current = null;
   for (const line of wt.out.split('\n')) {
     if (line.startsWith('worktree ')) current = line.slice('worktree '.length);
-    else if (line === `branch ${ref}` && current && current !== here.out) {
+    else if (line === `branch ${ref}` && current && !samePath(current, here.out)) {
       answer.local.heldBy = current;
     }
   }
@@ -155,7 +186,9 @@ if (!answer.local.exists) {
           + ' squash does not move');
       } else {
         // Local mode: git cannot tell a squash from work that never landed, and neither
-        // can this. The caller has just confirmed the merge and knows its strategy.
+        // can this. The caller has just confirmed the merge and knows its strategy — and
+        // `callerDecides` below is where that judgement is handed over, so that making it
+        // never means reading this blocker's prose.
         answer.local.noRefProof = true;
         answer.local.blockers.push('no ref-level proof: either its tip carries commits the'
           + ' merge never took, or the strategy collapsed them — a squash leaves none, and'
@@ -203,7 +236,7 @@ if (!opts.pr) {
 // and deleting it closes the request along with whatever a reviewer asks for next.
 if (opts.pr) {
   const others = gh(['pr', 'list', '--head', opts.branch, '--state', 'open',
-    '--json', 'number', ...(opts.repo ? ['--repo', opts.repo] : [])]);
+    '--json', 'number,headRepository', ...(opts.repo ? ['--repo', opts.repo] : [])]);
   // BOTH sides, on every path: a branch under an open request stays locally too — that
   // request's head is this ref, and what a reviewer asks for next has nowhere to land.
   // Unknown is not `none`, so a reading that failed blocks exactly as a second request
@@ -217,8 +250,23 @@ if (opts.pr) {
     if (!Array.isArray(list)) {
       bothWays('what else is open on this ref came back in a shape this cannot read');
     } else {
-      const open = list.map((r) => r && r.number).filter((n) => String(n) !== String(opts.pr));
-      if (open.length) bothWays(`another request is open on this ref: ${open.join(', ')}`);
+      // `--head` filters by branch NAME, which is not unique across forks: a
+      // contributor's own `fix/typo` is a different ref, and deleting this one cannot
+      // reach it. Identity decides, and where it cannot be read the blocker stands.
+      const hits = [];
+      const unsure = [];
+      for (const r of list) {
+        const n = r && r.number;
+        if (String(n) === String(opts.pr)) continue;
+        const same = sameRepo(answer.request.headRepo, headRepo(r));
+        if (same === true) hits.push(n);
+        else if (same === null) unsure.push(n);
+      }
+      if (hits.length) bothWays(`another request is open on this ref: ${hits.join(', ')}`);
+      if (unsure.length) {
+        bothWays('another request carries this branch name and which repository its head'
+          + ` is in could not be read: ${unsure.join(', ')}`);
+      }
     }
   }
 }
@@ -230,9 +278,15 @@ if (answer.local.heldBy) {
 }
 // Both verdicts here, after every blocker is in. Computing one earlier is how a check
 // that runs later adds its blocker beside a `safe: true` that no longer holds.
-answer.deleteLocal = answer.local.exists
-  && (answer.local.contained || answer.local.noRefProof)
-  && answer.local.blockers.length === 0;
+// The one refusal a caller may overrule, and local mode's alone. A flag rather than a
+// blocker to read around: `false` the moment anything else is also in the way, so
+// overruling it can never carry a dirty tree or another worktree along with it.
+answer.local.callerDecides = answer.local.noRefProof && answer.local.blockers.length === 1;
+// One rule, said once and for both sides: there is something to delete, and nothing in
+// the way. Naming a proof here as well — `contained`, say — reads as a second guard and
+// is not one: every path that leaves it false pushes a blocker, so the term can never
+// change an answer, and a dead term in a verdict is what the last round removed.
+answer.deleteLocal = answer.local.exists && answer.local.blockers.length === 0;
 answer.deleteRemote = answer.remote.published === true && answer.remote.blockers.length === 0;
 
 answer.read = true;

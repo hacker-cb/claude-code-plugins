@@ -36,6 +36,7 @@ where there is no request standing, the count does have a moment of truth.
 | `squash_merge_commit_title` | disagrees between repositories about whether the pull request's title reaches the commit at all — `PR_TITLE` and `COMMIT_OR_PR_TITLE` both measured in the same set | read the setting, or pass `--subject` |
 | `git branch -d` | **tests containment against the branch's upstream, not against the branch you merged into.** Measured after a squash merge: it deleted the branch, saying so out loud — `deleting branch 'feature' that has been merged to 'refs/remotes/origin/feature', but not yet merged to HEAD` | the forge's record: the request is merged and its `headRefOid` is contained in the target ([`branch-retirement.md`](branch-retirement.md)) |
 | a ref-level containment check after a squash | **never passes.** Squash writes a new commit, so `merge-base --is-ancestor` answers no and `branch --merged` omits the branch, however completely the work landed | the same forge record |
+| `gh pr list --head <branch>` | **a branch NAME, matched across every head repository, forks included.** Measured on `nodejs/node`: `--head main` answered with six open requests whose heads live in six different owners' forks. A second request on *this* ref is told apart only by identity — `headRepository` on both the request and the listing | compare `headRepository.id`, or `nameWithOwner` where no id is given, and treat a listing that carries neither as unknown rather than as a difference |
 
 ## Review
 
