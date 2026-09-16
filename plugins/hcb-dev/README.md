@@ -343,6 +343,10 @@ session's context — a skill invokes one and reads its answer.
   here that acts**, because the order of the three is the hazard: a rename is refused
   where a request pins the name, the publish is unconditional, and a name comes off the
   remote only after the new one is up.
+- [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
+  stands on the epic issue, whether the next write fits under a cap that announces itself
+  only by refusing one, and whether the archives beside it and the index naming them
+  agree. It reads: what may be archived out of a ledger is a judgement about content.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
@@ -372,13 +376,23 @@ saying something else. Each file opens by saying what it owns.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name, a commit subject and a change-request title take. Read wherever a
   branch is named, renamed or landed under its name.
+- [`references/branch-publish.md`](references/branch-publish.md) — the act rather
+  than the name: renaming, publishing, and taking a name this branch used to carry
+  off the remote. Read by whatever renames or publishes.
 - [`references/branch-retirement.md`](references/branch-retirement.md) — what
   becomes of a branch once its merge is confirmed. Read by whatever lands work.
 - [`references/merge-message.md`](references/merge-message.md) — keeping a change
   request's body true to what is landing, and the message a collapsing merge
   leaves on the base. Read by whatever lands work, before the merge.
-- [`references/slice-completion.md`](references/slice-completion.md) — how a slice
-  *ends*, across both backends. Read by whatever finishes a slice.
+- [`references/slice-completion.md`](references/slice-completion.md) — the contract
+  a slice *ends* under: the inputs a caller threads in, the outputs a report reads
+  back, and what outranks a merge authorization. Read by everything that hands a
+  slice on, not only by what completes one.
+- [`references/completion-backends.md`](references/completion-backends.md) — what
+  each completion mode actually does. Read by whatever executes a completion.
+- [`references/feature-branch.md`](references/feature-branch.md) — the branch a set
+  of slices shares: keeping it current, and the three cases where any branch takes
+  its base by merge rather than rebase.
 - [`references/architecture-decisions.md`](references/architecture-decisions.md) —
   the decision protocol: what to ask about, what to act on, and the form a stop
   takes. Read at every planning gate and every stop-and-ask.
