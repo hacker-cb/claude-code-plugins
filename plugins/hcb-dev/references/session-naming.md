@@ -97,48 +97,36 @@ alone — which is what makes it safe to shorten or drop under a cap.
 
 ## When the title does not fit
 
-The titling tool caps what it accepts, and a list of sessions truncates before
-that. What gives way, in this order:
-
-1. the tail gives up its trailing numbers for a count — `(#896 +5)` is six issues,
-   and the `+` is what says the list was cut rather than short — and then goes
-   entirely; the composition stands in the ledger either way;
-2. the topic shortens;
-3. **the identifier and the role marker are never touched.** Together they are the
-   address. A standalone identifier that would not fit is settled where it is
-   coined, by `<tasks>`'s nickname, never by trimming here.
+The titling tool caps what it accepts, and a list of sessions truncates before that. What gives
+way, in this order: the tail gives up its trailing numbers for a count — `(#896 +5)` is six
+issues, the `+` saying the list was cut rather than short — and then goes entirely, the
+composition standing in the ledger either way; then the topic shortens; and **the identifier and
+the role marker are never touched**, being together the address. A standalone identifier that
+would not fit is settled where it is coined, by `<tasks>`'s nickname, never by trimming here.
 
 ## When a session titles itself
 
-Twice, never a third time: once with whatever is in hand, once when what was
-missing arrives.
+Twice, never a third time: once with whatever is in hand, once when what was missing arrives.
 
-**A master.**
+**A master** titles itself **on assuming the role**, before anything else, with whatever
+identifier is in hand — the epic's number where the assignment named one, otherwise the
+nickname. Carrying no topic, the provisional title is `[master] <epic>`, and the topic arrives
+with the second step; a session that was doing something else renames itself here, the
+assignment being the authorization, and renames only itself. **When the ledger is in hand** —
+opened here, or read after a restart — it carries both halves, and where it already records a
+title, that string is the address every order already out is carrying: wear it as recorded. The
+final title stands **before the first chip, order or message leaves**.
 
-1. **On assuming the role**, before anything else, with whatever identifier is in
-   hand — the epic's number where the assignment named one, otherwise the nickname.
-   Carrying no topic, the provisional title is `[master] <epic>`, and the topic
-   arrives with step 2. A session that was doing something else renames itself
-   here — the assignment is the authorization — and renames only itself.
-2. **When the ledger is in hand** — opened here, or read after a restart — it
-   carries both halves. Where the ledger already records a title, that string is
-   the address every order already out is carrying: wear it as recorded.
+**A session running its own work** — a build, a completion, a survey — wears the standalone
+shape: **on intake**, with whatever is in hand (the task numbers, else the nickname, and the
+topic the work was asked for, provisional being enough); then **when the scope is settled**, a
+plan approved or a slice named, rewritten to what that scope makes — unless it already stands in
+it **or has gone out as an address**, an order carrying it or a session answered on it, which is
+worn as sent while the scope reaches the report instead.
 
-The final title stands **before the first chip, order or message leaves**.
-
-**A session running its own work** — a build, a completion, a survey — wears the
-standalone shape:
-
-1. **On intake**, with whatever is in hand: the task numbers, else the nickname,
-   and the topic the work was asked for. A provisional topic is enough.
-2. **When the scope is settled** — a plan approved, a slice named — the title is
-   rewritten to what that scope makes, unless it already stands in it **or has gone
-   out as an address**: an order carrying it, a session answered on it. That one is
-   worn as sent, and the scope reaches the report instead.
-
-**The entry point titles.** A skill invoked inside a run already under way touches
-the title at neither step — a completion called per slice, a survey a master runs
-before planning: what stands there stays.
+**The entry point titles.** A skill invoked inside a run already under way touches the title at
+neither step — a completion called per slice, a survey a master runs before planning: what
+stands there stays.
 
 ## Where these names travel
 
