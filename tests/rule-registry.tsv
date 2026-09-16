@@ -20,13 +20,13 @@ I10-02	pending	the first page of a listing is not the listing	plugins/hcb-dev/re
 I8-04	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/claude-worktrees.md:5@dc79f6c	(dropped)	copies drift
 I10-03	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/forge-docs.md:16@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
 I10-04	pending	the first page of a listing is not the listing	plugins/hcb-dev/references/forge-docs.md:18@dc79f6c	plugins/hcb-dev/references/invariants.md	The first page is not the list
-I7-01	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/references/order-anatomy.md:40@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
-I7-02	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/references/order-anatomy.md:41@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
-I5-01	pending	an authority narrows on the way down and never widens	plugins/hcb-dev/references/order-anatomy.md:60@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down
-I3-02	pending	read what happened, never predict it from configuration	plugins/hcb-dev/references/order-anatomy.md:71@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing
+I7-01	done	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/references/order-anatomy.md:40@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission its caller needs
+I7-02	done	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/references/order-anatomy.md:41@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission its caller needs
+I5-01	done	an authority narrows on the way down and never widens	plugins/hcb-dev/references/order-anatomy.md:60@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down and never widens
+I3-02	done	read what happened, never predict it from configuration	plugins/hcb-dev/references/order-anatomy.md:71@dc79f6c	plugins/hcb-dev/references/invariants.md	Configuration predicts nothing; read the result
 I1-03	pending	an empty answer is not a negative one	plugins/hcb-dev/references/report-format.md:67@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
 I8-05	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/review-runs.md:7@dc79f6c	(dropped)	a copy per engine drifts
-I1-04	pending	an empty answer is not a negative one	plugins/hcb-dev/references/session-comms.md:52@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
+I1-04	done	an empty answer is not a negative one	plugins/hcb-dev/references/session-comms.md:52@dc79f6c	plugins/hcb-dev/references/invariants.md	Empty is not negative
 I8-06	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/session-prompts.md:5@dc79f6c	(dropped)	drift apart
 I8-07	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:5@dc79f6c	(dropped)	drift apart
 I8-08	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/slice-completion.md:6@dc79f6c	(dropped)	prose copies drift
@@ -98,9 +98,9 @@ I6-08	pending	every stop carries its recommendation first	plugins/hcb-dev/skills
 I6-09	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/master-session/SKILL.md:104@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
 I7-04	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/multi-review/SKILL.md:149@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
 I7-05	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/session-dispatch/SKILL.md:66@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
-I9-03	pending	a file read in part is not read	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:97@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
-I9-04	pending	a file read in part is not read	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:98@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
-I6-10	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:124@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
+I9-03	done	a file read in part is not read	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:97@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
+I9-04	done	a file read in part is not read	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:98@dc79f6c	plugins/hcb-dev/references/invariants.md	A file read in part is not read
+I6-10	done	every stop carries its recommendation first	plugins/hcb-dev/skills/session-plugin-refresh/SKILL.md:124@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first
 I7-06	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/shipping-workflow/SKILL.md:34@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
 I7-07	pending	the invocation that started the run is the ask a subagent rule waits for	plugins/hcb-dev/skills/shipping-workflow/SKILL.md:35@dc79f6c	plugins/hcb-dev/references/invariants.md	A skill's own ask is the permission
 I6-11	pending	every stop carries its recommendation first	plugins/hcb-dev/skills/shipping-workflow/SKILL.md:194@dc79f6c	plugins/hcb-dev/references/invariants.md	Every stop carries its recommendation first

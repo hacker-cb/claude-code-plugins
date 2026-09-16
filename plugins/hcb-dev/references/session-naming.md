@@ -1,20 +1,15 @@
 # Naming a session, an epic and a batch
 
-Read by whatever titles a session — another's or its own — coins a batch id,
-or writes one of those names where it is matched on later: a chip, an order, a
-ledger row, a worktree. It lives here rather than in any one skill because the
-same name is written by the coordinating session, by the dispatcher, by the
-receiver and by a session titling itself for the run it opens, and prose copies
-drift.
+Read by whatever titles a session — another's or its own — coins a batch id, or
+writes one of those names where it is matched on later: a chip, an order, a ledger
+row, a worktree.
 
-The rule everything below serves: **the address leads, and it does not
-change.** A title is an address — sessions resolve each other by it across
-restarts ([`session-comms.md`](session-comms.md)), and the user picks one run
-out of a list of them by it — so what stands first is what a stranger matches
-on, and a name already sent out is not re-coined. The address is the
-identifier, preceded by the role marker where the role has one. A name that
-changes regardless — a host renaming a session whose name was taken — is
-announced to whoever already holds the old one (`session-comms.md`).
+The rule everything below serves: **the address leads, and it does not change.** A
+title is an address — sessions resolve each other by it across restarts
+([`session-comms.md`](session-comms.md)), and the user picks one run out of a list
+by it. The address is the identifier, preceded by the role marker where the role
+has one. A name that changes regardless — a host renaming a session whose name was
+taken — is announced to whoever already holds the old one (`session-comms.md`).
 
 ## The shapes
 
@@ -24,20 +19,16 @@ batch       <epic>/<id> — <topic> (<issues>)
 standalone  <tasks | nickname> — <topic>
 ```
 
-Separator ` — ` throughout, em dash. `[master]` is the role marker: it stands
-first, ahead of the identifier, and keeps that spelling and those brackets
-whatever language the topic is in. What follows the marker is the name a session
-without one wears, so anything matching on `<epic>` matches a master exactly as
-it does a batch.
-A batch needs no marker, since the `/` is one.
+Separator ` — ` throughout, em dash. `[master]` stands first, ahead of the
+identifier, in that spelling and those brackets whatever language the topic is in.
+What follows it is the name a session without one wears, so anything matching on
+`<epic>` matches a master exactly as it does a batch. A batch needs no marker —
+the `/` is one.
 
-The standalone shape titles a session that belongs to no epic: an
-investigation dispatched on its own, a session someone will come back to by
-message, and a session simply running its own work, which wears it so its user
-can pick that run out of a list. Who puts it on differs — a session titles
-itself for the run it opens (below), and where an order expects its answer to
-come back over the wire, the order says which title to answer
-([`order-anatomy.md`](order-anatomy.md)).
+The standalone shape titles a session belonging to no epic: an investigation
+dispatched on its own, one someone will come back to by message, one simply running
+its own work. Where an order expects its answer over the wire, the order says which
+title to answer ([`order-anatomy.md`](order-anatomy.md)).
 
 Examples: `[master] 841 — UI widgets`,
 `841/P — DX odds and ends (#896, #881, #877, #870)`, `514 — OCC acceptance`,
@@ -45,153 +36,123 @@ Examples: `[master] 841 — UI widgets`,
 
 ## `<epic>`
 
-The epic issue's number, digits alone: no `#`, since the same value goes into
-a worktree name. An epic always ends with one — the ledger hangs on an umbrella
-issue ([`wave-ledger.md`](wave-ledger.md)) — so a nickname stands here only
-while that issue is being filed, and gives way to the number the moment it is,
-whatever the work was gathered from.
+The epic issue's number, digits alone — no `#`, since the same value goes into a
+worktree name. An epic always ends with one, the ledger hanging on an umbrella
+issue ([`wave-ledger.md`](wave-ledger.md)), so a nickname stands here only while
+that issue is being filed and gives way to the number the moment it is.
 
-It is fixed once, when the ledger is opened, and it is the number by then.
-Resuming an epic reads it back from the epic the ledger hangs on rather than
-coining it again.
+Fixed once, when the ledger is opened. Resuming an epic reads it back from the
+issue the ledger hangs on rather than coining it again.
 
-The value is unique inside its repository and nowhere else: two repositories
-can each hold an issue 841, while the live registry spans the machine. A name
-matched there is therefore a candidate, not a destination, and both sides hand
-their own over early — the order carries the master's name, the confirmation
-that opens a batch carries the batch's. What settles a matched name is the
-challenge line (`session-comms.md`), which leads the message and waits for its
-answer.
+**The value is unique inside its repository and nowhere else**, while the live
+registry spans the machine — so a name matched there is a candidate, and the
+challenge line settles it (`session-comms.md`). Both sides hand their own over
+early: the order carries the master's name, the confirmation opening a batch
+carries the batch's.
 
 ## `<id>`
 
-Capital ASCII letters in planning order — `A`, `B`, … `Z`, then `AA`, `AB`.
-Never a digit: a digit collides with the wave number and with the issue
-numbers standing beside it.
+Capital ASCII letters in planning order — `A`, `B`, … `Z`, then `AA`, `AB`. Never a
+digit, which collides with the wave number and with the issue numbers beside it.
 
-A batch is addressed by `<epic>/<id>`, never by the letter alone — the letter
-repeats in every other epic, so anything recording or matching a batch records
-the pair.
+A batch is addressed by `<epic>/<id>`, never the letter alone: the letter repeats
+in every other epic.
 
-- **Assigned once at planning, never re-assigned.** A batch that moves to
-  another wave, gets re-chipped or is restarted keeps its letter.
-- **Never re-used inside the epic.** A withdrawn or failed batch takes its
-  letter with it — re-issued, the same string would mean two things across the
-  ledger and the orders already out.
+- **Assigned once at planning, never re-assigned.** A batch that moves wave, gets
+  re-chipped or restarts keeps its letter.
+- **Never re-used inside the epic.** A withdrawn or failed batch takes its letter
+  with it.
 
 ## `<tasks>`
 
-The numbers of the tasks a standalone session is running, digits alone — no
-`#`, for `<epic>`'s reason: the value goes into a worktree name. Comma-separated
-in the order the work takes them, so the number leading the work leads the
-address — and all of them stand there: a list of sessions is read for who is
-holding what, which a count of the rest answers for none of them.
+The numbers a standalone session is running, digits alone — no `#`, for `<epic>`'s
+reason. Comma-separated in the order the work takes them, and **all of them**: a
+list of sessions is read for who holds what, which a leading number and a count of
+the rest answers for none of them, and two slices both starting at `95` would wear
+one address.
 
-Where there are no numbers — free-text work, a repository without a tracker, a
-slice of the backlog — a short kebab-case nickname for the subject stands in
-their place. So does a list of them too long for the title to carry: an
-identifier is never trimmed once it stands ("When the title does not fit"), so
-a list that will not fit is settled here, when the address is coined, and the
-nickname is what stands instead. Never the leading number and a count of the
-rest: two slices both starting at `95` would wear one address, and an address
-resolving to two sessions addresses neither.
+Where there are no numbers — free-text work, no tracker, a slice of the backlog —
+a short kebab-case nickname stands in their place, and so does a list too long for
+the title: an identifier is never trimmed once it stands, so a list that will not
+fit is settled here, when the address is coined.
 
 ## `<topic>`
 
-A noun phrase of a few words saying what this work is about, in the language of
-the tracker it is written in — and where there is neither a tracker nor a
-number, the language the task was given in. Not a sentence, and never a generic
-word standing alone — a stranger matching on "master" or "fixes" finds the
-wrong session. A master wears the epic's own topic; a batch's says what that
-batch does, which is never a restatement of the epic's.
+A noun phrase of a few words saying what the work is about, in the language of the
+tracker it is written in — or, with neither tracker nor number, the language the
+task was given in. Not a sentence, and never a generic word standing alone: a
+stranger matching on "master" or "fixes" finds the wrong session. A master wears
+the epic's own topic; a batch's says what that batch does, never a restatement of
+the epic's.
 
 ## The issue tail
 
-The batch's issues in the order its `Work:` slot takes them, so a list of
-sessions shows the composition without opening the ledger — all of them, not
-the leading one and a count of the rest. Shortening the tail is what a title
-does under a cap, below, and not the shape it is written in. A batch holding no
-issue carries no tail. A chip re-issued before its click carries the
-composition the batch now has; a batch already running keeps the title it
-started with.
+The batch's issues in the order its `Work:` slot takes them, all of them, so a list
+of sessions shows the composition without opening the ledger. No issue, no tail. A
+chip re-issued before its click carries the composition the batch now has; a batch
+already running keeps the title it started with.
 
-The tail is never matched on — sessions resolve each other by `<epic>/<id>`
-alone, which is what makes it safe to shorten or drop where the title does not
-fit.
+**The tail is never matched on** — sessions resolve each other by `<epic>/<id>`
+alone — which is what makes it safe to shorten or drop under a cap.
 
 ## When the title does not fit
 
 The titling tool caps what it accepts, and a list of sessions truncates before
 that. What gives way, in this order:
 
-1. the tail gives up its trailing numbers for a count of them — `(#896 +5)`
-   is six issues, and the `+` is what says the list was cut rather than short
-   — and then goes entirely; the composition stands in the ledger either way;
+1. the tail gives up its trailing numbers for a count — `(#896 +5)` is six issues,
+   and the `+` is what says the list was cut rather than short — and then goes
+   entirely; the composition stands in the ledger either way;
 2. the topic shortens;
-3. the identifier and the role marker are never touched: together they are the
-   address, and truncating either is losing the session. A standalone
-   identifier that would not fit is settled where it is coined, by `<tasks>`'s
-   nickname, and never by trimming it here.
+3. **the identifier and the role marker are never touched.** Together they are the
+   address. A standalone identifier that would not fit is settled where it is
+   coined, by `<tasks>`'s nickname, never by trimming here.
 
-## When a master titles itself
+## When a session titles itself
 
-1. **On assuming the role** — before anything else, with whatever identifier
-   is already in hand: the epic's number where the assignment named one,
-   otherwise the nickname. Where it carries no topic — a resume naming the
-   number and nothing else — the provisional title is the marker and the
-   identifier, `[master] <epic>`, and the topic arrives with step 2 rather than
-   holding the title back. A session that was doing something else until now
-   renames itself here, the assignment being the authorization; it renames
-   only itself, as batches are titled by their chip or by themselves.
-2. **When the ledger is in hand** — opened here, or read after a restart —
-   it carries both halves, and the title is rewritten to the shape they make
-   unless it already stands in it. Opening it here is the case that needs
-   this: the provisional title of step 1 gains the half it was missing.
-   Where the ledger already records a title, that string is the address every
-   order already out is carrying: wear it as recorded, and leave restyling to
-   the epics opened under this shape.
-3. **Before the first outgoing mention** — the final title stands before the
-   first chip, order or message leaves, because an order carries the master's
-   title as the address its batch resolves.
+Twice, never a third time: once with whatever is in hand, once when what was
+missing arrives.
 
-## When a session titles itself for its own run
+**A master.**
 
-A session running its own work — a build, a completion, a survey — wears the
+1. **On assuming the role**, before anything else, with whatever identifier is in
+   hand — the epic's number where the assignment named one, otherwise the nickname.
+   Carrying no topic, the provisional title is `[master] <epic>`, and the topic
+   arrives with step 2. A session that was doing something else renames itself
+   here — the assignment is the authorization — and renames only itself.
+2. **When the ledger is in hand** — opened here, or read after a restart — it
+   carries both halves. Where the ledger already records a title, that string is
+   the address every order already out is carrying: wear it as recorded.
+
+The final title stands **before the first chip, order or message leaves**.
+
+**A session running its own work** — a build, a completion, a survey — wears the
 standalone shape:
 
-1. **On intake** — with whatever is already in hand: the task numbers, else
-   the nickname, and the topic the work was asked for. A provisional topic is
-   enough; the title does not wait for the analysis behind it.
-2. **When the scope is settled** — a plan approved, a slice named — the
-   title is rewritten to what that scope makes, unless it already stands in it
-   or has gone out as an address: an order carrying it, a session answered on
-   it. That one is worn as sent, and the scope reaches the report instead.
+1. **On intake**, with whatever is in hand: the task numbers, else the nickname,
+   and the topic the work was asked for. A provisional topic is enough.
+2. **When the scope is settled** — a plan approved, a slice named — the title is
+   rewritten to what that scope makes, unless it already stands in it **or has gone
+   out as an address**: an order carrying it, a session answered on it. That one is
+   worn as sent, and the scope reaches the report instead.
 
-**The entry point titles.** A skill invoked inside a run already under way
-touches the title at neither step — a completion called per slice by the
-workflow above it, a survey a master runs before planning its waves: what
-stands there stays.
+**The entry point titles.** A skill invoked inside a run already under way touches
+the title at neither step — a completion called per slice, a survey a master runs
+before planning: what stands there stays.
 
 ## Where these names travel
 
-- **The chip's title is what the batch session is asked to wear**: a dispatcher
-  writing the batch shape into the chip has titled the receiver, and later
-  messages match on it — until the receiver's own start report says what it
-  answers to, which is what they match on from then on. The two part company
-  where a host hands back a variant, and matching the chip's title after that
-  reaches whoever holds the original (`session-comms.md`).
-- **A worktree a session cuts for itself leads with its title's identifier**
-  — `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number
-  would otherwise prefix every batch's name; a hyphen where the title has a
-  slash, and one for each comma between numbers — the space after that comma
-  goes into the same hyphen, a ref taking none — since a ref is a path and a
-  prefix match reads the two spellings as one name. The role marker's brackets
-  stay out of a ref, where they are shell glob characters and buy nothing the
-  trailing `-master` does not. One the host generated is left alone — renaming
-  a live session's directory is not a naming decision — so there the title
-  carries the address by itself.
+- **The chip's title is what the batch session is asked to wear.** Later messages
+  match on it until the receiver's start report says what it answers to — the two
+  part company where a host hands back a variant (`session-comms.md`).
+- **A worktree a session cuts for itself leads with its title's identifier** —
+  `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number would
+  otherwise prefix every batch's name. A hyphen where the title has a slash, and
+  one for each comma between numbers, the space after it going into the same hyphen
+  — a ref is a path, and a prefix match reads two spellings as one name. The role
+  marker's brackets stay out of a ref, being shell glob characters. One the host
+  generated is left alone.
 - **In a wave, the order's tag is `<epic>/<id>`** — no separate tag is coined
   (`order-anatomy.md`).
 - **A branch takes none of this.** It is named for the change it carries
-  ([`branch-naming.md`](branch-naming.md)) and outlives the epic that
-  scheduled it.
+  ([`branch-naming.md`](branch-naming.md)) and outlives the epic that scheduled it.

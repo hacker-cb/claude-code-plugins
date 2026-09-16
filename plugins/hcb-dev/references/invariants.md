@@ -41,5 +41,8 @@ a skill names the invariant it is leaning on and goes on.
   subagents, workflows or reviewers only on the user's or a skill's ask, the
   invocation that started this run and the skills it calls are that ask.
 - **A promised outcome is closed with its outcome, whichever way it came out** —
-  clean, red with what is red, nothing there to measure, or not waited out with
-  the state it stood at. Silence carries nothing, so it is never made to.
+  clean; red with what is red; nothing there to measure; not waited out, with the
+  state it stood at; or **unread**, with what stands in the way, which stays owed
+  until it can be taken. Silence carries nothing, so it is never made to, and a
+  protocol announced as "only if it goes wrong" is that same silence with
+  permission.

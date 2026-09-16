@@ -94,10 +94,7 @@ ones this session had never read included: a reference that is new is exactly
 where an unknown rule sits. The diff ranks that reading and catches what left; it
 never replaces it.
 
-**Read each file whole.** A rule is settled by the sentence you would have
-skipped, and a read that came back truncated is not a read
-([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
-§4).
+**Read each file whole** (*A file read in part is not read*).
 
 ## Reconciling what this session already did
 
@@ -121,8 +118,8 @@ Every divergence ends in one of four:
   [`../../references/session-comms.md`](../../references/session-comms.md).
 - **to the addressee** — it needs a decision or an authorization. The addressee
   is named, not inferred: an order above this session sends it to whoever wrote
-  that order, and absent one it is this session's user. Recommendation first
-  (`architecture-decisions.md` §2).
+  that order, and absent one it is this session's user (*Every stop carries its
+  recommendation first*).
 
 **What the new text says about work in flight is a claim to check, not one to
 adopt.** Where it contradicts something the user told this session directly, that

@@ -1,8 +1,7 @@
 # The anatomy of an order — what a dispatched task settles
 
-Read by whatever writes an order for another session to execute, over any
-carrier [`session-prompts.md`](session-prompts.md) admits — a paste block, a
-chip prompt, a message between live sessions. The envelope owns how a crossing
+Read by whatever writes an order for another session to execute, over any carrier
+[`session-prompts.md`](session-prompts.md) admits. The envelope owns how a crossing
 prompt behaves; this file owns what an order settles. The answer it asks for is
 [`order-return.md`](order-return.md).
 
@@ -25,25 +24,22 @@ a receiver told only what is known treats the rest as known.
   checkout says so here.
 - **The base pin** — the base as `<remote>/<branch>@<sha>`, the remote-tracking
   form `base-resolution.md` carries forward (the local branch where no remote
-  exists): the commit the order's facts were verified on. It dates the payload:
-  the receiver reads the delta from the pin to the tip the facts are read
-  against as the list of facts to re-verify before relying on them — the named
-  process's own base refresh where it has one, otherwise one the receiver
-  refreshes itself (`base-resolution.md`). An order whose facts are the
-  tracker's alone has no delta of this kind — those facts are re-verified in the
-  tracker. An issue among the facts is re-verified either way, and against the
-  code rather than the tracker ([`issue-currency.md`](issue-currency.md)): the
-  pin dates what the tree made true, never what the body claims about it.
+  exists): the commit the order's facts were verified on. It dates the payload —
+  the receiver reads the delta from the pin to the tip as the list of facts to
+  re-verify before relying on them, refreshing the base itself where the named
+  process does not. An order whose facts are the tracker's alone has no delta of
+  this kind. An issue among the facts is re-verified either way, and against the
+  code rather than the tracker ([`issue-currency.md`](issue-currency.md)): the pin
+  dates what the tree made true, never what the body claims about it.
 - **The process** — the workflow that runs the work:
-  `hcb-dev:implementation-workflow` where there is something to build, and it
-  brings its own slicing, review and completion — write that it runs in full,
-  its review across every reviewer and the subagents its skills ask for being
-  part of the ask, so a receiver that admits subagents only on the user's or a
-  skill's ask has the ask in hand; an order with nothing to build names what
-  runs it instead — `hcb-dev:issue-tracking` where classification and bodies
-  are the work, or the method its evidence comes from where the deliverable is
-  a verdict. Past that, name only a domain methodology the receiving session's
-  own rules do not already carry, and mark it mandatory.
+  `hcb-dev:implementation-workflow` where there is something to build, written as
+  running **in full**, since it brings its own slicing, review and completion (*A
+  skill's own ask is the permission its caller needs* — naming it here is what
+  hands the receiver the ask). An order with nothing to build names what runs it
+  instead: `hcb-dev:issue-tracking` where classification and bodies are the work,
+  or the method its evidence comes from where the deliverable is a verdict. Past
+  that, name only a domain methodology the receiver's own rules do not carry, and
+  mark it mandatory.
 - **The checks** that have to pass before it is complete.
 - **The terminal deliverable** — what exists at the end that does not now, in a
   form the receiver can check itself against. Code is one kind; recorded
@@ -55,9 +51,9 @@ a receiver told only what is known treats the rest as known.
   the receiver's planning gate asking for it; an order that lands nothing in
   the repository states it as none.
 - **The merge authority**, in that same vocabulary — the value *and* the
-  addressee it names, never read off the receiver's own role. Settling it here
-  is what stops the receiver defaulting it to its own user; an order that lands
-  nothing states it as none. The receiver may narrow it and never widen it.
+  addressee it names, never read off the receiver's own role. Settling it here is
+  what stops the receiver defaulting it to its own user; an order that lands
+  nothing states it as none (*An authority narrows on the way down*).
 - **The decision points** — which forks the receiver settles alone and
   narrates, and which come back — each with its addressee: the user, or the
   session that wrote the order
@@ -65,10 +61,11 @@ a receiver told only what is known treats the rest as known.
 - **The negative constraint** — the envelope's, plus any workaround
   deliberately left in place elsewhere.
 - **The closing act** — never empty: the return of
-  [`order-return.md`](order-return.md), or a named end state with nothing
-  coming back. Where the return travels by message rather than by hand, it
-  also carries the address to answer — the name the writing session answers to,
-  read back rather than assumed ([`session-comms.md`](session-comms.md)).
+  [`order-return.md`](order-return.md), or a named end state with nothing coming
+  back. A return travelling by message also carries the address to answer — the
+  name the writing session answers to, read back rather than assumed
+  (*Configuration predicts nothing; read the result* —
+  [`session-comms.md`](session-comms.md)).
 - **The answer's coordinate** — where an answer that changes what the receiver
   is building will be written, so it is read there rather than waited for in an
   inbox (`session-comms.md`); never empty, and where the work has no such place
@@ -76,11 +73,11 @@ a receiver told only what is known treats the rest as known.
 
 ## The tag
 
-Coin one naming the subject, unique among the orders the writing session has
-out — except in a wave, where the tag is the batch's own `<epic>/<id>`
-([`session-naming.md`](session-naming.md)) and none is coined. It goes in the
-first line beside the ask in prose, and into the writing session's own record
-together with the ask and the deliverable expected back.
+Coin one naming the subject, unique among the orders this session has out — except
+in a wave, where the tag is the batch's own `<epic>/<id>`
+([`session-naming.md`](session-naming.md)) and none is coined. It goes in the first
+line beside the ask, and into the writing session's own record together with the
+ask and the deliverable expected back.
 
 ## More than one order
 

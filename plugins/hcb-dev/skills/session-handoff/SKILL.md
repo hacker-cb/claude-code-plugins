@@ -41,10 +41,9 @@ its ask is unbidden.
    reorganized, a documentation change all count, and each is stated as what now
    holds rather than as what was looked at. Short, and complete: brevity comes
    from leaving out how it got there, never from leaving out an outcome.
-   Something unfinished is said to be unfinished.
-
-   **What a review left uncovered, and what it surfaced without fixing, goes
-   here too.** A reader given only the outcome reads the work as reviewed clean.
+   Something unfinished is said to be unfinished, and **what a review left
+   uncovered, or surfaced without fixing, belongs here** (*A promised outcome is
+   closed with its outcome*).
 
 2. **Where it is** — the branch, where there is one. Where the work belongs
    outside the reader's current track, say so and say which base it was cut
@@ -60,10 +59,11 @@ its ask is unbidden.
    dead number as a mistake in the prompt.
 
    **Where no files changed and the result is findings alone** this part carries
-   them instead: each claim at the repo-relative coordinate it was read at, and
-   beside them what was ruled out and by what. Work that lives in the tracker is
-   not this case — there the list above *is* the result. What was *not* checked goes here too — a reader
-   told only what is known treats the rest as known.
+   them instead: each claim at the repo-relative coordinate it was read at, what
+   was ruled out and by what, and what was not checked
+   ([`../../references/order-anatomy.md`](../../references/order-anatomy.md), The
+   payload). Work living in the tracker is not this case — there the list above
+   *is* the result.
 
 4. **How to get it, and check it** — the opening step depends on where the work
    landed:
@@ -92,10 +92,9 @@ its ask is unbidden.
    **Unbidden** — these are the reader's steps: work out what this changes for
    what it is already doing — what it overlaps, what it conflicts with, what
    assumption it breaks, what it has already done for them — then summarize that
-   back to the user, saying plainly where it changes nothing, and put the
+   back to the user, **saying plainly where it changes nothing**, and put the
    non-obvious consequences up before acting on them
    ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
-   Silence reads as "not checked".
 
    A reader already mid-flight is told what this breaks for it whichever posture
    applies: where the handoff invalidates a premise it stands on, name it, and
