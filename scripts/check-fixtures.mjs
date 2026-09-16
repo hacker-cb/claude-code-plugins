@@ -14,8 +14,9 @@
 //
 // Usage: node scripts/check-fixtures.mjs [--dir <fixtures root>]
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, isAbsolute, join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 // The invented shapes. A sanitizer writes these; anything else is real data that leaked.
@@ -37,6 +38,15 @@ const SHAPES = {
   ref: /^example-branch-[0-9a-f]{8}$|^(main|master|dev|HEAD)$/i,
   // URLs point at a host that does not exist.
   url: /^https:\/\/(github|gitlab)\.example(\/|$)/,
+  // A check's name is a workflow's name, which routinely carries a product or a
+  // customer, so the collector hashes it — except for a handful of literals that name
+  // nobody and that a filter under test has to match. This gate keeps its OWN copy of
+  // that handful deliberately: a name the collector starts passing through without
+  // telling the gate fails here, and failing closed is the only safe way for two lists
+  // that must agree to disagree.
+  check: /^example-check-[0-9a-f]{8}$|^(ci success|validate marketplace & plugins|copilot-pull-request-reviewer)$/i,
+  // Opaque ids the collector replaces wholesale.
+  id: /^example-id-[0-9a-f]{8}$/,
 };
 
 const KEY_SHAPE = [
@@ -45,6 +55,8 @@ const KEY_SHAPE = [
   [/^(full_name|nameWithOwner|repository|ruleset_source)$/i, 'repo'],
   [/^(ref|head_ref|base_ref|headRefName|baseRefName|branch|source_branch|target_branch)$/i, 'ref'],
   [/url$/i, 'url'],
+  [/^(name|context|slug)$/i, 'check'],
+  [/^id$/i, 'id'],
 ];
 
 // A real commit id anywhere in a value, whatever key it sits under.
@@ -77,6 +89,48 @@ function packedLeak(value) {
 // Every detector above is checked against a value that must trip it and one that must
 // not. A guard nothing can kill is a guard nobody proved, and these run in CI beside the
 // real check — where a regex quietly stopping matching would otherwise read as "clean".
+// Read from the directory's own listing, not by asking whether a path exists. macOS is
+// case-insensitive, so `existsSync(<dir>/CAPTURED)` is TRUE of a directory named
+// `captured` sitting there — which is precisely what the collector's own output is
+// called. The gate would then mark a whole suite captured on a developer's machine and
+// not in CI, and a rule that answers differently per filesystem is worse than no rule.
+// A listing compares exactly, and `isFile` keeps a directory from ever being a marker.
+const hasMarker = (dir) => {
+  try {
+    return readdirSync(dir).includes('CAPTURED') && statSync(join(dir, 'CAPTURED')).isFile();
+  } catch {
+    // A directory that cannot be listed is not a directory without a marker. Say so
+    // rather than answering "no" — the caller below turns this into a failure.
+    return null;
+  }
+};
+
+
+// The nearest ancestor carrying a marker, `null` for none, `undefined` for a directory
+// that could not be read — three answers, because "unknown" taking the shape of "no" is
+// how a gate reports a clean tree it never managed to look at.
+function markedAncestor(dir, stopAt, cache = new Map(), alsoMarked = new Set()) {
+  let at = dir;
+  for (;;) {
+    // Two sources, UNIONED. Replacing one with the other is what went wrong twice: git's
+    // listing alone missed a marker git cannot see, and the filesystem alone missed one
+    // that is staged but deleted from the working tree — which is precisely a pre-commit
+    // run, `rm CAPTURED` with the deletion not committed. Either source saying "marker"
+    // is a marker; only both saying "no" is no.
+    if (alsoMarked.has(at)) return at;
+    if (!cache.has(at)) {
+      const seen = hasMarker(at);
+      if (seen === null) return undefined;
+      cache.set(at, seen);
+    }
+    if (cache.get(at)) return at;
+    if (at === stopAt) return null;
+    const up = dirname(at);
+    if (up === at) return null;
+    at = up;
+  }
+}
+
 const SELF_TEST = [
   ['sha in the open', '18b5c1fd43f39a3a411db365e946c95f4e4d5ce3', true, (v) => LOOSE_SHA.test(v)],
   ['invented sha passes', `f1x7${'a'.repeat(36)}`, false, (v) => LOOSE_SHA.test(v)],
@@ -101,13 +155,67 @@ const SELF_TEST = [
   ['an invented branch passes', 'example-branch-1a2b3c4d', true, (v) => SHAPES.ref.test(v)],
 ];
 
+// Two of the probes below are about the WALK rather than a detector, so they need a
+// tree. It is built in a temp directory and torn down: a probe that asserts against the
+// repository's own layout stops proving anything the day that layout changes.
+function treeProbes() {
+  let base;
+  try {
+    base = mkdtempSync(join(tmpdir(), 'hcb-fixture-probe-'));
+  } catch (error) {
+    // Said out loud and failed, never skipped. These probes cover the branch that decides
+    // whether the gate opens or closes, and a self-test that quietly runs fewer of them
+    // reports "every detector reads both ways" over detectors it never touched.
+    process.stderr.write('check-fixtures: the walk probes need a writable temp directory'
+      + ` — ${error.message}\n`);
+    process.exit(2);
+  }
+  try {
+    mkdirSync(join(base, 'marked', 'sub'), { recursive: true });
+    writeFileSync(join(base, 'marked', 'CAPTURED'), 'x\n');
+    // A DIRECTORY called `captured` — which is what the collector's own output is named,
+    // and what a case-insensitive filesystem hands back for a query about `CAPTURED`.
+    mkdirSync(join(base, 'plain', 'captured'), { recursive: true });
+    // No marker on disk anywhere under it — the probe hands the git-listing set instead.
+    mkdirSync(join(base, 'staged', 'sub'), { recursive: true });
+    return [
+      ['a marker file is a marker', join(base, 'marked'), true, (v) => hasMarker(v) === true],
+      ['a directory named captured is not', join(base, 'plain'), false, (v) => hasMarker(v) === true],
+      ['the marker reaches a subdirectory', join(base, 'marked', 'sub'), true,
+        (v) => markedAncestor(v, base) === join(base, 'marked')],
+      ['and does not reach a sibling', join(base, 'plain'), false,
+        (v) => markedAncestor(v, base) !== null],
+      // Why the call site passes the CHECKOUT root and never the scan root: a boundary
+      // set below the marker hides it, and the file then gets the loose probes alone.
+      // `--dir` narrowing is exactly what would set such a boundary.
+      ['a boundary below the marker hides it', join(base, 'marked', 'sub'), true,
+        (v) => markedAncestor(v, v) === null],
+      // The branch that decides whether the gate opens or closes, and it had no probe.
+      // A directory that cannot be read must answer "unknown" — never "no marker".
+      ['an unreadable directory answers unknown', join(base, 'gone'), true,
+        (v) => hasMarker(v) === null],
+      ['and unknown reaches the caller as unknown', join(base, 'gone'), true,
+        (v) => markedAncestor(v, base) === undefined],
+      // Either source alone is enough: git's listing marks a directory whose marker is
+      // not in the working tree at all, which is what a pre-commit run looks like.
+      ['git\'s listing alone marks a directory', join(base, 'staged', 'sub'), true,
+        (v) => markedAncestor(v, base, new Map(), new Set([join(base, 'staged')]))
+          === join(base, 'staged')],
+    ].map(([name, value, want, probe]) => [name, value, want, probe, probe(value)]);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+}
+
 function selfTest() {
   const bad = [];
-  for (const [name, value, want, probe] of SELF_TEST) {
-    const got = probe(value);
+  // Evaluated while the tree still stands; the rows carry their answers.
+  const tree = treeProbes();
+  for (const [name, value, want, probe, answered] of [...SELF_TEST, ...tree]) {
+    const got = answered !== undefined ? answered : probe(value);
     if (got !== want) bad.push(`${name}: expected ${want}, got ${got} — "${value}"`);
   }
-  process.stdout.write(`self-test: ${SELF_TEST.length} probe(s)\n`);
+  process.stdout.write(`self-test: ${SELF_TEST.length + tree.length} probe(s)\n`);
   for (const b of bad) process.stdout.write(`  FAIL  ${b}\n`);
   if (bad.length) {
     process.stdout.write(`\n${bad.length} detector(s) no longer work\n`);
@@ -125,7 +233,11 @@ function die(message) {
 }
 
 const argv = process.argv.slice(2);
-let root = 'tests/suites';
+// The whole repository, not one directory inside it. The collector's `--out` accepts any
+// path, so a capture written beside the script it serves carries its marker there and a
+// gate rooted at `tests/suites` never visits it — the same defect as walking by path
+// instead of by marker, one level up. `--dir` narrows this for a one-off check.
+let root = '.';
 let rootWasGiven = false;
 let wantSelfTest = false;
 for (let i = 0; i < argv.length; i += 1) {
@@ -149,7 +261,10 @@ const repoRoot = (() => {
 
 if (wantSelfTest) die('--self-test takes no --dir: it probes the detectors, not a tree');
 
-const rootAbs = isAbsolute(root) ? root : join(repoRoot, root);
+// `resolve` and not `join`: a trailing slash — which shell completion supplies for
+// `--dir tests/suites/` — survives `join`, while `dirname` never produces one, so the
+// ancestry walk never met its stop point and climbed past the checkout to `/`.
+const rootAbs = resolve(isAbsolute(root) ? root : join(repoRoot, root));
 if (!existsSync(rootAbs)) die(`no directory at ${root}`);
 
 // Two kinds of fixture, and they earn different checks. A fixture written by hand is
@@ -166,21 +281,111 @@ if (!existsSync(rootAbs)) die(`no directory at ${root}`);
 //
 // The loose checks run over both kinds: a real commit id or a real forge host has no
 // business in either, and that guard costs nothing.
-const fixtures = [];
-const capturedDirs = new Set();
-(function walk(dir) {
-  const entries = readdirSync(dir);
-  const captured = entries.includes('CAPTURED');
-  if (captured) capturedDirs.add(dir);
-  for (const entry of entries) {
-    const abs = join(dir, entry);
-    if (statSync(abs).isDirectory()) { walk(abs); continue; }
-    if (!entry.endsWith('.json')) continue;
-    fixtures.push({ abs, captured });
-  }
-}(rootAbs));
+//
+// The WALK, though, is the whole repository, while what it INSPECTS is fixtures alone.
+// Those are two different scopes and collapsing them breaks the gate either way: rooted
+// at `tests/suites` it never visits a capture the collector's `--out` put somewhere else
+// — the marker-not-path defect one level up — and inspecting everything it walks fails
+// the manifests, which carry this project's own real repository url by design.
+// Where a fixture may live besides a marked directory: the suites tree, whose json IS
+// fixture data whether or not it was captured.
+const SUITES = join(repoRoot, 'tests', 'suites');
+const isFixtureTree = (dir) => dir === SUITES || dir.startsWith(`${SUITES}/`);
+
+// WHAT to walk is git's answer, not the filesystem's. A plain recursive walk from the
+// repository root descends into `.claude/worktrees/`, where this project keeps its linked
+// checkouts — every one of them a full copy of the tree, on another branch, with another
+// branch's captures in it. The gate would then read files that are not in this checkout's
+// history, fail on somebody else's half-finished capture, and take every suite down with
+// it. `--cached --others --exclude-standard` lists exactly what is committed or about to
+// be: an ignored path cannot reach a public history, and anything that can is here.
+const listed = spawnSync('git', ['-C', rootAbs, 'ls-files', '--cached', '--others',
+  '--exclude-standard', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+let tracked;
+if (listed.status === 0) {
+  tracked = listed.stdout.split('\0').filter(Boolean);
+} else if (rootWasGiven && spawnSync('git', ['-C', rootAbs, 'rev-parse', '--show-toplevel'],
+  { encoding: 'utf8' }).status !== 0) {
+  // An explicit `--dir` may name a directory git knows nothing about — a capture checked
+  // where the collector wrote it, BEFORE it is moved into the repository, which is the
+  // one moment checking it still costs nothing. There is no listing to ask, and no
+  // worktree problem either: the caller named this directory.
+  //
+  // The check is "outside a checkout", never "the listing failed". A corrupt index or an
+  // output too large for the buffer would otherwise switch the gate to a filesystem walk
+  // silently — losing every marker that lives in the index alone, which is the case this
+  // whole union exists for.
+  tracked = [];
+  (function walk(dir) {
+    for (const entry of readdirSync(dir)) {
+      const abs = join(dir, entry);
+      if (statSync(abs).isDirectory()) walk(abs);
+      else tracked.push(abs.slice(rootAbs.length + 1));
+    }
+  }(rootAbs));
+} else {
+  // Under the default root a failed listing is not an empty repository. Refusing is the
+  // point: the alternative is a gate reporting a clean tree because it could not see one.
+  die(`could not list the tree under ${root} (${(listed.stderr || '').trim().split('\n')[0] || 'no detail'})`);
+}
 
 const failures = [];
+const fixtures = [];
+const capturedDirs = new Set();
+
+// THE RULE, stated once, because getting it wrong four different ways is what this
+// paragraph is paying for: a json is strictly checked when ANY signal says its own
+// directory or an ancestor is a capture. The signals are git's listing and the
+// filesystem, they are UNIONED, and an ancestor that cannot be read counts as a capture.
+// Every past hole here was the same shape — one signal replacing another, or a narrower
+// scope quietly becoming a weaker rule.
+const markedByGit = new Set();
+for (const rel of tracked) {
+  if (rel !== 'CAPTURED' && !rel.endsWith('/CAPTURED')) continue;
+  // Unconditionally. Asking `hasMarker` to confirm it is what let a staged-but-deleted
+  // marker drop out — and a directory that cannot be listed drop out silently with it.
+  markedByGit.add(dirname(join(rootAbs, rel)));
+}
+// Seeded here, not discovered later. Building `capturedDirs` out of the fixtures that
+// found a marker means a capture holding NO listed json never enters the set at all —
+// and the check below, whose whole job is to notice a marker nothing was checked
+// against, then has nothing to notice.
+for (const dir of markedByGit) capturedDirs.add(dir);
+
+const markerAt = new Map();
+// Up to the CHECKOUT root, never to the scan root: stopping at `rootAbs` made the
+// classification depend on `--dir`, so `--dir captured/sub` never saw `captured/CAPTURED`
+// and the same unsanitized login a full scan rejects passed under the loose probes.
+// Narrowing says where to look. It never says what the rules are.
+const nearestMarker = (dir) => {
+  const hit = markedAncestor(dir, repoRoot, markerAt, markedByGit);
+  if (hit === undefined) {
+    failures.push(`${dir}: could not be listed, so whether it carries a CAPTURED marker`
+      + ' is unknown — which is not the same as carrying none');
+    return dir;
+  }
+  if (hit !== null) capturedDirs.add(hit);
+  return hit;
+};
+
+for (const rel of tracked) {
+  if (!rel.endsWith('.json')) continue;
+  const abs = join(rootAbs, rel);
+  // `--cached` lists a file whose deletion is not committed yet. It is a path with no
+  // bytes behind it, and reading it as an unparseable fixture would fail the gate over a
+  // file that carries nothing.
+  if (!existsSync(abs)) continue;
+  const marker = nearestMarker(dirname(abs));
+  const captured = marker !== null;
+  // Inspected where a fixture may live: under a marked directory, and in the suites
+  // tree whose json IS fixture data. Elsewhere the manifests carry this project's own
+  // real url by design, so everything else is listed for markers and read as nothing —
+  // and that rule does NOT bend for an explicit `--dir`, which narrows where to look
+  // and never what counts. Letting it widen the rule made one tree answer two ways:
+  // `--dir .` failed on the manifests that the default run over the same tree passed.
+  if (!captured && !isFixtureTree(dirname(abs))) continue;
+  fixtures.push({ abs, captured, marker });
+}
 
 function inspect(node, path, file, keyName, captured) {
   if (node === null || node === undefined) return;
@@ -194,6 +399,11 @@ function inspect(node, path, file, keyName, captured) {
     }
     return;
   }
+  // Numbers are coerced rather than skipped. A forge sends `id` as an integer, the
+  // collector replaces it with a string, and returning early on a non-string means the
+  // one shape that proves the replacement happened is never checked on the value that
+  // did not get it. Booleans and the rest carry nothing and are let go.
+  if (typeof node === 'number') node = String(node);
   if (typeof node !== 'string') return;
 
   if (LOOSE_SHA.test(node)) {
@@ -236,7 +446,7 @@ for (const { abs, captured } of fixtures) {
 }
 
 process.stdout.write(`fixtures: ${fixtures.length} file(s) under ${root}`
-  + `, ${capturedCount} captured\n`);
+  + `, ${capturedCount} captured, ${capturedDirs.size} marked director${capturedDirs.size === 1 ? 'y' : 'ies'}\n`);
 
 // An explicit --dir naming a directory with no fixture in it is a question that went
 // unanswered, not a clean answer: the caller pointed at something it wanted checked.
@@ -251,7 +461,11 @@ if (rootWasGiven && fixtures.length === 0) {
 // under the default root too: it is how a capture whose files were moved away, or
 // written under a name this walk cannot see, stops reading as "checked".
 for (const dir of capturedDirs) {
-  if (fixtures.some(({ abs, captured }) => captured && dirname(abs) === dir)) continue;
+  // A fixture whose NEAREST marker is this one answers for it — not merely one under
+  // this path, which would let a nested capture vouch for its parent. Requiring a
+  // sibling, as this did before the marker began reaching downward, failed a capture
+  // whose files had just been inspected successfully.
+  if (fixtures.some(({ marker }) => marker === dir)) continue;
   const rel = dir.startsWith(`${repoRoot}/`) ? dir.slice(repoRoot.length + 1) : dir;
   failures.push(`${rel}: CAPTURED marker with no fixture beside it — nothing was checked`);
 }

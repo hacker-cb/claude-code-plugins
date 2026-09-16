@@ -19,6 +19,7 @@
 //
 // Usage: node scripts/collect-fixtures.mjs --repo <owner/name> --pr <n> --out <dir>
 //                                          [--kind reviews|timeline|checks|status|rules]
+//                                          [--sha <oid>]   (default: the pull request's head)
 //
 // Writes <out>/<kind>.json plus a CAPTURED marker, which is what tells
 // scripts/check-fixtures.mjs to hold these files to the invented shapes.
@@ -95,7 +96,7 @@ const BODY_MARKERS = [
 ];
 
 const USAGE = 'usage: node scripts/collect-fixtures.mjs --repo <owner/name> --pr <n>'
-  + ' --out <dir> [--kind reviews|timeline|checks|status|rules]\n';
+  + ' --out <dir> [--kind reviews|timeline|checks|status|rules] [--sha <oid>]\n';
 
 function die(message) {
   process.stderr.write(`collect-fixtures: ${message}\n${USAGE}`);
@@ -103,10 +104,10 @@ function die(message) {
 }
 
 const argv = process.argv.slice(2);
-const opts = { repo: null, pr: null, out: null, kind: null };
+const opts = { repo: null, pr: null, out: null, kind: null, sha: null };
 for (let i = 0; i < argv.length; i += 1) {
   const flag = argv[i];
-  if (!['--repo', '--pr', '--out', '--kind'].includes(flag)) die(`unknown argument '${flag}'`);
+  if (!['--repo', '--pr', '--out', '--kind', '--sha'].includes(flag)) die(`unknown argument '${flag}'`);
   if (argv[i + 1] === undefined) die(`${flag} needs a value`);
   opts[flag.slice(2)] = argv[i + 1];
   i += 1;
@@ -154,10 +155,14 @@ const invented = {
   context: (value) => `example-check-${digest(value, 8)}`,
 };
 
-// A check's name is often a workflow name, which can carry a product or customer. The
-// exception is the aggregate every repo of this user runs, whose literal name is what a
-// script under test has to recognise.
-const PUBLIC_CHECK_NAMES = new Set(['ci success', 'validate marketplace & plugins']);
+// A check's name is often a workflow name, which can carry a product or customer. Two
+// exceptions: the aggregate every repo of this user runs, and the reviewer bot's own
+// check — both name nobody, and both are literals a script under test has to recognise.
+// The reviewer's is the one that distinguishes the head's feed from the merge
+// commit's, so hashing it would erase the very difference a fixture is taken for.
+const PUBLIC_CHECK_NAMES = new Set([
+  'ci success', 'validate marketplace & plugins', 'copilot-pull-request-reviewer',
+]);
 
 function sanitizeBody(body) {
   if (typeof body !== 'string' || body === '') return body;
@@ -300,6 +305,10 @@ assertKeepIsCovered();
 
 const head = JSON.parse(gh(['pr', 'view', opts.pr, '--repo', opts.repo,
   '--json', 'headRefOid,baseRefName']));
+// The head is the default, never the only choice: what a base runs on the commit a
+// merge lands is a different set from what the pull request ran, and only the second
+// can be reached from the head. `--sha` is how a fixture is taken of the first.
+const sha = opts.sha || head.headRefOid;
 const outAbs = isAbsolute(opts.out) ? opts.out : join(process.cwd(), opts.out);
 mkdirSync(outAbs, { recursive: true });
 writeFileSync(join(outAbs, 'CAPTURED'),
@@ -308,7 +317,7 @@ writeFileSync(join(outAbs, 'CAPTURED'),
   + 'invented shapes because of this marker. Never add a file here by hand.\n');
 
 for (const kind of kinds) {
-  const args = KINDS[kind](opts.repo, opts.pr, head.headRefOid, head.baseRefName);
+  const args = KINDS[kind](opts.repo, opts.pr, sha, head.baseRefName);
   const clean = sanitize(parsePages(gh(args)), null);
   const path = join(outAbs, `${kind}.json`);
   writeFileSync(path, `${JSON.stringify(clean, null, 2)}\n`);

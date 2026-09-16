@@ -295,6 +295,26 @@ the plan stages them.
   tables it classifies by are
   [`skills/git-cleanup/references/verdicts.md`](skills/git-cleanup/references/verdicts.md).
 
+## Shared scripts
+
+A question with one right answer, and a set of wrong ones that look alike, belongs in
+code rather than in prose a reader re-derives each time. Each script here answers ONE
+question, prints JSON, and is held to what a forge actually sends by a suite under
+[`../../tests/suites`](../../tests/suites) in the repository root. They never load into a
+session's context — a skill invokes one and reads its answer.
+
+- [`scripts/default-branch.mjs`](scripts/default-branch.mjs) — which branch this
+  repository treats as its default, and the remote that says so. Asks the remote even
+  when the local pointer verified, because a pointer at a ref that still exists is the
+  case verification cannot catch.
+- [`scripts/commit-checks.mjs`](scripts/commit-checks.mjs) — what the two check feeds
+  say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
+  reader of one is blind to the other, and answers with a single `verdict` so a caller
+  never assembles one out of counts.
+
+Both refuse rather than guess, and a refusal says which question could not be answered —
+never "nothing matched".
+
 ## Shared references
 
 Guidance more than one skill needs is kept in one place rather than copied into

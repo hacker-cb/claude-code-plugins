@@ -1,0 +1,1 @@
+{"checks": {"total_count": 2, "check_runs": [{"id": "example-id-1", "name": "ci-aggregate", "status": "completed", "conclusion": "success"}, {"id": "example-id-2", "name": "ci-aggregate", "status": "completed", "conclusion": "failure"}]}, "status": {"state": "pending", "statuses": [], "total_count": 0}}

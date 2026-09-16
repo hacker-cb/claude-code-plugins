@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Stands in for `gh`. Unlike the git stub beside the default-branch suite this is NOT a
+# proxy: every call this script makes reaches a forge, so there is no half to pass
+# through. A call the envelope does not answer is a bug in the case, not something to
+# forward — it exits 3 saying so, which no real gh failure looks like.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+suite=$(cd -- "$(dirname -- "$0")/.." && pwd)
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+# A capture is named by a path relative to the suite; anything else in the field is the
+# payload itself. Keeping the captures as files is what lets check-fixtures.mjs hold them
+# to the invented shapes — an envelope with a real sha pasted inline would not be walked.
+emit() {
+  case "$1" in
+    ''|fail) return 1 ;;
+    # A call that succeeds having printed nothing. Not the same as a call that failed,
+    # and not the same as one that printed an empty list — which is the whole point.
+    empty) return 0 ;;
+    /*|./*|captured/*) cat "$suite/$1" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+case "$1 $2" in
+  "pr view")
+    v=$(ask '.pr_view')
+    case "$v" in
+      ""|fail) echo "gh: could not resolve to a PullRequest" >&2; exit 1 ;;
+      notjson) printf 'not json at all\n'; exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "api repos"*)
+    # Un-paginated, so the PATH is $2 — there is no --paginate word ahead of it.
+    case "$2" in
+      */protection/required_status_checks)
+        v=$(ask '.classic')
+        case "$v" in
+          ""|absent) echo "gh: Branch not protected (HTTP 404)" >&2; exit 1 ;;
+          forbidden) echo "gh: Resource not accessible by integration (HTTP 403)" >&2; exit 1 ;;
+          # What GitHub answers for a resource the credentials may not see. Measured
+          # beside it: an unprotected branch says "Branch not protected", and a missing
+          # one "Branch not found" — three different 404s, three different steps.
+          hidden) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+          missing) echo "gh: Branch not found (HTTP 404)" >&2; exit 1 ;;
+          garbage) printf 'not json at all\n'; exit 0 ;;
+          *) printf '%s\n' "$v"; exit 0 ;;
+        esac ;;
+    esac ;;
+  "api --paginate")
+    # $3 is the path. The feeds differ only by their last segments.
+    case "$3" in
+      */rules/branches/*)
+        v=$(ask '.gates')
+        case "$v" in
+          # Hands the PATH back as a check name, which is how a case observes what the
+          # script actually sent — a branch name is a url path PARAMETER, and one segment
+          # of it, so a non-ASCII or slashed name has to arrive percent-encoded.
+          echo-path) printf '[{"type":"required_status_checks","parameters":{"required_status_checks":[{"context":"%s"}]}}]\n' "${3#*/rules/branches/}"; exit 0 ;;
+          ""|absent) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+          fail) echo "gh: Bad credentials (HTTP 401)" >&2; exit 1 ;;
+          *) printf '%s\n' "$v"; exit 0 ;;
+        esac ;;
+      */check-runs)
+        emit "$(ask '.checks')" && exit 0
+        echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+      */status)
+        emit "$(ask '.status')" && exit 0
+        echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+    esac ;;
+esac
+echo "stub gh: no envelope answer for: $*" >&2
+exit 3

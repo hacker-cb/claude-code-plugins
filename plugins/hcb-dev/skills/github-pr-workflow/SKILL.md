@@ -511,67 +511,81 @@ that, never the merge command's exit status:
 - Poll until the PR shows `MERGED`, or report what's blocking it.
 - **On `MERGED`, wait for the base's own checks on the merge commit.** Two heads
   green apart can be red together, and where the base does not require branches
-  current with it, nothing before this point reads them combined:
+  current with it, nothing before this point reads them combined — a base commonly
+  runs workflows no pull request ever triggers
+  ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)).
+
+  Two reads. The base's own tip comes first because it answers what the merge commit
+  alone cannot: what this base runs on a push at all, and which of it to wait for.
 
   ```bash
-  # The PR's own repo, never gh's default — in a fork checkout that default is the
-  # parent, where this SHA does not exist and every read below 404s into silence.
-  # Strip the host rather than a literal one: an Enterprise instance serves its own.
-  PR_URL=$(gh pr view <pr> --json url --jq '.url')
-  REPO=$(printf '%s' "$PR_URL" | sed -E 's#^https?://[^/]+/##; s#/pull/.*$##')
-  MERGE_SHA=$(gh pr view <pr> --json mergeCommit --jq '.mergeCommit.oid // empty')
-  # Empty until the merge commit is published (a queue, a replica behind). Stop here
-  # and re-poll: an empty SHA builds a URL that 404s, and a 404 prints no rows —
-  # which the reading below would take for a base with nothing to run.
-  [ -n "$MERGE_SHA" ] || { echo "merge commit not published yet — re-poll"; exit 1; }
-  # Captured with their exit status, never piped straight out: a call that failed
-  # prints no rows, exactly as a base with nothing to run does, and the two take
-  # different steps.
-  if ! RUNS="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
-    --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"')"; then
-    echo "CANNOT READ the check-runs feed — unread, not unchecked"; exit 1
-  fi
-  # Checks API and the older statuses are separate feeds; an external CI posting only
-  # the latter leaves the call above empty however red it is. This one answers with an
-  # object, so its verdict is the rolled-up `.state` the server computes over every
-  # status — take that, and read `.statuses[]` as the rows Step 7 reports in full,
-  # which is why it paginates; the rollup line then repeats once per page, identically.
-  if ! STATUSES="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/status" \
-    --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")')"; then
-    echo "CANNOT READ the status feed — unread, not unchecked"; exit 1
-  fi
-  printf '%s\n%s\n' "$RUNS" "$STATUSES"
+  # Quoted as one word at every use: the plugin root is a path like any other and may
+  # carry spaces, and unquoted, `node` is handed its first segment.
+  CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
+  BEFORE="$(node "$CHECKS" --pr <pr> --sha base  --require-from-gates)" \
+    || echo "CALLED WRONG: $BEFORE"
+  AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
+    || echo "CALLED WRONG: $AFTER"
   ```
 
-  Poll while any row is unfinished, on Step 4's budget and its escalation.
-  **Nothing returned is not green**: a run registers after the push that triggers
-  it, so an empty pair of reads right after the merge is the answer arriving, not
-  the answer. A rollup of `pending` over zero statuses is that same emptiness and
-  not a run in flight — the rollup says something only beside a non-empty list.
-  Tell that apart from a base that runs nothing at all by reading the same two
-  feeds on the commit the base carried *before* this merge — where that one has
-  rows, keep polling; where it has none either, say the base is unchecked and
-  that this step guaranteed nothing. A budget that runs out while this step is
-  still polling — a row unfinished, or rows the commit before carried and this
-  one still lacks — is not waited out, with what the feeds showed when the
-  waiting stopped, empty included; and a read that did not succeed is neither of
-  those — unread is not empty, and it takes the platform path above rather than
-  any verdict about this base.
+  **`--require-from-gates` is why no check name appears above.** The names come out of
+  the base's own gates — a ruleset and classic branch protection, which are separate
+  mechanisms and are both read ([`references/merge-gates.md`](references/merge-gates.md))
+  — and travel from one forge response into the next as data. A workflow may be called
+  `Team's CI`, or carry a `$` or a backtick, and a name composed into a command line has
+  to be quoted exactly right every single time. `.gates` is what the base actually
+  requires; `null` there means the question was never asked, which is not an empty list.
 
-  **What the report claims is what these two reads saw**, never that the base is
+  **Read `BEFORE` before believing what it lacks.** An unread answer carries empty `runs`
+  and `statuses` too, so "the base does not run this" and "nothing was read" look
+  identical in the rows. `BEFORE.verdict` tells them apart, and only a `BEFORE` that was
+  actually read may say the base runs nothing on a push.
+
+  Captured in variables, never redirected to a file: Step 6 runs inside the user's
+  checkout, where a stray `merged.json` is an untracked file that Step 7, `git-cleanup`
+  and branch retirement all read as work in progress. **A non-zero exit is the
+  invocation being wrong**, never a state to retry — it is the one outcome that carries
+  no JSON, so it is read from the status rather than from the body.
+
+  Otherwise route on `.verdict`, which is the one field this answer is designed to be
+  read by — the rollup the server computes can say `failure` over rows that all passed,
+  so a caller assembling a verdict out of the counts reports green on a red base:
+
+  | `.verdict` | the step |
+  |---|---|
+  | `retry` | the answer is not published yet — re-poll the same call; a merge commit appears late behind a queue or a replica |
+  | `unread` | the feeds were not read: unread, never unchecked — take the platform path above and claim nothing about this base |
+  | `running` | poll, on Step 4's budget and its escalation |
+  | `failing` | attribute, then report |
+  | `empty` | nothing registered yet where `BEFORE` has rows; where `BEFORE` is `empty` too, this base runs nothing on a push — say it is unchecked and that this step guaranteed nothing |
+  | `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, and `null` that none was ever asked, so a required check may exist that this run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
+
+  **Wait by name, never for the count to settle**, which is what `--require-from-gates`
+  does: the aggregate registers after the checks it aggregates, so the moment every check
+  has finished is a moment it does not exist. One name it brings needs judgement, though
+  — a gate belonging to a `pull_request`-only workflow never appears on a merge commit,
+  so `AFTER` stays `running` on it while every push check is green. `BEFORE` is what
+  settles that: a required name absent from `BEFORE` is absent from the base's pushes,
+  and waiting for it on `AFTER` spends the budget for nothing. Report that the guarantee
+  is the weaker one rather than waiting it out.
+
+  A budget that runs out mid-poll is not waited out: report the state the feeds stood
+  at, empty included.
+
+  **What the report claims is what these reads saw**, never that the base is
   quiet: a check that registers after them, and one that runs for the pull
   request and not for the push that landed it, are both outside what they can
   see.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
-  on that previous commit too is not this merge's, and neither is a degraded forge
+  on `BEFORE` too is not this merge's, and neither is a degraded forge
   (*When the platform is down, the red check is not yours*) or a known flake.
   What survives that is **this merge's**, not the next author's — report it in
   Step 7 and fix it forward on a branch cut from the base, through this skill from
   Step 1. Where the base does require branches current, this read confirms rather
   than guards — take it either way.
 
-  **Step 7 carries what these feeds showed, whichever way it came out** — green;
+  **Step 7 carries what these reads showed, whichever way it came out** — green;
   red, with every failing row and what each was attributed to; unchecked; or the
   wait stopped before the rows finished, with the state they stood at then.
   Attribution decides what you fix, never what gets reported: rows attributed
