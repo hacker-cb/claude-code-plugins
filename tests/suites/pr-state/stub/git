@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+case "$1 $2" in
+  "rev-parse --verify")
+    case "$(ask '.base_present')" in no) exit 1 ;; esac
+    printf '%s\n' "f1x70000000000000000000000000000000000aa"; exit 0 ;;
+  "rev-list --count")
+    v=$(ask '.behind')
+    case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;;
+      "") printf '0\n'; exit 0 ;; *) printf '%s\n' "$v"; exit 0 ;; esac ;;
+  "diff --name-only")
+    v=$(ask '.moved')
+    case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;;
+      *) printf '%s\n' "$v"; exit 0 ;; esac ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+case "$1 $2" in
+  "pr view")
+    v=$(ask '.pr_view')
+    case "$v" in
+      ""|fail) echo "gh: could not resolve to a PullRequest" >&2; exit 1 ;;
+      notjson) printf 'not json\n'; exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "api graphql")
+    v=$(ask '.threads')
+    case "$v" in
+      fail) echo "gh: GraphQL error" >&2; exit 1 ;;
+      notjson) printf 'not json\n'; exit 0 ;;
+      "") printf '{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[]}}}}}\n'; exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+esac
+echo "stub gh: no envelope answer for: $*" >&2; exit 3

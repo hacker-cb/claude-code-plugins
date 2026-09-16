@@ -314,6 +314,10 @@ session's context — a skill invokes one and reads its answer.
 - [`scripts/cleanup-scan.mjs`](scripts/cleanup-scan.mjs) — what a sweep would find in a
   repository and what each thing carries: the git state of every worktree, and the proof
   every branch has that its work landed. Classifies, and deletes nothing.
+- [`scripts/pr-state.mjs`](scripts/pr-state.mjs) — what the forge says about one change
+  request and what is outstanding on it: its own enums, the review threads no `pr view`
+  field carries, and the drift against its base, measured rather than read off
+  `mergeStateStatus`. `mayMerge` is permission, never readiness.
 - [`scripts/commit-checks.mjs`](scripts/commit-checks.mjs) — what the two check feeds
   say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
   reader of one is blind to the other, and answers with a single `verdict` so a caller

@@ -1,0 +1,30 @@
+# fixture	args	want	expect	note
+clean	--pr 7	0	"mayMerge": true|"blockers": []	open, not a draft, mergeable and clean, with no approval the base asks for — the one shape where the gates permit a merge
+draft	--pr 7	0	it is a draft|"mayMerge": false	measured: a draft whose base carries a rule reports `BLOCKED` rather than `DRAFT`, so the enum is not where draftness is read
+conflicting	--pr 7	0	it conflicts with its base|NOT:asynchronously	a conflict is an answer, and it is not the same as mergeability not being computed yet
+mergeable-unknown	--pr 7	0	asynchronously — not yet is not yes|"mayMerge": false	the forge computes mergeability after the fact and says so; reading `UNKNOWN` as clear is reading "not yet" as "yes"
+blocked	--pr 7	0	the merge state is BLOCKED	a gate the base carries is unmet, and which one is not in this field
+behind	--pr 7	0	the merge state is BEHIND	the enum arrives only where the base REQUIRES a current head — which is why the drift is measured separately rather than read off it
+unstable	--pr 7	0	"mayMerge": true	`UNSTABLE` is a check the base does not require going red: the forge permits the merge, and whether it should happen is the driver's own bar
+has-hooks	--pr 7	0	"mayMerge": true	`HAS_HOOKS` is clean with a hook attached, and it permits the merge
+changes-requested	--pr 7	0	a reviewer asked for changes	a verdict against the head is not the requirement's state, and it blocks on its own
+review-required	--pr 7	0	the base asks for an approval it has not got	the field carries the REQUIREMENT rather than one reviewer's verdict — a base asking for none answers `null`, and nothing is then outstanding however a review landed
+approved	--pr 7	0	"mayMerge": true|"reviewDecision": "APPROVED"	satisfied is satisfied, whoever satisfied it
+closed	--pr 7	0	is CLOSED, not open|"mayMerge": false	a request that is not open has no merge to permit
+merge-state-absent	--pr 7	0	the merge state did not come back	a field that did not arrive is not a field that said `CLEAN`
+pr-unread	--pr 7	0	"read": false|could not read pull request 7	a request that could not be read permits nothing and says so
+pr-notjson	--pr 7	0	"read": false|was not JSON	an error body is text, and it is not a request in some state
+pr-view-is-a-list	--pr 7	0	"read": false|shape this cannot read	a list where an object belongs is a shape this cannot route on
+threads-open	--pr 7	0	"unresolved": 1|"total": 2|example-thread-00000001	a thread carries the id the resolve call needs, and `resolvedBy` is what tells one you answered from one the reviewer closed itself
+threads-closed-by-reviewer	--pr 7	0	"resolvedBy": null|"isOutdated": true	an outdated thread is still open, and the reviewer closing its sibling says nothing about it
+threads-unread	--pr 7	0	the review threads could not be read|"mayMerge": false	a listing that failed is not a request with no threads, and the difference is every finding nobody answered
+threads-notjson	--pr 7	0	the review threads could not be read|"read": true	the request itself read fine; only its threads did not, and the two are said apart
+threads-page-full	--pr 7	0	the first hundred threads is all this asked for	a page is not the list: a request with more threads than this asked for has ones it never saw, and an unseen thread is not a resolved one
+drift-behind	--pr 7 --base-ref refs/remotes/origin/dev	0	"behind": 4|tests/run.sh|"mayMerge": true	the drift is a JUDGEMENT, not a gate: re-sync where what those paths carry can break this head, and merge without one where the base moved elsewhere
+drift-base-absent	--pr 7 --base-ref refs/remotes/origin/dev	0	is not a commit this checkout carries|"measured": false	a base this checkout does not carry leaves the drift unknown, which is not zero
+drift-count-unread	--pr 7 --base-ref refs/remotes/origin/dev	0	could not count the drift|"measured": false	a count that failed is not a count of nothing
+-	--base-ref refs/remotes/origin/dev	2	--pr is required	there is no request to read without one
+-	--pr 0	2	is not a request number	zero is not a request
+-	--pr 7 --repo not-owner-slash-name	2	is not owner/name	a repository that is not owner/name would steer the request somewhere else
+-	--pr 7 --everything	2	unknown argument '--everything'	a mistyped flag silently ignored would answer about a question nobody asked
+thread-without-the-flag	--pr 7	0	"unresolved": 1|example-thread-0000000a	a thread whose resolution flag never arrived is not a resolved one — the field has to SAY resolved, and anything else leaves the thread open
