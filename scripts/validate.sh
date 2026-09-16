@@ -450,21 +450,37 @@ ref_ceiling=150
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   case "$f" in plugins/*) ;; *) continue ;; esac
-  n=$(wc -l < "$f" | tr -d ' ')
+  # `git ls-files -co` lists a file deleted in the working tree and not yet committed, and
+  # `wc -l` on it leaves `n` empty — which `[ "" -le 200 ]` fails as a syntax error and
+  # reports as a ceiling nobody crossed.
+  [ -f "$f" ] || continue
+  # `wc -l` counts NEWLINES, so a file whose final line is unterminated measures one short —
+  # a 201-line file passes a 200-line ceiling. `awk END{print NR}` counts records, which is
+  # lines as anyone reading the file means them.
+  n=$(awk 'END { print NR }' "$f")
   case "$f" in
     */SKILL.md)
       [ "$n" -le "$skill_ceiling" ] \
         || err "$f: $n lines, over the $skill_ceiling-line ceiling for a SKILL.md — move mechanics to a script, facts to references/forge-behaviour.md, or split by what a reader needs when" ;;
     */references/*.md)
-      case "${f##*/}" in forge-docs.md|forge-behaviour.md) continue ;; esac
+      # The two exemptions are PATHS, not basenames: a `forge-docs.md` in another plugin,
+      # or in a skill's own references, is an ordinary reference and takes the ceiling.
+      case "$f" in
+        plugins/hcb-dev/references/forge-docs.md|plugins/hcb-dev/references/forge-behaviour.md) continue ;;
+      esac
       [ "$n" -le "$ref_ceiling" ] \
         || err "$f: $n lines, over the $ref_ceiling-line ceiling for a reference — a reference owns one subject; split it or move what it explains into the code that does it" ;;
   esac
 done < <(md_files)
 
-# A fenced `bash` block longer than this is not an example any more: it is
-# machinery, and machinery belongs in a script under test. The count is the lines
-# BETWEEN the fences, so the fence markers themselves are not the budget.
+# A fenced shell block longer than this is not an example any more: it is machinery,
+# and machinery belongs in a script under test. The count is the lines BETWEEN the
+# fences, so the fence markers themselves are not the budget.
+#
+# Every spelling a shell block is written under, not just ```bash: a rule one relabel
+# walks around is not a rule, and `sh`, `shell`, `zsh` and `console` all render the
+# same. A block with NO language is left alone deliberately — that is how this repo
+# writes a template or a transcript, which is not machinery.
 #
 # Read through a process substitution rather than a pipe: `... | while read` runs the
 # loop in a SUBSHELL, so every `err` it calls increments a counter that dies with it —
@@ -477,10 +493,17 @@ done < <(
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     case "$f" in plugins/*) ;; *) continue ;; esac
+    # A fence opens with three or more backticks or tildes, and closes with at least as many
+    # of the SAME character: a block opened with four passes a gate that knows only three, and
+    # the language label sits on the opening line either way.
     awk -v file="$f" -v cap="$fence_ceiling" '
-      /^[[:space:]]*```bash[[:space:]]*$/ && !inb { inb = 1; n = 0; start = NR; next }
-      /^[[:space:]]*```[[:space:]]*$/ && inb {
-        if (n > cap) printf "%s:%d: a bash block of %d lines — that is machinery, and it belongs in a script with a suite\n", file, start, n
+      !inb && match($0, /^[[:space:]]*(`{3,}|~{3,})[[:space:]]*(bash|sh|shell|zsh|console)[[:space:]]*$/) {
+        fence = $0; sub(/^[[:space:]]*/, "", fence); sub(/[^`~].*$/, "", fence)
+        inb = 1; n = 0; start = NR; next
+      }
+      inb && match($0, /^[[:space:]]*(`{3,}|~{3,})[[:space:]]*$/) \
+        && index($0, fence) > 0 && substr(fence, 1, 1) == substr($0, index($0, substr(fence, 1, 1)), 1) {
+        if (n > cap) printf "%s:%d: a shell block of %d lines — that is machinery, and it belongs in a script with a suite\n", file, start, n
         inb = 0; next
       }
       inb { n++ }

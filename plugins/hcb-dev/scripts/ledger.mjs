@@ -153,7 +153,17 @@ if (!res.ok) {
   // fixes by correcting the coordinate rather than by retrying. It is also what either forge
   // answers where the token cannot see the issue at all, and the two are indistinguishable
   // from here, so the line says both.
-  answer.reason = /\b404\b|\bNot Found\b/i.test(`${res.err} ${res.out}`)
+  //
+  // Read out of stderr ALONE, and by the parenthesised status rather than by the words. A
+  // paginated read prints the pages it already got to stdout, so a walk that died on page two
+  // carries every comment body with it — and an epic discussing a forge's 404s is the ordinary
+  // case, not a contrived one. Matched there, a failure to finish reading reports as a
+  // coordinate to correct, which is the mistake this branch exists to prevent.
+  const status = /\(HTTP (\d{3})\)/.exec(res.err);
+  // `404 Project Not Found` is the project, not the issue — and the probe above already proved
+  // the project answers, so this is a race (a rename, another cwd) rather than a wrong number.
+  const aboutProject = /project not found/i.test(res.err);
+  answer.reason = status?.[1] === '404' && !aboutProject
     ? text(`no issue ${opts.issue} here, or this token cannot see it: ${res.line()}`)
     : text(`the comment feed could not be read: ${res.line()}`);
   out();

@@ -40,3 +40,5 @@ mirrored-on-both	--issue 42 --repo team/app --forge glab	0	"forge": "glab"|"foun
 -	--issue 42 --forge gh --repo team/..	2	--repo takes|NOT:"read"	`repos/team/../issues/42` normalises into a request somewhere else entirely
 -	--issue 42 --forge gh --repo-dir	2	--repo-dir takes a value	a flag at the end of the line has no value, and undefined reaching cwd is silently this checkout
 issue-absent	--issue 42 --forge gh	0	no issue 42 here, or this token cannot see it|"read": false	measured on both forges: a 404 is an answer — the coordinate is wrong, or invisible to this token — and neither is a silence to retry
+page-two-died	--issue 42 --forge gh	0	the comment feed could not be read|NOT:no issue 42 here	a walk that died on page two carries every body it already read, and an epic discussing 404s is ordinary — the status is read out of stderr alone
+project-absent	--issue 42 --forge gh	0	the comment feed could not be read|NOT:no issue 42 here	`404 Project Not Found` is the project, which the probe already proved answers — a race, not a wrong number
