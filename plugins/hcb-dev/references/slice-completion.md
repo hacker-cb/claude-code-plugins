@@ -18,25 +18,21 @@ A skill takes no typed arguments, so the caller passes these as invocation prose
 - `mode` — `local` or `request` (resolution ladder below).
 - `parent` — the branch this slice lands on, as a **bare local name**, carried
   alongside the `<remote>/<name>` ref it was reduced from. It is a destination, not
-  a ref to read: the local backend checks it out and merges into it, and
-  [`base-resolution.md`](base-resolution.md) shows what a `<remote>/<name>` does
-  there — `checkout`
-  detaches HEAD quietly and the merge then lands nowhere. Keep the ref too, because
-  the name alone does not say which tip was resolved: with the same branch on two
-  remotes, or a local copy behind its remote, merging into the name lands somewhere
-  the reviewers never read. Before merging, confirm the local branch is at that ref
-  or fast-forwards to it; where it does not, stop and say so.
+  a ref to read ([`base-resolution.md`](base-resolution.md) says what a ref does
+  where a name belongs). Keep the ref too: the name alone does not say which tip was
+  resolved, and with the same branch on two remotes, or a local copy behind its
+  remote, merging into the name lands somewhere the reviewers never read. Before
+  merging, confirm the local branch is at that ref or fast-forwards to it; where it
+  does not, stop and say so.
   Multi-slice: the shared feature branch (known to the orchestrator — it created
-  it). Single slice: the base, resolved by that ladder, handed on as an explicit
+  it). Single slice: the base, resolved by that ladder and handed on as an explicit
   base — the ladder's rung 1 — in both forms.
 - `diff-base` — the commit the slice was cut from, which after a refresh is the
-  remote-tracking ref rather than the local `parent` behind it. It is what every
-  per-slice range is taken against, as an **explicit** base, so coverage is
-  *this* slice, not the cumulative feature diff (which would re-read slice 1 while
-  auditing slice 2, and the coverage gate would record no gap over the wrong
-  range). **Landing the slice on `parent` moves it** to the tip landed on — the
-  slice is cut from there now, and the threaded value names a commit `parent` has
-  grown past.
+  remote-tracking ref rather than the local `parent` behind it. Every per-slice
+  range is taken against it as an **explicit** base, so coverage is *this* slice and
+  not the cumulative feature diff — which would re-read slice 1 while auditing slice
+  2, and record no gap over the wrong range. **Landing the slice on `parent` moves
+  it** to the tip landed on.
 - `old-name` — the name the branch carried before `shipping-workflow` step 0
   renamed it, threaded on every rename as a bare branch name; empty where
   nothing was renamed. What is published under it is the request driver's to
@@ -133,10 +129,6 @@ Each of them stops where the authorization's own addressee decides — except th
 last, whose addressee is a **person** whatever the authorization named: a
 coordinating session carries that one on rather than answering it.
 
-An authorization is **narrowed** on the way down and never widened: a session
-holding `on-green` may hold the merge back — reporting that it did — and no
-session gives itself a value its caller did not hand it.
-
 ## Mode — resolve, don't assume
 
 First hit wins:
@@ -168,8 +160,8 @@ a phrase first, which for an authorization would widen what a caller narrowed:
    alone.
 3. **The mode-dependent fallback above.**
 
-A later word from the user lands over all three: it narrows or withdraws what
-any rung gave, and widens nothing.
+A later word from the user lands over all three (*An authority narrows on the way
+down and never widens*).
 
 ## Backend: local — merge into the parent, no forge
 
