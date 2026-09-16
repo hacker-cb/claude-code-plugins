@@ -558,7 +558,7 @@ that, never the merge command's exit status:
   | `running` | poll, on Step 4's budget and its escalation |
   | `failing` | attribute, then report |
   | `empty` | nothing registered yet where `BEFORE` has rows; where `BEFORE` is `empty` too, this base runs nothing on a push — say it is unchecked and that this step guaranteed nothing |
-  | `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, so a required check may exist that this run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
+  | `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, and `null` that none was ever asked, so a required check may exist that this run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
 
   **Wait by name, never for the count to settle**, which is what `--require-from-gates`
   does: the aggregate registers after the checks it aggregates, so the moment every check

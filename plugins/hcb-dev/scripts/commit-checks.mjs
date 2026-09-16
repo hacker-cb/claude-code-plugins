@@ -12,6 +12,11 @@
 // Usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>) --sha head|base|merge|<oid>
 //                               [--require <name>]... [--require-from-gates] [--repo-dir <path>]
 //
+// `complete` is `null` until `--require-from-gates` actually asks a gate source, `true`
+// when every source answered, and `false` when one did not — so a green verdict beside
+// `false` is green as far as this run knew to look. "Not asked" is not "asked and
+// whole", the same distinction `gates: null` keeps one field over.
+//
 // Exit 0 either way: `"read": true` with what the feeds held, or `"read": false` with a
 // `reason`. A read that did not happen is not a commit with nothing on it — unread is not
 // empty, and a caller that cannot tell them apart reports a base as quiet because the
@@ -111,10 +116,14 @@ const repoOk = (v) => { const p = v.split('/'); return p.length === 2 && p.every
 // read into a refusal on every repository that targets one, taking the whole step with
 // it. Each segment is held to the same rule instead, so nothing steers the url and every
 // real branch name still reaches it.
-// `{` and `}` are excluded above for a reason that is not about urls: `gh api`
-// substitutes `{owner}`, `{repo}` and `{branch}` from the repository of the CURRENT
-// directory, so a branch actually named `{repo}` would send the request somewhere else
-// — and in a fork checkout, somewhere else is another repository.
+// A branch name is many segments where a commit id is one, so it takes its own check —
+// but what keeps it inside the url is `encodeURIComponent` at the call site, not the
+// splitting. What the splitting is for is the rest of `SEGMENT`'s rule: no `..`, no
+// leading `-`, no lone `.`, and none of the characters SEGMENT excludes for every value
+// here — `{` and `}` among them, because `gh api` substitutes `{owner}`, `{repo}` and
+// `{branch}` from the repository of the CURRENT directory, so a branch actually named
+// `{repo}` sends the request somewhere else, and in a fork checkout somewhere else is
+// another repository.
 const refOk = (v) => typeof v === 'string' && v !== ''
   && v.split('/').every((seg) => readable(seg) && seg !== '.');
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
@@ -258,24 +267,32 @@ if (opts.fromGates) {
     const pages = parsePages(r.out);
     if (pages === null) answer.gatesUnknown.push(`the ruleset on ${baseRef} did not come back as JSON`);
     else {
+      let unreadable = false;
       for (const page of pages) {
         // A page that is not a list of rules is a response this cannot read, not a base
-        // with no rules — an error body from a proxy is valid JSON too.
-        if (!Array.isArray(page)) {
-          answer.gatesUnknown.push(`the ruleset on ${baseRef} came back in a shape this cannot read`);
-          continue;
-        }
+        // with no rules — an error body from a proxy is valid JSON too. Recorded once
+        // for the source, not once per page: a paginated answer would otherwise repeat
+        // the same sentence as many times as it had pages.
+        if (!Array.isArray(page)) { unreadable = true; continue; }
         for (const rule of page) {
           if (!rule || rule.type !== 'required_status_checks') continue;
-          for (const c of (rule.parameters && rule.parameters.required_status_checks) || []) {
+          const checks = rule.parameters && rule.parameters.required_status_checks;
+          // Guarded like every other list here. Unguarded, a `for…of` over an object
+          // throws, and an uncaught throw leaves stdout EMPTY — no verdict, no reason,
+          // which this file's whole contract is written against.
+          if (!Array.isArray(checks)) { unreadable = true; continue; }
+          for (const c of checks) {
             if (c && typeof c.context === 'string' && c.context.trim()) fromGates.push(c.context);
           }
         }
       }
+      if (unreadable) answer.gatesUnknown.push(`the ruleset on ${baseRef} came back in a shape this cannot read`);
     }
-  } else if (/404|not found/i.test(r.err)) {
-    // No ruleset on this branch — the ordinary answer, and `gh` exits non-zero on it.
   } else {
+    // No exception for a 404 here, and that is measured: this endpoint answers `[]` with
+    // status 200 both for a branch carrying no rules AND for a branch that does not
+    // exist. So a 404 is never "no ruleset" — it is the repository failing to read, and
+    // treating it as an absence is how an unread source becomes a confirmed empty one.
     answer.gatesUnknown.push(`the ruleset on ${baseRef} (${r.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
   }
 
@@ -286,15 +303,30 @@ if (opts.fromGates) {
   const prot = gh(['api', `repos/${repo}/branches/${branch}/protection/required_status_checks`]);
   if (prot.ok) {
     let p;
-    try { p = JSON.parse(prot.out); } catch { p = null; }
-    const contexts = p && Array.isArray(p.contexts) ? p.contexts : null;
-    const checks = p && Array.isArray(p.checks) ? p.checks : null;
-    if (contexts === null && checks === null) {
-      answer.gatesUnknown.push(`classic protection on ${baseRef} came back in a shape this cannot read`);
+    let parsed = true;
+    try { p = JSON.parse(prot.out); } catch { parsed = false; }
+    // Kept apart, because a caller chooses differently between them: a body that is not
+    // JSON is a transport that went wrong and may work on a retry, while a body that
+    // parses into the wrong shape will parse the same way every time.
+    if (!parsed) {
+      answer.gatesUnknown.push(`classic protection on ${baseRef} did not come back as JSON`);
     } else {
-      for (const c of contexts || []) if (typeof c === 'string' && c.trim()) fromGates.push(c);
-      for (const c of checks || []) {
-        if (c && typeof c.context === 'string' && c.context.trim()) fromGates.push(c.context);
+      const obj = p && typeof p === 'object' && !Array.isArray(p) ? p : null;
+      const hasContexts = obj !== null && 'contexts' in obj;
+      const hasChecks = obj !== null && 'checks' in obj;
+      // A field that is PRESENT must be an array. Requiring both to be unreadable let
+      // `{"contexts": [], "checks": {…}}` through as zero names — and `contexts` is the
+      // deprecated half, so the readable-but-empty one is exactly what stays behind.
+      const ok = obj !== null && (hasContexts || hasChecks)
+        && (!hasContexts || Array.isArray(obj.contexts))
+        && (!hasChecks || Array.isArray(obj.checks));
+      if (!ok) {
+        answer.gatesUnknown.push(`classic protection on ${baseRef} came back in a shape this cannot read`);
+      } else {
+        for (const c of obj.contexts || []) if (typeof c === 'string' && c.trim()) fromGates.push(c);
+        for (const c of obj.checks || []) {
+          if (c && typeof c.context === 'string' && c.context.trim()) fromGates.push(c.context);
+        }
       }
     }
   } else if (/branch not protected|not enabled/i.test(prot.err)) {

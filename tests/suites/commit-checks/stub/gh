@@ -43,6 +43,7 @@ case "$1 $2" in
           # one "Branch not found" — three different 404s, three different steps.
           hidden) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
           missing) echo "gh: Branch not found (HTTP 404)" >&2; exit 1 ;;
+          garbage) printf 'not json at all\n'; exit 0 ;;
           *) printf '%s\n' "$v"; exit 0 ;;
         esac ;;
     esac ;;

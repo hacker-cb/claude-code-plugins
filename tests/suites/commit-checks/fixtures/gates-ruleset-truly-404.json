@@ -8,7 +8,7 @@
   },
   "baseRefName": "dev"
  },
- "gates": [],
+ "gates": "absent",
  "classic": {
   "contexts": [
    "legacy-ci"

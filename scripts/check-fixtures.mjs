@@ -159,7 +159,17 @@ const SELF_TEST = [
 // tree. It is built in a temp directory and torn down: a probe that asserts against the
 // repository's own layout stops proving anything the day that layout changes.
 function treeProbes() {
-  const base = mkdtempSync(join(tmpdir(), 'hcb-fixture-probe-'));
+  let base;
+  try {
+    base = mkdtempSync(join(tmpdir(), 'hcb-fixture-probe-'));
+  } catch (error) {
+    // Said out loud and failed, never skipped. These probes cover the branch that decides
+    // whether the gate opens or closes, and a self-test that quietly runs fewer of them
+    // reports "every detector reads both ways" over detectors it never touched.
+    process.stderr.write('check-fixtures: the walk probes need a writable temp directory'
+      + ` — ${error.message}\n`);
+    process.exit(2);
+  }
   try {
     mkdirSync(join(base, 'marked', 'sub'), { recursive: true });
     writeFileSync(join(base, 'marked', 'CAPTURED'), 'x\n');
