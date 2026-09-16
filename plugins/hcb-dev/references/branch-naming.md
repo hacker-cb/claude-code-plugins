@@ -164,13 +164,25 @@ where the push is the whole point.
 | `stale[].verdict` | per name it used to carry: `retired` taken off this run, `absent` not there, `kept` with the `reason` the report carries |
 | `notes` | why the name it ships under is not the one asked for |
 
-**Three proofs before any name comes off the remote, all required, and one that cannot run
-keeps the ref**: the remote answered and the ref is there; its tip is one this branch stood
-on, by `HEAD` or by its reflog; and it holds something past the base — which is also what
-stops the base branch itself from ever being retired.
+**Every proof before a name comes off the remote is required, and one that cannot run keeps
+the ref**: no open change request heads it, since deleting a head ref closes the request
+along with its review; no other worktree stands on it; the remote answered and the ref is
+there; its tip is one this branch stood on, by `HEAD` or by its reflog; and it holds
+something past the base. **The base itself is refused by name, not by that last proof** —
+pushing to a fork while basing on the upstream inverts it, the fork's own base legitimately
+holding what the upstream has not.
+
+**The request probe is asked only where something is published**, because that is where a
+ref can be destroyed: a rename alone strands nothing, so a local normalization renames with
+no network call at all. And the probe speaks `gh`; on GitLab it cannot answer, so a
+publication there keeps every name and retires none until the same reading is done by
+hand.
 
 - **Never `git branch -M`.** The force form overwrites an existing branch of that name —
   someone else's work, silently. On a collision pick a different name.
+- **A second worktree can stand on this same branch** (`git worktree add -f`), and the
+  one-argument rename moves it for that session too. The script refuses the rename there,
+  and refuses it again where the worktree listing could not be read at all.
 - **Resolve the push remote before renaming**, per
   [`base-resolution.md`](base-resolution.md) ("Pushing is a different question"):
   `branch.<name>.pushRemote` is read under the name the branch carries now, and an

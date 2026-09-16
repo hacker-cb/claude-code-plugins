@@ -11,6 +11,9 @@
   "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work",
   "refs/heads/wip/example": "absent"
  },
- "fast_forward": "yes",
- "ship_stood_on": "yes"
+ "ship_stood_on": "yes",
+ "pr_list": {
+  "wip/example": "[{\"number\": 42, \"headRepository\": {\"nameWithOwner\": \"example-org/example-repo\"}}]",
+  "feat/example-export": "[{\"number\": 77, \"headRepository\": {\"nameWithOwner\": \"example-org/example-repo\"}}]"
+ }
 }

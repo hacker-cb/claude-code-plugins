@@ -2,7 +2,6 @@
  "head": "claude/example-work",
  "pr_list_default": "[]",
  "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
- "worktrees": "worktree /tmp/example-checkout\nbranch refs/heads/claude/example-work\n\nworktree /tmp/other-checkout\nbranch refs/heads/wip/example\n",
  "base_present": "yes",
  "object_default": "yes",
  "stood_on": "yes",
@@ -10,7 +9,11 @@
  "ls_remote": {
   "refs/heads/feat/example-export": "absent",
   "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work",
-  "refs/heads/wip/example": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/wip/example"
+  "refs/heads/wip/example": "absent"
  },
- "ship_stood_on": "yes"
+ "ship_stood_on": "yes",
+ "pr_list": {
+  "claude/example-work": "[{\"number\": 91, \"headRepository\": {\"nameWithOwner\": \"outside-contributor/example-repo\"}}]"
+ },
+ "repo_view": "silent"
 }

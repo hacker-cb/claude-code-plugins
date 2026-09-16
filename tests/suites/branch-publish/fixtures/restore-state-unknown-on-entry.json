@@ -1,5 +1,5 @@
 {
- "head": "claude/example-work",
+ "head": "feat/example-export",
  "pr_list_default": "[]",
  "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
  "base_present": "yes",
@@ -7,9 +7,13 @@
  "stood_on": "yes",
  "in_base": "no",
  "ls_remote": {
-  "refs/heads/feat/example-export": "absent",
+  "refs/heads/feat/example-export": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\trefs/heads/feat/example-export",
   "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work",
   "refs/heads/wip/example": "absent"
  },
- "ship_stood_on": "yes"
+ "ship_stood_on": "yes",
+ "pr_list": {
+  "wip/example": "[{\"number\": 42, \"headRepository\": {\"nameWithOwner\": \"example-org/example-repo\"}}]",
+  "feat/example-export": "silent"
+ }
 }

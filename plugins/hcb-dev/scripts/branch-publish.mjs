@@ -18,6 +18,7 @@
 // Exit 0 either way: `"published": true` is the one thing a caller carries forward, and
 // `"ships"` the name it carries it under. Exit 2 only for a call this cannot act on.
 
+import { realpathSync } from 'node:fs';
 import { writeAll, readable, refNameOk, repoOk, runner, text, worktrees } from './lib/forge.mjs';
 
 const USAGE = 'usage: node branch-publish.mjs --new <name> [--old-name <name>]'
@@ -63,6 +64,14 @@ const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
 const gh = runner(cwd);
 
+// The tips a branch actually STOOD on. Commits merely reachable from them include
+// everything it ever merged in, and a ref published from one of those was never this
+// branch's — so the walk is over the reflog's own entries, not over their ancestry.
+const reflogOf = (ref) => {
+  const rl = git(['reflog', 'show', '--format=%H', ref]);
+  return new Set(rl.ok ? rl.out.split('\n').filter(Boolean) : []);
+};
+
 const answer = {
   read: false,
   // Where the branch was when this started and where it ends up. They differ only when a
@@ -104,9 +113,45 @@ answer.branch.at = entry;
 let cur = entry;
 let ships = opts.new;
 
+// Read BEFORE the rename, because that is the state both questions are about: whether
+// another worktree stands on the name about to move, and whose the names left behind are.
+// A path answered by two git commands is not two places — `/tmp` is a symlink to
+// `/private/tmp` on macOS — so the comparison is by resolved path, not by string.
+const real = (p) => { try { return realpathSync(p); } catch { return p; } };
+const heldElsewhere = new Map();
+let worktreesUnread = null;
+{
+  const mine = git(['rev-parse', '--show-toplevel']);
+  const wt = worktrees(git);
+  if (wt.trees === null) worktreesUnread = wt.error;
+  else if (!mine.ok) worktreesUnread = 'this checkout could not say where it is';
+  else {
+    const hereTree = real(mine.out);
+    for (const t of wt.trees) {
+      if (t.branch && real(t.path) !== hereTree) heldElsewhere.set(t.branch, t.path);
+    }
+  }
+}
+
+// The probe reaches a forge, and what it gates is DESTRUCTION: a rename that would strand
+// a request's head ref, and a deletion that would close one outright. Where nothing is
+// published nothing is deleted either, so a local normalization — `shipping-workflow`
+// step 0, and every rename in a repository this CLI does not speak for — renames with no
+// network call at all rather than failing closed forever on a `gh` that cannot answer.
+const mayAsk = opts.publish;
+// Which repository this run is in, read once. `gh pr list --head` filters by branch NAME,
+// which is not unique across forks, so without this a contributor's own branch of the
+// same name pins a name nothing here could reach — and in the restore path that is not a
+// cautious no-op but an action.
+let here = opts.repo || null;
+if (mayAsk && !here) {
+  const v = gh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner']);
+  if (v.ok && repoOk(v.out)) here = v.out;
+}
+
 // Does an open change request head this name? Three answers, and the third carries the
 // weight: `gh` failing to say prints exactly what "nothing open" prints, and reading the
-// second as the first renames a branch whose head-ref deletion closes a live review.
+// second as the first renames or deletes the head ref of a live review.
 const headedBy = (name) => {
   const r = gh(['pr', 'list', '--head', name, '--state', 'open', '--json', 'number,headRepository',
     ...(opts.repo ? ['--repo', opts.repo] : [])]);
@@ -114,16 +159,17 @@ const headedBy = (name) => {
   let list;
   try { list = JSON.parse(r.out); } catch { return null; }
   if (!Array.isArray(list)) return null;
-  // `--head` filters by branch NAME, which is not unique across forks: a contributor's
-  // own branch of this name is a different ref and nothing here could reach it. That only
-  // ever makes this keep a name it could have changed, so the repository each head lives
-  // in is reported rather than acted on.
-  return list.map((p) => ({
+  const hits = list.map((p) => ({
     number: p && typeof p.number === 'number' ? p.number : null,
-    where: text(p && p.headRepository && p.headRepository.nameWithOwner) || 'a repository this could not read',
+    where: text(p && p.headRepository && p.headRepository.nameWithOwner),
   })).filter((p) => p.number !== null);
+  // A head that lives elsewhere is a fork's ref this run cannot reach. Dropped only where
+  // this run knows its own repository AND the hit says where its head is — either unknown
+  // and the hit counts, which is the reading that keeps a name rather than losing one.
+  return here ? hits.filter((h) => h.where === null || h.where === here) : hits;
 };
-const say = (hits) => hits.map((h) => `#${h.number} in ${h.where}`).join(', ');
+const say = (hits) => hits
+  .map((h) => `#${h.number} in ${h.where || 'a repository this could not read'}`).join(', ');
 
 // --- the name it ships under
 //
@@ -131,7 +177,7 @@ const say = (hits) => hits.map((h) => `#${h.number} in ${h.where}`).join(', ');
 // `old-name`. A request heading that name pins it: the rename closed nothing yet — only a
 // local ref moved — so it is undone and the branch ships under the old name after all.
 let oldPinned = false;
-if (opts.oldName && opts.oldName !== cur) {
+if (mayAsk && opts.oldName && opts.oldName !== cur) {
   const heads = headedBy(opts.oldName);
   if (heads === null || heads.length) {
     const why = heads === null
@@ -149,7 +195,7 @@ if (opts.oldName && opts.oldName !== cur) {
 }
 // The same probe on the name carried now, and for the same reason. Asked only where a
 // rename is actually on the table: with the name already right there is nothing to pin.
-if (cur !== ships) {
+if (mayAsk && cur !== ships) {
   const heads = headedBy(cur);
   if (heads === null) {
     note(`the request state for ${cur} could not be read — keeping that name, since a`
@@ -160,6 +206,17 @@ if (cur !== ships) {
       + ' renaming would close it');
     ships = cur;
   }
+}
+// `git worktree add -f` lets a second worktree stand on this same branch, and the
+// one-argument rename then moves it for that session too — retargeting its HEAD without a
+// word. A listing that could not be read is the same refusal: unknown is not "nobody".
+if (cur !== ships && (worktreesUnread !== null || heldElsewhere.has(`refs/heads/${cur}`))) {
+  note(worktreesUnread !== null
+    ? `this repository's worktrees could not be read (${worktreesUnread}) — keeping ${cur},`
+      + ' since a rename would retarget another session standing on it'
+    : `another worktree stands on ${cur} (${heldElsewhere.get(`refs/heads/${cur}`)}) —`
+      + ' keeping the name, since the rename would move that session\'s HEAD too');
+  ships = cur;
 }
 if (cur !== ships) {
   // Never `-M`: the force form overwrites an existing branch of that name, which is
@@ -173,6 +230,10 @@ if (cur !== ships) {
     note(`the rename to ${ships} was refused (${mv.line()}) — shipping as ${cur}`);
     ships = cur;
   }
+}
+if (!mayAsk && cur !== ships) {
+  note(`nothing is being published, so no forge was asked whether a request heads ${cur}`
+    + ' — a rename alone strands no head ref, and every deletion asks for itself');
 }
 answer.branch.ships = ships;
 const shipRef = `refs/heads/${ships}`;
@@ -191,8 +252,10 @@ if (opts.publish) {
     const tracking = `refs/remotes/${opts.pushRemote}/${ships}`;
     let ready = true;
     if (remoteTip) {
-      // A lease compares against the tracking ref, so it needs one that exists and is
-      // current. A stale one leases against a tip that moved and the force overwrites it.
+      // Not for the lease, which carries its own value below: for the two readings that
+      // need the remote's tip as an OBJECT here — whether this branch already contains it,
+      // and whether it ever stood on it. A tip that was never fetched answers neither, and
+      // an `is-ancestor` that errored reads exactly like one that said no.
       const f = run(['fetch', opts.pushRemote, `+${shipRef}:${tracking}`]);
       if (!f.ok) {
         ready = false;
@@ -208,14 +271,32 @@ if (opts.publish) {
       if (!remoteTip) answer.publish.mode = 'first';
       else if (git(['merge-base', '--is-ancestor', tracking, shipRef]).ok) answer.publish.mode = 'fast-forward';
       else answer.publish.mode = 'leased';
-      // `--force-if-includes` alongside a lease with no expected value: the bare lease
-      // also passes someone else's commit that arrived since the fetch, and overwrites it.
-      const args = answer.publish.mode === 'leased'
-        ? ['push', '--force-with-lease', '--force-if-includes', opts.pushRemote, '-u', spec]
-        : ['push', opts.pushRemote, '-u', spec];
-      const p = run(args);
-      answer.published = p.ok;
-      if (!p.ok) answer.publish.reason = `the push was refused (${p.line()})`;
+      let args = ['push', opts.pushRemote, '-u', spec];
+      if (answer.publish.mode === 'leased') {
+        // What is being overwritten has to be work this branch itself put there. A bare
+        // `--force-with-lease` plus `--force-if-includes` is git's way of saying that, and
+        // it is unusable here for two measured reasons: the bare lease resolves through
+        // the remote's CONFIGURED fetch refspec, so a single-branch clone refuses the push
+        // as `stale info` even with the tracking ref fetched by name; and pinning the lease
+        // to a value — which does work there — turns `--force-if-includes` into a no-op,
+        // so the guarantee silently leaves with it. The proof is made here instead, where
+        // a test can hold it.
+        const stoodOn = git(['merge-base', '--is-ancestor', remoteTip, shipRef]).ok
+          || reflogOf(shipRef).has(remoteTip);
+        if (!stoodOn) {
+          answer.published = false;
+          answer.publish.reason = `${opts.pushRemote} carries ${text(remoteTip)} on ${ships},`
+            + ' which this branch never stood on — forcing over it would drop work that is'
+            + ' not this branch\'s to drop';
+          ready = false;
+        }
+        args = ['push', `--force-with-lease=${shipRef}:${remoteTip}`, opts.pushRemote, '-u', spec];
+      }
+      if (ready) {
+        const p = run(args);
+        answer.published = p.ok;
+        if (!p.ok) answer.publish.reason = `the push was refused (${p.line()})`;
+      }
     }
   }
 }
@@ -232,21 +313,11 @@ for (const name of [entry, opts.oldName]) {
   if (!candidates.includes(name)) candidates.push(name);
 }
 
-// `null` is the answer that matters: a listing that could not be read says nothing about
-// who holds these names, and reading it as "nobody" unpublishes a ref another session is
-// standing on and would push straight back.
 // Nothing below is read where nothing can come of it: with the new name unpublished, the
-// chain of reasons in the loop stops before any of these three answers is looked at, and
-// asking a remote a question whose answer is already unused is a round trip in a run that
-// has already failed.
+// chain of reasons in the loop stops before any of these answers is looked at, and asking
+// a remote a question whose answer is already unused is a round trip in a run that has
+// already failed.
 const mayRetire = candidates.length > 0 && answer.published === true;
-let held = mayRetire ? new Map() : null;
-let heldUnread = null;
-if (mayRetire) {
-  const wt = worktrees(git);
-  if (wt.trees === null) { held = null; heldUnread = wt.error; }
-  else for (const t of wt.trees) if (t.branch) held.set(t.branch, t.path);
-}
 
 const tracking = opts.base !== null ? `refs/remotes/${opts.baseRemote}/${opts.base}` : null;
 // Refreshed and verified once, here rather than in a caller's shell, because a STALE base
@@ -265,14 +336,7 @@ if (mayRetire && tracking !== null) {
   }
 }
 const baseUsable = tracking !== null && baseUnusable === null;
-// Read once for the same reason. A reflog walk lists the tips this branch actually stood
-// on, which is the question — commits merely REACHABLE from them include everything it
-// ever merged in, and a name published from one of those was never this branch's.
-let stood = null;
-if (mayRetire) {
-  const rl = git(['reflog', 'show', '--format=%H', shipRef]);
-  if (rl.ok) stood = new Set(rl.out.split('\n').filter(Boolean));
-}
+const stood = mayRetire ? reflogOf(shipRef) : null;
 
 for (const name of candidates) {
   const it = { name, tip: null, verdict: 'kept', reason: null };
@@ -282,6 +346,13 @@ for (const name of candidates) {
   // report needs which, so no two of them collapse into one refusal.
   if (oldPinned && name === opts.oldName) {
     it.reason = 'a request heads it and the rename back was refused — it is not this run\'s to remove';
+  } else if (opts.base !== null && name === opts.base) {
+    // Named outright, and not left to the proof below. That proof reads "holds nothing
+    // past the base", and in a triangular checkout — pushing to a fork, basing on the
+    // upstream — a fork's own base branch legitimately holds commits the upstream has
+    // not, so the proof passes and the branch every other one is cut from comes off.
+    it.reason = 'it is the base itself — whatever it holds past another remote\'s copy of'
+      + ' the base, it is not a publication of this branch';
   } else if (!opts.publish) {
     it.reason = 'nothing was published, so no name is stale yet';
   } else if (answer.published !== true) {
@@ -289,11 +360,11 @@ for (const name of candidates) {
   } else if (!baseUsable) {
     it.reason = baseUnusable
       || 'no base was named, and what a ref holds cannot be judged against nothing';
-  } else if (held === null) {
-    it.reason = `this repository's worktrees could not be read (${heldUnread}), so whether`
-      + ' another session holds this name and would push it straight back is unknown';
-  } else if (held.has(ref)) {
-    it.reason = `another worktree holds it and can push it straight back: ${held.get(ref)}`;
+  } else if (worktreesUnread !== null) {
+    it.reason = `this repository's worktrees could not be read (${worktreesUnread}), so`
+      + ' whether another session holds this name and would push it straight back is unknown';
+  } else if (heldElsewhere.has(ref)) {
+    it.reason = `another worktree holds it and can push it straight back: ${heldElsewhere.get(ref)}`;
   } else {
     const ls = git(['ls-remote', '--heads', opts.pushRemote, ref]);
     if (!ls.ok) {
@@ -313,12 +384,26 @@ for (const name of candidates) {
       } else if (git(['merge-base', '--is-ancestor', tip, tracking]).ok) {
         it.reason = `it holds nothing past ${opts.base} — not this branch's publication`;
       } else {
-        // Leased to the tip just read rather than to a tracking ref: nothing here fetched
-        // this name, so the only current thing to lease against is what the remote said a
-        // moment ago.
-        const del = run(['push', `--force-with-lease=${ref}:${tip}`, opts.pushRemote, '--delete', ref]);
-        if (del.ok) it.verdict = 'retired';
-        else it.reason = `the delete was refused (${del.line()}) — a stale lease or a deletion rule`;
+        // Asked HERE, per name, and not inherited from whatever the rename decided. A
+        // rename may not have happened at all — the restore path leaves the names it did
+        // not touch unasked about — and a request can be opened on any of these between
+        // one run and the next. Deleting a head ref closes the request it heads, so this
+        // is the last thing between that and a review nobody meant to end.
+        const heads = mayAsk ? headedBy(name) : null;
+        if (heads === null) {
+          it.reason = `whether a request heads ${name} could not be read — deleting a head`
+            + ' ref closes the request it heads, and this one cannot be seen';
+        } else if (heads.length) {
+          it.reason = `a request heads it (${say(heads)}) — deleting this ref closes that`
+            + ' request along with its review';
+        } else {
+          // Leased to the tip just read rather than to a tracking ref: nothing here
+          // fetched this name, so what the remote said a moment ago is the only current
+          // thing to lease against.
+          const del = run(['push', `--force-with-lease=${ref}:${tip}`, opts.pushRemote, '--delete', ref]);
+          if (del.ok) it.verdict = 'retired';
+          else it.reason = `the delete was refused (${del.line()}) — a stale lease or a deletion rule`;
+        }
       }
     }
   }

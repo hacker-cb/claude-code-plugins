@@ -6,6 +6,10 @@ fail() { echo "${1:-fatal: stub git refused}" >&2; exit "${2:-1}"; }
 
 case "$1 $2" in
   "rev-parse --git-dir") echo ".git"; exit 0 ;;
+  "rev-parse --show-toplevel")
+    v=$(ask '.here'); [ -z "$v" ] && v=/tmp/example-checkout
+    case "$v" in fail) fail "fatal: not a git repository" 128 ;; esac
+    printf '%s\n' "$v"; exit 0 ;;
   "symbolic-ref --short")
     # `head_empty` is the git that exits 0 saying nothing — rarer than the refusal, and
     # the one an exit-status check alone reads as a branch named the empty string.
@@ -35,13 +39,14 @@ case "$1 $2" in
       *) printf '%s\n' "$v"; exit 0 ;;
     esac ;;
   "merge-base --is-ancestor")
-    # Three questions, told apart by what each measures AGAINST: a local ref is the
-    # fast-forward test, `HEAD` is whether this branch ever stood on a remote's tip, and a
-    # tracking ref is whether that tip holds anything past the base.
-    case "$4" in
-      HEAD)           k=stood_on ;;
-      refs/remotes/*) k=in_base ;;
-      *)              k=fast_forward ;;
+    # Four questions, told apart by the PAIR rather than by one side: two of them measure
+    # against the same `refs/heads/<ships>` and a dispatch on that alone answers one with
+    # the other's envelope key.
+    case "$3:$4" in
+      refs/remotes/*:*) k=fast_forward ;;   # the published tip, already in this branch
+      *:HEAD)           k=stood_on ;;       # an old name's tip, in this branch's history
+      *:refs/remotes/*) k=in_base ;;        # that tip, already in the base
+      *)                k=ship_stood_on ;;  # the published tip of the name being pushed
     esac
     case "$(ask ".$k")" in yes) exit 0 ;; *) exit 1 ;; esac ;;
   "reflog show")
@@ -49,8 +54,13 @@ case "$1 $2" in
     case "$v" in ""|fail) fail "fatal: no reflog for that ref" 128 ;; esac
     printf '%s\n' "$v"; exit 0 ;;
   "worktree list")
+    case "$(ask '.worktrees_fail')" in yes) fail "fatal: could not list worktrees" 128 ;; esac
     v=$(ask '.worktrees')
-    case "$v" in ""|fail) fail "fatal: could not list worktrees" 128 ;; esac
+    # By default this checkout alone, standing on the branch the envelope says HEAD is on.
+    # A listing that disagreed with HEAD would make every case test a contradiction.
+    [ -z "$v" ] && v="worktree /tmp/example-checkout
+branch refs/heads/$(ask '.head')"
+
     # The envelope holds the line form; `-z` is the same shape with NUL where the
     # newlines are, which is what git prints.
     for a in "$@"; do [ "$a" = "-z" ] || continue

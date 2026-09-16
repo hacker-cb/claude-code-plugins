@@ -2,7 +2,6 @@
  "head": "claude/example-work",
  "pr_list_default": "[]",
  "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
- "worktrees": "worktree /tmp/example-checkout\nbranch refs/heads/feat/example-export\n",
  "base_present": "yes",
  "object_default": "yes",
  "stood_on": "yes",
@@ -14,5 +13,6 @@
  },
  "pr_list": {
   "claude/example-work": "[{\"number\": 42, \"headRepository\": {\"nameWithOwner\": \"example-org/example-repo\"}}]"
- }
+ },
+ "ship_stood_on": "yes"
 }

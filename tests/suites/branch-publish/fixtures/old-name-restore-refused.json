@@ -2,7 +2,6 @@
  "head": "feat/example-export",
  "pr_list_default": "[]",
  "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
- "worktrees": "worktree /tmp/example-checkout\nbranch refs/heads/feat/example-export\n",
  "base_present": "yes",
  "object_default": "yes",
  "stood_on": "yes",
@@ -17,5 +16,6 @@
  },
  "rename": {
   "wip/example": "fail"
- }
+ },
+ "ship_stood_on": "yes"
 }

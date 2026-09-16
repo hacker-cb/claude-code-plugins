@@ -159,8 +159,10 @@ Three things come out of it:
 - **`branch.ships`** — the name to use from here on, which is not always the one asked for:
   a change request heading a name pins it, and so does a request state that could not be
   read. `notes` says which happened.
-- **`stale`** — one entry per name this branch used to carry. Anything not `retired` is a
-  ref still standing, and its `reason` is what the report carries.
+- **`stale`** — one entry per name this branch used to carry, and the three verdicts are
+  three different things: `retired` this run took off the remote, `absent` was never there
+  to take off, and **`kept` alone is a ref still standing** — with the `reason` the report
+  carries.
 
 ## Step 2 — Bring the branch up to date with base
 

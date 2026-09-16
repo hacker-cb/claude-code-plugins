@@ -1,7 +1,6 @@
 {
  "pr_list_default": "[]",
  "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
- "worktrees": "worktree /tmp/example-checkout\nbranch refs/heads/feat/example-export\n",
  "base_present": "yes",
  "object_default": "yes",
  "stood_on": "yes",
@@ -11,5 +10,6 @@
   "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work",
   "refs/heads/wip/example": "absent"
  },
- "head_empty": "yes"
+ "head_empty": "yes",
+ "ship_stood_on": "yes"
 }
