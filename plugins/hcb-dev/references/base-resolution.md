@@ -9,69 +9,41 @@ kind of guess. A guess that *resolves* is not a guess that is *right*: it
 resolves to the wrong base, or the wrong repository, and the run reports a
 plausible-looking scope line while covering something else entirely.
 
-## Pick the remote before the branch
+## The remotes are a script's question
 
-`origin` is as hardcoded as `main` is. A repo may have a single remote under
-another name, and in a fork checkout `origin` is your own copy while `upstream`
-carries the real base. Rank the remotes that actually exist:
+`scripts/resolve-base.mjs` answers them: which remotes exist and in what order to probe
+them, which one to **read** a base from, which one a push actually goes to, and — given a
+base — whether the ref for it is CURRENT.
 
-```bash
-# upstream and origin first, then every other remote; existing only, deduped.
-# Use this to *probe* remotes — try each until one carries the ref you want.
-remotes_ranked() {
-  for r in upstream origin; do git remote | grep -qx -- "$r" && echo "$r"; done
-  git remote | grep -vxE 'upstream|origin'
-}
-
-# Picking ONE remote outright is a different question: a preferred name, else a lone
-# remote whatever it is called. Never `remotes_ranked | head -1` here — with remotes
-# `alice` and `bob` it silently takes whichever sorts first. Empty means stop and ask.
-REMOTE="$(for r in upstream origin; do git remote | grep -qx -- "$r" && { echo "$r"; break; }; done)"
-[ -n "$REMOTE" ] || { [ "$(git remote | grep -c .)" = 1 ] && REMOTE="$(git remote)"; }
+```text
+node <plugin root>/scripts/resolve-base.mjs [--base <name>] [--forge gh|glab]
 ```
 
-`grep -qx` and `grep -vxE` match whole lines, so a remote named `origin2` or
-`my-upstream` is neither mistaken for the real thing nor dropped from the tail.
+| field | what it settles |
+|---|---|
+| `remotes.ranked` | the probing order — `upstream` and `origin` first, then every other remote, matched by whole name so `origin2` is neither taken for the real thing nor dropped |
+| `remotes.read` | the ONE remote to read from: a preferred name, else a lone remote whatever it is called. `null` with a reason where several exist and none is preferred — **stop and ask**, since for a read that costs a wrong review and for a push it can publish a branch in somebody else's repository |
+| `remotes.push` / `pushSource` | git's own routing — `branch.<name>.pushRemote`, `remote.pushDefault`, `origin`, a lone remote — and never `@{upstream}`, which in a fork points at the canonical repository. A configured name that names no remote here is a stale config, not a route |
+| `base.current` | the ref was refreshed from the remote just now. `false` with a reason is **"the age is unknown"**, never "no new commits" |
+| `base.sharesHistory` | `false` refuses the base outright (below) |
+| `requestBase` / `landings` | the open request's base, and where this repository's changes actually land, where `--forge` named one. Read, never chosen: which rung wins is the ladder's |
 
-Where several remotes exist and none is preferred, **stop and ask** rather than
-taking the first alphabetically. For a read that costs a wrong review; for a push
-it can publish a branch in someone else's repository.
-
-## Pushing is a different question
-
-The remote you *read* a base from is not the one you *write* a branch to: in a
-fork the base is in `upstream`, which you cannot push to. For a push, use git's
-own routing — `branch.<name>.pushRemote`, then `remote.pushDefault`, then
-`origin`, then a lone remote whatever its name — and never `@{upstream}`, which in
-a fork points at the canonical repo. Ambiguity stops here too, and for the higher
-stake of the two.
+**The remote you *read* a base from is not the one you *write* a branch to**: in a fork
+the base is in `upstream`, which you cannot push to.
 
 ## The ladder — first hit wins
 
 1. **A base the caller named.** An explicit base always wins.
 
-2. **The base of the open change request.** Both CLIs answer with a *bare branch
-   name*, so pair it with whichever remote actually carries that branch — take
-   the first ref that exists, in `remotes_ranked` order:
-   ```bash
-   # GitHub
-   gh pr view --json baseRefName -q .baseRefName
-   # GitLab
-   glab mr view --output json | jq -r .target_branch
-   ```
+2. **The base of the open change request** — `requestBase` above. It is a *bare branch
+   name*, so pair it with whichever remote actually carries that branch.
 
-3. **Where this repo's changes actually land.** A review usually runs *before*
-   the change request exists, so rung 2 comes back empty — and the default branch
-   is the wrong guess in any repo whose changes target `dev`, `develop`,
-   `release/*`. Look, don't assume:
-   ```bash
-   # GitHub
-   gh pr list --state merged --limit 10 --json baseRefName -q '.[].baseRefName' | sort | uniq -c
-   # GitLab
-   glab mr list --merged --output json | jq -r '.[].target_branch' | sort | uniq -c
-   ```
-   If one non-default base dominates, use it and name it in the report. The
-   winner is a bare branch name too — normalize it exactly as rung 2 does.
+3. **Where this repo's changes actually land** — `landings` above, ranked by count. A
+   review usually runs *before* the change request exists, so rung 2 comes back empty,
+   and the default branch is the wrong guess in any repo whose changes target `dev`,
+   `develop`, `release/*`. **If one non-default base dominates, use it and name it in the
+   report** — that judgement is this rung's, not the script's. The winner is a bare name
+   too, paired with a remote exactly as rung 2 is.
 
 4. **The repo default branch.** A question narrow enough to have its own script:
    `scripts/default-branch.mjs`, which the calling **skill** invokes — skill content is
@@ -119,34 +91,24 @@ not "nothing matched": say so and treat what depended on it as unknown.
 
 ## A resolved name is not a current ref
 
-The ladder answers *which* base; it says nothing about *when*. `<remote>/<base>`
-holds whatever the last fetch left there, so a branch cut from it, a range diffed
-against it and a merge landing on it can all be built on a base the remote moved
-past days ago. Refresh it before any consumer reads it:
+The ladder answers *which* base; it says nothing about *when*. `<remote>/<base>` holds
+whatever the last fetch left there, so a branch cut from it, a range diffed against it and
+a merge landing on it can all be built on a base the remote moved past days ago. The
+script above refreshes it and answers `base.current` — three outcomes, and only one means
+current:
 
-```bash
-# The explicit refspec, not a bare `<base>`: where the remote's configured refspec
-# does not cover it, the bare form updates FETCH_HEAD alone and never writes
-# `<remote>/<base>`, which is what every consumer reads.
-git fetch <remote> "+refs/heads/<base>:refs/remotes/<remote>/<base>"
-```
-
-Three outcomes, and only one of them means current:
-
-- **The fetch succeeded.** The ref is the remote's tip — whether or not it moved;
-  "already up to date" is this outcome, not a separate one.
-- **The remote did not answer.** That is "the age is unknown", not "no new
-  commits": the local ref stays standing and every consumer reads it without
-  complaint, so a run treating this as success reports a branch current with a base
-  nothing checked. Say the base is unverified and treat what depended on its
-  freshness as unknown.
-- **`couldn't find remote ref`.** Where the base was resolved *from* that remote,
-  the branch has been renamed or deleted since: re-resolve it by the ladder — rung
-  `git remote set-head <remote> --auto` is what retires the pointer, and a
-  refspec-restricted fetch prunes nothing — rather than carrying one at a branch
-  nobody has. Where the base never had a remote counterpart — a local-only parent,
-  a repo with no remote — nothing is missing: it is as current as it can be, and
-  saying so once is the whole step.
+- **refreshed** — the ref is the remote's tip, whether or not it moved; "already up to
+  date" is this outcome and not a separate one;
+- **the remote did not answer** — the age is unknown, not "no new commits". The local ref
+  stays standing and every consumer reads it without complaint, so a run treating this as
+  success reports a branch current with a base nothing checked. Say it is unverified and
+  treat what depended on its freshness as unknown;
+- **the ref is not there** — where the base was resolved *from* that remote, the branch
+  has been renamed or deleted since: re-resolve by the ladder rather than carrying a name
+  nobody has (`git remote set-head <remote> --auto` retires the pointer, and a
+  refspec-restricted fetch prunes nothing). Where the base never had a remote counterpart
+  — a local-only parent, a repo with no remote — nothing is missing, and saying so once is
+  the whole step.
 
 A consumer that only **reads** the base brings nothing over: it reads against
 the ref, and a claim it makes about the tree names the revision it was read at.
@@ -170,15 +132,12 @@ Then bring the local side to what arrived:
 
 ## A base with no shared history is not a base
 
-Confirm `git merge-base <base> HEAD` is non-empty before using it. Empty means a
-shallow clone (`clone --depth 1`, `actions/checkout` at default depth) fetched
-neither side's ancestry, or the ref is genuinely unrelated. Diffing against it is
-worse than not diffing at all: it reports the base's own files as deletions the
-branch never made, and a reviewer dutifully files findings about them. Refuse
-such a base and say why.
-
-Watch what that does to a coverage count: "unknown" is neither zero nor a number,
-so it slips past both a zero-file check and a count gate.
+`base.sharesHistory: false` refuses it. Empty means a shallow clone (`clone --depth 1`,
+`actions/checkout` at default depth) fetched neither side's ancestry, or the ref is
+genuinely unrelated. Diffing against such a base is worse than not diffing at all — it
+reports the base's own files as deletions the branch never made, and a reviewer dutifully
+files findings about them. And watch what it does to a coverage count: "unknown" is
+neither zero nor a number, so it slips past both a zero-file check and a count gate.
 
 ## When nothing resolves, ask
 

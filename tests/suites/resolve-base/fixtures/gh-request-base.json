@@ -1,0 +1,7 @@
+{
+ "remotes": "upstream\norigin",
+ "branch": "feat/example-export",
+ "base_present": "yes",
+ "pr_view": "dev",
+ "pr_list": "master\ndev\ndev"
+}

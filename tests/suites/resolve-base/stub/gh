@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+case "$1 $2" in
+  "pr view")
+    case "$(ask '.pr_view')" in silent) echo "no open request could be read" >&2; exit 1 ;;
+      *) printf '%s' "$(ask '.pr_view')"; [ -n "$(ask '.pr_view')" ] && echo; exit 0 ;; esac ;;
+  "pr list")
+    case "$(ask '.pr_list')" in silent) echo "the merged list could not be read" >&2; exit 1 ;;
+      *) printf '%s' "$(ask '.pr_list')"; [ -n "$(ask '.pr_list')" ] && echo; exit 0 ;; esac ;;
+esac
+echo "stub gh: no envelope answer for: $*" >&2; exit 3

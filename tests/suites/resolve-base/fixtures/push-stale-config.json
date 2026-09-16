@@ -1,0 +1,8 @@
+{
+ "remotes": "origin\nupstream",
+ "branch": "feat/example-export",
+ "base_present": "yes",
+ "config": {
+  "branch.feat/example-export.pushRemote": "gone"
+ }
+}

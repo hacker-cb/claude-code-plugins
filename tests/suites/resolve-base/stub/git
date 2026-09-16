@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+fail() { echo "${1:-fatal: stub git refused}" >&2; exit "${2:-1}"; }
+
+case "$1 $2" in
+  "rev-parse --git-dir") echo ".git"; exit 0 ;;
+  "rev-parse --verify")
+    # `$4` is `<rev>^{commit}`. Two questions reach here: whether the base's tracking ref
+    # is in this checkout, and whether HEAD is a commit at all.
+    case "$4" in
+      HEAD*) case "$(ask '.head_absent')" in yes) exit 1 ;; esac ;;
+      *)     case "$(ask '.base_present')" in no) exit 1 ;; esac ;;
+    esac
+    echo cafe; exit 0 ;;
+  "symbolic-ref --short")
+    v=$(ask '.branch'); [ -z "$v" ] && exit 1
+    printf '%s\n' "$v"; exit 0 ;;
+  "config --get")
+    v=$(ask ".config[\"$3\"]"); [ -z "$v" ] && exit 1
+    printf '%s\n' "$v"; exit 0 ;;
+  "merge-base "*)
+    case "$(ask '.shares_history')" in no) exit 1 ;; esac
+    echo "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"; exit 0 ;;
+esac
+case "$1" in
+  remote)
+    case "$(ask '.remotes_fail')" in yes) fail "fatal: could not read the config" 128 ;; esac
+    v=$(ask '.remotes')
+    [ -n "$v" ] && printf '%s\n' "$v"
+    exit 0 ;;
+  fetch)
+    # The explicit refspec is the whole point: a bare name updates FETCH_HEAD alone and
+    # never writes the ref every consumer reads.
+    case "$3" in +refs/heads/*:refs/remotes/*) ;; *) fail "fatal: refusing a bare refspec" 128 ;; esac
+    case "$(ask '.fetch')" in fail) fail "fatal: could not read from remote repository" 128 ;; esac
+    exit 0 ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3

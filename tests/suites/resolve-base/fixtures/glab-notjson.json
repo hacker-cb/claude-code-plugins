@@ -1,0 +1,7 @@
+{
+ "remotes": "upstream\norigin",
+ "branch": "feat/example-export",
+ "base_present": "yes",
+ "mr_view": "<html>",
+ "mr_list": "<html>"
+}

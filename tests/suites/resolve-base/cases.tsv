@@ -1,0 +1,26 @@
+# fixture	args	want	expect	note
+two-remotes	--base dev	0	"read": "upstream"|BEFORE:"upstream"<<"origin"|"current": true|"sharesHistory": true	upstream and origin rank first and in that order, since in a fork checkout `origin` is your own copy while `upstream` carries the real base
+lone-odd-remote	--base dev	0	"read": "fork"|is the only remote, whatever it is called	a repository may have a single remote under any name at all, and refusing it because it is not called `origin` refuses the only thing there is
+several-none-preferred	--base dev	0	"read": null|none preferred|never the first alphabetically	for a read that costs a wrong review; for a push it can publish a branch in somebody else’s repository — neither is a price for an alphabetical tiebreak
+no-remote	--base dev	0	"read": null|no remote at all|"ref": null	and a ref composed from an empty name is a ref to nothing, which makes every consumer fatal rather than unresolved
+near-miss-names	--base dev	0	"read": null|origin2|my-upstream|BEFORE:"origin2"<<"my-upstream"	whole names, never prefixes: `origin2` is neither mistaken for the real thing nor dropped off the tail of the ranking
+push-branch-config	--base dev	0	"push": "fork"|branch.feat/example-export.pushRemote|NOT:"pushSource": "remote.pushDefault"	git’s own routing, and never `@{upstream}`, which in a fork points at the canonical repository you cannot push to
+push-default	--base dev	0	"push": "fork"|remote.pushDefault	the second rung of that routing, read from the config rather than assumed
+push-stale-config	--base dev	0	"push": "origin"|names gone, which is not a remote here	a configured name that names no remote is a stale config, and pushing to it fails at the far end where the report says it succeeded here
+push-nowhere	--base dev	0	"push": null|the higher stake of the two	ambiguity stops a push as it stops a read, and for the more expensive of the two
+base-remote-silent	--base dev	0	"current": false|age of this ref is unknown|not unchanged	a remote that did not answer leaves the local ref standing and every consumer reading it without complaint — a run treating that as success reports a branch current with a base it never saw
+base-ref-absent	--base dev	0	is not in this checkout|"ref": null	a clone that fetched only feature branches carries no such ref until one is asked for by name
+base-unrelated	--base dev	0	"sharesHistory": false|shares no history with HEAD	an unrelated base is worse than none: every range against it is the whole history of both sides, and the reviewer reads a diff nobody wrote
+two-remotes	--base dev --no-network	0	"current": false|the network was not asked|its age is unknown	and not asking is its own answer — whatever the last fetch left is all the ref says
+detached-head	--base dev	0	"read": true|"push": "origin"	a detached HEAD has no branch config to route a push by, and the rungs below it still answer
+remotes-unread	-	0	"read": false|remotes could not be read	nothing below can be answered about a checkout whose own remotes would not read
+gh-request-base	--forge gh	0	"name": "dev"|"n": 2|"read": true|BEFORE:"n": 2<<"n": 1	both forge rungs are READ here and chosen by the caller: which rung wins, and whether one base dominates, is a judgement this cannot make
+gh-request-none	--forge gh	0	"read": true|"name": null	no open request is an answer; a call that could not say is not, and the two print the same nothing
+gh-request-unread	--forge gh	0	"read": false|could not be read	which is why the exit status is kept rather than the output alone
+gh-landings-unread	--forge gh	0	where changes land could not be read|"name": "dev"	one rung failing leaves the other standing rather than emptying the answer
+glab-request-base	--forge glab	0	"name": "dev"|"n": 2|BEFORE:"n": 2<<"n": 1	the same two rungs on the other forge, mirrored command for command
+glab-notjson	--forge glab	0	a shape this cannot read	a body that is not the JSON asked for is unread, never a request with no base
+-	--base not..a..name	2	is not a branch name	a name git itself refuses would compose a ref to nothing
+-	--forge svn	2	is not gh or glab	a forge nobody mirrors would send the two rungs to a CLI that is not there
+-	--base	2	needs a value	a flag with no value takes the next flag as its own
+-	--wat x	2	unknown argument	a mistyped flag would resolve a base nobody asked for
