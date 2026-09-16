@@ -28,10 +28,10 @@ const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
 const DEFAULT_LIMIT = 65536;
 
 const usage = 'usage: node ledger.mjs --issue <n> [--repo <owner/name>] [--forge gh|glab]'
-  + ' [--host <host>] [--body-file <path>] [--limit <n>] [--repo-dir <path>]';
+  + ' [--host <host>] [--body-file <path>] [--limit <n>] [--me <login>] [--repo-dir <path>]';
 
 const opts = { issue: null, repo: null, forge: null, host: null, bodyFile: null,
-  limit: DEFAULT_LIMIT, dir: process.cwd() };
+  limit: DEFAULT_LIMIT, me: null, dir: process.cwd() };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -48,6 +48,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === '--host') opts.host = val();
   else if (a === '--body-file') opts.bodyFile = val();
   else if (a === '--limit') opts.limit = val();
+  else if (a === '--me') opts.me = val();
   else if (a === '--repo-dir') opts.dir = val();
   else { writeAll(2, `ledger: unknown argument '${a}'\n${usage}\n`); process.exit(2); }
 }
@@ -75,14 +76,26 @@ if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 // it came as, so `limit` is a number in the answer even when the caller passed the default.
 if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a character count');
 opts.limit = Number(opts.limit);
+// A login, which is neither a path segment nor a ref. Admitting what BOTH forges allow rather
+// than one of them: GitHub takes letters, digits and hyphens up to 39; GitLab takes dots and
+// underscores too and admits a LEADING underscore, up to 255; an App's own user carries a
+// `[bot]` suffix. Held to the wider of the two on every axis: a name refused
+// here is a real account this run then cannot claim anything as its own, which is the failure
+// this flag exists to prevent.
+if (opts.me !== null && !/^[A-Za-z0-9_][A-Za-z0-9._-]{0,254}(?:\[bot\])?$/.test(opts.me)) {
+  die(`--me '${opts.me}' is not a login`);
+}
 
 const answer = {
   read: false,
   forge: null,
   // `id` is what a REST edit takes and `nodeId` what GraphQL takes: one is not the other, and a
   // caller handed the wrong one gets a 404 on the comment it just read.
+  //
+  // `mine` is three-valued on purpose: true, false, and null for a run that could not name its
+  // own user. A ledger nobody can confirm as ours is not a ledger proved foreign.
   ledger: { found: false, id: null, nodeId: null, url: null, chars: null, utf16: null,
-    ambiguous: false, at: null },
+    ambiguous: false, at: null, author: null, mine: null },
   archives: [],
   index: { listed: null, present: [], missing: [], unlisted: [] },
   write: { asked: false, chars: null, utf16: null, fits: null, headroom: null, limit: opts.limit },
@@ -126,6 +139,37 @@ answer.forge = forge;
 
 const cli = runner(opts.dir, forge);
 
+// Who this run is, because a marker alone does not say whose state it found. The marker is an
+// HTML comment — invisible in either forge's UI — so on a repository anyone can comment on,
+// a stranger's comment carrying it is indistinguishable from the coordinating session's own.
+//
+// Read, not assumed, and a read that fails leaves `me` null rather than a guess: a repository's
+// own `GITHUB_TOKEN` and an App installation token both get 403 from `/user`, and a run under
+// one of those knows the ledger's author without being able to name itself. `--me` is how such
+// a caller says so, and an explicit value spends no round trip.
+let meRaw = null;
+if (opts.me !== null) meRaw = opts.me;
+else {
+  const args = ['api'];
+  if (opts.host) args.push('--hostname', opts.host);
+  args.push('user');
+  const who = cli(args, 60000);
+  let parsed = null;
+  if (who.ok) { try { parsed = JSON.parse(who.out); } catch { parsed = null; } }
+  // Each forge names the field itself: `login` on GitHub, `username` on GitLab. Taken by the
+  // forge already resolved rather than by trying both, so a shape that changes is a null here
+  // instead of a value read out of whatever field happens to be present.
+  const login = forge === 'gh' ? parsed?.login : parsed?.username;
+  // An empty string is not a login. Left as one it would match a comment whose author field is
+  // also empty, which is attribution by coincidence — `copilot-findings.mjs` normalises it away
+  // for the same reason.
+  meRaw = typeof login === 'string' && login !== '' ? login : null;
+}
+// Quoted for the answer, kept whole for the comparison. `text()` bounds a value another process
+// wrote at 200 characters, which is right for something travelling into a reader's context and
+// wrong for an identity: GitLab admits 255, so a long login would be compared against its own
+// truncation and read as foreign, and two logins sharing 200 characters would read as one.
+answer.me = text(meRaw);
 // The comment feed, to the END of it. A first page is not the list, and the ledger is the
 // comment opened when the role was assumed — which on a long epic is behind every later one.
 const feed = () => {
@@ -191,6 +235,18 @@ answer.read = true;
 // larger, so a body that fits under either measure is the only one called safe.
 const measure = (s) => ({ chars: [...String(s)].length, utf16: String(s).length });
 
+// Whose comment this is, by the field the resolved forge uses for it. Compared case-folded:
+// both forges treat a login as case-insensitive and hand back the canonical spelling, while
+// `--me` carries whatever a person or a CI variable typed — and an exact comparison there turns
+// one account into two, which reads as a foreign ledger on the one run that needed the flag.
+// Three values again:
+// null where the comment names no author (a deleted account comes back as `null` on GitHub)
+// or where this run could not name itself — never folded into false, which would read as
+// "proved to be somebody else's".
+const fold = (v) => (typeof v === 'string' ? v.toLowerCase() : v);
+const mineness = (author) => (meRaw === null || author === null
+  ? null : fold(author) === fold(meRaw));
+
 const marked = [];
 for (const c of rows) {
   const b = typeof c?.body === 'string' ? c.body : null;
@@ -199,11 +255,15 @@ for (const c of rows) {
   const nodeId = typeof c?.node_id === 'string' ? text(c.node_id) : null;
   const at = text(c?.created_at ?? null);
   const url = text(c?.html_url ?? c?.url ?? null);
+  const wrote = forge === 'gh' ? c?.user?.login : c?.author?.username;
+  const rawAuthor = typeof wrote === 'string' ? wrote : null;
+  const author = text(rawAuthor);
+  const mine = mineness(rawAuthor);
   if (LEDGER.test(b)) {
     // The ledger's own INDEX is written in these same markers — a pointer standing where the
     // text used to be. A comment carrying the ledger marker is the ledger, and the archive
     // markers in it are what it lists, never archives of its own.
-    marked.push({ kind: 'ledger', id: text(String(id)), nodeId, url, at, body: b });
+    marked.push({ kind: 'ledger', id: text(String(id)), nodeId, url, at, body: b, author, mine });
     continue;
   }
   ARCHIVE.lastIndex = 0;
@@ -215,31 +275,71 @@ for (const c of rows) {
   // markers of the ones before it is the ordinary way that happens — is malformed rather than
   // two archives, and counted as two it invents a duplicate of a number nobody wrote twice.
   if (ns.size > 1) {
-    marked.push({ kind: 'malformed', ns: [...ns].sort((x, y) => x - y), id: text(String(id)) });
+    marked.push({ kind: 'malformed', ns: [...ns].sort((x, y) => x - y), id: text(String(id)),
+      author, mine });
     continue;
   }
-  marked.push({ kind: 'archive', n: [...ns][0], id: text(String(id)), url, at, body: b });
+  marked.push({ kind: 'archive', n: [...ns][0], id: text(String(id)), url, at, body: b,
+    author, mine });
 }
 
 const ledgers = marked.filter((m) => m.kind === 'ledger');
 const archives = marked.filter((m) => m.kind === 'archive');
 for (const bad of marked.filter((m) => m.kind === 'malformed')) {
   answer.faults.push({ fault: `one comment carries the archive markers ${bad.ns.join(', ')}`,
-    ids: [bad.id] });
+    ids: [bad.id], authors: [bad.author], mine: [bad.mine] });
 }
 
+// Authorship is read to SAY whose a comment is, and never to pick between two of them. Breaking
+// the tie in favour of ours looks safe and is not: the ledger opened under ANOTHER token — a
+// master session handed over, a run from CI, which is the case the identity read exists for —
+// is then the one left out, and the next write lands in the newer comment while the state
+// stands in the older. Losing the state costs more than stopping does. So two markers still
+// publish no coordinate; what this changed is that the caller is now told which is which.
+const ours = ledgers.filter((l) => l.mine === true);
 if (ledgers.length > 1) {
   // A coordinate resolving to two states resolves to neither, so NO coordinate is published:
-  // `found` stays false and the ids travel in the fault. Publishing the first one would hand
-  // the next write a comment picked by age out of two nobody has reconciled.
+  // `found` stays false and the ids travel in the fault. Publishing one of them would hand the
+  // next write a comment picked out of two nobody has reconciled.
   answer.ledger.ambiguous = true;
-  answer.faults.push({ fault: 'two comments carry the ledger marker',
-    ids: ledgers.map((l) => l.id) });
+  // Four different repairs, and conflating them is the mistake this whole reading exists to
+  // avoid. One of ours beside another: the caller knows which to keep, and can say so. Two of
+  // ours: a session opened a second ledger over its own. None ours, all attributed: a tie this
+  // run has no standing to break. Anything unattributed — an author the feed did not carry, or
+  // a run that could not name itself — is UNKNOWN, and calling that "none of them is ours"
+  // would be reading a negative out of a blank.
+  const unknown = ledgers.some((l) => l.mine === null);
+  answer.faults.push({
+    fault: ours.length === 1
+      ? 'two comments carry the ledger marker, and one of them is ours'
+      : (ours.length > 1
+        ? 'two comments of ours carry the ledger marker'
+        : (unknown
+          ? 'two comments carry the ledger marker, and this run cannot tell which is ours'
+            // Two unknowns, and only one has a flag for its repair: a run that could not name
+            // ITSELF is what `--me` answers, while a comment the feed gave no author for stays
+            // unattributable however this run is named.
+            + (answer.me === null
+              ? ' — pass --me <login> where the token cannot read its own user'
+              : ' — a marked comment carries no author')
+          : 'two comments carry the ledger marker, and none of them is ours')),
+    ids: ledgers.map((l) => l.id),
+    authors: ledgers.map((l) => l.author),
+    ours: ours.map((l) => l.id),
+  });
 } else if (ledgers.length === 1) {
   const l = ledgers[0];
   const m = measure(l.body);
+  // A lone ledger is still the ledger whoever wrote it — the token may have changed since it
+  // was opened, and refusing it would send the caller to open a second one over live state.
+  // What changed is that a comment proved foreign now says so, which is the reading that was
+  // missing entirely: the marker is an HTML comment, invisible in either forge's UI.
+  if (l.mine === false) {
+    answer.faults.push({ fault: 'the only ledger comment is not ours', ids: [l.id],
+      authors: [l.author] });
+  }
   answer.ledger = { found: true, id: l.id, nodeId: l.nodeId, url: l.url, chars: m.chars,
-    utf16: m.utf16, ambiguous: false, at: l.at };
+    utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine };
 }
 
 // One archive per comment is the shape; a comment carrying two markers is a fault rather than
@@ -247,11 +347,17 @@ if (ledgers.length > 1) {
 const byN = new Map();
 for (const a of archives) {
   const m = measure(a.body);
-  const row = { n: a.n, id: a.id, url: a.url, chars: m.chars, utf16: m.utf16 };
-  if (byN.has(a.n)) {
-    answer.faults.push({ fault: `two comments carry the archive marker ${a.n}`,
-      ids: [byN.get(a.n).id, a.id] });
-  } else byN.set(a.n, row);
+  const row = { n: a.n, id: a.id, url: a.url, chars: m.chars, utf16: m.utf16,
+    author: a.author, mine: a.mine };
+  const held = byN.get(a.n);
+  if (held === undefined) { byN.set(a.n, row); continue; }
+  // The first read stays, and authorship travels beside it rather than reordering anything:
+  // new journal entries go INTO the most recent archive, so picking between two comments that
+  // claim one number is the same write-to-the-wrong-comment risk the ledger's own tie carries.
+  // A duplicate marker is a fault to repair, not a choice for this to make.
+  answer.faults.push({ fault: `two comments carry the archive marker ${a.n}`,
+    ids: [held.id, a.id], authors: [held.author, a.author],
+    mine: [held.mine, a.mine] });
 }
 answer.archives = [...byN.values()].sort((x, y) => x.n - y.n);
 answer.index.present = answer.archives.map((a) => a.n);
