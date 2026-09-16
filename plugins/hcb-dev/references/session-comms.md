@@ -19,9 +19,11 @@ answer will arrive on and name the other in the first contact's identity line.
 
 **An address is what a channel answers when asked about this session** — never an
 identifier found in a path or in the environment, however much it looks like one.
-A channel may derive what it shows from the working directory rather than from the
-title; about another session the same channels may show its title instead, which is
-how one is read from outside.
+But what a channel will deliver to is not what this session WEARS: a channel may
+derive what it shows from the working directory rather than from the title, so a
+listing carrying no title is not a session without one, and what this session wears
+is answered by the host's own record of it. About another session those same
+channels may show its title instead, which is how one is read from outside.
 
 **Across a restart, three things survive**: the name a session set for itself, its
 worktree path, and anything written to the forge. A suffix a listing adds beside a
@@ -125,11 +127,10 @@ and on some channels no sooner than the end of the turn. Plan for the later:
   could not deliver, or the parking ran out of use — turns ended, inbox still
   empty, nothing left to build that the answer does not touch. Then one fresh
   resolution, one send, and the rungs not yet tried; never the waiting alone.
-- **Never make silence carry a result.** A check or a measurement promised to a
-  counterpart closes with its outcome, and a protocol announced as "only if it goes
-  wrong" is silence with permission (*A promised outcome is closed with its
-  outcome*). Sparing the channel is what the coordinate is for — the outcome
-  written there, the message a pointer at it — never the outcome left unsent.
+- **Never make silence carry a result** (*A promised outcome is closed with its
+  outcome* — five of them, `unread` among them). Sparing the channel is what the
+  coordinate is for: the outcome written there, the message a pointer at it, never
+  the outcome left unsent.
 - **A send is not a delivery.** What proves arrival is the other side acting on it.
   Until then it stands in this session's own record as owed, whatever the send
   reported. Where the send reported non-delivery, sending again once the

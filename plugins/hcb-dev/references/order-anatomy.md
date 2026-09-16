@@ -63,8 +63,9 @@ a receiver told only what is known treats the rest as known.
 - **The closing act** — never empty: the return of
   [`order-return.md`](order-return.md), or a named end state with nothing coming
   back. A return travelling by message also carries the address to answer — the
-  name the writing session answers to, **read back** rather than assumed
-  ([`session-comms.md`](session-comms.md)).
+  name the writing session answers to, read back rather than assumed
+  (*Configuration predicts nothing; read the result* —
+  [`session-comms.md`](session-comms.md)).
 - **The answer's coordinate** — where an answer that changes what the receiver
   is building will be written, so it is read there rather than waited for in an
   inbox (`session-comms.md`); never empty, and where the work has no such place
