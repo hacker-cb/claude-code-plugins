@@ -511,35 +511,48 @@ that, never the merge command's exit status:
 - Poll until the PR shows `MERGED`, or report what's blocking it.
 - **On `MERGED`, wait for the base's own checks on the merge commit.** Two heads
   green apart can be red together, and where the base does not require branches
-  current with it, nothing before this point reads them combined — measured: one
-  merge commit carried 22 checks where its head had carried 9, the extra fourteen
-  being audit and dependabot runs no pull request ever triggers.
+  current with it, nothing before this point reads them combined — a base commonly
+  runs workflows no pull request ever triggers
+  ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)).
+
+  Two reads, and the earlier commit comes first because it answers what the merge
+  commit alone cannot: what this base runs at all, and which of it runs on a push.
 
   ```bash
-  CC="node ${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
-  # `--sha merge` is the merge commit, resolved from the request itself along with the
-  # repository it lives in. Both feeds, both paginated, and the three outcomes kept
-  # apart: read with rows, read with nothing, or not read at all.
-  $CC --pr <pr> --sha merge --require "<the aggregate the base requires>" > merged.json
-  jq -r 'if .read then "rows=\(.counts.runs)+\(.counts.statuses) unfinished=\(.counts.unfinished) failing=\(.counts.failing) empty=\(.empty)" else "UNREAD: \(.reason)" end' merged.json
+  CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
+  # Quoted as one word at every use. The plugin root is a path like any other and may
+  # carry spaces; unquoted, `node` is handed its first segment and the step never runs.
+  BEFORE="$(node "$CHECKS" --pr <pr> --sha merge --parent 1)"
+  AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require "<the aggregate, where BEFORE carries it>")"
   ```
 
-  Route on `.read` first, and only then on the rest:
+  Captured in a variable, never redirected to a file: Step 6 runs inside the user's
+  checkout, where a stray `merged.json` is an untracked file that Step 7, `git-cleanup`
+  and branch retirement all read as work in progress.
 
-  | `merged.json` says | what it is | the step |
+  Route each answer on `.read` first, and only then on the rest. A body that is not
+  JSON at all belongs to the first row too — a refusal before the script's own
+  argument check writes nothing at all to stdout:
+
+  | the answer says | what it is | the step |
   |---|---|---|
+  | not JSON, or `.read == false` with `.retry == true` | the answer is not published yet | re-poll the same call; a merge commit appears late behind a queue or a replica |
   | `.read == false` | the feeds were not read | unread, never unchecked — take the platform path above, claim nothing about this base |
   | `.counts.unfinished > 0`, or a `.required[]` not `present` | the run is not over | poll, on Step 4's budget and its escalation |
-  | `.empty == true` | nothing has registered **or** nothing runs here | run the same read on the commit the base carried *before* this merge: rows there means keep polling, none there means the base is unchecked and this step guaranteed nothing |
+  | `.empty == true` on AFTER, rows on BEFORE | nothing has registered yet | keep polling |
+  | `.empty == true` on both | this base runs nothing on a push | say the base is unchecked and that this step guaranteed nothing |
   | `.counts.failing > 0` | rows that did not pass | attribute, then report |
   | none of the above | green, as of this read | report it as of this read |
 
-  **Waiting is by name, never for the count to settle** — that is what `--require`
-  is for: the aggregate is born *after* the others finish
-  ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)),
-  so at the instant every check has finished, the one that gates the merge does not
-  yet exist. A budget that runs out mid-poll is not waited out: report the state the
-  feeds stood at, empty included.
+  **Wait by name, never for the count to settle** — `--require` is that wait, and the
+  count is not a substitute for it. It takes **only a name `BEFORE` actually carries**:
+  an aggregate belonging to a `pull_request`-only workflow never appears on the merge
+  commit, so requiring it there polls until the budget is spent while every push check
+  is already green. Where `BEFORE` carries no aggregate, pass none and say in the report
+  that the guarantee is the weaker one.
+
+  A budget that runs out mid-poll is not waited out: report the state the feeds stood
+  at, empty included.
 
   **What the report claims is what these reads saw**, never that the base is
   quiet: a check that registers after them, and one that runs for the pull
@@ -547,7 +560,7 @@ that, never the merge command's exit status:
   see.
 
   A red row is attributed before it is owned, the way Step 4 attributes one: red
-  on that previous commit too is not this merge's, and neither is a degraded forge
+  on `BEFORE` too is not this merge's, and neither is a degraded forge
   (*When the platform is down, the red check is not yours*) or a known flake.
   What survives that is **this merge's**, not the next author's — report it in
   Step 7 and fix it forward on a branch cut from the base, through this skill from

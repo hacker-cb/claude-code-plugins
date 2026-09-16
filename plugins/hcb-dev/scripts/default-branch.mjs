@@ -19,9 +19,31 @@
 // work. Exit 2 only for a call this script cannot act on at all.
 
 import { spawnSync } from 'node:child_process';
+import { writeSync } from 'node:fs';
 
 const USAGE = 'usage: node default-branch.mjs [--no-network] [--repo-dir <path>]\n';
-const die = (m) => { process.stderr.write(`default-branch: ${m}\n${USAGE}`); process.exit(2); };
+// `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit` drops
+// whatever has not reached the OS — so an answer past the 64KB pipe buffer arrives
+// truncated mid-token, as valid-looking JSON that will not parse. Writing from the
+// write's own callback flushes it, but then the exit is asynchronous too: execution
+// CONTINUES past the refusal that called it, and a script that has just said "this
+// argument is unusable" goes on to use it. Both have to hold, so the write itself is
+// made synchronous and the exit stays where it was.
+const writeAll = (fd, text) => {
+  const buf = Buffer.from(text, 'utf8');
+  let off = 0;
+  while (off < buf.length) {
+    try {
+      off += writeSync(fd, buf, off, buf.length - off);
+    } catch (e) {
+      // A non-blocking pipe whose reader is behind says EAGAIN rather than writing less;
+      // retrying is the whole handling. Anything else — a closed reader, above all — is
+      // not something to spin on.
+      if (e.code !== 'EAGAIN') return;
+    }
+  }
+};
+const die = (m) => { writeAll(2, `default-branch: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
 let network = true;
@@ -49,7 +71,7 @@ const answer = {
   resolved: false, remote: null, name: null, ref: null, short: null,
   source: null, confirmed: false, reason: null, notes: [],
 };
-const finish = () => { process.stdout.write(`${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
+const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const refuse = (reason) => { answer.reason = reason; finish(); };
 
 if (!git('rev-parse', '--git-dir').ok) die('not inside a git checkout');

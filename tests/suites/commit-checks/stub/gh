@@ -14,6 +14,9 @@ ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 emit() {
   case "$1" in
     ''|fail) return 1 ;;
+    # A call that succeeds having printed nothing. Not the same as a call that failed,
+    # and not the same as one that printed an empty list — which is the whole point.
+    empty) return 0 ;;
     /*|./*|captured/*) cat "$suite/$1" ;;
     *) printf '%s\n' "$1" ;;
   esac
@@ -25,6 +28,13 @@ case "$1 $2" in
     case "$v" in
       ""|fail) echo "gh: could not resolve to a PullRequest" >&2; exit 1 ;;
       notjson) printf 'not json at all\n'; exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "api repos"*)
+    # The un-paginated single-commit read `--parent` makes. One object, not a list.
+    v=$(ask '.commit')
+    case "$v" in
+      ""|fail) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
       *) printf '%s\n' "$v"; exit 0 ;;
     esac ;;
   "api --paginate")

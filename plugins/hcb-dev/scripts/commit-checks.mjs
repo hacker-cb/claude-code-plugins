@@ -18,17 +18,39 @@
 // call 404'd. Exit 2 only for a call this script cannot act on at all.
 
 import { spawnSync } from 'node:child_process';
+import { writeSync } from 'node:fs';
 
 const USAGE = 'usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>)'
   + ' --sha head|merge|<oid> [--require <name>]... [--repo-dir <path>]\n';
-const die = (m) => { process.stderr.write(`commit-checks: ${m}\n${USAGE}`); process.exit(2); };
+// `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit` drops
+// whatever has not reached the OS — so an answer past the 64KB pipe buffer arrives
+// truncated mid-token, as valid-looking JSON that will not parse. Writing from the
+// write's own callback flushes it, but then the exit is asynchronous too: execution
+// CONTINUES past the refusal that called it, and a script that has just said "this
+// argument is unusable" goes on to use it. Both have to hold, so the write itself is
+// made synchronous and the exit stays where it was.
+const writeAll = (fd, text) => {
+  const buf = Buffer.from(text, 'utf8');
+  let off = 0;
+  while (off < buf.length) {
+    try {
+      off += writeSync(fd, buf, off, buf.length - off);
+    } catch (e) {
+      // A non-blocking pipe whose reader is behind says EAGAIN rather than writing less;
+      // retrying is the whole handling. Anything else — a closed reader, above all — is
+      // not something to spin on.
+      if (e.code !== 'EAGAIN') return;
+    }
+  }
+};
+const die = (m) => { writeAll(2, `commit-checks: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { pr: null, repo: null, sha: null, repoDir: null, require: [] };
+const opts = { pr: null, repo: null, sha: null, repoDir: null, parent: null, require: [] };
 for (let i = 0; i < argv.length; i += 1) {
   const flag = argv[i];
   const value = argv[i + 1];
-  if (!['--pr', '--repo', '--sha', '--repo-dir', '--require'].includes(flag)) {
+  if (!['--pr', '--repo', '--sha', '--repo-dir', '--require', '--parent'].includes(flag)) {
     die(`unknown argument '${flag}'`);
   }
   if (value === undefined) die(`${flag} needs a value`);
@@ -37,6 +59,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else opts[flag.slice(2)] = value;
   i += 1;
 }
+if (opts.parent !== null && !/^[1-9]$/.test(opts.parent)) die('--parent takes 1 or 2 — the nth parent, counting from one');
 if (!opts.sha) die('--sha is required: head, merge, or a commit id');
 if (!opts.pr && !opts.repo) die('one of --pr or --repo is required');
 // `--sha head` and `--sha merge` are the pull request's, so they need one named.
@@ -46,15 +69,25 @@ if (!opts.pr && (opts.sha === 'head' || opts.sha === 'merge')) {
 // Shape-checked HERE, before any call goes out: a bad value caught after `gh pr view`
 // has already run has cost a round trip to learn what the argument said all along.
 //
-// Not hex, and deliberately. This endpoint takes a ref, so a branch name reaches it as
-// legitimately as an object id — the check that matters is that the value is ONE path
-// segment and cannot steer the url somewhere else. Length keeps a stray word out.
-const SEGMENT = /^[^/\\\s?#%]{7,64}$/;
-if (opts.sha !== 'head' && opts.sha !== 'merge'
-    && (!SEGMENT.test(opts.sha) || opts.sha.includes('..'))) {
+// Not hex, and deliberately. This endpoint takes a ref, so `main` reaches it as
+// legitimately as an object id — a length floor would refuse the commonest branch names
+// while admitting nothing safer. What matters is that a value is ONE url path segment
+// and cannot steer the request elsewhere, so the class excludes everything that would:
+// a separator, a query, a fragment, an escape, and git's own `^` `~` `:` `?` `*` `[`,
+// which no ref may carry anyway. `..` doubles as path traversal and as git's range.
+//
+// `<sha>^` is refused HERE rather than 404ing as a failed read, because the two mean
+// different things to a caller: one is an argument to fix, the other a forge to retry.
+// A caller wanting a parent resolves it with git and passes the oid.
+const SEGMENT = /^[^/\\\s?#%~^:*[\]]+$/;
+const readable = (v) => SEGMENT.test(v) && !v.includes('..') && !v.startsWith('-');
+if (opts.sha !== 'head' && opts.sha !== 'merge' && !readable(opts.sha)) {
   die(`--sha '${opts.sha}' is not a commit id or a ref this can read`);
 }
-if (opts.repo && !/^[^/\s]+\/[^/\s]+$/.test(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
+// The same guard, and for the same reason. Checked more loosely than `--sha`, an
+// `owner/name?per_page=1` rides straight into the path the feeds are read from.
+const repoOk = (v) => { const p = v.split('/'); return p.length === 2 && p.every(readable); };
+if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
 const cwd = opts.repoDir || process.cwd();
 const gh = (args) => {
@@ -65,14 +98,19 @@ const gh = (args) => {
 const answer = {
   // `read` is the only field a caller may act on without saying it did not look: BOTH
   // feeds answered. It is set last, after everything that can refuse has refused.
-  read: false, repo: null, sha: null,
+  read: false, repo: null, sha: null, parentOf: null,
   runs: [], statuses: [], rollup: null, rollupSpeaks: false,
   counts: { runs: 0, statuses: 0, unfinished: 0, failing: 0 },
+  // A refusal splits two ways a caller must not conflate: `retry` says the answer is
+  // simply not published yet and the same call will work shortly, while a refusal
+  // without it says the read failed. Routing on the reason's prose would make a caller
+  // parse English to tell a queue from an outage.
+  retry: false,
   empty: false, unfinished: [], failing: [], required: [],
   reason: null, notes: [],
 };
-const finish = () => { process.stdout.write(`${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
-const refuse = (reason) => { answer.reason = reason; finish(); };
+const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
+const refuse = (reason, retry = false) => { answer.reason = reason; answer.retry = retry; finish(); };
 
 // A paginated `gh api` prints one JSON document per page, concatenated. Parsed as one
 // document that is a syntax error; parsed as the first page it is the first page — which
@@ -81,6 +119,10 @@ const refuse = (reason) => { answer.reason = reason; finish(); };
 const parsePages = (text) => {
   const pages = [];
   let rest = text.trim();
+  // Nothing at all is NOT an empty list. A call that exited 0 having printed nothing
+  // brought no answer, and returning `[]` here would turn that into "this commit has no
+  // checks" — the exact confusion the rest of this file exists to prevent.
+  if (!rest) return null;
   while (rest) {
     let depth = 0; let inString = false; let escaped = false; let end = -1;
     for (let i = 0; i < rest.length; i += 1) {
@@ -131,16 +173,37 @@ if (opts.pr) {
   if (!sha) {
     refuse(opts.sha === 'merge'
       ? `pull request ${opts.pr} carries no merge commit yet — re-poll rather than reading an empty id`
-      : `pull request ${opts.pr} reports no ${opts.sha} commit`);
+      : `pull request ${opts.pr} reports no ${opts.sha} commit`, opts.sha === 'merge');
   }
 }
 
 // What the request answered with is checked too — it is data from a forge, not argv, so
 // it refuses rather than dying: a caller gating on `read` is told the question could not
 // be answered, which is what every other refusal here says.
-if (!SEGMENT.test(sha) || sha.includes('..')) refuse(`the pull request named '${sha}' as its ${opts.sha} commit, which is not a ref this can read`);
-if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) refuse(`'${repo}' is not owner/name`);
+if (!readable(sha)) refuse(`the pull request named '${sha}' as its ${opts.sha} commit, which is not a ref this can read`);
+if (!repoOk(repo)) refuse(`the pull request's url gave '${repo}', which is not owner/name`);
 answer.repo = repo;
+
+// `--parent` resolves the commit this one was built on, which is what tells "nothing has
+// registered yet" from "this base runs nothing on a push" — the one question a single
+// commit's feeds cannot answer. It is asked of the forge rather than written `<sha>^`,
+// because a caller passing that would be handing this script a value it refuses (and
+// rightly: `^` is not a ref character) while the endpoint would 404 on it, which a
+// caller reads as a failed read rather than as a bad argument.
+if (opts.parent !== null) {
+  const view = gh(['api', `repos/${repo}/commits/${sha}`]);
+  if (!view.ok) refuse(`could not read ${sha} to find its parent (${view.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
+  let commit;
+  try { commit = JSON.parse(view.out); } catch { refuse(`the commit ${sha} did not come back as JSON`); }
+  const parents = Array.isArray(commit.parents) ? commit.parents : [];
+  const picked = parents[Number(opts.parent) - 1];
+  if (!picked || !picked.sha) {
+    refuse(`${sha} has ${parents.length} parent(s), so there is no parent ${opts.parent}`);
+  }
+  if (!readable(picked.sha)) refuse(`the forge named '${picked.sha}' as parent ${opts.parent}, which is not a ref this can read`);
+  answer.parentOf = sha;
+  sha = picked.sha;
+}
 answer.sha = sha;
 
 // Both feeds paginate. Both are captured with their exit status rather than piped
@@ -229,11 +292,17 @@ for (const name of opts.require) {
   const matching = answer.runs.filter((r) => r.name === name)
     .concat(answer.statuses.filter((s) => s.context === name)
       .map((s) => ({ name: s.context, status: s.state === 'pending' ? 'in_progress' : 'completed', conclusion: s.state })));
+  // Always a list, however many rows carry the name — one repository running the
+  // aggregate once and the next running it as a matrix must answer the same shape, or a
+  // filter tuned on the first quietly matches nothing on the second. That is the very
+  // case that made this script key by `id`.
   answer.required.push({
     name,
     present: matching.length > 0,
     finished: matching.length > 0 && matching.every((r) => r.status === 'completed'),
-    conclusion: matching.length === 1 ? matching[0].conclusion : matching.map((r) => r.conclusion),
+    passed: matching.length > 0
+      && matching.every((r) => ['success', 'neutral', 'skipped'].includes(String(r.conclusion))),
+    conclusions: matching.map((r) => r.conclusion),
   });
 }
 

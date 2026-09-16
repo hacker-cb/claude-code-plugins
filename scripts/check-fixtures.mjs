@@ -37,6 +37,15 @@ const SHAPES = {
   ref: /^example-branch-[0-9a-f]{8}$|^(main|master|dev|HEAD)$/i,
   // URLs point at a host that does not exist.
   url: /^https:\/\/(github|gitlab)\.example(\/|$)/,
+  // A check's name is a workflow's name, which routinely carries a product or a
+  // customer, so the collector hashes it — except for a handful of literals that name
+  // nobody and that a filter under test has to match. This gate keeps its OWN copy of
+  // that handful deliberately: a name the collector starts passing through without
+  // telling the gate fails here, and failing closed is the only safe way for two lists
+  // that must agree to disagree.
+  check: /^example-check-[0-9a-f]{8}$|^(ci success|validate marketplace & plugins|copilot-pull-request-reviewer)$/i,
+  // Opaque ids the collector replaces wholesale.
+  id: /^example-id-[0-9a-f]{8}$/,
 };
 
 const KEY_SHAPE = [
@@ -45,6 +54,8 @@ const KEY_SHAPE = [
   [/^(full_name|nameWithOwner|repository|ruleset_source)$/i, 'repo'],
   [/^(ref|head_ref|base_ref|headRefName|baseRefName|branch|source_branch|target_branch)$/i, 'ref'],
   [/url$/i, 'url'],
+  [/^(name|context|slug)$/i, 'check'],
+  [/^id$/i, 'id'],
 ];
 
 // A real commit id anywhere in a value, whatever key it sits under.
@@ -125,7 +136,11 @@ function die(message) {
 }
 
 const argv = process.argv.slice(2);
-let root = 'tests/suites';
+// The whole repository, not one directory inside it. The collector's `--out` accepts any
+// path, so a capture written beside the script it serves carries its marker there and a
+// gate rooted at `tests/suites` never visits it — the same defect as walking by path
+// instead of by marker, one level up. `--dir` narrows this for a one-off check.
+let root = '.';
 let rootWasGiven = false;
 let wantSelfTest = false;
 for (let i = 0; i < argv.length; i += 1) {
@@ -166,16 +181,32 @@ if (!existsSync(rootAbs)) die(`no directory at ${root}`);
 //
 // The loose checks run over both kinds: a real commit id or a real forge host has no
 // business in either, and that guard costs nothing.
+//
+// The WALK, though, is the whole repository, while what it INSPECTS is fixtures alone.
+// Those are two different scopes and collapsing them breaks the gate either way: rooted
+// at `tests/suites` it never visits a capture the collector's `--out` put somewhere else
+// — the marker-not-path defect one level up — and inspecting everything it walks fails
+// the manifests, which carry this project's own real repository url by design.
+const SKIP_DIRS = new Set(['.git', 'node_modules']);
+// Where a fixture may live: a directory the collector marked, and the suites tree, whose
+// json IS fixture data. Anything else the walk passes is there to be searched for
+// markers, not to be read as a fixture.
+const isFixtureTree = (dir) => dir === join(repoRoot, 'tests', 'suites')
+  || dir.startsWith(`${join(repoRoot, 'tests', 'suites')}/`);
+
 const fixtures = [];
 const capturedDirs = new Set();
 (function walk(dir) {
   const entries = readdirSync(dir);
   const captured = entries.includes('CAPTURED');
   if (captured) capturedDirs.add(dir);
+  const collect = captured || isFixtureTree(dir) || rootWasGiven;
   for (const entry of entries) {
+    if (SKIP_DIRS.has(entry)) continue;
     const abs = join(dir, entry);
     if (statSync(abs).isDirectory()) { walk(abs); continue; }
     if (!entry.endsWith('.json')) continue;
+    if (!collect) continue;
     fixtures.push({ abs, captured });
   }
 }(rootAbs));
@@ -194,6 +225,11 @@ function inspect(node, path, file, keyName, captured) {
     }
     return;
   }
+  // Numbers are coerced rather than skipped. A forge sends `id` as an integer, the
+  // collector replaces it with a string, and returning early on a non-string means the
+  // one shape that proves the replacement happened is never checked on the value that
+  // did not get it. Booleans and the rest carry nothing and are let go.
+  if (typeof node === 'number') node = String(node);
   if (typeof node !== 'string') return;
 
   if (LOOSE_SHA.test(node)) {
@@ -236,7 +272,7 @@ for (const { abs, captured } of fixtures) {
 }
 
 process.stdout.write(`fixtures: ${fixtures.length} file(s) under ${root}`
-  + `, ${capturedCount} captured\n`);
+  + `, ${capturedCount} captured, ${capturedDirs.size} marked director${capturedDirs.size === 1 ? 'y' : 'ies'}\n`);
 
 // An explicit --dir naming a directory with no fixture in it is a question that went
 // unanswered, not a clean answer: the caller pointed at something it wanted checked.
