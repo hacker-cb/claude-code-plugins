@@ -1,0 +1,32 @@
+# fixture	args	want	expect	note
+ledger-found	--issue 42 --forge gh	0	"read": true|"found": true|"id": "IC_2"|"chars": 38|"faults": []	the comment is found by its marker and not by position: the ledger is the second of two
+no-ledger	--issue 42 --forge gh	0	"read": true|"found": false|"reason": null	a feed that answered and carries no marker is an epic whose ledger is not open yet, never an unread feed
+two-ledgers	--issue 42 --forge gh	0	"ambiguous": true|two comments carry the ledger marker|"IC_1"|"IC_9"	a coordinate resolving to two states resolves to neither, and both ids travel so the caller can repair
+archives-indexed	--issue 42 --forge gh	0	"n": 1|"n": 2|"missing": []|"unlisted": []|"faults": []	the ledger's index and the archives standing on the issue agree
+archives-indexed	--issue 42 --forge gh	0	NOT:"n": 0	the ledger's own index markers do not make the ledger an archive of itself
+archive-unlisted	--issue 42 --forge gh	0	archive 3 stands on the issue and the ledger does not list it|"missing": []	an archive nothing points at is the same fault as a second ledger
+index-missing	--issue 42 --forge gh	0	the ledger lists archive 4, and no comment carries it|"unlisted": []	an index naming an archive that was never written is what an interrupted rotation leaves
+two-same-archive	--issue 42 --forge gh	0	two comments carry the archive marker 2|"IC_3"|"IC_4"	one archive per comment is the shape; two under one number is a fault rather than two archives
+paginated	--issue 42 --forge gh	0	"read": true|"found": true|"id": "IC_3"	the first page is not the list: the ledger opened when the role was assumed sits behind every later comment
+feed-unread	--issue 42 --forge gh	0	"read": false|the comment feed could not be read	unread is not an empty feed, and nothing below it is claimed
+not-json	--issue 42 --forge gh	0	"read": false|the comment feed was not JSON	a body the CLI printed that does not parse says nothing about the issue
+single-object	--issue 42 --forge gh	0	"read": false|something that is not a list	an object where a list was expected is not a feed of one comment
+null-body	--issue 42 --forge gh	0	"read": true|"found": true|"id": "IC_2"	a comment whose body is null — a deleted one — is skipped rather than read as empty text
+marker-in-prose	--issue 42 --forge gh	0	"ambiguous": true	a comment merely TALKING about the marker carries it, and the repair is the user's, not a guess here
+spaced-marker	--issue 42 --forge gh	0	"n": 7|archive 7 stands on the issue and the ledger does not list it	the marker is matched with the whitespace a hand-written one carries
+host-honoured	--issue 42 --forge gh --host forge.example.com	0	"read": true|"found": true	the host reaches the call: without it a self-hosted epic is read from the SaaS
+repo-path	--issue 42 --forge gh --repo team/app	0	"read": true|"found": true	an explicit repository reaches the path rather than gh's own {owner}/{repo}
+glab-notes	--issue 42 --forge glab --repo team/sub/app	0	"read": true|"found": true	GitLab is asked for notes on its own path, and a subgroup project is a legitimate repository
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/small.txt	0	"asked": true|"fits": true|"chars": 19|"headroom": 65517	a body measured before the write, which is how the cap is met without a refused round trip
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/huge.txt	0	"fits": false|"headroom": -4464	a body over the cap is refused BEFORE the write, and what it is over by is what says how much to archive
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/emoji.txt	0	"chars": 40|"utf16": 80	characters and UTF-16 units are two numbers, and both travel because no forge states which it counts
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/emoji.txt --limit 60	0	"fits": false	a body of 40 characters and 80 units is judged on the larger: the one measure that cannot be wrong
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/huge.txt --limit 100000	0	"fits": true|"limit": 100000	a forge whose cap the caller measured is passed in, and the same body fits under it
+-	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/small.txt --limit 0	2	--limit takes a character count	a cap of zero is not a cap
+-	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/nowhere.txt	0	--body-file could not be read|"read": false	a file the caller named and cannot be read is answered without spending a forge round trip
+-	--issue 0 --forge gh	2	--issue takes an issue number	zero names no issue on either forge
+-	--issue ../../etc/passwd --forge gh	2	--issue takes an issue number	a value that is not digits would reach the url as a path of its own
+-	--issue 42 --forge svn	2	--forge takes gh or glab	an unknown forge is refused rather than probed for
+words-not-marker	--issue 42 --forge gh	0	"found": true|"id": "IC_2"|"ambiguous": false	the marker is the comment SYNTAX, not the words: prose naming the ledger is not a second one
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/eleven.txt --limit 11	0	"fits": true|"headroom": 0	a body of exactly the cap fits — the boundary a forge refuses is the one PAST it
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/eleven.txt --limit 10	0	"fits": false|"headroom": -1	and one character past it does not
