@@ -30,6 +30,17 @@ case "$1 $2" in
       notjson) printf 'not json at all\n'; exit 0 ;;
       *) printf '%s\n' "$v"; exit 0 ;;
     esac ;;
+  "api repos"*)
+    # Un-paginated, so the PATH is $2 — there is no --paginate word ahead of it.
+    case "$2" in
+      */protection/required_status_checks)
+        v=$(ask '.classic')
+        case "$v" in
+          ""|absent) echo "gh: Branch not protected (HTTP 404)" >&2; exit 1 ;;
+          forbidden) echo "gh: Resource not accessible by integration (HTTP 403)" >&2; exit 1 ;;
+          *) printf '%s\n' "$v"; exit 0 ;;
+        esac ;;
+    esac ;;
   "api --paginate")
     # $3 is the path. The feeds differ only by their last segments.
     case "$3" in

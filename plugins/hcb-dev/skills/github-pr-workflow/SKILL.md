@@ -529,11 +529,12 @@ that, never the merge command's exit status:
   ```
 
   **`--require-from-gates` is why no check name appears above.** The names come out of
-  the base's own ruleset and travel from one forge response into the next as data — a
-  workflow may be called `Team's CI`, or carry a `$` or a backtick, and a name composed
-  into a command line has to be quoted exactly right every single time. `.gates` in the
-  answer is what the base actually requires; `null` there means the question was never
-  asked, which is not an empty list.
+  the base's own gates — a ruleset and classic branch protection, which are separate
+  mechanisms and are both read ([`references/merge-gates.md`](references/merge-gates.md))
+  — and travel from one forge response into the next as data. A workflow may be called
+  `Team's CI`, or carry a `$` or a backtick, and a name composed into a command line has
+  to be quoted exactly right every single time. `.gates` is what the base actually
+  requires; `null` there means the question was never asked, which is not an empty list.
 
   **Read `BEFORE` before believing what it lacks.** An unread answer carries empty `runs`
   and `statuses` too, so "the base does not run this" and "nothing was read" look
@@ -557,7 +558,7 @@ that, never the merge command's exit status:
   | `running` | poll, on Step 4's budget and its escalation |
   | `failing` | attribute, then report |
   | `empty` | nothing registered yet where `BEFORE` has rows; where `BEFORE` is `empty` too, this base runs nothing on a push — say it is unchecked and that this step guaranteed nothing |
-  | `green` | green, as of this read |
+  | `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, so a required check may exist that this run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
 
   **Wait by name, never for the count to settle**, which is what `--require-from-gates`
   does: the aggregate registers after the checks it aggregates, so the moment every check

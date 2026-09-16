@@ -106,6 +106,12 @@ if (!SYMBOLIC.includes(opts.sha) && !readable(opts.sha)) {
 // The same guard, and for the same reason. Checked more loosely than `--sha`, an
 // `owner/name?per_page=1` rides straight into the path the feeds are read from.
 const repoOk = (v) => { const p = v.split('/'); return p.length === 2 && p.every(readable); };
+// A BRANCH name is many segments, not one: `release/1.0` and `feature/foo` are ordinary
+// names, and the single-segment rule refuses them — which would have turned the gate
+// read into a refusal on every repository that targets one, taking the whole step with
+// it. Each segment is held to the same rule instead, so nothing steers the url and every
+// real branch name still reaches it.
+const refOk = (v) => typeof v === 'string' && v !== '' && v.split('/').every(readable);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
 const cwd = opts.repoDir || process.cwd();
@@ -117,14 +123,14 @@ const gh = (args) => {
 const answer = {
   // `read` is the only field a caller may act on without saying it did not look: BOTH
   // feeds answered. It is set last, after everything that can refuse has refused.
-  read: false, repo: null, sha: null, gates: null,
+  read: false, repo: null, sha: null, gates: null, gatesUnknown: [],
   runs: [], statuses: [], rollup: null, rollupSpeaks: false,
   counts: { runs: 0, statuses: 0, unfinished: 0, failing: 0 },
   // One field to route on. Reassembling it from four numbers at every call site is how a
   // combination gets missed — a server rollup of `failure` beside rows that all passed,
   // for one, which the counts alone report as green.
   // Precedence: unread > retry > failing > running > empty > green.
-  verdict: 'unread',
+  verdict: 'unread', complete: true,
   // A refusal splits two ways a caller must not conflate: `retry` says the answer is
   // simply not published yet and the same call will work shortly, while a refusal
   // without it says the read failed. Routing on the reason's prose would make a caller
@@ -232,7 +238,7 @@ answer.repo = repo;
 if (opts.fromGates) {
   // Composed into a url, so held to the same bound as every other value that is —
   // including this one, which the forge supplied rather than the caller.
-  if (!readable(baseRef)) refuse(`the pull request named '${baseRef}' as its base branch, which is not a ref this can read`);
+  if (!refOk(baseRef)) refuse(`the pull request named '${baseRef}' as its base branch, which is not a ref this can read`);
   const r = gh(['api', '--paginate', `repos/${repo}/rules/branches/${baseRef}`]);
   if (!r.ok) {
     // 404 is a normal answer — a branch with no ruleset — and `gh` exits non-zero on it.
@@ -254,12 +260,46 @@ if (opts.fromGates) {
         }
       }
     }
-    answer.gates = [...new Set(opts.require)];
-    if (answer.gates.length === 0) {
-      answer.notes.push(`${baseRef} carries rules, but none of them requires a status check`);
-    }
   }
+
+  // A SECOND source, and both have to be read. Rulesets and classic branch protection
+  // are different mechanisms with different endpoints ([merge-gates.md]), and a repo on
+  // the classic one has an empty ruleset — so a gate list built from rulesets alone
+  // comes back short there, and `AFTER` reports green before a required check has
+  // registered.
+  const prot = gh(['api', `repos/${repo}/branches/${baseRef}/protection/required_status_checks`]);
+  if (prot.ok) {
+    let p;
+    try { p = JSON.parse(prot.out); } catch { p = null; }
+    if (p === null) answer.gatesUnknown.push('classic protection did not come back as JSON');
+    else {
+      for (const c of Array.isArray(p.contexts) ? p.contexts : []) {
+        if (typeof c === 'string' && c.trim()) opts.require.push(c);
+      }
+      for (const c of Array.isArray(p.checks) ? p.checks : []) {
+        if (c && typeof c.context === 'string' && c.context.trim()) opts.require.push(c.context);
+      }
+    }
+  } else if (/404|not protected|not found/i.test(prot.err)) {
+    // "Branch not protected" — the ordinary answer on a repository using rulesets, or
+    // none. Measured: that is exactly what the endpoint says.
+  } else {
+    // Anything else — 403 above all, which is what a non-admin reads — is a source that
+    // did not answer. Not a refusal: the check feeds are still readable and useful. But
+    // the gate list is then INCOMPLETE, and a caller told `green` over an incomplete list
+    // has been told something the read cannot support.
+    answer.gatesUnknown.push(`classic protection on ${baseRef} (${prot.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
+  }
+
   opts.require = [...new Set(opts.require)];
+  answer.gates = [...opts.require];
+  if (answer.gates.length === 0 && answer.gatesUnknown.length === 0) {
+    answer.notes.push(`${baseRef} requires no status check — neither a ruleset nor classic`
+      + ' protection names one');
+  }
+  if (answer.gatesUnknown.length) {
+    answer.notes.push(`the gate list is incomplete: ${answer.gatesUnknown.join('; ')}`);
+  }
 }
 
 answer.sha = sha;
@@ -388,6 +428,9 @@ if (answer.counts.failing > 0 || rollupRed) answer.verdict = 'failing';
 else if (answer.counts.unfinished > 0 || requiredWaiting) answer.verdict = 'running';
 else if (answer.empty) answer.verdict = 'empty';
 else answer.verdict = 'green';
+// A verdict is only as complete as the gate list behind it. Green over a list that could
+// not be fully read is green as far as anyone looked, which is a different claim.
+answer.complete = answer.gatesUnknown.length === 0;
 if (rollupRed && answer.counts.failing === 0) {
   answer.notes.push(`every row read passed, but the feed's own rollup says '${answer.rollup}'`
     + ' — the rollup is over what the server holds, not over what this call captured');
