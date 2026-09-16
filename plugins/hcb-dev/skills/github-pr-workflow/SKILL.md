@@ -320,8 +320,9 @@ buys another review of the same kind.
    ever starting — because the forge is degraded wants no change at all, so read
    what it reports before touching code and attribute it per
    *When the platform is down, the red check is not yours*.
-3. **Classify what step 1's fourth script returned** — `references/copilot.md` owns
-   the severity ladder, and reading a body in full wherever `suppressed` is above zero.
+3. **Classify what step 1's fourth script returned** — `references/copilot.md` owns the
+   severity ladder, and every body whose `readBody` is true carries findings no thread
+   holds.
 4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
    as few pushes as is reasonable — where a rule in force reviews pushes, every
    push costs another wait at step 6, whether or not a new review actually follows.

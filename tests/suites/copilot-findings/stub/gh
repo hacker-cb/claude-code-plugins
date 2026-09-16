@@ -18,10 +18,22 @@ guard() { [ "$want" = "$host" ] || { echo "that call went to '${host:-the defaul
 
 if [ "$1 $2" = "pr view" ]; then answer "$(ask '.pr_view')"; fi
 if [ "$1" = "api" ]; then
+  # Scanned rather than positional: `--hostname <host>` sits between `api` and the path.
+  for a in "$@"; do
+    [ "$a" = "user" ] || continue
+    v=$(ask '.me'); [ -z "$v" ] && v=example-author
+    case "$v" in silent) echo "could not read the authenticated user" >&2; exit 1 ;; esac
+    printf '%s\n' "$v"; exit 0
+  done
+fi
+if [ "$1" = "api" ]; then
   for a in "$@"; do
     case "$a" in
       graphql)
         guard
+        # A second page is asked for by cursor, and answering the first again is how a
+        # walk that never ends looks from in here.
+        case " $* " in *" -f after="*) after=1 ;; *) after=0 ;; esac
         case " $* " in
           *" -f owner="*) ;;
           *) echo "owner reached the query typed: a repository named 2048 becomes an integer and String! refuses it" >&2; exit 1 ;;
@@ -30,7 +42,7 @@ if [ "$1" = "api" ]; then
           *" -f repo="*) ;;
           *) echo "repo reached the query typed, and String! refuses an integer" >&2; exit 1 ;;
         esac
-        answer "$(ask '.threads')" ;;
+        if [ "$after" = 1 ]; then answer "$(ask '.threads_2')"; else answer "$(ask '.threads')"; fi ;;
       */reviews)   guard; answer "$(ask '.reviews')" ;;
     esac
   done

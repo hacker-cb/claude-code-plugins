@@ -16,6 +16,17 @@
 
 import { writeAll, hostOk, parsePages, repoOk, runner, text, isCopilot } from './lib/forge.mjs';
 
+// A finding's own words, kept whole. `text()` is for the short identity fields beside
+// them — a login, a state, a timestamp — and its 200 characters would take the rationale
+// off a real finding and leave a path naming no file. Control characters still go, since
+// they would end a line in a reader's terminal, and the ceiling is high enough that only
+// something pathological reaches it — which then SAYS it was clipped rather than looking
+// like the whole of it.
+const CEILING = 20000;
+const whole = (v) => (typeof v === 'string'
+  ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ').slice(0, CEILING) : null);
+const clipped = (v) => typeof v === 'string' && v.length > CEILING;
+
 const USAGE = 'usage: node copilot-findings.mjs --pr <n> [--repo <owner/name>]'
   + ' [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `copilot-findings: ${m}\n${USAGE}`); process.exit(2); };
@@ -42,6 +53,11 @@ const answer = {
   // Each half says whether IT was read. One that failed leaves the other's findings
   // standing rather than emptying the whole answer — but `read` below stays false, so a
   // caller cannot act on a half while believing it has the review.
+  // Who "ours" is. Every judgement below about whether a finding was answered rests on
+  // it: on a public repository anyone at all can reply in a review thread, and a reply
+  // from a passer-by is not an answer to the finding — it is a third party clearing a
+  // gate. Unread leaves every thread owed, which is the safe direction.
+  me: null,
   threads: { read: false, reason: null, more: false, items: [] },
   bodies: { read: false, reason: null, items: [] },
   // Every thread still owed something, and WHICH of the ways it is owed — they take
@@ -75,6 +91,12 @@ if (typeof pr.url === 'string') {
   } catch { host = null; }
 }
 const hostArgs = hostOk(host) ? ['--hostname', host] : [];
+const whoami = gh(['api', ...hostArgs, 'user', '-q', '.login']);
+answer.me = whoami.ok && whoami.out ? text(whoami.out.split('\n')[0]) : null;
+if (answer.me === null) {
+  answer.notes.push('who this run is authenticated as could not be read, so no comment in'
+    + ' any thread counts as an answer of ours');
+}
 const owner = where.split('/').slice(0, 2);
 answer.repo = owner.length === 2 && owner.every(Boolean) ? owner.join('/') : null;
 
@@ -83,12 +105,16 @@ if (!answer.repo) {
   answer.threads.reason = 'which repository this request is in could not be read, and the'
     + ' thread query is asked of a repository by name';
 } else {
-  const q = gh(['api', ...hostArgs, 'graphql', '-f', `query=
-    query($owner:String!,$repo:String!,$pr:Int!){
+  // Paginated rather than capped. A request past the first page used to be truncated
+  // silently by hand; refusing instead is honest but leaves a request with that many
+  // threads unable to pass this step on any attempt, so the pages are walked. The ceiling
+  // is a run that will not terminate, not a number of findings.
+  const QUERY = `
+    query($owner:String!,$repo:String!,$pr:Int!,$after:String){
       repository(owner:$owner,name:$repo){
         pullRequest(number:$pr){
-          reviewThreads(first:100){
-            pageInfo{ hasNextPage }
+          reviewThreads(first:100, after:$after){
+            pageInfo{ hasNextPage endCursor }
             nodes{ id isResolved isOutdated resolvedBy{ login }
                    comments(first:100){
                      pageInfo{ hasNextPage }
@@ -96,29 +122,61 @@ if (!answer.repo) {
           }
         }
       }
-    }`,
-  // `-f` for the strings and `-F` only for the number: the typed flag infers, so a
-  // repository named `2048` travels as an integer and the query's `String!` refuses it.
-  '-f', `owner=${owner[0]}`, '-f', `repo=${owner[1]}`, '-F', `pr=${opts.pr}`]);
-  if (!q.ok) {
-    answer.threads.reason = `the review threads could not be read (${q.line()})`;
-  } else {
+    }`;
+  const nodes = [];
+  let after = null;
+  let pages = 0;
+  for (;;) {
+    pages += 1;
+    const q = gh(['api', ...hostArgs, 'graphql', '-f', `query=${QUERY}`,
+      // `-f` for the strings and `-F` only for the number: the typed flag infers, so a
+      // repository named `2048` travels as an integer and the query's `String!` refuses it.
+      '-f', `owner=${owner[0]}`, '-f', `repo=${owner[1]}`, '-F', `pr=${opts.pr}`,
+      ...(after === null ? [] : ['-f', `after=${after}`])]);
+    if (!q.ok) { answer.threads.reason = `the review threads could not be read (${q.line()})`; break; }
     let got = null;
     try { got = JSON.parse(q.out).data.repository.pullRequest.reviewThreads; } catch { got = null; }
     if (!got || !Array.isArray(got.nodes)) {
       answer.threads.reason = 'the review threads came back in a shape this cannot read';
-    } else {
-      answer.threads.more = got.pageInfo?.hasNextPage === true;
-      for (const t of got.nodes) {
+      break;
+    }
+    nodes.push(...got.nodes);
+    if (got.pageInfo?.hasNextPage !== true) break;
+    const cursor = got.pageInfo?.endCursor;
+    // A forge saying there is more and not saying where is a listing this cannot finish,
+    // and walking it again from the start would never end.
+    if (typeof cursor !== 'string' || cursor === '' || cursor === after) {
+      answer.threads.more = true;
+      answer.threads.reason = 'the forge reports more threads and named no cursor to reach them';
+      break;
+    }
+    after = cursor;
+    if (pages >= 50) {
+      answer.threads.more = true;
+      answer.threads.reason = 'the thread listing did not end within fifty pages';
+      break;
+    }
+  }
+  if (answer.threads.reason === null) {
+    {
+      for (const t of nodes) {
         const comments = Array.isArray(t?.comments?.nodes) ? t.comments.nodes : [];
         const rows = comments.map((c) => ({
           id: typeof c?.databaseId === 'number' ? c.databaseId : null,
           author: text(c?.author?.login),
           reviewer: isCopilot({ login: c?.author?.login, type: c?.author?.__typename }),
-          path: text(c?.path), line: typeof c?.line === 'number' ? c.line : null,
-          body: text(c?.body),
+          // Ours by identity, never by "not the reviewer": anyone at all can reply in a
+          // review thread on a public repository, and a passer-by writing "not a real
+          // key, ignore" is not an answer to the finding — it is a third party clearing
+          // the only gate standing between it and a merge.
+          ours: answer.me !== null && text(c?.author?.login) === answer.me,
+          path: whole(c?.path), line: typeof c?.line === 'number' ? c.line : null,
+          body: whole(c?.body), truncated: clipped(c?.body),
         }));
-        const first = rows.findIndex((r) => r.reviewer);
+        // The LAST thing the reviewer said, not the first. It answers our reply and closes
+        // the thread often enough — "the fix is incomplete" — and anchoring to the first
+        // leaves that follow-up answered by the reply it was written about.
+        const lastSaid = rows.reduce((at, r, i) => (r.reviewer ? i : at), -1);
         const it = {
           id: typeof t?.id === 'string' ? t.id : null,
           resolved: t?.isResolved === true,
@@ -132,8 +190,12 @@ if (!answer.repo) {
           // did". A thread the reviewer closed with nothing of ours in it is an open
           // finding wearing the resolved badge, and the merge gate is satisfied the
           // whole time it stands.
-          answered: first !== -1 && rows.slice(first + 1).some((r) => !r.reviewer),
-          fromReviewer: first !== -1,
+          answered: lastSaid !== -1 && rows.slice(lastSaid + 1).some((r) => r.ours),
+          // Somebody else did speak, which is neither an answer nor nothing: it is why a
+          // thread that looks attended to is still owed one.
+          othersSpoke: lastSaid !== -1
+            && rows.slice(lastSaid + 1).some((r) => !r.reviewer && !r.ours),
+          fromReviewer: lastSaid !== -1,
           path: rows[0]?.path ?? null, line: rows[0]?.line ?? null,
           comments: rows,
         };
@@ -155,11 +217,19 @@ if (!answer.repo) {
 // Markup stripped before either count is read: both labels arrive as a heading or a bold
 // run as often as plain text, and the forge may reword either of them.
 const plain = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ').replace(/[*_#]/g, ' ');
-// `null` and not `0`: a body carrying no such block and a block reporting none are
-// different readings, and they take different next steps.
+// Every match, not the first. A review body carries the paths of the files it reviewed
+// above the block this is looking for, and a path is a name somebody chose: one shaped
+// `docs/deprecations suppressed (0).md` sits above the real block and answers for it.
+//
+// `null` and not `0` where there is no match at all: a body carrying no such block and a
+// block reporting none are different readings, taking different next steps. `null` again
+// where there are SEVERAL — which of them is the block cannot be told from here, and the
+// unknown resolves toward reading the body rather than toward skipping it.
 const countIn = (body, re) => {
-  const m = re.exec(plain(body));
-  return m ? Number.parseInt(m[1], 10) : null;
+  const all = [...plain(body).matchAll(re)];
+  if (all.length === 0) return { n: null, ambiguous: false };
+  if (all.length > 1) return { n: null, ambiguous: true };
+  return { n: Number.parseInt(all[0][1], 10), ambiguous: false };
 };
 // The placeholders where the url did not parse: `gh` fills them from the current
 // directory, which is the same repository `gh pr view` resolved a moment ago — so the two
@@ -180,6 +250,8 @@ if (!reviews.ok) {
         if (!isCopilot({ login: r?.user?.login, type: r?.user?.type })) continue;
         const body = typeof r?.body === 'string' ? r.body : '';
         const commit = typeof r?.commit_id === 'string' ? r.commit_id : null;
+        const sup = countIn(body, /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
+        const opened = countIn(body, /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
         answer.bodies.items.push({
           at: text(r?.submitted_at), commit, state: text(r?.state),
           // Every review that posted is read, whichever commit it covers: the head handed
@@ -188,12 +260,20 @@ if (!reviews.ok) {
           head: commit !== null && answer.head !== null ? commit === answer.head : null,
           // The body's first line and nothing more — where the assessment sits when the
           // review carries one, and a pointer to the body rather than a substitute for it.
-          opening: text((body.split('\n')[0] || '').replace(/^#+ *|\s+$/g, '')),
-          suppressed: countIn(body, /[Ss]uppressed[^(]{0,40}\((\d+)\)/),
+          opening: text((body.split('\n')[0] || '').replace(/^#+ */, '').replace(/\s+$/, '')),
+          // The body itself, because the decision below is to READ one: telling a caller
+          // to open something and handing it a first line is telling it to classify a
+          // finding by the heading above it.
+          body: whole(body), truncated: clipped(body),
+          suppressed: sup.n,
           // What the review OPENED, which is a count of threads and never of findings: a
           // review whose findings all went to the suppressed block opened none, so zero
           // here is that class's signature rather than evidence against it.
-          opened: countIn(body, /[Cc]omments generated[^0-9]{0,20}(\d+)/),
+          opened: opened.n,
+          ambiguous: sup.ambiguous || opened.ambiguous,
+          // The decision, made here rather than left as an inference a reader re-derives:
+          // a block with findings in it, or a count that could not be pinned at all.
+          readBody: sup.ambiguous || opened.ambiguous || (sup.n !== null && sup.n > 0),
         });
       }
     }
@@ -210,10 +290,19 @@ if (answer.threads.read) {
     if (t.answered === null) {
       why = 'this read only part of its comments, so whether an answer is in it is unknown';
     } else if (!t.answered) {
-      why = t.resolved
-        ? 'this reviewer closed it with no answer of ours in it — an open finding wearing'
-          + ' the resolved badge, and the gate satisfied the whole time it stands'
-        : 'nothing has answered it';
+      if (t.resolved && t.byReviewer) {
+        why = 'this reviewer closed it with no answer of ours in it — an open finding'
+          + ' wearing the resolved badge, and the gate satisfied the whole time it stands';
+      } else if (t.resolved) {
+        // Said as what it is. Reading a person's resolve as the bot's self-closing sends
+        // the caller looking at the reviewer's habits instead of at who actually closed it.
+        why = `${t.resolvedBy ?? 'someone'} closed it with no answer of ours in it`;
+      } else {
+        why = t.othersSpoke
+          ? 'somebody else replied and we did not — a third party in the thread is not an'
+            + ' answer to the finding'
+          : 'nothing has answered it';
+      }
     } else if (!t.resolved) {
       why = 'answered and still open — the resolve lands after the reply rather than with it';
     }

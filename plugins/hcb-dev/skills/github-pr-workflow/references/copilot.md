@@ -207,18 +207,20 @@ node <plugin root>/scripts/copilot-findings.mjs --pr <n> [--repo <owner/name>]
 | field | what it settles |
 |---|---|
 | `read` | **both halves answered.** Either half alone is half a review, and `false` here says so however much is in the answer |
+| `me` | who this run is authenticated as, which is what "answered" is measured against. `null` leaves every thread owed |
 | `threads.items[]` | one per review thread: `resolved`, `outdated`, `resolvedBy`, `byReviewer`, the `path` and `line`, and each comment with the `id` a reply is posted to |
-| `threads.items[].answered` | whether anything of ours follows the finding — **position is what makes a reply one**. `null` where that thread's own comments paginated, which owes exactly as much as no answer does |
-| `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head`, and `opening` — the body's first line, where the assessment sits, and a pointer to the body rather than a substitute for reading it |
-| `bodies.items[].suppressed` | the findings that opened no thread. **`null` is "no such block", never zero** — they take different next steps |
+| `threads.items[].answered` | whether a comment of **ours** follows the reviewer's LAST word. Anyone at all can reply in a thread, so a reply is ours by identity and an answer by position; `othersSpoke` beside it is a third party having attended to the thread, which is not an answer to the finding. `null` where that thread's own comments paginated, which owes exactly as much as no answer does |
+| `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head`, `opening` and the `body` itself |
+| `bodies.items[].readBody` | **the decision**: this body has findings in it that opened no thread, or a count that could not be pinned. Everything else is `false` |
+| `bodies.items[].suppressed` | the findings that opened no thread. **`null` is "no such block", never zero** — and `null` beside `ambiguous` is a count the body's own file list answered for, which resolves toward reading rather than skipping |
 | `bodies.items[].opened` | what the review OPENED, a count of threads and never of findings: a review whose findings all went to the suppressed block opened none, so zero there is that class's signature rather than evidence against it. It holds whatever the verdict says — an approving review carries a suppressed block as readily as a declining one |
-| `open[]` | every thread still owed something, each carrying the `why` that says which of the three states it is in |
+| `open[]` | every thread still owed something, each carrying the `why` that says which state it is in |
 
-Above zero, `suppressed` means reading that body in full: the script says *whether* to
-read one, never *what* it found. A suppressed finding carries no comment id, so there is
-no thread to answer in and none to resolve — it ends in the fix, and is named, fixed or
-turned down with its reason, in the pull request's conversation, which is where
-*Replying* would otherwise have put it.
+A suppressed finding carries no comment id, so there is no thread to answer in and none
+to resolve — it ends in the fix, and is named, fixed or turned down with its reason, in
+the pull request's conversation, which is where *Replying* would otherwise have put it.
+A `truncated` flag beside a body or a comment says the text was clipped; nothing else is
+lossy.
 
 ## Classifying severity
 
@@ -297,20 +299,16 @@ loop and keeps the review thread honest.
   review summary carries no thread and needs no resolving. (See *Classifying
   severity*.)
 
-**A thread this reviewer resolved is not by itself an answered thread.** Copilot
-closes its own, under a login other than the one it commented under. The pair from
-*The state is read by a script* has nothing to test here — `resolvedBy` is typed as a plain
-user and carries no field distinguishing a bot from a person — so this is the one
-place the `^copilot` prefix stands alone, case-insensitively, which is what covers
-every spelling it resolves under.
+**A thread this reviewer resolved is not by itself an answered thread**, and *Finding
+the findings* is what tells the two apart: `byReviewer` says it closed its own,
+`answered` says whether a reply of ours follows its last word, and each entry in `open`
+names which state it is in. `resolvedBy` is typed as a plain user and carries no field
+distinguishing a bot from a person, so that one match is by login prefix alone — the
+single place the pair does not apply.
 
-**What that match means turns on whether your reply is already in the thread**, and
-the query above returns both. A thread this reviewer closed with no answer of yours
-in it is an open finding wearing the resolved badge, and
-`required_review_thread_resolution` is satisfied the whole time it stands. One you
-answered and it then closed is settled: its resolve lands *after* the reply rather
-than with it, so a list taken as you answer is honest and already stale — retake it
-on the head you hand in rather than answering twice.
+A resolve lands *after* the reply rather than with it, so a list taken as you answer is
+honest and already stale: **retake it on the head you hand in** rather than answering
+twice.
 
 Reply + resolve via:
 ```bash
