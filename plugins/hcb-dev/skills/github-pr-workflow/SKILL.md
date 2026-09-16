@@ -511,54 +511,37 @@ that, never the merge command's exit status:
 - Poll until the PR shows `MERGED`, or report what's blocking it.
 - **On `MERGED`, wait for the base's own checks on the merge commit.** Two heads
   green apart can be red together, and where the base does not require branches
-  current with it, nothing before this point reads them combined:
+  current with it, nothing before this point reads them combined — measured: one
+  merge commit carried 22 checks where its head had carried 9, the extra fourteen
+  being audit and dependabot runs no pull request ever triggers.
 
   ```bash
-  # The PR's own repo, never gh's default — in a fork checkout that default is the
-  # parent, where this SHA does not exist and every read below 404s into silence.
-  # Strip the host rather than a literal one: an Enterprise instance serves its own.
-  PR_URL=$(gh pr view <pr> --json url --jq '.url')
-  REPO=$(printf '%s' "$PR_URL" | sed -E 's#^https?://[^/]+/##; s#/pull/.*$##')
-  MERGE_SHA=$(gh pr view <pr> --json mergeCommit --jq '.mergeCommit.oid // empty')
-  # Empty until the merge commit is published (a queue, a replica behind). Stop here
-  # and re-poll: an empty SHA builds a URL that 404s, and a 404 prints no rows —
-  # which the reading below would take for a base with nothing to run.
-  [ -n "$MERGE_SHA" ] || { echo "merge commit not published yet — re-poll"; exit 1; }
-  # Captured with their exit status, never piped straight out: a call that failed
-  # prints no rows, exactly as a base with nothing to run does, and the two take
-  # different steps.
-  if ! RUNS="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/check-runs" \
-    --jq '.check_runs[] | "\(.conclusion // .status)\t\(.name)"')"; then
-    echo "CANNOT READ the check-runs feed — unread, not unchecked"; exit 1
-  fi
-  # Checks API and the older statuses are separate feeds; an external CI posting only
-  # the latter leaves the call above empty however red it is. This one answers with an
-  # object, so its verdict is the rolled-up `.state` the server computes over every
-  # status — take that, and read `.statuses[]` as the rows Step 7 reports in full,
-  # which is why it paginates; the rollup line then repeats once per page, identically.
-  if ! STATUSES="$(gh api --paginate "repos/$REPO/commits/$MERGE_SHA/status" \
-    --jq '"rollup: \(.state)", (.statuses[] | "\(.state)\t\(.context)")')"; then
-    echo "CANNOT READ the status feed — unread, not unchecked"; exit 1
-  fi
-  printf '%s\n%s\n' "$RUNS" "$STATUSES"
+  CC="node ${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
+  # `--sha merge` is the merge commit, resolved from the request itself along with the
+  # repository it lives in. Both feeds, both paginated, and the three outcomes kept
+  # apart: read with rows, read with nothing, or not read at all.
+  $CC --pr <pr> --sha merge --require "<the aggregate the base requires>" > merged.json
+  jq -r 'if .read then "rows=\(.counts.runs)+\(.counts.statuses) unfinished=\(.counts.unfinished) failing=\(.counts.failing) empty=\(.empty)" else "UNREAD: \(.reason)" end' merged.json
   ```
 
-  Poll while any row is unfinished, on Step 4's budget and its escalation.
-  **Nothing returned is not green**: a run registers after the push that triggers
-  it, so an empty pair of reads right after the merge is the answer arriving, not
-  the answer. A rollup of `pending` over zero statuses is that same emptiness and
-  not a run in flight — the rollup says something only beside a non-empty list.
-  Tell that apart from a base that runs nothing at all by reading the same two
-  feeds on the commit the base carried *before* this merge — where that one has
-  rows, keep polling; where it has none either, say the base is unchecked and
-  that this step guaranteed nothing. A budget that runs out while this step is
-  still polling — a row unfinished, or rows the commit before carried and this
-  one still lacks — is not waited out, with what the feeds showed when the
-  waiting stopped, empty included; and a read that did not succeed is neither of
-  those — unread is not empty, and it takes the platform path above rather than
-  any verdict about this base.
+  Route on `.read` first, and only then on the rest:
 
-  **What the report claims is what these two reads saw**, never that the base is
+  | `merged.json` says | what it is | the step |
+  |---|---|---|
+  | `.read == false` | the feeds were not read | unread, never unchecked — take the platform path above, claim nothing about this base |
+  | `.counts.unfinished > 0`, or a `.required[]` not `present` | the run is not over | poll, on Step 4's budget and its escalation |
+  | `.empty == true` | nothing has registered **or** nothing runs here | run the same read on the commit the base carried *before* this merge: rows there means keep polling, none there means the base is unchecked and this step guaranteed nothing |
+  | `.counts.failing > 0` | rows that did not pass | attribute, then report |
+  | none of the above | green, as of this read | report it as of this read |
+
+  **Waiting is by name, never for the count to settle** — that is what `--require`
+  is for: the aggregate is born *after* the others finish
+  ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)),
+  so at the instant every check has finished, the one that gates the merge does not
+  yet exist. A budget that runs out mid-poll is not waited out: report the state the
+  feeds stood at, empty included.
+
+  **What the report claims is what these reads saw**, never that the base is
   quiet: a check that registers after them, and one that runs for the pull
   request and not for the push that landed it, are both outside what they can
   see.
@@ -571,7 +554,7 @@ that, never the merge command's exit status:
   Step 1. Where the base does require branches current, this read confirms rather
   than guards — take it either way.
 
-  **Step 7 carries what these feeds showed, whichever way it came out** — green;
+  **Step 7 carries what these reads showed, whichever way it came out** — green;
   red, with every failing row and what each was attributed to; unchecked; or the
   wait stopped before the rows finished, with the state they stood at then.
   Attribution decides what you fix, never what gets reported: rows attributed

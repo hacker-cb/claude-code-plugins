@@ -1,0 +1,77 @@
+{
+  "total_count": 9,
+  "check_runs": [
+    {
+      "id": "example-id-a3f0919c",
+      "name": "CI success",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:43:03Z",
+      "completed_at": "2026-09-12T11:43:06Z"
+    },
+    {
+      "id": "example-id-48299adc",
+      "name": "example-check-81a3a9bb",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:20Z",
+      "completed_at": "2026-09-12T11:41:53Z"
+    },
+    {
+      "id": "example-id-ca1bd87b",
+      "name": "example-check-833d682a",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:18Z",
+      "completed_at": "2026-09-12T11:43:01Z"
+    },
+    {
+      "id": "example-id-288faf64",
+      "name": "example-check-34f0dbba",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:18Z",
+      "completed_at": "2026-09-12T11:42:12Z"
+    },
+    {
+      "id": "example-id-8f592ff3",
+      "name": "example-check-620d767d",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:19Z",
+      "completed_at": "2026-09-12T11:42:24Z"
+    },
+    {
+      "id": "example-id-f2e8c247",
+      "name": "example-check-7e2d7884",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:18Z",
+      "completed_at": "2026-09-12T11:42:22Z"
+    },
+    {
+      "id": "example-id-27c3a0e3",
+      "name": "copilot-pull-request-reviewer",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:19Z",
+      "completed_at": "2026-09-12T11:49:14Z"
+    },
+    {
+      "id": "example-id-515e6a6e",
+      "name": "example-check-6da316a2",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:08Z",
+      "completed_at": "2026-09-12T11:40:20Z"
+    },
+    {
+      "id": "example-id-8febc8e7",
+      "name": "example-check-5ebda254",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-12T11:40:08Z",
+      "completed_at": "2026-09-12T11:40:16Z"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# fixture	args	want	expect	note
+head-real	--pr 7 --sha head	0	"read": true|"repo": "example-org/example-repo"|"runs": 9|copilot-pull-request-reviewer|"rollupSpeaks": false	a real head: nine check-runs, and a status feed that carries none of them
+head-real	--pr 7 --sha head	0	that is this feed having nothing, not a run in flight|"rollup": "pending"	the measured trap: `pending` over zero statuses is this feed's empty answer, and a poll on .state never exits
+head-real	--pr 7 --sha head	0	"repo": "example-org/example-repo"	the repository is read out of the request's own url, host stripped rather than matched — an Enterprise instance serves its own
+merge-real	--pr 7 --sha merge	0	"read": true|"runs": 22|"unfinished": 0|"failing": 0	twenty-two runs over eight distinct names: keyed by name the matrix legs collapse to eight and two thirds of the set go unread
+merge-real	--pr 7 --sha merge	0	"read": true|"empty": false	the base runs what the head never did — measured: fourteen audit and dependabot runs the pull request never carried
+checks-unread	--repo example-org/example-repo --sha f1x7f77028eb8aedab90be3fe4d8763e3dd26837	0	"read": false|check-runs feed could not be read|"empty": false	a feed that failed prints no rows, exactly as a commit with nothing on it does
+status-unread	--repo example-org/example-repo --sha f1x7f77028eb8aedab90be3fe4d8763e3dd26837	0	"read": false|status feed could not be read	the second feed is refused as loudly as the first — one read of two is not a read
+nothing	--repo example-org/example-repo --sha f1x7f77028eb8aedab90be3fe4d8763e3dd26837	0	"read": true|"empty": true|read the commit before this one	both feeds empty is an answer, and it is neither green nor unread
+legacy-statuses	--repo example-org/example-repo --sha f1x7f77028eb8aedab90be3fe4d8763e3dd26837	0	"read": true|"rollupSpeaks": true|external-ci/build|"failing": 1|"empty": false	an external CI posts only to the older feed: a reader of check-runs alone sees a commit with nothing on it
+in-flight	--repo example-org/example-repo --sha f1x7f77028eb8aedab90be3fe4d8763e3dd26837	0	"read": true|"unfinished": 1|unit-tests|"failing": 0	a run still going is unfinished, never failing — conclusion is null while it runs, and null is not a verdict
+aggregate-missing	--repo example-org/example-repo --sha f1x7f77028eb8aedab90be3fe4d8763e3dd26837 --require ci-aggregate	0	"read": true|"unfinished": 0|"present": false	every check finished and the aggregate is not there — measured, it is born last, three seconds after the last of nineteen
+head-real	--pr 7 --sha head --require copilot-pull-request-reviewer	0	"present": true|"finished": true|"conclusion": "success"	the same question on a head that does carry the named check
+merge-not-published	--pr 7 --sha merge	0	"read": false|carries no merge commit yet|re-poll	an empty merge id builds a url that 404s, and a 404 prints no rows — which reads as a base with nothing to run
+pr-view-unread	--pr 7 --sha head	0	"read": false|could not read pull request 7	the request could not be read, so neither feed was ever asked — refuse rather than compose a url from nothing
+paginated	--repo example-org/example-repo --sha f1x7f77028eb8aedab90be3fe4d8763e3dd26837	0	"read": true|page-one|page-two|"runs": 2|ext/a|ext/b|"statuses": 2	both feeds paginate: the first page is not the list, and a rollup line repeated per page is one rollup
+-	--sha head	2	one of --pr or --repo is required	a commit named but no repository to read it in
+-	--repo example-org/example-repo --sha head	2	names a pull request's commit	head is the request's word for a commit, and there is no request here
+-	--pr 7 --sha zzz	2	is not a commit id or a ref	a bad value is caught before the round trip that would learn nothing new
+-	--pr 7 --sha ../../etc/passwd	2	is not a commit id or a ref	a value that would steer the url elsewhere never reaches it
+-	--pr 7 --sha head --heffalump x	2	unknown argument	an unknown flag is refused, never ignored

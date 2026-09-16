@@ -68,7 +68,14 @@ readFileSync(registryAbs, 'utf8').split('\n').forEach((line, i) => {
 
 if (rows.length === 0) die(`${registryPath} holds no row`);
 
-// Every markdown file the plugins carry, read once: a (dropped) row has to be checked
+// A rule can move into CODE, and that is the whole point of this refactor: the
+// instruction "unread is not empty" stops being a paragraph and becomes a branch that a
+// suite holds to. So a target is any file that can carry a rule, not only prose —
+// markdown-only, a row pointing at the script its rule now lives in reads as a missing
+// file, and the honest move looks exactly like a lost one.
+const RULE_BEARING = /\.(md|mjs|js|sh)$/;
+
+// Every such file the plugins carry, read once: a (dropped) row has to be checked
 // against all of them, and re-reading the tree per row would be quadratic for nothing.
 const pluginFiles = new Map();
 (function walk(dir) {
@@ -77,7 +84,7 @@ const pluginFiles = new Map();
   for (const entry of readdirSync(abs)) {
     const rel = `${dir}/${entry}`;
     if (statSync(join(repoRoot, rel)).isDirectory()) walk(rel);
-    else if (entry.endsWith('.md')) pluginFiles.set(rel, readFileSync(join(repoRoot, rel), 'utf8'));
+    else if (RULE_BEARING.test(entry)) pluginFiles.set(rel, readFileSync(join(repoRoot, rel), 'utf8'));
   }
 }('plugins'));
 
