@@ -32,20 +32,20 @@ re-check every half hour **from a detached job**, never in the foreground — th
 loop sleeps half an hour per pass, and running it in front parks the very session
 it exists to keep usable.
 
+**Three outcomes, not two.** A fetch that failed and a body that is not JSON are both *could
+not determine*, which retries; an empty status out of a feed that DID parse is a name matching
+no component, and sleeping on that waits forever — take the name from the feed itself.
+
 ```bash
 COMPONENT="<the component that is down, spelled as the feed spells it>"
+FEED=https://www.githubstatus.com/api/v2/components.json
 while :; do
-  # Three outcomes, not two. A failed fetch and a body that is not JSON are both
-  # "could not determine", which retries; an empty status out of a feed that DID
-  # parse is a name matching no component, and sleeping on that waits forever.
-  if ! feed="$(curl -fsS --connect-timeout 10 --max-time 30 \
-        https://www.githubstatus.com/api/v2/components.json)" \
-     || ! status="$(jq -r --arg c "$COMPONENT" \
-        '.components[] | select(.name==$c) | .status' <<<"$feed" 2>/dev/null)"; then
+  if ! body="$(curl -fsS --connect-timeout 10 --max-time 30 "$FEED")" \
+     || ! st="$(jq -r --arg c "$COMPONENT" '.components[]|select(.name==$c)|.status' <<<"$body")"; then
     echo "FEED UNREADABLE — cannot attribute anything; retrying"
   else
-    [ -n "$status" ] || { echo "NO COMPONENT NAMED $COMPONENT — take the name from the feed"; exit 1; }
-    [ "$status" = operational ] && break
+    [ -n "$st" ] || { echo "NO COMPONENT NAMED $COMPONENT — take the name from the feed"; exit 1; }
+    [ "$st" = operational ] && break
   fi
   sleep 1800
 done

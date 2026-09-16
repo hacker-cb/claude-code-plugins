@@ -124,6 +124,21 @@ rather than captured: each envelope is the registry and marketplace answer one
 case needs, and the version trees those answers point at sit beside them under
 `trees/`, which is where a case's `--root` and the paths it expects come from.
 
+## Data out of a private repository comes in one way only
+
+`scripts/collect-fixtures.mjs` takes it, sanitizes it, and writes a `CAPTURED` marker beside
+what it wrote. `scripts/check-fixtures.mjs` then holds everything under that marker to the
+invented shapes — an allow-list, so a value nobody thought of in advance fails too.
+
+**What the gate cannot do is recognise a capture nobody marked.** A forge response pasted into
+a `fixtures/` directory by hand is judged as a hand-written fixture: the loose probes still run
+over it, so a real commit id, a real forge host and a packed one inside a `node_id` are all
+caught, but a real login, a branch naming a customer or a repository path are not — those are
+exactly the values a hand-written fixture legitimately spells however it likes. So: **never
+paste a forge's answer into a fixture.** Run the collector, which marks what it writes, or
+write the envelope yourself with invented values. The gate is the second line here; this rule
+is the first.
+
 ## Adding a case
 
 Write the envelope, add the row, run the file. A case earns its place when it pins

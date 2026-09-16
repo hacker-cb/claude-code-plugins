@@ -433,6 +433,61 @@ while IFS= read -r md; do
   done < <(printf '%s\n' "$body" | grep -o '`[^`]*\.md`' 2>/dev/null | tr -d '`' | sort -u)
 done < <(md_files)
 
+# --- the size gate ----------------------------------------------------------
+# What a skill costs a session is what it loads, and prose grows one paragraph at a
+# time while every paragraph looks worth its line. These two ceilings are the gate
+# against that: a `SKILL.md` is a procedure (steps, forks, what to call) and a
+# reference is one subject, and neither has ever needed more than this once the
+# mechanics live in a script and the measurements in a table.
+#
+# Two references are named exceptions, and only two. `forge-docs.md` and
+# `forge-behaviour.md` are lookup tables rather than prose — the second one is
+# where a measured fact goes INSTEAD of into a skill, so a ceiling on it would
+# lock the very layer the rest of this gate exists to feed. They grow by rows,
+# which a diff shows plainly.
+skill_ceiling=200
+ref_ceiling=150
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  case "$f" in plugins/*) ;; *) continue ;; esac
+  n=$(wc -l < "$f" | tr -d ' ')
+  case "$f" in
+    */SKILL.md)
+      [ "$n" -le "$skill_ceiling" ] \
+        || err "$f: $n lines, over the $skill_ceiling-line ceiling for a SKILL.md — move mechanics to a script, facts to references/forge-behaviour.md, or split by what a reader needs when" ;;
+    */references/*.md)
+      case "${f##*/}" in forge-docs.md|forge-behaviour.md) continue ;; esac
+      [ "$n" -le "$ref_ceiling" ] \
+        || err "$f: $n lines, over the $ref_ceiling-line ceiling for a reference — a reference owns one subject; split it or move what it explains into the code that does it" ;;
+  esac
+done < <(md_files)
+
+# A fenced `bash` block longer than this is not an example any more: it is
+# machinery, and machinery belongs in a script under test. The count is the lines
+# BETWEEN the fences, so the fence markers themselves are not the budget.
+#
+# Read through a process substitution rather than a pipe: `... | while read` runs the
+# loop in a SUBSHELL, so every `err` it calls increments a counter that dies with it —
+# the gate prints its findings and reports zero errors, passing what it just caught.
+fence_ceiling=15
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  err "$line"
+done < <(
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    case "$f" in plugins/*) ;; *) continue ;; esac
+    awk -v file="$f" -v cap="$fence_ceiling" '
+      /^[[:space:]]*```bash[[:space:]]*$/ && !inb { inb = 1; n = 0; start = NR; next }
+      /^[[:space:]]*```[[:space:]]*$/ && inb {
+        if (n > cap) printf "%s:%d: a bash block of %d lines — that is machinery, and it belongs in a script with a suite\n", file, start, n
+        inb = 0; next
+      }
+      inb { n++ }
+    ' "$f"
+  done < <(md_files)
+)
+
 # --- summary ----------------------------------------------------------------
 echo ""
 echo "Summary: $errors error(s), $warnings warning(s)."

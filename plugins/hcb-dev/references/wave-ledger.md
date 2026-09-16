@@ -31,7 +31,7 @@ node <plugin root>/scripts/ledger.mjs --issue <n> [--repo <owner/name>] [--forge
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
 | `write.fits` / `.headroom` | whether a body handed in `--body-file` fits under the cap, and by how much |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
-| `reason` | why nothing could be answered — a feed that did not read, or **both forges answering for this repository**, which a mirror makes ordinary and `--forge` settles |
+| `reason` | why nothing could be answered — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), or **both forges answering for this repository**, which a mirror makes ordinary and `--forge` settles |
 
 The comment is the only form the ledger takes, so a tracker is what the role stands on: whether
 the repository has one is established against the forge ([`forge-docs.md`](forge-docs.md) names

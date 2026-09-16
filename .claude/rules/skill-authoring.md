@@ -35,6 +35,18 @@ constraint, two commands that must stay chained — say in one line what it
 protects. Inside the block, about that line of code. Never a paragraph, and never
 about a choice between designs.
 
+## A distinction you explain has somewhere else to live
+
+Where a paragraph exists to draw a line — this reading is not that one, this state is not that
+state — it is one of three things, and none of them is prose in a procedure: an **invariant**
+([`../../plugins/hcb-dev/references/invariants.md`](../../plugins/hcb-dev/references/invariants.md),
+written once and read by every skill), a **row in the fact table**
+([`../../plugins/hcb-dev/references/forge-behaviour.md`](../../plugins/hcb-dev/references/forge-behaviour.md),
+where a measurement goes so that no skill carries it),
+or a **comment beside the line of code that acts on it**. What stays in the procedure is the
+link and the step, never the explanation — a distinction re-explained wherever it applies is
+how one rule becomes fourteen paragraphs that drift apart.
+
 ## A reference owns what it covers
 
 Never restate a shared reference beside the link to it. Where a paragraph both

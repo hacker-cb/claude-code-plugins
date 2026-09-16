@@ -147,7 +147,17 @@ const feed = () => {
 };
 
 const res = feed();
-if (!res.ok) { answer.reason = text(`the comment feed could not be read: ${res.line()}`); out(); }
+if (!res.ok) {
+  // A 404 is an ANSWER, not a silence: measured on both forges — `gh: Not Found (HTTP 404)`
+  // and `glab: 404 Not found (HTTP 404)` — it says this issue is not there, which a caller
+  // fixes by correcting the coordinate rather than by retrying. It is also what either forge
+  // answers where the token cannot see the issue at all, and the two are indistinguishable
+  // from here, so the line says both.
+  answer.reason = /\b404\b|\bNot Found\b/i.test(`${res.err} ${res.out}`)
+    ? text(`no issue ${opts.issue} here, or this token cannot see it: ${res.line()}`)
+    : text(`the comment feed could not be read: ${res.line()}`);
+  out();
+}
 
 const pages = parsePages(res.out);
 if (pages === null) { answer.reason = 'the comment feed was not JSON'; out(); }

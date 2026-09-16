@@ -57,6 +57,7 @@ where there is no request standing, the count does have a moment of truth.
 | a `404` from a type-definitions endpoint | **the same answer whether the feature is absent or invisible to this token.** Absent only once something else confirms the token reaches this repository — and say which of the two you concluded |
 | label cardinality | **GitHub enforces none of it.** GitLab enforces one-value-per-key for `key::value` labels on a paid tier only, and by *replacing* the sibling rather than refusing the new one, splitting the key at the **last** `::`. Probe for it rather than assuming it |
 | a label name the caller did not just read | **created, on GitLab**, so a typo joins the set permanently; on GitHub labels passed while creating or updating an issue are dropped in silence where the caller has no push access. Confirm the labels that came back, not the exit status |
+| a `404` on an issue's comment feed | **an answer, not a silence.** Measured on both: `gh: Not Found (HTTP 404)` and `glab: 404 Not found (HTTP 404)` — the issue is not there, which a caller fixes by correcting the coordinate rather than retrying. It is also what either forge answers where the token cannot see the issue, and the two are indistinguishable from outside |
 | a GitLab label listing | carries the group's **inherited** labels, which apply, and **archived** ones, which do not |
 
 ## Limits
