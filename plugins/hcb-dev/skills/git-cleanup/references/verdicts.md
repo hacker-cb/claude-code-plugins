@@ -9,14 +9,14 @@ and every step number below is the skill's.
 
 | Signal | Verdict |
 |---|---|
-| primary worktree | never touch |
-| the current session's own worktree | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
-| path is a live session's `cwd` | keep — someone is working there |
-| **another** worktree the host made — a `claude/…` branch, or a directory in the host's own worktree dir — **that is still on disk** | **surface, never remove** — its lease survives the process and is unreadable from here ([`../../../references/claude-worktrees.md`](../../../references/claude-worktrees.md)). A registration whose directory is already gone is not this case: nothing is left to destroy, so it falls to the `prunable` rows below |
+| `owner` is `another session` or `unknown` | keep — `worktree-owners.mjs` has told them apart, and its `blockers` are the row's reason |
+| `owner: the host` | **surface, never remove** — that lease survives the process and is unreadable from here. A registration whose directory is already gone is not this case: the script leaves it unblocked, and it falls to the `prunable` rows below |
+| `owner: you`, no blocker | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
+| `owner: you`, and a blocker | surface — you are standing in it and something in it is not yours to take: a second client, a lock, or a registry that would not read |
 | `locked` | keep — Claude Code locks a worktree while its agent runs |
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
-| clean, its branch merged, and **this session cut it** | `remove` (class 2) |
+| in `unsettled`, clean, its branch merged, and **this session cut it** | `remove` (class 2) — the memory is the answer the script says it cannot have |
 | a populated submodule, or a `modules` directory in its admin dir | surface (class 3) — the removal takes whatever history that git dir holds, and nothing here proves it empty |
 | uncommitted or untracked changes | surface (class 3) — never `--force` unasked |
 | on disk but absent from `worktree list` | a filesystem orphan: class 1 only if `git status` in it is empty, otherwise surface (class 3) — it is still someone's working tree |
@@ -38,6 +38,9 @@ and every step number below is the skill's.
 | the forge CLI says its PR/MR is `OPEN` | keep |
 | no upstream, `$D` non-empty, and `rev-list --count "$D..refs/heads/<branch>"` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
+
+The four `owner` rows are exclusive, and a worktree the script leaves at `owner: null`
+— every entry of `unsettled` — reaches the rows below rather than any of them.
 
 **Rows overlap.** An open request keeps the branch whatever else matched. A
 surface row beats a delete row **within the same proof** — the forge's unknown row

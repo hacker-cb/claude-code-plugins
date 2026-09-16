@@ -326,15 +326,26 @@ for suite in "${all_suites[@]}"; do
     # every failure prints the same first line, so a status implies its line and
     # checking one against the other asserts nothing. What separates the branches is
     # the advice underneath, and that is what these fragments hold.
-    missing=""
+    missing="" present=""
     saved_ifs=$IFS
     IFS='|'
     for fragment in $expect; do
-      case "$out" in *"$fragment"*) ;; *) missing="$fragment" ;; esac
+      # A fragment opening `NOT:` asserts the rest is ABSENT. Presence is all a substring
+      # test can say by itself, so a guarantee shaped "the answer does not carry this" —
+      # a field deliberately left out, a value that must not reach a reader — had nothing
+      # to hold it, and putting it back read as green.
+      case "$fragment" in
+        NOT:*) case "$out" in *"${fragment#NOT:}"*) present="${fragment#NOT:}" ;; esac ;;
+        *) case "$out" in *"$fragment"*) ;; *) missing="$fragment" ;; esac ;;
+      esac
     done
     IFS=$saved_ifs
     if [ -n "$missing" ]; then
       report_failure "$suite/$fixture" "exit $got as wanted, but never printed: $missing" "$note"
+      suite_fail=$((suite_fail + 1)); continue
+    fi
+    if [ -n "$present" ]; then
+      report_failure "$suite/$fixture" "exit $got as wanted, but printed what it must not: $present" "$note"
       suite_fail=$((suite_fail + 1)); continue
     fi
     pass=$((pass + 1))

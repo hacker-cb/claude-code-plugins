@@ -307,6 +307,10 @@ session's context — a skill invokes one and reads its answer.
   repository treats as its default, and the remote that says so. Asks the remote even
   when the local pointer verified, because a pointer at a ref that still exists is the
   case verification cannot catch.
+- [`scripts/worktree-owners.mjs`](scripts/worktree-owners.mjs) — whose is each worktree
+  of this repository right now, read from Claude Code's live-session registry. Presence
+  only: a live session proves a worktree is in use, and its absence proves nothing,
+  because the host leases worktrees to sessions rather than to processes.
 - [`scripts/commit-checks.mjs`](scripts/commit-checks.mjs) — what the two check feeds
   say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
   reader of one is blind to the other, and answers with a single `verdict` so a caller
@@ -483,7 +487,7 @@ Per skill, on top of those:
   `implementation-workflow` by identifier.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
-  are occupied it also reads Claude Code's live-session registry under
-  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, and the probe
-  proves presence only — a worktree the host created for another session is
+  are occupied, `scripts/worktree-owners.mjs` reads Claude Code's live-session
+  registry under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, and
+  it proves presence only — a worktree the host created for another session is
   reported either way.

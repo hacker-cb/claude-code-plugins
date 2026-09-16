@@ -69,7 +69,11 @@ Three things meet for each one, all inside the suite:
   at all.
 - `cases.tsv` — one row of five columns: the fixture, what the case adds to the
   invocation, the exit status, the fragments the output must contain, and what the
-  case is there to hold. A path written into that second column is relative to the
+  case is there to hold. A fragment opening `NOT:` asserts the rest is **absent** —
+  presence is all a substring test says by itself, so a guarantee shaped *the answer
+  does not carry this* (a field deliberately left out, a value that must not reach a
+  reader) had nothing to hold it, and putting it back read as green. A path written
+  into that second column is relative to the
   repository root, which is where the runner works from whatever directory it was
   called in. One word there is the runner's own rather than the script's:
   `WORKTREE=1` runs that case from a fresh linked worktree of this repository — the

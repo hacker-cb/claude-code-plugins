@@ -1,0 +1,8 @@
+{
+ "pid": 1,
+ "cwd": "/tmp/another-project",
+ "kind": "interactive",
+ "entrypoint": "example-client",
+ "name": "example-session",
+ "startedAt": 1767225600000
+}
