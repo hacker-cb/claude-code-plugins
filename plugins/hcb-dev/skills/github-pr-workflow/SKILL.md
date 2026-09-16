@@ -143,12 +143,12 @@ Critical and Important findings fixed, its comments answered and its threads res
 where a wait ran out, the addressee's word to merge with the head unreviewed, said in the
 report.
 
-**Two exit items no round of this loop closes** — the drift, where the base does not require
-the branch current with it, and the approval — are
-[`references/merge-gates.md`](references/merge-gates.md)'s: it owns what each asks here, and
-when either becomes a stop.
+**Two exit items no round of this loop closes** — the drift, where the base does not require the
+branch current with it, and the approval — are
+[`references/merge-gates.md`](references/merge-gates.md)'s: it owns what each asks here, and when
+either becomes a stop.
 
-1. **Read the live state** — four scripts, one question each, none of them by hand.
+1. **Read the live state** — four scripts, one question each, none by hand:
 
    ```bash
    # Re-resolving is what STOPS the drift read where the base cannot be refreshed: an older
@@ -163,8 +163,9 @@ when either becomes a stop.
    ```
 
    Route on `pr-state.mjs`'s `blockers` and `drift`, on `commit-checks.mjs`'s `verdict`
-   (`references/merge-gates.md`), and on the two Copilot answers per `references/copilot.md` —
-   `mayMerge` being **permission**, never readiness.
+   (`references/merge-gates.md`), and on the two Copilot answers per `references/copilot.md` and
+   [`references/copilot-findings.md`](references/copilot-findings.md). `mayMerge` is
+   **permission**, never readiness.
 2. **A required check red:** read the failing job's logs and fix the root cause — don't
    guess. Not every red one wants a code change: one standing in for a review waits on the
    review or on unresolved threads, and one red or stuck because the forge is degraded wants
@@ -173,12 +174,11 @@ when either becomes a stop.
    Through an outage, change nothing, spend no iteration on it, and **never merge past it**:
    a check red because the platform is red is no non-required check you may deem irrelevant
    (`UNSTABLE`), and one that never started is no check that passed.
-3. **Take the Copilot round from `references/copilot.md`**, which owns all of it: the severity
-   ladder, which findings route to a fix and which to the report, what a body carrying findings
-   no thread holds asks of this round, the reply-and-resolve protocol, how many pushes to
-   spend, and which reviews this driver waits for before the exit above is evaluated at all.
-4. **Re-read from this loop's step 1**, not the top-level Step 1 — and after any push, bring
-   the body back to what is landing first (`merge-message.md`).
+3. **Take the Copilot round from its two references.** `copilot.md` owns which reviews this driver
+   waits for before the exit above is evaluated, and what a review that did not approve asks for;
+   `copilot-findings.md` owns the readings, the ladder, the pushes and the reply protocol.
+4. **Re-read from this loop's step 1**, not the top-level Step 1 — and after any push, bring the
+   body back to what is landing first (`merge-message.md`).
 
 ## Steps 5 to 7 — merge, watch it land, report
 
