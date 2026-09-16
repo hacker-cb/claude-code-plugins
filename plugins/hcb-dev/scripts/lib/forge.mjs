@@ -75,6 +75,13 @@ export const repoOk = (v) => {
 // `gh` by default because most callers ask a forge; `git` where the question is the
 // checkout's. Same three-part answer either way — a caller that cannot tell a failed
 // call from an empty one is the defect every script here is written against.
+// A forge HOST, which is not a path segment: it may carry a port, and the segment class
+// refuses the `:` that separates one. A self-hosted instance on a non-default port then
+// gets no host passed at all and the request goes to the SaaS instead — which is the one
+// thing reading the host was for.
+export const hostOk = (v) => typeof v === 'string'
+  && /^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?$/.test(v);
+
 export const runner = (cwd, cmd = 'gh') => (args, timeout = 120000) => {
   const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout, maxBuffer: 32 * 1024 * 1024 });
   return {

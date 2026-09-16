@@ -17,7 +17,7 @@
 // Exit 0 either way: `"read": true` with the state, or `"read": false` with a `reason`.
 // Exit 2 only for a call this script cannot act on at all.
 
-import { writeAll, readable, refOk, refNameOk, repoOk, runner, text } from './lib/forge.mjs';
+import { writeAll, hostOk, refOk, refNameOk, repoOk, runner, text } from './lib/forge.mjs';
 
 const USAGE = 'usage: node pr-state.mjs --pr <n> [--repo <owner/name>]'
   + ' [--repo-dir <path>] [--base-ref <ref>]\n';
@@ -96,7 +96,7 @@ if (typeof pr.url === 'string') {
     if (!where) where = u.pathname.slice(1);
   } catch { host = null; }
 }
-const hostArgs = host && readable(host) ? ['--hostname', host] : [];
+const hostArgs = hostOk(host) ? ['--hostname', host] : [];
 const owner = where.split('/').slice(0, 2);
 if (owner.length === 2 && owner.every(Boolean)) {
   const q = gh(['api', ...hostArgs, 'graphql', '-f', `query=
@@ -110,7 +110,10 @@ if (owner.length === 2 && owner.every(Boolean)) {
           }
         }
       }
-    }`, '-F', `owner=${owner[0]}`, '-F', `repo=${owner[1]}`, '-F', `pr=${opts.pr}`]);
+    }`, // `-f` for the two strings and `-F` only for the number: the typed flag infers, so a
+    // repository named `2048` — or an owner — travels as an integer and the query's own
+    // `String!` refuses it, leaving every such request unable to read its threads.
+    '-f', `owner=${owner[0]}`, '-f', `repo=${owner[1]}`, '-F', `pr=${opts.pr}`]);
   if (!q.ok) answer.threads.reason = q.line();
   else {
     let nodes = null;
@@ -175,10 +178,19 @@ if (opts.baseRef) {
       if (n > 0) {
         // THREE dots: two compares the two trees, so everything the request itself
         // changed lands in the list and every drift then looks like it touches this
-        // head's own files. Three is what moved on the base's side alone.
-        const paths = git(['diff', '--name-only', `${head}...${opts.baseRef}`]);
-        if (paths.ok) answer.drift.paths = paths.out.split('\n').filter(Boolean).map(text);
-        else answer.drift.reason = `could not list what moved (${paths.line()})`;
+        // head's own files. Three is what moved on the base's side alone. `-z`, because
+        // a path outside the ASCII range comes back QUOTED otherwise — and the paths are
+        // carried whole, never through the display helper, since a name cut at a bound
+        // no longer names a file.
+        const paths = git(['diff', '--name-only', '-z', `${head}...${opts.baseRef}`]);
+        if (paths.ok) answer.drift.paths = paths.out.split('\u0000').filter(Boolean);
+        else {
+          // Both commits can be here and the three-dot form still fail — a shallow
+          // checkout has no merge base to diff from. A count with no paths beside it is
+          // "nothing moved" to a reader, and what actually happened is that nobody knows.
+          answer.drift.measured = false;
+          answer.drift.reason = `could not list what moved (${paths.line()})`;
+        }
       }
     }
   }

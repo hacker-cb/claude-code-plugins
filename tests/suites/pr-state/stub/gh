@@ -19,6 +19,17 @@ case "$1 ${2:-}" in
       for a in "$@"; do [ "$prev" = "--hostname" ] && got=$a; prev=$a; done
       [ "$got" = "$want" ] || { echo "gh: asked $got, this instance is $want" >&2; exit 1; }
     fi
+    # `-F` infers the type, so a repository whose name is all digits travels as an
+    # integer and a `String!` variable refuses it. A case can require the string form.
+    if [ -n "$(ask '.require_string_fields')" ]; then
+      prev=""
+      for a in "$@"; do
+        case "$prev$a" in
+          -F*owner=*|-F*repo=*) echo "gh: Variable owner/repo of type String! was provided invalid value" >&2; exit 1 ;;
+        esac
+        prev=$a
+      done
+    fi
     v=$(ask '.threads')
     case "$v" in
       fail) echo "gh: GraphQL error" >&2; exit 1 ;;

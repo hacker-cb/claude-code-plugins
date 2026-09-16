@@ -20,7 +20,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-  writeAll, readable, refOk, refNameOk, nameSafe, repoOk, runner, parsePages, text,
+  writeAll, hostOk, refOk, refNameOk, nameSafe, repoOk, runner, parsePages, text,
   worktrees,
 } from './lib/forge.mjs';
 
@@ -274,7 +274,7 @@ if (opts.forge && answer.branches.length) {
     answer.forge.reason = null;
     const forge = runner(cwd, answer.forge.cli);
     const host = reader.host(probe);
-    const hostArgs = host && readable(host) ? ['--hostname', host] : [];
+    const hostArgs = hostOk(host) ? ['--hostname', host] : [];
     for (const b of answer.branches) {
       if (!b.oid || !refOk(b.oid)) continue;
       // By TIP, never by name: a merged `fix/login` may have come from a fork, and the

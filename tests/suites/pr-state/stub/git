@@ -16,10 +16,18 @@ case "$1 $2" in
     case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;;
       "") printf '0\n'; exit 0 ;; *) printf '%s\n' "$v"; exit 0 ;; esac ;;
   "diff --name-only")
-    # Two dots and three are different questions, and the stub answers them differently —
-    # a stub blind to the difference makes the wrong one look right.
-    v=$(ask ".moved_by_range[\"$3\"] // .moved")
-    case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;;
-      *) printf '%s\n' "$v"; exit 0 ;; esac ;;
+    # The RANGE is found rather than positioned: flags sit between it and the subcommand,
+    # and a stub reading `$3` answers about `-z`. Two dots and three are different
+    # questions, and this answers them differently — a stub blind to that makes the wrong
+    # one look right.
+    range=""
+    for a in "$@"; do case "$a" in *..*) range=$a ;; esac; done
+    v=$(ask ".moved_by_range[\"$range\"] // .moved")
+    case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;; esac
+    # `-z` asks for NUL between the names and no trailing one, which is what git writes.
+    for a in "$@"; do
+      [ "$a" = "-z" ] && { printf '%s' "$v" | tr '\n' '\000'; exit 0; }
+    done
+    printf '%s\n' "$v"; exit 0 ;;
 esac
 echo "stub git: no envelope answer for: $*" >&2; exit 3

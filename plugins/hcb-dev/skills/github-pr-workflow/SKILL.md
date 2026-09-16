@@ -403,9 +403,10 @@ one that was needed puts the break in the base, where only Step 6 finds it.
 **The approval is the exit item no iteration of this loop produces.** Every other one
 answers to a push; that one answers to a reviewer, and all a round can do is remove
 reasons to withhold it. So read it before spending an iteration against it, and read the
-**requirement** rather than one reviewer's verdict — which is what `reviewDecision`
-carries: a base asking for no approval answers `null`, and nothing is outstanding there
-however Copilot's own review landed.
+**requirement** rather than one reviewer's verdict. `reviewDecision` is not that
+requirement — an empty one is not a base that asks for nothing
+([`references/merge-gates.md`](references/merge-gates.md), which owns where the
+requirement is read and why that field cannot stand in for it).
 
 Where the requirement *is* outstanding and the head's review has settled without
 closing it, which of the two kinds of review that is
