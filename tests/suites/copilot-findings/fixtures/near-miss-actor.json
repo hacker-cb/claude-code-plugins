@@ -1,0 +1,6 @@
+{
+ "pr_view": "{\"url\": \"https://forge.example/example-org/example-repo/pull/7\", \"headRefOid\": \"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
+ "threads": "{\"data\": {\"repository\": {\"pullRequest\": {\"reviewThreads\": {\"pageInfo\": {\"hasNextPage\": false}, \"nodes\": [{\"id\": \"T_one\", \"isResolved\": false, \"isOutdated\": false, \"resolvedBy\": null, \"comments\": {\"pageInfo\": {\"hasNextPage\": false}, \"nodes\": [{\"databaseId\": 101, \"author\": {\"login\": \"Copilot\", \"__typename\": \"User\"}, \"body\": \"not the bot\", \"path\": \"src/example.ts\", \"line\": 12}]}}]}}}}}",
+ "reviews": "[{\"submitted_at\": \"2026-09-16T10:00:00Z\", \"commit_id\": \"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"state\": \"COMMENTED\", \"body\": \"Copilot the human\", \"user\": {\"login\": \"example-reviewer\", \"type\": \"User\"}}]",
+ "want_host": "forge.example"
+}

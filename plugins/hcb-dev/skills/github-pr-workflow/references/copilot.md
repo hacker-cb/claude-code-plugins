@@ -50,12 +50,9 @@ Three things the script is built around, and a caller reading its answer relies 
 
 **Never place a request** — every review waited for is one already requested.
 
-**Reading the findings is still by hand** (*Finding the findings* below): the script
-answers about the head's state, not about what a review said. Both readings there
-use the same pair-filter, and reach every field through `?` and `// ""` — `test/1`
-raises on anything that is not a string, and a deleted account leaves `"user": null`,
-one such row aborting a whole `--jq` program and turning a request full of findings
-into one with none.
+**What a review SAID is a second script's** (*Finding the findings* below): this one
+answers about the head's state. Both hold to the same pair, and both survive a deleted
+account leaving `"user": null` where a filter expected a login.
 
 ## What the review lands as
 
@@ -193,92 +190,50 @@ Do this after *every* push, the last one included.
 
 ## Finding the findings — two readings, not one
 
-A review puts its findings in **two** places, and only one of them opens threads.
-Both are read every round: one alone is half the review, and the half it drops is
-the half nothing else catches — no thread, no gate, no count.
+A review puts its findings in **two** places, and only one of them opens threads. Both
+are read every round: one alone is half the review, and the half it drops is the half
+nothing else catches — no thread, no gate, no count. A finding in the suppressed block
+has no thread, so `required_review_thread_resolution` does not hold it and the check
+that unresolved threads are zero reads a clean field while it stands.
 
-### Reading 1 — the threads
+`scripts/copilot-findings.mjs` does both readings and says what is still owed. It reads;
+replying and resolving are *Replying*'s, and a reply folded into the reading is sent
+before the reading is believed.
 
-Use whichever source is available (in priority order):
-
-1. **GitHub MCP** — use the connected GitHub MCP tools to list PR review comments
-   and review threads. Richest structured output (author, path, line, body,
-   thread/resolution state).
-2. **`gh` CLI:**
-   ```bash
-   gh pr view <pr> --comments
-   # review threads with resolution state (GraphQL). Select the thread `id` and each
-   # comment's `databaseId` — you need them below: `id` is the `<thread_node_id>` for
-   # resolveReviewThread, `databaseId` is the `<comment_id>` for the replies endpoint.
-   # `resolvedBy` and `isOutdated` are what *Replying* judges a thread by; `isResolved`
-   # alone cannot tell one you answered from one the reviewer closed itself.
-   gh api graphql -f query='
-     query($owner:String!,$repo:String!,$pr:Int!){
-       repository(owner:$owner,name:$repo){
-         pullRequest(number:$pr){
-           reviewThreads(first:100){
-             nodes{ id isResolved isOutdated resolvedBy{ login }
-                    comments(first:100){ nodes{ databaseId author{login __typename} body path line } } }
-           }
-         }
-       }
-     }' -F owner=<owner> -F repo=<repo> -F pr=<pr>
-   ```
-3. **REST API** via `gh api repos/{owner}/{repo}/pulls/<pr>/comments` as a
-   fallback.
-
-Filter all three by the pair from *The state is read by a script*, never by a login you saw
-on another surface: on `/comments` the login is a bare `Copilot`, and in GraphQL it
-carries no `[bot]` suffix.
-
-### Reading 2 — the review bodies
-
-Findings that opened no thread are in the **review body itself**, under a
-suppressed-comments heading: a file and a line, the finding, and the code it sits
-on — everything an inline comment carries except the comment. Having no thread is
-what makes every habit built around threads miss them at once. The comment sources
-above return nothing of them, `required_review_thread_resolution` does not hold
-them, and the check that unresolved threads are zero reads a clean field while they
-stand.
-
-Read the body of **every** Copilot review that posted, whichever commit it covers —
-the head you hand in may never earn one of its own, and a later run carries findings
-the earlier one did not. A body the PR's conversation already answers was read in an
-earlier round:
-
-```bash
-if ! bodies="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
-  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        # markup stripped before either count is read: both labels arrive as a heading
-        # or a bold run as often as plain text, and GitHub may reword either of them
-        | ((.body? // "") | gsub("<[^>]*>"; " ") | gsub("[*_#]"; " ")) as $b
-        | {at: .submitted_at, commit: ((.commit_id // "")[:7]), state,
-           opening: (((.body? // "") | split("\n")[0] // "") | gsub("^#+ *|[[:space:]]+$"; "")),
-           # `// "none"` and not `// "0"`: a body carrying no such block and a block
-           # reporting none are different readings, and they take different next steps
-           suppressed: (($b | capture("[Ss]uppressed[^(]{0,40}\\((?<n>[0-9]+)\\)").n) // "none"),
-           threads_opened: (($b | capture("[Cc]omments generated[^0-9]{0,20}(?<n>[0-9]+)").n) // "none")}
-        | @json')"; then
-  echo "REVIEW BODIES UNREAD — not a set of reviews with nothing to read"; exit 1
-fi
-printf '%s\n' "$bodies"
+```text
+node <plugin root>/scripts/copilot-findings.mjs --pr <n> [--repo <owner/name>]
+  [--me <login>]
 ```
 
-That says *whether* to read a body, never *what* it found — read the ones it names
-in full. `opening` is the body's first line and nothing more: it is where the
-assessment sits when the review carries one, and a pointer to the body rather than
-a substitute for reading it.
+`--me` where the token cannot read its own user — a repository's `GITHUB_TOKEN` and an
+App installation token both answer 403 to `/user`. Without it `me` is `null`, no comment
+counts as ours, and every thread stays owed for the life of the run: a loop that cannot
+converge, so name the login rather than iterating against it.
 
-**The count the body reports is a count of threads, not of findings.** It says what
-the review opened, and a review whose findings all went to the suppressed block
-opened none — so zero there is this class's *signature*, never evidence against it.
-And this holds whatever the verdict says: an approving review carries a suppressed
-block as readily as a declining one, and its body is read like any other.
+| field | what it settles |
+|---|---|
+| `read` | **both halves answered.** Either half alone is half a review, and `false` here says so however much is in the answer |
+| `me` | who this run is authenticated as, which is what "answered" is measured against. `null` leaves every thread owed |
+| `threads.items[]` | one per review thread: `resolved`, `outdated`, `resolvedBy`, `byReviewer`, the `path` and `line`, and each comment with the `id` a reply is posted to |
+| `threads.items[].answered` | whether a comment of **ours** follows the reviewer's LAST word. Anyone at all can reply in a thread, so a reply is ours by identity and an answer by position; `othersSpoke` beside it is a third party having attended to the thread, which is not an answer to the finding. `null` where that thread's own comments paginated, which owes exactly as much as no answer does |
+| `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head`, `opening` and the `body` itself |
+| `bodies.items[].readBody` | **the decision**: this body has findings in it that opened no thread, or a count that could not be pinned — a block standing there with no number reachable being one such. Everything else is `false` |
+| `bodies.items[].suppressed` | the findings that opened no thread. **`null` is "no such block", never zero** — and `null` beside `ambiguous` is a count the body's own file list answered for, which resolves toward reading rather than skipping |
+| `bodies.items[].opened` | what the review OPENED, a count of threads and never of findings: a review whose findings all went to the suppressed block opened none, so zero there is that class's signature rather than evidence against it. It holds whatever the verdict says — an approving review carries a suppressed block as readily as a declining one |
+| `open[]` | every thread still owed something, each carrying the `why` that says which state it is in |
 
-A suppressed finding carries no `comment_id`, so there is no thread to answer in and
-none to resolve. It ends in the fix, and is named — fixed, or turned down with its
-reason — in the pull request's conversation, which is where *Replying* would
-otherwise have put it.
+A suppressed finding carries no comment id, so there is no thread to answer in and none
+to resolve — it ends in the fix, and is named, fixed or turned down with its reason, in
+the pull request's conversation, which is where *Replying* would otherwise have put it.
+A `truncated` flag beside a body or a comment says the text was clipped; nothing else is
+lossy.
+
+**`readBody` is a property of the body, not of the round.** Every review this reviewer
+ever posted is in the answer, so a body settled three pushes ago still carries its
+findings and still asks to be read. What settles one is the pull request's conversation,
+which this does not read: **a body whose findings the conversation already names was read
+in an earlier round**, and re-classifying it posts the same answers again every
+iteration. Read the ones the conversation is silent about.
 
 ## Classifying severity
 
@@ -357,20 +312,16 @@ loop and keeps the review thread honest.
   review summary carries no thread and needs no resolving. (See *Classifying
   severity*.)
 
-**A thread this reviewer resolved is not by itself an answered thread.** Copilot
-closes its own, under a login other than the one it commented under. The pair from
-*The state is read by a script* has nothing to test here — `resolvedBy` is typed as a plain
-user and carries no field distinguishing a bot from a person — so this is the one
-place the `^copilot` prefix stands alone, case-insensitively, which is what covers
-every spelling it resolves under.
+**A thread this reviewer resolved is not by itself an answered thread**, and *Finding
+the findings* is what tells the two apart: `byReviewer` says it closed its own,
+`answered` says whether a reply of ours follows its last word, and each entry in `open`
+names which state it is in. `resolvedBy` is typed as a plain user and carries no field
+distinguishing a bot from a person, so that one match is by login prefix alone — the
+single place the pair does not apply.
 
-**What that match means turns on whether your reply is already in the thread**, and
-the query above returns both. A thread this reviewer closed with no answer of yours
-in it is an open finding wearing the resolved badge, and
-`required_review_thread_resolution` is satisfied the whole time it stands. One you
-answered and it then closed is settled: its resolve lands *after* the reply rather
-than with it, so a list taken as you answer is honest and already stale — retake it
-on the head you hand in rather than answering twice.
+A resolve lands *after* the reply rather than with it, so a list taken as you answer is
+honest and already stale: **retake it on the head you hand in** rather than answering
+twice.
 
 Reply + resolve via:
 ```bash
@@ -386,39 +337,18 @@ Or the equivalent MCP tools if available.
 
 ## What the report says about this reviewer
 
-The end-of-session report (main skill Step 7) gives Copilot one line among the
-gates: **the review of the head that merged** and the `state` it carries — or, where
-that head has none, the commit the last review covered and why. Read the head
-first: `headRefOid` survives both the merge and the deletion of the branch, so this
-works after Step 6 as well as before it.
+The end-of-session report (main skill Step 7) gives Copilot one line among the gates:
+**the review of the head that merged** and the `state` it carries — or, where that head
+has none, the commit the last review covered and why. `headReview` and `reviews` from
+*The state is read by a script* are both, and they survive the merge and the deletion of
+the branch, so the line is available after Step 6 as well as before it.
 
-```bash
-HEAD_SHA="$(gh pr view <pr> --json headRefOid --jq .headRefOid)"
-# Unset it and the line below reads `head: false` — "the merged head went
-# unreviewed", said by a variable that never got a value rather than by the PR.
-[ -n "$HEAD_SHA" ] || { echo "HEAD SHA UNREAD — report no Copilot line"; exit 1; }
-export HEAD_SHA
-if ! rows="$(gh api --paginate repos/{owner}/{repo}/pulls/<pr>/reviews \
-  --jq '.[] | select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
-        | {commit_id, state, head: (.commit_id == env.HEAD_SHA)} | @json')"; then
-  echo "REVIEWS UNREAD — no Copilot line, and not an absent one"; exit 1
-fi
-# The merged head's own review, where it has one — reviews publish out of commit
-# order, so the last row is a different question. Rows come in publication order.
-printf '%s\n' "$rows" | grep '"head":true' | tail -1
-printf '%s\n' "$rows" | tail -1
-```
+No review of the head exists for one of three reasons, which take different steps, so
+report which it was:
 
-The first line is the report's, where there is one. Where it is empty, the second
-says which commit the last review covered, and no review of the head exists — for
-one of three reasons, which take different steps, so report which it was. Both empty
-is a PR with no Copilot review at all, pending or never asked, which the timeline's
-latest move tells apart:
-
-- **no request reached the later commits** — no rule in force, none that reviews
-  pushes, or what the wait recorded at its cutoff for this head, a removal included
-  (*Wait for the review of the CURRENT head*, step 2);
+- **no request reached the later commits** — no rule in force, none that reviews pushes,
+  or what the wait recorded at its cutoff for this head, a removal included (*Wait for
+  the review of the CURRENT head*, step 2);
 - **the ceiling reached**, and the addressee's word to merge past it;
-- **a review still outstanding** — Copilot's latest move on the timeline tells that
-  one, and after a merge it is the late review the main skill's Step 7 goes back
-  for.
+- **a review still outstanding** — `latestMove` tells that one, and after a merge it is
+  the late review the main skill's Step 7 goes back for.

@@ -280,7 +280,7 @@ That, and a reviewer handing the decision to a human, are not this loop's work:
 the reason the review gave and what would answer it. Another round against that
 buys another review of the same kind.
 
-1. **Read the live state** — three scripts, each answering one question, and none of
+1. **Read the live state** — four scripts, each answering one question, and none of
    them by hand. Quoted as one word at every use: the plugin root is a path like any
    other and may carry spaces.
 
@@ -296,6 +296,7 @@ buys another review of the same kind.
    fi
    node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates
    node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-state.mjs" --pr <pr>
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-findings.mjs" --pr <pr>
    ```
 
    - **`pr-state.mjs`** — what the forge says about the request: its own enums, the
@@ -306,6 +307,9 @@ buys another review of the same kind.
      `running` is not `failing` and neither is `empty`.
    - **`copilot-state.mjs`** — the head's own review, what the base's rules ask, and what
      stands right now (`references/copilot.md`). Route on its `verdict` per that file.
+   - **`copilot-findings.mjs`** — what that reviewer actually said, in both of the places
+     it says it, and what is still owed. `read: false` there is half a review, and the
+     half it drops is the one no gate holds.
 
    `"read": false` from any of them is a reading that could not be taken, never a state
    to act on; a non-zero exit is the invocation being wrong, never a state to retry.
@@ -316,9 +320,11 @@ buys another review of the same kind.
    ever starting — because the forge is degraded wants no change at all, so read
    what it reports before touching code and attribute it per
    *When the platform is down, the red check is not yours*.
-3. **Read Copilot's findings — the threads and the review bodies both** — and
-   classify them; `references/copilot.md` owns where each of the two lives and how
-   to reach it.
+3. **Classify what step 1's fourth script returned** — `references/copilot.md` owns the
+   severity ladder, every body whose `readBody` is true carrying findings no thread
+   holds. Skip the ones this pull request's conversation already answers: `readBody` is a
+   property of the body and not of the round, so a body settled three pushes ago asks to
+   be read on every one of them.
 4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
    as few pushes as is reasonable — where a rule in force reviews pushes, every
    push costs another wait at step 6, whether or not a new review actually follows.
