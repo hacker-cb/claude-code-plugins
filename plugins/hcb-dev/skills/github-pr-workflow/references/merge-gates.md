@@ -118,3 +118,24 @@ Captured in variables, never redirected to a file: these run inside the user's c
 where a stray `merged.json` is an untracked file the report, `git-cleanup` and branch
 retirement all read as work in progress. **A non-zero exit is the invocation being
 wrong**, never a state to retry.
+
+## The two exit items a round cannot close
+
+**Drift, where the base does not require the branch current.** That enum never arrives, so
+a head sitting well behind its base reads `CLEAN` and the drift is measured rather than read
+off a status. `drift.behind` above zero is a judgement, not a gate: re-sync when what
+`drift.paths` carries can break this head — the same files or modules, an interface a caller
+here uses, a migration, a dependency — and merge without one when the base moved elsewhere.
+Neither answer is free: a re-sync is a push, which restarts the checks and the review; a
+skipped one that was needed puts the break in the base, where only the post-merge read finds
+it.
+
+**The approval.** Every other exit item answers to a push; this one answers to a reviewer,
+and all a round can do is remove reasons to withhold it. Read the **requirement** — the
+`pull_request` row above — before spending an iteration against it, never one reviewer's
+verdict. Where it is outstanding and the head's review has settled without closing it, which
+of the two kinds of review that is ([`copilot.md`](copilot.md), *What the review lands as*)
+decides: findings still outstanding are the loop's work where a rule in force reviews pushes
+or a request stands, since the next review can close the requirement. Where neither holds no
+next review comes — that, and a reviewer handing the decision to a human, are stops, carrying
+the reason the review gave and what would answer it.
