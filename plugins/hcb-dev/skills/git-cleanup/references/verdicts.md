@@ -9,8 +9,10 @@ and every step number below is the skill's.
 
 | Signal | Verdict |
 |---|---|
-| `owner` is not `you`, or any `blockers` stand | keep — `worktree-owners.mjs` has already told the two apart, and its blocker is the row's reason. `the host` is **surface, never remove**: that lease survives the process and is unreadable from here. A registration whose directory is already gone is not that case — nothing is left to destroy, so it falls to the `prunable` rows below |
-| `owner: you` with no blocker | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
+| `owner` is `another session` or `unknown` | keep — `worktree-owners.mjs` has told them apart, and its `blockers` are the row's reason |
+| `owner: the host` | **surface, never remove** — that lease survives the process and is unreadable from here. A registration whose directory is already gone is not this case: the script leaves it unblocked, and it falls to the `prunable` rows below |
+| `owner: you`, no blocker | removable — its lease-holder is the one asking — but never from inside it: see step 7 |
+| `owner: you`, and a blocker | surface — you are standing in it and something in it is not yours to take: a second client, a lock, or a registry that would not read |
 | `locked` | keep — Claude Code locks a worktree while its agent runs |
 | `prunable`, and its path's parent directory exists | `worktree prune` (class 1) |
 | `prunable` because the whole path is unreachable | surface (class 3) — an unmounted volume looks identical to a deleted worktree, and pruning strands the work it still holds |
@@ -36,6 +38,9 @@ and every step number below is the skill's.
 | the forge CLI says its PR/MR is `OPEN` | keep |
 | no upstream, `$D` non-empty, and `rev-list --count "$D..refs/heads/<branch>"` = 0 | delete (class 2) — nothing to lose |
 | no upstream, unique commits | surface (class 3) |
+
+The four `owner` rows are exclusive, and a worktree the script leaves at `owner: null`
+— every entry of `unsettled` — reaches the rows below rather than any of them.
 
 **Rows overlap.** An open request keeps the branch whatever else matched. A
 surface row beats a delete row **within the same proof** — the forge's unknown row

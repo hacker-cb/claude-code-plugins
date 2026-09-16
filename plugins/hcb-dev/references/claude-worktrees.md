@@ -45,12 +45,12 @@ node <plugin root>/scripts/worktree-owners.mjs [--repo-dir <path>]
 
 | field | what it settles |
 |---|---|
-| `owner` | `you` the worktree you stand in, `another session` a live session is in it, `the host` it cut this one and the lease is unreadable, `unknown` the probe failed, `null` nothing known against it |
+| `owner` | `you` the worktree this run stands in — git's answer, which the registry cannot overrule; `another session` a live session is in it; `the host` it cut this one and the lease is unreadable; `unknown` the probe failed; `null` nothing known against it |
 | `removable` / `unsettled` | the two lists a caller acts on: yours with nothing in the way, and the ones turning on the single thing this cannot know |
 | `mayRemove` / `callerDecides` | the same two per worktree — `callerDecides` is **did you cut it**, which is your own memory of this conversation and nothing a probe can overrule |
 | `blockers` | why not, in words a report can carry |
-| `sessions` | the live ones in it: `pid`, `cwd`, `kind`, `entrypoint`, `name` — where and since when, never what |
-| `probeFailed` | no registry, or records that would not read. **Not** a registry that read cleanly and found nobody, which is an answer |
+| `sessions` | the live ones in it: `pid`, `cwd`, `startedAt` — where and since when, never what. `couldBeMe` marks one whose directory is at or above this run's own |
+| `probeFailed` | no registry, or **any** record that would not read — one unreadable record beside a live one still leaves the worktree that record is in looking free. **Not** a registry that read cleanly and found nobody, which is an answer |
 
 **The registry proves presence, never absence.** A live pid means occupied; no live pid
 means nothing at all ([`invariants.md`](invariants.md), *Empty is not negative*). So a
@@ -58,6 +58,12 @@ worktree the host made stays the host's, running or not — with one exception, 
 `you` verdict is: the lease-holder is the one asking. It does not extend to a *sibling*
 worktree of the same host, whose holder is not in the room. Treat an unfamiliar client as
 another host, not as an absence of one.
+
+**And standing in a worktree does not make every session in it yours.** A record carries
+the directory its session started in, so one that is not at or above this run's own is
+somebody else however close it sits, and two that could both be this run are a second
+client the script cannot tell apart. Yours is the single case: exactly one session in it,
+and that one could be this run.
 
 Three measurements the script is built on, each of which a caller doing this by hand gets
 wrong:
@@ -74,6 +80,15 @@ wrong:
   them is therefore also under the main working tree, and attributing a session by
   containment alone reads that tree as occupied by people nowhere near it. The innermost
   worktree holding a `cwd` is the one that has it.
+
+**The registry is written by other processes, so what it says is quoted, not repeated.**
+A record also carries `kind`, `entrypoint` and a `name` Claude Code derived from that
+session's own conversation — so a session that read something hostile can carry a
+sentence of the attacker's choosing, and a sweep reading it would have that beside the
+paths it is about to delete. None of the three answers a question this script was asked,
+so none is carried out of it; `cwd` is, with the characters that would end a line or a
+record taken out and a bound on its length. `startedAt` is epoch milliseconds, a number
+— measured, whatever its name suggests.
 
 Another session's uncommitted working tree is not an answer either — that is work its
 owner has not committed to, and it is stale the moment you read it.

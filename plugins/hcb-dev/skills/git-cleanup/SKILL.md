@@ -56,6 +56,9 @@ A worktree with a live session in it must not be removed, and git alone cannot t
 One script reads every worktree of the repository at once:
 
 ```bash
+# `--repo-dir` names WHICH repository to sweep; where this run stands is read from the
+# directory the command runs in, and they are two questions. `$PROJECT` for both would
+# make the main worktree the one you are in — the one `worktree remove` refuses.
 node "${CLAUDE_PLUGIN_ROOT}/scripts/worktree-owners.mjs" --repo-dir "$PROJECT"
 ```
 

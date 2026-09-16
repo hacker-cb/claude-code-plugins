@@ -29,8 +29,13 @@ for (let i = 0; i < argv.length; i += 1) {
   repoDir = argv[i += 1];
 }
 
+// Two questions, and `--repo-dir` answers only the first: WHICH repository to scan, and
+// WHERE the caller stands. A sweep runs against the whole repository from its main
+// worktree, so taking the second from the first made the main tree the one you are in —
+// and that is the one `worktree remove` refuses, so nothing was ever yours.
 const cwd = repoDir || process.cwd();
 const git = runner(cwd, 'git');
+const self = runner(process.cwd(), 'git');
 
 const answer = {
   read: false,
@@ -52,6 +57,11 @@ const refuse = (reason) => { answer.reason = reason; finish(); };
 // Two spellings of one path are not two places: `/tmp` is a symlink to `/private/tmp` on
 // macOS, and a session's `cwd` need not be spelled the way git spells its worktree.
 const real = (p) => { try { return realpathSync(p); } catch { return p; } };
+// Another process wrote these, so they are quoted rather than repeated: a string, with
+// the control characters that would end a line or a record taken out, and bounded — a
+// value of any length or shape would otherwise travel into a reader's context whole.
+const text = (v) => (typeof v === 'string'
+  ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 200) : null);
 // The worktree is the ancestor, never the descendant: a session that stepped into a
 // subdirectory is still working in it, and the reverse reading would put a session in
 // every worktree above it.
@@ -103,28 +113,49 @@ for (const name of files) {
   if (live === false) continue;
   if (live === null) answer.registry.unreadable += 1;
   else answer.registry.live += 1;
-  sessions.push({ pid: Number.isInteger(pid) ? pid : null, cwd: rec.cwd, path: real(rec.cwd),
-    live, kind: rec.kind ?? null, entrypoint: rec.entrypoint ?? null, name: rec.name ?? null });
+  // `kind`, `entrypoint` and `name` are NOT carried out. They answer no question this
+  // script was asked, and a session's `name` is text Claude Code derived from that
+  // session's own conversation — so a session that read something hostile can put a
+  // sentence of the attacker's choosing into this answer, which another session reads
+  // beside the paths it is about to delete. What is echoed is bounded and says what it
+  // is: a pid this validated, and the directory the record claims.
+  sessions.push({ pid: Number.isInteger(pid) ? pid : null, cwd: text(rec.cwd),
+    path: real(rec.cwd), live,
+    // Measured: it is epoch milliseconds, a NUMBER, not the ISO string its name
+    // suggests. A string is carried too, quoted like any other borrowed text.
+    startedAt: Number.isFinite(rec.startedAt) ? rec.startedAt : text(rec.startedAt) });
 }
 // Separated deliberately: no registry at all, and a registry whose records would not
 // read, are both "the probe failed" — while a registry that read cleanly and found
 // nobody is an answer.
-answer.probeFailed = !answer.registry.present
-  || (answer.registry.records > 0 && answer.registry.live === 0 && answer.registry.unreadable > 0);
+answer.probeFailed = !answer.registry.present || answer.registry.unreadable > 0;
 
 // --- the worktrees
 if (!git(['rev-parse', '--git-dir']).ok) die('not inside a git checkout');
-const here = git(['rev-parse', '--show-toplevel']);
-if (!here.ok) refuse(`could not read this checkout's top level (${here.line()})`);
+// From the CALLER's directory, not the scanned repository's. Standing outside it
+// entirely is an answer too: nothing is then yours, which is the safe reading.
+const here = self(['rev-parse', '--show-toplevel']);
+if (!here.ok) refuse(`could not read where this run stands (${here.line()})`);
 answer.here = here.out;
 const hereReal = real(here.out);
+const myCwd = real(process.cwd());
 
-const list = git(['worktree', 'list', '--porcelain']);
-if (!list.ok) refuse(`could not list this repository's worktrees (${list.line()})`);
+// `-z` because `--porcelain` alone does not escape a path: a worktree whose directory
+// carries a newline prints a line that reads exactly like the start of another record.
+// Older git does not take it, so the line form is the fallback — the records are
+// separated the same way either, by an empty one.
+let list = git(['worktree', 'list', '--porcelain', '-z']);
+let records;
+if (list.ok) records = `${list.out}\0`.split('\0');
+else {
+  list = git(['worktree', 'list', '--porcelain']);
+  if (!list.ok) refuse(`could not list this repository's worktrees (${list.line()})`);
+  records = `${list.out}\n`.split('\n');
+}
 
 let wt = null;
 const push = () => { if (wt) answer.worktrees.push(wt); };
-for (const line of `${list.out}\n`.split('\n')) {
+for (const line of records) {
   if (line.startsWith('worktree ')) {
     push();
     wt = { path: line.slice('worktree '.length), branch: null, detached: false, bare: false,
@@ -173,8 +204,12 @@ for (const s of sessions) {
 answer.worktrees.forEach((w, i) => {
   const path = paths[i];
   w.isHere = path === hereReal;
-  w.sessions = held[i].map((s) => ({ pid: s.pid, cwd: s.cwd, kind: s.kind,
-    entrypoint: s.entrypoint, name: s.name, live: s.live }));
+  w.sessions = held[i].map((s) => ({ pid: s.pid, cwd: s.cwd, startedAt: s.startedAt,
+    live: s.live,
+    // At or above this run's own directory, so it COULD be this run. More than one that
+    // could be is a second client on the same directory, and which is which cannot be
+    // told from here.
+    couldBeMe: within(myCwd, s.path) }));
   w.occupied = answer.probeFailed ? null : w.sessions.length > 0;
 
   // Two hints at what the host cut, both undocumented and both allowed only to widen
@@ -190,21 +225,31 @@ answer.worktrees.forEach((w, i) => {
   if (w.isPrimary) w.blockers.push('it is the main working tree — `worktree remove` refuses it');
   if (w.locked) w.blockers.push(`it is locked${w.lockReason ? `: ${w.lockReason}` : ''}`);
   if (w.occupied === null) {
-    w.blockers.push('the live-session registry could not be read, so who is in it is unknown');
+    w.blockers.push(w.isHere
+      ? 'the live-session registry could not be read, so whether a second client is in'
+        + ' this worktree too is unknown — you are standing in it either way'
+      : 'the live-session registry could not be read, so who is in it is unknown');
   } else if (w.sessions.length && !w.isHere) {
     w.blockers.push(`a live session is in it: ${w.sessions.map((s) => s.pid).join(', ')}`);
-  } else if (w.sessions.length > 1 && w.isHere) {
-    // One of them is the caller and this cannot tell which — so more than one is a
-    // second client on the same directory, whose tree the removal would take too.
-    w.blockers.push(`${w.sessions.length} live sessions are in it, and one of them is you`);
+  } else if (w.sessions.length && !(w.sessions.length === 1 && w.sessions[0].couldBeMe)) {
+    // Standing in it does not make every session in it yours. One rule, because the
+    // cases it separates all end the same way: a record carries the cwd its session
+    // started in, so one that is not at or above this run's own directory is somebody
+    // else however close it sits — and two that could both be this run are a second
+    // client on the same directory, which this cannot tell apart either. Yours is the
+    // one case where exactly one session is in it and that one could be this run.
+    w.blockers.push('a live session is in it this run cannot show is itself:'
+      + ` ${w.sessions.map((s) => s.pid).join(', ')}`);
   }
-  if (w.hostMade && !w.isHere) {
+  if (w.hostMade && !w.isHere && !w.prunable) {
+    // `prunable` and still the host's are not the same case: git says the registration
+    // has nothing behind it any more, so pruning it destroys no work and needs no lease.
     w.blockers.push('the host made it, and the lease that says whose it is cannot be read'
       + ' from here — the host sweeps its own pool');
   }
 
-  w.owner = w.occupied === null ? 'unknown'
-    : w.isHere ? 'you'
+  w.owner = w.isHere ? 'you'
+    : w.occupied === null ? 'unknown'
       : w.sessions.length ? 'another session'
         : w.hostMade ? 'the host'
           : null;
