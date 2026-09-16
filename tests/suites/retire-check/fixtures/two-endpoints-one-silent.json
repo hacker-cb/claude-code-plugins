@@ -10,5 +10,7 @@
  "ls_remote": {
   "https://forge.example/example-org/example-repo.git": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/feat-example",
   "https://mirror.example/example-org/example-repo.git": "silent"
- }
+ },
+ "pr_view": "{\"state\": \"MERGED\", \"headRefOid\": \"f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
+ "pr_list": "[]"
 }

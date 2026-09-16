@@ -46,22 +46,43 @@ reading runs before the reading is believed, and what it reports is then not wha
 did.
 
 ```text
-retire-check.mjs --branch <name> (--tip <ref> | --pr <n>) --push-remote <name>
+node <plugin root>/scripts/retire-check.mjs \
+  --branch <name> (--tip <ref> | --pr <n>) [--push-remote <name>]
 ```
+
+**Every skill that performs a retirement writes that command itself**, with the plugin
+root substituted — which happens in skill content and not here, where the placeholder
+would stay literal text. Three do: `github-pr-workflow` Step 6, `hcb-dev:wave-worker`
+on a landing it finds already taken, and whatever drives a local completion
+([`slice-completion.md`](slice-completion.md)). A skill that only *mentions* the
+retirement, rather than running it, links this file and stops there.
 
 | field | what it settles |
 |---|---|
 | `read` | every reading answered. `false` retires nothing, on either side |
+| `measuredAgainst` | what containment measures against and what the deletion leases — **never where HEAD goes**: after a squash the request's head is not in the base at all |
 | `request` | request mode: the `state` every deletion rests on, and the `headRefOid` the local proof measures against and the remote deletion leases |
-| `local.safe` | the branch exists, is contained in the tip, no other worktree holds it, the tree is clean |
-| `local.blockers` | why not, in words the report can carry |
+| `deleteLocal` / `deleteRemote` | the two verdicts, named apart because `safe` on both sides was one word at two levels |
+| `local.blockers` / `remote.blockers` | why not, in words the report can carry |
 | `remote.published` | `true` still there, `false` the merge already took it, **`null` an endpoint did not answer** |
 | `remote.endpoints[].has` | per push URL, because a push reaches every configured endpoint |
-| `remote.safe` | published, and nothing holding it |
+
 
 **The two sides are answered separately because they fail separately.** A dirty tree,
 or a local tip carrying commits that never reached the request, says nothing about the
 published ref — and the published ref is the one nothing else can clear afterwards.
+
+**The published side is request mode's alone.** A local merge publishes nothing, so a
+ref an earlier push left on the remote is not this step's to remove — and there is no
+recorded head to lease the deletion against, which is the only thing that stops it
+removing a ref that moved since.
+
+**GitLab is read by hand**, the script speaking `gh` alone: take the state and the head
+the same way, and the rest of this file holds unchanged.
+
+```bash
+glab mr view <n> --output json | jq -r '"\(.state) \(.sha)"'
+```
 
 Three readings the answer is built on, each of which a caller doing this by hand gets
 wrong:
@@ -85,8 +106,19 @@ fetches it by its id before measuring, and says `containment is unknown` rather 
 
 ## Free the branch, then delete it
 
+**An uncommitted change stops both halves of this section** — do not switch, do not
+delete, and say the local branch is still there. `local.dirty` is that answer, and it
+gates the HEAD move as much as the deletion: switching with work in the tree carries it
+onto another commit. What is published is a separate question and answered above either
+way.
+
 Git refuses to delete a branch that is checked out, so HEAD moves off it first — and
-only where **this** worktree holds it, which `local.heldBy` answers. First hit wins:
+only where **this** worktree holds it, which `local.heldBy` answers. **HEAD moves onto
+the refreshed base**, never onto `measuredAgainst`: `<remote>/<base>` brought current
+through [`base-resolution.md`](base-resolution.md) carries the merge plus whatever else
+landed while the request was open, so work continued from it starts current instead of a
+rebase behind — and a base that reference leaves unverified stops the HEAD move and the
+local deletion rather than seeding the next branch from a stale tip. First hit wins:
 
 1. **The parent is available here** — it exists locally, no other worktree holds it, and
    it fast-forwards to the tip. `git switch <parent>` unless HEAD already stands on it;
@@ -96,7 +128,12 @@ only where **this** worktree holds it, which `local.heldBy` answers. First hit w
 2. **Otherwise** — `git switch --detach <tip>`. Detached is the ordinary state between
    tasks.
 
-Then, and only on the matching `safe`:
+Then, and only on the matching verdict. `noRefProof` is the one judgement left with the
+caller, and **only in local mode**: git cannot tell a squash from work that never
+landed, while the caller has just confirmed the merge and knows its strategy. In request
+mode there is no such judgement — containment is measured against the head the request
+recorded, which a squash does not move, so `contained: false` there is commits that
+never reached the request.
 
 ```bash
 git branch -D <branch>                       # local.safe

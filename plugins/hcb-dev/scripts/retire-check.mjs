@@ -46,13 +46,21 @@ const git = runner(cwd, 'git');
 const gh = runner(cwd);
 
 const answer = {
-  read: false, branch: opts.branch, tip: null,
+  read: false, branch: opts.branch,
+  // What containment is measured against and what the remote deletion LEASES — never
+  // where HEAD should go. After a squash the request's head is not in the base at all,
+  // so a caller detaching onto it would stand on unmerged work and cut the next branch
+  // from there. The HEAD move uses the refreshed base; `base-resolution.md` owns it.
+  measuredAgainst: null,
   // Request mode only. `state` and `headRefOid` are what every deletion rests on, and a
   // run that could not read them retires nothing.
   request: null,
-  local: { exists: false, contained: false, heldBy: null, dirty: false, safe: false, blockers: [] },
+  local: { exists: false, contained: false, noRefProof: false, heldBy: null, dirty: false, blockers: [] },
   // `published: null` is "the endpoints did not all answer" — never "no branch there".
-  remote: { published: null, endpoints: [], safe: false, blockers: [] },
+  remote: { published: null, endpoints: [], blockers: [] },
+  // Named apart on purpose: `safe` on both sides was one word at two levels, and a
+  // reader — or a test — cannot tell two levels of one word apart.
+  deleteLocal: false, deleteRemote: false,
   reason: null, notes: [],
 };
 const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
@@ -77,7 +85,7 @@ if (opts.pr) {
     answer.local.blockers.push(`the request is ${answer.request.state ?? 'in an unknown state'}, not merged`);
     answer.remote.blockers.push(`the request is ${answer.request.state ?? 'in an unknown state'}, not merged`);
   }
-  if (!readable(answer.request.headRefOid || '')) {
+  if (!refOk(answer.request.headRefOid || '')) {
     refuse(`pull request ${opts.pr} recorded no head commit — nothing to measure against`);
   }
   tip = answer.request.headRefOid;
@@ -89,7 +97,7 @@ if (opts.pr) {
     if (!f.ok) answer.notes.push(`${tip} is not in this checkout and could not be fetched from ${opts.pushRemote}`);
   }
 }
-answer.tip = tip;
+answer.measuredAgainst = tip;
 
 // --- the local side
 const ref = `refs/heads/${opts.branch}`;
@@ -123,7 +131,10 @@ if (!answer.local.exists) {
   // earlier point passes whether or not the merge landed. Measured, with git saying so
   // out loud: `deleting branch 'feature' that has been merged to
   // 'refs/remotes/origin/feature', but not yet merged to HEAD`.
-  if (!readable(tip || '')) refuse('no tip to measure containment against');
+  // `refOk`, not `readable`: a parent is `feature/x` and a remote-tracking ref is
+  // `refs/remotes/origin/main` — many segments, and holding them to one refuses every
+  // ordinary local completion.
+  if (!refOk(tip || '')) refuse('no tip to measure containment against');
   const have = git(['rev-parse', '--verify', '-q', `${tip}^{commit}`]).ok;
   if (!have) {
     answer.local.blockers.push(`${tip} is not an object this checkout carries, so containment is unknown — not unmerged`);
@@ -131,16 +142,37 @@ if (!answer.local.exists) {
     const c = git(['merge-base', '--is-ancestor', ref, tip]);
     answer.local.contained = c.ok;
     if (!c.ok) {
-      answer.local.blockers.push('its tip carries commits the merge never took —'
-        + ' or the strategy collapsed them, which no ref-level check can show');
+      // Two states, one git answer: git cannot tell them apart and neither can this.
+      // The caller can — it has just confirmed the merge and knows its strategy — so
+      // the blocker names both rather than picking one.
+      answer.local.contained = false;
+      if (opts.pr) {
+        // Request mode measures against the head the request RECORDED, which is
+        // pre-squash — so the strategy invalidates nothing here, and `false` means
+        // commits that never reached the request. There is no exception to offer.
+        answer.local.blockers.push('its tip carries commits the request never took —'
+          + ' containment is measured against the head the request recorded, which a'
+          + ' squash does not move');
+      } else {
+        // Local mode: git cannot tell a squash from work that never landed, and neither
+        // can this. The caller has just confirmed the merge and knows its strategy.
+        answer.local.noRefProof = true;
+        answer.local.blockers.push('no ref-level proof: either its tip carries commits the'
+          + ' merge never took, or the strategy collapsed them — a squash leaves none, and'
+          + ' the confirmed merge is then what landed it');
+      }
     }
   }
 }
-answer.local.safe = answer.local.exists && answer.local.contained
-  && answer.local.blockers.length === 0;
 
 // --- the published side, which stands on its own
-if (!opts.pushRemote) {
+if (!opts.pr) {
+  // Request mode only. A local merge publishes nothing, so a ref an earlier push left
+  // on the remote is not this step's to remove — and there is no recorded head to lease
+  // the deletion against, which is what stops it removing a ref that moved since.
+  answer.remote.blockers.push('local mode publishes nothing, and there is no recorded'
+    + ' head to lease a deletion against — what is published is not this step\'s');
+} else if (!opts.pushRemote) {
   answer.remote.blockers.push('no push remote named — what is published was not asked');
 } else {
   // The URLs that RECEIVE pushes, not the remote by name: a `pushurl` sends pushes
@@ -167,12 +199,41 @@ if (!opts.pushRemote) {
     answer.remote.published = unknown.length ? null : live;
   }
 }
+// Another request open on this ref keeps the branch: that request's head IS this ref,
+// and deleting it closes the request along with whatever a reviewer asks for next.
+if (opts.pr) {
+  const others = gh(['pr', 'list', '--head', opts.branch, '--state', 'open',
+    '--json', 'number', ...(opts.repo ? ['--repo', opts.repo] : [])]);
+  // BOTH sides, on every path: a branch under an open request stays locally too — that
+  // request's head is this ref, and what a reviewer asks for next has nowhere to land.
+  // Unknown is not `none`, so a reading that failed blocks exactly as a second request
+  // standing does.
+  const bothWays = (why) => { answer.local.blockers.push(why); answer.remote.blockers.push(why); };
+  if (!others.ok) {
+    bothWays(`could not read what else is open on this ref (${others.line()})`);
+  } else {
+    let list;
+    try { list = JSON.parse(others.out); } catch { list = null; }
+    if (!Array.isArray(list)) {
+      bothWays('what else is open on this ref came back in a shape this cannot read');
+    } else {
+      const open = list.map((r) => r && r.number).filter((n) => String(n) !== String(opts.pr));
+      if (open.length) bothWays(`another request is open on this ref: ${open.join(', ')}`);
+    }
+  }
+}
+
 if (answer.local.heldBy) {
   // That session can push to this ref and would recreate what the deletion removed.
   answer.remote.blockers.push('another worktree can push to this ref and would recreate it:'
     + ` ${answer.local.heldBy}`);
 }
-answer.remote.safe = answer.remote.published === true && answer.remote.blockers.length === 0;
+// Both verdicts here, after every blocker is in. Computing one earlier is how a check
+// that runs later adds its blocker beside a `safe: true` that no longer holds.
+answer.deleteLocal = answer.local.exists
+  && (answer.local.contained || answer.local.noRefProof)
+  && answer.local.blockers.length === 0;
+answer.deleteRemote = answer.remote.published === true && answer.remote.blockers.length === 0;
 
 answer.read = true;
 finish();

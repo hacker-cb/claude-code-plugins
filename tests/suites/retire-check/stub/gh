@@ -3,6 +3,12 @@
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 case "$1 $2" in
+  "pr list")
+    v=$(ask '.pr_list')
+    case "$v" in
+      ""|fail) echo "gh: could not list" >&2; exit 1 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
   "pr view")
     v=$(ask '.pr_view')
     case "$v" in

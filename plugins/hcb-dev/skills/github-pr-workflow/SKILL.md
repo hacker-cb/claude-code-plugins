@@ -636,12 +636,16 @@ that, never the merge command's exit status:
   The reading is the script's; the acting is this step's:
 
   ```bash
-  RETIRE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/retire-check.mjs" \
-    --branch "<branch>" --pr <pr> --push-remote "<push-remote>")" \
-    || echo "CALLED WRONG: $RETIRE"
-  printf '%s' "$RETIRE" | jq -r 'if .read then
-      "local=\(.local.safe) remote=\(.remote.safe) published=\(.remote.published)"
-    else "UNREAD: \(.reason)" end'
+  if RETIRE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/retire-check.mjs" \
+      --branch "<branch>" --pr <pr> --push-remote "<push-remote>")"; then
+    printf '%s' "$RETIRE" | jq -r 'if .read then
+        "local=\(.deleteLocal) remote=\(.deleteRemote) published=\(.remote.published)"
+      else "UNREAD: \(.reason)" end'
+  else
+    # A non-zero exit carries usage text, not JSON. Feeding it to `jq` prints a parse
+    # error where the step needs a refusal, which reads as nothing having been said.
+    echo "CALLED WRONG: $RETIRE"
+  fi
   ```
 
   Each side acts only on its own `safe`, and every `false` carries its `blockers` into

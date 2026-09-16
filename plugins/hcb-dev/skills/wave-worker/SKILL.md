@@ -121,10 +121,16 @@ holds, and what it stops is named in the return as the gap it is.
   report; a boundary change agreed mid-flight.
 - **A landing this session did not take is still its landing to finish.** Work
   found already landed, in either mode, is never landed a second time: confirm
-  the merge, retire the branch per
-  [`../../references/branch-retirement.md`](../../references/branch-retirement.md),
+  the merge, then retire the branch — the reading is the script's and the acting is
+  this step's
+  ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)) —
   and where a change request carried it, read the closed request once more for a
   review that posted after the merge — its findings are orphaned there otherwise.
+  ```bash
+  node "${CLAUDE_PLUGIN_ROOT}/scripts/retire-check.mjs" --branch "<branch>" \
+    --pr <n> --push-remote "<push-remote>"    # or --tip <ref> for a local landing
+  ```
+
   Commits the landing did not take are not landed behind it either: they go to
   the master, and into the return as work left undone.
 - **The master silent and the master unreachable are different states**, told

@@ -107,7 +107,8 @@ branch others have pulled, an open change request, a branch checked out in anoth
 worktree) that prohibition wins: land the work under the name it has and say so in
 the report, rather than deadlocking two absolutes against each other; retire the
 branch the merge landed, per
-[`branch-retirement.md`](branch-retirement.md); leave the
+[`branch-retirement.md`](branch-retirement.md), whose reading the completing
+skill runs as `scripts/retire-check.mjs` and whose acting it does itself; leave the
 tree in a known state; emit a completion record.
 
 ## What outranks an authorization

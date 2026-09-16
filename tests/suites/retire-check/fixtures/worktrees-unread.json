@@ -7,5 +7,7 @@
  "dirty": "",
  "push_urls": "https://forge.example/example-org/example-repo.git",
  "ls_remote_default": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/feat-example",
- "worktrees_fail": "yes"
+ "worktrees_fail": "yes",
+ "pr_view": "{\"state\": \"MERGED\", \"headRefOid\": \"f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
+ "pr_list": "[]"
 }
