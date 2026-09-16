@@ -1,0 +1,13 @@
+{
+ "pr_view": "{\"state\": \"OPEN\", \"isDraft\": false, \"mergeable\": \"MERGEABLE\", \"mergeStateStatus\": \"CLEAN\", \"reviewDecision\": null, \"baseRefName\": \"dev\", \"headRefName\": \"feat-example\", \"headRefOid\": \"f1x71111111111111111111111111111111111bb\", \"url\": \"https://forge.example/example-org/example-repo/pull/7\"}",
+ "behind": "4",
+ "moved": "plugins/hcb-dev/README.md\ntests/run.sh",
+ "counts": {
+  "f1x71111111111111111111111111111111111bb..refs/remotes/origin/dev": "4",
+  "HEAD..refs/remotes/origin/dev": "99"
+ },
+ "moved_by_range": {
+  "f1x71111111111111111111111111111111111bb...refs/remotes/origin/dev": "plugins/hcb-dev/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/deep-name.md",
+  "f1x71111111111111111111111111111111111bb..refs/remotes/origin/dev": "tests/run.sh\nplugins/hcb-dev/README.md"
+ }
+}

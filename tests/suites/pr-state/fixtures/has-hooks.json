@@ -1,0 +1,3 @@
+{
+ "pr_view": "{\"state\": \"OPEN\", \"isDraft\": false, \"mergeable\": \"MERGEABLE\", \"mergeStateStatus\": \"HAS_HOOKS\", \"reviewDecision\": null, \"baseRefName\": \"dev\", \"headRefName\": \"feat-example\", \"headRefOid\": \"f1x71111111111111111111111111111111111bb\", \"url\": \"https://forge.example/example-org/example-repo/pull/7\"}"
+}

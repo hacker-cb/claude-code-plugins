@@ -118,8 +118,8 @@ required, or what a check was called there. These signals already fold in whatev
 is enforced, by any mechanism:
 
 ```bash
-gh pr checks <pr>                                              # required checks + state
-gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision  # merge verdict + why
+node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr>   # the merge verdict, and why
+node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates
 ```
 
 **Gates are a floor, never a ceiling** — Step 4's bar applies on top of whatever
@@ -388,34 +388,25 @@ merge, your bar decides *readiness*; when they diverge, the stricter one wins �
 save for the one item below, whose answer is the base's. The severity
 classification only decides what you *fix*, never when you're *done*.
 
-**Being current with base is that item.** Where the base requires it, `BEHIND` is
-a gate: re-sync until it clears. Where it does not, **that enum never arrives** —
-nothing is blocking the merge, so a head sitting well behind its base reads
-`CLEAN` — and routing on it would skip exactly the case this paragraph is for.
-Measure the drift yourself, on the two values Step 2 filled:
+**Being current with base is that item.** Where the base requires it, `BEHIND` is a gate.
+Where it does not, **that enum never arrives** — nothing is blocking the merge, so a head
+sitting well behind its base reads `CLEAN` — which is why `drift` is measured rather than
+read off it. Fetch first, or the measurement is against a stale tracking ref and a head
+that is behind reads current.
 
-```bash
-git fetch -q "$BASE_REMOTE" "+refs/heads/$BASE:refs/remotes/$BASE_REMOTE/$BASE" || \
-  { echo "FETCH FAILED — drift unknown, do not rule the head current"; exit 1; }
-# `HEAD..` is what this head has NOT absorbed, so a Step 2 rebase already moved the
-# line forward: this is the window since the last re-sync, not since the branch was cut.
-git rev-list --count "HEAD..$BASE_REMOTE/$BASE"   # 0 = current
-git diff --name-only "HEAD..$BASE_REMOTE/$BASE"   # what moved, when it is not
-```
+`drift.behind` above zero is a judgement, not a gate: re-sync when what `drift.paths`
+carries can break this head — the same files or modules, an interface a caller here uses,
+a migration, a dependency — and merge without one when the base moved elsewhere. Neither
+answer is free: a re-sync is a push, which restarts the checks and the review; a skipped
+one that was needed puts the break in the base, where only Step 6 finds it.
 
-A non-zero count is a judgement, not a gate: re-sync when what those paths carry
-can break this head — the same files or modules, an interface a caller here uses,
-a migration, a dependency — and merge without one when the base moved elsewhere.
-Neither answer is free: a re-sync is a push, which restarts the checks and the
-review; a skipped one that was needed puts the break in the base, where only
-Step 6 finds it.
-
-**The approval is the exit item no iteration of this loop produces.** Every other
-one answers to a push; that one answers to a reviewer, and all a round can do is
-remove reasons to withhold it. So read it before spending an iteration against it,
-and read the **requirement** rather than one reviewer's verdict: a base asking for
-no approval, or one already satisfied by somebody else, leaves nothing outstanding
-however Copilot's own review landed.
+**The approval is the exit item no iteration of this loop produces.** Every other one
+answers to a push; that one answers to a reviewer, and all a round can do is remove
+reasons to withhold it. So read it before spending an iteration against it, and read the
+**requirement** rather than one reviewer's verdict. `reviewDecision` is not that
+requirement — an empty one is not a base that asks for nothing
+([`references/merge-gates.md`](references/merge-gates.md), which owns where the
+requirement is read and why that field cannot stand in for it).
 
 Where the requirement *is* outstanding and the head's review has settled without
 closing it, which of the two kinds of review that is
@@ -428,25 +419,35 @@ That, and a reviewer handing the decision to a human, are not this loop's work:
 the reason the review gave and what would answer it. Another round against that
 buys another review of the same kind.
 
-1. **Read the live state:** `gh pr checks <pr>` plus
-   `gh pr view <pr> --json mergeable,mergeStateStatus,reviewDecision` (or MCP
-   equivalents). `reviewThreads` is **not** a `gh pr view --json` field — for
-   thread-resolution state use the GraphQL `reviewThreads` query in
-   `references/copilot.md`. Poll while checks are in progress.
-
-   **Copilot's state is read with the script, not by hand** — the head's own review,
-   what the base's rules ask, and what stands right now, in one answer
-   (`references/copilot.md`):
+1. **Read the live state** — three scripts, each answering one question, and none of
+   them by hand. Quoted as one word at every use: the plugin root is a path like any
+   other and may carry spaces.
 
    ```bash
-   # Quoted as one word: the plugin root is a path like any other and may carry spaces.
-   COP="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-state.mjs" --pr <pr>)" \
-     || echo "CALLED WRONG: $COP"
-   printf '%s' "$COP" | jq -r 'if .read then .verdict else "UNREAD: \(.reason)" end'
+   # The fetch STOPS the drift read where it fails: an older tracking ref measures
+   # cleanly and answers `behind: 0`, which is the one wrong answer this cannot give.
+   if git fetch -q "$BASE_REMOTE" "+refs/heads/$BASE:refs/remotes/$BASE_REMOTE/$BASE"; then
+     node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr> \
+       --base-ref "refs/remotes/$BASE_REMOTE/$BASE"
+   else
+     echo "FETCH FAILED — drift unknown, do not rule the head current"
+     node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr>
+   fi
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-state.mjs" --pr <pr>
    ```
 
-   Route on `.verdict` per that file; a non-zero exit is the invocation being wrong,
-   never a state to retry.
+   - **`pr-state.mjs`** — what the forge says about the request: its own enums, the
+     review threads no `pr view` field carries, and the drift. `mayMerge` is
+     **permission**, never readiness, and `blockers` says what is outstanding.
+   - **`commit-checks.mjs`** — what the two check feeds say about this head
+     (`references/merge-gates.md`). Poll on its `verdict` while runs are in flight;
+     `running` is not `failing` and neither is `empty`.
+   - **`copilot-state.mjs`** — the head's own review, what the base's rules ask, and what
+     stands right now (`references/copilot.md`). Route on its `verdict` per that file.
+
+   `"read": false` from any of them is a reading that could not be taken, never a state
+   to act on; a non-zero exit is the invocation being wrong, never a state to retry.
 2. **If a required check is red:** read the failing job's logs, fix the root
    cause, commit, push. Don't guess — read the actual failure. Not every red check
    wants a code change: one that stands in for a review is typically waiting on the
