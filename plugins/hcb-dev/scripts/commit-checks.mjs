@@ -22,7 +22,7 @@
 // empty, and a caller that cannot tell them apart reports a base as quiet because the
 // call 404'd. Exit 2 only for a call this script cannot act on at all.
 
-import { writeAll, parsePages, readable, refOk, repoOk, runner } from './lib/forge.mjs';
+import { dirOk, parsePages, readable, refOk, repoOk, runner, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>)'
   + ' --sha head|base|merge|<oid> [--require <name>]... [--require-from-gates]'
@@ -81,6 +81,9 @@ if (!SYMBOLIC.includes(opts.sha) && !readable(opts.sha)) {
 }
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const gh = runner(opts.repoDir || process.cwd());
 
 const answer = {
@@ -120,7 +123,7 @@ let baseRef = null;
 if (opts.pr) {
   const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,baseRefOid,baseRefName,mergeCommit',
     ...(opts.repo ? ['--repo', opts.repo] : [])]);
-  if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.err.split('\n')[0] || 'no detail'})`);
+  if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.line()})`);
   let pr;
   try { pr = JSON.parse(view.out); } catch { refuse('the pull request view was not JSON'); }
   // Valid JSON is not an object: `null` parses, and reaching a field on it throws — exit
@@ -213,7 +216,7 @@ if (opts.fromGates) {
     // status 200 both for a branch carrying no rules AND for a branch that does not
     // exist. So a 404 is never "no ruleset" — it is the repository failing to read, and
     // treating it as an absence is how an unread source becomes a confirmed empty one.
-    answer.gatesUnknown.push(`the ruleset on ${baseRef} (${r.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
+    answer.gatesUnknown.push(`the ruleset on ${baseRef} (${r.line()})`);
   }
 
   // SOURCE TWO — classic branch protection, a different mechanism with its own endpoint
@@ -257,7 +260,7 @@ if (opts.fromGates) {
   } else if (/branch not found/i.test(prot.err)) {
     answer.gatesUnknown.push(`${baseRef} is not a branch on ${repo} — its gates were never read`);
   } else {
-    answer.gatesUnknown.push(`classic protection on ${baseRef} (${prot.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
+    answer.gatesUnknown.push(`classic protection on ${baseRef} (${prot.line()})`);
   }
 
   // What the GATES name, and nothing else. `opts.require` also holds whatever the caller
@@ -283,7 +286,7 @@ answer.sha = sha;
 // does, and the two take different steps.
 const feed = (path) => {
   const r = gh(['api', '--paginate', `repos/${repo}/commits/${sha}/${path}`]);
-  if (!r.ok) return { ok: false, err: r.err.split('\n').filter(Boolean).pop() || 'no detail' };
+  if (!r.ok) return { ok: false, err: r.line() };
   const pages = parsePages(r.out);
   if (pages === null) return { ok: false, err: `could not parse the ${path} response` };
   return { ok: true, pages };
@@ -299,8 +302,15 @@ if (!statusFeed.ok) refuse(`the status feed could not be read (${statusFeed.err}
 // name reads three runs as one and calls the set finished while two are still going.
 const runsById = new Map();
 let unkeyed = 0;
+let shapeless = 0;
 for (const page of runsFeed.pages) {
-  for (const [i, run] of ((page && page.check_runs) || []).entries()) {
+  // Guarded like the gate sources above, and for the same reason said there: a page that
+  // is not the shape this expects is a response it cannot read, not a commit with nothing
+  // on it — and an unguarded `.entries()` on an object THROWS, which leaves stdout empty.
+  // No verdict, no reason: the one outcome this file's contract forbids outright.
+  const rows = page && page.check_runs;
+  if (!Array.isArray(rows)) { if (page && 'check_runs' in page) shapeless += 1; continue; }
+  for (const [i, run] of rows.entries()) {
     if (!run) continue;
     // A row with no `id` is kept under a key of its own rather than dropped. Dropping it
     // is how an unfinished run disappears from `unfinished` and a commit reads green —
@@ -314,8 +324,15 @@ if (unkeyed) {
   answer.notes.push(`${unkeyed} check-run(s) came back without an id and are counted by`
     + ' name — two rows of one name cannot be told apart among them');
 }
+if (shapeless) {
+  answer.notes.push(`${shapeless} page(s) of the check-runs feed carried a \`check_runs\``
+    + ' that is not a list and were not read — what they held is unknown, not absent');
+}
 answer.runs = [...runsById.values()].map((r) => ({
-  id: String(r.id), name: r.name ?? null,
+  // `null` where the forge sent none. `String(undefined)` renders the literal "undefined",
+  // which reads as an id and collapses in a caller keyed on it — the very confusion the
+  // synthetic map key above exists to prevent.
+  id: r.id === undefined ? null : String(r.id), name: r.name ?? null,
   status: r.status ?? null, conclusion: r.conclusion ?? null,
 }));
 
@@ -326,7 +343,11 @@ for (const page of statusFeed.pages) {
   // The rollup line repeats once per page, identically — it is a property of the commit,
   // not of the page. Taking the last is taking the same value the first page carried.
   if (page.state !== undefined) rollup = page.state;
-  for (const s of page.statuses || []) statuses.push({ context: s.context ?? null, state: s.state ?? null });
+  // Same guard as the run feed: iterating an object throws, and a throw here prints nothing.
+  if (!Array.isArray(page.statuses)) { if ('statuses' in page) shapeless += 1; continue; }
+  for (const s of page.statuses) {
+    if (s && typeof s === 'object') statuses.push({ context: s.context ?? null, state: s.state ?? null });
+  }
 }
 answer.statuses = statuses;
 answer.rollup = rollup;

@@ -18,7 +18,7 @@
 // answered" is not "nothing is merged", and a caller that cannot tell them apart deletes
 // work. Exit 2 only for a call this script cannot act on at all.
 
-import { spawnSync } from 'node:child_process';
+import { dirOk, runner } from './lib/forge.mjs';
 import { writeSync } from 'node:fs';
 
 const USAGE = 'usage: node default-branch.mjs [--no-network] [--repo-dir <path>]\n';
@@ -57,11 +57,14 @@ for (let i = 0; i < argv.length; i += 1) {
   die(`unknown argument '${argv[i]}'`);
 }
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (repoDir && !dirOk(repoDir)) die(`--repo-dir '${repoDir}' is not a directory`);
 const cwd = repoDir || process.cwd();
-const run = (cmd, args, timeout = 60000) => {
-  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024 });
-  return { ok: r.status === 0, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() };
-};
+// The shared one, not a second copy of it: `runner` pins `LC_ALL=C` so a translated git
+// diagnostic never reaches a reader comparing English, carries the exit CODE — 1 and 128
+// mean different things — and exposes the `line()` every refusal here quotes.
+const run = (cmd, args, timeout = 60000) => runner(cwd, cmd)(args, timeout);
 const git = (...a) => run('git', a);
 
 const answer = {
@@ -120,7 +123,7 @@ if (network) {
       if (m) { remoteSaid = m[1]; break; }
     }
   } else if (symref.err) {
-    answer.notes.push(`${remote} did not answer (${symref.err.split('\n')[0]})`);
+    answer.notes.push(`${remote} did not answer (${symref.line()})`);
   }
 }
 
@@ -163,7 +166,7 @@ if (network) {
   const had = haveRef(answer.ref);
   const f = run('git', ['fetch', remote, `+refs/heads/${name}:${answer.ref}`], 120000);
   if (!f.ok || !haveRef(answer.ref)) {
-    refuse(`${answer.ref} could not be fetched (${f.err.split('\n')[0] || 'no detail'})`);
+    refuse(`${answer.ref} could not be fetched (${f.line()})`);
   }
   if (!had) answer.notes.push(`${answer.short} was not in this checkout; fetched it`);
 } else if (!haveRef(answer.ref)) {

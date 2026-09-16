@@ -16,9 +16,13 @@ case "$1" in
       esac
     done
     if [ "$tip" = PROBE ]; then
+      # Answering is the case's to ask for, exactly as the sibling stub makes the GitHub
+      # probe depend on `.repo_view`. A stub that answers by default made every case one
+      # where BOTH CLIs answer — the ambiguity a mirror creates — and hid it behind
+      # whichever the reader happened to try first.
       case "$(ask '.glab_probe')" in
-        fail) echo "glab: not a GitLab repository" >&2; exit 1 ;;
-        *) printf '{"id": 1}\n'; exit 0 ;;
+        yes) printf '{"id": 1}\n'; exit 0 ;;
+        *) echo "glab: not a GitLab repository" >&2; exit 1 ;;
       esac
     fi
     v=$(ask ".pulls[\"$tip\"] // .pulls_default")

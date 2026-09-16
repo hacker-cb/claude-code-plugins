@@ -54,7 +54,10 @@ const rows = [];
 readFileSync(registryAbs, 'utf8').split('\n').forEach((line, i) => {
   if (!line.trim() || line.startsWith('#')) return;
   const cells = line.split('\t');
-  if (cells.length < 6) {
+  // Exactly six. Fewer is a row that cannot be read; MORE is an assert carrying a tab,
+  // which the destructuring below would silently cut at — leaving the row checking a
+  // prefix nobody wrote while reading as green.
+  if (cells.length !== 6) {
     die(`${registryPath}:${i + 1}: needs six tab-separated columns, got ${cells.length}`);
   }
   // Trimmed: a CRLF checkout leaves `\r` on the last cell, and an assert compared with
@@ -83,7 +86,11 @@ const pluginFiles = new Map();
   if (!existsSync(abs)) return;
   for (const entry of readdirSync(abs)) {
     const rel = `${dir}/${entry}`;
-    if (statSync(join(repoRoot, rel)).isDirectory()) walk(rel);
+    // A dangling symlink, or an entry removed between the listing and this call, is not a
+    // reason to end the whole walk with a stack: skip what cannot be stat'd.
+    let st;
+    try { st = statSync(join(repoRoot, rel)); } catch { continue; }
+    if (st.isDirectory()) walk(rel);
     else if (RULE_BEARING.test(entry)) pluginFiles.set(rel, readFileSync(join(repoRoot, rel), 'utf8'));
   }
 }('plugins'));
@@ -133,7 +140,11 @@ for (const row of rows) {
     failures.push(`${row.id}: target does not exist — ${row.target}`);
     continue;
   }
-  if (!text.includes(row.assertText)) {
+  // Flattened on both sides, exactly as the `(dropped)` branch above does it and for the
+  // reason given there: markdown wraps, so a phrase measured on one line can end up split
+  // across two without a word of it changing. Compared raw, a rewrapped paragraph reads as
+  // a rule that went missing, and the repair is to reword the assert rather than the tree.
+  if (!flatten(text).includes(flatten(row.assertText))) {
     failures.push(`${row.id}: ${row.target} does not carry its assert — "${row.assertText}"`);
   }
 }

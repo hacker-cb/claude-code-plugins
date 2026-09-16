@@ -17,7 +17,7 @@
 //
 // Exit 0 either way. Exit 2 only for a call this script cannot act on at all.
 
-import { writeAll, readable, refNameOk, repoOk, runner, text } from './lib/forge.mjs';
+import { dirOk, readable, refNameOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node resolve-base.mjs [--base <name>] [--forge gh|glab]'
   + ' [--repo <owner/name>] [--no-network] [--repo-dir <path>]\n';
@@ -45,6 +45,9 @@ if (opts.repo && !(opts.forge === 'glab' ? pathOk(opts.repo) : repoOk(opts.repo)
   die(`--repo '${opts.repo}' is not ${opts.forge === 'glab' ? 'a project path' : 'owner/name'}`);
 }
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
 

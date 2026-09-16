@@ -1,0 +1,1 @@
+{"checks": {"total_count": 1, "check_runs": {"0": {"id": "example-id-1", "name": "unit-tests", "status": "completed", "conclusion": "success"}}}, "status": {"state": "success", "statuses": {"0": {"context": "ci", "state": "success"}}}}

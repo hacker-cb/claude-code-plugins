@@ -17,7 +17,7 @@
 // `reason`. Exit 2 only for a call this script cannot act on at all.
 
 import { realpathSync } from 'node:fs';
-import { writeAll, readable, refOk, repoOk, runner } from './lib/forge.mjs';
+import { dirOk, readable, refOk, repoOk, runner, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node retire-check.mjs --branch <name> (--tip <ref> | --pr <n>)'
   + ' [--push-remote <name>] [--repo <owner/name>] [--repo-dir <path>]\n';
@@ -42,6 +42,9 @@ if (opts.tip && !refOk(opts.tip)) die(`--tip '${opts.tip}' is not a ref this can
 if (opts.pushRemote && !readable(opts.pushRemote)) die(`--push-remote '${opts.pushRemote}' is not a remote name`);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
 const gh = runner(cwd);

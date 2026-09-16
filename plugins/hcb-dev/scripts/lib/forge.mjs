@@ -6,7 +6,7 @@
 // already written twice, and each was got wrong at least once — the exit that
 // truncates, the page that is not a list, the guard that refuses `main`.
 
-import { writeSync } from 'node:fs';
+import { statSync, writeSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 // `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit`
@@ -65,6 +65,14 @@ export const refNameOk = (v) => {
 // rather than through the text of it.
 export const nameSafe = (v) => typeof v === 'string' && v !== ''
   && !v.startsWith('-') && /^[A-Za-z0-9._/+#%@-]+$/.test(v);
+
+// `--repo-dir` reaches `spawnSync` as `cwd`, where a path that is not there produces
+// `status: null` with an EMPTY stderr — so a malformed invocation comes back as a forge
+// that would not answer, or a checkout that is not a checkout. Answered here instead, by
+// the argument, which is what the caller can actually fix.
+export const dirOk = (v) => {
+  try { return statSync(v).isDirectory(); } catch { return false; }
+};
 
 export const repoOk = (v) => {
   if (typeof v !== 'string') return false;

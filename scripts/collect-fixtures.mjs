@@ -303,8 +303,21 @@ function parsePages(text) {
 
 assertKeepIsCovered();
 
-const head = JSON.parse(gh(['pr', 'view', opts.pr, '--repo', opts.repo,
-  '--json', 'headRefOid,baseRefName']));
+// Parsed with its own refusal: `gh` printing an auth prompt or a proxy's error page would
+// otherwise end the capture with a SyntaxError, which says nothing about what went wrong.
+let head;
+try {
+  head = JSON.parse(gh(['pr', 'view', opts.pr, '--repo', opts.repo,
+    '--json', 'headRefOid,baseRefName']));
+} catch (e) {
+  process.stderr.write(`collect-fixtures: the pull request view was not JSON (${e.message})\n`);
+  process.exit(1);
+}
+if (!head || typeof head !== 'object' || Array.isArray(head)) {
+  process.stderr.write('collect-fixtures: the pull request view came back in a shape this'
+    + ' cannot read\n');
+  process.exit(1);
+}
 // The head is the default, never the only choice: what a base runs on the commit a
 // merge lands is a different set from what the pull request ran, and only the second
 // can be reached from the head. `--sha` is how a fixture is taken of the first.

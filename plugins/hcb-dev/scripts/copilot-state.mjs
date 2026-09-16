@@ -18,8 +18,7 @@
 // Exit 0 either way: `"read": true` with the state, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
 
-import { writeAll, parsePages, readable, refOk, repoOk, runner, isCopilot }
-  from './lib/forge.mjs';
+import { dirOk, isCopilot, parsePages, readable, refOk, repoOk, runner, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node copilot-state.mjs --pr <n> [--repo <owner/name>]'
   + ' [--repo-dir <path>]\n';
@@ -39,6 +38,9 @@ if (!opts.pr) die('--pr is required');
 if (!/^[1-9][0-9]{0,9}$/.test(opts.pr)) die(`--pr '${opts.pr}' is not a request number`);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const gh = runner(opts.repoDir || process.cwd());
 
 const answer = {

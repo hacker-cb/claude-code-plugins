@@ -308,13 +308,20 @@ ref_names=$(find plugins -type f -path '*/references/*.md' -exec basename {} \; 
 # The fallback prunes those by name: without a `.git` there is nothing to ask, and
 # a source tree unpacked from an archive can still carry a worktree directory
 # someone copied in.
+# Enumerated ONCE per run and replayed from the capture: three separate loops read this
+# list, and three `git ls-files` over the whole tree is three times the work for one answer
+# that cannot change between them.
+_md_files_cache=""
 md_files() {
-  if git rev-parse --git-dir >/dev/null 2>&1; then
-    git ls-files -co --exclude-standard '*.md' | sort -u
-  else
-    find . \( -name .git -o -path './.claude/worktrees' -o -name .worktrees -o -name node_modules \) -prune \
-      -o -type f -name '*.md' -print 2>/dev/null | sed 's|^\./||' | sort
+  if [ -z "$_md_files_cache" ]; then
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+      _md_files_cache=$(git ls-files -co --exclude-standard '*.md' | sort -u)
+    else
+      _md_files_cache=$(find . \( -name .git -o -path './.claude/worktrees' -o -name .worktrees -o -name node_modules \) -prune \
+        -o -type f -name '*.md' -print 2>/dev/null | sed 's|^\./||' | sort)
+    fi
   fi
+  printf '%s\n' "$_md_files_cache"
 }
 
 # A fenced block holds examples, not links. CLAUDE.md and CONTRIBUTING.md both

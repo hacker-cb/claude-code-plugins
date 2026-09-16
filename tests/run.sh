@@ -54,7 +54,13 @@ if command -v node >/dev/null 2>&1; then
     printf '%-16s %s\n' "${guard%% *}" "$(printf '%s' "$out" | tail -1)"
   done
 else
-  echo "node not on PATH — skipping the registry and fixture guards"
+  # Not a skip. The fixture gate is the only thing standing between capture data taken from
+  # private repositories and this public one, and a run that did not check it must not exit
+  # 0 saying everything passed — "not run" is not "clean", which is the distinction every
+  # script under test here is written around.
+  echo "node is not on PATH, so the registry and fixture guards could not run — and a run"
+  echo "that cannot check them has not checked them."
+  exit 1
 fi
 echo
 

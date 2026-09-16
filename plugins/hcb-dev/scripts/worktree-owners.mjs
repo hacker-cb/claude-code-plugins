@@ -17,7 +17,7 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { join, sep } from 'node:path';
-import { writeAll, runner, text, worktrees } from './lib/forge.mjs';
+import { dirOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node worktree-owners.mjs [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `worktree-owners: ${m}\n${USAGE}`); process.exit(2); };
@@ -34,6 +34,9 @@ for (let i = 0; i < argv.length; i += 1) {
 // WHERE the caller stands. A sweep runs against the whole repository from its main
 // worktree, so taking the second from the first made the main tree the one you are in —
 // and that is the one `worktree remove` refuses, so nothing was ever yours.
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (repoDir && !dirOk(repoDir)) die(`--repo-dir '${repoDir}' is not a directory`);
 const cwd = repoDir || process.cwd();
 const git = runner(cwd, 'git');
 const self = runner(process.cwd(), 'git');

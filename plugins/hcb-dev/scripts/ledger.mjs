@@ -13,7 +13,7 @@
 // script that guessed would move what is still open.
 
 import { readFileSync } from 'node:fs';
-import { writeAll, runner, parsePages, readable, hostOk, text } from './lib/forge.mjs';
+import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
@@ -54,6 +54,10 @@ for (let i = 0; i < argv.length; i += 1) {
 }
 
 const die = (msg) => { writeAll(2, `ledger: ${msg}\n${usage}\n`); process.exit(2); };
+
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (!dirOk(opts.dir)) die(`--repo-dir '${opts.dir}' is not a directory`);
 
 // An issue number, not a ref: a value that is not digits would reach the url as a path of
 // its own, and `0` names no issue on either forge.

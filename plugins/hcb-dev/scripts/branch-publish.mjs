@@ -19,7 +19,7 @@
 // `"ships"` the name it carries it under. Exit 2 only for a call this cannot act on.
 
 import { realpathSync } from 'node:fs';
-import { writeAll, refNameOk, repoOk, runner, text, worktrees } from './lib/forge.mjs';
+import { dirOk, refNameOk, repoOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node branch-publish.mjs --new <name> [--old-name <name>]'
   + ' [--publish --push-remote <name>] [--base <name> --base-remote <name>]'
@@ -64,6 +64,9 @@ if (opts.base !== null && !refNameOk(opts.base)) die(`--base '${opts.base}' is n
 if (opts.baseRemote !== null && !refNameOk(opts.baseRemote)) die(`--base-remote '${opts.baseRemote}' is not a remote name git would take`);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
 const gh = runner(cwd);
@@ -242,8 +245,9 @@ if (mayAsk && cur !== ships) {
     ships = cur;
   }
 }
-if (cur !== ships && standsElsewhere()) {
-  note(`${standsElsewhere()} — keeping the name, since the rename would move that`
+const standingHere = cur !== ships ? standsElsewhere() : null;
+if (standingHere) {
+  note(`${standingHere} — keeping the name, since the rename would move that`
     + ' session\'s HEAD too');
   ships = cur;
 }

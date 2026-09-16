@@ -17,7 +17,7 @@
 // Exit 0 either way: `"read": true` with the state, or `"read": false` with a `reason`.
 // Exit 2 only for a call this script cannot act on at all.
 
-import { writeAll, hostOk, refOk, refNameOk, repoOk, runner, text } from './lib/forge.mjs';
+import { dirOk, hostOk, refNameOk, refOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node pr-state.mjs --pr <n> [--repo <owner/name>]'
   + ' [--repo-dir <path>] [--base-ref <ref>]\n';
@@ -39,6 +39,9 @@ if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/nam
 // request path, and a remote named `upstream#2` makes a ref a URL class refuses.
 if (opts.baseRef && !refNameOk(opts.baseRef)) die(`--base-ref '${opts.baseRef}' is not a ref`);
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
 const gh = runner(cwd);

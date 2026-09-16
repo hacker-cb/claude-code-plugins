@@ -15,7 +15,7 @@
 //
 // Exit 0 either way. Exit 2 only for a call this script cannot act on at all.
 
-import { writeAll, hostOk, parsePages, repoOk, runner, text, isCopilot } from './lib/forge.mjs';
+import { dirOk, hostOk, isCopilot, parsePages, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 // A finding's own words, kept whole. `text()` is for the short identity fields beside
 // them — a login, a state, a timestamp — and its 200 characters would take the rationale
@@ -51,6 +51,9 @@ if (opts.me !== null && !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:\[bot\])?$/.test(
   die(`--me '${opts.me}' is not a login`);
 }
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const gh = runner(opts.repoDir || process.cwd());
 const repoArgs = opts.repo ? ['--repo', opts.repo] : [];
 

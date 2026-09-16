@@ -15,7 +15,7 @@
 // taken from `origin/master` rather than from whatever the branch has already changed.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, normalize, relative } from 'node:path';
+import { dirname, join, normalize } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const CEILINGS = { skill: 200, reference: 150 };
@@ -196,9 +196,18 @@ if (opts.json) {
   process.exit(0);
 }
 
-const baseline = opts.baseline
-  ? JSON.parse(readFileSync(relative(process.cwd(), opts.baseline) || opts.baseline, 'utf8'))
-  : null;
+// Read and parsed with its own refusal: a truncated or hand-edited baseline would
+// otherwise end the run with a stack, taking every metric that needs no baseline with it.
+// The path goes to `readFileSync` as it stands — it takes an absolute one as readily as a
+// relative one, and round-tripping through `relative()` only rebuilt what was passed.
+let baseline = null;
+if (opts.baseline) {
+  try { baseline = JSON.parse(readFileSync(opts.baseline, 'utf8')); }
+  catch (e) {
+    process.stderr.write(`metrics: the baseline at ${opts.baseline} could not be read`
+      + ` (${e.code || e.message}) — reporting without it\n`);
+  }
+}
 const delta = (now, was) => (was === undefined || was === null ? '' : ` (${now - was >= 0 ? '+' : ''}${now - was})`);
 
 const b = baseline ? baseline.totals : {};

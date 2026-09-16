@@ -19,10 +19,7 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import {
-  writeAll, hostOk, refOk, refNameOk, nameSafe, repoOk, runner, parsePages, text,
-  worktrees,
-} from './lib/forge.mjs';
+import { dirOk, hostOk, nameSafe, parsePages, refNameOk, refOk, repoOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node cleanup-scan.mjs [--default <name>] [--default-ref <ref>]'
   + ' [--repo-dir <path>] [--repo <owner/name>] [--no-forge]\n';
@@ -50,6 +47,9 @@ if (opts.baseRef && !opts.base) {
   die('--default-ref needs --default: a ref to read and a name to compare are two values');
 }
 
+// A directory, proved here: passed on as `cwd` it would come back as a call that failed
+// with nothing on stderr, which reads as a forge that would not answer.
+if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
 
@@ -97,6 +97,13 @@ const READERS = {
     }),
   },
 };
+
+// `%(upstream)` is always fully qualified and `--default-ref` is however the caller spelled
+// it, so `origin/master` and `refs/remotes/origin/master` are the same ref written two ways.
+// Compared raw, a correctly tracking default branch is prescribed `set-upstream` on every
+// run — a repair that changes nothing, reported forever.
+const shortRef = (v) => String(v ?? '').replace(/^refs\/(remotes|heads)\//, '');
+const sameRef = (a, b) => a !== null && b !== null && shortRef(a) === shortRef(b);
 
 const answer = {
   read: false,
@@ -265,10 +272,24 @@ if (opts.forge && answer.branches.length) {
   answer.forge.asked = true;
   let reader = null;
   let probe = null;
+  // Which CLI answers for THIS REPOSITORY, and BOTH answering is an ambiguity rather than a
+  // race the first one wins. A GitLab project mirrored to GitHub under the same path answers
+  // on both, and a first-success order then asks the mirror about every tip here: a branch
+  // whose merge request is open on one forge has no open request on the other, so it loses
+  // its keep and is handed to the caller as deletable. `--forge` is how a caller settles it.
+  const answers = [];
   for (const cli of opts.cli ? [opts.cli] : ['gh', 'glab']) {
     const p = runner(cwd, cli)(READERS[cli].probe(opts.repo));
     if (!p.ok) { if (!answer.forge.reason) answer.forge.reason = `${cli}: ${p.line()}`; continue; }
-    answer.forge.cli = cli; reader = READERS[cli]; probe = p.out; break;
+    answers.push({ cli, out: p.out });
+  }
+  if (answers.length > 1) {
+    answer.forge.reason = `both ${answers.map((a) => a.cli).join(' and ')} answer for this`
+      + ' repository — name one with --forge, since the wrong one answers about a mirror';
+  } else if (answers.length === 1) {
+    answer.forge.cli = answers[0].cli;
+    reader = READERS[answers[0].cli];
+    probe = answers[0].out;
   }
   if (reader) {
     answer.forge.reason = null;
@@ -361,7 +382,7 @@ for (const b of answer.branches) {
   // an upstream and `-d` silently measures containment against it. Recoverable either
   // way: the next `push -u` restores what the second one drops.
   if (b.verdict !== 'delete') {
-    if (b.isDefault && answer.base.usable && b.upstreamRef !== answer.base.ref) {
+    if (b.isDefault && answer.base.usable && !sameRef(b.upstreamRef, answer.base.ref)) {
       b.repair = 'set-upstream';
     } else if (b.gone && !b.isDefault) b.repair = 'unset-upstream';
   }

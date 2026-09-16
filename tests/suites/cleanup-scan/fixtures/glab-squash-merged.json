@@ -12,5 +12,6 @@
  "pulls": {
   "f1x73333333333333333333333333333333333dd": "[{\"iid\": 42, \"state\": \"merged\", \"merge_commit_sha\": null, \"squash_commit_sha\": \"f1x7aaaa0000000000000000000000000000000f\"}]"
  },
- "gh_probe": "fail"
+ "gh_probe": "fail",
+ "glab_probe": "yes"
 }
