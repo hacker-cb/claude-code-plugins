@@ -523,15 +523,23 @@ that, never the merge command's exit status:
   # carry spaces, and unquoted, `node` is handed its first segment.
   CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
   BEFORE="$(node "$CHECKS" --pr <pr> --sha base)" || echo "CALLED WRONG: $BEFORE"
-  # The check's name comes FROM THE FORGE, so it is carried in a variable and never
-  # written into the command: inside double quotes a shell still expands `$(…)` and
-  # backticks, and a workflow may be named anything at all. Pick it out of BEFORE by
-  # the name the base's gates require.
-  REQ="$(printf '%s' "$BEFORE" | jq -r --arg want "<the required aggregate>" \
+  # SINGLE quotes, and a variable from here on. A check's name is a workflow's name and
+  # may be anything at all — inside double quotes a shell still expands `$(…)` and a
+  # backtick, so a name is never written into a command, not even as a jq argument.
+  WANT='<the aggregate the base requires>'
+  REQ="$(printf '%s' "$BEFORE" | jq -r --arg want "$WANT" \
          '[.runs[].name, .statuses[].context] | map(select(. == $want)) | first // ""')"
   AFTER="$(node "$CHECKS" --pr <pr> --sha merge ${REQ:+--require "$REQ"})" \
     || echo "CALLED WRONG: $AFTER"
   ```
+
+  **`BEFORE` is read before `REQ` is believed.** An unread `BEFORE` still answers with
+  empty `runs` and `statuses`, so `REQ` comes back empty from a read that never
+  happened — and an empty `REQ` drops `--require` altogether, after which `AFTER` can
+  come back `green` having waited for nothing. Where `BEFORE.verdict` is `unread` or
+  `retry`, this step has learned nothing about the base: re-poll or take the platform
+  path, and claim nothing. Only a `BEFORE` that was actually read may say the base
+  carries no aggregate.
 
   Captured in variables, never redirected to a file: Step 6 runs inside the user's
   checkout, where a stray `merged.json` is an untracked file that Step 7, `git-cleanup`
