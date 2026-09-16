@@ -30,16 +30,16 @@ case "$1 $2" in
       notjson) printf 'not json at all\n'; exit 0 ;;
       *) printf '%s\n' "$v"; exit 0 ;;
     esac ;;
-  "api repos"*)
-    # The un-paginated single-commit read `--parent` makes. One object, not a list.
-    v=$(ask '.commit')
-    case "$v" in
-      ""|fail) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
-      *) printf '%s\n' "$v"; exit 0 ;;
-    esac ;;
   "api --paginate")
-    # $3 is the path. The two feeds differ only by their last segment.
+    # $3 is the path. The feeds differ only by their last segments.
     case "$3" in
+      */rules/branches/*)
+        v=$(ask '.gates')
+        case "$v" in
+          ""|absent) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+          fail) echo "gh: Bad credentials (HTTP 401)" >&2; exit 1 ;;
+          *) printf '%s\n' "$v"; exit 0 ;;
+        esac ;;
       */check-runs)
         emit "$(ask '.checks')" && exit 0
         echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;

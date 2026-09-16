@@ -10,7 +10,7 @@
 // post to and nothing else. A reader of one is blind to the other however red it is.
 //
 // Usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>) --sha head|base|merge|<oid>
-//                               [--require <name>]... [--repo-dir <path>]
+//                               [--require <name>]... [--require-from-gates] [--repo-dir <path>]
 //
 // Exit 0 either way: `"read": true` with what the feeds held, or `"read": false` with a
 // `reason`. A read that did not happen is not a commit with nothing on it — unread is not
@@ -21,7 +21,8 @@ import { spawnSync } from 'node:child_process';
 import { writeSync } from 'node:fs';
 
 const USAGE = 'usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>)'
-  + ' --sha head|base|merge|<oid> [--require <name>]... [--repo-dir <path>]\n';
+  + ' --sha head|base|merge|<oid> [--require <name>]... [--require-from-gates]'
+  + ' [--repo-dir <path>]\n';
 // `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit` drops
 // whatever has not reached the OS — so an answer past the 64KB pipe buffer arrives
 // truncated mid-token, as valid-looking JSON that will not parse. Writing from the
@@ -46,10 +47,11 @@ const writeAll = (fd, text) => {
 const die = (m) => { writeAll(2, `commit-checks: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { pr: null, repo: null, sha: null, repoDir: null, require: [] };
+const opts = { pr: null, repo: null, sha: null, repoDir: null, require: [], fromGates: false };
 for (let i = 0; i < argv.length; i += 1) {
   const flag = argv[i];
   const value = argv[i + 1];
+  if (flag === '--require-from-gates') { opts.fromGates = true; continue; }
   if (!['--pr', '--repo', '--sha', '--repo-dir', '--require'].includes(flag)) {
     die(`unknown argument '${flag}'`);
   }
@@ -72,6 +74,8 @@ if (opts.require.some((n) => n.trim() === '')) die('--require needs a check name
 if (!opts.pr && !opts.repo) die('one of --pr or --repo is required');
 // `--sha head` and `--sha merge` are the pull request's, so they need one named.
 const SYMBOLIC = ['head', 'merge', 'base'];
+// The gates belong to a branch, and only a request names one.
+if (!opts.pr && opts.fromGates) die('--require-from-gates needs --pr: the gates belong to the base branch');
 if (!opts.pr && SYMBOLIC.includes(opts.sha)) {
   die(`--sha ${opts.sha} names a pull request's commit — pass --pr, or an explicit id`);
 }
@@ -113,7 +117,7 @@ const gh = (args) => {
 const answer = {
   // `read` is the only field a caller may act on without saying it did not look: BOTH
   // feeds answered. It is set last, after everything that can refuse has refused.
-  read: false, repo: null, sha: null,
+  read: false, repo: null, sha: null, gates: null,
   runs: [], statuses: [], rollup: null, rollupSpeaks: false,
   counts: { runs: 0, statuses: 0, unfinished: 0, failing: 0 },
   // One field to route on. Reassembling it from four numbers at every call site is how a
@@ -173,9 +177,10 @@ const parsePages = (text) => {
 
 let repo = opts.repo;
 let sha = opts.sha;
+let baseRef = null;
 
 if (opts.pr) {
-  const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,baseRefOid,mergeCommit',
+  const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,baseRefOid,baseRefName,mergeCommit',
     ...(opts.repo ? ['--repo', opts.repo] : [])]);
   if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.err.split('\n')[0] || 'no detail'})`);
   let pr;
@@ -197,6 +202,7 @@ if (opts.pr) {
   // belongs to this same request, so a feed read there says nothing about the base.
   else if (sha === 'base') sha = pr.baseRefOid || '';
   else if (sha === 'merge') sha = (pr.mergeCommit && pr.mergeCommit.oid) || '';
+  baseRef = pr.baseRefName || '';
   // Empty until the merge commit is published — a queue, a replica behind. Refusing is
   // the whole point: an empty id builds a url that 404s, and a 404 prints no rows, which
   // a caller reads as a base with nothing to run.
@@ -213,6 +219,48 @@ if (opts.pr) {
 if (!readable(sha)) refuse(`the pull request named '${sha}' as its ${opts.sha} commit, which is not a ref this can read`);
 if (!repoOk(repo)) refuse(`the pull request's url gave '${repo}', which is not owner/name`);
 answer.repo = repo;
+
+// `--require-from-gates` exists so that a check's NAME never has to travel through a
+// shell. A workflow may be called `Team's CI`, or anything with a `$` or a backtick in
+// it, and a caller composing that into a command line has to quote it exactly right
+// every time — which three separate fixes to one line of a calling skill failed to do,
+// each moving the injection point rather than closing it. Read here, the name goes from
+// one forge response into another as data and is never text anyone escapes.
+//
+// The base's gates are also the right authority for WHICH check gates a merge: a name
+// typed by a caller is that caller's belief about the ruleset.
+if (opts.fromGates) {
+  // Composed into a url, so held to the same bound as every other value that is —
+  // including this one, which the forge supplied rather than the caller.
+  if (!readable(baseRef)) refuse(`the pull request named '${baseRef}' as its base branch, which is not a ref this can read`);
+  const r = gh(['api', '--paginate', `repos/${repo}/rules/branches/${baseRef}`]);
+  if (!r.ok) {
+    // 404 is a normal answer — a branch with no ruleset — and `gh` exits non-zero on it.
+    // Everything else is a read that failed, and the two must not share a path.
+    if (/404|not found/i.test(r.err)) {
+      answer.notes.push(`${baseRef} has no ruleset, so the gates name no required check`);
+    } else {
+      refuse(`could not read the gates on ${baseRef} (${r.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
+    }
+  } else {
+    const pages = parsePages(r.out);
+    if (pages === null) refuse(`the gates on ${baseRef} did not come back as JSON`);
+    for (const page of pages) {
+      for (const rule of Array.isArray(page) ? page : []) {
+        if (!rule || rule.type !== 'required_status_checks') continue;
+        const checks = (rule.parameters && rule.parameters.required_status_checks) || [];
+        for (const c of checks) {
+          if (c && typeof c.context === 'string' && c.context.trim()) opts.require.push(c.context);
+        }
+      }
+    }
+    answer.gates = [...new Set(opts.require)];
+    if (answer.gates.length === 0) {
+      answer.notes.push(`${baseRef} carries rules, but none of them requires a status check`);
+    }
+  }
+  opts.require = [...new Set(opts.require)];
+}
 
 answer.sha = sha;
 
@@ -292,6 +340,9 @@ for (const s of answer.statuses) {
 answer.counts = {
   runs: answer.runs.length, statuses: answer.statuses.length,
   unfinished: answer.unfinished.length, failing: answer.failing.length,
+  // Counted, not just listed: a list that silently came back empty and one that was
+  // never asked for read the same in a name-by-name assertion.
+  gates: answer.gates === null ? null : answer.gates.length,
 };
 
 // Empty is both feeds carrying nothing, and it is never a verdict. A run registers after

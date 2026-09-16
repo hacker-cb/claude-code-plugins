@@ -522,29 +522,23 @@ that, never the merge command's exit status:
   # Quoted as one word at every use: the plugin root is a path like any other and may
   # carry spaces, and unquoted, `node` is handed its first segment.
   CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
-  # A check's name is a workflow's name and may carry an apostrophe, a `$`, a backtick —
-  # anything. Single-quote it and write each apostrophe as '\'' : that is the complete
-  # rule for a POSIX shell and the only one. Double quotes would expand `$(…)`.
-  WANT='<the aggregate the base'\''s gates require>'
-  BEFORE="$(node "$CHECKS" --pr <pr> --sha base --require "$WANT")" \
+  BEFORE="$(node "$CHECKS" --pr <pr> --sha base  --require-from-gates)" \
     || echo "CALLED WRONG: $BEFORE"
-  # Read, and carrying it. `.required[0].present` is false on an UNREAD answer too —
-  # because nothing was read, not because the base lacks the check.
-  CARRIES="$(printf '%s' "$BEFORE" | jq -r 'if .read then (.required[0].present // false) else "unread" end')"
-  if [ "$CARRIES" = true ]; then
-    AFTER="$(node "$CHECKS" --pr <pr> --sha merge --require "$WANT")" || echo "CALLED WRONG: $AFTER"
-  else
-    AFTER="$(node "$CHECKS" --pr <pr> --sha merge)" || echo "CALLED WRONG: $AFTER"
-  fi
+  AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
+    || echo "CALLED WRONG: $AFTER"
   ```
 
-  **`CARRIES` has three answers and only one of them lets `AFTER` proceed.** An unread
-  `BEFORE` still answers with empty `runs` and `statuses`, so "the base does not carry
-  the aggregate" and "nothing was read" look identical in the rows — and dropping
-  `--require` on the strength of the second lets `AFTER` come back `green` having waited
-  for nothing. `unread` means this step has learned nothing about the base: re-poll, or
-  take the platform path, and claim nothing. Only a `BEFORE` that was actually read may
-  say the base carries no aggregate.
+  **`--require-from-gates` is why no check name appears above.** The names come out of
+  the base's own ruleset and travel from one forge response into the next as data — a
+  workflow may be called `Team's CI`, or carry a `$` or a backtick, and a name composed
+  into a command line has to be quoted exactly right every single time. `.gates` in the
+  answer is what the base actually requires; `null` there means the question was never
+  asked, which is not an empty list.
+
+  **Read `BEFORE` before believing what it lacks.** An unread answer carries empty `runs`
+  and `statuses` too, so "the base does not run this" and "nothing was read" look
+  identical in the rows. `BEFORE.verdict` tells them apart, and only a `BEFORE` that was
+  actually read may say the base runs nothing on a push.
 
   Captured in variables, never redirected to a file: Step 6 runs inside the user's
   checkout, where a stray `merged.json` is an untracked file that Step 7, `git-cleanup`
@@ -565,12 +559,14 @@ that, never the merge command's exit status:
   | `empty` | nothing registered yet where `BEFORE` has rows; where `BEFORE` is `empty` too, this base runs nothing on a push — say it is unchecked and that this step guaranteed nothing |
   | `green` | green, as of this read |
 
-  **Wait by name, never for the count to settle** — `--require` is that wait, and it
-  takes **only a name `BEFORE` actually carries**: an aggregate belonging to a
-  `pull_request`-only workflow never appears on the merge commit, so requiring it there
-  polls until the budget is spent while every push check is already green. Where
-  `BEFORE` carries no aggregate, pass none and say in the report that the guarantee is
-  the weaker one.
+  **Wait by name, never for the count to settle**, which is what `--require-from-gates`
+  does: the aggregate registers after the checks it aggregates, so the moment every check
+  has finished is a moment it does not exist. One name it brings needs judgement, though
+  — a gate belonging to a `pull_request`-only workflow never appears on a merge commit,
+  so `AFTER` stays `running` on it while every push check is green. `BEFORE` is what
+  settles that: a required name absent from `BEFORE` is absent from the base's pushes,
+  and waiting for it on `AFTER` spends the budget for nothing. Report that the guarantee
+  is the weaker one rather than waiting it out.
 
   A budget that runs out mid-poll is not waited out: report the state the feeds stood
   at, empty included.
