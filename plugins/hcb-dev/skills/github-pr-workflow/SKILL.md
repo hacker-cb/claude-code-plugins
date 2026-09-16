@@ -515,41 +515,43 @@ that, never the merge command's exit status:
   runs workflows no pull request ever triggers
   ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)).
 
-  Two reads, and the earlier commit comes first because it answers what the merge
-  commit alone cannot: what this base runs at all, and which of it runs on a push.
+  Two reads. The base's own tip comes first because it answers what the merge commit
+  alone cannot: what this base runs on a push at all, and which of it to wait for.
 
   ```bash
+  # Quoted as one word at every use: the plugin root is a path like any other and may
+  # carry spaces, and unquoted, `node` is handed its first segment.
   CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
-  # Quoted as one word at every use. The plugin root is a path like any other and may
-  # carry spaces; unquoted, `node` is handed its first segment and the step never runs.
-  BEFORE="$(node "$CHECKS" --pr <pr> --sha merge --parent 1)"
-  AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require "<the aggregate, where BEFORE carries it>")"
+  BEFORE="$(node "$CHECKS" --pr <pr> --sha base)"   || echo "CALLED WRONG: $BEFORE"
+  AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require "<an aggregate BEFORE carries>")" \
+    || echo "CALLED WRONG: $AFTER"
   ```
 
-  Captured in a variable, never redirected to a file: Step 6 runs inside the user's
+  Captured in variables, never redirected to a file: Step 6 runs inside the user's
   checkout, where a stray `merged.json` is an untracked file that Step 7, `git-cleanup`
-  and branch retirement all read as work in progress.
+  and branch retirement all read as work in progress. **A non-zero exit is the
+  invocation being wrong**, never a state to retry — it is the one outcome that carries
+  no JSON, so it is read from the status rather than from the body.
 
-  Route each answer on `.read` first, and only then on the rest. A body that is not
-  JSON at all belongs to the first row too — a refusal before the script's own
-  argument check writes nothing at all to stdout:
+  Otherwise route on `.verdict`, which is the one field this answer is designed to be
+  read by — the rollup the server computes can say `failure` over rows that all passed,
+  so a caller assembling a verdict out of the counts reports green on a red base:
 
-  | the answer says | what it is | the step |
-  |---|---|---|
-  | not JSON, or `.read == false` with `.retry == true` | the answer is not published yet | re-poll the same call; a merge commit appears late behind a queue or a replica |
-  | `.read == false` | the feeds were not read | unread, never unchecked — take the platform path above, claim nothing about this base |
-  | `.counts.unfinished > 0`, or a `.required[]` not `present` | the run is not over | poll, on Step 4's budget and its escalation |
-  | `.empty == true` on AFTER, rows on BEFORE | nothing has registered yet | keep polling |
-  | `.empty == true` on both | this base runs nothing on a push | say the base is unchecked and that this step guaranteed nothing |
-  | `.counts.failing > 0` | rows that did not pass | attribute, then report |
-  | none of the above | green, as of this read | report it as of this read |
+  | `.verdict` | the step |
+  |---|---|
+  | `retry` | the answer is not published yet — re-poll the same call; a merge commit appears late behind a queue or a replica |
+  | `unread` | the feeds were not read: unread, never unchecked — take the platform path above and claim nothing about this base |
+  | `running` | poll, on Step 4's budget and its escalation |
+  | `failing` | attribute, then report |
+  | `empty` | nothing registered yet where `BEFORE` has rows; where `BEFORE` is `empty` too, this base runs nothing on a push — say it is unchecked and that this step guaranteed nothing |
+  | `green` | green, as of this read |
 
-  **Wait by name, never for the count to settle** — `--require` is that wait, and the
-  count is not a substitute for it. It takes **only a name `BEFORE` actually carries**:
-  an aggregate belonging to a `pull_request`-only workflow never appears on the merge
-  commit, so requiring it there polls until the budget is spent while every push check
-  is already green. Where `BEFORE` carries no aggregate, pass none and say in the report
-  that the guarantee is the weaker one.
+  **Wait by name, never for the count to settle** — `--require` is that wait, and it
+  takes **only a name `BEFORE` actually carries**: an aggregate belonging to a
+  `pull_request`-only workflow never appears on the merge commit, so requiring it there
+  polls until the budget is spent while every push check is already green. Where
+  `BEFORE` carries no aggregate, pass none and say in the report that the guarantee is
+  the weaker one.
 
   A budget that runs out mid-poll is not waited out: report the state the feeds stood
   at, empty included.

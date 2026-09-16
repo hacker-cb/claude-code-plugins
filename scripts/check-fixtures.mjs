@@ -14,7 +14,7 @@
 //
 // Usage: node scripts/check-fixtures.mjs [--dir <fixtures root>]
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -187,29 +187,53 @@ if (!existsSync(rootAbs)) die(`no directory at ${root}`);
 // at `tests/suites` it never visits a capture the collector's `--out` put somewhere else
 // — the marker-not-path defect one level up — and inspecting everything it walks fails
 // the manifests, which carry this project's own real repository url by design.
-const SKIP_DIRS = new Set(['.git', 'node_modules']);
-// Where a fixture may live: a directory the collector marked, and the suites tree, whose
-// json IS fixture data. Anything else the walk passes is there to be searched for
-// markers, not to be read as a fixture.
-const isFixtureTree = (dir) => dir === join(repoRoot, 'tests', 'suites')
-  || dir.startsWith(`${join(repoRoot, 'tests', 'suites')}/`);
+// Where a fixture may live besides a marked directory: the suites tree, whose json IS
+// fixture data whether or not it was captured.
+const SUITES = join(repoRoot, 'tests', 'suites');
+const isFixtureTree = (dir) => dir === SUITES || dir.startsWith(`${SUITES}/`);
+
+// WHAT to walk is git's answer, not the filesystem's. A plain recursive walk from the
+// repository root descends into `.claude/worktrees/`, where this project keeps its linked
+// checkouts — every one of them a full copy of the tree, on another branch, with another
+// branch's captures in it. The gate would then read files that are not in this checkout's
+// history, fail on somebody else's half-finished capture, and take every suite down with
+// it. `--cached --others --exclude-standard` lists exactly what is committed or about to
+// be: an ignored path cannot reach a public history, and anything that can is here.
+const listed = spawnSync('git', ['-C', rootAbs, 'ls-files', '--cached', '--others',
+  '--exclude-standard', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+// A failed listing is not an empty repository. Refusing is the point: the alternative is
+// a gate reporting a clean tree because it could not see one.
+if (listed.status !== 0) {
+  die(`could not list the tree under ${root} (${(listed.stderr || '').trim().split('\n')[0] || 'no detail'})`);
+}
+const tracked = listed.stdout.split('\0').filter(Boolean);
 
 const fixtures = [];
 const capturedDirs = new Set();
-(function walk(dir) {
-  const entries = readdirSync(dir);
-  const captured = entries.includes('CAPTURED');
-  if (captured) capturedDirs.add(dir);
-  const collect = captured || isFixtureTree(dir) || rootWasGiven;
-  for (const entry of entries) {
-    if (SKIP_DIRS.has(entry)) continue;
-    const abs = join(dir, entry);
-    if (statSync(abs).isDirectory()) { walk(abs); continue; }
-    if (!entry.endsWith('.json')) continue;
-    if (!collect) continue;
-    fixtures.push({ abs, captured });
+// A directory is captured when git can see a CAPTURED file in it — the marker decides,
+// and reading it from the same listing keeps the two answers from disagreeing.
+for (const rel of tracked) {
+  if (rel.endsWith('CAPTURED') && !rel.slice(0, -('CAPTURED'.length) - 1).includes('CAPTURED')) {
+    capturedDirs.add(dirname(join(rootAbs, rel)));
   }
-}(rootAbs));
+}
+for (const rel of tracked) {
+  if (!rel.endsWith('.json')) continue;
+  const abs = join(rootAbs, rel);
+  // `--cached` lists a file whose deletion is not committed yet. It is a path with no
+  // bytes behind it, and reading it as an unparseable fixture would fail the gate over a
+  // file that carries nothing.
+  if (!existsSync(abs)) continue;
+  const captured = capturedDirs.has(dirname(abs));
+  // Inspected where a fixture may live: a marked directory, and the suites tree whose
+  // json IS fixture data. Elsewhere the manifests carry this project's own real url by
+  // design, so everything else is listed for markers and read as nothing — and that
+  // rule does NOT bend for an explicit `--dir`, which narrows where to look and never
+  // what counts. Letting it widen the rule made one tree answer two ways: `--dir .`
+  // failed on the manifests that the default run over the same tree passed.
+  if (!captured && !isFixtureTree(dirname(abs))) continue;
+  fixtures.push({ abs, captured });
+}
 
 const failures = [];
 

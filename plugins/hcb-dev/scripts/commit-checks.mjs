@@ -9,7 +9,7 @@
 // Checks API knows; `status` carries the older commit statuses, which an external CI may
 // post to and nothing else. A reader of one is blind to the other however red it is.
 //
-// Usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>) --sha head|merge|<oid>
+// Usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>) --sha head|base|merge|<oid>
 //                               [--require <name>]... [--repo-dir <path>]
 //
 // Exit 0 either way: `"read": true` with what the feeds held, or `"read": false` with a
@@ -21,7 +21,7 @@ import { spawnSync } from 'node:child_process';
 import { writeSync } from 'node:fs';
 
 const USAGE = 'usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>)'
-  + ' --sha head|merge|<oid> [--require <name>]... [--repo-dir <path>]\n';
+  + ' --sha head|base|merge|<oid> [--require <name>]... [--repo-dir <path>]\n';
 // `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit` drops
 // whatever has not reached the OS — so an answer past the 64KB pipe buffer arrives
 // truncated mid-token, as valid-looking JSON that will not parse. Writing from the
@@ -46,11 +46,11 @@ const writeAll = (fd, text) => {
 const die = (m) => { writeAll(2, `commit-checks: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { pr: null, repo: null, sha: null, repoDir: null, parent: null, require: [] };
+const opts = { pr: null, repo: null, sha: null, repoDir: null, require: [] };
 for (let i = 0; i < argv.length; i += 1) {
   const flag = argv[i];
   const value = argv[i + 1];
-  if (!['--pr', '--repo', '--sha', '--repo-dir', '--require', '--parent'].includes(flag)) {
+  if (!['--pr', '--repo', '--sha', '--repo-dir', '--require'].includes(flag)) {
     die(`unknown argument '${flag}'`);
   }
   if (value === undefined) die(`${flag} needs a value`);
@@ -59,11 +59,20 @@ for (let i = 0; i < argv.length; i += 1) {
   else opts[flag.slice(2)] = value;
   i += 1;
 }
-if (opts.parent !== null && !/^[1-9]$/.test(opts.parent)) die('--parent takes 1 or 2 — the nth parent, counting from one');
-if (!opts.sha) die('--sha is required: head, merge, or a commit id');
+if (!opts.sha) die('--sha is required: head, base, merge, or a commit id');
+// The one argument that reaches `gh` before anything else, and it had no guard at all:
+// `--pr --repo=other/repo` arrives as a flag, and `--pr https://host/other/repo/pull/1`
+// is accepted by the CLI and reads somebody else's request — under a caller that
+// believes it passed a number, and whose `.repo` then names a repository it never asked
+// about.
+if (opts.pr !== null && !/^[1-9][0-9]{0,9}$/.test(opts.pr)) die(`--pr '${opts.pr}' is not a request number`);
+// An empty `--require` matches no name there is, so `present` stays false forever and a
+// caller polling on it spends its whole budget on a placeholder nobody substituted.
+if (opts.require.some((n) => n.trim() === '')) die('--require needs a check name, not an empty string');
 if (!opts.pr && !opts.repo) die('one of --pr or --repo is required');
 // `--sha head` and `--sha merge` are the pull request's, so they need one named.
-if (!opts.pr && (opts.sha === 'head' || opts.sha === 'merge')) {
+const SYMBOLIC = ['head', 'merge', 'base'];
+if (!opts.pr && SYMBOLIC.includes(opts.sha)) {
   die(`--sha ${opts.sha} names a pull request's commit — pass --pr, or an explicit id`);
 }
 // Shape-checked HERE, before any call goes out: a bad value caught after `gh pr view`
@@ -81,7 +90,7 @@ if (!opts.pr && (opts.sha === 'head' || opts.sha === 'merge')) {
 // A caller wanting a parent resolves it with git and passes the oid.
 const SEGMENT = /^[^/\\\s?#%~^:*[\]]+$/;
 const readable = (v) => SEGMENT.test(v) && !v.includes('..') && !v.startsWith('-');
-if (opts.sha !== 'head' && opts.sha !== 'merge' && !readable(opts.sha)) {
+if (!SYMBOLIC.includes(opts.sha) && !readable(opts.sha)) {
   die(`--sha '${opts.sha}' is not a commit id or a ref this can read`);
 }
 // The same guard, and for the same reason. Checked more loosely than `--sha`, an
@@ -98,9 +107,14 @@ const gh = (args) => {
 const answer = {
   // `read` is the only field a caller may act on without saying it did not look: BOTH
   // feeds answered. It is set last, after everything that can refuse has refused.
-  read: false, repo: null, sha: null, parentOf: null,
+  read: false, repo: null, sha: null,
   runs: [], statuses: [], rollup: null, rollupSpeaks: false,
   counts: { runs: 0, statuses: 0, unfinished: 0, failing: 0 },
+  // One field to route on. Reassembling it from four numbers at every call site is how a
+  // combination gets missed — a server rollup of `failure` beside rows that all passed,
+  // for one, which the counts alone report as green.
+  // Precedence: unread > retry > failing > running > empty > green.
+  verdict: 'unread',
   // A refusal splits two ways a caller must not conflate: `retry` says the answer is
   // simply not published yet and the same call will work shortly, while a refusal
   // without it says the read failed. Routing on the reason's prose would make a caller
@@ -110,7 +124,11 @@ const answer = {
   reason: null, notes: [],
 };
 const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
-const refuse = (reason, retry = false) => { answer.reason = reason; answer.retry = retry; finish(); };
+const refuse = (reason, retry = false) => {
+  answer.reason = reason; answer.retry = retry;
+  answer.verdict = retry ? 'retry' : 'unread';
+  finish();
+};
 
 // A paginated `gh api` prints one JSON document per page, concatenated. Parsed as one
 // document that is a syntax error; parsed as the first page it is the first page — which
@@ -151,7 +169,7 @@ let repo = opts.repo;
 let sha = opts.sha;
 
 if (opts.pr) {
-  const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,mergeCommit',
+  const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,baseRefOid,mergeCommit',
     ...(opts.repo ? ['--repo', opts.repo] : [])]);
   if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.err.split('\n')[0] || 'no detail'})`);
   let pr;
@@ -166,6 +184,12 @@ if (opts.pr) {
     repo = m[1];
   }
   if (sha === 'head') sha = pr.headRefOid || '';
+  // `base` is a commit ON the base branch, which is what answers "does this base run
+  // anything on a push" — and it is the only form that answers it under every merge
+  // strategy. A merge commit's first parent is the base tip only when the merge was a
+  // true merge: rebased, `mergeCommit` names the last rebased commit and its parent
+  // belongs to this same request, so a feed read there says nothing about the base.
+  else if (sha === 'base') sha = pr.baseRefOid || '';
   else if (sha === 'merge') sha = (pr.mergeCommit && pr.mergeCommit.oid) || '';
   // Empty until the merge commit is published — a queue, a replica behind. Refusing is
   // the whole point: an empty id builds a url that 404s, and a 404 prints no rows, which
@@ -184,26 +208,6 @@ if (!readable(sha)) refuse(`the pull request named '${sha}' as its ${opts.sha} c
 if (!repoOk(repo)) refuse(`the pull request's url gave '${repo}', which is not owner/name`);
 answer.repo = repo;
 
-// `--parent` resolves the commit this one was built on, which is what tells "nothing has
-// registered yet" from "this base runs nothing on a push" — the one question a single
-// commit's feeds cannot answer. It is asked of the forge rather than written `<sha>^`,
-// because a caller passing that would be handing this script a value it refuses (and
-// rightly: `^` is not a ref character) while the endpoint would 404 on it, which a
-// caller reads as a failed read rather than as a bad argument.
-if (opts.parent !== null) {
-  const view = gh(['api', `repos/${repo}/commits/${sha}`]);
-  if (!view.ok) refuse(`could not read ${sha} to find its parent (${view.err.split('\n').filter(Boolean).pop() || 'no detail'})`);
-  let commit;
-  try { commit = JSON.parse(view.out); } catch { refuse(`the commit ${sha} did not come back as JSON`); }
-  const parents = Array.isArray(commit.parents) ? commit.parents : [];
-  const picked = parents[Number(opts.parent) - 1];
-  if (!picked || !picked.sha) {
-    refuse(`${sha} has ${parents.length} parent(s), so there is no parent ${opts.parent}`);
-  }
-  if (!readable(picked.sha)) refuse(`the forge named '${picked.sha}' as parent ${opts.parent}, which is not a ref this can read`);
-  answer.parentOf = sha;
-  sha = picked.sha;
-}
 answer.sha = sha;
 
 // Both feeds paginate. Both are captured with their exit status rather than piped
@@ -226,10 +230,21 @@ if (!statusFeed.ok) refuse(`the status feed could not be read (${statusFeed.err}
 // carried `audit-full` three times from three matrix legs — so a caller collapsing by
 // name reads three runs as one and calls the set finished while two are still going.
 const runsById = new Map();
+let unkeyed = 0;
 for (const page of runsFeed.pages) {
-  for (const run of (page && page.check_runs) || []) {
-    if (run && run.id !== undefined) runsById.set(String(run.id), run);
+  for (const [i, run] of ((page && page.check_runs) || []).entries()) {
+    if (!run) continue;
+    // A row with no `id` is kept under a key of its own rather than dropped. Dropping it
+    // is how an unfinished run disappears from `unfinished` and a commit reads green —
+    // silently losing data is the same failure as reading none, and this file refuses
+    // that everywhere else.
+    if (run.id === undefined) { unkeyed += 1; runsById.set(`#${runsById.size}:${run.name ?? i}`, run); }
+    else runsById.set(String(run.id), run);
   }
+}
+if (unkeyed) {
+  answer.notes.push(`${unkeyed} check-run(s) came back without an id and are counted by`
+    + ' name — two rows of one name cannot be told apart among them');
 }
 answer.runs = [...runsById.values()].map((r) => ({
   id: String(r.id), name: r.name ?? null,
@@ -304,6 +319,21 @@ for (const name of opts.require) {
       && matching.every((r) => ['success', 'neutral', 'skipped'].includes(String(r.conclusion))),
     conclusions: matching.map((r) => r.conclusion),
   });
+}
+
+// The server's own rollup over the statuses it holds is a VERDICT, not a row — it can
+// read `failure` while every row this call captured passed, because the feed moved
+// between pages. Reporting green over a failure that was read is the failure this whole
+// script exists to prevent, so the verdict outranks the rows.
+const rollupRed = answer.rollupSpeaks && !['success', 'pending'].includes(String(answer.rollup));
+const requiredWaiting = answer.required.some((r) => !r.present || !r.finished);
+if (answer.counts.failing > 0 || rollupRed) answer.verdict = 'failing';
+else if (answer.counts.unfinished > 0 || requiredWaiting) answer.verdict = 'running';
+else if (answer.empty) answer.verdict = 'empty';
+else answer.verdict = 'green';
+if (rollupRed && answer.counts.failing === 0) {
+  answer.notes.push(`every row read passed, but the feed's own rollup says '${answer.rollup}'`
+    + ' — the rollup is over what the server holds, not over what this call captured');
 }
 
 // Set last, and only here. Every refusal above returns with it false, so a caller gating
