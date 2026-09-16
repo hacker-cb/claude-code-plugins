@@ -46,6 +46,7 @@ where there is no request standing, the count does have a moment of truth.
 |---|---|
 | the size of a change | **does not predict the automated reviewer's verdict.** Measured over 16 merged pull requests: 3717 lines across 4 files was approved, 709 lines across 11 files was approved, and 686 lines across 10 files was not. Two changes of nearly equal size and shape, different answers |
 | a pull request with no reviewer verdict | may carry no request at all rather than a withheld one — measured on four pull requests whose base was a feature branch, which carried no `copilot_code_review` rule and no reviews |
+| `requested_reviewers`, and `gh pr view --json reviewRequests` | **empty from the moment a review request registers until its review posts** — both read the same field, so a wait armed on either never fires. The timeline is where a standing request is legible |
 | `dismiss_stale_reviews_on_push` | **unmeasured here, and the claim it is usually written with is untested.** The distinguishing case — a push that changes no diff, with an approval standing — did not occur in 60 merged pull requests across four repositories, though 13 of them force-pushed. Read what the pull request reports rather than predicting from the setting |
 
 ## Limits
