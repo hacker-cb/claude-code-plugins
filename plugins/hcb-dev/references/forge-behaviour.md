@@ -49,6 +49,16 @@ where there is no request standing, the count does have a moment of truth.
 | `requested_reviewers`, and `gh pr view --json reviewRequests` | **empty from the moment a review request registers until its review posts** — both read the same field, so a wait armed on either never fires. The timeline is where a standing request is legible |
 | `dismiss_stale_reviews_on_push` | **unmeasured here, and the claim it is usually written with is untested.** The distinguishing case — a push that changes no diff, with an approval standing — did not occur in 60 merged pull requests across four repositories, though 13 of them force-pushed. Read what the pull request reports rather than predicting from the setting |
 
+## Issues and their vocabulary
+
+| signal | what it actually is |
+|---|---|
+| a native issue-type field | **GitHub's belongs to organisation-owned repositories and holds one type per issue; GitLab's configurable work item types are a paid-tier feature configured on the top-level group.** What the installed CLI's `issue` commands carry of either is its `--help`'s to say, and a flag naming the type an issue is merely filed under is not this value, whatever it is called |
+| a `404` from a type-definitions endpoint | **the same answer whether the feature is absent or invisible to this token.** Absent only once something else confirms the token reaches this repository — and say which of the two you concluded |
+| label cardinality | **GitHub enforces none of it.** GitLab enforces one-value-per-key for `key::value` labels on a paid tier only, and by *replacing* the sibling rather than refusing the new one, splitting the key at the **last** `::`. Probe for it rather than assuming it |
+| a label name the caller did not just read | **created, on GitLab**, so a typo joins the set permanently; on GitHub labels passed while creating or updating an issue are dropped in silence where the caller has no push access. Confirm the labels that came back, not the exit status |
+| a GitLab label listing | carries the group's **inherited** labels, which apply, and **archived** ones, which do not |
+
 ## Limits
 
 | limit | how it announces itself | what to do |
