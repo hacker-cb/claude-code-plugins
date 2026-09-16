@@ -108,8 +108,13 @@ const forgeNoise = (node) => (node === null || typeof node !== 'object' || Array
 function rawReplyIn(node, path = '$') {
   if (node === null || node === undefined) return null;
   if (typeof node === 'string') {
-    const nested = nestedJson(node);
-    return nested === null ? null : rawReplyIn(nested, `${path}<json>`);
+    const docs = nestedDocs(node);
+    if (docs === null) return null;
+    for (let i = 0; i < docs.length; i += 1) {
+      const hit = rawReplyIn(docs[i], docs.length > 1 ? `${path}<json ${i}>` : `${path}<json>`);
+      if (hit) return hit;
+    }
+    return null;
   }
   if (Array.isArray(node)) {
     for (let i = 0; i < node.length; i += 1) {
@@ -132,13 +137,42 @@ function rawReplyIn(node, path = '$') {
 // how a suite hands its stub what to print. The key shapes read key names, and a string has
 // none — so a reply pasted into an envelope by hand was checked for a bare commit id and a
 // bare host, and for nothing else. Parse what parses, and walk that too.
-function nestedJson(value) {
-  const t = value.trim();
-  if (t.length < 2 || (t[0] !== '{' && t[0] !== '[')) return null;
-  try {
-    const parsed = JSON.parse(t);
-    return parsed !== null && typeof parsed === 'object' ? parsed : null;
-  } catch { return null; }
+//
+// EVERY document in it, not the first. `gh api --paginate` concatenates its pages — `[…][…]`,
+// which `JSON.parse` refuses whole — and a paginated reply is exactly what a hand-captured
+// envelope carries. Parsed with one `try`, such a string reads as "not JSON" and is walked no
+// further, so the pages pass unread: the failure is silent and looks like a clean gate.
+//
+// The brace scan is this file's own on purpose. `parsePages` in the plugin does the same walk,
+// but this gate is what stands between four private repositories and a public one — and a gate
+// that imports the code it guards fails the day that code changes for its own reasons.
+function nestedDocs(value) {
+  let rest = value.trim();
+  if (rest.length < 2 || (rest[0] !== '{' && rest[0] !== '[')) return null;
+  const docs = [];
+  while (rest) {
+    if (rest[0] !== '{' && rest[0] !== '[') break;
+    let depth = 0; let inString = false; let escaped = false; let end = -1;
+    for (let i = 0; i < rest.length; i += 1) {
+      const c = rest[i];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (c === '\\') escaped = true;
+        else if (c === '"') inString = false;
+        continue;
+      }
+      if (c === '"') { inString = true; continue; }
+      if (c === '[' || c === '{') depth += 1;
+      else if (c === ']' || c === '}') {
+        depth -= 1;
+        if (depth === 0) { end = i + 1; break; }
+      }
+    }
+    if (end === -1) break;
+    try { docs.push(JSON.parse(rest.slice(0, end))); } catch { break; }
+    rest = rest.slice(end).trim();
+  }
+  return docs.length ? docs : null;
 }
 
 // Every detector above is checked against a value that must trip it and one that must
@@ -230,10 +264,20 @@ const SELF_TEST = [
     '{"id":9,"body":"x","author":{"username":"realperson","state":"active",'
     + '"avatar_url":"https://forge.internal/uploads/a.png","web_url":"https://forge.internal/realperson"}}',
     true, (v) => rawReplyIn(JSON.parse(v)) !== null],
-  ['json carried as a string is unpacked', '[{"body":"x"}]', true, (v) => nestedJson(v) !== null],
+  ['json carried as a string is unpacked', '[{"body":"x"}]', true, (v) => nestedDocs(v) !== null],
   ['prose that opens with a brace is not json', '{not json at all', false,
-    (v) => nestedJson(v) !== null],
-  ['a scalar is not a document', '42', false, (v) => nestedJson(v) !== null],
+    (v) => nestedDocs(v) !== null],
+  ['a scalar is not a document', '42', false, (v) => nestedDocs(v) !== null],
+  // What `gh api --paginate` writes: page after page, concatenated. One `JSON.parse` refuses
+  // the whole thing, and every page would then go unread.
+  ['concatenated pages are all unpacked', '[{"a":1}] [{"b":2}]', true,
+    (v) => (nestedDocs(v) || []).length === 2],
+  ['a bracket inside a string does not end a page', '[{"a":"]["}] [{"b":2}]', true,
+    (v) => (nestedDocs(v) || []).length === 2],
+  ['a reply on a later page is still found',
+    '[{"id":1,"body":"x"}] [{"author":{"web_url":"https://f.internal/u",'
+    + '"avatar_url":"https://f.internal/a.png"}}]', true,
+    (v) => rawReplyIn(JSON.parse(`{"comments":${JSON.stringify(v)}}`)) !== null],
 ];
 
 // Two of the probes below are about the WALK rather than a detector, so they need a
@@ -502,8 +546,11 @@ function inspect(node, path, file, keyName, captured) {
   }
   // An envelope's payload is a document in its own right: walked with a key name of its own
   // rather than the string's, so the shapes read the forge's field names and not `comments`.
-  const nested = nestedJson(node);
-  if (nested !== null) inspect(nested, `${path}<json>`, file, null, captured);
+  const docs = nestedDocs(node);
+  if (docs !== null) {
+    docs.forEach((doc, i) => inspect(doc,
+      docs.length > 1 ? `${path}<json ${i}>` : `${path}<json>`, file, null, captured));
+  }
 
   if (!captured || !keyName) return;
   for (const [keyPattern, shape] of KEY_SHAPE) {

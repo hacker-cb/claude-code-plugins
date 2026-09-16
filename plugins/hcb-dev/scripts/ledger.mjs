@@ -77,9 +77,9 @@ if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a character count');
 opts.limit = Number(opts.limit);
 // A login, which is neither a path segment nor a ref. Admitting what BOTH forges allow rather
-// than one of them: GitHub takes letters, digits and hyphens up to 39, GitLab takes dots and
-// underscores too — a leading one included, only `-` is refused there — up to 255, and an App's
-// own user carries a `[bot]` suffix. Held to the wider of the two on every axis: a name refused
+// than one of them: GitHub takes letters, digits and hyphens up to 39; GitLab takes dots and
+// underscores too and admits a LEADING underscore, up to 255; an App's own user carries a
+// `[bot]` suffix. Held to the wider of the two on every axis: a name refused
 // here is a real account this run then cannot claim anything as its own, which is the failure
 // this flag exists to prevent.
 if (opts.me !== null && !/^[A-Za-z0-9_][A-Za-z0-9._-]{0,254}(?:\[bot\])?$/.test(opts.me)) {
@@ -147,7 +147,8 @@ const cli = runner(opts.dir, forge);
 // own `GITHUB_TOKEN` and an App installation token both get 403 from `/user`, and a run under
 // one of those knows the ledger's author without being able to name itself. `--me` is how such
 // a caller says so, and an explicit value spends no round trip.
-if (opts.me !== null) answer.me = opts.me;
+let meRaw = null;
+if (opts.me !== null) meRaw = opts.me;
 else {
   const args = ['api'];
   if (opts.host) args.push('--hostname', opts.host);
@@ -158,12 +159,17 @@ else {
   // Each forge names the field itself: `login` on GitHub, `username` on GitLab. Taken by the
   // forge already resolved rather than by trying both, so a shape that changes is a null here
   // instead of a value read out of whatever field happens to be present.
-  const login = text(forge === 'gh' ? parsed?.login ?? null : parsed?.username ?? null);
+  const login = forge === 'gh' ? parsed?.login : parsed?.username;
   // An empty string is not a login. Left as one it would match a comment whose author field is
   // also empty, which is attribution by coincidence — `copilot-findings.mjs` normalises it away
   // for the same reason.
-  answer.me = login === '' ? null : login;
+  meRaw = typeof login === 'string' && login !== '' ? login : null;
 }
+// Quoted for the answer, kept whole for the comparison. `text()` bounds a value another process
+// wrote at 200 characters, which is right for something travelling into a reader's context and
+// wrong for an identity: GitLab admits 255, so a long login would be compared against its own
+// truncation and read as foreign, and two logins sharing 200 characters would read as one.
+answer.me = text(meRaw);
 // The comment feed, to the END of it. A first page is not the list, and the ledger is the
 // comment opened when the role was assumed — which on a long epic is behind every later one.
 const feed = () => {
@@ -238,8 +244,8 @@ const measure = (s) => ({ chars: [...String(s)].length, utf16: String(s).length 
 // or where this run could not name itself — never folded into false, which would read as
 // "proved to be somebody else's".
 const fold = (v) => (typeof v === 'string' ? v.toLowerCase() : v);
-const mineness = (author) => (answer.me === null || author === null
-  ? null : fold(author) === fold(answer.me));
+const mineness = (author) => (meRaw === null || author === null
+  ? null : fold(author) === fold(meRaw));
 
 const marked = [];
 for (const c of rows) {
@@ -249,8 +255,10 @@ for (const c of rows) {
   const nodeId = typeof c?.node_id === 'string' ? text(c.node_id) : null;
   const at = text(c?.created_at ?? null);
   const url = text(c?.html_url ?? c?.url ?? null);
-  const author = text(forge === 'gh' ? c?.user?.login ?? null : c?.author?.username ?? null);
-  const mine = mineness(author);
+  const wrote = forge === 'gh' ? c?.user?.login : c?.author?.username;
+  const rawAuthor = typeof wrote === 'string' ? wrote : null;
+  const author = text(rawAuthor);
+  const mine = mineness(rawAuthor);
   if (LEDGER.test(b)) {
     // The ledger's own INDEX is written in these same markers — a pointer standing where the
     // text used to be. A comment carrying the ledger marker is the ledger, and the archive
@@ -267,7 +275,8 @@ for (const c of rows) {
   // markers of the ones before it is the ordinary way that happens — is malformed rather than
   // two archives, and counted as two it invents a duplicate of a number nobody wrote twice.
   if (ns.size > 1) {
-    marked.push({ kind: 'malformed', ns: [...ns].sort((x, y) => x - y), id: text(String(id)) });
+    marked.push({ kind: 'malformed', ns: [...ns].sort((x, y) => x - y), id: text(String(id)),
+      author, mine });
     continue;
   }
   marked.push({ kind: 'archive', n: [...ns][0], id: text(String(id)), url, at, body: b,
@@ -278,7 +287,7 @@ const ledgers = marked.filter((m) => m.kind === 'ledger');
 const archives = marked.filter((m) => m.kind === 'archive');
 for (const bad of marked.filter((m) => m.kind === 'malformed')) {
   answer.faults.push({ fault: `one comment carries the archive markers ${bad.ns.join(', ')}`,
-    ids: [bad.id] });
+    ids: [bad.id], authors: [bad.author], mine: [bad.mine] });
 }
 
 // Authorship is read to SAY whose a comment is, and never to pick between two of them. Breaking
@@ -307,7 +316,12 @@ if (ledgers.length > 1) {
         ? 'two comments of ours carry the ledger marker'
         : (unknown
           ? 'two comments carry the ledger marker, and this run cannot tell which is ours'
-            + ' — pass --me <login> where the token cannot read its own user'
+            // Two unknowns, and only one has a flag for its repair: a run that could not name
+            // ITSELF is what `--me` answers, while a comment the feed gave no author for stays
+            // unattributable however this run is named.
+            + (answer.me === null
+              ? ' — pass --me <login> where the token cannot read its own user'
+              : ' — a marked comment carries no author')
           : 'two comments carry the ledger marker, and none of them is ours')),
     ids: ledgers.map((l) => l.id),
     authors: ledgers.map((l) => l.author),
