@@ -307,6 +307,11 @@ session's context — a skill invokes one and reads its answer.
   repository treats as its default, and the remote that says so. Asks the remote even
   when the local pointer verified, because a pointer at a ref that still exists is the
   case verification cannot catch.
+- [`scripts/resolve-base.mjs`](scripts/resolve-base.mjs) — which remote to read a base
+  from, which one a push actually goes to, and whether the ref for a base is CURRENT
+  rather than whatever the last fetch left. Refuses where several remotes exist and none
+  is preferred: for a read that costs a wrong review, for a push it can publish a branch
+  in somebody else's repository.
 - [`scripts/worktree-owners.mjs`](scripts/worktree-owners.mjs) — whose is each worktree
   of this repository right now, read from Claude Code's live-session registry. Presence
   only: a live session proves a worktree is in use, and its absence proves nothing,

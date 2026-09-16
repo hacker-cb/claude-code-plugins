@@ -83,9 +83,25 @@ export const hostOk = (v) => typeof v === 'string'
   && /^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?$/.test(v);
 
 export const runner = (cwd, cmd = 'gh') => (args, timeout = 120000) => {
-  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout, maxBuffer: 32 * 1024 * 1024 });
+  const r = spawnSync(cmd, args, {
+    cwd,
+    encoding: 'utf8',
+    timeout,
+    maxBuffer: 32 * 1024 * 1024,
+    // git TRANSLATES its diagnostics, and every reader here compares that text against
+    // English. Measured: the same missing branch prints `couldn't find remote ref` under
+    // `LC_ALL=C` and `Konnte Remote-Referenz … nicht finden` under a German locale, so a
+    // classification resting on the words is right on one machine and silently wrong on
+    // the next. Pinned here rather than at each call, because every `.err` read in this
+    // plugin has the same exposure.
+    env: { ...process.env, LC_ALL: 'C', LANG: 'C', LC_MESSAGES: 'C' },
+  });
   return {
     ok: r.status === 0,
+    // The exit CODE, not only whether it was zero: git says "these two share no history"
+    // with 1 and "I could not answer" with 128, and a caller that cannot tell them apart
+    // reports an unrelated base where it should report an unknown one.
+    code: typeof r.status === 'number' ? r.status : null,
     out: (r.stdout || '').trim(),
     err: (r.stderr || '').trim(),
     line: () => (r.stderr || '').trim().split('\n').filter(Boolean).pop() || 'no detail',

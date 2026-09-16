@@ -1,0 +1,5 @@
+{
+ "remotes": "alice\nbob",
+ "branch": "feat/example-export",
+ "base_present": "yes"
+}

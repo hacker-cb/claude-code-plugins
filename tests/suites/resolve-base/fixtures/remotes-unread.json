@@ -1,0 +1,6 @@
+{
+ "remotes": "upstream\norigin",
+ "branch": "feat/example-export",
+ "base_present": "yes",
+ "remotes_fail": "yes"
+}

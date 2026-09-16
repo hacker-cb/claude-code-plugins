@@ -1,0 +1,6 @@
+{
+ "remotes": "origin\nupstream",
+ "branch": "feat/example-export",
+ "base_present": "no",
+ "ls_remote_default": "silent"
+}

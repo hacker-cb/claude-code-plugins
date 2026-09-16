@@ -336,6 +336,22 @@ for suite in "${all_suites[@]}"; do
       # to hold it, and putting it back read as green.
       case "$fragment" in
         NOT:*) case "$out" in *"${fragment#NOT:}"*) present="${fragment#NOT:}" ;; esac ;;
+        # `BEFORE:a<<b` asserts a comes before b. A substring test cannot see ORDER, and a
+        # pretty-printed array puts its entries on their own lines, so the one thing a
+        # ranking is FOR — that this entry precedes that one — had nothing to hold it:
+        # reversing a sort read as green in every case that named both.
+        BEFORE:*)
+          pair=${fragment#BEFORE:}
+          first=${pair%%'<<'*}; second=${pair#*'<<'}
+          if [ "$first" = "$pair" ] || [ -z "$first" ] || [ -z "$second" ]; then
+            missing="$fragment (BEFORE: wants a<<b)"
+          else
+            head_part=${out%%"$second"*}
+            case "$out" in
+              *"$second"*) case "$head_part" in *"$first"*) ;; *) missing="$first before $second" ;; esac ;;
+              *) missing="$second" ;;
+            esac
+          fi ;;
         *) case "$out" in *"$fragment"*) ;; *) missing="$fragment" ;; esac ;;
       esac
     done

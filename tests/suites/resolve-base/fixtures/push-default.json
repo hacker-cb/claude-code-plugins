@@ -1,0 +1,8 @@
+{
+ "remotes": "upstream\norigin\nfork",
+ "branch": "feat/example-export",
+ "base_present": "yes",
+ "config": {
+  "remote.pushDefault": "fork"
+ }
+}
