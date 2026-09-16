@@ -113,8 +113,9 @@ titles itself — the session, not the branch of step 0 — per
    the slice sits on whatever that branch is behind by. **Both modes** — the write
    is local, and publishing a rewritten history is step 7's driver's.
 
-   Rebase by default; merge where `slice-completion.md` puts this branch in one
-   of its merge-never-rebase cases, and where that cannot be read, ask.
+   Rebase by default; merge where
+   [`../../references/feature-branch.md`](../../references/feature-branch.md) puts this branch
+   in one of its merge-never-rebase cases, and where that cannot be read, ask.
 
    Landing re-cuts the slice, so `diff-base` moves to the tip landed on
    (`slice-completion.md`); step 4 gets the moved value.
@@ -176,8 +177,9 @@ titles itself — the session, not the branch of step 0 — per
    under the line. Step 7's driver then loops again against a reviewer of its
    own, on a budget of its own; neither is drawn from the other.
 6. **Check the coverage** — the gate below, over the last round there was.
-7. **Complete the slice by mode** — hand off to the completion contract in
-   `slice-completion.md`, which owns every mechanic of both backends. `local`
+7. **Complete the slice by mode** — the contract is `slice-completion.md`'s and the mechanics
+   are
+   [`../../references/completion-backends.md`](../../references/completion-backends.md)'s. `local`
    merges the slice into its `parent` with git alone, no forge and no network
    write;
    `request` hands to the forge's change-request driver

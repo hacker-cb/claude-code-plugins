@@ -144,8 +144,7 @@ neither zero nor a number, so it slips past both a zero-file check and a count g
 
 ## When nothing resolves, ask
 
-With no remote there is nothing to derive a default branch *from*, and any local
-guess is the same hardcoded name wearing a disguise. Say what is missing and ask,
-naming the cost concretely — "no remote, so I can't tell what this branch was cut
-from: give me a base, or this covers only the working tree and leaves 3 commits
-unread."
+With no remote there is nothing to derive a default branch *from*, and any local guess is the
+same hardcoded name wearing a disguise. Say what is missing and ask, naming the cost concretely
+— "no remote, so I can't tell what this branch was cut from: give me a base, or this covers only
+the working tree and leaves 3 commits unread."

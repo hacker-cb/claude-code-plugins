@@ -105,8 +105,8 @@ git rebase --autostash "<.base.ref, on a .base.current of true>"
   narrowing sends the security review to `n/a`), fix Critical and Important, push here; a
   review that cannot run, or such a finding left open, is a stop.
 - After a successful rebase, push with `--force-with-lease`.
-- **Exception:** a branch `slice-completion.md` says to merge rather than rebase takes the
-  base by merge instead, and the report says which case it was.
+- **Exception:** a branch [`../../references/feature-branch.md`](../../references/feature-branch.md)
+  says to merge rather than rebase takes the base by merge, and the report says which case it was.
 - **Whether staying up to date is itself a merge gate is the base's answer, not this
   step's** (`references/merge-gates.md`): where it is, every later `BEHIND` is re-synced with
   `gh pr update-branch <pr>` until it clears. Either way this rebase stands — what CI reads
