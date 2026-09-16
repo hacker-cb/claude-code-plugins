@@ -19,7 +19,7 @@
 // `"ships"` the name it carries it under. Exit 2 only for a call this cannot act on.
 
 import { realpathSync } from 'node:fs';
-import { writeAll, readable, refNameOk, repoOk, runner, text, worktrees } from './lib/forge.mjs';
+import { writeAll, refNameOk, repoOk, runner, text, worktrees } from './lib/forge.mjs';
 
 const USAGE = 'usage: node branch-publish.mjs --new <name> [--old-name <name>]'
   + ' [--publish --push-remote <name>] [--base <name> --base-remote <name>]'
@@ -52,12 +52,16 @@ if (opts.oldName !== null && !refNameOk(opts.oldName)) {
 // would otherwise get a silent no-op where this step's whole point is that the push
 // always happens.
 if (opts.publish && !opts.pushRemote) die('--publish needs --push-remote');
-if (opts.pushRemote && !readable(opts.pushRemote)) die(`--push-remote '${opts.pushRemote}' is not a remote name`);
+// Git's own rules, not a url segment's: `git remote add` takes `team/upstream`,
+// `upstream#2` and `up%2` — measured — and a url class refuses all three. The value
+// reaches git as an argument and composes `refs/remotes/<remote>/<branch>`, so what has to
+// hold is that it is a ref path and not an option.
+if (opts.pushRemote && !refNameOk(opts.pushRemote)) die(`--push-remote '${opts.pushRemote}' is not a remote name git would take`);
 if ((opts.base === null) !== (opts.baseRemote === null)) {
   die('--base and --base-remote name one tracking ref between them; pass both or neither');
 }
 if (opts.base !== null && !refNameOk(opts.base)) die(`--base '${opts.base}' is not a branch name`);
-if (opts.baseRemote !== null && !readable(opts.baseRemote)) die(`--base-remote '${opts.baseRemote}' is not a remote name`);
+if (opts.baseRemote !== null && !refNameOk(opts.baseRemote)) die(`--base-remote '${opts.baseRemote}' is not a remote name git would take`);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
 const cwd = opts.repoDir || process.cwd();
@@ -139,14 +143,30 @@ let worktreesUnread = null;
 // step 0, and every rename in a repository this CLI does not speak for — renames with no
 // network call at all rather than failing closed forever on a `gh` that cannot answer.
 const mayAsk = opts.publish;
-// Which repository this run is in, read once. `gh pr list --head` filters by branch NAME,
-// which is not unique across forks, so without this a contributor's own branch of the
-// same name pins a name nothing here could reach — and in the restore path that is not a
-// cautious no-op but an action.
-let here = opts.repo || null;
-if (mayAsk && !here) {
-  const v = gh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner']);
-  if (v.ok && repoOk(v.out)) here = v.out;
+// Which repository a hit's head must live in for anything here to reach it: the one
+// `--push-remote` points at, and NEVER the one `gh` speaks for. In a fork checkout those
+// are two different repositories — `gh` answers for the base, where the request lives,
+// while the head ref a deletion here would remove is on the fork — so comparing against
+// `gh`'s answer drops exactly the request whose head is about to come off and keeps the
+// ones nothing here could touch. `--repo` is the same mistake by another route: it names
+// the repository to ASK, not the one being pushed to.
+//
+// Only a url with a host answers this. A filesystem path is a remote too, and reading its
+// trailing directories as `owner/name` would silently drop every hit — which is the
+// reading that deletes. `null` means unknown, and unknown keeps every hit.
+const repoOfUrl = (url) => {
+  const m = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:\/\/)?(?:[^/@]*@)?[^/@:]+(?::[0-9]+)?[/:](.+)$/
+    .exec(String(url).trim());
+  if (!m) return null;
+  const path = m[1].replace(/\.git\/*$/, '').replace(/^\/+|\/+$/g, '');
+  return path.includes('/') ? path : null;
+};
+let here = null;
+if (mayAsk) {
+  // The url that RECEIVES pushes: a `pushurl` sends them somewhere the fetch url never
+  // published to, and it is the receiving side a deletion lands on.
+  const u = git(['remote', 'get-url', '--push', opts.pushRemote]);
+  if (u.ok) here = repoOfUrl(u.out.split('\n').filter(Boolean)[0] || '');
 }
 
 // Does an open change request head this name? Three answers, and the third carries the
@@ -163,9 +183,9 @@ const headedBy = (name) => {
     number: p && typeof p.number === 'number' ? p.number : null,
     where: text(p && p.headRepository && p.headRepository.nameWithOwner),
   })).filter((p) => p.number !== null);
-  // A head that lives elsewhere is a fork's ref this run cannot reach. Dropped only where
-  // this run knows its own repository AND the hit says where its head is — either unknown
-  // and the hit counts, which is the reading that keeps a name rather than losing one.
+  // A head that lives elsewhere is a ref this run's push remote cannot reach. Dropped only
+  // where both sides are known — either unknown and the hit counts, which is the reading
+  // that keeps a name rather than losing one.
   return here ? hits.filter((h) => h.where === null || h.where === here) : hits;
 };
 const say = (hits) => hits
@@ -176,6 +196,15 @@ const say = (hits) => hits
 // A caller upstream may have renamed already and threaded what it renamed away through as
 // `old-name`. A request heading that name pins it: the rename closed nothing yet — only a
 // local ref moved — so it is undone and the branch ships under the old name after all.
+// `git worktree add -f` lets a second worktree stand on this branch, and a one-argument
+// rename moves it for that session too — retargeting its HEAD without a word. Both renames
+// below are that form, so both ask; a listing that could not be read is the same refusal,
+// since unknown is not "nobody".
+const standsElsewhere = () => (worktreesUnread !== null
+  ? `this repository's worktrees could not be read (${worktreesUnread})`
+  : (heldElsewhere.get(`refs/heads/${cur}`)
+    ? `another worktree stands on ${cur} (${heldElsewhere.get(`refs/heads/${cur}`)})` : null));
+
 let oldPinned = false;
 if (mayAsk && opts.oldName && opts.oldName !== cur) {
   const heads = headedBy(opts.oldName);
@@ -183,13 +212,19 @@ if (mayAsk && opts.oldName && opts.oldName !== cur) {
     const why = heads === null
       ? `the request state for ${opts.oldName} could not be read`
       : `a request heads ${opts.oldName} (${say(heads)})`;
-    const back = run(['branch', '-m', opts.oldName]);
-    if (back.ok) {
+    const standing = standsElsewhere();
+    const back = standing ? null : run(['branch', '-m', opts.oldName]);
+    if (back && back.ok) {
       note(`${why} — renamed back, and the branch ships under that name`);
       cur = opts.oldName; ships = opts.oldName; answer.restored = true;
     } else {
+      // Either way the old name keeps whatever heads it and is not this run's to remove,
+      // which is exactly what `oldPinned` says downstream.
       oldPinned = true;
-      note(`${why}, and the rename back was refused (${back.line()}) — shipping as ${cur}`);
+      note(standing
+        ? `${why}, and ${standing} — keeping ${cur}, since the rename back would move that`
+          + ' session\'s HEAD too'
+        : `${why}, and the rename back was refused (${back.line()}) — shipping as ${cur}`);
     }
   }
 }
@@ -207,15 +242,9 @@ if (mayAsk && cur !== ships) {
     ships = cur;
   }
 }
-// `git worktree add -f` lets a second worktree stand on this same branch, and the
-// one-argument rename then moves it for that session too — retargeting its HEAD without a
-// word. A listing that could not be read is the same refusal: unknown is not "nobody".
-if (cur !== ships && (worktreesUnread !== null || heldElsewhere.has(`refs/heads/${cur}`))) {
-  note(worktreesUnread !== null
-    ? `this repository's worktrees could not be read (${worktreesUnread}) — keeping ${cur},`
-      + ' since a rename would retarget another session standing on it'
-    : `another worktree stands on ${cur} (${heldElsewhere.get(`refs/heads/${cur}`)}) —`
-      + ' keeping the name, since the rename would move that session\'s HEAD too');
+if (cur !== ships && standsElsewhere()) {
+  note(`${standsElsewhere()} — keeping the name, since the rename would move that`
+    + ' session\'s HEAD too');
   ships = cur;
 }
 if (cur !== ships) {

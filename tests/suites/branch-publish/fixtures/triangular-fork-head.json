@@ -12,8 +12,8 @@
   "refs/heads/wip/example": "absent"
  },
  "ship_stood_on": "yes",
+ "push_url": "https://forge.example/outside-contributor/example-repo.git",
  "pr_list": {
   "claude/example-work": "[{\"number\": 91, \"headRepository\": {\"nameWithOwner\": \"outside-contributor/example-repo\"}}]"
- },
- "push_url": "/srv/git/example-repo.git"
+ }
 }

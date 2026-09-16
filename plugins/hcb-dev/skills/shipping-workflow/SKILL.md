@@ -57,8 +57,17 @@ titles itself — the session, not the branch of step 0 — per
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
    (a host session's `claude/…`, a `wip`) to the shape in
    [`../../references/branch-naming.md`](../../references/branch-naming.md),
-   **first and in both modes** — the local half of that reference only, since
-   nothing before step 7 writes to the network. Carry the name renamed away to
+   **first and in both modes**. Without `--publish` the call below writes to no
+   network and asks no forge, which is what lets it run here:
+
+   ```bash
+   NEW="<the name from branch-naming.md>"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-publish.mjs" --new "$NEW"
+   ```
+
+   Read `branch.ships`, not `$NEW`: a second worktree standing on this branch
+   refuses the rename, and so does a worktree listing that could not be read.
+   Carry the name renamed away to
    step 7 as `old-name` (`slice-completion.md`): what stands published under it
    is read there, by whoever can reach the remote.
 1. **Refresh the base** — what this work is ranged against and lands on: the

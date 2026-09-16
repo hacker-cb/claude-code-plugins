@@ -68,6 +68,14 @@ branch refs/heads/$(ask '.head')"
     done
     printf '%s\n' "$v"; exit 0 ;;
 esac
+case "$1 $2" in
+  "remote get-url")
+    # The url that RECEIVES pushes, which is what says WHICH repository a deletion here
+    # would land in — a different question from the one `gh` answers for.
+    v=$(ask '.push_url'); [ -z "$v" ] && v=https://forge.example/example-org/example-repo.git
+    case "$v" in fail) fail "fatal: no such remote" 128 ;; esac
+    printf '%s\n' "$v"; exit 0 ;;
+esac
 case "$1" in
   fetch)
     # A remote that REWOUND, which is the case the leading `+` is for: without it git

@@ -175,8 +175,15 @@ holding what the upstream has not.
 **The request probe is asked only where something is published**, because that is where a
 ref can be destroyed: a rename alone strands nothing, so a local normalization renames with
 no network call at all. And the probe speaks `gh`; on GitLab it cannot answer, so a
-publication there keeps every name and retires none until the same reading is done by
-hand.
+publication there keeps every name and retires none until the same reading is done by hand.
+
+**A hit belongs to the repository being PUSHED to, not to the one the CLI speaks for.**
+The filter is by branch name, which is not unique across forks — and in a fork checkout the
+CLI answers for the base, where the request lives, while the head ref a deletion would
+remove is on the fork. Compared the wrong way round it drops exactly the request about to
+be closed and keeps the ones nothing could reach, so the comparison is against the push
+remote's own url, and a remote that names no repository — a filesystem path — keeps every
+hit.
 
 - **Never `git branch -M`.** The force form overwrites an existing branch of that name —
   someone else's work, silently. On a collision pick a different name.
