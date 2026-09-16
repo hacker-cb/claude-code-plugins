@@ -122,113 +122,51 @@ What that costs the steps below, for as long as the outage is what blocks the ru
   non-required check you may deem irrelevant (`UNSTABLE`), and a check that never
   started is not a check that passed.
 
-## Step 1 — Branch naming
+## Step 1 — The name it ships under, and putting it on the remote
 
 [`../../references/branch-naming.md`](../../references/branch-naming.md) owns the shape a
-name takes and where a rename is refused; this step owns the mechanics it points back at —
-renaming a branch that may already be on a remote, and publishing it under the final name.
+name takes and where a rename is refused;
+[`../../scripts/branch-publish.mjs`](../../scripts/branch-publish.mjs) owns the mechanics —
+the rename, the publication, and taking off the remote every name this branch used to carry.
 
-**The rename is often a no-op and the publish never is.** Upstream normalized the name
-already and threads what it renamed away as `old-name`
-([`../../references/slice-completion.md`](../../references/slice-completion.md)); a PR
-heading that name pins it, and the rename is undone. The push below is the only place
-this skill puts the branch on a remote, and without it Step 2's `--force-with-lease` dies
-on "no upstream branch" and Step 3's `--head` finds no ref — so skip the rename where the
-name is already right, and never skip the push.
+**The rename is often a no-op and the publish never is.** This is the only place the branch
+reaches a remote in this skill, and without it Step 2's lease dies on "no upstream branch"
+and Step 3's `--head` finds no ref.
 
-**Which remote to push to is
-[`../../references/base-resolution.md`](../../references/base-resolution.md)'s question**,
-resolved **before** renaming, since `branch.<name>.pushRemote` is read under the name the
-branch carries now.
+**Which remote to push to, and which base an old ref is judged against, are both
+[`../../references/base-resolution.md`](../../references/base-resolution.md)'s.** The push
+remote is resolved **before** the call, since `branch.<name>.pushRemote` is read under the
+name the branch carries now.
 
-Fill the three values at the top; everything under them is live.
+Fill the five values; the call under them is live.
 
 ```bash
 PUSH_REMOTE="<resolved per base-resolution.md, before any rename>"
+BASE_REMOTE="<resolved per base-resolution.md>"
+BASE="<the PR's base branch, bare name>"
 NEW="<the name from branch-naming.md — MAY equal the current one>"
-OLD_NAME="<the bare old-name shipping-workflow step 0 threaded in — EMPTY where nothing was renamed>"
+OLD_NAME="<the bare old-name shipping-workflow step 0 threaded in — empty where none>"
 
-# Detached HEAD has no branch to rename or push, and an empty $cur would silently
-# turn a `branch.<name>.*` lookup into `branch..*`. Say so instead.
-cur="$(git symbolic-ref --short -q HEAD)" \
-  || { echo "DETACHED HEAD — check out a branch before shipping"; exit 1; }
-# A PR heading the name a caller renamed away pins that name: the rename closed
-# nothing yet — only the local ref moved — so it is undone and the branch ships
-# under the old name. Unknown state reads as pinned, as the probe below reads it.
-if [ -n "$OLD_NAME" ] && [ "$OLD_NAME" != "$cur" ]; then
-  if old_pr="$(gh pr list --head "$OLD_NAME" --state open --json number -q '.[].number' 2>/dev/null)"; then
-    old_known=1
-  else
-    old_known=0
-  fi
-  if [ "$old_known" = 0 ] || [ -n "$old_pr" ]; then
-    if git branch -m "$OLD_NAME"; then
-      echo "note: PR on $OLD_NAME open or unknown — renamed back; that name stays"
-      cur="$OLD_NAME"; NEW="$OLD_NAME"
-    else
-      echo "RENAME BACK FAILED — keeping $cur; refs/heads/$OLD_NAME stays, a PR may head it"
-    fi
-    OLD_NAME=""
-  fi
-fi
-# An open PR pins the name: renaming deletes the head ref below, closing the PR and
-# its review threads. This probe must fail CLOSED — empty output covers both "no PR"
-# and "gh could not tell me", and the second read as the first closes a PR unseen.
-# Keep the exit status, not just the output.
-if pr_open="$(gh pr list --head "$cur" --state open --json number -q '.[].number' 2>/dev/null)"; then
-  pr_known=1
-else
-  pr_known=0
-fi
-if [ "$cur" != "$NEW" ] && [ "$pr_known" = 0 ]; then
-  echo "PR STATE UNKNOWN for $cur — keeping the name; a rename here could close a PR I cannot see"
-  NEW="$cur"
-elif [ "$cur" != "$NEW" ] && [ -n "$pr_open" ]; then
-  echo "note: PR already open on $cur — keeping the name (renaming would close it)"
-  NEW="$cur"
-fi
-[ "$cur" = "$NEW" ] || git branch -m "$NEW"
-# UNCONDITIONAL: this is the branch's only publication in this skill. Steps 2 and
-# 3 both assume an upstream exists, and neither creates one. The branch arrives
-# already landed on its parent, so a force may be owed — to that case alone.
-# `ls-remote` answers three ways: exit 0 and empty is a branch that is not there,
-# non-zero is a remote nobody could read, and conflating them publishes blind.
-if ! remote_tip="$(git ls-remote --heads "$PUSH_REMOTE" "refs/heads/$NEW" 2>/dev/null)"; then
-  echo "CANNOT READ $PUSH_REMOTE"; exit 1
-fi
-# A lease compares against the tracking ref, so it needs one that exists and is current.
-if [ -n "$remote_tip" ] \
-   && ! git fetch "$PUSH_REMOTE" "+refs/heads/$NEW:refs/remotes/$PUSH_REMOTE/$NEW"; then
-  echo "FETCH FAILED for $NEW — its age is unknown"; exit 1
-fi
-published=0
-if [ -z "$remote_tip" ]; then
-  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # first publication
-# Full refnames: the short `<remote>/<name>` reaches a tag of that name instead.
-elif git merge-base --is-ancestor "refs/remotes/$PUSH_REMOTE/$NEW" "refs/heads/$NEW"; then
-  git push "$PUSH_REMOTE" -u "$NEW" && published=1                 # fast-forward
-else
-  # `--force-if-includes` requires the published tip to be in this branch's reflog —
-  # a bare lease also passes someone else's commit, and overwrites it.
-  git push --force-with-lease --force-if-includes "$PUSH_REMOTE" -u "$NEW" && published=1
-fi
-# Chained: a refused push followed by the delete below unpublishes the branch.
-[ "$published" = 1 ] || { echo "NOT PUBLISHED — push refused for $NEW"; exit 1; }
-# ONLY when the name actually changed: with $cur == $NEW this deletes the ref the
-# line above just pushed, unpublishing the branch and closing any PR on it.
-if [ "$cur" != "$NEW" ]; then
-  # The full refname: a bare one is ambiguous where a tag shares the name, and
-  # reaches that tag where the branch was never pushed under the old name at all.
-  git push "$PUSH_REMOTE" --delete "refs/heads/$cur" || true
-fi
+node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-publish.mjs" --new "$NEW" \
+  ${OLD_NAME:+--old-name "$OLD_NAME"} --publish --push-remote "$PUSH_REMOTE" \
+  --base "$BASE" --base-remote "$BASE_REMOTE"
 ```
+
+Three things come out of it:
+
+- **`published`** — `true` is what every step below stands on. Anything else stops the run
+  here, and `publish.reason` says which of the three it was.
+- **`branch.ships`** — the name to use from here on, which is not always the one asked for:
+  a change request heading a name pins it, and so does a request state that could not be
+  read. `notes` says which happened.
+- **`stale`** — one entry per name this branch used to carry, and the three verdicts are
+  three different things: `retired` this run took off the remote, `absent` was never there
+  to take off, and **`kept` alone is a ref still standing** — with the `reason` the report
+  carries.
 
 ## Step 2 — Bring the branch up to date with base
 
-The base branch and the remote carrying it both come from `base-resolution.md` — rung 2,
-the open PR's own base, and that reference's remote ranking, since `upstream` can exist
-while *this* base lives only on `origin`. Then rebase onto it: rebase is the default,
-being cleaner history and friendlier to a squash.
+Rebase onto it: rebase is the default, being cleaner history and friendlier to a squash.
 
 **Check the fetch, not just the ref.** You picked that remote *because*
 `<base-remote>/<base>` is already there, so an existence test passes just as happily
@@ -236,20 +174,18 @@ against a week-old copy — and a rebase onto that copy reports "up to date" her
 forge reports `BEHIND` at merge time. A fetch that did not succeed stops this step: a base
 whose age is unknown is not one to rebase onto.
 
-Fill the two values at the top; everything under them is live, and so are Step 1's —
-`PUSH_REMOTE`, `NEW` and `OLD_NAME` as that step left them.
+`BASE_REMOTE` and `BASE` are Step 1's, as it left them.
 
 ```bash
-BASE_REMOTE="<resolved per base-resolution.md>"
-BASE="<the PR's base branch, bare name>"
-
-if ! git fetch "$BASE_REMOTE" "+refs/heads/$BASE:refs/remotes/$BASE_REMOTE/$BASE"; then
+ref="refs/remotes/$BASE_REMOTE/$BASE"
+if ! git fetch "$BASE_REMOTE" "+refs/heads/$BASE:$ref"; then
   echo "FETCH FAILED from $BASE_REMOTE — not rebasing onto a possibly stale base"; exit 1
 fi
-# And the ref must exist at all: the branch may simply not be on that remote.
-git rev-parse --verify -q "$BASE_REMOTE/$BASE^{commit}" >/dev/null 2>&1 \
+# And the ref must exist at all: the branch may simply not be on that remote. The full
+# refname, since the short form reaches a tag of that name instead.
+git rev-parse --verify -q "$ref^{commit}" >/dev/null 2>&1 \
   || { echo "BASE $BASE NOT ON $BASE_REMOTE — name the right remote and re-run"; exit 1; }
-git rebase --autostash "$BASE_REMOTE/$BASE"
+git rebase --autostash "$ref"
 ```
 
 - Resolve trivial conflicts yourself; if a conflict needs a real decision, stop
@@ -272,33 +208,6 @@ git rebase --autostash "$BASE_REMOTE/$BASE"
   further re-sync is Step 4's call, taken on a drift it measures itself. Either
   way this step's own rebase stands: what CI reads must be the code that is going
   to land.
-
-**Then retire what `old-name` names**, now that the new name is up and the base is
-fetched. Three proofs, all required, and one that cannot run keeps the ref — the block
-below is each of them in order, and every path out of it says why the ref stayed, because
-the report needs the reason.
-
-```bash
-if [ -n "$OLD_NAME" ] && [ "$OLD_NAME" != "$NEW" ] && [ "$OLD_NAME" != "$BASE" ]; then
-  # Exit status kept: an empty answer means 'not there' only when the remote answered.
-  if old_line="$(git ls-remote --heads "$PUSH_REMOTE" "refs/heads/$OLD_NAME" 2>/dev/null)"; then
-    old_tip="${old_line%%[[:space:]]*}"
-    if [ -z "$old_tip" ]; then
-      echo "refs/heads/$OLD_NAME is not on $PUSH_REMOTE — nothing to retire"
-    elif ! { git merge-base --is-ancestor "$old_tip" HEAD 2>/dev/null \
-             || git rev-list -g "refs/heads/$NEW" | grep -qx "$old_tip"; }; then
-      echo "NOT RETIRED: refs/heads/$OLD_NAME on $PUSH_REMOTE is at $old_tip, which this branch never held — someone's work; leave it and report it"
-    elif git merge-base --is-ancestor "$old_tip" "$BASE_REMOTE/$BASE" 2>/dev/null; then
-      echo "NOT RETIRED: refs/heads/$OLD_NAME holds nothing past $BASE — not this branch's publication; leave it and report it"
-    else
-      git push --force-with-lease="refs/heads/$OLD_NAME:$old_tip" "$PUSH_REMOTE" --delete "refs/heads/$OLD_NAME" \
-        || echo "NOT RETIRED: the delete of refs/heads/$OLD_NAME was refused — a stale lease or a deletion rule; read the remote and report it"
-    fi
-  else
-    echo "NOT RETIRED: $PUSH_REMOTE did not answer for refs/heads/$OLD_NAME — report it as possibly standing"
-  fi
-fi
-```
 
 ## Step 3 — Open the PR (if not already open)
 

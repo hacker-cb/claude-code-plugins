@@ -1,0 +1,21 @@
+{
+ "head": "feat/example-export",
+ "pr_list_default": "[]",
+ "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "base_present": "yes",
+ "object_default": "yes",
+ "stood_on": "yes",
+ "in_base": "no",
+ "ls_remote": {
+  "refs/heads/feat/example-export": "absent",
+  "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work",
+  "refs/heads/wip/example": "absent"
+ },
+ "pr_list": {
+  "wip/example": "[{\"number\": 42, \"headRepository\": {\"nameWithOwner\": \"example-org/example-repo\"}}]"
+ },
+ "rename": {
+  "wip/example": "fail"
+ },
+ "ship_stood_on": "yes"
+}

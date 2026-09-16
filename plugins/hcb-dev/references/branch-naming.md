@@ -67,33 +67,23 @@ glab mr list --merged --output json --per-page 30 | jq -r '.[].source_branch'
 git for-each-ref --format='%(refname:lstrip=3)' refs/remotes | grep -vx HEAD
 ```
 
-**A forge-side pattern is a gate, not a preference.** GitHub rulesets carry a
-`branch_name_pattern` rule and GitLab push rules a `branch_name_regex`; where one
-is configured, a name that does not match is rejected **at push time**, so a
-branch named past it is unpushable rather than merely unconventional. Read it
-where you can — mirrored, because a `gh`-only check leaves every GitLab repo to
-discover its own rule from a rejected push:
-
-"No rule configured" is a normal answer on both forges — GitHub returns a list
-without the rule, GitLab answers 404 outright — so capture the result and read the
-variable, rather than piping a failed call into `jq` and printing its error as if
-it were a pattern:
+**A forge-side pattern is a gate, not a preference**, and a name past it is rejected
+**at push time** — a naming failure, never a permissions one. Read it mirrored: a
+`gh`-only check leaves every GitLab repo to discover its rule from a refused push.
 
 ```bash
-# GitHub — rules already in force on that branch, ref_name conditions applied
-gh_rule="$(gh api "repos/{owner}/{repo}/rules/branches/<branch>" 2>/dev/null \
-  | jq -r '.[] | select(.type=="branch_name_pattern") | .parameters.pattern // empty' 2>/dev/null)"
-echo "GitHub: ${gh_rule:-none}"
+# GitHub — the rules already in force on that branch, ref_name conditions applied
+gh api "repos/{owner}/{repo}/rules/branches/<branch>" 2>/dev/null \
+  | jq -r '.[] | select(.type=="branch_name_pattern") | .parameters.pattern // empty'
 # GitLab — one push-rule object per project; <project> is URL-encoded ("group%2Frepo")
-gl_rule="$(glab api "projects/<project>/push_rule" 2>/dev/null \
-  | jq -r '.branch_name_regex // empty' 2>/dev/null)"
-echo "GitLab: ${gl_rule:-none}"
+glab api "projects/<project>/push_rule" 2>/dev/null | jq -r '.branch_name_regex // empty'
 ```
 
-`// empty` in the filter and `${var:-none}` in the shell: a default inside the jq
-filter never fires on an empty body, which is what a missing rule leaves behind.
-
-Treat a rejected push as a naming failure, not a permissions one.
+"No rule configured" is an ordinary answer on both and each spells it differently —
+GitHub a list without that row, GitLab a 404 on the whole object. Capture the result
+and read the variable: a `// empty` default inside the filter never fires on the empty
+body a missing rule leaves behind, and a failed call piped onward prints its own error
+where a pattern should be.
 
 ## Sets — a feature branch and its slices
 
@@ -145,55 +135,74 @@ it is the part that survives.
 are one-way doors: a pushed name needs a remote deletion to undo, and a name
 under an open change request cannot be fixed at all (below).
 
-## Renaming — the mechanics
+## Renaming and publishing — the mechanics
 
-The local half is plain git — no forge, no network — so it runs wherever
-normalization happens, `shipping-workflow` step 0 included.
+`scripts/branch-publish.mjs` answers one question and acts on it: **what name does this
+branch ship under, is that name on the remote, and what of the names it used to carry
+comes off**. Unlike the scripts beside it this one acts, and the ORDER it acts in is the
+whole hazard — a rename is refused wherever a change request pins a name, the publish is
+unconditional, and a name comes off the remote only after the new one is up.
 
-Two things are checked in advance, because only these two go wrong **quietly** —
-an invalid name, a taken one, a directory/file collision, a detached HEAD all stop
-`git branch -m` outright, naming the ref that blocked it.
-
-```bash
-cur="$(git symbolic-ref --short -q HEAD)" \
-  || { echo "DETACHED HEAD — check out a branch first"; exit 1; }
-NEW="<new>"
-# QUIET #1 — `git branch -m <same-name>` exits 0 having done nothing, so a caller
-# running this block for its push half would delete the ref it had just pushed.
-[ "$cur" = "$NEW" ] && { echo "ALREADY $NEW — nothing to rename"; exit 0; }
-# QUIET #2 — renaming a branch checked out in ANOTHER worktree exits 0 and retargets
-# that session's HEAD without a word. Compare against THIS worktree's path, or the
-# branch you stand on reads as someone else's.
-here="$(git rev-parse --show-toplevel)"
-git worktree list --porcelain | awk -v cur="refs/heads/$cur" -v here="$here" '
-    /^worktree /{w=substr($0,10)}
-    $0=="branch "cur && w!=here {print "  " w; found=1}
-    END{exit !found}' \
-  && { echo "CHECKED OUT ELSEWHERE — leave it to that session"; exit 1; }
-git branch -m "$NEW"   # carries branch.<old>.* across, `pushRemote` included
+```text
+node <plugin root>/scripts/branch-publish.mjs --new <name> [--old-name <name>]
+  [--publish --push-remote <name>] [--base <name> --base-remote <name>]
 ```
 
-- **Already published** — the local rename is then only half of it: the old name
-  is on the remote and the new one is not. Push the new name, and delete the old
-  ref **only** when the rename actually happened (the block above exits first when
-  `cur == NEW`, which is what stops a caller from deleting the ref it just pushed)
-  and **only** when no change request is open on that branch — deleting a head ref
-  closes the request. Resolve the push remote *before* renaming — the ambiguity
-  path exits, and exiting after `git branch -m` leaves a branch renamed locally
-  with nothing pushed — per [`base-resolution.md`](base-resolution.md) ("Pushing is
-  a different question"). Where the rename and the publication happen in
-  different steps, the old name travels between them as `old-name`
-  ([`slice-completion.md`](slice-completion.md)).
-- **Never `git branch -M`.** The force form overwrites an existing branch of that
-  name — someone else's work, silently. On a collision pick a different name.
+**Every skill that renames writes that command itself**, the plugin root being substituted
+in skill content and staying literal text here. `--publish` is opt-in rather than inferred
+from a remote being named: a caller that forgot it would otherwise get a silent no-op
+where the push is the whole point.
+
+| field | what it settles |
+|---|---|
+| `read` | `false` renamed nothing and published nothing — a detached HEAD is the case |
+| `branch.ships` | **the name it actually ships under**, which is not always the one asked for |
+| `renamed` / `restored` | whether the rename happened, and whether it was *undone* — a request heading the name a caller renamed away pins that name |
+| `published` | `true` on the remote under `ships`; **`null` is "not asked", never refused** |
+| `publish.mode` | `first`, `fast-forward` or `leased` — which push the remote's state owed |
+| `publish.reason` | why not, where `published` is `false` |
+| `stale[].verdict` | per name it used to carry: `retired` taken off this run, `absent` not there, `kept` with the `reason` the report carries |
+| `notes` | why the name it ships under is not the one asked for |
+
+**Every proof before a name comes off the remote is required, and one that cannot run keeps
+the ref**: no open change request heads it, since deleting a head ref closes the request
+along with its review; no other worktree stands on it; the remote answered and the ref is
+there; its tip is one this branch stood on, by `HEAD` or by its reflog; and it holds
+something past the base. **The base itself is refused by name, not by that last proof** —
+pushing to a fork while basing on the upstream inverts it, the fork's own base legitimately
+holding what the upstream has not.
+
+**The request probe is asked only where something is published**, because that is where a
+ref can be destroyed: a rename alone strands nothing, so a local normalization renames with
+no network call at all. And the probe speaks `gh`; on GitLab it cannot answer, so a
+publication there keeps every name and retires none until the same reading is done by hand.
+
+**A hit belongs to the repository being PUSHED to, not to the one the CLI speaks for.**
+The filter is by branch name, which is not unique across forks — and in a fork checkout the
+CLI answers for the base, where the request lives, while the head ref a deletion would
+remove is on the fork. Compared the wrong way round it drops exactly the request about to
+be closed and keeps the ones nothing could reach, so the comparison is against the push
+remote's own url, and a remote that names no repository — a filesystem path — keeps every
+hit.
+
+- **Never `git branch -M`.** The force form overwrites an existing branch of that name —
+  someone else's work, silently. On a collision pick a different name.
+- **A second worktree can stand on this same branch** (`git worktree add -f`), and the
+  one-argument rename moves it for that session too. The script refuses the rename there,
+  and refuses it again where the worktree listing could not be read at all.
+- **Resolve the push remote before renaming**, per
+  [`base-resolution.md`](base-resolution.md) ("Pushing is a different question"):
+  `branch.<name>.pushRemote` is read under the name the branch carries now, and an
+  ambiguity that exits after the rename leaves a branch renamed locally and nothing
+  pushed.
+- Where the rename and the publication happen in different steps, the old name travels
+  between them as `old-name` ([`slice-completion.md`](slice-completion.md)).
 
 ## Never
 
 | ❌ | ✅ |
 |---|---|
-| rename a branch that already has an open change request | normalize *before* it opens — deleting the old head ref closes the change request and its review with it |
-| rename a branch checked out in another worktree — `git branch -m <other> <new>` | probe `git worktree list` first (the block above); git performs that rename happily and retargets the other session's HEAD without a word |
-| delete the old remote ref when the name did not change | the block exits on `cur == NEW`; a push followed by a delete of that same ref unpublishes the branch and closes any change request whose head it is |
+| rename a branch checked out in another worktree — `git branch -m <other> <new>` | probe `git worktree list` first; git performs that rename happily and retargets the other session's HEAD without a word. The one-argument form renames the branch you stand on and cannot reach another's |
 | rename a shared branch others have pulled | leave it; a nicer name is not worth breaking someone's upstream |
 | rename a host-session branch earlier than needed | Claude Code manages some of its own worktree sessions through undocumented bookkeeping ([`claude-worktrees.md`](claude-worktrees.md)) — normalize on the way into completion, not at cut |
 | derive the new name from the old one | read the diff and the task; the old name is the thing with no information in it |

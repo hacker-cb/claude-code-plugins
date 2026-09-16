@@ -1,0 +1,15 @@
+{
+ "head": "claude/example-work",
+ "pr_list_default": "[]",
+ "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "base_present": "no",
+ "object_default": "yes",
+ "stood_on": "yes",
+ "in_base": "no",
+ "ls_remote": {
+  "refs/heads/feat/example-export": "absent",
+  "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work",
+  "refs/heads/wip/example": "absent"
+ },
+ "ship_stood_on": "yes"
+}
