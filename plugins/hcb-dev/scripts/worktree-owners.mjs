@@ -14,7 +14,8 @@
 // Exit 0 either way: `"read": true` with the worktrees, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
 
-import { readdirSync, readFileSync, statSync, realpathSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { writeAll, runner } from './lib/forge.mjs';
 
@@ -87,6 +88,35 @@ const alive = (pid) => {
   }
 };
 
+// Which registry record IS this run. Inferring it from directories cannot work: a
+// session that started in the repository root and stepped into somebody else's worktree
+// takes THEIR record for its own and hands their tree back as removable. The process
+// chain says it outright — the session that spawned this is an ancestor of it, measured:
+// the chain above a script run from this plugin carries the session's own pid. Where the
+// chain cannot be walked nothing is claimed, which blocks rather than frees.
+const parentOf = (pid) => {
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+    // `comm` can hold spaces and parentheses, so the fields are read after the LAST `)`.
+    const after = stat.slice(stat.lastIndexOf(')') + 1).trim().split(/\s+/);
+    const ppid = Number.parseInt(after[1], 10);
+    if (Number.isInteger(ppid) && ppid > 0) return ppid;
+  } catch { /* not Linux, or not readable — ask ps */ }
+  const r = spawnSync('ps', ['-o', 'ppid=', '-p', String(pid)],
+    { encoding: 'utf8', timeout: 10000 });
+  if (r.status !== 0) return null;
+  const ppid = Number.parseInt((r.stdout || '').trim(), 10);
+  return Number.isInteger(ppid) && ppid > 0 ? ppid : null;
+};
+const ancestry = new Set([process.pid]);
+for (let pid = process.pid, i = 0; i < 24; i += 1) {
+  const next = parentOf(pid);
+  if (next === null || ancestry.has(next)) break;
+  ancestry.add(next);
+  if (next <= 1) break;
+  pid = next;
+}
+
 const sessions = [];
 let files = [];
 try {
@@ -132,13 +162,13 @@ answer.probeFailed = !answer.registry.present || answer.registry.unreadable > 0;
 
 // --- the worktrees
 if (!git(['rev-parse', '--git-dir']).ok) die('not inside a git checkout');
-// From the CALLER's directory, not the scanned repository's. Standing outside it
-// entirely is an answer too: nothing is then yours, which is the safe reading.
+// From the CALLER's directory, not the scanned repository's. Unreadable is a refusal
+// rather than an answer — not knowing where this run stands is not the same as
+// standing nowhere, and the second hands every worktree back as somebody else's.
 const here = self(['rev-parse', '--show-toplevel']);
 if (!here.ok) refuse(`could not read where this run stands (${here.line()})`);
 answer.here = here.out;
 const hereReal = real(here.out);
-const myCwd = real(process.cwd());
 
 // `-z` because `--porcelain` alone does not escape a path: a worktree whose directory
 // carries a newline prints a line that reads exactly like the start of another record.
@@ -172,10 +202,11 @@ for (const line of records) {
   else if (line === 'bare') wt.bare = true;
   else if (line === 'locked' || line.startsWith('locked ')) {
     wt.locked = true;
-    wt.lockReason = line.length > 'locked '.length ? line.slice('locked '.length) : null;
+    wt.lockReason = line.length > 'locked '.length ? text(line.slice('locked '.length)) : null;
   } else if (line === 'prunable' || line.startsWith('prunable ')) {
     wt.prunable = true;
-    wt.pruneReason = line.length > 'prunable '.length ? line.slice('prunable '.length) : null;
+    wt.pruneReason = line.length > 'prunable '.length
+      ? text(line.slice('prunable '.length)) : null;
   }
 }
 push();
@@ -206,10 +237,9 @@ answer.worktrees.forEach((w, i) => {
   w.isHere = path === hereReal;
   w.sessions = held[i].map((s) => ({ pid: s.pid, cwd: s.cwd, startedAt: s.startedAt,
     live: s.live,
-    // At or above this run's own directory, so it COULD be this run. More than one that
-    // could be is a second client on the same directory, and which is which cannot be
-    // told from here.
-    couldBeMe: within(myCwd, s.path) }));
+    // This run's own session, named by the process chain rather than inferred from a
+    // directory two sessions can share.
+    isThisRun: Number.isInteger(s.pid) && ancestry.has(s.pid) }));
   w.occupied = answer.probeFailed ? null : w.sessions.length > 0;
 
   // Two hints at what the host cut, both undocumented and both allowed only to widen
@@ -224,22 +254,26 @@ answer.worktrees.forEach((w, i) => {
 
   if (w.isPrimary) w.blockers.push('it is the main working tree — `worktree remove` refuses it');
   if (w.locked) w.blockers.push(`it is locked${w.lockReason ? `: ${w.lockReason}` : ''}`);
+  // Independent, not a chain: more than one of these holds at once, and an `else` files
+  // the report under whichever was reached first.
   if (w.occupied === null) {
     w.blockers.push(w.isHere
       ? 'the live-session registry could not be read, so whether a second client is in'
         + ' this worktree too is unknown — you are standing in it either way'
       : 'the live-session registry could not be read, so who is in it is unknown');
-  } else if (w.sessions.length && !w.isHere) {
+  }
+  if (w.sessions.length && !w.isHere) {
     w.blockers.push(`a live session is in it: ${w.sessions.map((s) => s.pid).join(', ')}`);
-  } else if (w.sessions.length && !(w.sessions.length === 1 && w.sessions[0].couldBeMe)) {
-    // Standing in it does not make every session in it yours. One rule, because the
-    // cases it separates all end the same way: a record carries the cwd its session
-    // started in, so one that is not at or above this run's own directory is somebody
-    // else however close it sits — and two that could both be this run are a second
-    // client on the same directory, which this cannot tell apart either. Yours is the
-    // one case where exactly one session is in it and that one could be this run.
-    w.blockers.push('a live session is in it this run cannot show is itself:'
-      + ` ${w.sessions.map((s) => s.pid).join(', ')}`);
+  }
+  if (w.isHere) {
+    // Standing in it does not make every session in it yours: a second client on the
+    // same directory, or one this host cannot even verify, is somebody whose tree the
+    // removal would take as well. Only the record this run IS gets a pass.
+    const others = w.sessions.filter((s) => !s.isThisRun);
+    if (others.length) {
+      w.blockers.push('a live session is in it that is not this run:'
+        + ` ${others.map((s) => s.pid).join(', ')}`);
+    }
   }
   if (w.hostMade && !w.isHere && !w.prunable) {
     // `prunable` and still the host's are not the same case: git says the registration
@@ -253,9 +287,25 @@ answer.worktrees.forEach((w, i) => {
       : w.sessions.length ? 'another session'
         : w.hostMade ? 'the host'
           : null;
-  // One rule, and the same one the retirement uses: something of yours, and nothing in
-  // the way. `null` above is the one case this cannot settle — a worktree nobody is in
-  // and the host did not make — so it is handed over as a flag rather than as silence.
+});
+
+// Removing a worktree is recursive, so occupancy does not stop at the entry that holds
+// it: a worktree nested inside this one goes with it, live session and all. Attribution
+// stays innermost — that is who is where — and the VERDICT looks down.
+answer.worktrees.forEach((w, i) => {
+  const inside = answer.worktrees.filter((o, j) => j !== i && within(paths[j], paths[i])
+    && (o.sessions.length > 0 || o.blockers.length > 0));
+  if (inside.length) {
+    w.blockers.push('a worktree inside it is not this run\'s to take:'
+      + ` ${inside.map((o) => o.path).join(', ')}`);
+  }
+});
+
+// Both verdicts here, after every blocker is in — including the one the pass above adds.
+// One rule: something of yours, and nothing in the way. `owner: null` is the single case
+// this cannot settle — a worktree nobody is in and the host did not make — so it is
+// handed over as a flag rather than as silence.
+answer.worktrees.forEach((w) => {
   w.mayRemove = w.owner === 'you' && w.blockers.length === 0;
   w.callerDecides = w.owner === null && w.blockers.length === 0;
 });

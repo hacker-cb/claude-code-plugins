@@ -70,9 +70,14 @@ is never this skill's to remove, running or not —
 and the answer's `unsettled` list is the one question it leaves you: **did this session
 cut that worktree**, which is your own memory of this conversation.
 
-`"probeFailed": true` is not "nobody is working" — it is no registry, or records that
-would not read. Say so once, and every worktree but the current one is unknown rather
-than free.
+`"read": false` answers nothing about any worktree: its `reason` names the reading that
+could not be taken, and the empty lists beside it are not "none of them are yours" —
+classify none of them, say so, and go on to the branches, which stand on their own.
+
+`"probeFailed": true` is not "nobody is working" either — it is no registry, or records
+that would not read. Every worktree goes unknown then, the one you stand in included: git
+still says you are standing in it, and a registry that would not read says only that
+whether a second client is there too cannot be known.
 
 What is left after that is still worth the sweep: worktrees you cut yourself, and — the
 larger share — **branches**, which no host cleanup touches.

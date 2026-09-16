@@ -49,7 +49,8 @@ node <plugin root>/scripts/worktree-owners.mjs [--repo-dir <path>]
 | `removable` / `unsettled` | the two lists a caller acts on: yours with nothing in the way, and the ones turning on the single thing this cannot know |
 | `mayRemove` / `callerDecides` | the same two per worktree — `callerDecides` is **did you cut it**, which is your own memory of this conversation and nothing a probe can overrule |
 | `blockers` | why not, in words a report can carry |
-| `sessions` | the live ones in it: `pid`, `cwd`, `startedAt` — where and since when, never what. `couldBeMe` marks one whose directory is at or above this run's own |
+| `read` | `false` says which reading could not be taken, in `reason`. It answers nothing about any worktree — not "none of them are yours", which is what an empty list beside it would read as |
+| `sessions` | the live ones in it: `pid`, `cwd`, `startedAt` — where and since when, never what. `isThisRun` marks the one this run IS |
 | `probeFailed` | no registry, or **any** record that would not read — one unreadable record beside a live one still leaves the worktree that record is in looking free. **Not** a registry that read cleanly and found nobody, which is an answer |
 
 **The registry proves presence, never absence.** A live pid means occupied; no live pid
@@ -59,11 +60,17 @@ worktree the host made stays the host's, running or not — with one exception, 
 worktree of the same host, whose holder is not in the room. Treat an unfamiliar client as
 another host, not as an absence of one.
 
-**And standing in a worktree does not make every session in it yours.** A record carries
-the directory its session started in, so one that is not at or above this run's own is
-somebody else however close it sits, and two that could both be this run are a second
-client the script cannot tell apart. Yours is the single case: exactly one session in it,
-and that one could be this run.
+**And standing in a worktree does not make every session in it yours.** A second client
+on the same directory, or a session this host cannot even verify, is somebody whose tree
+the removal would take as well. Which record IS this run is answered by the process
+chain — the session that spawned the run is an ancestor of it — and never by a directory,
+which a record holds from its own start and two sessions can share: infer it that way and
+a session that stepped into somebody else's worktree takes their record for its own.
+
+**Occupancy does not stop at the worktree that holds it.** Removal is recursive, so a
+live session in a worktree nested inside another goes with it — and a nested checkout is
+not what makes the outer one dirty. Attribution stays innermost, which is who is where;
+the verdict looks down.
 
 Three measurements the script is built on, each of which a caller doing this by hand gets
 wrong:
