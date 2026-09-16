@@ -1,0 +1,29 @@
+# fixture	args	want	expect	note
+answered-and-resolved	--pr 7	0	"read": true|"answered": true|"resolved": true|"open": []|"suppressed": 3|"opened": 2	both halves read, and a thread answered and then resolved owes nothing — the ordinary end of a round
+resolved-unanswered	--pr 7	0	"read": true|"byReviewer": true|"answered": false|closed it with no answer of ours	the reviewer closes its own threads under a login other than the one it commented under, and one it closed with no answer of ours in it is an open finding wearing the resolved badge — the merge gate satisfied the whole time it stands
+open-unanswered	--pr 7	0	"resolved": false|"answered": false|nothing has answered it	the plain case: a finding nobody has answered
+answered-not-resolved	--pr 7	0	"answered": true|"resolved": false|answered and still open	answered is not settled — the resolve lands after the reply rather than with it, so a thread answered and left open is still owed one
+human-thread	--pr 7	0	"fromReviewer": false|"open": []	a thread this reviewer never spoke in is not its finding, and sweeping it into the same list makes every human conversation look like an unanswered review
+threads-paginated	--pr 7	0	"read": false|more threads than the first page|"more": true	a page is not the list: an unread thread is not an answered one, so the whole reading goes unread rather than reporting a part of itself as the whole
+comments-paginated	--pr 7	0	"answered": null|more comments than one page|whether an answer is in it is unknown	and a thread whose own comments paginated is one this read only part of — whether an answer is in it is UNKNOWN, which owes exactly as much as no answer does
+threads-unread	--pr 7	0	"read": false|the review threads could not be read|"items": []	a query that failed is not a request with no threads, and the bodies it did read stay in the answer while `read` says the review was not
+threads-notjson	--pr 7	0	"read": false|a shape this cannot read	a body that parses but carries nothing where the threads should be is the same unread, and reading it as an empty list clears every finding at once
+bodies-unread	--pr 7	0	"read": false|the review bodies could not be read|"threads"	the half that opens no threads is the half nothing else catches — no gate holds it and no count includes it, so failing to read it fails the whole reading
+bodies-notjson	--pr 7	0	"read": false|something this cannot parse	and a feed answering with something that is not JSON at all says the same
+suppressed-absent	--pr 7	0	"suppressed": null|"opened": null	a body carrying no such block and a block reporting none are different readings, and they take different next steps
+suppressed-zero	--pr 7	0	"suppressed": 0|"opened": 1	which is why a block reporting zero comes back as zero rather than as absent
+opened-none-suppressed-many	--pr 7	0	"opened": 0|"suppressed": 5	the count a body reports is a count of THREADS: a review whose findings all went to the suppressed block opened none, so zero there is this class’s signature rather than evidence against it — and the labels arrive wrapped in markup as often as plain
+review-of-an-older-head	--pr 7	0	"head": false|"suppressed": 3	every review that posted is read whichever commit it covers — the head handed in may never earn one of its own, and a later review carries findings an earlier one did not
+humans-only	--pr 7	0	"read": true|"items": []	a request a person reviewed and this one did not is read, and it has nothing of this reviewer’s in it
+near-miss-actor	--pr 7	0	"read": true|"items": []|"fromReviewer": false	the name alone is not the actor: a person called Copilot is typed as a user, and matching the login without the type turns every such account into the reviewer
+self-hosted	--pr 7	0	"read": true|"repo": "example-org/example-repo"	the request’s own host reaches every call, port and all: `pr view` finds an enterprise request through the remote while `api` defaults to the SaaS, where a same-named repository answers with somebody else’s review
+pr-view-unread	--pr 7	0	"read": false|could not read pull request 7	nothing below can be asked of a request that could not be read
+pr-view-notjson	--pr 7	0	"read": false|was not JSON	and a view that answered with something else is the same refusal, not a request with no url
+url-unparseable	--pr 7	0	"read": false|the thread query is asked of a repository by name|"repo": null	GraphQL needs a repository by name rather than by context, so a url that will not parse costs the threads — and says so instead of asking about a repository nobody named
+-	-	2	--pr is required	the request number is the one thing this cannot resolve for itself
+-	--pr 0	2	is not a request number	a number that is not a request number would compose a path to nothing
+-	--repo example-org/example-repo	2	--pr is required	a repository without a request names no review to read
+-	--pr 7 --repo not-owner-slash-name/x/y	2	is not owner/name	a repository is two segments, and a third would steer the request elsewhere
+-	--pr 7 --wat x	2	unknown argument	a mistyped flag taken for a value would read a different request than the one asked for
+reviewer-spoke-last	--pr 7	0	"answered": false|"fromReviewer": true|nothing has answered it	a comment of ours BEFORE the finding is not an answer to it: position is what makes a reply one, and counting our comments anywhere in the thread clears every finding a conversation happened to precede
+label-wrapped-in-markup	--pr 7	0	"suppressed": 4|"opened": 1	the label arrives wrapped in markup as often as plain, and a tag long enough pushes the count past the window the pattern allows — read unstripped, a block of four findings reads as no block at all

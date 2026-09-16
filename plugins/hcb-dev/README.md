@@ -326,6 +326,10 @@ session's context — a skill invokes one and reads its answer.
   reviewer is expected on this request, whether it has answered the head, and what it
   said. Reads the request the repository's own settings describe, never a list of
   reviewers that a completed review has already emptied.
+- [`scripts/copilot-findings.mjs`](scripts/copilot-findings.mjs) — what that reviewer
+  actually said on one request, in both of the places it says it, and what is still owed.
+  A finding that opened no thread is held by no gate and counted by nothing, so reading
+  one half is half a review and this says which half it got.
 - [`scripts/retire-check.mjs`](scripts/retire-check.mjs) — is this branch safe to retire,
   and on which side. The local half and the published half fail separately and are
   answered separately; it reads and judges, and deletes nothing.
