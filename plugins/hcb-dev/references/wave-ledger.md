@@ -31,6 +31,7 @@ node <plugin root>/scripts/ledger.mjs --issue <n> [--repo <owner/name>] [--forge
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
 | `write.fits` / `.headroom` | whether a body handed in `--body-file` fits under the cap, and by how much |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
+| `reason` | why nothing could be answered — a feed that did not read, or **both forges answering for this repository**, which a mirror makes ordinary and `--forge` settles |
 
 The comment is the only form the ledger takes, so a tracker is what the role stands on: whether
 the repository has one is established against the forge ([`forge-docs.md`](forge-docs.md) names
@@ -103,13 +104,11 @@ test on a passage is whether deleting it changes what anyone does next.
    A rule asking whether a batch is finished says which of the three it counts,
    and answers the question it actually needs: what landed is one question, what
    has nothing outstanding is another, and `released` alone is neither.
-3. **Verdicts** — one line per open issue of the epic's slice that no batch has
-   ended: the issue, the verdict [`issue-currency.md`](issue-currency.md) gave
-   it, the coordinate that verdict stood on, and the pin and tracker moment it
-   was read at. A survey's reading opens it; every capacity refresh writes back
-   what it re-read, and reads the rest from here rather than re-deriving them
-   (`hcb-dev:wave-refresh`). A line leaves when its issue does — closed, or
-   carried by a batch that ended.
+3. **Verdicts** — one line per open issue of the epic's slice that no batch has ended: the issue,
+   the verdict [`issue-currency.md`](issue-currency.md) gave it, the coordinate that verdict stood
+   on, and the pin and tracker moment it was read at. A survey's reading opens it; every capacity
+   refresh writes back what it re-read and reads the rest from here rather than re-deriving them
+   (`hcb-dev:wave-refresh`). A line leaves when its issue does.
 4. **Decisions** — every fork settled during the epic: who asked, what was decided, where it is
    recorded — the decision, not the case that was made for it.
 5. **Standing constraints** — what no batch may violate while the epic runs: a

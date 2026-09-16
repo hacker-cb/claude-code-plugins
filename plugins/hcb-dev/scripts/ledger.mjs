@@ -13,7 +13,7 @@
 // script that guessed would move what is still open.
 
 import { readFileSync } from 'node:fs';
-import { writeAll, runner, parsePages, repoOk, hostOk, text } from './lib/forge.mjs';
+import { writeAll, runner, parsePages, readable, hostOk, text } from './lib/forge.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
@@ -35,7 +35,13 @@ const opts = { issue: null, repo: null, forge: null, host: null, bodyFile: null,
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
-  const val = () => argv[i += 1];
+  // A flag at the end of the line has no value, and `undefined` reaching `cwd` is silently the
+  // current directory — a plausible ledger out of whatever repository this run happens to stand
+  // in. A malformed invocation is refused instead.
+  const val = () => {
+    if (i + 1 >= argv.length) { writeAll(2, `ledger: ${a} takes a value\n${usage}\n`); process.exit(2); }
+    return argv[i += 1];
+  };
   if (a === '--issue') opts.issue = val();
   else if (a === '--repo') opts.repo = val();
   else if (a === '--forge') opts.forge = val();
@@ -51,9 +57,17 @@ const die = (msg) => { writeAll(2, `ledger: ${msg}\n${usage}\n`); process.exit(2
 // An issue number, not a ref: a value that is not digits would reach the url as a path of
 // its own, and `0` names no issue on either forge.
 if (!/^[1-9][0-9]{0,11}$/.test(String(opts.issue ?? ''))) die('--issue takes an issue number');
-if (opts.repo !== null && !repoOk(opts.repo) && !/^[A-Za-z0-9._~@+-]+(\/[A-Za-z0-9._~@+-]+){1,10}$/.test(opts.repo)) {
+// Two to eleven segments — GitLab nests projects under subgroups — each held to the rule the
+// rest of the plugin holds a path segment to. `..` above all: `repos/team/../issues/42` is
+// normalised by the server into a request to somewhere else entirely.
+const repoSegments = opts.repo === null ? [] : opts.repo.split('/');
+if (opts.repo !== null && (repoSegments.length < 2 || repoSegments.length > 11
+  || !repoSegments.every((seg) => readable(seg) && seg !== '.'))) {
   die('--repo takes <owner>/<name>, or a GitLab group path');
 }
+// Encoded segment by segment, never whole: a `/` between segments is the path, and encoding it
+// would ask for one repository named with slashes in it.
+const repoPath = repoSegments.map(encodeURIComponent).join('/');
 if (opts.forge !== null && opts.forge !== 'gh' && opts.forge !== 'glab') die('--forge takes gh or glab');
 if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 // A count, and nothing about how big a sensible one is: what a forge accepts is the caller's
@@ -88,24 +102,26 @@ if (opts.bodyFile !== null) {
   answer.write.asked = true;
 }
 
-const forge = opts.forge || (() => {
-  // Which CLI answers for THIS REPOSITORY, never which one has an account. `auth status`
-  // succeeds wherever a login exists on any host, so a machine logged into both would take
-  // `gh` for a GitLab epic and read an unrelated issue of the same number on GitHub — a
-  // plausible ledger out of the wrong repository. The probe is a real read of the repository
-  // itself, and only a repository that answers picks its CLI.
-  for (const [cmd, path] of [
-    ['gh', opts.repo ? `repos/${opts.repo}` : 'repos/{owner}/{repo}'],
-    ['glab', `projects/${opts.repo ? encodeURIComponent(opts.repo) : ':fullpath'}`],
-  ]) {
-    const args = ['api'];
-    if (opts.host) args.push('--hostname', opts.host);
-    args.push(path);
-    if (runner(opts.dir, cmd)(args, 60000).ok) return cmd;
-  }
-  return null;
-})();
-if (forge === null) { answer.reason = 'no forge CLI answered for this repository'; out(); }
+// Which CLI answers for THIS REPOSITORY, never which one has an account: `auth status` succeeds
+// wherever a login exists on any host. But answering is not enough either — a GitLab project
+// mirrored on GitHub under the same path answers on both, and a first-success order would read
+// issue 42 of the mirror and call it this epic's ledger. **Both answering is an ambiguity**,
+// refused the way a base with several unpreferred remotes is refused, because the wrong answer
+// here is indistinguishable from the right one.
+const answered = opts.forge ? [opts.forge] : ['gh', 'glab'].filter((cmd) => {
+  const args = ['api'];
+  if (opts.host) args.push('--hostname', opts.host);
+  args.push(cmd === 'gh'
+    ? (opts.repo ? `repos/${repoPath}` : 'repos/{owner}/{repo}')
+    : `projects/${opts.repo ? encodeURIComponent(opts.repo) : ':fullpath'}`);
+  return runner(opts.dir, cmd)(args, 60000).ok;
+});
+if (answered.length === 0) { answer.reason = 'no forge CLI answered for this repository'; out(); }
+if (answered.length > 1) {
+  answer.reason = 'both forges answer for this repository — name one with --forge';
+  out();
+}
+const forge = answered[0];
 answer.forge = forge;
 
 const cli = runner(opts.dir, forge);
@@ -119,7 +135,7 @@ const feed = () => {
     // `{owner}`/`{repo}` are substituted by `gh` from the CURRENT directory, which is the
     // repository this run stands in — named explicitly wherever the caller passed one.
     args.push(opts.repo
-      ? `repos/${opts.repo}/issues/${encodeURIComponent(opts.issue)}/comments`
+      ? `repos/${repoPath}/issues/${encodeURIComponent(opts.issue)}/comments`
       : `repos/{owner}/{repo}/issues/${encodeURIComponent(opts.issue)}/comments`);
     return cli(args, 180000);
   }
