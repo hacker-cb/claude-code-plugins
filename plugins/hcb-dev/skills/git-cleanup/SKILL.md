@@ -173,12 +173,16 @@ Then, per branch it still calls `delete`, with `<n>` its index in that fresh ans
 
 ```bash
 BR="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].name')"
-OID="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].oid')"
-# The ref as it stands THIS instant, not as the scan found it: the forge reads above take
-# time, and a branch can advance inside them. `--verify -q` for the empty answer and
-# `|| true` for the exit status, so a vanished ref leaves a value to test.
+# The oid the GATE's row carried — the reading taken BEFORE the wait. Both values from
+# the same reading makes the comparison say nothing: a branch that moved while the gate
+# waited comes back with its new tip, matches itself, and is deleted as an object nobody
+# approved, under a restore command that names a different one.
+APPROVED="<the oid this branch's gate row carried>"
+# And the ref as it stands THIS instant: the forge reads inside the rescan take time, and
+# a branch can advance inside them. `--verify -q` for the empty answer and `|| true` for
+# the exit status, so a vanished ref leaves a value to test.
 NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/$BR" || true)"
-if [ "$NOW" = "$OID" ]; then
+if [ "$NOW" = "$APPROVED" ]; then
   git -C "$PROJECT" branch -D -- "$BR"
 else
   echo "moved or gone while the gate waited: $BR — surface it, and ask again over its tip"

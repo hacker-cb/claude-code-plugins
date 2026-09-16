@@ -18,7 +18,7 @@
 // Exit 2 only for a call this script cannot act on at all.
 
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import {
   writeAll, readable, refOk, refNameOk, nameSafe, repoOk, runner, parsePages, text,
   worktrees,
@@ -127,25 +127,32 @@ if (opts.baseRef) {
 const listed = worktrees(git);
 if (listed.trees === null) refuse(`could not list this repository's worktrees (${listed.error})`);
 for (const w of listed.trees) {
-  const t = { ...w, onDisk: null, dirty: null, submodules: null,
+  const t = { ...w, onDisk: null, parentOnDisk: null, dirty: null, submodules: null,
     modulesDir: null, blockers: [] };
   if (w.prunable) {
     // git's word for the registration, and its PROSE is free to change: `gitdir file
     // points to non-existent location` is what it writes for a worktree whose directory
     // was deleted — measured — while `gitdir file does not exist` names a directory that
-    // may still be full of work. Matching either is matching wording. The path is the
-    // question.
+    // may still be full of work. Matching either is matching wording. The paths are the
+    // question, and it takes BOTH of them.
     t.onDisk = existsSync(w.path);
+    t.parentOnDisk = existsSync(dirname(w.path));
+    if (!t.onDisk && !t.parentOnDisk) {
+      // The directory above it is gone too, which is what an unmounted volume looks
+      // like — indistinguishable from a deleted worktree, and pruning it strands
+      // whatever the volume still holds.
+      t.blockers.push('its path and the directory above it both fail to answer, which is'
+        + ' what an unmounted volume looks like');
+    }
     if (!t.onDisk) {
-      // Nothing left to destroy, and asking git about a directory that is gone only
-      // produces failures to report. It takes a prune, and `verdicts.md` routes it.
+      // Nothing here to read, whichever of the two it is: asking git about a directory
+      // that is not there only produces failures to report.
       answer.worktrees.push(t);
       continue;
     }
-    // Still there, which is exactly what an unmounted volume looks like — pruning that
-    // strands the work it holds.
-    t.blockers.push('git calls it prunable although its path is still there, which is'
-      + ' what an unmounted volume looks like');
+    // The directory is there and git still calls the registration prunable, so a prune
+    // would take a working tree that still exists.
+    t.blockers.push('git calls it prunable although its path is still there');
   }
   // `worktree list` never mentions modified or untracked files, so without this there is
   // no clean/dirty signal at all, and a removable worktree cannot be told from one
@@ -173,17 +180,18 @@ for (const w of listed.trees) {
 }
 
 // --- the branches, in one pass
-// A NUL between the fields and a sentinel before each record: a branch name can carry
-// neither, and `worktreepath` is a filesystem path, which can carry a newline.
+// A NUL between the fields and a COUNT, not a marker, for where each record ends. Any
+// marker is a string some field can hold: a branch tracking a local branch named `R`
+// prints exactly the sequence that used to separate records, which truncated its own
+// record and invented one after it. Nothing can forge a boundary that is a count.
 const SEP = '\u0000';
-const REC = `${SEP}R${SEP}`;
 // Both forms of the upstream, because a ref and a name are two values: the short one
 // is what a report says, and the full one is what compares against a ref — `origin/master`
 // against `refs/remotes/origin/master` never matches, and the default branch then gets
 // its tracking "repaired" on every run.
 const FIELDS = ['%(refname:lstrip=2)', '%(objectname)', '%(worktreepath)',
   '%(upstream:short)', '%(upstream)', '%(upstream:track)'];
-const format = (extra) => `%00R%00${FIELDS.join('%00')}${extra}`;
+const format = (extra) => `${FIELDS.join('%00')}${extra}%00`;
 // `ahead-behind` gives the count AND the containment in one pass — a branch is in the
 // base exactly when it is ahead of it by nothing. It needs git 2.41 and a ref that
 // resolves, so its absence is a fallback rather than a refusal.
@@ -191,6 +199,8 @@ const withCounts = answer.base.usable
   ? git(['for-each-ref', 'refs/heads/',
     `--format=${format(`%00%(ahead-behind:${opts.baseRef})`)}`])
   : { ok: false, out: '', line: () => 'no usable base' };
+// One more field in the counted form, and the count is what says where a record ends.
+const WIDE = FIELDS.length + (answer.base.usable && withCounts.ok ? 1 : 0);
 const counted = withCounts.ok;
 const listing = counted ? withCounts
   : git(['for-each-ref', 'refs/heads/', `--format=${format('')}`]);
@@ -200,12 +210,17 @@ if (answer.base.usable && !counted) {
     + ' one branch at a time');
 }
 
-for (const rec of listing.out.split(REC)) {
-  if (!rec.trim()) continue;
-  // `for-each-ref` ends every record with a newline, which lands in the last field —
-  // whichever that is, since the counted form has one more.
-  const f = rec.replace(/\n$/, '').split(SEP);
-  const name = (f[0] || '').trim();
+// `for-each-ref` ends every record with a newline of its own, which lands between the
+// record's closing NUL and the next record's first field. Taken out here, so no field
+// carries it and no field is trimmed for it.
+const fields = listing.out.split(SEP).map((v, i) => (i === 0 ? v : v.replace(/^\n/, '')));
+if (fields.length && fields[fields.length - 1] === '') fields.pop();
+for (let at = 0; at + WIDE <= fields.length; at += WIDE) {
+  const f = fields.slice(at, at + WIDE);
+  // Not trimmed: the record-ending newline is taken out above, once, where it is a
+  // structural thing rather than something a name carries. Trimming here as well
+  // would make that pass redundant, and a redundant guard is one nothing holds.
+  const name = f[0] || '';
   // By GIT's rules: `feature#123` and `feature%123` are branches a URL-segment class
   // refuses, and a sweep that cannot read them leaves them out of its own answer.
   if (!refNameOk(name)) {
@@ -235,7 +250,7 @@ for (const rec of listing.out.split(REC)) {
     freedBy: null,
   };
   if (counted) {
-    const ahead = Number.parseInt((f[6] || '').trim().split(/\s+/)[0], 10);
+    const ahead = Number.parseInt((f[FIELDS.length] || '').trim().split(/\s+/)[0], 10);
     if (Number.isInteger(ahead)) { b.ownCommits = ahead; b.merged = ahead === 0; }
   } else if (answer.base.usable) {
     const c = git(['rev-list', '--count', `${opts.baseRef}..${b.ref}`]);
@@ -362,7 +377,10 @@ for (const b of answer.branches) {
   if (!w) continue;
   if (b.openRequest) {
     w.blockers.push(`a change request on its branch is still open: ${b.name}`);
-  } else if (b.verdict === 'surface') {
+  } else if (!b.proof) {
+    // Never `verdict === 'surface'`: a branch with a worktree is kept BY that worktree,
+    // so that test can only ever be false here. What the worktree turns on is whether
+    // the branch has a proof at all.
     w.blockers.push(`its branch has no proof it landed: ${b.name}`);
   }
 }

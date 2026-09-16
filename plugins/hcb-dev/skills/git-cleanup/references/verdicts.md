@@ -42,12 +42,16 @@ other:
 | `worktree-owners.mjs` | whose it is. `mayRemove` is yours with nothing in the way; `callerDecides` turns on the one thing no probe can know — **did you cut it**, which is your own memory of this conversation |
 | `cleanup-scan.mjs` | the git state it is in — dirty, a submodule or a git directory for one, a `prunable` entry whose path is still there — **and what is checked out in it**: removing a worktree destroys the working copy of its branch, so a branch under an open request, or with no proof it landed, keeps its worktree too. Any `blockers` entry keeps it |
 
-`onDisk` is what tells those apart, and the path is the question rather than git's
-wording for it: `gitdir file points to non-existent location` is what git writes for a
-deleted worktree and `gitdir file does not exist` for a directory that may still be full
-of work. `onDisk: false` has nothing left to destroy and takes `worktree prune` (class 1);
-`onDisk: true` beside `prunable` is what an unmounted volume looks like, and pruning
-strands the work it holds — class 3.
+`onDisk` and `parentOnDisk` tell those apart, and the paths are the question rather than
+git's wording for them — `gitdir file points to non-existent location` is what git writes
+for a deleted worktree and `gitdir file does not exist` for a directory that may still be
+full of work, and neither of them says which:
+
+| `onDisk` | `parentOnDisk` | what it is |
+|---|---|---|
+| `false` | `true` | the directory was deleted. Nothing left to destroy — `worktree prune`, class 1 |
+| `false` | `false` | **the path does not answer at all**, which is what an unmounted volume looks like: the files are still on that volume, and pruning strands them. Class 3 |
+| `true` | — | git calls it prunable while its working tree is still there. Class 3 |
 
 A worktree found on disk but absent from `worktree list` is a filesystem orphan: class 1
 where `git status` in it is empty, class 3 otherwise — it is still someone's working tree.
