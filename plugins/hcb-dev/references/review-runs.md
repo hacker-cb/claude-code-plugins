@@ -53,67 +53,50 @@ becomes an untracked file the next run reads as part of the change.
 
 ## Running it detached
 
-Launch with `Bash(run_in_background: true)`, whoever asked and however small the
-diff looks. Read inline, the call is killed on the tool's own limit, and the kill
-takes the coverage record and the failure branch with it — the run then comes back
-as neither a review nor a named failure. Give the `Bash` call a `description`
-naming the engine, so the run is recognizable in the task list.
+Launch with `Bash(run_in_background: true)`, whoever asked and however small the diff
+looks. Read inline, the call is killed on the tool's own limit, and the kill takes the
+coverage record and the failure branch with it — the run comes back as neither a review
+nor a named failure. Give the call a `description` naming the engine, so the run is
+recognizable in the task list. Detached is how it runs, not permission to answer without
+it: collect the finished task's output and read it back before answering.
 
-Detached is how it runs, not permission to answer without it: collect the finished
-task's output and read it back before answering.
+**Waiting is a blocking call, never a loop.** One call that holds a single turn for ten
+minutes, or until the run answers; repeat it, window after window. Nothing is checked
+between them — the window *is* the wait. **Never** wait by running commands in a loop, a
+`sleep`, a `seq`, or a background watcher that sleeps and re-checks: a backgrounded call
+returns instantly, so the wait becomes a spin that bills a whole turn, with the whole
+context behind it, every few seconds. Where no blocking wait is available, wait inside a
+single command that blocks until the run prints one of the three lines below or the window
+is up — one turn per window is the same wait however it is spelled.
 
-**Waiting is a blocking call, never a loop.**
+**With several runs out, a window is spent on one of them.** Collect the ones that have
+already answered before opening any window, and open the next on the run most likely to
+return — never on the same silent one while finished records sit unread. The ceiling is
+wall-clock across the whole wait: three reviewers do not buy three hours.
 
-**Wait on blocking windows.** One call that holds a single turn for ten minutes,
-or until the run answers; repeat it, window after window, until the run answers or
-the ceiling below is reached. Nothing is checked between them — the window *is*
-the wait.
+**Ending the turn instead is for one case only**: an interactive session, with a person
+present, where nothing downstream is blocked on the answer. There the harness's completion
+notification brings the run back and names the file to read. Two things make that case
+narrow — a run that hangs sends no notification at all, so the ceiling never arrives and
+the wait is silent forever; and a subagent that ends its turn ends the work the review was
+gating, answering its caller with whatever the last reviewer said. **Anything autonomous —
+a subagent, a dispatched batch, an orchestrated slice — waits on the windows**, and whoever
+ends a turn while reviewers are out says which ones, and says nothing about what they
+found until their records are in hand.
 
-**With several runs out, a window is spent on one of them.** Collect the ones that
-have already answered before opening any window, and open the next window on the run
-most likely to return — never on the same silent one over and over while finished
-records sit unread. The ceiling below is wall-clock across the whole wait, not six
-windows per run: three reviewers do not buy three hours.
+**A wait ends, but not soon.** These engines take minutes and the upper rungs tens of
+them: half an hour of silence is a run reading, and a window that expires is one window,
+not a verdict. What ends a wait is an hour of it, on the clock rather than per run. Before
+that hour waiting is the whole of the job; at it, stop and record what happened — a run
+that never returned is a row and a reason in the caller's report, never a reason to stall
+and never a review to claim. Spend the wait itself on what does not depend on the answer.
 
-**Where no blocking wait is available**, wait inside a single command instead: one call that blocks until the
-run prints one of those three lines or the window is up, and reads the file by what
-it says
-rather than by whether it is empty. What the rule below forbids is a turn per check,
-not a second of waiting: one turn per window is the same wait however it is
-spelled.
-
-**Ending the turn instead is for one case only**: an interactive session, with a
-person present, where nothing downstream is blocked on the answer. There the
-harness's completion notification is what brings the run back, and it names the
-output file to read. Two things make that case narrow. A run that hangs sends no
-notification at all, so the ceiling below never arrives and the wait is silent
-forever. And a subagent that ends its turn ends the work the review was gating,
-answering its caller with whatever the last reviewer said. **Anything autonomous —
-a subagent, a dispatched batch, an orchestrated slice — waits on the windows**, and
-whoever ends a turn while reviewers are out says which ones, and says nothing about
-what they found until their records are in hand.
-
-**Never wait by running commands in a loop** — a `sleep`, a `seq` loop, a
-background "watcher" that sleeps and re-checks. A backgrounded call returns
-instantly, so the wait becomes a spin that bills a whole turn, with the whole
-context behind it, every few seconds.
-
-**A wait ends, but not soon.** These engines take minutes, and the upper rungs take
-tens of them — half an hour of silence is a run reading, not a run lost, and a
-window that expires is one window, not a verdict — open the next one. What ends a
-wait is an hour of it, counted on the clock rather than per run. Before that hour,
-waiting is the whole of the job; at it, stop and record what actually happened — a
-run that never returned is a row and a reason in the caller's report, not a reason
-to stall, and not a review to claim. Spend the wait itself on what does not depend
-on the answer.
-
-**The command lives in the engine's script, and its skill names it.** Run that
-script as it stands, one plain command — an agent isolated in its own worktree has
-anything more complicated refused as unverifiable, and a round hours into the work
-is where a command gets rebuilt from memory rather than read. What a rebuild drops
-is never the engine call, which is the memorable part: it is the flags that make a
-headless run reviewable, the redirect, and the coverage record — leaving a run that
-reports as a review nobody measured.
+**The command lives in the engine's script, and its skill names it.** Run that script as
+it stands, one plain command: an agent isolated in its own worktree has anything more
+complicated refused as unverifiable, and a round hours into the work is where a command
+gets rebuilt from memory rather than read. What a rebuild drops is never the engine call,
+which is the memorable part — it is the flags that make a headless run reviewable, the
+redirect, and the coverage record, leaving a run that reports as a review nobody measured.
 
 ## The two lines a run prints
 

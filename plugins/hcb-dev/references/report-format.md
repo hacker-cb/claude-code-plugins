@@ -35,11 +35,10 @@ Two kinds, a line each, before the first table, chip or link the report offers:
 - **what this session settled inside the authority it holds**, with what undoes
   that.
 
-Neither is a question: the answer to both is a veto, and a veto needs the item in
-front of the reader. An empty section is left out — it is the ask block below that
-is never omitted. Where a report's body keeps these in rows of its own — an
-outcome column, a list of divergences — that is where they stand: what the frame
-fixes is that they reach the reader ahead of anything to act on, not the heading
+Neither is a question: the answer to both is a veto, and a veto needs the item in front of
+the reader. An empty section is left out — it is the ask block below that is never
+omitted. Where a report's body keeps these in rows of its own, that is where they stand:
+the frame fixes that they reach the reader ahead of anything to act on, not the heading
 they sit under.
 
 ### The body
@@ -59,17 +58,15 @@ message. Each carries:
 - **what standing means** — what stops until it is answered, or that nothing does;
 - **how long it has been open**, for one carried over from an earlier report.
 
-Two groups — what holds work, in the order dependency puts them in, then what
-holds nothing — and a closing line saying how an answer can be given. A click, an
-approval and an archival are asks exactly as a question is: "nothing waits on
-you" is written only where this block is empty, and a chip nobody has clicked —
-or an approval the repository's gates or the merge authorization actually leave
-outstanding — is not empty. An ask leaves the block only with an
+Two groups — what holds work, in the order dependency puts them in, then what holds
+nothing — and a closing line saying how an answer can be given. A click, an approval and
+an archival are asks exactly as a question is: "nothing waits on you" is written only
+where this block is empty, and a chip nobody has clicked, or an approval the gates or the
+merge authorization leave outstanding, is not empty. An ask leaves the block only with an
 outcome — answered, deferred by the reader's word (which stops it holding work),
-withdrawn, failed with what still stands, or overtaken by something that settles
-it — said in the line that drops it. Where the session keeps a record of what it awaits — a
-coordinating one keeps it in [`wave-ledger.md`](wave-ledger.md) — the block
-prints that record rather than recall.
+withdrawn, failed with what still stands, or overtaken — said in the line that drops it.
+Where the session keeps a record of what it awaits ([`wave-ledger.md`](wave-ledger.md) for
+a coordinating one), the block prints that record rather than recall.
 
 ### What a report is not
 

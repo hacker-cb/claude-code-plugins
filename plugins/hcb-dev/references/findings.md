@@ -1,18 +1,15 @@
 # A finding, and what to do with it
 
-Read wherever work turns up a finding — a reviewer that reported one, a step that
-noticed it while editing something else, a completion that ran past it. A finding
-on the code the work is writing and one noticed in passing are both here: this
-file owns how a finding is rated, whether it is fixed in the work that found it,
-and, for what is left, everything between noticing and the tracker — so one
-finding gets the same treatment whichever skill found it. The tracker operations
-themselves — searching, the issue body, hierarchy, closing — belong to
+Read wherever work turns up a finding — a reviewer that reported one, a step that noticed
+it while editing something else, a completion that ran past it. This file owns how a
+finding is rated, whether it is fixed in the work that found it, and everything between
+noticing and the tracker for what is left, so one finding gets the same treatment
+whichever skill found it. The tracker operations themselves belong to
 `hcb-dev:issue-tracking`.
 
-Two questions decide everything below, in this order: **is it fixed here** — how
-much it matters, whether it belongs to the work in hand, and what the fix costs
-against the record of it — and, for what is not fixed, **what record it leaves**.
-Every finding ends in one of the outcomes this file closes on.
+Two questions, in this order: **is it fixed here** — how much it matters, whether it
+belongs to the work in hand, and what the fix costs against the record of it — and, for
+what is not fixed, **what record it leaves**.
 
 ## How much it matters
 
@@ -25,57 +22,44 @@ Every finding ends in one of the outcomes this file closes on.
   suggestions carrying no concrete defect, speculative edge cases that cannot
   occur.
 
-**On the code this work is writing, doubt between Important and Minor resolves
-upward.** Anywhere else it resolves by consequence: name what observably breaks
-if this is never fixed, and where nothing does, it is Minor. Where the reviewer
-rated the finding itself, take its rating; reading a rating back out of an engine
-is that engine's skill's own business.
+**On the code this work is writing, doubt between Important and Minor resolves upward.**
+Anywhere else it resolves by consequence: name what observably breaks if this is never
+fixed, and where nothing does, it is Minor. Where the reviewer rated the finding itself,
+take its rating.
 
 ## Whether it belongs to the work in hand
 
-A finding on the code this work is writing belongs to it, and is not weighed
-against scope at all. For anything else the reviewers happened to read, five
-conditions, all of which have to hold:
+A finding on the code this work is writing belongs to it and is not weighed against scope
+at all. For anything else the reviewers happened to read, five conditions, **all** of
+which have to hold:
 
-- **It would have been in scope had it been seen earlier.** The test is the
-  planning gate: named while this work was being scoped, would it have gone in?
-  The same defect one line over, the other half of the rename, the case the new
-  branch forgot — yes. Another subsystem, another kind of problem, something that
-  shares only a file — no.
-- **Nothing is being decided.** The fix is mechanical, or has one
-  obviously-correct form. Where two shapes are both defensible it is an
-  architectural fork ([`architecture-decisions.md`](architecture-decisions.md) §1),
-  and a fork is not a drive-by.
-- **Intended behaviour stays intended.** What the code is *meant* to do is the
-  user's call, whatever it currently does.
-- **It fits inside the review already coming.** A fix wanting a reading of its
-  own — a new surface, a migration, a slice's worth of work — is its own work,
-  however plainly the thing is broken.
-- **The ground is yours.** Another slice in flight, another worktree's checkout, a
-  vendored tree: not yours to edit, whatever is wrong in it.
+| condition | what fails it |
+|---|---|
+| **it would have been in scope had it been seen earlier** — the test is the planning gate | another subsystem, another kind of problem, something sharing only a file. The same defect one line over, the other half of the rename, the case the new branch forgot: in scope |
+| **nothing is being decided** — the fix is mechanical, or has one obviously-correct form | two defensible shapes, which is an architectural fork ([`architecture-decisions.md`](architecture-decisions.md) §1), and a fork is not a drive-by |
+| **intended behaviour stays intended** | what the code is *meant* to do, which is the user's call whatever it currently does |
+| **it fits inside the review already coming** | a fix wanting a reading of its own — a new surface, a migration, a slice's worth of work — however plainly the thing is broken |
+| **the ground is yours** | another slice in flight, another worktree's checkout, a vendored tree |
 
-A finding that is simply **wrong** is neither fixed nor surfaced: say why it does
-not hold, and move on. A fork does not go below either — §1 routes that one, and
-where it is genuinely unforeseen the route is stopping the run, not filing it.
-Everything else that fails a condition surfaces.
+A finding that is simply **wrong** is neither fixed nor surfaced: say why it does not
+hold, and move on. A fork does not go below either — §1 routes it, and where it is
+genuinely unforeseen the route is stopping the run, not filing it. Everything else that
+fails a condition surfaces.
 
 ## Cheaper to do than to record
 
-A fix that costs less than the record of it is done rather than written down: a
-scope condition that turned it down does not send it to the tracker by itself.
+A fix that costs less than the record of it is done rather than written down: a scope
+condition that turned it down does not send it to the tracker by itself.
 
-**It lifts two of the five conditions, and only those.** *Would have been in
-scope* and *fits inside the review already coming* are what it answers — they say
-the fix does not belong to this work, which is no reason to spend an entry on
-something a few lines settle. *Nothing is being decided*, *intended behaviour
-stays intended* and *the ground is yours* stand as written: a fork is still a
-fork, the user's call is still theirs, and ground that is not yours sends it to
-**HAND OVER** rather than to your commit.
+**It lifts two of the five conditions, and only those** — *would have been in scope* and
+*fits inside the review already coming*, which say the fix does not belong to this work
+and are no reason to spend an entry on what a few lines settle. The other three stand as
+written: a fork is still a fork, the user's call is still theirs, and ground that is not
+yours sends it to **HAND OVER** rather than to your commit.
 
-The measure is the fix — a few lines with one obviously-correct form. On your own
-ground it rides a commit of its own. Where it falls outside the range the
-reviewers read, it is **proposed** as a fix rather than made, so nothing lands
-that no review covered.
+The measure is the fix — a few lines with one obviously-correct form. On your own ground
+it rides a commit of its own. Where it falls outside the range the reviewers read it is
+**proposed** rather than made, so nothing lands that no review covered.
 
 ## What record it leaves
 
@@ -147,13 +131,11 @@ inheriting a list already cut.
 
 ## Decided cold
 
-Where something other than this run rules its candidates — an order's addressee, a
-master session, the user — a candidate is not decided in the response that found
-it. It travels with its proposed outcome and waits for the pass that reads the
-run's candidates together, against each other and against what the tracker already
-holds; whoever decides is then not whoever found it. Where no such authority
-stands over the run, the run's own end is that pass, and the candidates are read
-together there rather than one at a time.
+Where something other than this run rules its candidates — an order's addressee, a master
+session, the user — a candidate is not decided in the response that found it. It travels
+with its proposed outcome and waits for the pass that reads the run's candidates together,
+against each other and against what the tracker holds. Where no such authority stands over
+the run, the run's own end is that pass.
 
 **Fixing never waits for it.** **FIX** and **HAND OVER** are the work's own,
 settled where the finding is found, and a `Critical` or `Important` on the code
@@ -173,19 +155,16 @@ A fix that is not what the change set out to make — as against a fix to the co
 this change is writing, which is just the work — never rides inside another
 commit, and never shares one with a second drive-by.
 
-- **Its subject** — [`branch-naming.md`](branch-naming.md) owns what a passenger
-  commit is called.
-- **Commits, not pushes.** Where a push costs a re-review round they still go up
-  together; it is the history that stays separate, not the round trips.
-- **Notice it before the reviewers run**, so it sits inside the range they read.
-  One noticed after they have reported is fixed only where it falls inside that
-  range; outside it, it surfaces instead.
-- **Where the merge collapses the commits, name the fix in the message it
-  leaves** ([`merge-message.md`](merge-message.md)) — and in the change-request
-  body that message is written from, where there is one. A slice always squashes
-  and a standalone request usually does
-  ([`slice-completion.md`](slice-completion.md)). A merge keeping the commits
-  carries it already.
+- **Its subject** — [`branch-naming.md`](branch-naming.md) owns what a passenger commit
+  is called.
+- **Commits, not pushes.** Where a push costs a re-review round they still go up together;
+  it is the history that stays separate, not the round trips.
+- **Notice it before the reviewers run**, so it sits inside the range they read. One
+  noticed after they have reported is fixed only where it falls inside that range;
+  outside it, it surfaces instead.
+- **Where the merge collapses the commits, name the fix in the message it leaves**
+  ([`merge-message.md`](merge-message.md)) — and in the change-request body that message
+  is written from. A merge keeping the commits carries it already.
 
 A fix is not surfaced as a finding — no proposal, no issue. It is done, and the
 commit and that line are its record.
@@ -200,23 +179,19 @@ test not written, a duplication, a TODO, an assumption that did not hold.
 All three happen before the finding is proposed, not after it is accepted:
 
 - **Search the tracker**, closed entries included
-  ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — it
-  runs on what the lineage above leaves, and its result decides which of the three
-  states below applies.
-- **Re-measure it** at its coordinate on the tree the work stands on — the base
-  where the code is in it already, the branch carrying it where it is not — with
-  whatever will judge it there: the run, the gate, the tool, reading only where
-  reading is that instrument.
-- **Read the repository's own classification**
-  ([`classification.md`](classification.md)),
-  once for the run rather than once per finding, so the proposal already carries
-  what it would be opened with. Where a role has no vocabulary here, name the role
-  and offer nothing for it.
+  ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)). Its result
+  decides which of the three states below applies.
+- **Re-measure it** at its coordinate on the tree the work stands on — the base where the
+  code is already in it, the branch carrying it where it is not — with whatever will judge
+  it there: the run, the gate, the tool.
+- **Read the repository's own classification** ([`classification.md`](classification.md)),
+  once for the run rather than once per finding, so the proposal already carries what it
+  would be opened with. Where a role has no vocabulary there, name the role and offer
+  nothing for it.
 
-Where there is no tracker to reach — no remote at all, or none a forge answers
-for — the search is not possible and the classification reaches only what the
-project itself states, while the re-measure still runs, and the finding surfaces: as an observation with
-no proposal attached, saying there is nowhere to file it.
+Where there is no tracker to reach, the search is not possible and the classification
+reaches only what the project itself states, while the re-measure still runs: the finding
+surfaces as an observation with no proposal attached, saying there is nowhere to file it.
 
 ## The form
 
@@ -252,18 +227,18 @@ it, every time. **A standing instruction to work autonomously is not that
 answer** — it authorizes the work, not the tracker — and an approval covers the
 batch it was given for, never what turns up afterwards.
 
-**The answer takes the form the person gives it**, and three forms of it answer:
-agreement with what was recommended, which settles each item in the outcome
-recommended for it; a bar — "file the important ones" — which settles every
-candidate of the pass it was given for that clears this file's bar once
-re-measured — what a re-measure turns up that was not among them is a new
-candidate, proposed rather than filed; and a delegation of the ruling. What no form of it moves is the **target** and the
-**outcome**: content the re-measure corrected is written, and the correction
-named in the report (`report-format.md`), while a changed
-target or outcome — narrowed to closed, **INTO** to **OPEN**, one issue to
-another — waits for a new answer, except under a delegation, the one form that
-carries it. An answer by numbers that passes over one of
-them leaves that one unanswered: ask it again rather than filling it in.
+**The answer takes the form the person gives it**, and three forms answer: agreement with
+what was recommended, settling each item in the outcome recommended for it; a bar — "file
+the important ones" — settling every candidate of that pass which clears this file's bar
+once re-measured, anything a re-measure turns up beyond them being a new candidate,
+proposed rather than filed; and a delegation of the ruling.
+
+What no form of it moves is the **target** and the **outcome**. Content the re-measure
+corrected is written, with the correction named in the report
+([`report-format.md`](report-format.md)); a changed target or outcome — narrowed to
+closed, **INTO** to **OPEN**, one issue to another — waits for a new answer, except under
+a delegation, the one form that carries it. An answer by numbers that passes over one
+leaves that one unanswered: ask again rather than filling it in.
 
 Where no answer comes, the finding stays undecided rather than dropped:
 re-surface it at the natural end of the session, once the primary work is done.
