@@ -113,3 +113,15 @@ I7-10	done	the invocation that started the run is the ask a subagent rule waits 
 I5-11	done	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:132@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down and never widens
 I5-12	done	an authority narrows on the way down and never widens	plugins/hcb-dev/references/slice-completion.md:166@dc79f6c	plugins/hcb-dev/references/invariants.md	An authority narrows on the way down and never widens
 I8-09	done	meta-text restating a shared reference beside the link to it	plugins/hcb-dev/references/slice-completion.md:16@dc79f6c	(dropped)	detaches HEAD quietly and the merge then lands nowhere
+I2-21	done	a read that failed is not a read that came back empty	plugins/hcb-dev/references/branch-retirement.md:133@dc79f6c	plugins/hcb-dev/scripts/retire-check.mjs	endpoints.push({ url, has: null, error: r.line() })
+I1-16	done	an empty answer is not a negative one	plugins/hcb-dev/references/branch-retirement.md:144@dc79f6c	plugins/hcb-dev/scripts/retire-check.mjs	answer.remote.published = unknown.length ? null : live;
+I3-12	done	read what happened, never predict it from configuration	plugins/hcb-dev/references/branch-retirement.md:97@dc79f6c	plugins/hcb-dev/scripts/retire-check.mjs	so a branch pushed at some
+R1-01	done	the retirement verdicts are named `deleteLocal`/`deleteRemote` — a doc naming the field the script stopped printing is a gate pointing at nothing	plugins/hcb-dev/references/branch-retirement.md:95@d12af3e	(dropped)	local.safe
+R1-02	done	the same on the published side	plugins/hcb-dev/references/branch-retirement.md:145@d12af3e	(dropped)	remote.safe
+I8-09	done	meta-text explaining why a shared reference exists — carries no instruction	plugins/hcb-dev/references/branch-retirement.md:7@d12af3e	(dropped)	prose copies
+R2-01	done	the two sides are answered separately because they fail separately	plugins/hcb-dev/references/branch-retirement.md:71@d12af3e	plugins/hcb-dev/scripts/retire-check.mjs	because they fail separately
+R2-02	done	the published side is request mode's alone — a local merge publishes nothing	plugins/hcb-dev/references/branch-retirement.md:75@d12af3e	plugins/hcb-dev/scripts/retire-check.mjs	A local merge publishes nothing
+R2-03	done	a second request open on this ref keeps the branch on both sides	plugins/hcb-dev/references/branch-retirement.md:148@d12af3e	plugins/hcb-dev/scripts/retire-check.mjs	another request is open on this ref
+R2-04	done	never let a deletion command decide whether the work landed	plugins/hcb-dev/references/branch-retirement.md:174@d12af3e	plugins/hcb-dev/scripts/retire-check.mjs	containment is unknown
+R2-05	done	never move the HEAD of a worktree you do not hold	plugins/hcb-dev/references/branch-retirement.md:175@d12af3e	plugins/hcb-dev/scripts/retire-check.mjs	is not this session's to move or delete
+R2-06	done	a head that advanced on the forge alone is fetched by id before measuring	plugins/hcb-dev/references/branch-retirement.md:102@d12af3e	plugins/hcb-dev/scripts/retire-check.mjs	Fetch it by its id first

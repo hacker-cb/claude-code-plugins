@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Git as a PROXY: real for everything except the questions whose answer would reach a
+# network or depend on the shape of this checkout. A case resting on the runner's own
+# clone would test the clone rather than the script.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+real=$(PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "^$(dirname "$0")$" | paste -sd: -) command -v git)
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+case "$1" in
+  rev-parse)
+    if [ "$2" = "--verify" ]; then
+      case "$4" in
+        refs/heads/*) case "$(ask '.branch_exists')" in yes) exit 0 ;; no) exit 1 ;; esac ;;
+        *) case "$(ask '.tip_present')" in yes) exit 0 ;; no) exit 1 ;; esac ;;
+      esac
+    fi
+    [ "$2" = "--show-toplevel" ] && { printf '%s\n' "$(ask '.here')"; exit 0; } ;;
+  worktree)
+    v=$(ask '.worktrees'); [ -n "$v" ] && { printf '%s\n' "$v"; exit 0; }
+    case "$(ask '.worktrees_fail')" in yes) exit 1 ;; esac ;;
+  status)
+    case "$(ask '.status_fail')" in yes) exit 1 ;; esac
+    printf '%s' "$(ask '.dirty')"; [ -n "$(ask '.dirty')" ] && echo; exit 0 ;;
+  merge-base)
+    case "$(ask '.contained')" in yes) exit 0 ;; no) exit 1 ;; esac ;;
+  remote)
+    v=$(ask '.push_urls')
+    case "$v" in
+      ""|fail) echo "fatal: no such remote" >&2; exit 128 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  ls-remote)
+    # $3 is the url, so an envelope can answer differently per endpoint.
+    v=$(ask ".ls_remote[\"$3\"] // .ls_remote_default")
+    case "$v" in
+      ""|silent) echo "fatal: could not read from remote repository" >&2; exit 128 ;;
+      absent) exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  fetch) case "$(ask '.fetch')" in fail) exit 1 ;; esac; exit 0 ;;
+esac
+exec "$real" "$@"

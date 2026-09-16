@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+# `gh --json a,b` returns THOSE keys and no others, so a stub answering the whole saved
+# object hands the script fields it never asked for — and a script that stopped asking
+# then goes on reading them, green.
+fields=""; prev=""
+for a in "$@"; do [ "$prev" = "--json" ] && fields="$a"; prev="$a"; done
+project() {
+  [ -n "$fields" ] || { printf '%s\n' "$1"; return; }
+  printf '%s' "$1" | jq -c --arg f "$fields" '
+    def pick: . as $o | reduce ($f | split(",")[]) as $k
+      ({}; if ($o | type) == "object" and ($o | has($k)) then .[$k] = $o[$k] else . end);
+    if type == "array" then map(pick) elif type == "object" then pick else . end' \
+    || printf '%s\n' "$1"
+}
+case "$1 $2" in
+  "pr list")
+    v=$(ask '.pr_list')
+    case "$v" in
+      ""|fail) echo "gh: could not list" >&2; exit 1 ;;
+      *) project "$v"; exit 0 ;;
+    esac ;;
+  "pr view")
+    v=$(ask '.pr_view')
+    case "$v" in
+      ""|fail) echo "gh: could not resolve to a PullRequest" >&2; exit 1 ;;
+      notjson) printf 'not json\n'; exit 0 ;;
+      *) project "$v"; exit 0 ;;
+    esac ;;
+esac
+echo "stub gh: no envelope answer for: $*" >&2; exit 3

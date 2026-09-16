@@ -4,28 +4,27 @@ Read by whatever *lands* work — a local merge into a parent, or a change reque
 the forge reports merged. It owns what follows that merge: freeing the worktree
 holding the branch, deleting it — locally, and on the remote a change request
 published it to — and what the report says about each. It sits outside either
-backend because the step is the same whoever drove the merge, and prose copies
-drift.
+backend because the step is the same whoever drove the merge.
 
 It runs **as soon as the merge is confirmed**, never deferred to
 `/hcb-dev:git-cleanup`: that skill is manual-only and sweeps a whole repository, so
 a branch handed to it is a branch left standing indefinitely.
 
-## The tip
+## Two commits, not one
 
-Everything below measures against one commit — the state the merge produced.
+**Where HEAD goes** is `<landing>` — the state the work landed on, current. Locally
+that is the parent merged into. On a request the merge happened on the forge, so this
+repository does not carry it yet: refresh `<remote>/<base>` through
+[`base-resolution.md`](base-resolution.md), which owns that fetch and what each of its
+outcomes means, and a base it leaves unverified stops the HEAD move and the local
+deletion rather than seeding the next branch from a stale one. The refreshed ref carries
+the merge plus whatever else landed while the request was open, so work continued from it
+starts current instead of a rebase behind.
 
-**Local** — the parent that was merged into already is that state.
-
-**Request** — the merge happened on the forge, so this repository does not carry
-the commit yet. Refresh `<remote>/<base>` through
-[`base-resolution.md`](base-resolution.md), which owns that fetch and what each of
-its outcomes means; a base it leaves unverified stops what measures against the
-tip — the HEAD move and the local deletion — rather than seeding the next branch
-from a stale tip. The published ref measures against nothing here and retires
-anyway (*On the remote*). The refreshed ref is the tip, carrying the merge plus
-whatever else landed while the request was open, so work continued from it starts
-current instead of a rebase behind.
+**What containment measures against** is `measuredAgainst`, and on a request it is not
+`<landing>` — it is the head the request RECORDED, which after a squash is in no branch
+at all. It is what the remote deletion leases, too. Locally the two are one commit, which
+is how one word for both survived this long.
 
 The remote the branch was **pushed** to is pruned in a call of its own, because in
 a fork it is not the one carrying the base (`base-resolution.md`, *Pushing is a
@@ -36,146 +35,107 @@ does not outlive it:
 git fetch --prune <push-remote>
 ```
 
-## What the request recorded
+## What the reading says, and who does the acting
 
-Request mode, and before either half below: both read these, and neither half's
-own blockers stop this one.
+`scripts/retire-check.mjs` answers one question — **is this branch safe to retire, and
+on which side**. It reads and judges; it deletes nothing and moves no HEAD, deliberately:
+a deletion folded into the reading runs before the reading is believed, and what it
+reports is then not what it did.
+
+```text
+node <plugin root>/scripts/retire-check.mjs \
+  --branch <name> (--tip <ref> | --pr <n>) [--push-remote <name>]
+```
+
+**Every skill that performs a retirement writes that command itself**, because the plugin
+root is substituted in skill content and stays literal text here. Three do:
+`github-pr-workflow` Step 6, `hcb-dev:wave-worker` on a landing it finds already taken,
+and whatever drives a local completion ([`slice-completion.md`](slice-completion.md)). A
+skill that only *mentions* the retirement links this file and stops there.
+
+| field | what it settles |
+|---|---|
+| `read` | every reading answered. `false` retires nothing, on either side |
+| `measuredAgainst` | what containment measures against and what the deletion leases — **never where HEAD goes**: after a squash the request's head is not in the base at all |
+| `request` | request mode: the `state` every deletion rests on, the `headRefOid` the local proof measures against and the remote deletion leases, and the `headRepo` that head lives in |
+| `deleteLocal` / `deleteRemote` | the two verdicts, named apart because `safe` on both sides was one word at two levels. Each is **something to delete, and nothing in the way** — every reason to refuse is a blocker, so no other field is a second gate |
+| `local.blockers` / `remote.blockers` | why not, in words the report can carry |
+| `local.callerDecides` | `deleteLocal: false` on the one refusal the caller may overrule, and **only that one**: `false` the moment anything else is in the way too |
+| `remote.published` | `true` still there, `false` the merge already took it, **`null` an endpoint did not answer** |
+| `remote.endpoints[].has` | per push URL, because a push reaches every configured endpoint |
+
+**GitLab is read by hand**, the script speaking `gh` alone: take the state and the head
+the same way, and the rest of this file holds unchanged.
 
 ```bash
-# GitHub
-gh pr view <n> --json state,headRefOid --jq '"\(.state) \(.headRefOid)"'
-# GitLab
 glab mr view <n> --output json | jq -r '"\(.state) \(.sha)"'
 ```
 
-Merged is what every deletion here rests on. The head is what the local proof
-measures against and what the remote deletion leases — a run that could not read
-either retires nothing and says so.
+Four readings it is built on, each of which a caller doing this by hand gets wrong, and
+each a row in [`forge-behaviour.md`](forge-behaviour.md):
 
-A head that advanced on the forge alone — a base update taken there, a review
-suggestion committed through the web UI — is not an object this repository carries,
-and the local proof reads it as unknown rather than as unmerged. Fetch it by its id
-first, from the remote the branch was pushed to:
+- **`git branch -d` is not the proof** — with an upstream set it tests containment
+  against that upstream, so a branch pushed earlier passes whether the merge landed or
+  not. Delete with `-D`, once `deleteLocal` says so.
+- **A squash leaves no ref-level proof at all**, so `local.contained` is false however
+  completely the work landed — which is what `local.callerDecides` is for.
+- **A branch name is not unique across forks**, so a second request on this ref is told
+  from a contributor's same-named one by identity, never by the name.
+- **A silent endpoint prints what a deleted branch prints.** `published: null` is
+  neither: leave the branch standing and report that endpoint as unknown.
 
-```bash
-git fetch <push-remote> <head>
-```
+## Free the branch, then delete it
 
-## Free the branch
+**An uncommitted change stops both halves of this section** — do not switch, do not
+delete, and say the local branch is still there. `local.dirty` is that answer, and it
+gates the HEAD move as much as the deletion: switching with work in the tree carries it
+onto another commit. What is published is a separate question and answered above either
+way.
 
-Git refuses to delete a branch that is checked out, so HEAD moves off it first —
-and only where **this** worktree is the one holding it. Another worktree's branch
-is not yours to move ([`claude-worktrees.md`](claude-worktrees.md)): report it and
-leave it standing. An uncommitted change stops both halves of this section and the
-next — do not switch, do not delete, and say the local branch is still there. What
-is published is a separate question, and *On the remote* answers it either way.
+Git refuses to delete a branch that is checked out, so HEAD moves off it first — and
+only where **this** worktree holds it, which `local.heldBy` answers. **HEAD moves onto
+`<landing>`, never onto `measuredAgainst`** — on a request those are two commits, and the
+second is not in the base at all after a squash. First hit wins:
 
-First hit wins:
+1. **The parent is available here** — it exists locally, no other worktree holds it, and
+   it fast-forwards to `<landing>`. `git switch <parent>` unless HEAD already stands on
+   it; then `git merge --ff-only <landing>` where it trails. Anything else about it — no
+   local branch of that name, a name that resolves ambiguously, commits of its own
+   `<landing>` does not carry — falls to 2 rather than stopping the retirement.
+2. **Otherwise** — `git switch --detach <landing>`. Detached is the ordinary state
+   between tasks.
 
-1. **The parent is available here** — it exists locally, no *other* worktree holds
-   it, and it fast-forwards to the tip. `git switch <parent>` unless HEAD already
-   stands on it; then `git merge --ff-only <tip>` where it trails. Anything else
-   about it — no local branch of that name, a name that resolves ambiguously,
-   commits of its own the tip does not carry — falls to 2 rather than stopping the
-   retirement.
-2. **Otherwise** — `git switch --detach <tip>`. Detached is the ordinary state
-   between tasks, and the next task leaves it the way every task starts: a fresh
-   branch cut from that tip, by whoever cuts branches in that flow.
-
-## Delete it
-
-A branch under a change request that is still open stays: that request's head is
-this ref, and what a reviewer asks for next has nowhere to land without it. So
-does one the user asked to keep — both refs, and the report says so. A ref that is
-already gone leaves only the HEAD question above and the line in the report.
-
-**`git branch -d` is not the proof.** With an upstream set, git tests containment
-against that upstream instead of HEAD, so a branch pushed at some earlier point
-passes the check whether or not the merge landed. Produce the proof below, then
-delete with `-D`.
-
-**Local** — the branch is contained in the tip:
+Then, and only on the matching verdict — or on `local.callerDecides`, the one refusal a
+caller may overrule and **only in local mode**: git cannot tell a squash from work that
+never landed, while the caller has just confirmed the merge and knows its strategy.
+Request mode has no such judgement, containment being measured there against the head the
+request recorded, which a squash does not move.
 
 ```bash
-git merge-base --is-ancestor refs/heads/<branch> <tip>   # exit 0: the tip holds it
-```
-
-Where the strategy collapsed the branch's commits, no ref-level check can show
-them: the confirmed merge this step follows is what landed them, and that is the
-proof.
-
-**Request** — the forge holds it: the request is merged, and the head it recorded
-(*What the request recorded*) contains the local tip.
-
-Merged, with `git merge-base --is-ancestor refs/heads/<branch> <head>` true, means
-every local commit reached the request: `git branch -D <branch>`. Equality is one
-way that holds, and a head built *on* the local tip is another. A tip carrying
-commits that head does not is work which never got there: keep the branch and say
-what sits on it.
-
-Either proof is a **precondition**, not a formality: without one, the local branch
-stays.
-
-## On the remote
-
-Request mode only — local mode publishes nothing, and a ref an earlier push left
-there is not this step's to remove. Ask the remote itself whether the branch is
-still published: a tracking ref answers only for what the checkout's refspec covers,
-which in a single-branch or CI clone is not this branch.
-
-```bash
-# The URLs that RECEIVE pushes, not the remote by name: a `pushurl` sends pushes
-# somewhere the FETCH url never published to. `--all`, because a push reaches every
-# configured endpoint. Keep each exit status: an endpoint that did not answer prints
-# nothing, and so does a missing remote — reading either as "no branch" calls a live
-# ref one the merge took.
-if urls="$(git remote get-url --push --all <push-remote>)"; then
-  printf '%s\n' "$urls" | while read -r url; do
-    git ls-remote --heads "$url" refs/heads/<branch> || echo "NO ANSWER: $url"
-  done
-else
-  echo "NO ANSWER: <push-remote> does not resolve"
-fi
-```
-
-A ref line means still published. Nothing at all means the merge already took it,
-and the report says so. `NO ANSWER` is neither: leave the branch standing and
-report that endpoint as unknown.
-
-**It stands on its own.** A dirty tree, or a local tip carrying commits that never
-reached the request, says nothing about the published ref — and this is the ref
-nothing else can clear afterwards. What does stop it: another request open on this
-ref, the user asking to keep the branch, or **another worktree holding it**, whose
-session can push to that ref and would only recreate what this step removed.
-
-The containment proof above measures *local* commits, so a repository with no such
-branch has none to strand and needs none. What the deletion does need is the
-recorded head, as a lease: the branch can have moved since — a push while the merge
-sat queued lands on the remote and nowhere else — and the remote refuses the
-deletion where the two disagree.
-
-```bash
+git branch -D <branch>                       # deleteLocal
 # The full refname on both halves, never the bare one: it is ambiguous where a tag
-# shares the name, and reaches that tag where the branch is already gone.
+# shares the name, and reaches that tag where the branch is already gone. The lease is
+# the recorded head — the branch can have moved since, and the remote refuses where the
+# two disagree.
 git push --force-with-lease="refs/heads/<branch>:<head>" <push-remote> \
-  --delete "refs/heads/<branch>"
+  --delete "refs/heads/<branch>"             # deleteRemote, leased on request.headRefOid
 ```
 
-A refused lease means the published ref is not what the request recorded — ahead of
-it, or rewritten behind it, and the refusal does not say which. Keep the branch,
-read what the remote actually carries, and report that rather than a guess. A
-deletion rule refusing the push leaves it
-published, and the report is the end of that — `/hcb-dev:git-cleanup` writes to no
-remote, so nothing sweeps it afterwards.
+**A branch the user asked to keep stays**, whatever the verdict says.
+
+A refused lease means the published ref is not what the request recorded — ahead of it,
+or rewritten behind it, and the refusal does not say which. Keep the branch, read what
+the remote actually carries, and report that rather than a guess. A deletion rule
+refusing the push leaves it published, and the report is the end of that:
+`/hcb-dev:git-cleanup` writes to no remote, so nothing sweeps it afterwards.
 
 ## The report
 
-One line, always: which branch went, on each side it stood, and where HEAD
-stands now — naming the commit wherever it is detached, so a later commit
-does not land unreachable. Where a ref stayed, name the reason: another worktree
-holds it, the tree is dirty, a change request on it is still open, its tip carries
-commits the merge never took, the remote ref is no longer the head the request
-recorded, the remote did not answer, or a deletion rule refused the push.
+One line, always: which branch went, on each side it stood, and where HEAD stands now —
+naming the commit wherever it is detached, so a later commit does not land unreachable.
+Where a ref stayed, the reason is its side's `blockers`, already in words the report can
+carry; a lease the remote refused is the one reason no blocker holds, because it happens
+after the reading.
 
 ## Never
 
@@ -184,6 +144,4 @@ recorded, the remote did not answer, or a deletion rule refused the push.
 | leave a landed branch to `/hcb-dev:git-cleanup` | retire it here; the manual sweep is for what earlier work left behind |
 | hand a refused remote deletion to that sweep instead | say it in the report — it writes to no remote, so nothing picks that branch up afterwards |
 | ask the merge command to retire a ref for you | merge, confirm, then retire — a deletion folded into the merge runs before the confirmation, and what it reports is not what it did |
-| let a deletion command decide whether the work landed | prove containment first — against the tip locally, against the recorded head on a request; no proof, no deletion |
-| move the HEAD of a worktree you do not hold | report it; that worktree belongs to another session |
 | retire the branch that was merged **into** | a parent, and the default branch, are never the branch being retired |
