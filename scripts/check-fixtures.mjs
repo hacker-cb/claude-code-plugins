@@ -294,11 +294,17 @@ const listed = spawnSync('git', ['-C', rootAbs, 'ls-files', '--cached', '--other
 let tracked;
 if (listed.status === 0) {
   tracked = listed.stdout.split('\0').filter(Boolean);
-} else if (rootWasGiven) {
+} else if (rootWasGiven && spawnSync('git', ['-C', rootAbs, 'rev-parse', '--show-toplevel'],
+  { encoding: 'utf8' }).status !== 0) {
   // An explicit `--dir` may name a directory git knows nothing about — a capture checked
   // where the collector wrote it, BEFORE it is moved into the repository, which is the
   // one moment checking it still costs nothing. There is no listing to ask, and no
   // worktree problem either: the caller named this directory.
+  //
+  // The check is "outside a checkout", never "the listing failed". A corrupt index or an
+  // output too large for the buffer would otherwise switch the gate to a filesystem walk
+  // silently — losing every marker that lives in the index alone, which is the case this
+  // whole union exists for.
   tracked = [];
   (function walk(dir) {
     for (const entry of readdirSync(dir)) {
@@ -330,6 +336,11 @@ for (const rel of tracked) {
   // marker drop out — and a directory that cannot be listed drop out silently with it.
   markedByGit.add(dirname(join(rootAbs, rel)));
 }
+// Seeded here, not discovered later. Building `capturedDirs` out of the fixtures that
+// found a marker means a capture holding NO listed json never enters the set at all —
+// and the check below, whose whole job is to notice a marker nothing was checked
+// against, then has nothing to notice.
+for (const dir of markedByGit) capturedDirs.add(dir);
 
 const markerAt = new Map();
 // Up to the CHECKOUT root, never to the scan root: stopping at `rootAbs` made the

@@ -522,24 +522,29 @@ that, never the merge command's exit status:
   # Quoted as one word at every use: the plugin root is a path like any other and may
   # carry spaces, and unquoted, `node` is handed its first segment.
   CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
-  BEFORE="$(node "$CHECKS" --pr <pr> --sha base)" || echo "CALLED WRONG: $BEFORE"
-  # SINGLE quotes, and a variable from here on. A check's name is a workflow's name and
-  # may be anything at all — inside double quotes a shell still expands `$(…)` and a
-  # backtick, so a name is never written into a command, not even as a jq argument.
-  WANT='<the aggregate the base requires>'
-  REQ="$(printf '%s' "$BEFORE" | jq -r --arg want "$WANT" \
-         '[.runs[].name, .statuses[].context] | map(select(. == $want)) | first // ""')"
-  AFTER="$(node "$CHECKS" --pr <pr> --sha merge ${REQ:+--require "$REQ"})" \
-    || echo "CALLED WRONG: $AFTER"
+  # A check's name is a workflow's name and may carry an apostrophe, a `$`, a backtick —
+  # anything. Single-quote it and write each apostrophe as '\'' : that is the complete
+  # rule for a POSIX shell and the only one. Double quotes would expand `$(…)`.
+  WANT='<the aggregate the base'\''s gates require>'
+  BEFORE="$(node "$CHECKS" --pr <pr> --sha base --require "$WANT")" \
+    || echo "CALLED WRONG: $BEFORE"
+  # Read, and carrying it. `.required[0].present` is false on an UNREAD answer too —
+  # because nothing was read, not because the base lacks the check.
+  CARRIES="$(printf '%s' "$BEFORE" | jq -r 'if .read then (.required[0].present // false) else "unread" end')"
+  if [ "$CARRIES" = true ]; then
+    AFTER="$(node "$CHECKS" --pr <pr> --sha merge --require "$WANT")" || echo "CALLED WRONG: $AFTER"
+  else
+    AFTER="$(node "$CHECKS" --pr <pr> --sha merge)" || echo "CALLED WRONG: $AFTER"
+  fi
   ```
 
-  **`BEFORE` is read before `REQ` is believed.** An unread `BEFORE` still answers with
-  empty `runs` and `statuses`, so `REQ` comes back empty from a read that never
-  happened — and an empty `REQ` drops `--require` altogether, after which `AFTER` can
-  come back `green` having waited for nothing. Where `BEFORE.verdict` is `unread` or
-  `retry`, this step has learned nothing about the base: re-poll or take the platform
-  path, and claim nothing. Only a `BEFORE` that was actually read may say the base
-  carries no aggregate.
+  **`CARRIES` has three answers and only one of them lets `AFTER` proceed.** An unread
+  `BEFORE` still answers with empty `runs` and `statuses`, so "the base does not carry
+  the aggregate" and "nothing was read" look identical in the rows — and dropping
+  `--require` on the strength of the second lets `AFTER` come back `green` having waited
+  for nothing. `unread` means this step has learned nothing about the base: re-poll, or
+  take the platform path, and claim nothing. Only a `BEFORE` that was actually read may
+  say the base carries no aggregate.
 
   Captured in variables, never redirected to a file: Step 6 runs inside the user's
   checkout, where a stray `merged.json` is an untracked file that Step 7, `git-cleanup`
