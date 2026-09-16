@@ -89,7 +89,13 @@ if (!opts.pr && SYMBOLIC.includes(opts.sha)) {
 // different things to a caller: one is an argument to fix, the other a forge to retry.
 // A caller wanting a parent resolves it with git and passes the oid.
 const SEGMENT = /^[^/\\\s?#%~^:*[\]]+$/;
-const readable = (v) => SEGMENT.test(v) && !v.includes('..') && !v.startsWith('-');
+// The type is checked first, and that is not defensiveness about argv — the forge's own
+// answer comes through here too. A `headRefOid` that arrives as a number or an array
+// makes `.includes` throw, which exits 1 with nothing on stdout: no JSON, no verdict, and
+// a caller routing on "no JSON" reads a deterministic crash as an answer not published
+// yet and re-polls it until its budget is gone.
+const readable = (v) => typeof v === 'string' && SEGMENT.test(v)
+  && !v.includes('..') && !v.startsWith('-');
 if (!SYMBOLIC.includes(opts.sha) && !readable(opts.sha)) {
   die(`--sha '${opts.sha}' is not a commit id or a ref this can read`);
 }

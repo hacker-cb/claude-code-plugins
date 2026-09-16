@@ -14,7 +14,8 @@
 //
 // Usage: node scripts/check-fixtures.mjs [--dir <fixtures root>]
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -88,6 +89,42 @@ function packedLeak(value) {
 // Every detector above is checked against a value that must trip it and one that must
 // not. A guard nothing can kill is a guard nobody proved, and these run in CI beside the
 // real check — where a regex quietly stopping matching would otherwise read as "clean".
+// Read from the directory's own listing, not by asking whether a path exists. macOS is
+// case-insensitive, so `existsSync(<dir>/CAPTURED)` is TRUE of a directory named
+// `captured` sitting there — which is precisely what the collector's own output is
+// called. The gate would then mark a whole suite captured on a developer's machine and
+// not in CI, and a rule that answers differently per filesystem is worse than no rule.
+// A listing compares exactly, and `isFile` keeps a directory from ever being a marker.
+const hasMarker = (dir) => {
+  try {
+    return readdirSync(dir).includes('CAPTURED') && statSync(join(dir, 'CAPTURED')).isFile();
+  } catch {
+    // A directory that cannot be listed is not a directory without a marker. Say so
+    // rather than answering "no" — the caller below turns this into a failure.
+    return null;
+  }
+};
+
+
+// The nearest ancestor carrying a marker, `null` for none, `undefined` for a directory
+// that could not be read — three answers, because "unknown" taking the shape of "no" is
+// how a gate reports a clean tree it never managed to look at.
+function markedAncestor(dir, stopAt, cache = new Map()) {
+  let at = dir;
+  for (;;) {
+    if (!cache.has(at)) {
+      const seen = hasMarker(at);
+      if (seen === null) return undefined;
+      cache.set(at, seen);
+    }
+    if (cache.get(at)) return at;
+    if (at === stopAt) return null;
+    const up = dirname(at);
+    if (up === at) return null;
+    at = up;
+  }
+}
+
 const SELF_TEST = [
   ['sha in the open', '18b5c1fd43f39a3a411db365e946c95f4e4d5ce3', true, (v) => LOOSE_SHA.test(v)],
   ['invented sha passes', `f1x7${'a'.repeat(36)}`, false, (v) => LOOSE_SHA.test(v)],
@@ -112,13 +149,39 @@ const SELF_TEST = [
   ['an invented branch passes', 'example-branch-1a2b3c4d', true, (v) => SHAPES.ref.test(v)],
 ];
 
+// Two of the probes below are about the WALK rather than a detector, so they need a
+// tree. It is built in a temp directory and torn down: a probe that asserts against the
+// repository's own layout stops proving anything the day that layout changes.
+function treeProbes() {
+  const base = mkdtempSync(join(tmpdir(), 'hcb-fixture-probe-'));
+  try {
+    mkdirSync(join(base, 'marked', 'sub'), { recursive: true });
+    writeFileSync(join(base, 'marked', 'CAPTURED'), 'x\n');
+    // A DIRECTORY called `captured` — which is what the collector's own output is named,
+    // and what a case-insensitive filesystem hands back for a query about `CAPTURED`.
+    mkdirSync(join(base, 'plain', 'captured'), { recursive: true });
+    return [
+      ['a marker file is a marker', join(base, 'marked'), true, (v) => hasMarker(v) === true],
+      ['a directory named captured is not', join(base, 'plain'), false, (v) => hasMarker(v) === true],
+      ['the marker reaches a subdirectory', join(base, 'marked', 'sub'), true,
+        (v) => markedAncestor(v, base) === join(base, 'marked')],
+      ['and does not reach a sibling', join(base, 'plain'), false,
+        (v) => markedAncestor(v, base) !== null],
+    ].map(([name, value, want, probe]) => [name, value, want, probe, probe(value)]);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+}
+
 function selfTest() {
   const bad = [];
-  for (const [name, value, want, probe] of SELF_TEST) {
-    const got = probe(value);
+  // Evaluated while the tree still stands; the rows carry their answers.
+  const tree = treeProbes();
+  for (const [name, value, want, probe, answered] of [...SELF_TEST, ...tree]) {
+    const got = answered !== undefined ? answered : probe(value);
     if (got !== want) bad.push(`${name}: expected ${want}, got ${got} — "${value}"`);
   }
-  process.stdout.write(`self-test: ${SELF_TEST.length} probe(s)\n`);
+  process.stdout.write(`self-test: ${SELF_TEST.length + tree.length} probe(s)\n`);
   for (const b of bad) process.stdout.write(`  FAIL  ${b}\n`);
   if (bad.length) {
     process.stdout.write(`\n${bad.length} detector(s) no longer work\n`);
@@ -208,14 +271,38 @@ if (listed.status !== 0) {
 }
 const tracked = listed.stdout.split('\0').filter(Boolean);
 
+const failures = [];
 const fixtures = [];
 const capturedDirs = new Set();
-// A directory is captured when git can see a CAPTURED file in it — the marker decides,
-// and reading it from the same listing keeps the two answers from disagreeing.
-for (const rel of tracked) {
-  if (rel.endsWith('CAPTURED') && !rel.slice(0, -('CAPTURED'.length) - 1).includes('CAPTURED')) {
-    capturedDirs.add(dirname(join(rootAbs, rel)));
+
+// Whether a file is captured is answered by the FILESYSTEM, and by any ancestor up to
+// the root — two separate corrections to the same question, each of which silently took
+// the strict layer away.
+//
+// Asking the git listing alone made a marker git cannot see stop counting: ignore it,
+// or `git rm --cached` it as "not needed in the repository", and every json beside it
+// goes on being tracked while `capturedDirs` comes back empty — the whole shape check
+// gone, under a summary line reading "no private data found".
+//
+// Asking only the file's own directory made a capture one level down escape: a marked
+// directory's `sub/checks.json` got the loose probes and nothing else, so a real login,
+// a real branch and a raw numeric id passed green.
+const markerAt = new Map();
+const isCaptured = (dir) => {
+  const hit = markedAncestor(dir, rootAbs, markerAt);
+  if (hit === undefined) {
+    failures.push(`${dir}: could not be listed, so whether it carries a CAPTURED marker is unknown`);
+    return true;
   }
+  if (hit === null) return false;
+  capturedDirs.add(hit);
+  return true;
+};
+
+for (const rel of tracked) {
+  if (!rel.endsWith('/CAPTURED') && rel !== 'CAPTURED') continue;
+  const dir = dirname(join(rootAbs, rel));
+  if (hasMarker(dir)) capturedDirs.add(dir);
 }
 for (const rel of tracked) {
   if (!rel.endsWith('.json')) continue;
@@ -224,18 +311,16 @@ for (const rel of tracked) {
   // bytes behind it, and reading it as an unparseable fixture would fail the gate over a
   // file that carries nothing.
   if (!existsSync(abs)) continue;
-  const captured = capturedDirs.has(dirname(abs));
-  // Inspected where a fixture may live: a marked directory, and the suites tree whose
-  // json IS fixture data. Elsewhere the manifests carry this project's own real url by
-  // design, so everything else is listed for markers and read as nothing — and that
-  // rule does NOT bend for an explicit `--dir`, which narrows where to look and never
-  // what counts. Letting it widen the rule made one tree answer two ways: `--dir .`
-  // failed on the manifests that the default run over the same tree passed.
+  const captured = isCaptured(dirname(abs));
+  // Inspected where a fixture may live: under a marked directory, and in the suites
+  // tree whose json IS fixture data. Elsewhere the manifests carry this project's own
+  // real url by design, so everything else is listed for markers and read as nothing —
+  // and that rule does NOT bend for an explicit `--dir`, which narrows where to look
+  // and never what counts. Letting it widen the rule made one tree answer two ways:
+  // `--dir .` failed on the manifests that the default run over the same tree passed.
   if (!captured && !isFixtureTree(dirname(abs))) continue;
   fixtures.push({ abs, captured });
 }
-
-const failures = [];
 
 function inspect(node, path, file, keyName, captured) {
   if (node === null || node === undefined) return;

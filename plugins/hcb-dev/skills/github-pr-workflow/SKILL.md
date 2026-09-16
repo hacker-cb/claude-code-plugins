@@ -522,8 +522,14 @@ that, never the merge command's exit status:
   # Quoted as one word at every use: the plugin root is a path like any other and may
   # carry spaces, and unquoted, `node` is handed its first segment.
   CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
-  BEFORE="$(node "$CHECKS" --pr <pr> --sha base)"   || echo "CALLED WRONG: $BEFORE"
-  AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require "<an aggregate BEFORE carries>")" \
+  BEFORE="$(node "$CHECKS" --pr <pr> --sha base)" || echo "CALLED WRONG: $BEFORE"
+  # The check's name comes FROM THE FORGE, so it is carried in a variable and never
+  # written into the command: inside double quotes a shell still expands `$(…)` and
+  # backticks, and a workflow may be named anything at all. Pick it out of BEFORE by
+  # the name the base's gates require.
+  REQ="$(printf '%s' "$BEFORE" | jq -r --arg want "<the required aggregate>" \
+         '[.runs[].name, .statuses[].context] | map(select(. == $want)) | first // ""')"
+  AFTER="$(node "$CHECKS" --pr <pr> --sha merge ${REQ:+--require "$REQ"})" \
     || echo "CALLED WRONG: $AFTER"
   ```
 
