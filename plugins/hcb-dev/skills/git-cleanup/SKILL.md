@@ -29,26 +29,18 @@ the wider question; this one has a script:
 
 ```bash
 DB="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/default-branch.mjs")"
-# BOTH flags gate this, and each covers a different failure. Without `.confirmed` the
-# answer may be this checkout's own pointer, which a rename on the forge leaves standing
-# and healthy-looking — acting on it compares every branch against a name that is no
-# longer the default. Without `.resolved` the name may be one whose ref was never
-# brought, and every command below then fails with a fatal, which is the same shape as
-# "nothing is merged" without being it.
-# Both values come from the answer itself. Never derive one from the other by
-# trimming: `${D#*/}` over a fully qualified ref yields `remotes/origin/master`,
-# and the comparison below then never matches the branch it is meant to protect.
-D="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .ref  else "" end')"   # a ref to READ
-DEF="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .name else "" end')" # a name to COMPARE
+# BOTH flags, and each covers a different failure: `.confirmed` false may be this
+# checkout's own stale pointer, `.resolved` false a name whose ref was never brought.
+# A ref to READ and a name to COMPARE are two values — never derive one by trimming the
+# other, which yields `remotes/origin/master` and matches nothing.
+D="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .ref  else "" end')"
+DEF="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .name else "" end')"
 [ -n "$D" ] || echo "DEFAULT-UNRESOLVED: $(printf '%s' "$DB" | jq -r '.reason // (.notes | join("; "))')"
 ```
 
-**`DEFAULT-UNRESOLVED` is not "nothing is merged"** — it is "the merge question
-cannot be answered", and holding those two apart is this skill's whole safety
-margin. Every branch's status becomes **unknown**: surface them all, delete none,
-and say the remote was unreachable.
-
-If there is no remote at all, ask the user — nothing local names the default.
+Empty `$D` is **DEFAULT-UNRESOLVED**, which step 4 carries through as
+`"usable": false`. If there is no remote at all, ask the user — nothing local names the
+default.
 
 ## Step 2 — Who is still working here
 
@@ -63,24 +55,15 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/worktree-owners.mjs" --repo-dir "$PROJECT"
 ```
 
 Carry its `owner` and `blockers` into step 5, and read them **in one direction only**: a
-live session proves a worktree is in use, and its absence proves nothing. The host leases
-worktrees to *sessions*, not to processes, so a worktree it created for another session
-is never this skill's to remove, running or not —
+live session proves a worktree is in use, and its absence proves nothing —
 [`../../references/claude-worktrees.md`](../../references/claude-worktrees.md) owns why,
-and the answer's `unsettled` list is the one question it leaves you: **did this session
-cut that worktree**, which is your own memory of this conversation.
+and `unsettled` is the one question it leaves you.
 
-`"read": false` answers nothing about any worktree: its `reason` names the reading that
-could not be taken, and the empty lists beside it are not "none of them are yours" —
-classify none of them, say so, and go on to the branches, which stand on their own.
-
-`"probeFailed": true` is not "nobody is working" either — it is no registry, or records
-that would not read. Every worktree goes unknown then, the one you stand in included: git
-still says you are standing in it, and a registry that would not read says only that
-whether a second client is there too cannot be known.
-
-What is left after that is still worth the sweep: worktrees you cut yourself, and — the
-larger share — **branches**, which no host cleanup touches.
+Two answers of its own that are not "nobody is working": `"probeFailed": true` is no
+registry or records that would not read, and every worktree goes unknown then, the one
+you stand in included. `"read": false` answers nothing about any worktree at all — its
+`reason` names the reading that failed, and the empty lists beside it are not "none of
+them are yours". Say so, and go on to the branches, which stand on their own.
 
 ## Step 3 — The mode
 
@@ -100,249 +83,141 @@ Where memory is genuinely unsure about one item, list it. Mode decides *what is
 listed*, never how freely anything is deleted — the risk class does that, and
 step 6 puts the whole list in front of the user before a single deletion.
 
-## Step 4 — Discovery (read-only, one parallel batch)
+## Step 4 — Discovery (read-only, one call)
 
 ```bash
-git -C "$PROJECT" worktree list --porcelain     # locked / prunable / detached, with reasons
-# lstrip=2, NOT refname:short — the latter shortens to `heads/<branch>` wherever a
-# tag shares the name, and every use below re-prefixes `refs/heads/`.
-git -C "$PROJECT" for-each-ref refs/heads/ \
-    --format='%(refname:lstrip=2) | %(worktreepath) | %(upstream:short) %(upstream:track)'
-# Guarded, not merely described: with an empty $D the range reads `..refs/heads/<b>`,
-# which git resolves against HEAD and answers as confidently as ever.
-if [ -n "$D" ]; then
-  git -C "$PROJECT" branch --merged "$D"
-  git -C "$PROJECT" rev-list --count "$D..refs/heads/<branch>"   # 0 -> carries nothing of its own
-fi
-git -C "<each worktree path>" status --porcelain -unormal   # clean vs dirty — nothing else reports it
-git -C "<each worktree path>" submodule status              # a line WITHOUT a leading '-' — populated
-# --absolute-git-dir, NOT --git-dir: the latter answers `.git` for a primary
-# worktree, which `ls` resolves against the caller's cwd. `-d` so an empty dir prints.
-ls -d "$(git -C "<each worktree path>" rev-parse --absolute-git-dir)/modules" 2>/dev/null || echo none
+SCAN="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-scan.mjs" \
+  --repo-dir "$PROJECT" --default "$DEF" --default-ref "$D")"
+printf '%s\n' "$SCAN"
 ```
 
-`for-each-ref` gives branch → worktree → upstream → `[gone]` in one pass; prefer
-it over parsing `branch -vv`. `worktree list` never mentions modified or
-untracked files, so without that per-worktree `status` there is no clean/dirty
-signal at all and step 5 cannot tell a removable worktree from one holding work.
-Read the two submodule commands for state, not for dirt: no line at all, or `-`
-on every line, **and** `none` for the directory — that combination is the only
-answer meaning nothing is there.
+It speaks both forge CLIs and picks whichever answers here; `--forge gh|glab` settles it
+where both do. `--no-forge` where neither is authed.
 
-**Squash-merged branches look unmerged to git.** When the repo is on a hosted
-forge and that forge's CLI is authed, close the gap read-only — asking, per
-branch, **which requests carry its tip commit**. A branch name is the wrong
-question: a merged `fix/login` may have come from a fork, or the local branch of
-that name may have been recreated since, and a list of requests filtered by name
-stops at a page where absence and a busy project look alike. The tip is the
-identity, and a request carrying it carries every commit under it.
+It answers both halves and keeps them apart, because they fail apart: the git state every
+worktree is in, and what proof every branch has that its work landed.
 
-```bash
-TIP="$(git -C "$PROJECT" rev-parse "refs/heads/<branch>")"
-# Both CLIs read the repository from their cwd and neither takes git's -C, so they
-# run from $PROJECT. --paginate, or an open request on page two is one the sweep
-# deletes over; --hostname, or a self-hosted instance is asked of github.com.
-# Merged reads as state `closed` carrying a merged_at.
-( cd "$PROJECT" || exit
-  HOST="$(gh repo view --json url --jq '.url' | sed -E 's|^https?://([^/]+)/.*|\1|')"
-  gh api --hostname "$HOST" --paginate "repos/{owner}/{repo}/commits/$TIP/pulls" \
-    --jq '.[] | [.number, .state, (.merged_at // ""), (.merge_commit_sha // "")] | @tsv' )
-# GitLab — `api` takes the host from that checkout itself. @tsv so an empty column
-# keeps its place; either one can hold the commit
-( cd "$PROJECT" || exit
-  glab api --paginate "projects/:id/repository/commits/$TIP/merge_requests" \
-    | jq -r '.[] | [.iid, .state, (.merge_commit_sha // ""), (.squash_commit_sha // "")] | @tsv' )
-```
+Four answers it gives that a caller reading git alone gets wrong:
 
-**An open request in that answer keeps the branch**, whatever else it says. A
-merged one is a candidate, and where its merge landed settles it:
-
-```bash
-git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"
-```
-
-On GitLab that commit is **the first of the two columns that is non-empty**;
-whichever is set is a commit on the target branch, and both empty leaves nothing
-to check against. An answer naming no merged request at all is the same nothing:
-the tip reached no request the forge merged.
-
-Exit 1 leaves the branch standing — the request landed somewhere `$D` does not
-carry. An object this repository does not have makes the check die instead
-(`fatal`, not exit 1), and that is **unknown**: the branch stands too, and the
-report says unknown rather than somebody else's work. An empty `$D` is unknown
-for every branch — the check cannot run at all, which is what step 1 leaves
-behind wherever the base did not verify.
-
-**Spell every branch `refs/heads/<branch>`**, here and in the verdict rows step 5
-classifies by. A tag of
-the same short name wins the lookup, so the bare form measures the tag and routes
-the branch to deletion on a proof that never described it.
-
-Without a forge CLI, a branch outside `--merged "$D"` has **unknown** merge
-status: surface it, never delete it.
+- **`"usable": false`** — the base could not be read, so every branch's merge question is
+  UNKNOWN. That is not "nothing is merged": nothing is deleted, everything surfaces. Drop
+  both flags where step 1 left `DEFAULT-UNRESOLVED` and the same thing happens.
+- **`"answered": false` beside `"asked": true`** — the forge did not reply, and a squash
+  merge is invisible without it. The sweep gets NARROWER, never wider, and each branch
+  carries the reason.
+- **`"read": false`** — it classified nothing at all. Its `reason` names the reading that
+  could not be taken, and the empty lists beside it are not an empty repository.
+- **`"nameSafe": false`** — git accepts `$ ( ) ; & | ' " < >` in a branch name, and this
+  one carries something a quoted template would not hold. It changes no verdict; it says
+  the name reaches a command through a variable, which step 7 does for every branch
+  anyway.
 
 ## Step 5 — Classification
 
-Classify every worktree, then every branch, by the tables in
-[`references/verdicts.md`](references/verdicts.md), which also says which row
-wins where two match. A verdict that deletes something carries a risk class,
-and the class — never the mode — decides its gate below; a `keep` or
-`never touch` deletes nothing and takes the kept section instead.
+Every branch arrives classified: `verdict` is `keep`, `delete` or `surface`, `class` is
+the risk the gate routes on, and `keeps` / `unproven` carry the words the report needs.
+[`references/verdicts.md`](references/verdicts.md) owns what each means.
+
+**A worktree takes two readings, and both have to be clear.** `worktree-owners.mjs` says
+whose it is, `cleanup-scan.mjs` says what git state it is in — one answering clean tells
+you nothing about the other. It is removable where the first says `mayRemove`, or says
+`callerDecides` and **you remember cutting it**, and the second lists no blockers. Either
+one's blockers are the row's reason.
 
 ## Step 6 — The gate
 
-Present four sections in this order, each a table, and never a single table with
-a class column — the class is routing, and the number names no consequence the
-user can weigh. Skip a section that would be empty. Every item **the mode listed**
-appears in exactly one of them, a kept one included: the gate is the whole plan,
-not the part that deletes. Mode still decides what is listed — step 3 — so a
-`session` sweep does not gain rows here for what other sessions left behind.
+Four sections in this order, each a table, and never one table with a class column — the
+class is routing, and the number names no consequence a user can weigh. Skip a section
+that would be empty. Every item **the mode listed** appears in exactly one of them, a
+kept one included: the gate is the whole plan, not the part that deletes.
 
-**Proceeding without asking — nothing is lost** (class 1)
+1. **Proceeding without asking — nothing is lost** (class 1): item, what it is, action.
+2. **Deleting — recoverable** (class 2): item, state, how to get it back. The restore
+   command carries the tip as it stands now, so the row alone undoes the deletion. A
+   branch whose `freedBy` names a worktree in this same section belongs **here**, not
+   among the kept: removing that worktree is what makes it deletable, and the user is
+   approving both at once.
+3. **Needs an explicit yes — irreversible** (class 3): item, state, what disappears —
+   the files, a branch's only copy, the submodule git dir that lives in that worktree
+   alone.
+4. **Kept — nothing is deleted**: item, what it is, why it stays, and **repair, if any**.
+   A keep promises the item survives, not that nothing touches it, so a branch whose
+   `repair` is set says so in its own row.
 
-| Item | What it is | Action |
-|---|---|---|
-
-**Deleting — recoverable** (class 2). The restore column carries the command with
-the tip as it stands now, so the row is enough to undo the deletion:
-
-| Item | State | How to get it back |
-|---|---|---|
-
-**Needs an explicit yes — irreversible** (class 3). What disappears is named per
-row — the files, the branch's only copy, the submodule git dir that lives in that
-worktree alone:
-
-| Item | State | What disappears |
-|---|---|---|
-
-**Kept — nothing is deleted** (every `keep` and `never touch` verdict: the default
-branch, a live or locked worktree, an open change request, a worktree the host
-made for another session). A kept branch step 7 will still repair — a `[gone]`
-upstream it drops — says so in its own row; a keep promises the item survives,
-not that nothing touches it:
-
-| Item | What it is | Why it stays | Repair, if any |
-|---|---|---|---|
-
-Then ask once, over both deleting sections and every `Repair` cell in the kept
-one — everything class 2 or class 3, tracking repair being class 2 like the
-recoverable deletions. The first section is the only one that proceeds unasked.
-Wait for an explicit answer; a subset means only that subset.
+Then ask once, over sections 2 and 3 and every `repair` cell in section 4 — a tracking
+repair is class 2 like the recoverable deletions. Section 1 is the only one that proceeds
+unasked. Wait for an explicit answer; a subset means only that subset.
 
 ## Step 7 — Execute, in this order
 
 ```bash
-git -C "$PROJECT" worktree remove "<path>"         # 1. --force ONLY on a confirmed class-3 item:
-                                                   #    a dirty worktree, or one remove refuses
-                                                   #    over a submodule. Plain remove re-checks
-                                                   #    clean at execution time; --force does not
-rm -rf "<orphan-worktree-dir>"                     # 2. approved class-3 items only
-git -C "$PROJECT" worktree prune --verbose         # 3. AFTER the rm, or the entry it just
-                                                   #    orphaned still blocks its branch
-git -C "$PROJECT" branch -D "<branch>"             # 4. ONLY behind the branch's own re-proof
-                                                   #    below, and chained to the $OID re-read
-                                                   #    there — nothing else authorizes a delete
+git -C "$PROJECT" worktree remove "$WT"      # 1. --force ONLY on a confirmed class-3 item:
+                                             #    a dirty worktree, or one the removal
+                                             #    refuses over a submodule. Plain remove
+                                             #    re-checks clean now; --force does not
+rm -rf "$WT"                                 # 2. approved class-3 items only
+git -C "$PROJECT" worktree prune --verbose   # 3. AFTER the rm, or the entry it just
+                                             #    orphaned still blocks its branch
 ```
 
-**`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks
-against `PROJECT`'s HEAD, or the branch's own upstream where it has one — never
-against `$D` — so it deletes what the verdict rows keep and refuses what they proved.
-What `-D` does carry is what no plumbing deletion has: it refuses a branch checked
-out in another worktree, resolves the branch ref rather than a symref's target,
-and drops `branch.<name>.*` with it — so the deletion stays `-D`, and the object
-it takes is pinned by re-reading `$OID` in the same chain. What authorizes a
-deletion is the re-proof the branch's own verdict row calls for
-(`references/verdicts.md`), **run here and not read
-off step 4**: step 6 waits on a human, and both what the branch carries and what
-the forge says about it can move while it waits. A branch with no proof of its own
-is not deleted at all — report it instead.
+`$WT` is read out of the answer, never pasted in: a path can carry anything a filesystem
+allows, and the same holds for the branch names below.
 
-Three things come first, in this order, on every branch reaching this step:
+**Re-take the proof here, never read it off step 4.** Step 6 waits on a human, and both
+what a branch carries and what the forge says about it move while it waits. Re-run step
+1's call and step 4's — in that order, and **after the worktree removals above**, which
+is what turns a branch whose only keep was `freedBy` into a `delete`. Then act on the
+fresh answer alone, and name in the report which `proof` each deletion stood on.
 
-- **Read the tip once, and carry that object through everything below**, the
-  deletion included: `OID="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>" || true)"`
-  — `--verify -q` for the empty answer and `|| true` for the exit status, so a
-  branch deleted or renamed while the gate waited leaves a value to test rather
-  than a fatal or a shell that stops on it. Empty,
-  or differing from the one the gate's row named, it is a branch that moved while
-  the gate waited: the row's restore command describes an object the deletion
-  would no longer take, so surface it and ask again over the tip as it stands.
-- **Re-resolve `$D` and `$DEF` together**, by running step 1's block again — the same
-  script, not the wider ladder, which would answer with the base of whatever request is
-  open. The repair block at the end of this step reads `$DEF`, so a `$D` emptied here
-  and a `$DEF` left standing sends every surviving branch through `--unset-upstream`.
-- **Re-ask step 4's query on the tip as it stands now**, wherever a forge CLI
-  answered it there. A tip that moved while the gate waited belongs to no merged
-  request, so the answer that authorized the deletion is simply gone; an open
-  request in it keeps the branch whatever any proof says.
-
-Then the branch's own proof, whichever routed it:
+Then, per branch it still calls `delete`, with `<n>` its index in that fresh answer:
 
 ```bash
-# Step 4's open rows for this tip, re-asked now. Empty when none are open and empty
-# where no forge CLI answered — both take the same path, on to the proofs below.
-OPEN="<those rows, or empty>"
-# $OID — the tip read above; every proof measures that object rather than the ref.
-PROVEN=""
-if [ -n "$OPEN" ]; then
-  echo "a request on this tip is open — keep the branch"
-elif [ -z "$D" ]; then
-  echo "skipping the delete — default branch unresolved"
-elif [ -z "$OID" ]; then
-  echo "the branch went away while the gate waited — surface it, nothing here to delete"
-# the forge's row: where the merge of the request carrying this tip landed
-elif git -C "$PROJECT" merge-base --is-ancestor "<the merge commit>" "$D"; then
-  PROVEN=forge
-# git's own rows: the count that routed it
-elif [ "$(git -C "$PROJECT" rev-list --count "$D..$OID")" = 0 ]; then
-  PROVEN=git
+BR="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].name')"
+# The oid the GATE's row carried — the reading taken BEFORE the wait. Both values from
+# the same reading makes the comparison say nothing: a branch that moved while the gate
+# waited comes back with its new tip, matches itself, and is deleted as an object nobody
+# approved, under a restore command that names a different one.
+APPROVED="<the oid this branch's gate row carried>"
+# And the ref as it stands THIS instant: the forge reads inside the rescan take time, and
+# a branch can advance inside them. `--verify -q` for the empty answer and `|| true` for
+# the exit status, so a vanished ref leaves a value to test.
+NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/$BR" || true)"
+if [ "$NOW" = "$APPROVED" ]; then
+  git -C "$PROJECT" branch -D -- "$BR"
 else
-  echo "the proof no longer holds — surface it, saying whether it failed or could not run"
-fi
-# The delete, once, behind a re-read of the ref — same `--verify -q` plus `|| true`
-# as above, so a vanished ref is a mismatch to report, never a fatal or a no-op.
-if [ -n "$PROVEN" ]; then
-  NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/<branch>" || true)"
-  if [ "$NOW" = "$OID" ]; then
-    git -C "$PROJECT" branch -D "<branch>"
-  else
-    echo "the branch moved or went away while the gate waited — surface it, and ask again over the tip as it stands"
-  fi
+  echo "moved or gone while the gate waited: $BR — surface it, and ask again over its tip"
 fi
 ```
 
-Name in the report which proof each deletion stood on.
+**`-d` is not a lighter `-D`, and neither command is the proof.** `-d` re-checks against
+`PROJECT`'s HEAD, or the branch's own upstream where it has one — never against the base —
+so it deletes what the verdicts keep and refuses what they proved. What `-D` carries is
+what no plumbing deletion has: it refuses a branch checked out in another worktree,
+resolves the branch ref rather than a symref's target, and drops `branch.<name>.*` with
+it. So the deletion stays `-D`, and what authorizes it is the verdict.
 
 To remove the worktree **you are standing in**, physically leave first
 (`git worktree remove` inspects the real cwd):
 
 ```bash
 cd "<PROJECT>"                                 # a separate Bash call — cwd must truly change
-git -C "<PROJECT>" worktree remove "<old-cwd>"
+git -C "<PROJECT>" worktree remove "$WT"
 ```
 
 Then tell the user cwd moved to `PROJECT` — their old path no longer exists.
 
-**Last, repair the tracking** — one branch at a time, and only on branches that
-survived the deletions above. `$D` and `$DEF` are step 1's ref and its bare name;
-which belongs where is `base-resolution.md`'s ref-versus-name rule, and swapping
-them here unsets the tracking this was meant to repair.
+**Last, repair the tracking**, one branch at a time and only on branches that survived.
+Which branches, and which of the two, is the scan's `repair` field — a branch it left
+`null` needs neither, and acting on a name instead is how every surviving branch loses
+its upstream on the one run that could not answer.
 
 ```bash
-CURRENT="<the branch being repaired>"
-
-# Skip entirely on DEFAULT-UNRESOLVED: an empty $DEF matches no branch, so the
-# else arm would strip every upstream on the one run told it cannot answer.
-if [ -z "$DEF" ]; then
-  echo "skipping upstream repair — default branch unresolved"
-elif [ "$CURRENT" = "$DEF" ]; then
-  git -C "$PROJECT" branch --set-upstream-to="$D" "$CURRENT"
-else
-  # The next `git push -u <remote> "$CURRENT"` restores it; say so in the report.
-  git -C "$PROJECT" branch --unset-upstream "$CURRENT"
-fi
+git -C "$PROJECT" branch --set-upstream-to="$D" -- "$BR"   # repair: set-upstream
+git -C "$PROJECT" branch --unset-upstream -- "$BR"         # repair: unset-upstream
 ```
+
+The second is recoverable: the next `git push -u <remote> <branch>` restores it, and the
+report says so.
 
 ## Step 8 — Verify and report
 
@@ -355,7 +230,6 @@ without asking.
 | ❌ | ✅ |
 |---|---|
 | remove a worktree Claude Code created, however idle it looks | report it — the lease outlives the process and is unreadable from here |
-| read "no live session" as "nobody needs it" | the probe proves presence only; absence is not an answer |
 | `git worktree unlock` something Claude Code locked | leave it; the periodic sweep releases stale locks itself |
 | `git submodule deinit` to get past `worktree remove`'s refusal | `--force` — a linked worktree shares `.git/config`, so the deinit unregisters the submodule for the **primary** worktree too, and the removal refuses all the same |
 | `rm -rf` a path outside this repository's worktree directories | resolve it from `worktree list` / the git dir, never from a name |
@@ -365,10 +239,8 @@ without asking.
 
 ## Edge cases
 
-- **The forge CLI offline or rate-limited mid-run** — degrade to git-only for the
-  rest of the pass and downgrade every forge-derived "merged" to "surface". The
-  sweep gets narrower, never wider.
-- **Detached HEAD worktree** — classify by clean/dirty only; no branch to delete.
+- **Detached HEAD worktree** — classify by its worktree readings alone; no branch to
+  delete.
 - **A branch checked out in a worktree of a *different* repository** — leave both
   alone; this skill stays within `PROJECT`.
 - **Submodules** — never operate on one. Removing a worktree that contains one is

@@ -17,7 +17,7 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { join, sep } from 'node:path';
-import { writeAll, runner } from './lib/forge.mjs';
+import { writeAll, runner, text, worktrees } from './lib/forge.mjs';
 
 const USAGE = 'usage: node worktree-owners.mjs [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `worktree-owners: ${m}\n${USAGE}`); process.exit(2); };
@@ -58,11 +58,6 @@ const refuse = (reason) => { answer.reason = reason; finish(); };
 // Two spellings of one path are not two places: `/tmp` is a symlink to `/private/tmp` on
 // macOS, and a session's `cwd` need not be spelled the way git spells its worktree.
 const real = (p) => { try { return realpathSync(p); } catch { return p; } };
-// Another process wrote these, so they are quoted rather than repeated: a string, with
-// the control characters that would end a line or a record taken out, and bounded — a
-// value of any length or shape would otherwise travel into a reader's context whole.
-const text = (v) => (typeof v === 'string'
-  ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 200) : null);
 // The worktree is the ancestor, never the descendant: a session that stepped into a
 // subdirectory is still working in it, and the reverse reading would put a session in
 // every worktree above it.
@@ -170,46 +165,12 @@ if (!here.ok) refuse(`could not read where this run stands (${here.line()})`);
 answer.here = here.out;
 const hereReal = real(here.out);
 
-// `-z` because `--porcelain` alone does not escape a path: a worktree whose directory
-// carries a newline prints a line that reads exactly like the start of another record.
-// Older git does not take it, so the line form is the fallback — the records are
-// separated the same way either, by an empty one.
-let list = git(['worktree', 'list', '--porcelain', '-z']);
-let records;
-if (list.ok) records = `${list.out}\0`.split('\0');
-else {
-  list = git(['worktree', 'list', '--porcelain']);
-  if (!list.ok) refuse(`could not list this repository's worktrees (${list.line()})`);
-  records = `${list.out}\n`.split('\n');
-}
-
-let wt = null;
-const push = () => { if (wt) answer.worktrees.push(wt); };
-for (const line of records) {
-  if (line.startsWith('worktree ')) {
-    push();
-    wt = { path: line.slice('worktree '.length), branch: null, detached: false, bare: false,
-      locked: false, lockReason: null, prunable: false, pruneReason: null,
-      // The first entry `worktree list` prints is the main working tree, and
-      // `worktree remove` refuses it outright: `fatal: '<path>' is a main working tree`.
-      isPrimary: answer.worktrees.length === 0,
-      isHere: false, sessions: [], occupied: null,
-      hostMade: false, hostSignals: [], owner: null,
-      mayRemove: false, callerDecides: false, blockers: [] };
-  } else if (!wt) continue;
-  else if (line.startsWith('branch ')) wt.branch = line.slice('branch '.length);
-  else if (line === 'detached') wt.detached = true;
-  else if (line === 'bare') wt.bare = true;
-  else if (line === 'locked' || line.startsWith('locked ')) {
-    wt.locked = true;
-    wt.lockReason = line.length > 'locked '.length ? text(line.slice('locked '.length)) : null;
-  } else if (line === 'prunable' || line.startsWith('prunable ')) {
-    wt.prunable = true;
-    wt.pruneReason = line.length > 'prunable '.length
-      ? text(line.slice('prunable '.length)) : null;
-  }
-}
-push();
+const listed = worktrees(git);
+if (listed.trees === null) refuse(`could not list this repository's worktrees (${listed.error})`);
+answer.worktrees = listed.trees.map((w) => ({ ...w,
+  isHere: false, sessions: [], occupied: null,
+  hostMade: false, hostSignals: [], owner: null,
+  mayRemove: false, callerDecides: false, blockers: [] }));
 
 // A session belongs to the INNERMOST worktree holding it, and only there. The host
 // leases its worktrees from a directory inside the repository, so every one of them is
