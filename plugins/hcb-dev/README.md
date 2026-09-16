@@ -322,8 +322,20 @@ session's context — a skill invokes one and reads its answer.
   say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
   reader of one is blind to the other, and answers with a single `verdict` so a caller
   never assembles one out of counts.
+- [`scripts/copilot-state.mjs`](scripts/copilot-state.mjs) — whether the automated
+  reviewer is expected on this request, whether it has answered the head, and what it
+  said. Reads the request the repository's own settings describe, never a list of
+  reviewers that a completed review has already emptied.
+- [`scripts/retire-check.mjs`](scripts/retire-check.mjs) — is this branch safe to retire,
+  and on which side. The local half and the published half fail separately and are
+  answered separately; it reads and judges, and deletes nothing.
+- [`scripts/branch-publish.mjs`](scripts/branch-publish.mjs) — the name a branch ships
+  under, put on the remote, and the names it used to carry taken off it. **The one script
+  here that acts**, because the order of the three is the hazard: a rename is refused
+  where a request pins the name, the publish is unconditional, and a name comes off the
+  remote only after the new one is up.
 
-Both refuse rather than guess, and a refusal says which question could not be answered —
+They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
 
 ## Shared references

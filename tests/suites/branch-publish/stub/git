@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+fail() { echo "${1:-fatal: stub git refused}" >&2; exit "${2:-1}"; }
+
+case "$1 $2" in
+  "rev-parse --git-dir") echo ".git"; exit 0 ;;
+  "symbolic-ref --short")
+    # `head_empty` is the git that exits 0 saying nothing — rarer than the refusal, and
+    # the one an exit-status check alone reads as a branch named the empty string.
+    case "$(ask '.head_empty')" in yes) exit 0 ;; esac
+    v=$(ask '.head'); [ -z "$v" ] && exit 1
+    printf '%s\n' "$v"; exit 0 ;;
+  "branch -m")
+    # Keyed by the name asked for: the rename back and the rename forward are two
+    # decisions in one run, and a case needs to refuse one while allowing the other.
+    case "$(ask ".rename[\"$3\"] // .rename_default")" in
+      fail) fail "fatal: a branch named '$3' already exists" 128 ;;
+    esac
+    exit 0 ;;
+  "rev-parse --verify")
+    # `$4` is `<rev>^{commit}`. Two questions arrive here: whether the base tracking ref
+    # is in this checkout at all, and whether a remote's tip is an object it carries.
+    case "$4" in
+      refs/remotes/*) case "$(ask '.base_present')" in no) exit 1 ;; esac ;;
+      *) case "$(ask ".object[\"${4%^*}\"] // .object_default")" in no) exit 1 ;; esac ;;
+    esac
+    echo "cafe"; exit 0 ;;
+  "ls-remote --heads")
+    v=$(ask ".ls_remote[\"$4\"] // .ls_remote_default")
+    case "$v" in
+      ""|silent) fail "fatal: could not read from remote repository" 128 ;;
+      absent) exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+  "merge-base --is-ancestor")
+    # Three questions, told apart by what each measures AGAINST: a local ref is the
+    # fast-forward test, `HEAD` is whether this branch ever stood on a remote's tip, and a
+    # tracking ref is whether that tip holds anything past the base.
+    case "$4" in
+      HEAD)           k=stood_on ;;
+      refs/remotes/*) k=in_base ;;
+      *)              k=fast_forward ;;
+    esac
+    case "$(ask ".$k")" in yes) exit 0 ;; *) exit 1 ;; esac ;;
+  "reflog show")
+    v=$(ask '.reflog')
+    case "$v" in ""|fail) fail "fatal: no reflog for that ref" 128 ;; esac
+    printf '%s\n' "$v"; exit 0 ;;
+  "worktree list")
+    v=$(ask '.worktrees')
+    case "$v" in ""|fail) fail "fatal: could not list worktrees" 128 ;; esac
+    # The envelope holds the line form; `-z` is the same shape with NUL where the
+    # newlines are, which is what git prints.
+    for a in "$@"; do [ "$a" = "-z" ] || continue
+      printf '%s' "$v" | tr '\n' '\0'; exit 0
+    done
+    printf '%s\n' "$v"; exit 0 ;;
+esac
+case "$1" in
+  fetch)
+    # A remote that REWOUND, which is the case the leading `+` is for: without it git
+    # refuses the tracking-ref update as non-fast-forward, and the lease below then rests
+    # on a ref that was never refreshed.
+    case "$3" in +*) ;; *) fail "! [rejected] $3 (non-fast-forward)" 1 ;; esac
+    case "$(ask '.fetch')" in fail) fail "fatal: couldn't find remote ref" 128 ;; esac
+    exit 0 ;;
+  push)
+    case "$*" in
+      *--delete*) case "$(ask '.delete')" in fail) fail "remote: refusing to delete the ref" 1 ;; esac ;;
+      *)
+        # A tag of the same name, which is what the full refname on the source side is
+        # for: a bare branch name matches both and git refuses rather than choosing.
+        case "$*" in *refs/heads/*:refs/heads/*) ;;
+          *) fail "error: src refspec matches more than one" 1 ;; esac
+        case "$(ask '.push')" in fail) fail "! [rejected] stale info" 1 ;; esac ;;
+    esac
+    exit 0 ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3
