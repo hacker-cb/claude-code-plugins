@@ -2,12 +2,16 @@
 [ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
-case "$1 $2" in
-  "pr view")
-    case "$(ask '.pr_view')" in silent) echo "no open request could be read" >&2; exit 1 ;;
-      *) printf '%s' "$(ask '.pr_view')"; [ -n "$(ask '.pr_view')" ] && echo; exit 0 ;; esac ;;
-  "pr list")
-    case "$(ask '.pr_list')" in silent) echo "the merged list could not be read" >&2; exit 1 ;;
-      *) printf '%s' "$(ask '.pr_list')"; [ -n "$(ask '.pr_list')" ] && echo; exit 0 ;; esac ;;
-esac
+say() {
+  case "$1" in silent) echo "that list could not be read" >&2; exit 1 ;; esac
+  printf '%s' "$1"; [ -n "$1" ] && echo; exit 0
+}
+# Both rungs are `pr list` now, told apart by `--head`: rung 2 asks about one branch,
+# rung 3 about what the merged ones targeted.
+if [ "$1 $2" = "pr list" ]; then
+  case " $* " in
+    *" --head "*) say "$(ask '.request_base')" ;;
+    *) say "$(ask '.pr_list')" ;;
+  esac
+fi
 echo "stub gh: no envelope answer for: $*" >&2; exit 3

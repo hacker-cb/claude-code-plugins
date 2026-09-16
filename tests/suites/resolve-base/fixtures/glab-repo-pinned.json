@@ -3,5 +3,6 @@
  "branch": "feat/example-export",
  "base_present": "yes",
  "mr_list": "[{\"target_branch\": \"main\"}, {\"target_branch\": \"dev\"}, {\"target_branch\": \"dev\"}]",
- "request_base": "[{\"target_branch\": \"dev\"}]"
+ "request_base": "[{\"target_branch\": \"dev\"}]",
+ "want_repo": "example-org/example-repo"
 }

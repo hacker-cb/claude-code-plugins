@@ -2,5 +2,7 @@
  "remotes": "origin\nupstream",
  "branch": "feat/example-export",
  "base_present": "yes",
- "fetch_default": "fail"
+ "config": {
+  "branch.feat/example-export.pushRemote": "gone"
+ }
 }

@@ -2,12 +2,20 @@
 [ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
-case "$1 $2" in
-  "mr view")
-    case "$(ask '.mr_view')" in silent) echo "no open request could be read" >&2; exit 1 ;;
-      *) printf '%s\n' "$(ask '.mr_view')"; exit 0 ;; esac ;;
-  "mr list")
-    case "$(ask '.mr_list')" in silent) echo "the merged list could not be read" >&2; exit 1 ;;
-      *) printf '%s\n' "$(ask '.mr_list')"; exit 0 ;; esac ;;
-esac
+say() {
+  case "$1" in silent) echo "that list could not be read" >&2; exit 1 ;; esac
+  printf '%s\n' "$1"; exit 0
+}
+if [ "$1 $2" = "mr list" ]; then
+  # `--repo` travels on both rungs, or this reads the project the directory resolves to
+  # rather than the one the caller named — a pin silently ignored is worse than refused.
+  want=$(ask '.want_repo')
+  if [ -n "$want" ]; then
+    case " $* " in *" --repo $want "*) ;; *) echo "that call did not carry --repo $want" >&2; exit 1 ;; esac
+  fi
+  case " $* " in
+    *" --source-branch "*) say "$(ask '.request_base')" ;;
+    *) say "$(ask '.mr_list')" ;;
+  esac
+fi
 echo "stub glab: no envelope answer for: $*" >&2; exit 3

@@ -32,9 +32,15 @@ case "$1" in
     exit 0 ;;
   fetch)
     # The explicit refspec is the whole point: a bare name updates FETCH_HEAD alone and
-    # never writes the ref every consumer reads.
-    case "$3" in +refs/heads/*:refs/remotes/*) ;; *) fail "fatal: refusing a bare refspec" 128 ;; esac
-    case "$(ask '.fetch')" in fail) fail "fatal: could not read from remote repository" 128 ;; esac
+    # never writes the ref every consumer reads. And `--end-of-options` before the remote,
+    # since a name out of this repository's own config can begin with a dash.
+    case "$2" in --end-of-options) ;; *) fail "fatal: the remote name was read as an option" 129 ;; esac
+    case "$*" in *' +refs/heads/'*':refs/remotes/'*) ;; *) fail "fatal: refusing a bare refspec" 128 ;; esac
+    # Keyed by remote, so a case can have one carry the branch and another not.
+    case "$(ask ".fetch[\"$3\"] // .fetch_default")" in
+      fail) fail "fatal: could not read from remote repository" 128 ;;
+      gone) fail "fatal: couldn't find remote ref refs/heads/$(ask '.want_base')" 128 ;;
+    esac
     exit 0 ;;
 esac
 echo "stub git: no envelope answer for: $*" >&2; exit 3

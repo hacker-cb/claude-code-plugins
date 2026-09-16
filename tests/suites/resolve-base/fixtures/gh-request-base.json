@@ -2,6 +2,6 @@
  "remotes": "upstream\norigin",
  "branch": "feat/example-export",
  "base_present": "yes",
- "pr_view": "dev",
- "pr_list": "master\ndev\ndev"
+ "pr_list": "master\ndev\ndev",
+ "request_base": "dev"
 }

@@ -23,14 +23,14 @@ node <plugin root>/scripts/resolve-base.mjs [--base <name>] [--forge gh|glab]
 |---|---|
 | `remotes.ranked` | the probing order — `upstream` and `origin` first, then every other remote, matched by whole name so `origin2` is neither taken for the real thing nor dropped |
 | `remotes.read` | the ONE remote to read from: a preferred name, else a lone remote whatever it is called. `null` with a reason where several exist and none is preferred — **stop and ask**, since for a read that costs a wrong review and for a push it can publish a branch in somebody else's repository |
-| `remotes.push` / `pushSource` | git's own routing — `branch.<name>.pushRemote`, `remote.pushDefault`, `origin`, a lone remote — and never `@{upstream}`, which in a fork points at the canonical repository. A configured name that names no remote here is a stale config, not a route |
-| `base.current` | the ref was refreshed from the remote just now. `false` with a reason is **"the age is unknown"**, never "no new commits" |
+| `remotes.push` / `pushSource` | git's own routing, in its own order: `branch.<name>.pushRemote`, `remote.pushDefault`, `branch.<name>.remote` — the rung `git push -u <remote> <branch>` writes — then `origin`, then a lone remote. Never `@{upstream}`, which in a fork points at the canonical repository. **A configured route naming something that is not a remote here refuses**: falling past it answers with the one repository the configuration was written to avoid |
+| `base.remote` / `base.ref` | which remote actually carries the base, found by probing the ranking rather than by asking the one picked outright — in a fork checkout a stack's parent is often on `origin` while `upstream` has never heard of it |
+| `base.outcome` | `refreshed`, `silent` (the age is unknown, never "no new commits") or `gone` (below) |
 | `base.sharesHistory` | `false` refuses the base outright (below) |
-| `requestBase` / `landings` | the open request's base, and where this repository's changes actually land, where `--forge` named one. Read, never chosen: which rung wins is the ladder's |
+| `requestBase` / `landings` | the open request's base, and where this repository's changes actually land, where `--forge` named one. Read, never chosen: which rung wins is the ladder's. `--no-network` asks neither |
 
 **The remote you *read* a base from is not the one you *write* a branch to**: in a fork
 the base is in `upstream`, which you cannot push to.
-
 ## The ladder — first hit wins
 
 1. **A base the caller named.** An explicit base always wins.
@@ -94,8 +94,7 @@ not "nothing matched": say so and treat what depended on it as unknown.
 The ladder answers *which* base; it says nothing about *when*. `<remote>/<base>` holds
 whatever the last fetch left there, so a branch cut from it, a range diffed against it and
 a merge landing on it can all be built on a base the remote moved past days ago. The
-script above refreshes it and answers `base.current` — three outcomes, and only one means
-current:
+script refreshes it — three outcomes, and only one means current:
 
 - **refreshed** — the ref is the remote's tip, whether or not it moved; "already up to
   date" is this outcome and not a separate one;
@@ -103,12 +102,15 @@ current:
   stays standing and every consumer reads it without complaint, so a run treating this as
   success reports a branch current with a base nothing checked. Say it is unverified and
   treat what depended on its freshness as unknown;
-- **the ref is not there** — where the base was resolved *from* that remote, the branch
-  has been renamed or deleted since: re-resolve by the ladder rather than carrying a name
-  nobody has (`git remote set-head <remote> --auto` retires the pointer, and a
-  refspec-restricted fetch prunes nothing). Where the base never had a remote counterpart
-  — a local-only parent, a repo with no remote — nothing is missing, and saying so once is
-  the whole step.
+- **`gone`** — every remote answered and none carries the branch: it was renamed or
+  deleted since, so re-resolve by the ladder rather than carrying a name nobody has, and
+  the answer names no ref at all (`git remote set-head <remote> --auto` retires the
+  pointer, and a refspec-restricted fetch prunes nothing). Where the base never had a
+  remote counterpart — a local-only parent, a repo with no remote — nothing is missing,
+  and saying so once is the whole step.
+
+A `silent` outcome still names whatever stale copy is standing, so a caller can say what
+it is reading and how old that is, rather than being handed nothing at all.
 
 A consumer that only **reads** the base brings nothing over: it reads against
 the ref, and a claim it makes about the tree names the revision it was read at.

@@ -190,11 +190,10 @@ hit.
 - **A second worktree can stand on this same branch** (`git worktree add -f`), and the
   one-argument rename moves it for that session too. The script refuses the rename there,
   and refuses it again where the worktree listing could not be read at all.
-- **Resolve the push remote before renaming**, per
-  [`base-resolution.md`](base-resolution.md) ("Pushing is a different question"):
-  `branch.<name>.pushRemote` is read under the name the branch carries now, and an
-  ambiguity that exits after the rename leaves a branch renamed locally and nothing
-  pushed.
+- **Resolve the push remote before renaming** — `remotes.push` in
+  [`base-resolution.md`](base-resolution.md): `branch.<name>.pushRemote` is read under the
+  name the branch carries now, and an ambiguity that exits after the rename leaves a
+  branch renamed locally and nothing pushed.
 - Where the rename and the publication happen in different steps, the old name travels
   between them as `old-name` ([`slice-completion.md`](slice-completion.md)).
 

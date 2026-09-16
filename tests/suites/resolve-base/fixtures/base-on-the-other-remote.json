@@ -2,5 +2,8 @@
  "remotes": "origin\nupstream",
  "branch": "feat/example-export",
  "base_present": "yes",
- "fetch_default": "fail"
+ "fetch": {
+  "upstream": "gone"
+ },
+ "want_base": "dev"
 }
