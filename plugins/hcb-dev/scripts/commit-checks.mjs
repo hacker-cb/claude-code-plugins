@@ -22,33 +22,11 @@
 // empty, and a caller that cannot tell them apart reports a base as quiet because the
 // call 404'd. Exit 2 only for a call this script cannot act on at all.
 
-import { spawnSync } from 'node:child_process';
-import { writeSync } from 'node:fs';
+import { writeAll, parsePages, readable, refOk, repoOk, runner } from './lib/forge.mjs';
 
 const USAGE = 'usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>)'
   + ' --sha head|base|merge|<oid> [--require <name>]... [--require-from-gates]'
   + ' [--repo-dir <path>]\n';
-// `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit` drops
-// whatever has not reached the OS — so an answer past the 64KB pipe buffer arrives
-// truncated mid-token, as valid-looking JSON that will not parse. Writing from the
-// write's own callback flushes it, but then the exit is asynchronous too: execution
-// CONTINUES past the refusal that called it, and a script that has just said "this
-// argument is unusable" goes on to use it. Both have to hold, so the write itself is
-// made synchronous and the exit stays where it was.
-const writeAll = (fd, text) => {
-  const buf = Buffer.from(text, 'utf8');
-  let off = 0;
-  while (off < buf.length) {
-    try {
-      off += writeSync(fd, buf, off, buf.length - off);
-    } catch (e) {
-      // A non-blocking pipe whose reader is behind says EAGAIN rather than writing less;
-      // retrying is the whole handling. Anything else — a closed reader, above all — is
-      // not something to spin on.
-      if (e.code !== 'EAGAIN') return;
-    }
-  }
-};
 const die = (m) => { writeAll(2, `commit-checks: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
@@ -87,52 +65,23 @@ if (!opts.pr && SYMBOLIC.includes(opts.sha)) {
 // Shape-checked HERE, before any call goes out: a bad value caught after `gh pr view`
 // has already run has cost a round trip to learn what the argument said all along.
 //
-// Not hex, and deliberately. This endpoint takes a ref, so `main` reaches it as
-// legitimately as an object id — a length floor would refuse the commonest branch names
-// while admitting nothing safer. What matters is that a value is ONE url path segment
-// and cannot steer the request elsewhere, so the class excludes everything that would:
-// a separator, a query, a fragment, an escape, and git's own `^` `~` `:` `?` `*` `[`,
-// which no ref may carry anyway. `..` doubles as path traversal and as git's range.
-//
-// `<sha>^` is refused HERE rather than 404ing as a failed read, because the two mean
-// different things to a caller: one is an argument to fix, the other a forge to retry.
-// A caller wanting a parent resolves it with git and passes the oid.
-const SEGMENT = /^[^/\\\s?#%~^:*[\]{}]+$/;
-// The type is checked first, and that is not defensiveness about argv — the forge's own
-// answer comes through here too. A `headRefOid` that arrives as a number or an array
-// makes `.includes` throw, which exits 1 with nothing on stdout: no JSON, no verdict, and
-// a caller routing on "no JSON" reads a deterministic crash as an answer not published
-// yet and re-polls it until its budget is gone.
-const readable = (v) => typeof v === 'string' && SEGMENT.test(v)
-  && !v.includes('..') && !v.startsWith('-');
-if (!SYMBOLIC.includes(opts.sha) && !readable(opts.sha)) {
-  die(`--sha '${opts.sha}' is not a commit id or a ref this can read`);
-}
-// The same guard, and for the same reason. Checked more loosely than `--sha`, an
-// `owner/name?per_page=1` rides straight into the path the feeds are read from.
-const repoOk = (v) => { const p = v.split('/'); return p.length === 2 && p.every(readable); };
 // A BRANCH name is many segments, not one: `release/1.0` and `feature/foo` are ordinary
 // names, and the single-segment rule refuses them — which would have turned the gate
 // read into a refusal on every repository that targets one, taking the whole step with
 // it. Each segment is held to the same rule instead, so nothing steers the url and every
 // real branch name still reaches it.
-// A branch name is many segments where a commit id is one, so it takes its own check —
-// but what keeps it inside the url is `encodeURIComponent` at the call site, not the
-// splitting. What the splitting is for is the rest of `SEGMENT`'s rule: no `..`, no
-// leading `-`, no lone `.`, and none of the characters SEGMENT excludes for every value
-// here — `{` and `}` among them, because `gh api` substitutes `{owner}`, `{repo}` and
-// `{branch}` from the repository of the CURRENT directory, so a branch actually named
-// `{repo}` sends the request somewhere else, and in a fork checkout somewhere else is
-// another repository.
-const refOk = (v) => typeof v === 'string' && v !== ''
-  && v.split('/').every((seg) => readable(seg) && seg !== '.');
+// Shape-checked HERE, before any call goes out: a bad value caught after `gh pr view`
+// has already run has cost a round trip to learn what the argument said all along.
+// `<sha>^` is refused as an argument rather than 404ing as a failed read: the two mean
+// different things to a caller — one is an argument to fix, the other a forge to retry.
+// A caller wanting a parent resolves it itself and passes the oid. `--sha base` is a
+// different thing and not a substitute: it is the BASE BRANCH's tip.
+if (!SYMBOLIC.includes(opts.sha) && !readable(opts.sha)) {
+  die(`--sha '${opts.sha}' is not a commit id or a ref this can read`);
+}
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
 
-const cwd = opts.repoDir || process.cwd();
-const gh = (args) => {
-  const r = spawnSync('gh', args, { cwd, encoding: 'utf8', timeout: 120000, maxBuffer: 32 * 1024 * 1024 });
-  return { ok: r.status === 0, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() };
-};
+const gh = runner(opts.repoDir || process.cwd());
 
 const answer = {
   // `read` is the only field a caller may act on without saying it did not look: BOTH
@@ -163,40 +112,6 @@ const refuse = (reason, retry = false) => {
   finish();
 };
 
-// A paginated `gh api` prints one JSON document per page, concatenated. Parsed as one
-// document that is a syntax error; parsed as the first page it is the first page — which
-// is the "first page is not the list" failure happening inside the reader written to
-// prevent it. Split on brace depth outside strings, then merge the lists.
-const parsePages = (text) => {
-  const pages = [];
-  let rest = text.trim();
-  // Nothing at all is NOT an empty list. A call that exited 0 having printed nothing
-  // brought no answer, and returning `[]` here would turn that into "this commit has no
-  // checks" — the exact confusion the rest of this file exists to prevent.
-  if (!rest) return null;
-  while (rest) {
-    let depth = 0; let inString = false; let escaped = false; let end = -1;
-    for (let i = 0; i < rest.length; i += 1) {
-      const c = rest[i];
-      if (inString) {
-        if (escaped) escaped = false;
-        else if (c === '\\') escaped = true;
-        else if (c === '"') inString = false;
-        continue;
-      }
-      if (c === '"') { inString = true; continue; }
-      if (c === '[' || c === '{') depth += 1;
-      else if (c === ']' || c === '}') {
-        depth -= 1;
-        if (depth === 0) { end = i + 1; break; }
-      }
-    }
-    if (end === -1) return null;
-    try { pages.push(JSON.parse(rest.slice(0, end))); } catch { return null; }
-    rest = rest.slice(end).trim();
-  }
-  return pages;
-};
 
 let repo = opts.repo;
 let sha = opts.sha;
@@ -208,6 +123,11 @@ if (opts.pr) {
   if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.err.split('\n')[0] || 'no detail'})`);
   let pr;
   try { pr = JSON.parse(view.out); } catch { refuse('the pull request view was not JSON'); }
+  // Valid JSON is not an object: `null` parses, and reaching a field on it throws — exit
+  // 1 with nothing on stdout, which is the one outcome this contract forbids.
+  if (!pr || typeof pr !== 'object' || Array.isArray(pr)) {
+    refuse('the pull request view came back in a shape this cannot read');
+  }
   // The request's OWN repository, taken from its url — never gh's default, which in a
   // fork checkout is the parent, where this commit does not exist and every read below
   // 404s into a silence that looks exactly like a commit with nothing on it. The host is

@@ -1,0 +1,30 @@
+{
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7ffffffffffffffffffffffffffffffffffff",
+  "baseRefName": "dev",
+  "isDraft": false
+ },
+ "rules": [],
+ "reviews": [
+  {
+   "id": 1,
+   "commit_id": "f1x7ffffffffffffffffffffffffffffffffffff",
+   "state": "APPROVED",
+   "user": {
+    "type": "User",
+    "login": "example-user-1a2b3c4d"
+   }
+  }
+ ],
+ "timeline": [
+  {
+   "event": "review_requested",
+   "created_at": "2026-09-16T10:00:00Z",
+   "requested_reviewer": {
+    "type": "User",
+    "login": "example-user-1a2b3c4d"
+   }
+  }
+ ]
+}

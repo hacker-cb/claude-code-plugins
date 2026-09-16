@@ -1,0 +1,45 @@
+{
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7666666666666666666666666666666666666",
+  "baseRefName": "dev",
+  "isDraft": true
+ },
+ "rules": [
+  {
+   "type": "copilot_code_review",
+   "parameters": {
+    "review_on_push": true,
+    "review_draft_pull_requests": false
+   }
+  },
+  {
+   "type": "copilot_code_review",
+   "parameters": {
+    "review_on_push": false,
+    "review_draft_pull_requests": true
+   }
+  }
+ ],
+ "reviews": [
+  {
+   "id": 1,
+   "commit_id": "f1x7666666666666666666666666666666666666",
+   "state": "COMMENTED",
+   "user": {
+    "type": "Bot",
+    "login": "copilot-pull-request-reviewer[bot]"
+   }
+  }
+ ],
+ "timeline": [
+  {
+   "event": "reviewed",
+   "submitted_at": "2026-09-16T10:00:00Z",
+   "user": {
+    "type": "Bot",
+    "login": "copilot-pull-request-reviewer[bot]"
+   }
+  }
+ ]
+}

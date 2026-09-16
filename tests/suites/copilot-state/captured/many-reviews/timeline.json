@@ -1,0 +1,484 @@
+[
+  {
+    "sha": "f1x73fc1db4179d802417cbef0375f2c5210ea62",
+    "event": "committed"
+  },
+  {
+    "sha": "f1x753e23b97f352562e7a869808c570eb1461a2",
+    "event": "committed"
+  },
+  {
+    "sha": "f1x7c398d902588a4ddd4fc1079a7f48f396528f",
+    "event": "committed"
+  },
+  {
+    "sha": "f1x737015902eca7bd9867a172bd488d621f36bd",
+    "event": "committed"
+  },
+  {
+    "sha": "f1x77c8af467b14c36162026e1d4da2c8d72e019",
+    "event": "committed"
+  },
+  {
+    "sha": "f1x77870ed74083be77f58d00cd33b4d2f785964",
+    "event": "committed"
+  },
+  {
+    "id": "example-id-029ae219",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "review_requested",
+    "commit_id": null,
+    "created_at": "2026-09-12T10:29:50Z",
+    "requested_reviewer": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    }
+  },
+  {
+    "id": "example-id-21a02c5c",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "copilot_work_started",
+    "commit_id": null,
+    "created_at": "2026-09-12T10:30:22Z"
+  },
+  {
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T10:32:51Z",
+    "updated_at": "2026-09-12T10:32:51Z",
+    "event": "cross-referenced"
+  },
+  {
+    "id": "example-id-0af0cb2b",
+    "user": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "suppressed (3)\nComments generated: 1\n[body redacted by collect-fixtures]",
+    "commit_id": "f1x77870ed74083be77f58d00cd33b4d2f785964",
+    "state": "commented",
+    "submitted_at": "2026-09-12T10:37:48Z",
+    "updated_at": "2026-09-12T10:37:48Z",
+    "author_association": "NONE",
+    "event": "reviewed"
+  },
+  {
+    "sha": "f1x7e1ce3075cc63baa003813a1e2fefff7dee11",
+    "event": "committed"
+  },
+  {
+    "id": "example-id-e0a68215",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "review_requested",
+    "commit_id": null,
+    "created_at": "2026-09-12T10:49:42Z",
+    "requested_reviewer": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    }
+  },
+  {
+    "id": "example-id-2796f97b",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "copilot_work_started",
+    "commit_id": null,
+    "created_at": "2026-09-12T10:50:11Z"
+  },
+  {
+    "id": "example-id-88e74174",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T10:50:27Z",
+    "updated_at": "2026-09-12T10:50:27Z",
+    "body": "[body redacted by collect-fixtures]",
+    "author_association": "MEMBER",
+    "event": "commented",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    }
+  },
+  {
+    "id": "example-id-333feda1",
+    "user": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "suppressed (4)\nComments generated: 1\n[body redacted by collect-fixtures]",
+    "commit_id": "f1x7e1ce3075cc63baa003813a1e2fefff7dee11",
+    "state": "commented",
+    "submitted_at": "2026-09-12T10:55:22Z",
+    "updated_at": "2026-09-12T10:55:22Z",
+    "author_association": "NONE",
+    "event": "reviewed"
+  },
+  {
+    "sha": "f1x75ff370f4f6ed4c6021105391ce604e241eec",
+    "event": "committed"
+  },
+  {
+    "id": "example-id-f8658901",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "review_requested",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:03:47Z",
+    "requested_reviewer": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    }
+  },
+  {
+    "id": "example-id-4a05dd67",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "copilot_work_started",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:04:23Z"
+  },
+  {
+    "id": "example-id-bfa38348",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T11:04:24Z",
+    "updated_at": "2026-09-12T11:04:24Z",
+    "body": "[body redacted by collect-fixtures]",
+    "author_association": "MEMBER",
+    "event": "commented",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    }
+  },
+  {
+    "id": "example-id-86a62491",
+    "user": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "Needs a closer look\nsuppressed (2)\nComments generated: 0\n[body redacted by collect-fixtures]",
+    "commit_id": "f1x75ff370f4f6ed4c6021105391ce604e241eec",
+    "state": "commented",
+    "submitted_at": "2026-09-12T11:08:38Z",
+    "updated_at": "2026-09-12T11:08:38Z",
+    "author_association": "NONE",
+    "event": "reviewed"
+  },
+  {
+    "sha": "f1x72e3dde829ee7e05b31ba76604069ff74badf",
+    "event": "committed"
+  },
+  {
+    "id": "example-id-78418d37",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T11:14:25Z",
+    "updated_at": "2026-09-12T11:14:25Z",
+    "body": "[body redacted by collect-fixtures]",
+    "author_association": "MEMBER",
+    "event": "commented",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    }
+  },
+  {
+    "id": "example-id-e541dfa0",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "review_requested",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:14:25Z",
+    "requested_reviewer": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    }
+  },
+  {
+    "id": "example-id-bc057546",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "copilot_work_started",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:15:03Z"
+  },
+  {
+    "id": "example-id-6858fdb6",
+    "user": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "Needs a closer look\nsuppressed (3)\nComments generated: 0\n[body redacted by collect-fixtures]",
+    "commit_id": "f1x72e3dde829ee7e05b31ba76604069ff74badf",
+    "state": "commented",
+    "submitted_at": "2026-09-12T11:20:36Z",
+    "updated_at": "2026-09-12T11:20:36Z",
+    "author_association": "NONE",
+    "event": "reviewed"
+  },
+  {
+    "sha": "f1x76a7ca7bbefc6d3f841352e3f01b9a3219e01",
+    "event": "committed"
+  },
+  {
+    "id": "example-id-b9feeacd",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T11:27:33Z",
+    "updated_at": "2026-09-12T11:27:33Z",
+    "body": "[body redacted by collect-fixtures]",
+    "author_association": "MEMBER",
+    "event": "commented",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    }
+  },
+  {
+    "id": "example-id-1bdc4090",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "review_requested",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:27:33Z",
+    "requested_reviewer": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    }
+  },
+  {
+    "id": "example-id-4e4169ab",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "copilot_work_started",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:28:06Z"
+  },
+  {
+    "id": "example-id-04471840",
+    "user": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "Needs a closer look\nsuppressed (5)\nComments generated: 0\n[body redacted by collect-fixtures]",
+    "commit_id": "f1x76a7ca7bbefc6d3f841352e3f01b9a3219e01",
+    "state": "commented",
+    "submitted_at": "2026-09-12T11:33:12Z",
+    "updated_at": "2026-09-12T11:33:12Z",
+    "author_association": "NONE",
+    "event": "reviewed"
+  },
+  {
+    "sha": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837",
+    "event": "committed"
+  },
+  {
+    "id": "example-id-1e418a40",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T11:40:02Z",
+    "updated_at": "2026-09-12T11:40:02Z",
+    "body": "[body redacted by collect-fixtures]",
+    "author_association": "MEMBER",
+    "event": "commented",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    }
+  },
+  {
+    "id": "example-id-89603463",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "review_requested",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:40:02Z",
+    "requested_reviewer": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    }
+  },
+  {
+    "id": "example-id-6db61349",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "copilot_work_started",
+    "commit_id": null,
+    "created_at": "2026-09-12T11:40:39Z"
+  },
+  {
+    "id": "example-id-be702b3e",
+    "user": {
+      "login": "Copilot",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "suppressed (5)\nComments generated: 1\n[body redacted by collect-fixtures]",
+    "commit_id": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837",
+    "state": "commented",
+    "submitted_at": "2026-09-12T11:49:13Z",
+    "updated_at": "2026-09-12T11:49:13Z",
+    "author_association": "NONE",
+    "event": "reviewed"
+  },
+  {
+    "id": "example-id-89aa77ba",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T11:51:16Z",
+    "updated_at": "2026-09-12T11:51:16Z",
+    "body": "[body redacted by collect-fixtures]",
+    "author_association": "MEMBER",
+    "event": "commented",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    }
+  },
+  {
+    "id": "example-id-342b1c24",
+    "user": {
+      "login": "example-user-1e8e16fd",
+      "id": "example-id-c36449d6",
+      "type": "User"
+    },
+    "body": null,
+    "commit_id": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837",
+    "state": "approved",
+    "submitted_at": "2026-09-12T12:00:50Z",
+    "updated_at": "2026-09-12T12:00:50Z",
+    "author_association": "MEMBER",
+    "event": "reviewed"
+  },
+  {
+    "id": "example-id-ca3ce736",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "merged",
+    "commit_id": "f1x72ee0c35ea702a10dfb6afaab47608260b7ea",
+    "created_at": "2026-09-12T12:02:51Z"
+  },
+  {
+    "id": "example-id-2b4d8bec",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "closed",
+    "commit_id": null,
+    "created_at": "2026-09-12T12:02:52Z"
+  },
+  {
+    "id": "example-id-420e001b",
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "event": "head_ref_deleted",
+    "commit_id": null,
+    "created_at": "2026-09-12T12:02:53Z"
+  },
+  {
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T12:07:52Z",
+    "updated_at": "2026-09-12T12:07:52Z",
+    "event": "cross-referenced"
+  },
+  {
+    "actor": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "created_at": "2026-09-12T12:21:12Z",
+    "updated_at": "2026-09-12T12:21:12Z",
+    "event": "cross-referenced"
+  }
+]

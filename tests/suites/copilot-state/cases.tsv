@@ -1,0 +1,29 @@
+# fixture	args	want	expect	note
+head-unreviewed	--pr 7	0	"read": true|"verdict": "unrequested"|"headReview": null	six Copilot reviews stand and none is of the head — the exact shape a `does a review exist` test reads as finished
+head-unreviewed	--pr 7	0	"requests": 6|"latestMove": "reviewed"	counted from the timeline, never from the request list, which reads empty through a live request as readily as through none
+head-reviewed	--pr 7	0	"verdict": "reviewed"|"headReview"|"commitId": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837"	the same capture with the head moved onto a commit a review carries — selected ON the head, not taken off the end
+waiting	--pr 7	0	"verdict": "waiting"|"latestMove": "review_requested"|"newestRequestAt"	a request standing is the one state that is neither reviewed nor over
+request-removed	--pr 7	0	"verdict": "unrequested"|"latestMove": "review_request_removed"	a removal ends the request it removes; what it leaves is a head with nothing standing, which the skill's cutoff rules
+not-expected	--pr 7	0	"verdict": "not-expected"|"rule": false	no rule on this base, no request ever, no review ever — Copilot is not part of this request's flow
+draft-not-reviewed	--pr 7	0	"drafts": false|"draft": true|nothing is coming until it is opened	a rule that does not review drafts means no review is coming at all, which is not a review that is late
+humans-only	--pr 7	0	"verdict": "not-expected"|"reviews": []|"requests": 0	a human review and a human request are not Copilot's — one actor wears a different login on every surface, and matching loosely catches people
+null-user	--pr 7	0	"read": true|"reviews"|"verdict": "reviewed"	a deleted account leaves `user: null`, and one such row must not abort the read — that is the silent-empty failure by another route
+rules-unread	--pr 7	0	"read": false|the rules on dev could not be read	this endpoint answers `[]` for a base with no rules, so a failure is the repository not reading — never a base without the rule
+reviews-unread	--pr 7	0	"read": false|the reviews could not be read	a read that failed prints what a request with no reviews prints
+timeline-unread	--pr 7	0	"read": false|the timeline could not be read	and the third feed is refused as loudly as the first two
+rules-notjson	--pr 7	0	"read": false|did not come back as JSON	an error body from a proxy is valid text and not valid JSON; either way it is not a base without the rule
+pr-unread	--pr 7	0	"read": false|could not read pull request 7	the request could not be read, so no feed was ever asked
+-	--pr 0	2	is not a request number	zero is not a request, and an unguarded value reaches gh as a flag
+-	--pr --repo=other/repo	2	is not a request number	a value shaped like a flag reads a different request than the caller named
+-	-	2	--pr is required	the one argument this cannot be run without
+-	--pr 7 --repo owner/name?x=1	2	is not owner/name	the repository is held inside one path segment, like every value that reaches a url
+near-miss-actors	--pr 7	0	"verdict": "not-expected"|"reviews": []|"requests": 0|"latestMove": "none"	one actor wears a different login on every surface, so the filter is the PAIR: a person named `copilot-fan` passes a login test, and `dependabot[bot]` passes a type test
+re-requested-after-review	--pr 7	0	"verdict": "waiting"|"more": true	a request that is still the LATEST move came after the review beside it — somebody re-requested on a head already reviewed, and taking `reviewed` there merges before the new findings arrive
+drafts-disagree	--pr 7	0	"drafts": true|"more": true	two rulesets disagreeing: every rule in force applies, so one reviewing drafts means drafts are reviewed however strict its neighbour
+draft-not-reviewed	--pr 7	0	"more": false|nothing is coming until it is opened	a draft under a rule that skips drafts is not a head waiting out a cutoff — nothing is on its way, and the caller opens it ready rather than waiting
+no-push-review	--pr 7	0	"more": true|"verdict": "unrequested"	a review exists but NOT of this head, and this cannot tell the rule's request from one placed by hand — so it answers cautiously: a cutoff spent for nothing costs minutes, a review skipped costs its findings
+head-unreviewed	--pr 7	0	"more": true|"latestMoveAt": "2	the cutoff is counted from when an earlier request released, so the answer carries that moment
+pr-view-null	--pr 7	0	"read": false|shape this cannot read	valid JSON is not an object: `null` parses, and reaching a field on it throws — exit 1 with nothing on stdout, the one outcome this contract forbids
+no-push-head-reviewed	--pr 7	0	"more": false|"verdict": "reviewed"	the head carries its OWN review under a rule that does not review pushes: nothing further comes, and that is the case the cautious answer above must not swallow
+rules-cross-loose	--pr 7	0	"more": false|"drafts": true|"onPush": true	taking the loosest of each field separately invents a rule nobody wrote — one reviewing pushes but not drafts beside one reviewing drafts but not pushes is not a rule that reviews pushes on drafts
+draft-requested-by-hand	--pr 7	0	"verdict": "waiting"|"more": true|"notes": []	the draft note must not fire beside a standing request: a reader acting on it would open the request ready, or stop waiting, while a review is already on its way

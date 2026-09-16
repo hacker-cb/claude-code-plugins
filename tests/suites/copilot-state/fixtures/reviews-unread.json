@@ -1,0 +1,11 @@
+{
+ "rules": "captured/many-reviews/rules.json",
+ "reviews": "fail",
+ "timeline": "captured/many-reviews/timeline.json",
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "baseRefName": "dev",
+  "isDraft": false
+ }
+}
