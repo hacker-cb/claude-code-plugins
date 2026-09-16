@@ -10,7 +10,8 @@
 // This READS. It replies to nothing and resolves nothing — those are the caller's, and
 // deliberately: a reply folded into the reading is sent before the reading is believed.
 //
-// Usage: node copilot-findings.mjs --pr <n> [--repo <owner/name>] [--repo-dir <path>]
+// Usage: node copilot-findings.mjs --pr <n> [--repo <owner/name>] [--me <login>]
+//                                  [--repo-dir <path>]
 //
 // Exit 0 either way. Exit 2 only for a call this script cannot act on at all.
 
@@ -28,12 +29,12 @@ const whole = (v) => (typeof v === 'string'
 const clipped = (v) => typeof v === 'string' && v.length > CEILING;
 
 const USAGE = 'usage: node copilot-findings.mjs --pr <n> [--repo <owner/name>]'
-  + ' [--repo-dir <path>]\n';
+  + ' [--me <login>] [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `copilot-findings: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { pr: null, repo: null, repoDir: null };
-const FLAGS = { '--pr': 'pr', '--repo': 'repo', '--repo-dir': 'repoDir' };
+const opts = { pr: null, repo: null, repoDir: null, me: null };
+const FLAGS = { '--pr': 'pr', '--repo': 'repo', '--repo-dir': 'repoDir', '--me': 'me' };
 for (let i = 0; i < argv.length; i += 1) {
   const key = FLAGS[argv[i]];
   if (!key) die(`unknown argument '${argv[i]}'`);
@@ -44,6 +45,11 @@ for (let i = 0; i < argv.length; i += 1) {
 if (!opts.pr) die('--pr is required');
 if (!/^[1-9][0-9]{0,9}$/.test(opts.pr)) die(`--pr '${opts.pr}' is not a request number`);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
+// A login, which is not a path segment and not a ref: letters, digits and hyphens is what
+// both forges allow, and an App's own user carries a `[bot]` suffix.
+if (opts.me !== null && !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:\[bot\])?$/.test(opts.me)) {
+  die(`--me '${opts.me}' is not a login`);
+}
 
 const gh = runner(opts.repoDir || process.cwd());
 const repoArgs = opts.repo ? ['--repo', opts.repo] : [];
@@ -91,11 +97,18 @@ if (typeof pr.url === 'string') {
   } catch { host = null; }
 }
 const hostArgs = hostOk(host) ? ['--hostname', host] : [];
-const whoami = gh(['api', ...hostArgs, 'user', '-q', '.login']);
-answer.me = whoami.ok && whoami.out ? text(whoami.out.split('\n')[0]) : null;
+// What the caller named wins, and it is the answer for a token that cannot read its own
+// user at all: a repository's `GITHUB_TOKEN` and an App installation token both get 403
+// from `/user`, and without this every thread stays owed for the life of the run.
+if (opts.me !== null) answer.me = opts.me;
+else {
+  const whoami = gh(['api', ...hostArgs, 'user', '-q', '.login']);
+  answer.me = whoami.ok && whoami.out ? text(whoami.out.split('\n')[0]) : null;
+}
 if (answer.me === null) {
-  answer.notes.push('who this run is authenticated as could not be read, so no comment in'
-    + ' any thread counts as an answer of ours');
+  answer.notes.push('who this run is authenticated as could not be read and none was'
+    + ' named, so no comment in any thread counts as an answer of ours — pass --me <login>'
+    + ' where the token cannot read its own user');
 }
 const owner = where.split('/').slice(0, 2);
 answer.repo = owner.length === 2 && owner.every(Boolean) ? owner.join('/') : null;
@@ -216,7 +229,13 @@ if (!answer.repo) {
 //
 // Markup stripped before either count is read: both labels arrive as a heading or a bold
 // run as often as plain text, and the forge may reword either of them.
-const plain = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ').replace(/[*_#]/g, ' ');
+//
+// A TAG, and one that cannot cross a line. `<[^>]*>` is not "a tag" but "from any `<` to
+// the next `>`", so a `<` in ordinary prose — `stops when \`i < len\`` — deletes everything
+// up to the next `>` anywhere below, the block this is looking for included. Measured: the
+// count then comes back `null` with nothing marking it unknown.
+const plain = (s) => String(s ?? '')
+  .replace(/<\/?[A-Za-z][^>\n]{0,200}>/g, ' ').replace(/[*_#]/g, ' ');
 // Every match, not the first. A review body carries the paths of the files it reviewed
 // above the block this is looking for, and a path is a name somebody chose: one shaped
 // `docs/deprecations suppressed (0).md` sits above the real block and answers for it.
@@ -272,8 +291,11 @@ if (!reviews.ok) {
           opened: opened.n,
           ambiguous: sup.ambiguous || opened.ambiguous,
           // The decision, made here rather than left as an inference a reader re-derives:
-          // a block with findings in it, or a count that could not be pinned at all.
-          readBody: sup.ambiguous || opened.ambiguous || (sup.n !== null && sup.n > 0),
+          // a block with findings in it, or a count that could not be pinned at all — the
+          // label standing in the body with no number reachable being one such, since a
+          // block that is there and unreadable is not a body with nothing in it.
+          readBody: sup.ambiguous || opened.ambiguous || (sup.n !== null && sup.n > 0)
+            || (sup.n === null && /suppressed/i.test(body)),
         });
       }
     }
@@ -313,8 +335,9 @@ if (answer.threads.read) {
 // caller acting on half of it drops exactly the findings nothing else would catch.
 answer.read = answer.threads.read && answer.bodies.read && !answer.threads.more;
 if (!answer.read && answer.reason === null) {
-  answer.reason = answer.threads.more
-    ? 'the request carries more threads than the first page this asked for'
-    : (answer.threads.reason || answer.bodies.reason);
+  // Its own words, not a summary of them: the walk now stops for several different
+  // reasons and a caller told the wrong one looks for the wrong thing.
+  answer.reason = answer.threads.reason || answer.bodies.reason
+    || (answer.threads.more ? 'the thread listing did not finish' : null);
 }
 finish();

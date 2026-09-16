@@ -321,8 +321,10 @@ buys another review of the same kind.
    what it reports before touching code and attribute it per
    *When the platform is down, the red check is not yours*.
 3. **Classify what step 1's fourth script returned** — `references/copilot.md` owns the
-   severity ladder, and every body whose `readBody` is true carries findings no thread
-   holds.
+   severity ladder, every body whose `readBody` is true carrying findings no thread
+   holds. Skip the ones this pull request's conversation already answers: `readBody` is a
+   property of the body and not of the round, so a body settled three pushes ago asks to
+   be read on every one of them.
 4. **Fix the findings `references/copilot.md` routes to a fix.** Batch fixes into
    as few pushes as is reasonable — where a rule in force reviews pushes, every
    push costs another wait at step 6, whether or not a new review actually follows.

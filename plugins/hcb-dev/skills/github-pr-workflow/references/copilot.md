@@ -202,7 +202,13 @@ before the reading is believed.
 
 ```text
 node <plugin root>/scripts/copilot-findings.mjs --pr <n> [--repo <owner/name>]
+  [--me <login>]
 ```
+
+`--me` where the token cannot read its own user — a repository's `GITHUB_TOKEN` and an
+App installation token both answer 403 to `/user`. Without it `me` is `null`, no comment
+counts as ours, and every thread stays owed for the life of the run: a loop that cannot
+converge, so name the login rather than iterating against it.
 
 | field | what it settles |
 |---|---|
@@ -211,7 +217,7 @@ node <plugin root>/scripts/copilot-findings.mjs --pr <n> [--repo <owner/name>]
 | `threads.items[]` | one per review thread: `resolved`, `outdated`, `resolvedBy`, `byReviewer`, the `path` and `line`, and each comment with the `id` a reply is posted to |
 | `threads.items[].answered` | whether a comment of **ours** follows the reviewer's LAST word. Anyone at all can reply in a thread, so a reply is ours by identity and an answer by position; `othersSpoke` beside it is a third party having attended to the thread, which is not an answer to the finding. `null` where that thread's own comments paginated, which owes exactly as much as no answer does |
 | `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head`, `opening` and the `body` itself |
-| `bodies.items[].readBody` | **the decision**: this body has findings in it that opened no thread, or a count that could not be pinned. Everything else is `false` |
+| `bodies.items[].readBody` | **the decision**: this body has findings in it that opened no thread, or a count that could not be pinned — a block standing there with no number reachable being one such. Everything else is `false` |
 | `bodies.items[].suppressed` | the findings that opened no thread. **`null` is "no such block", never zero** — and `null` beside `ambiguous` is a count the body's own file list answered for, which resolves toward reading rather than skipping |
 | `bodies.items[].opened` | what the review OPENED, a count of threads and never of findings: a review whose findings all went to the suppressed block opened none, so zero there is that class's signature rather than evidence against it. It holds whatever the verdict says — an approving review carries a suppressed block as readily as a declining one |
 | `open[]` | every thread still owed something, each carrying the `why` that says which state it is in |
@@ -221,6 +227,13 @@ to resolve — it ends in the fix, and is named, fixed or turned down with its r
 the pull request's conversation, which is where *Replying* would otherwise have put it.
 A `truncated` flag beside a body or a comment says the text was clipped; nothing else is
 lossy.
+
+**`readBody` is a property of the body, not of the round.** Every review this reviewer
+ever posted is in the answer, so a body settled three pushes ago still carries its
+findings and still asks to be read. What settles one is the pull request's conversation,
+which this does not read: **a body whose findings the conversation already names was read
+in an earlier round**, and re-classifying it posts the same answers again every
+iteration. Read the ones the conversation is silent about.
 
 ## Classifying severity
 
