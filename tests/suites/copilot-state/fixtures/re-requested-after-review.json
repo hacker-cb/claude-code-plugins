@@ -1,0 +1,36 @@
+{
+ "rules": "captured/many-reviews/rules.json",
+ "reviews": "captured/many-reviews/reviews.json",
+ "timeline": [
+  {
+   "event": "review_requested",
+   "created_at": "2026-09-12T11:00:00Z",
+   "requested_reviewer": {
+    "type": "Bot",
+    "login": "Copilot"
+   }
+  },
+  {
+   "event": "reviewed",
+   "submitted_at": "2026-09-12T11:30:00Z",
+   "user": {
+    "type": "Bot",
+    "login": "copilot-pull-request-reviewer[bot]"
+   }
+  },
+  {
+   "event": "review_requested",
+   "created_at": "2026-09-12T12:00:00Z",
+   "requested_reviewer": {
+    "type": "Bot",
+    "login": "Copilot"
+   }
+  }
+ ],
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837",
+  "baseRefName": "dev",
+  "isDraft": false
+ }
+}

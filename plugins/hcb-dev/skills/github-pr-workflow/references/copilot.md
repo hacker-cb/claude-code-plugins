@@ -13,10 +13,11 @@ own timeline, and returns:
 | field | what it settles |
 |---|---|
 | `read` | every feed answered. `false` is unread, never "nothing there" |
-| `expects.rule` / `.onPush` / `.drafts` | what the base's rules ask of Copilot — `rule: false` means no rule applies **to this base**, which is not "this repo has no such rule" |
-| `verdict` | `reviewed` — a review whose `commit_id` is the head; `waiting` — a request stands; `unrequested` — no review of the head and nothing standing; `not-expected` — no rule, no request ever, no review ever |
+| `expects.rule` / `.onPush` / `.drafts` | what the base's rules ask of Copilot — `rule: false` means no rule applies **to this base**, which is not "this repo has no such rule". Where rulesets disagree the **looser** answer wins: every rule in force applies |
+| `expects.more` | is another review coming to this request **at all**. `false` is the difference between a head waiting out a cutoff and one nothing is on its way to |
+| `verdict` | `waiting` — a request stands, which **outranks** a review of the head: the timeline is oldest-first, so a request that is still the latest move came after that review and a round is outstanding; `reviewed` — a review whose `commit_id` is the head and nothing since; `unrequested` — neither; `not-expected` — no rule, no request ever, no review ever |
 | `headReview`, `reviews` | the head's own review, and every Copilot review on the request |
-| `latestMove`, `requests`, `newestRequestAt` | read from the timeline, never from the request list |
+| `latestMove`, `latestMoveAt`, `requests`, `newestRequestAt` | read from the timeline, never from the request list. `latestMoveAt` is when an earlier head's request released, which is where the cutoff below starts counting |
 | `draft` | beside `expects.drafts: false`, nothing is coming until the request is opened ready for review |
 
 Three things the script is built around, and a caller reading its answer relies on:
@@ -27,13 +28,22 @@ Three things the script is built around, and a caller reading its answer relies 
   review of the push just made has not posted. Acting there discards every comment it
   was about to write. Measured on a real request: six Copilot reviews standing, none
   of them of the head.
-- **One actor, a different login on every surface** — `copilot-pull-request-reviewer[bot]`
-  on the reviews feed, `Copilot` on comments and on the timeline,
-  `copilot-pull-request-reviewer` in GraphQL. The filter is the **pair**: type `Bot`
-  **and** a case-insensitive `^copilot`. A login test alone takes a person named
-  `copilot-…`; a type test alone takes `dependabot[bot]`. A filter pinned to one
-  spelling matches nothing on the others, and the failure is silent — an empty result
-  reads as "no findings" rather than as a filter that missed.
+- **One actor, a different login on every surface, and the type under a different key
+  too.** The filter is the **pair** — type `Bot` **and** a case-insensitive `^copilot` —
+  and a filter pinned to one spelling matches nothing on the others, silently: an empty
+  result reads as "no findings" rather than as a filter that missed. A login test alone
+  takes a person named `copilot-…`; a type test alone takes `dependabot[bot]`.
+
+  | Surface | `login` | the type field |
+  |---|---|---|
+  | REST `…/pulls/<pr>/reviews` | `copilot-pull-request-reviewer[bot]` | `.user.type` |
+  | REST `…/pulls/<pr>/comments` | `Copilot` | `.user.type` |
+  | REST `…/issues/<pr>/timeline` | `Copilot` | `.requested_reviewer.type`, a review's `.user.type` |
+  | GraphQL `author` — reviews, comments | `copilot-pull-request-reviewer` | `.author.__typename` |
+
+  ```jq
+  select((.user.type? // "") == "Bot" and ((.user.login? // "") | test("^copilot"; "i")))
+  ```
 - **The request list is not the request.** `requested_reviewers` and
   `gh pr view --json reviewRequests` both read empty from the moment a request
   registers until its review posts, so a wait built on either never arms.
@@ -136,7 +146,8 @@ is nothing to wait for — `verdict: not-expected` says exactly that.
 |---|---|
 | `reviewed` | the head's own review is in hand — go to *Finding the findings* |
 | `waiting` | a request stands: wait, on the budget below |
-| `unrequested` | no review of the head and nothing standing — the cutoff below decides whether that is final |
+| `unrequested`, `expects.more: true` | no review of the head and nothing standing — the cutoff below decides whether that is final |
+| `unrequested`, `expects.more: false` | **nothing is coming at all**, so there is no cutoff to wait out. Either the request is a draft the rule skips — open it ready for review (Step 3), or Copilot never runs on it — or the rule does not review pushes and its one review has posted. Act, do not wait |
 | `not-expected` | Copilot is not part of this request's flow; rely on the rest of your bar |
 | `read: false` | the feeds were not read — unread, never unreviewed; take the platform path (*When the platform is down, the red check is not yours*) |
 
@@ -216,7 +227,7 @@ Use whichever source is available (in priority order):
 3. **REST API** via `gh api repos/{owner}/{repo}/pulls/<pr>/comments` as a
    fallback.
 
-Filter all three by the pair from *Identifying Copilot*, never by a login you saw
+Filter all three by the pair from *The state is read by a script*, never by a login you saw
 on another surface: on `/comments` the login is a bare `Copilot`, and in GraphQL it
 carries no `[bot]` suffix.
 
@@ -348,7 +359,7 @@ loop and keeps the review thread honest.
 
 **A thread this reviewer resolved is not by itself an answered thread.** Copilot
 closes its own, under a login other than the one it commented under. The pair from
-*Identifying Copilot* has nothing to test here — `resolvedBy` is typed as a plain
+*The state is read by a script* has nothing to test here — `resolvedBy` is typed as a plain
 user and carries no field distinguishing a bot from a person — so this is the one
 place the `^copilot` prefix stands alone, case-insensitively, which is what covers
 every spelling it resolves under.

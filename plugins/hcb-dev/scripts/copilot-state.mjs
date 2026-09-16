@@ -47,9 +47,12 @@ const answer = {
   read: false, repo: null, pr: Number(opts.pr), head: null, base: null, draft: null,
   // What the base's rules ask of Copilot — `rule: false` means no rule applies TO THIS
   // BASE, which is not "this repo has no such rule".
-  expects: { rule: false, onPush: false, drafts: null },
+  // `more` answers the question the verdict cannot: is another Copilot review coming to
+  // this request AT ALL. `unrequested` with `more: false` is not a head waiting out a
+  // cutoff — nothing is on its way, and the caller acts rather than waits.
+  expects: { rule: false, onPush: false, drafts: null, more: null },
   reviews: [], headReview: null,
-  requests: 0, newestRequestAt: null, latestMove: 'none',
+  requests: 0, newestRequestAt: null, latestMove: 'none', latestMoveAt: null,
   verdict: 'unread', reason: null, notes: [],
 };
 const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
@@ -61,6 +64,11 @@ const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,baseRefName,is
 if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.line()})`);
 let pr;
 try { pr = JSON.parse(view.out); } catch { refuse('the pull request view was not JSON'); }
+// Valid JSON is not an object: `null` parses, and reaching a field on it throws — which
+// exits 1 with nothing on stdout, the one outcome this contract forbids.
+if (!pr || typeof pr !== 'object' || Array.isArray(pr)) {
+  refuse('the pull request view came back in a shape this cannot read');
+}
 
 // The request's OWN repository, taken from its url — never gh's default, which in a
 // fork checkout is the parent, where every read below 404s into a silence that looks
@@ -104,8 +112,11 @@ if (!rules.ok) {
       // reviewing pushes anywhere means pushes are reviewed.
       if (p.review_on_push === true) answer.expects.onPush = true;
       if (typeof p.review_draft_pull_requests === 'boolean') {
-        answer.expects.drafts = answer.expects.drafts === false
-          ? false : p.review_draft_pull_requests;
+        // The looser answer wins, like `onPush` beside it: every rule in force applies,
+        // so one ruleset reviewing drafts means drafts are reviewed however strict its
+        // neighbour is.
+        answer.expects.drafts = answer.expects.drafts === true
+          ? true : p.review_draft_pull_requests;
       }
     }
   }
@@ -160,6 +171,10 @@ if (!timeline.ok) refuse(`the timeline could not be read (${timeline.line()})`);
       // what settles it.
       if (!isCopilot(e.requested_reviewer) && !isCopilot(e.user)) continue;
       answer.latestMove = e.event;
+      // The cutoff is counted from the push, or from the moment an earlier head's
+      // request RELEASED — which is this timestamp when the latest move is a review or a
+      // removal. Without it a caller cannot tell when its couple of minutes began.
+      answer.latestMoveAt = e.created_at ?? e.submitted_at ?? answer.latestMoveAt;
       if (e.event === 'review_requested') {
         answer.requests += 1;
         answer.newestRequestAt = e.created_at ?? answer.newestRequestAt;
@@ -168,9 +183,30 @@ if (!timeline.ok) refuse(`the timeline could not be read (${timeline.line()})`);
   }
 }
 
+// --- is another review coming at all
+if (answer.latestMove === 'review_requested') {
+  answer.expects.more = true;                       // one is on its way
+} else if (answer.draft && answer.expects.drafts === false) {
+  answer.expects.more = false;                      // not until it is opened ready
+} else if (answer.expects.rule && answer.expects.onPush) {
+  answer.expects.more = true;                       // every push earns one
+} else if (answer.expects.rule && answer.reviews.length === 0) {
+  answer.expects.more = true;                       // the first one has not come yet
+} else {
+  // Two ways to get here and one answer: a rule that does not review pushes whose
+  // review has posted, and no rule at all. Either way nothing further is on its way,
+  // and a caller waiting out a cutoff for it waits for nothing.
+  answer.expects.more = false;
+}
+
 // --- the verdict, computed once here rather than reassembled at every call site
-if (answer.headReview) answer.verdict = 'reviewed';
-else if (answer.latestMove === 'review_requested') answer.verdict = 'waiting';
+// A STANDING request outranks a review of the head, and that order is the whole point:
+// the timeline is read oldest-first, so a `review_requested` that is still the latest
+// move came AFTER the review beside it — somebody re-requested Copilot on a head it had
+// already reviewed, and a round is outstanding. Taking `reviewed` there merges before
+// its findings arrive, which is this file's own failure mode one level up.
+if (answer.latestMove === 'review_requested') answer.verdict = 'waiting';
+else if (answer.headReview) answer.verdict = 'reviewed';
 else if (answer.expects.rule || answer.reviews.length || answer.latestMove !== 'none') {
   // A head with no review of its own and no request standing. Whether that is final
   // is the skill's cutoff to judge — this says only that nothing is outstanding here.

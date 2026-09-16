@@ -72,9 +72,10 @@ if (!opts.pr && SYMBOLIC.includes(opts.sha)) {
 // real branch name still reaches it.
 // Shape-checked HERE, before any call goes out: a bad value caught after `gh pr view`
 // has already run has cost a round trip to learn what the argument said all along.
-// `<sha>^` is refused as an argument rather than 404ing as a failed read, because the
-// two mean different things to a caller — one is an argument to fix, the other a forge
-// to retry. A caller wanting a parent passes `--sha base` instead.
+// `<sha>^` is refused as an argument rather than 404ing as a failed read: the two mean
+// different things to a caller — one is an argument to fix, the other a forge to retry.
+// A caller wanting a parent resolves it itself and passes the oid. `--sha base` is a
+// different thing and not a substitute: it is the BASE BRANCH's tip.
 if (!SYMBOLIC.includes(opts.sha) && !readable(opts.sha)) {
   die(`--sha '${opts.sha}' is not a commit id or a ref this can read`);
 }
@@ -122,6 +123,11 @@ if (opts.pr) {
   if (!view.ok) refuse(`could not read pull request ${opts.pr} (${view.err.split('\n')[0] || 'no detail'})`);
   let pr;
   try { pr = JSON.parse(view.out); } catch { refuse('the pull request view was not JSON'); }
+  // Valid JSON is not an object: `null` parses, and reaching a field on it throws — exit
+  // 1 with nothing on stdout, which is the one outcome this contract forbids.
+  if (!pr || typeof pr !== 'object' || Array.isArray(pr)) {
+    refuse('the pull request view came back in a shape this cannot read');
+  }
   // The request's OWN repository, taken from its url — never gh's default, which in a
   // fork checkout is the parent, where this commit does not exist and every read below
   // 404s into a silence that looks exactly like a commit with nothing on it. The host is

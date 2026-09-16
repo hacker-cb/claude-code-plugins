@@ -1,0 +1,24 @@
+{
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7777777777777777777777777777777777777",
+  "baseRefName": "dev",
+  "isDraft": true
+ },
+ "rules": [
+  {
+   "type": "copilot_code_review",
+   "parameters": {
+    "review_draft_pull_requests": false
+   }
+  },
+  {
+   "type": "copilot_code_review",
+   "parameters": {
+    "review_draft_pull_requests": true
+   }
+  }
+ ],
+ "reviews": [],
+ "timeline": []
+}

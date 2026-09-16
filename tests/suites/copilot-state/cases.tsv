@@ -18,3 +18,9 @@ pr-unread	--pr 7	0	"read": false|could not read pull request 7	the request could
 -	-	2	--pr is required	the one argument this cannot be run without
 -	--pr 7 --repo owner/name?x=1	2	is not owner/name	the repository is held inside one path segment, like every value that reaches a url
 near-miss-actors	--pr 7	0	"verdict": "not-expected"|"reviews": []|"requests": 0|"latestMove": "none"	one actor wears a different login on every surface, so the filter is the PAIR: a person named `copilot-fan` passes a login test, and `dependabot[bot]` passes a type test
+re-requested-after-review	--pr 7	0	"verdict": "waiting"|"more": true	a request that is still the LATEST move came after the review beside it — somebody re-requested on a head already reviewed, and taking `reviewed` there merges before the new findings arrive
+drafts-disagree	--pr 7	0	"drafts": true|"more": true	two rulesets disagreeing: every rule in force applies, so one reviewing drafts means drafts are reviewed however strict its neighbour
+draft-not-reviewed	--pr 7	0	"more": false|nothing is coming until it is opened	a draft under a rule that skips drafts is not a head waiting out a cutoff — nothing is on its way, and the caller opens it ready rather than waiting
+no-push-review	--pr 7	0	"more": false|"verdict": "unrequested"	a rule that does not review pushes, whose review already posted: waiting out a cutoff here waits for nothing
+head-unreviewed	--pr 7	0	"more": true|"latestMoveAt": "2	the cutoff is counted from when an earlier request released, so the answer carries that moment
+pr-view-null	--pr 7	0	"read": false|shape this cannot read	valid JSON is not an object: `null` parses, and reaching a field on it throws — exit 1 with nothing on stdout, the one outcome this contract forbids
