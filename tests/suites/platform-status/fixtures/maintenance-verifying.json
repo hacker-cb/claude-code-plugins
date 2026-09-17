@@ -1,0 +1,19 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-api requests",
+    "name": "API Requests",
+    "status": "operational"
+   }
+  ],
+  "incidents": [],
+  "scheduled_maintenances": [
+   {
+    "id": "m1",
+    "name": "Storage swap",
+    "status": "verifying"
+   }
+  ]
+ }
+}

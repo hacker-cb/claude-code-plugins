@@ -180,6 +180,12 @@ const groupOf = (c) => {
   const parent = answer.shape === 'statuspage' && c && str(c.group_id) ? byId.get(c.group_id) : null;
   return parent ? named(parent) : null;
 };
+// "Has something to judge" has to match what `isUp` actually judges by: a status.io row
+// carrying a numeric code and no display string is a row this CAN rule on, while a row
+// with neither is one nothing here can. Both paths ask it — the aggregate to leave such a
+// row out, the named one to refuse rather than call it down.
+const judgeable = (c) => str(c.status) !== null
+  || (answer.shape === 'status.io' && typeof c.status_code === 'number');
 const row = (c) => ({
   id: text(str(c.id)), name: named(c), group: groupOf(c),
   status: text(str(c.status)), up: isUp(c),
@@ -201,7 +207,7 @@ answer.incidents = cap(incidentRows
     components: cap(arr(i.components).map((c) => (typeof c === 'string' ? text(c) : named(c))).filter(Boolean)),
   })));
 const maintenanceRows = answer.shape === 'statuspage'
-  ? arr(doc.scheduled_maintenances).filter((m) => m && str(m.status) === 'in_progress')
+  ? arr(doc.scheduled_maintenances).filter((m) => m && !['scheduled', 'completed'].includes(str(m.status) || ''))
   : arr(result.maintenance && result.maintenance.active);
 counts.maintenances = maintenanceRows.length;
 answer.maintenances = cap(maintenanceRows.map((m) => ({ name: named(m), status: text(str(m.status)) })));
@@ -226,6 +232,13 @@ if (opts.component !== null || opts.componentId !== null) {
     answer.available = cap(matches.map(row));
     stop(`${asked} matches ${matches.length} components — name one with --component-id`);
   }
+  // A row carrying nothing to judge by is not a row that is down. Answering 3 here put
+  // the documented loop to sleep every half hour on a component whose state the feed
+  // never stated — and the aggregate path had already been taught to leave it out.
+  if (!judgeable(matches[0])) {
+    answer.component = row(matches[0]);
+    stop(`${asked} carries no status this can rule on — the feed states none for it`);
+  }
   answer.component = row(matches[0]);
   if (answer.component.up) {
     answer.verdict = 'operational';
@@ -243,11 +256,6 @@ if (opts.component !== null || opts.componentId !== null) {
 // --- everything, which is the attribution
 // A group row is a roll-up of the components under it, not a component anyone parks on,
 // and one with no status at all is a row this cannot rule on either way.
-// "Has something to judge" has to match what `isUp` actually judges by: a status.io row
-// carrying a numeric code and no display string is a row this CAN rule on, and dropping
-// it here made unnamed mode answer 0 where --component on the same row answered 3.
-const judgeable = (c) => str(c.status) !== null
-  || (answer.shape === 'status.io' && typeof c.status_code === 'number');
 const degradedRows = components.filter((c) => c && c.group !== true && judgeable(c) && !isUp(c));
 counts.degraded = degradedRows.length;
 answer.degraded = cap(degradedRows.map(row));

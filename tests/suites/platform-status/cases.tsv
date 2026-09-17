@@ -9,6 +9,10 @@ name-in-two-groups	--component Requests	2	matches 2 components|--component-id|"g
 name-in-two-groups	--component-id c2	3	major_outage|"group": "Self-managed"|"up": false	and the id settles it — the same feed, the same ambiguity, answered
 group-row-degraded	-	0	"verdict": "operational"|NOT:Cloud	a group row rolls up its children and is never a component to park on: counting it would report an outage the components deny
 status-missing	-	0	"verdict": "operational"|NOT:Ghost	a component carrying no status is a row this cannot rule on — not one to call degraded
+status-missing	--component Ghost	2	carries no status this can rule on|"verdict": "unresolved"	the same row the aggregate leaves out: answering 3 here parked the loop every half hour on a component the feed never stated a state for
+statusio-nothing-to-judge	--component Website	2	carries no status this can rule on	and on the other shape, where a row with neither a code nor a string is the unjudgeable one
+maintenance-verifying	-	3	1 maintenance(s) in progress|Storage swap	Statuspage runs scheduled → in_progress → verifying → completed, and verifying is work that has started and not finished
+maintenance-unknown-state	-	3	1 maintenance(s) in progress|Something new	a state name nobody here has seen is not evidence the work is over — what counts as finished is named, and everything else is running
 incident-no-components	-	3	1 open incident(s)|Elevated errors|"components": []	an incident mapped to no component is ordinary, and it is still an outage — the check can be down under one nobody has mapped yet
 incident-resolved	-	0	"incidents": []|"verdict": "operational"	a resolved incident is history; a feed that lists it is not reporting an outage
 incident-elsewhere	--component Actions	0	"verdict": "operational"|1 incident(s) open elsewhere	the component this caller waits on is up, so the parking lifts — and the incident elsewhere is said rather than acted on
