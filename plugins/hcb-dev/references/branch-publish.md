@@ -29,6 +29,7 @@ the whole point.
 | `publish.mode` | `first`, `fast-forward` or `leased` — which push the remote's state owed |
 | `publish.reason` | why not, where `published` is `false` |
 | `stale[].verdict` | per name it used to carry: `retired` taken off this run, `absent` not there, `kept` with the `reason` the report carries |
+| `ran` | **every call that changed something**, in the order it was made — the rename, the fetches, the publish, a name taken off the remote. The proofs behind each are reads and stay out, so an empty `ran` is a run that read its state and touched none of it |
 | `notes` | why the name it ships under is not the one asked for |
 
 **A proof that cannot run keeps the ref.** Five have to hold before a name comes off the remote —
