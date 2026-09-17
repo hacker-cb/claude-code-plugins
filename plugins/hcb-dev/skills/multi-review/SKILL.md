@@ -149,8 +149,9 @@ short. **A model limit is recoverable now**: rerun on another family before reco
 the committed half while the rest sat in the working tree, covered a nonzero number of the wrong
 files. That is `partial`, and it counts as a gap — say what it missed. Where the scope was
 narrowed, the count is the range's and not the narrowing's. **A `coverage-warning:` row is
-`partial`**, whatever the count beside it says. When a reviewer fails, quote its error instead
-of guessing a cause.
+`partial`**, whatever the count beside it says — while a **`run-warning:` is not**: it says what
+the run did, not what it read, and a build the boundary refused is this session's to run where a
+finding hangs on it. When a reviewer fails, quote its error instead of guessing a cause.
 
 ## 5. Consolidate
 

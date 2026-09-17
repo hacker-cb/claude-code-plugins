@@ -11,6 +11,9 @@
 [ -z "${STUB_MARKER_FILE:-}" ] || : > "$STUB_MARKER_FILE"
 # The argv the script built, one argument per line, for cases that pin the flags.
 [ -z "${STUB_ARGV_FILE:-}" ] || printf '%s\n' "$@" > "$STUB_ARGV_FILE"
+# The prompt the run was launched with — `-p` and its value are the first two
+# arguments — echoed where a case can assert what it says.
+[ -z "${STUB_ECHO_PROMPT:-}" ] || echo "stub prompt: $2" >&2
 # A warning on stderr, which the script collects into its `run warnings:` block.
 [ -z "${STUB_STDERR:-}" ] || printf '%s\n' "$STUB_STDERR" >&2
 # The CLI's own refusal of `--strict-mcp-config` under an enterprise MCP configuration,
