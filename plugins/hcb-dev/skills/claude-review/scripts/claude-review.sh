@@ -622,26 +622,44 @@ fi
 # that. Counting it as unread ground turned a read-only review of a fully read range
 # into a "structural gap" nobody could close. It gets a line of its own, naming the
 # command, so the caller can run it where the run could not.
-# The split fails closed: a call counts as a run only when every command in it starts
-# with a program from the list below, `cd` aside and the programs its output is piped
-# into ignored. Anything else — a file tool, a reader, a command with no text, one
-# program outside the list — stays a coverage warning, since calling a read a run is
-# the direction that hides lost ground.
+# The split fails closed, because calling a read a run is the direction that hides lost
+# ground. A call counts as a run only when every command in it is a build or test tool
+# named below with a subcommand that builds or tests — a general interpreter or a
+# launcher (`python3 -c`, `node -e`, `npx`, `cargo run`) reads a file as easily as it
+# runs one, and stays on the coverage side. `cd <dir>` and leading `NAME=value` words are
+# passed over, and a pipeline may end in `head` or `tail` with nothing but options;
+# anything the split does not take apart — a lone `&`, `$(…)`, a backtick, an input
+# redirect — stays a coverage warning, as does a file tool or a command with no text.
 # A classifier that fails — a `jq` too old for `IN`, say — falls back to counting every
 # denial as unread ground, never to counting none; the last fallback keeps a failed
 # count from printing a warning with a blank number.
-RUNNERS='["cargo","make","gmake","just","npm","npx","pnpm","yarn","bun","deno","node",
-  "go","python","python3","pytest","tox","nox","uv","poetry","pip","gradle","gradlew",
-  "mvn","mvnw","bazel","bazelisk","cmake","ctest","ninja","meson","rake","bundle","mix",
-  "dotnet","swift","xcodebuild"]'
-# shellcheck disable=SC2016 # deliberate: `$runners` and `$c` below are jq's own
+RUNNERS='{"cargo":["build","check","test","clippy","xtask","nextest","doc","bench","fmt"],
+  "make":["*"],"gmake":["*"],"just":["*"],"ninja":["*"],"ctest":["*"],
+  "npm":["test","run","ci","install"],"pnpm":["test","run","install","build"],
+  "yarn":["test","run","install","build"],"bun":["test","run","install","build"],
+  "go":["build","test","vet"],"pytest":["*"],"tox":["*"],"nox":["*"],
+  "gradle":["*"],"gradlew":["*"],"mvn":["*"],"mvnw":["*"],
+  "bazel":["build","test"],"bazelisk":["build","test"],"cmake":["--build"],
+  "meson":["compile","test"],"rake":["*"],"mix":["test","compile"],
+  "dotnet":["build","test"],"swift":["build","test"],"xcodebuild":["*"]}'
+# shellcheck disable=SC2016 # deliberate: `$runners`, `$w`, `$c` and the rest are jq's own
 DENIALS_JQ='
-  def program: [splits("\\s+")]
-    | map(select(. != "" and (test("^[A-Za-z_][A-Za-z0-9_]*=") | not)))
-    | (.[0] // "") | sub("^.*/"; "");
-  def runs_project: [splits("&&|\\|\\||;|\n")]
-    | map([splits("\\|")][0] | program) | map(select(. != "" and . != "cd"))
-    | length > 0 and all(.[]; IN($runners[]));
+  def words: [splits("\\s+")] | map(select(. != ""));
+  def builds: words | until((.[0] // "") | test("^[A-Za-z_][A-Za-z0-9_]*=") | not; .[1:])
+    | . as $w | (($w[0] // "") | sub("^.*/"; "")) as $prog
+    | ($w[1:] | map(select(test("^[-+]") | not)) | .[0] // "") as $sub
+    | $runners[$prog] as $subs
+    | $subs != null and ($subs == ["*"] or ($sub | IN($subs[])) or any($w[1:][]; IN($subs[])
+      and startswith("--")));
+  def filters: words
+    | (.[0] | IN("head", "tail")) and all(.[1:][]; test("^-?[0-9]+$|^-[A-Za-z]+$"));
+  def opaque: test("\\$\\(|`|<")
+    or (gsub("&&"; "") | gsub("[0-9]*>&[0-9]+|&>"; "") | test("&"));
+  def runs_project: (opaque | not)
+    and ([splits("&&|\\|\\||;|\n")] | map(select(test("\\S")))
+      | map(select(words | .[0] == "cd" and length <= 2 | not)) as $rest
+      | ($rest | length) > 0
+        and all($rest[]; [splits("\\|")] as $p | ($p[0] | builds) and all($p[1:][]; filters)));
   (.permission_denials // [])
   | map(.tool_input.command? as $c
         | if .tool_name == "Bash" and ($c | type) == "string" and ($c | runs_project)
