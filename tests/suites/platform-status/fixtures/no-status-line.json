@@ -1,0 +1,13 @@
+{
+ "no_status": "yes",
+ "doc": {
+  "components": [
+   {
+    "id": "c-api-requests",
+    "name": "API Requests",
+    "status": "operational"
+   }
+  ],
+  "incidents": []
+ }
+}

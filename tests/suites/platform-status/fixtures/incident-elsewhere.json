@@ -1,0 +1,30 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-api requests",
+    "name": "API Requests",
+    "status": "operational"
+   },
+   {
+    "id": "c-actions",
+    "name": "Actions",
+    "status": "operational"
+   }
+  ],
+  "incidents": [
+   {
+    "id": "i1",
+    "name": "Pages is slow",
+    "status": "monitoring",
+    "impact": "minor",
+    "components": [
+     {
+      "id": "c-pages",
+      "name": "Pages"
+     }
+    ]
+   }
+  ]
+ }
+}

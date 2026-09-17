@@ -327,6 +327,11 @@ session's context — a skill invokes one and reads its answer.
   say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
   reader of one is blind to the other, and answers with a single `verdict` so a caller
   never assembles one out of counts.
+- [`scripts/platform-status.mjs`](scripts/platform-status.mjs) — is the forge itself
+  down, and is the component a parked step waits on back yet. Answers with its exit code
+  because what asks is a sleep loop, and reads the two feed shapes forges actually
+  publish; the url is the caller's to pass, since a host written in here would be naming
+  a forge by its hostname.
 - [`scripts/copilot-state.mjs`](scripts/copilot-state.mjs) — whether the automated
   reviewer is expected on this request, whether it has answered the head, and what it
   said. Reads the request the repository's own settings describe, never a list of

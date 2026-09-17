@@ -1,0 +1,20 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-api-requests",
+    "name": "API Requests",
+    "status": "operational"
+   }
+  ],
+  "incidents": [
+   {
+    "id": "i1",
+    "name": "Elevated errors",
+    "status": "investigating",
+    "impact": "minor",
+    "components": []
+   }
+  ]
+ }
+}

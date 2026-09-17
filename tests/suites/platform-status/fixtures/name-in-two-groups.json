@@ -1,0 +1,31 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "g1",
+    "name": "Cloud",
+    "status": "operational",
+    "group": true
+   },
+   {
+    "id": "g2",
+    "name": "Self-managed",
+    "status": "operational",
+    "group": true
+   },
+   {
+    "id": "c1",
+    "name": "Requests",
+    "status": "operational",
+    "group_id": "g1"
+   },
+   {
+    "id": "c2",
+    "name": "Requests",
+    "status": "major_outage",
+    "group_id": "g2"
+   }
+  ],
+  "incidents": []
+ }
+}

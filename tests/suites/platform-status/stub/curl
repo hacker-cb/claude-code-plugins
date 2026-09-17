@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Stands in for curl as this script calls it: `-sS -w '\n%{http_code}' --connect-timeout N
+# --max-time N -- <url>`. What it prints is the body followed by the status on its own
+# line, which is what `-w` appends to the real thing's output.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+# The call itself failing, which is a different answer from any HTTP status: no listener,
+# a name that does not resolve, the transfer running past --max-time.
+case "$(ask '.curl')" in
+  refused)  echo "curl: (7) Failed to connect to status.example.test port 443" >&2; exit 7 ;;
+  timeout)  echo "curl: (28) Operation timed out after 30001 milliseconds" >&2; exit 28 ;;
+  silent)   exit 6 ;;
+esac
+
+# A body with no status appended — the one shape that says curl itself answered nothing
+# usable, and the reason the script reads the trailer rather than trusting it.
+case "$(ask '.no_status')" in
+  yes) jq -c '.doc // {}' "$env"; exit 0 ;;
+esac
+
+code=$(ask '.http'); [ -z "$code" ] && code=200
+raw=$(ask '.raw')
+if [ -n "$raw" ]; then
+  printf '%s' "$raw"
+else
+  # `.doc` verbatim, including a document that is deliberately not an object.
+  jq -c '.doc' "$env"
+fi
+printf '\n%s' "$code"
+exit 0

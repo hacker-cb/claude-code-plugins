@@ -1,0 +1,11 @@
+{
+ "http": 200,
+ "doc": {
+  "page": {
+   "id": "abc"
+  },
+  "status": {
+   "indicator": "none"
+  }
+ }
+}

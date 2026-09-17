@@ -1,0 +1,29 @@
+{
+ "doc": {
+  "result": {
+   "status_overall": {
+    "status": "Operational",
+    "status_code": 100
+   },
+   "status": [
+    {
+     "id": "io-website",
+     "name": "Website",
+     "status": "Operational",
+     "status_code": 100
+    },
+    {
+     "id": "io-ci/cd",
+     "name": "CI/CD",
+     "status": "Operational",
+     "status_code": 100
+    }
+   ],
+   "incidents": [],
+   "maintenance": {
+    "active": [],
+    "upcoming": []
+   }
+  }
+ }
+}

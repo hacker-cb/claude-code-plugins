@@ -1,0 +1,20 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "g1",
+    "name": "Cloud",
+    "status": "degraded_performance",
+    "group": true
+   },
+   {
+    "id": "c1",
+    "name": "API Requests",
+    "status": "operational",
+    "group_id": "g1"
+   }
+  ],
+  "incidents": [],
+  "scheduled_maintenances": []
+ }
+}

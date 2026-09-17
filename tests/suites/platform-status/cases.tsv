@@ -1,0 +1,38 @@
+# fixture	args	want	expect	note
+statuspage-up	-	0	"read": true|"shape": "statuspage"|"verdict": "operational"|"degraded": []	an ordinary day on a Statuspage feed: every component up, nothing open
+statuspage-degraded	-	3	"verdict": "degraded"|degraded_performance|1 component(s) not operational	one component down is the platform being down for whoever depends on it — exit 3 is the caller sleeping again
+statuspage-up	--component Actions	0	"name": "Actions"|"up": true|"verdict": "operational"	the wait: the named component is back, and 0 is what lifts the parking
+component-named	--component Actions	3	"up": false|Actions is partial_outage|"verdict": "degraded"	the same wait, still down — the reason names the component so the report does not have to guess
+component-by-id	--component-id br0l2tvcx85d	3	"id": "br0l2tvcx85d"|major_outage|"up": false	an id is a coordinate a rename cannot move, which is why it is the way out of an ambiguous name
+component-absent	--component Pages	2	"verdict": "unresolved"|matches no component|API Requests|Actions	a name in no feed sleeps forever if it is retried, so it stops instead — and prints the names there ARE
+name-in-two-groups	--component Requests	2	matches 2 components|--component-id|"group": "Cloud"|"group": "Self-managed"	one name, two groups: ordinary at Statuspage. Taking the first would park the caller on whichever the feed listed first, under the name of the other
+name-in-two-groups	--component-id c2	3	major_outage|"group": "Self-managed"|"up": false	and the id settles it — the same feed, the same ambiguity, answered
+group-row-degraded	-	0	"verdict": "operational"|NOT:Cloud	a group row rolls up its children and is never a component to park on: counting it would report an outage the components deny
+status-missing	-	0	"verdict": "operational"|NOT:Ghost	a component carrying no status is a row this cannot rule on — not one to call degraded
+incident-no-components	-	3	1 open incident(s)|Elevated errors|"components": []	an incident mapped to no component is ordinary, and it is still an outage — the check can be down under one nobody has mapped yet
+incident-resolved	-	0	"incidents": []|"verdict": "operational"	a resolved incident is history; a feed that lists it is not reporting an outage
+incident-elsewhere	--component Actions	0	"verdict": "operational"|1 incident(s) open elsewhere	the component this caller waits on is up, so the parking lifts — and the incident elsewhere is said rather than acted on
+maintenance-running	-	3	1 maintenance(s) in progress|Database upgrade	planned work under way is a red check nobody should fix: it belongs with the outages, not beside them
+maintenance-scheduled	-	0	"maintenances": []|"verdict": "operational"	scheduled is not running — a window next Tuesday parks nothing today
+many-components	-	3	"truncated": true|25 component(s) not operational	the cap bounds what travels into a reader; it must not bound what gets counted, or the cap decides the answer
+statusio-up	-	0	"shape": "status.io"|"verdict": "operational"	the OTHER shape — measured: GitLab publishes status.io, not Statuspage, so a reader that knows one shape covers one forge
+statusio-degraded	-	3	Degraded Performance|1 component(s) not operational	status.io carries a numeric code beside a display string, and 100 is the operational one
+statusio-up	--component CI/CD	0	"name": "CI/CD"|"group": null|"up": true	naming a component works the same on either shape; status.io has no groups, so the column stays empty rather than guessing one
+statusio-no-code	-	0	"shape": "status.io"|"verdict": "operational"	no numeric code at all: the display string is all there is, and it still has to resolve to up or down
+statusio-code-over-wording	--component Website	0	"verdict": "operational"|"status": "Fully Operational"|"up": true	the code and the string disagree: 100 says up while the wording is not the literal "operational". A reader comparing the string parks a caller on a component that is fine
+statusio-wording-lies	-	3	"verdict": "degraded"|1 component(s) not operational|"status": "Operational"	and the other way round — the string reads Operational over code 500. The string is what a page renders; the code is the value
+statusio-maintenance	-	3	Storage migration|1 maintenance(s) in progress	status.io keeps running work under `maintenance.active`, which is a different field from Statuspage and the same answer
+http-404	-	4	"verdict": "unread"|HTTP 404|"read": false	a status the feed did not answer with 2xx is UNREAD — never operational, which is the one reading that resumes a run into an outage
+http-503	-	4	HTTP 503|"verdict": "unread"	the outage taking the status page with it is exactly what the retry is for
+ok-but-html	-	2	"verdict": "unresolved"|HTTP 200 with something that is not JSON	measured on a url one segment short: the server answers 200 with HTML, and treating that as a retry sleeps on the typo forever
+ok-but-array	-	2	JSON that is not an object|"verdict": "unresolved"	a successful answer that parsed into a list is still not a feed, and waiting will not make it one
+unknown-shape	-	2	neither a Statuspage summary nor a status.io status	a document in neither shape is a stop: retrying cannot grow the field it lacks
+connection-refused	-	4	"verdict": "unread"|the feed did not answer|(7)	the call itself failing is a different answer from any HTTP status, and it is the retry
+connection-timeout	-	4	(28)|"verdict": "unread"	a timeout is the network being part of what the outage took down
+no-status-line	-	4	curl reported no HTTP status|"verdict": "unread"	the trailer is read rather than trusted: a body arriving without one says curl answered nothing usable
+-	--component A --component-id B	2	name one of	two ways to name one component, and no rule for which wins — refused before anything is fetched
+-	--timeout abc	2	not a whole number	a timeout that is not a number would reach curl as text and be taken for a flag
+-	--feed file:///etc/passwd	2	is not http(s)	the url reaches curl, which would happily read a local path — so what a feed may be is settled here
+-	--feed https://u:p@status.example.test/x	2	carries credentials	a status feed is public everywhere it exists; one carrying a password is a mistake to say out loud rather than forward
+-	--feed notaurl	2	is not a url	a bare word is not a feed, and the failure belongs at the argument rather than three layers down
+-	--nonsense x	2	unknown argument	a mistyped flag must not be swallowed: the value it was meant to carry would go unread

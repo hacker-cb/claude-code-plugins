@@ -1,0 +1,21 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-api-requests",
+    "name": "API Requests",
+    "status": "operational"
+   }
+  ],
+  "incidents": [
+   {
+    "id": "i1",
+    "name": "Yesterday",
+    "status": "resolved",
+    "impact": "minor",
+    "components": []
+   }
+  ],
+  "scheduled_maintenances": []
+ }
+}

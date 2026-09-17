@@ -8,46 +8,52 @@ yours — and, once it is, how to wait it out and what to put back afterwards.
 
 The tell that a failure is not yours: it touches nothing you changed, or it lands
 on runs and repositories your branch never went near. That is a reason to look, not
-a verdict. Read the **component** covering whatever is actually blocked — CI, the
-API you are calling, the change requests themselves:
+a verdict. **`scripts/platform-status.mjs` reads the feed and answers with its exit
+code**, because what asks is a loop. Unnamed it reports everything that is not
+operational, which is the attribution; named it answers about one component, which is
+the wait:
 
-```bash
-# Timeouts on every fetch of this feed: the network is part of what an outage
-# takes down, and a hung curl is a stall where a verdict was the whole point.
-curl -fsS --connect-timeout 10 --max-time 30 \
-    https://www.githubstatus.com/api/v2/summary.json | jq -r '
-  (.components[] | select(.status != "operational") | "component  \(.name): \(.status)"),
-  (.incidents[]  | "incident   \(.name) — \(.status)")'
+```text
+node <plugin root>/scripts/platform-status.mjs --feed <url>
+  [--component <name> | --component-id <id>] [--timeout <seconds>]
 ```
 
-A self-hosted instance is **not** on that page — it is a separate deployment, and
-its health lives wherever its operator publishes it. Where nothing publishes it,
-say the failure could not be attributed and put the wait to the user rather than
-reading a verdict off the failure's shape.
+| code | what it found | what the caller does |
+|---|---|---|
+| `0` | the named component is up — or, with none named, nothing is down and nothing is open | resume the parked step |
+| `3` | degraded: a component down, an incident open, or maintenance running | wait and ask again |
+| `4` | the feed was not reached — no answer, a timeout, or any HTTP status outside 2xx | wait and ask again. **Unread is not operational**, and a loop reading it as one resumes into the outage |
+| `2` | a call it cannot answer — a 2xx body that is not a feed, a document in neither shape it reads, a component name matching none or several | **stop.** Each of these answers the same however long anyone waits |
+
+**`--feed` carries the whole url and has no default.** Which url that is per forge is
+[`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md) —
+measured, and the two are not one shape, so a path built from a base is wrong for one of
+them. A host written into the plugin would be identifying a forge by its hostname, which
+[`../../../references/invariants.md`](../../../references/invariants.md) does not do.
+
+**A self-hosted instance is on nobody's page** — it is a separate deployment, and its
+health lives wherever its operator publishes it. Where nothing publishes it there is no
+url to pass: say the failure could not be attributed and put the wait to the user, rather
+than reading a verdict off the failure's shape.
+
+**A name resolving to two components resolves to neither.** The script refuses instead of
+taking the first, and `--component-id` is what settles it: a tie broken silently parks the
+caller on whichever the feed happened to list first, under the name of the other.
 
 ## The wait
 
-Say in one line which component is down and which step is parked on it. Then
-re-check every half hour **from a detached job**, never in the foreground — the
-loop sleeps half an hour per pass, and running it in front parks the very session
-it exists to keep usable.
-
-Three outcomes here, by *Unread is not empty* and *Empty is not negative*
-([`../../../references/invariants.md`](../../../references/invariants.md)):
+Say in one line which component is down and which step is parked on it. Then re-check
+every half hour **from a detached job**, never in the foreground — the loop sleeps half an
+hour per pass, and running it in front parks the very session it exists to keep usable.
 
 ```bash
-COMPONENT="<the component that is down, spelled as the feed spells it>"
-FEED=https://www.githubstatus.com/api/v2/components.json
+FEED="<the url for this forge, per forge-behaviour.md>"
+COMPONENT="<the component, spelled as the feed spells it>"
 while :; do
-  # Unread: a fetch that failed and a body that is not JSON are one case, and it retries.
-  if ! body="$(curl -fsS --connect-timeout 10 --max-time 30 "$FEED")" \
-     || ! st="$(jq -r --arg c "$COMPONENT" '.components[]|select(.name==$c)|.status' <<<"$body")"; then
-    echo "FEED UNREADABLE — cannot attribute anything; retrying"
-  else
-    # Empty out of a feed that DID parse is a name matching no component: sleeping waits forever.
-    [ -n "$st" ] || { echo "NO COMPONENT NAMED $COMPONENT — take the name from the feed"; exit 1; }
-    [ "$st" = operational ] && break
-  fi
+  node "<plugin root>/scripts/platform-status.mjs" --feed "$FEED" --component "$COMPONENT"
+  code=$?
+  [ "$code" = 0 ] && break
+  [ "$code" = 2 ] && { echo "the feed cannot answer this — read what it printed"; exit 1; }
   sleep 1800
 done
 echo "$COMPONENT is back — resume the parked step"

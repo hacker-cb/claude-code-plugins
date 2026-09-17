@@ -1,0 +1,132 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-component-00",
+    "name": "Component 00",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-01",
+    "name": "Component 01",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-02",
+    "name": "Component 02",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-03",
+    "name": "Component 03",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-04",
+    "name": "Component 04",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-05",
+    "name": "Component 05",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-06",
+    "name": "Component 06",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-07",
+    "name": "Component 07",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-08",
+    "name": "Component 08",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-09",
+    "name": "Component 09",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-10",
+    "name": "Component 10",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-11",
+    "name": "Component 11",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-12",
+    "name": "Component 12",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-13",
+    "name": "Component 13",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-14",
+    "name": "Component 14",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-15",
+    "name": "Component 15",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-16",
+    "name": "Component 16",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-17",
+    "name": "Component 17",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-18",
+    "name": "Component 18",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-19",
+    "name": "Component 19",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-20",
+    "name": "Component 20",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-21",
+    "name": "Component 21",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-22",
+    "name": "Component 22",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-23",
+    "name": "Component 23",
+    "status": "major_outage"
+   },
+   {
+    "id": "c-component-24",
+    "name": "Component 24",
+    "status": "major_outage"
+   }
+  ],
+  "incidents": []
+ }
+}

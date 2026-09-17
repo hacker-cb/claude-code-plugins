@@ -1,0 +1,25 @@
+{
+ "doc": {
+  "result": {
+   "status": [
+    {
+     "id": "io-website",
+     "name": "Website",
+     "status": "Operational",
+     "status_code": 100
+    }
+   ],
+   "incidents": [],
+   "maintenance": {
+    "active": [
+     {
+      "id": "m1",
+      "name": "Storage migration",
+      "status": "in_progress"
+     }
+    ],
+    "upcoming": []
+   }
+  }
+ }
+}

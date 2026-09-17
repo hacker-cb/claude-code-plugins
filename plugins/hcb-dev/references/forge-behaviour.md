@@ -66,6 +66,23 @@ where there is no request standing, the count does have a moment of truth.
 |---|---|---|
 | a comment body's maximum | by refusing the write, never by a field. Measured once at 65536 characters on GitHub | check the size before writing and archive ahead of it; keep handling the refusal as the backstop. GitLab's own limit is unmeasured |
 
+## Status feeds
+
+Where a forge publishes whether it is itself up, and in what shape. Read by
+`scripts/platform-status.mjs`, which takes the whole url — **no default**, since a host
+written into the plugin would be identifying a forge by its hostname.
+
+| feed | what it actually is | where it does not apply |
+|---|---|---|
+| GitHub's | Statuspage, at `https://www.githubstatus.com/api/v2/summary.json`. One object carrying `components[]`, `incidents[]` and `scheduled_maintenances[]`; a component is up when `status` is the literal `operational` | — |
+| GitLab's | **not Statuspage.** Measured 2026-09-17: `status.gitlab.com` serves a status.io page, and `/api/v2/summary.json` under it answers **404**. The document is `https://api.status.io/1.0/status/5b36dc6502d06804c08349f7`, shaped `result.status[]` with `result.incidents[]` and `result.maintenance.active[]` beside it | — |
+| status.io's own "up" | a **numeric** `status_code`, where `100` is operational. The `status` string beside it is what the page renders — measured `Operational` on every component of one instance — and it is not the value to compare: a feed wording it differently reads as down | a document carrying no `status_code`, where the string is all there is |
+| a Statuspage base url with no document under it | **200 and an HTML page**, not a 404. Measured on `https://www.githubstatus.com/api/v2` | — |
+
+That last row is why a successful answer that is not JSON is a **stop** rather than a
+retry: the typo answers 200 forever, and a loop that treats every non-feed body as "ask
+again later" never ends. A status outside 2xx is the opposite case and does retry.
+
 ## What is not here
 
 A number nobody measured, and a behaviour that a document asserts but no run
