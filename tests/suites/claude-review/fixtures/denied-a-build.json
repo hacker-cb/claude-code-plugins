@@ -50,6 +50,13 @@
         "command": "cd xtask && cargo xtask lint 2>&1 | tail -40",
         "description": "run the repository lint"
       }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "t2",
+      "tool_input": {
+        "command": "make clean"
+      }
     }
   ],
   "fast_mode_state": "off",
