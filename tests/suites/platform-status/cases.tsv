@@ -11,6 +11,11 @@ group-row-degraded	-	0	"verdict": "operational"|NOT:Cloud	a group row rolls up i
 status-missing	-	0	"verdict": "operational"|NOT:Ghost	a component carrying no status is a row this cannot rule on — not one to call degraded
 status-missing	--component Ghost	2	carries no status this can rule on|"verdict": "unresolved"	the same row the aggregate leaves out: answering 3 here parked the loop every half hour on a component the feed never stated a state for
 statusio-nothing-to-judge	--component Website	2	carries no status this can rule on	and on the other shape, where a row with neither a code nor a string is the unjudgeable one
+statusio-nothing-to-judge	-	2	no component carrying a status|"verdict": "unresolved"	components that exist and carry nothing to judge by are the same nothing as no components: reporting operational off them rules on a state the feed never stated
+statusio-wording-lies	--component Website	3	status_code 500|"code": 500|"status": "Operational"	the reason has to rest on what the verdict rested on — a row reading Operational under a verdict of degraded otherwise contradicts itself with nothing in the answer to explain it
+statusio-code-only	--component Website	3	status_code 500|"status": null	and where there is no string at all, the code is the only thing there was to say
+url-normalized	--feed https://STATUS.example.test/api/v2/summary.json	0	"verdict": "operational"	the url curl is handed is the normalized one, not the string the caller typed: validating one and fetching the other is how the two parsers disagree — the stub refuses anything else
+curl-malformed	-	2	curl refused|malformed|"verdict": "unresolved"	a url curl rejects before making a request does not improve while anyone waits
 maintenance-verifying	-	3	1 maintenance(s) in progress|Storage swap	Statuspage runs scheduled → in_progress → verifying → completed, and verifying is work that has started and not finished
 maintenance-unknown-state	-	3	1 maintenance(s) in progress|Something new	a state name nobody here has seen is not evidence the work is over — what counts as finished is named, and everything else is running
 incident-no-components	-	3	1 open incident(s)|Elevated errors|"components": []	an incident mapped to no component is ordinary, and it is still an outage — the check can be down under one nobody has mapped yet
@@ -41,6 +46,7 @@ ok-but-array	-	2	JSON that is not an object|"verdict": "unresolved"	a successful
 unknown-shape	-	2	neither a Statuspage summary nor a status.io status	a document in neither shape is a stop: retrying cannot grow the field it lacks
 connection-refused	-	4	"verdict": "unread"|the feed did not answer|(7)	the call itself failing is a different answer from any HTTP status, and it is the retry
 connection-timeout	-	4	(28)|"verdict": "unread"	a timeout is the network being part of what the outage took down
+curl-silent	-	4	no detail|"verdict": "unread"	a call that failed and said nothing: the reason still has to name something, or a report carries an empty parenthesis where the cause belongs
 no-status-line	-	4	curl reported no HTTP status|"verdict": "unread"	the trailer is read rather than trusted: a body arriving without one says curl answered nothing usable
 -	--component A --component-id B	2	name one of	two ways to name one component, and no rule for which wins — refused before anything is fetched
 -	--timeout abc	2	not a whole number	a timeout that is not a number would reach curl as text and be taken for a flag

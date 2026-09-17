@@ -1,0 +1,14 @@
+{
+ "want_url": "https://status.example.test/api/v2/summary.json",
+ "doc": {
+  "components": [
+   {
+    "id": "c-api requests",
+    "name": "API Requests",
+    "status": "operational"
+   }
+  ],
+  "incidents": [],
+  "scheduled_maintenances": []
+ }
+}

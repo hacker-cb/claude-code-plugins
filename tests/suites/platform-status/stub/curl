@@ -6,6 +6,24 @@
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 
+# Two guards, because what they hold cannot be seen in any answer this prints.
+#
+# `-q` must come FIRST or the real curl reads the user's ~/.curlrc, where a --fail, an -L
+# or an -o rewrites this script's exit-code contract on somebody else's machine. `-g`
+# keeps a url carrying [ or { from being expanded as a glob into several requests.
+[ "$1" = "-q" ] && [ "$2" = "-g" ] || { echo "stub curl: expected '-q -g' first, got '$1 $2'" >&2; exit 9; }
+
+# The url must be the NORMALIZED one. Validating `new URL(...)` and fetching the raw
+# string is how the two parsers come to disagree, and only the last argument shows it.
+want_url=$(ask '.want_url')
+if [ -n "$want_url" ]; then
+  for last; do :; done
+  [ "$last" = "$want_url" ] || { echo "stub curl: url '$last' is not the normalized '$want_url'" >&2; exit 9; }
+fi
+
+# A url curl itself refuses, before any request is made.
+case "$(ask '.curl')" in malformed) echo "curl: (3) URL rejected: Malformed input" >&2; exit 3 ;; esac
+
 # The call itself failing, which is a different answer from any HTTP status: no listener,
 # a name that does not resolve, the transfer running past --max-time.
 case "$(ask '.curl')" in

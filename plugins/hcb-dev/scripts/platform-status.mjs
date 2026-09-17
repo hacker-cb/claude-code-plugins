@@ -97,8 +97,17 @@ const connect = Math.min(10, seconds);
 // SUCCESSFUL answer that is not a feed is a stop, while any other status retries: a 5xx,
 // a rate limit, a proxy's error page are all the outage this script exists to wait out.
 const r = spawnSync('curl', [
-  '-sS', '-w', '\n%{http_code}', '--connect-timeout', String(connect),
-  '--max-time', String(seconds), '--', opts.feed,
+  // `-q` FIRST, and it has to be first: without it curl reads the user's ~/.curlrc, where
+  // a `--fail` turns a 404 into an exit code this reads as unread, an `-L` follows the
+  // redirect this deliberately does not, and an `-o` or `-w` takes the status trailer
+  // away entirely. Every one of those silently rewrites the contract below.
+  // `-g` because a url carrying `[` or `{` is otherwise a glob curl expands into several
+  // requests, whose bodies and trailers arrive concatenated.
+  '-q', '-g', '-sS', '-w', '\n%{http_code}', '--connect-timeout', String(connect),
+  // `url.href`, not the string the caller typed: validating one and fetching the other is
+  // how the two parsers disagree. Measured — a space inside the path passes `new URL` and
+  // curl refuses the raw string outright.
+  '--max-time', String(seconds), '--', url.href,
 ], {
   encoding: 'utf8',
   timeout: (seconds + 5) * 1000,
@@ -106,6 +115,10 @@ const r = spawnSync('curl', [
   env: { ...process.env, LC_ALL: 'C', LANG: 'C', LC_MESSAGES: 'C' },
 });
 if (r.error && r.error.code === 'ENOENT') die('curl is not on PATH — nothing here can read a feed');
+// A body past what this reads, and a url curl itself refuses (exit 3), are both permanent:
+// the document does not shrink and the argument does not improve while anyone waits.
+if (r.error && r.error.code === 'ENOBUFS') stop(`${url.href} answered more than this reads`);
+if (r.status === 3) stop(`curl refused ${url.href} as malformed — waiting cannot change that`);
 const errLine = () => (r.stderr || '').trim().split('\n').filter(Boolean).pop() || 'no detail';
 if (r.status !== 0) unread(`the feed did not answer (${errLine()})`);
 
@@ -188,8 +201,15 @@ const judgeable = (c) => str(c.status) !== null
   || (answer.shape === 'status.io' && typeof c.status_code === 'number');
 const row = (c) => ({
   id: text(str(c.id)), name: named(c), group: groupOf(c),
-  status: text(str(c.status)), up: isUp(c),
+  status: text(str(c.status)),
+  // The code is what status.io is judged by, so it travels beside the string rather than
+  // being dropped: a row reading `"status": "Operational"` under a verdict of degraded
+  // otherwise contradicts itself with nothing in the answer to explain it.
+  code: typeof c.status_code === 'number' ? c.status_code : null,
+  up: isUp(c),
 });
+// Say what the verdict actually rested on.
+const why = (c) => (c.code !== null && answer.shape === 'status.io' ? `status_code ${c.code}` : c.status);
 
 // An incident naming no component is ordinary, and it is still an incident: the caller's
 // check can be down under one nobody has mapped to a component yet.
@@ -249,7 +269,7 @@ if (opts.component !== null || opts.componentId !== null) {
     finish(0);
   }
   answer.verdict = 'degraded';
-  answer.reason = `${answer.component.name} is ${answer.component.status}`;
+  answer.reason = `${answer.component.name} is ${why(answer.component)}`;
   finish(3);
 }
 
@@ -267,7 +287,11 @@ if (!counts.degraded && !counts.incidents && !counts.maintenances) {
   // operational platform. Strictness belongs to this verdict alone: a degradation already
   // found stands whatever else the document lacks.
   const missing = [];
-  if (!components.length) missing.push('no components');
+  // Not the array's length — what it holds. Every row unjudgeable is the same nothing as
+  // no rows at all, and reporting `operational` off it rules on a state never stated.
+  if (!components.some((c) => c && c.group !== true && judgeable(c))) {
+    missing.push(components.length ? 'no component carrying a status' : 'no components');
+  }
   if (answer.shape === 'statuspage') {
     if (!Array.isArray(doc.incidents)) missing.push('no incidents');
     if (!Array.isArray(doc.scheduled_maintenances)) missing.push('no scheduled_maintenances');
