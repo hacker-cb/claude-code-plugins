@@ -294,7 +294,9 @@ const unfenced = (s) => String(s ?? '')
 // leaves the real count unpinned. A span closes on a run of exactly its own length, and crosses
 // a line break but never a blank line: a paragraph is as far as CommonMark lets one reach, and a
 // span held to one line leaves a label split across two standing as a count nobody wrote.
-const uncoded = (s) => unfenced(s).replace(/(`+)(?!`)(?:(?!\n[ \t]*\r?\n)[\s\S])*?(?<!`)\1(?!`)/g, ' ');
+// `(?<!`)` opens a span only at the start of a run: a search free to start one character in
+// takes the tail of a longer run for an opener of its own, and pairs it with a later line.
+const uncoded = (s) => unfenced(s).replace(/(?<!`)(`+)(?!`)(?:(?!\n[ \t]*\r?\n)[\s\S])*?(?<!`)\1(?!`)/g, ' ');
 // The review's own `body` field as the feed sent it. An empty string is a review that said
 // nothing; a field that is not a string at all is the feed no longer carrying what this reads.
 const unrecognisedIn = (body, sup) => {
@@ -384,7 +386,8 @@ if (!reviews.ok) {
           ambiguous: sup.ambiguous || opened.ambiguous || uncounted,
           // What of this body the layout above could not account for, and `null` where all
           // of it was. Not null is a layout that may have moved, never a body with nothing
-          // in it: the report names the review, and its count checks nothing.
+          // in it: the report names the review, and a count pinned beside it still checks the
+          // reading — a finding outside the block is exactly a reading the count comes up short of.
           unrecognised,
         });
       }
@@ -393,8 +396,7 @@ if (!reviews.ok) {
     const unknown = answer.bodies.items.filter((b) => b.unrecognised !== null).length;
     if (unknown > 0) {
       answer.notes.push(`${unknown} review ${unknown === 1 ? 'body' : 'bodies'} came in a layout`
-        + ' this does not recognise — each is named in the report, and its count checks nothing;'
-        + ' its `unrecognised` says why');
+        + ' this does not recognise — each is named in the report, and its `unrecognised` says why');
     }
   }
 }

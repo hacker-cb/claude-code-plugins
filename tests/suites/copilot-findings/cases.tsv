@@ -69,3 +69,4 @@ label-quoted-inline	--pr 7	0	"suppressed": 2|"opened": 0|"ambiguous": false	a fi
 label-quoted-in-a-fence	--pr 7	0	"suppressed": 2|"opened": 0|"ambiguous": false	and a fence quoting the whole block is the same quotation at more length
 label-quoted-across-lines	--pr 7	0	"suppressed": null|"ambiguous": false	a code span crosses a line break inside its paragraph, and one held to a single line leaves the label it quotes standing as a count nobody wrote
 lone-backticks-in-crlf-paragraphs	--pr 7	0	"suppressed": 2|"ambiguous": false|"unrecognised": null	a lone backtick opens no span past its own paragraph, and a CRLF blank line ends a paragraph as an LF one does — or the block between two of them goes out with the quote
+code-span-inside-a-longer-run	--pr 7	0	lists findings outside any block this reads	a code span opens at the start of a backtick run: taking the tail of a longer one for an opener pairs it with a later line and takes the finding between them out
