@@ -24,11 +24,13 @@
 //   4  the feed was not reached — no answer, a timeout, a 5xx, or one of the two 4xx that
 //      say *not now* (408, 429). UNREAD IS NOT OPERATIONAL, and a loop taking it for one
 //      resumes into the outage
-//   2  a call this cannot answer — a bad argument, any other status outside 2xx (a 404, a
-//      403, a redirect it does not follow), a 2xx body that is not a feed, a document in
-//      neither shape, one carrying no component it can rule on, a name matching none or
-//      several, or naming a group rather than a component. Each of these answers the same
-//      however long the caller waits, so the loop stops
+//   2  a call this cannot answer — a bad argument, any status outside 2xx that is not
+//      retryable, a 2xx body that is not a feed, a document in neither shape, a name
+//      matching none or several, one naming a group, or one naming a component the feed
+//      states no status for. And, ON AN OTHERWISE CLEAN UNNAMED READ ONLY, a document
+//      carrying no component it can rule on or missing the lists beside them: a
+//      degradation already found answers 3, since an incomplete document cannot unfind
+//      it. Each of these answers the same however long the caller waits, so the loop stops
 
 import { spawnSync } from 'node:child_process';
 import { text, writeAll } from './lib/forge.mjs';
@@ -142,8 +144,13 @@ if (!Number.isInteger(code) || code < 100) unread('curl reported no HTTP status'
 // something waiting cannot change: the document is not there, or is not ours to read, or
 // sits behind a redirect this deliberately does not follow. Measured: a Statuspage path
 // under the wrong host answers 404 forever, and that is a url to fix, not an outage.
+// Only these retry: a 5xx, and the two 4xx that say *not now*. Everything else outside
+// 2xx — a 1xx protocol switch as much as a 404 — answers the same however long anyone
+// waits. Written as what retries rather than as a range, so a status nobody thought about
+// stops instead of looping.
 const TRY_AGAIN = [408, 429];
-if (code >= 300 && code <= 499 && !TRY_AGAIN.includes(code)) {
+const retryable = (n) => (n >= 500 && n <= 599) || TRY_AGAIN.includes(n);
+if ((code < 200 || code > 299) && !retryable(code)) {
   stop(`${opts.feed} answered HTTP ${code} — waiting cannot change that; check the url`);
 }
 if (code < 200 || code > 299) unread(`the feed answered HTTP ${code}`);
@@ -261,12 +268,12 @@ if (opts.component !== null || opts.componentId !== null) {
     // What is under it, never the group itself: `available` is what the caller is being
     // told to park on, and offering back the row just refused is no repair at all.
     const ids = byName.map((g) => str(g.id)).filter(Boolean);
-    answer.available = cap(components.filter((c) => c && c.group !== true && ids.includes(str(c.group_id))).map(row));
+    answer.available = cap(components.filter((c) => c && c.group !== true && judgeable(c) && ids.includes(str(c.group_id))).map(row));
     stop(`${asked} names a group, not a component — park on one of the components under it`);
   }
   if (matches.length === 0) {
     // The names it DOES carry, because the usual repair is spelling one of them right.
-    answer.available = cap(components.filter((c) => c && c.group !== true && str(c.name)).map(row));
+    answer.available = cap(components.filter((c) => c && c.group !== true && judgeable(c) && str(c.name)).map(row));
     stop(`${asked} matches no component in this feed — take a name from 'available'`);
   }
   // Two components of one name is ordinary at Statuspage, where every group has its own
@@ -274,7 +281,7 @@ if (opts.component !== null || opts.componentId !== null) {
   // first, under the name of the one it asked for — so the ambiguity IS the answer, and
   // `--component-id` is what settles it.
   if (matches.length > 1) {
-    answer.available = cap(matches.map(row));
+    answer.available = cap(matches.filter(judgeable).map(row));
     stop(`${asked} matches ${matches.length} components — name one with --component-id`);
   }
   // A row carrying nothing to judge by is not a row that is down. Answering 3 here put
@@ -293,13 +300,31 @@ if (opts.component !== null || opts.componentId !== null) {
     // "Elsewhere" was asserted without looking. An open incident naming this very component
     // — or naming none, which reaches everything — is not elsewhere, and a report saying so
     // is wrong about the one thing the caller asked about.
+    //
+    // Off `incidentRows`, never off `answer.incidents`: that one is capped and carries names
+    // only, so an incident past the cap, or one referring to the component by id under a
+    // name that has since changed, would be counted as elsewhere. The cap bounds what is
+    // PRINTED; it must not decide what is true, which is the same rule the counts follow.
+    const mine = (i) => {
+      const rows = arr(i.components);
+      if (!rows.length) return true;
+      return rows.some((c) => (typeof c === 'string'
+        ? text(c) === answer.component.name
+        : (str(c && c.id) !== null && str(c.id) === answer.component.id)
+          || named(c) === answer.component.name));
+    };
     if (counts.incidents) {
-      const here = answer.incidents.filter((i) => !i.components.length
-        || i.components.includes(answer.component.name));
-      answer.notes.push(here.length
-        ? `${counts.incidents} incident(s) open, ${here.length} of them naming this component or no component`
+      const here = incidentRows.filter(mine).length;
+      answer.notes.push(here
+        ? `${counts.incidents} incident(s) open, ${here} of them naming this component or no component`
         : `${counts.incidents} incident(s) open elsewhere`);
     }
+    // And where the document carries no incident list at all, silence would read as "none
+    // open". The verdict still stands — the feed stated this component's own status, which
+    // is what was asked — but what it could NOT say is said out loud.
+    const absent = answer.shape === 'statuspage'
+      ? !Array.isArray(doc.incidents) : !Array.isArray(result.incidents);
+    if (absent) answer.notes.push('this document carries no incident list — nothing here says whether one is open');
     finish(0);
   }
   answer.verdict = 'degraded';

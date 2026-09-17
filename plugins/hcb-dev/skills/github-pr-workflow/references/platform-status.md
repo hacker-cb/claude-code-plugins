@@ -21,9 +21,9 @@ node <plugin root>/scripts/platform-status.mjs --feed <url>
 | code | what it found | what the caller does |
 |---|---|---|
 | `0` | the named component is up — or, with none named, nothing is down and nothing is open | resume the parked step |
-| `3` | degraded: a component down, an incident open, or maintenance running | wait and ask again |
+| `3` | degraded. **Named**: that component is not up — an incident elsewhere never decides this. **Unnamed**: a component down, an incident open, or maintenance running | wait and ask again |
 | `4` | the feed was not reached — no answer, a timeout, a 5xx, or the two 4xx that say *not now* (408, 429) | wait and ask again. **Unread is not operational**, and a loop reading it as one resumes into the outage |
-| `2` | a call it cannot answer — any other status outside 2xx (a 404, a 403, a redirect it does not follow), a 2xx body that is not a feed, a document in neither shape it reads, one carrying no component it can rule on, or missing either the incidents or the maintenance beside them, a component name matching none or several, or one naming a component the feed states no status for | **stop.** Each of these answers the same however long anyone waits |
+| `2` | a call it cannot answer — any status outside 2xx that is not retryable (a 404, a 403, a redirect it does not follow, a 1xx), a 2xx body that is not a feed, a document in neither shape it reads, a component name matching none or several, one naming a group, or one naming a component the feed states no status for. **And, on an otherwise clean unnamed read only**, a document carrying no component it can rule on or missing the incidents or maintenance beside them — a degradation already found answers 3, since what is incomplete cannot unfind it | **stop.** Each of these answers the same however long anyone waits |
 
 **`--feed` carries the whole url and has no default.** Which url that is per forge is
 [`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md) —
@@ -36,11 +36,13 @@ health lives wherever its operator publishes it. Where nothing publishes it ther
 url to pass: say the failure could not be attributed and put the wait to the user, rather
 than reading a verdict off the failure's shape.
 
-**Nothing found is not nothing wrong.** The script says `operational` only where the
-document carried everything it judges by — the components, the incidents, the maintenance
-beside them. A feed missing one of those (Statuspage's `components.json` is the measured
-case) stops instead, because every component reading up says nothing about an incident
-that document never carried.
+**Nothing found is not nothing wrong.** On an unnamed read the script says `operational`
+only where the document carried everything it judges by — the components, the incidents,
+the maintenance beside them. A feed missing one of those (Statuspage's `components.json`
+is the measured case) stops instead, because every component reading up says nothing about
+an incident that document never carried. Named, the verdict rests on the one status the
+feed did state, so an incomplete document answers about that component and says in a note
+what it could not say.
 
 **A name resolving to two components resolves to neither.** The script refuses instead of
 taking the first, and `--component-id` is what settles it: a tie broken silently parks the

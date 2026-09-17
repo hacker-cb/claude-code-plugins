@@ -1,0 +1,16 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-api",
+    "name": "API",
+    "status": "operational"
+   },
+   {
+    "id": "c-actions",
+    "name": "Actions",
+    "status": "operational"
+   }
+  ]
+ }
+}
