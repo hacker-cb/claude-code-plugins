@@ -9,7 +9,7 @@ threads-unread	--pr 7	0	"read": false|the review threads could not be read|"item
 threads-notjson	--pr 7	0	"read": false|a shape this cannot read	a body that parses but carries nothing where the threads should be is the same unread, and reading it as an empty list clears every finding at once
 bodies-unread	--pr 7	0	"read": false|the review bodies could not be read|"threads"	the half that opens no threads is the half nothing else catches — no gate holds it and no count includes it, so failing to read it fails the whole reading
 bodies-notjson	--pr 7	0	"read": false|something this cannot parse	and a feed answering with something that is not JSON at all says the same
-suppressed-absent	--pr 7	0	"suppressed": null|"opened": null	a body carrying no such block and a block reporting none are different readings, and they take different next steps
+suppressed-absent	--pr 7	0	"suppressed": null|"opened": 0|"unrecognised": null|"readBody": false	a body carrying no such block and a block reporting none are different readings, and they take different next steps
 suppressed-zero	--pr 7	0	"suppressed": 0|"opened": 1|"readBody": false	which is why a block reporting zero comes back as zero rather than as absent
 opened-none-suppressed-many	--pr 7	0	"opened": 0|"suppressed": 5|"readBody": true	the count a body reports is a count of THREADS: a review whose findings all went to the suppressed block opened none, so zero there is this class’s signature rather than evidence against it — and the labels arrive wrapped in markup as often as plain
 review-of-an-older-head	--pr 7	0	"head": false|"suppressed": 3	every review that posted is read whichever commit it covers — the head handed in may never earn one of its own, and a later review carries findings an earlier one did not
@@ -44,3 +44,13 @@ identity-named	--pr 7 --me example-author	0	"me": "example-author"|"open": []	a 
 -	--pr 7 --me not_a_login	2	is not a login	a login is not a path and not a ref, and one that is neither would compare against nothing
 label-inside-a-tag	--pr 7	0	"suppressed": 4|"ambiguous": false|"readBody": true	a decoy spelled inside a tag renders as nothing, so the stripped text is the one a reader sees and the one that answers — flagging the pair as ambiguous would turn stripping doing its job into an unknown
 
+shape-unrecognised	--pr 7	0	"unrecognised": "it carries none of the labels|"readBody": true|came in a layout this does not recognise	a body carrying none of the labels this reads is a layout that may have moved, never one with nothing in it — so it is read, and the reason is said
+section-unnamed	--pr 7	0	has no name for|related work|"readBody": true	a counted block under a name this has no reader for may hold findings no thread opened; the body ends its lines in CRLF, which must not hide the heading
+findings-without-a-block	--pr 7	0	lists findings outside any block this reads|"readBody": true|"suppressed": null	finding-shaped lines with no block read around them are findings nothing here counted
+findings-beside-an-empty-block	--pr 7	0	lists findings outside any block this reads|"suppressed": 0	and a block reporting none, with findings standing beside it, is not a body with nothing in it
+findings-inside-an-ambiguous-block	--pr 7	0	"ambiguous": true|"unrecognised": null	findings inside a block whose count could not be pinned are that block's own, not lines outside one
+quoted-heading-in-a-finding	--pr 7	0	"suppressed": 1|"unrecognised": null|NOT:has no name for	a finding quotes the file it is about, and a heading inside that quote is not a block of this review
+files-not-reviewed-known	--pr 7	0	"unrecognised": null|"readBody": false	the other counted block this reviewer writes is one this knows, and nothing in it is owed
+degraded-overview-known	--pr 7	0	"unrecognised": null|"readBody": false	the layout a degraded run posts carries neither the labels nor the counts, and it is still a layout this knows
+other-bot-thread	--pr 7	0	bots this does not take for Copilot spoke on this request|example-review-bot[bot]|"open": []	a thread opened by a bot this does not take for Copilot is counted nowhere, so it is named rather than dropped
+other-bot-review	--pr 7	0	bots this does not take for Copilot spoke on this request|example-review-bot[bot]|"items": []	and a review by one leaves no body behind, which is what the reviewer under a new login looks like from in here

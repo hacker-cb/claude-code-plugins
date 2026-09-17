@@ -18,7 +18,7 @@
 // Exit 0 either way: `"read": true` with the state, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
 
-import { dirOk, isCopilot, parsePages, readable, refOk, repoOk, runner, writeAll } from './lib/forge.mjs';
+import { dirOk, isCopilot, otherBot, parsePages, readable, refOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node copilot-state.mjs --pr <n> [--repo <owner/name>]'
   + ' [--repo-dir <path>]\n';
@@ -136,13 +136,22 @@ if (!rules.ok) {
 // its request, so a request with no rule and nothing standing can still carry one.
 const reviews = gh(['api', '--paginate', `repos/${repo}/pulls/${opts.pr}/reviews`]);
 if (!reviews.ok) refuse(`the reviews could not be read (${reviews.line()})`);
+// Bots this does not take for Copilot that reviewed the HEAD. Copilot answering under a
+// login the filter no longer matches leaves exactly this behind — a head with no review of
+// its own, reviewed all the same — and ruling that head unrequested is a merge past a review.
+const strangers = new Set();
 {
   const pages = parsePages(reviews.out);
   if (pages === null) refuse('the reviews did not come back as JSON');
   for (const page of pages) {
     if (!Array.isArray(page)) refuse('a page of reviews came back in a shape this cannot read');
     for (const r of page) {
-      if (!r || !isCopilot(r.user)) continue;
+      if (!r || !isCopilot(r.user)) {
+        if (r && r.commit_id === head && otherBot(r.user) && text(r.user.login)) {
+          strangers.add(text(r.user.login));
+        }
+        continue;
+      }
       answer.reviews.push({
         id: r.id ?? null,
         commitId: typeof r.commit_id === 'string' ? r.commit_id : null,
@@ -156,6 +165,13 @@ if (!reviews.ok) refuse(`the reviews could not be read (${reviews.line()})`);
 // commit would otherwise stand where the head's own review should be.
 const ofHead = answer.reviews.filter((r) => r.commitId === head);
 answer.headReview = ofHead.length ? ofHead[ofHead.length - 1] : null;
+// Only where Copilot has no review of the head: beside one it does have, another bot is
+// another reviewer and not a question about this one.
+if (!answer.headReview && strangers.size > 0) {
+  answer.notes.push(`the head was reviewed by ${[...strangers].join(', ')}, which this does not`
+    + ' take for Copilot — if Copilot now answers under that login, this head is reviewed and'
+    + ' `verdict` is not the whole of it');
+}
 
 // --- what stands now, read from the timeline
 // Never the request list: `requested_reviewers` and `reviewRequests` both read empty
