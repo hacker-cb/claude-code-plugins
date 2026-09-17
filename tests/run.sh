@@ -31,10 +31,10 @@ cd "$ROOT" || exit 1
 # without it each would fail in its own words several layers down. Say it once, here.
 command -v jq >/dev/null 2>&1 || { echo "tests need jq on PATH"; exit 1; }
 
-# Two repository-level checks run before any suite, because what they guard is not a
-# script's behaviour but the tree's: that no rule the refactor moved went missing, and
-# that no private data reached a fixture. Neither drives an engine, so neither is a suite
-# — a suite's shape is a stand-in CLI answering a saved envelope, and these read files.
+# One repository-level check runs before any suite, because what it guards is not a
+# script's behaviour but the tree's: that no private data reached a fixture. It drives no
+# engine, so it is not a suite — a suite's shape is a stand-in CLI answering a saved
+# envelope, and this one reads files.
 #
 # --self-test first: it proves the leak detectors still read both ways. A detector that
 # quietly stopped matching would otherwise report a clean tree, which is the failure mode
@@ -42,8 +42,7 @@ command -v jq >/dev/null 2>&1 || { echo "tests need jq on PATH"; exit 1; }
 if command -v node >/dev/null 2>&1; then
   for guard in \
     "check-fixtures.mjs --self-test" \
-    "check-fixtures.mjs" \
-    "check-registry.mjs"
+    "check-fixtures.mjs"
   do
     # shellcheck disable=SC2086 # deliberate: the entry supplies script plus its flags
     if ! out=$(node "$ROOT/scripts/"$guard 2>&1); then
@@ -58,8 +57,8 @@ else
   # private repositories and this public one, and a run that did not check it must not exit
   # 0 saying everything passed — "not run" is not "clean", which is the distinction every
   # script under test here is written around.
-  echo "node is not on PATH, so the registry and fixture guards could not run — and a run"
-  echo "that cannot check them has not checked them."
+  echo "node is not on PATH, so the fixture guard could not run — and a run that could"
+  echo "not check it has not checked it."
   exit 1
 fi
 echo
