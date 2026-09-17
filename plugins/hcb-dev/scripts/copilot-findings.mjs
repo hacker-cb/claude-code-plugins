@@ -361,7 +361,7 @@ if (!reviews.ok) {
         const unrecognised = unrecognisedIn(r?.body, sup);
         // The block's label standing with no number reachable. `null` alone says there is no
         // such block — the one reading a checksum would then hold the body to, and a false one.
-        const uncounted = sup.n === null && !sup.ambiguous && /suppressed/i.test(prose);
+        const uncounted = sup.n === null && !sup.ambiguous && /suppressed/i.test(plain(prose));
         answer.bodies.items.push({
           at: text(r?.submitted_at), commit, state: text(r?.state),
           // Every review that posted is read, whichever commit it covers: the head handed
@@ -389,6 +389,11 @@ if (!reviews.ok) {
           // in it: the report names the review, and a count pinned beside it still checks the
           // reading — a finding outside the block is exactly a reading the count comes up short of.
           unrecognised,
+          // Kept for one release after the reading moved to the agent, and `true` on every body:
+          // the plugin updates under a running session, and one still holding the reference that
+          // routed on this field then reads every body — what the reading now asks — instead of
+          // taking a field gone missing for "do not read". It decides nothing; the next major drops it.
+          readBody: true,
         });
       }
     }
