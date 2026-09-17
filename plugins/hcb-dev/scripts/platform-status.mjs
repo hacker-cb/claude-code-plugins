@@ -21,11 +21,14 @@
 // Exit codes, and each is a different step for the caller:
 //   0  operational — the named component is up, or, with none named, nothing is down
 //   3  degraded — wait and ask again
-//   4  the feed was not reached — no answer, a timeout, or any HTTP status outside 2xx.
-//      UNREAD IS NOT OPERATIONAL, and a loop that takes it for one resumes into an outage
-//   2  a call this cannot answer — a bad argument, a 2xx body that is not a feed, a
-//      document in neither shape, a component name matching none or several. Each of
-//      these answers the same however long the caller waits, so the loop stops
+//   4  the feed was not reached — no answer, a timeout, a 5xx, or one of the two 4xx that
+//      say *not now* (408, 429). UNREAD IS NOT OPERATIONAL, and a loop taking it for one
+//      resumes into the outage
+//   2  a call this cannot answer — a bad argument, any other status outside 2xx (a 404, a
+//      403, a redirect it does not follow), a 2xx body that is not a feed, a document in
+//      neither shape, one carrying no component it can rule on, a name matching none or
+//      several, or naming a group rather than a component. Each of these answers the same
+//      however long the caller waits, so the loop stops
 
 import { spawnSync } from 'node:child_process';
 import { text, writeAll } from './lib/forge.mjs';
@@ -234,14 +237,22 @@ answer.maintenances = cap(maintenanceRows.map((m) => ({ name: named(m), status: 
 
 // --- one component, which is the wait
 if (opts.component !== null || opts.componentId !== null) {
-  const matches = opts.componentId !== null
-    ? components.filter((c) => c && str(c.id) === opts.componentId)
-    : components.filter((c) => c && str(c.name) === opts.component);
   const asked = opts.componentId !== null
     ? `--component-id '${opts.componentId}'` : `--component '${opts.component}'`;
+  const byName = opts.componentId !== null
+    ? components.filter((c) => c && str(c.id) === opts.componentId)
+    : components.filter((c) => c && str(c.name) === opts.component);
+  // A group row rolls up the components under it, and the aggregate path already refuses
+  // to count one. Parking on one is the same mistake from the other side, so it is not a
+  // match here either — nor something `available` suggests parking on.
+  const matches = byName.filter((c) => c.group !== true);
+  if (byName.length && !matches.length) {
+    answer.available = cap(byName.map(row));
+    stop(`${asked} names a group, not a component — park on one of the components under it`);
+  }
   if (matches.length === 0) {
     // The names it DOES carry, because the usual repair is spelling one of them right.
-    answer.available = cap(components.filter((c) => c && str(c.name)).map(row));
+    answer.available = cap(components.filter((c) => c && c.group !== true && str(c.name)).map(row));
     stop(`${asked} matches no component in this feed — take a name from 'available'`);
   }
   // Two components of one name is ordinary at Statuspage, where every group has its own

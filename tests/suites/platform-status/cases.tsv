@@ -8,6 +8,8 @@ component-absent	--component Pages	2	"verdict": "unresolved"|matches no componen
 name-in-two-groups	--component Requests	2	matches 2 components|--component-id|"group": "Cloud"|"group": "Self-managed"	one name, two groups: ordinary at Statuspage. Taking the first would park the caller on whichever the feed listed first, under the name of the other
 name-in-two-groups	--component-id c2	3	major_outage|"group": "Self-managed"|"up": false	and the id settles it — the same feed, the same ambiguity, answered
 group-row-degraded	-	0	"verdict": "operational"|NOT:Cloud	a group row rolls up its children and is never a component to park on: counting it would report an outage the components deny
+group-row-degraded	--component Cloud	2	names a group, not a component|"verdict": "unresolved"	the aggregate path refuses to count a group row; parking on one is the same mistake from the other side, and the two paths must not disagree about what a component is
+name-in-two-groups	--component Missing	2	matches no component|NOT:"name": "Cloud"|NOT:"name": "Self-managed"	and the names it offers instead carry no groups either — suggesting one is suggesting a coordinate nothing can park on
 status-missing	-	0	"verdict": "operational"|NOT:Ghost	a component carrying no status is a row this cannot rule on — not one to call degraded
 status-missing	--component Ghost	2	carries no status this can rule on|"verdict": "unresolved"	the same row the aggregate leaves out: answering 3 here parked the loop every half hour on a component the feed never stated a state for
 statusio-nothing-to-judge	--component Website	2	carries no status this can rule on	and on the other shape, where a row with neither a code nor a string is the unjudgeable one
