@@ -95,6 +95,9 @@ const answer = {
   // One entry per name this branch used to carry. `retired` is a deletion this run made,
   // `absent` is a name that was not there, `kept` is every refusal — with its reason.
   stale: [],
+  // Every call that CHANGED something, in the order it was made. The reads that prove each
+  // one stay out: they are what this run asked, not what it did, and a run that touched
+  // nothing says so with an empty list.
   ran: [],
   notes: [],
   reason: null,
@@ -102,6 +105,8 @@ const answer = {
 const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const refuse = (reason) => { answer.reason = reason; finish(); };
 const note = (m) => { answer.notes.push(m); };
+// `git` for a question, `run` for an act — the split IS the contract of `ran` above, so a read
+// sent through here stops being distinguishable from a change this run made.
 const run = (args, timeout = 120000) => {
   const r = git(args, timeout);
   answer.ran.push(['git', ...args].join(' '));
