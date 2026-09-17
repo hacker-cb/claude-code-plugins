@@ -635,8 +635,8 @@ fi
 # count from printing a warning with a blank number.
 RUNNERS='{"cargo":["build","check","test","clippy","xtask","nextest","doc","bench","fmt"],
   "make":["*"],"gmake":["*"],"just":["*"],"ninja":["*"],"ctest":["*"],
-  "npm":["test","run","ci","install"],"pnpm":["test","run","install","build"],
-  "yarn":["test","run","install","build"],"bun":["test","run","install","build"],
+  "npm":["test","run"],"pnpm":["test","run","build"],
+  "yarn":["test","run","build"],"bun":["test","run","build"],
   "go":["build","test","vet"],"pytest":["*"],"tox":["*"],"nox":["*"],
   "gradle":["*"],"gradlew":["*"],"mvn":["*"],"mvnw":["*"],
   "bazel":["build","test"],"bazelisk":["build","test"],"cmake":["--build"],

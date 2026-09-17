@@ -106,11 +106,11 @@ scope: <base or "working tree">, <N> files, <the level and whatever else fixed t
 ```
 
 The count is what the *caller* computed from git — the ground the run was handed. Anything it does
-not cover goes on its **own** line, never appended to that one — and so does a `run-warning:`,
-which carries what the run *did* rather than what it read:
+not cover goes on its **own** line, and so does what the run *did* rather than read:
 
 ```text
 coverage-warning: <what is not covered, and why>
+run-warning: <what happened to the run, and what it leaves the caller to do>
 ```
 
 ## Reading it back

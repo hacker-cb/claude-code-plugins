@@ -77,6 +77,13 @@
       "tool_input": {
         "command": "cargo run -- src/lib.rs"
       }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "t6",
+      "tool_input": {
+        "command": "npm install"
+      }
     }
   ],
   "fast_mode_state": "off",
