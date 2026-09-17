@@ -202,6 +202,10 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # `dontAsk` turns it into a denial everywhere else. A denial narrows the run — the
 # coverage warning below reports that — and enough of them end it, which lands in the
 # failure branch.
+# The prompt says the same boundary in words, after the target and any narrowing: a
+# reviewer left to its own reading of a repository's instructions reaches for the
+# project's build or lint to settle a finding, spends turns on a refusal, and leaves a
+# denial the caller then has to tell apart from ground it did not read.
 # The deny list holds the file tools, which the sandbox does not reach. `--tools`
 # reaches neither far enough nor deep enough on its own: it selects among the built-in
 # tools, so the MCP tools of whoever runs the review stay reachable — theirs is the
@@ -226,11 +230,12 @@ echo "started: $MODEL at $LEVEL over ${BASE:-working tree}, pid $$, $(date +%H:%
 # reports the settings' `1` — but a settings block applied afterwards would undo
 # exactly that, and the value belongs to this run either way. Neither copy reaches
 # the user's own sessions.
+READ_ONLY="a read-only review: read the code, do not build, test, lint or run the project — the sandbox refuses the writes those need; a finding only a run could settle is reported as unverified, with the command that would settle it"
 # stdin is closed because the run waits on it otherwise;
 # stdout carries the JSON envelope, stderr its own file so a warning cannot corrupt
 # the JSON read below.
 CLAUDE_CODE_RETRY_WATCHDOG=0 \
-claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW}" \
+claude -p "/code-review $LEVEL $TARGET${NARROW:+ — $NARROW} — $READ_ONLY" \
   "$@" --effort "$LEVEL" --output-format json \
   --permission-mode dontAsk \
   --strict-mcp-config \
@@ -611,10 +616,46 @@ fi
 # Its own line too, and not a coverage one: this says what the run DID, not what it
 # read. The count above was taken before the run and stops describing the tree here.
 # A denial does not void the run — it narrows it, and a narrowed run is partial.
-# The fallback keeps a failed count from printing a warning with a blank number.
-DENIED=$(jq -r '(.permission_denials // []) | length' "$OUT" 2>/dev/null) || DENIED=0
+# Except the one kind that takes nothing from what was read: a build, a test or a lint
+# the reviewer reached for anyway, which the boundary refuses by design — a repository
+# whose own instructions name its lint as the enforcement of a rule invites exactly
+# that. Counting it as unread ground turned a read-only review of a fully read range
+# into a "structural gap" nobody could close. It gets a line of its own, naming the
+# command, so the caller can run it where the run could not.
+# The split fails closed: a call counts as a run only when every command in it starts
+# with a program from the list below, `cd` aside and the programs its output is piped
+# into ignored. Anything else — a file tool, a reader, a command with no text, one
+# program outside the list — stays a coverage warning, since calling a read a run is
+# the direction that hides lost ground.
+# A classifier that fails — a `jq` too old for `IN`, say — falls back to counting every
+# denial as unread ground, never to counting none; the last fallback keeps a failed
+# count from printing a warning with a blank number.
+RUNNERS='["cargo","make","gmake","just","npm","npx","pnpm","yarn","bun","deno","node",
+  "go","python","python3","pytest","tox","nox","uv","poetry","pip","gradle","gradlew",
+  "mvn","mvnw","bazel","bazelisk","cmake","ctest","ninja","meson","rake","bundle","mix",
+  "dotnet","swift","xcodebuild"]'
+# shellcheck disable=SC2016 # deliberate: `$runners` and `$c` below are jq's own
+DENIALS_JQ='
+  def program: [splits("\\s+")]
+    | map(select(. != "" and (test("^[A-Za-z_][A-Za-z0-9_]*=") | not)))
+    | (.[0] // "") | sub("^.*/"; "");
+  def runs_project: [splits("&&|\\|\\||;|\n")]
+    | map([splits("\\|")][0] | program) | map(select(. != "" and . != "cd"))
+    | length > 0 and all(.[]; IN($runners[]));
+  (.permission_denials // [])
+  | map(.tool_input.command? as $c
+        | if .tool_name == "Bash" and ($c | type) == "string" and ($c | runs_project)
+          then {run: ($c | gsub("\\s+"; " ") | .[0:120])} else {read: true} end)'
+DENIED=$(jq -r --argjson runners "$RUNNERS" "$DENIALS_JQ | map(select(.read)) | length" \
+  "$OUT" 2>/dev/null) \
+  || DENIED=$(jq -r '(.permission_denials // []) | length' "$OUT" 2>/dev/null) || DENIED=0
+RAN=$(jq -r --argjson runners "$RUNNERS" \
+  "$DENIALS_JQ | map(select(.run) | \"\`\(.run)\`\") | select(length > 0)
+   | \"\(length) command(s) that build, test or run the project were denied — the review reads and does not run, so nothing it read is lost; a finding that needs one is the caller's to run: \" + join(\"; \")" \
+  "$OUT" 2>/dev/null) || RAN=""
 [ "${DENIED:-0}" = 0 ] \
   || echo "coverage-warning: $DENIED tool call(s) were denied — the run read less than the range"
+[ -z "$RAN" ] || echo "run-warning: $RAN"
 printf '%s\n' "$RESULT"
 # `if`, not `[ … ] && { … }`: as the last command of the branch that form exits
 # non-zero whenever stderr was empty, marking every clean review as a failure.
