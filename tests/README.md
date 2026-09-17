@@ -69,7 +69,11 @@ Three things meet for each one, all inside the suite:
   at all.
 - `cases.tsv` — one row of five columns: the fixture, what the case adds to the
   invocation, the exit status, the fragments the output must contain, and what the
-  case is there to hold. A path written into that second column is relative to the
+  case is there to hold. A fragment opening `NOT:` asserts the rest is **absent** —
+  presence is all a substring test says by itself, so a guarantee shaped *the answer
+  does not carry this* (a field deliberately left out, a value that must not reach a
+  reader) had nothing to hold it, and putting it back read as green. A path written
+  into that second column is relative to the
   repository root, which is where the runner works from whatever directory it was
   called in. One word there is the runner's own rather than the script's:
   `WORKTREE=1` runs that case from a fresh linked worktree of this repository — the
@@ -119,6 +123,29 @@ quotes every phrase a quota notice contains.
 rather than captured: each envelope is the registry and marketplace answer one
 case needs, and the version trees those answers point at sit beside them under
 `trees/`, which is where a case's `--root` and the paths it expects come from.
+
+## Data out of a private repository comes in one way only
+
+`scripts/collect-fixtures.mjs` takes it, sanitizes it, and writes a `CAPTURED` marker beside
+what it wrote. `scripts/check-fixtures.mjs` then holds everything under that marker to the
+invented shapes — an allow-list, so a value nobody thought of in advance fails too.
+
+**An unmarked capture is recognised by its shape.** A forge's reply carries bookkeeping nobody
+sits down and invents — `node_id` beside `gravatar_id`, `site_admin`, the `*_url` fields — and
+the collector keeps only what its allow-list names, so none of it survives sanitizing. Two such
+keys in one object of an *unmarked* fixture is therefore a reply that went through no sanitizer
+at all, and the gate fails on it. It reads inside an envelope too: a reply pasted into the
+string a stub prints is parsed and walked like any other document, which is where the key
+shapes used to stop — a marked capture's envelope is now held to the invented shapes through
+the string as well.
+
+**What it cannot recognise is a reply somebody trimmed by hand,** and the key list is a list
+rather than a law — a shape neither forge writes today is a shape this does not know. Strip the
+bookkeeping and what is left — a login, a branch naming a customer, a repository path — is
+exactly what a hand-written fixture legitimately spells however it likes, and on a self-hosted
+instance the host check does not fire either. So the rule stands ahead of the gate: **never
+paste a forge's answer into a fixture.** Run the collector, which marks what it writes, or write
+the envelope yourself with invented values.
 
 ## Adding a case
 

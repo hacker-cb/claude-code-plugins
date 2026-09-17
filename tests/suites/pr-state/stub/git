@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+case "$1 $2" in
+  "rev-parse --verify")
+    # $4 is `<rev>^{commit}`; an envelope lists what this checkout carries, so a head the
+    # request names and a checkout standing elsewhere are two different answers.
+    want=${4%^\{commit\}}
+    case "$(ask '.base_present')" in no) case "$want" in refs/*) exit 1 ;; esac ;; esac
+    case " $(ask '.absent') " in *" $want "*) exit 1 ;; esac
+    printf '%s\n' "$want"; exit 0 ;;
+  "rev-list --count")
+    # The RANGE is the question: a drift measured from the wrong commit is still a number.
+    v=$(ask ".counts[\"$3\"] // .behind")
+    case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;;
+      "") printf '0\n'; exit 0 ;; *) printf '%s\n' "$v"; exit 0 ;; esac ;;
+  "diff --name-only")
+    # The RANGE is found rather than positioned: flags sit between it and the subcommand,
+    # and a stub reading `$3` answers about `-z`. Two dots and three are different
+    # questions, and this answers them differently — a stub blind to that makes the wrong
+    # one look right.
+    range=""
+    for a in "$@"; do case "$a" in *..*) range=$a ;; esac; done
+    v=$(ask ".moved_by_range[\"$range\"] // .moved")
+    case "$v" in fail) echo "fatal: bad revision" >&2; exit 128 ;; esac
+    # `-z` asks for NUL between the names and no trailing one, which is what git writes.
+    for a in "$@"; do
+      [ "$a" = "-z" ] && { printf '%s' "$v" | tr '\n' '\000'; exit 0; }
+    done
+    printf '%s\n' "$v"; exit 0 ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3

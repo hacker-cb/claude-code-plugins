@@ -308,13 +308,20 @@ ref_names=$(find plugins -type f -path '*/references/*.md' -exec basename {} \; 
 # The fallback prunes those by name: without a `.git` there is nothing to ask, and
 # a source tree unpacked from an archive can still carry a worktree directory
 # someone copied in.
+# Enumerated ONCE per run and replayed from the capture: three separate loops read this
+# list, and three `git ls-files` over the whole tree is three times the work for one answer
+# that cannot change between them.
+_md_files_cache=""
 md_files() {
-  if git rev-parse --git-dir >/dev/null 2>&1; then
-    git ls-files -co --exclude-standard '*.md' | sort -u
-  else
-    find . \( -name .git -o -path './.claude/worktrees' -o -name .worktrees -o -name node_modules \) -prune \
-      -o -type f -name '*.md' -print 2>/dev/null | sed 's|^\./||' | sort
+  if [ -z "$_md_files_cache" ]; then
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+      _md_files_cache=$(git ls-files -co --exclude-standard '*.md' | sort -u)
+    else
+      _md_files_cache=$(find . \( -name .git -o -path './.claude/worktrees' -o -name .worktrees -o -name node_modules \) -prune \
+        -o -type f -name '*.md' -print 2>/dev/null | sed 's|^\./||' | sort)
+    fi
   fi
+  printf '%s\n' "$_md_files_cache"
 }
 
 # A fenced block holds examples, not links. CLAUDE.md and CONTRIBUTING.md both
@@ -432,6 +439,106 @@ while IFS= read -r md; do
       || err "$md: '$m' is never linked in this file — link its first mention"
   done < <(printf '%s\n' "$body" | grep -o '`[^`]*\.md`' 2>/dev/null | tr -d '`' | sort -u)
 done < <(md_files)
+
+# --- the size gate ----------------------------------------------------------
+# What a skill costs a session is what it loads, and prose grows one paragraph at a
+# time while every paragraph looks worth its line. These two ceilings are the gate
+# against that: a `SKILL.md` is a procedure (steps, forks, what to call) and a
+# reference is one subject, and neither has ever needed more than this once the
+# mechanics live in a script and the measurements in a table.
+#
+# Two references are named exceptions, and only two. `forge-docs.md` and
+# `forge-behaviour.md` are lookup tables rather than prose — the second one is
+# where a measured fact goes INSTEAD of into a skill, so a ceiling on it would
+# lock the very layer the rest of this gate exists to feed. They grow by rows,
+# which a diff shows plainly.
+skill_ceiling=200
+ref_ceiling=150
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  case "$f" in plugins/*) ;; *) continue ;; esac
+  # `git ls-files -co` lists a file deleted in the working tree and not yet committed, and
+  # `wc -l` on it leaves `n` empty — which `[ "" -le 200 ]` fails as a syntax error and
+  # reports as a ceiling nobody crossed.
+  [ -f "$f" ] || continue
+  # `wc -l` counts NEWLINES, so a file whose final line is unterminated measures one short —
+  # a 201-line file passes a 200-line ceiling. `awk END{print NR}` counts records, which is
+  # lines as anyone reading the file means them.
+  n=$(awk 'END { print NR }' "$f")
+  case "$f" in
+    */SKILL.md)
+      [ "$n" -le "$skill_ceiling" ] \
+        || err "$f: $n lines, over the $skill_ceiling-line ceiling for a SKILL.md — move mechanics to a script, facts to references/forge-behaviour.md, or split by what a reader needs when" ;;
+    */references/*.md)
+      # The two exemptions are PATHS, not basenames: a `forge-docs.md` in another plugin,
+      # or in a skill's own references, is an ordinary reference and takes the ceiling.
+      case "$f" in
+        plugins/hcb-dev/references/forge-docs.md|plugins/hcb-dev/references/forge-behaviour.md) continue ;;
+      esac
+      [ "$n" -le "$ref_ceiling" ] \
+        || err "$f: $n lines, over the $ref_ceiling-line ceiling for a reference — a reference owns one subject; split it or move what it explains into the code that does it" ;;
+  esac
+done < <(md_files)
+
+# A fenced shell block longer than this is not an example any more: it is machinery,
+# and machinery belongs in a script under test. The count is the lines BETWEEN the
+# fences, so the fence markers themselves are not the budget.
+#
+# Every spelling a shell block is written under, not just ```bash: a rule one relabel
+# walks around is not a rule, and `sh`, `shell`, `zsh` and `console` all render the
+# same. A block with NO language is left alone deliberately — that is how this repo
+# writes a template or a transcript, which is not machinery.
+#
+# Read through a process substitution rather than a pipe: `... | while read` runs the
+# loop in a SUBSHELL, so every `err` it calls increments a counter that dies with it —
+# the gate prints its findings and reports zero errors, passing what it just caught.
+fence_ceiling=15
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  err "$line"
+done < <(
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    case "$f" in plugins/*) ;; *) continue ;; esac
+    # Markdown fences, by their own rules rather than by a pattern that happens to fit the
+    # blocks here today. An opener is three or more backticks or tildes; what closes it is a
+    # run of the SAME character, at least as long, carrying nothing else. Everything between
+    # is content — including a shorter fence, which is how this repo writes a template that
+    # shows a bash block. Tracking only shell fences read that inner one as a real block and
+    # failed the template; tracking the enclosing one is what tells them apart.
+    #
+    # The language is the first word of the info string, lowercased: ```Bash and
+    # ```bash title="x" both render as shell, and a gate one relabel walks around is not a
+    # gate. A block with no language is deliberately left alone — that is a template or a
+    # transcript, not machinery.
+    awk -v file="$f" -v cap="$fence_ceiling" '
+      function flush(  msg) {
+        if (inb && shell && n > cap)
+          printf "%s:%d: a shell block of %d lines — that is machinery, and it belongs in a script with a suite\n", file, start, n
+      }
+      !inb && match($0, /^[[:space:]]*(`{3,}|~{3,})/) {
+        fence = substr($0, RSTART, RLENGTH); sub(/^[[:space:]]*/, "", fence)
+        info = substr($0, RSTART + RLENGTH); sub(/^[[:space:]]+/, "", info)
+        lang = info; sub(/[[:space:]].*$/, "", lang); lang = tolower(lang)
+        inb = 1; n = 0; start = NR
+        shell = (lang == "bash" || lang == "sh" || lang == "shell" || lang == "zsh" || lang == "console")
+        next
+      }
+      inb {
+        # A closer is the same character, no shorter, and nothing else on the line.
+        if (match($0, /^[[:space:]]*(`{3,}|~{3,})[[:space:]]*$/)) {
+          close_run = $0; sub(/^[[:space:]]*/, "", close_run); sub(/[[:space:]]*$/, "", close_run)
+          if (substr(close_run, 1, 1) == substr(fence, 1, 1) && length(close_run) >= length(fence)) {
+            flush(); inb = 0; next
+          }
+        }
+        n++
+      }
+      # An unclosed fence runs to the end of the file, and markdown reads it that way too.
+      END { flush() }
+    ' "$f"
+  done < <(md_files)
+)
 
 # --- summary ----------------------------------------------------------------
 echo ""

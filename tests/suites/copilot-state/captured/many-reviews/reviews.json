@@ -1,0 +1,132 @@
+[
+  {
+    "id": "example-id-0af0cb2b",
+    "user": {
+      "login": "copilot-pull-request-reviewer[bot]",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "suppressed (3)\nComments generated: 1\n[body redacted by collect-fixtures]",
+    "state": "COMMENTED",
+    "author_association": "NONE",
+    "submitted_at": "2026-09-12T10:37:48Z",
+    "commit_id": "f1x77870ed74083be77f58d00cd33b4d2f785964"
+  },
+  {
+    "id": "example-id-a4667c6c",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "body": "",
+    "state": "COMMENTED",
+    "author_association": "MEMBER",
+    "submitted_at": "2026-09-12T10:50:12Z",
+    "commit_id": "f1x7e1ce3075cc63baa003813a1e2fefff7dee11"
+  },
+  {
+    "id": "example-id-333feda1",
+    "user": {
+      "login": "copilot-pull-request-reviewer[bot]",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "suppressed (4)\nComments generated: 1\n[body redacted by collect-fixtures]",
+    "state": "COMMENTED",
+    "author_association": "NONE",
+    "submitted_at": "2026-09-12T10:55:22Z",
+    "commit_id": "f1x7e1ce3075cc63baa003813a1e2fefff7dee11"
+  },
+  {
+    "id": "example-id-951bafe3",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "body": "",
+    "state": "COMMENTED",
+    "author_association": "MEMBER",
+    "submitted_at": "2026-09-12T11:04:06Z",
+    "commit_id": "f1x75ff370f4f6ed4c6021105391ce604e241eec"
+  },
+  {
+    "id": "example-id-86a62491",
+    "user": {
+      "login": "copilot-pull-request-reviewer[bot]",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "Needs a closer look\nsuppressed (2)\nComments generated: 0\n[body redacted by collect-fixtures]",
+    "state": "COMMENTED",
+    "author_association": "NONE",
+    "submitted_at": "2026-09-12T11:08:38Z",
+    "commit_id": "f1x75ff370f4f6ed4c6021105391ce604e241eec"
+  },
+  {
+    "id": "example-id-6858fdb6",
+    "user": {
+      "login": "copilot-pull-request-reviewer[bot]",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "Needs a closer look\nsuppressed (3)\nComments generated: 0\n[body redacted by collect-fixtures]",
+    "state": "COMMENTED",
+    "author_association": "NONE",
+    "submitted_at": "2026-09-12T11:20:36Z",
+    "commit_id": "f1x72e3dde829ee7e05b31ba76604069ff74badf"
+  },
+  {
+    "id": "example-id-04471840",
+    "user": {
+      "login": "copilot-pull-request-reviewer[bot]",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "Needs a closer look\nsuppressed (5)\nComments generated: 0\n[body redacted by collect-fixtures]",
+    "state": "COMMENTED",
+    "author_association": "NONE",
+    "submitted_at": "2026-09-12T11:33:12Z",
+    "commit_id": "f1x76a7ca7bbefc6d3f841352e3f01b9a3219e01"
+  },
+  {
+    "id": "example-id-be702b3e",
+    "user": {
+      "login": "copilot-pull-request-reviewer[bot]",
+      "id": "example-id-f21c69b9",
+      "type": "Bot"
+    },
+    "body": "suppressed (5)\nComments generated: 1\n[body redacted by collect-fixtures]",
+    "state": "COMMENTED",
+    "author_association": "NONE",
+    "submitted_at": "2026-09-12T11:49:13Z",
+    "commit_id": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837"
+  },
+  {
+    "id": "example-id-4155af13",
+    "user": {
+      "login": "example-user-d2e97ee7",
+      "id": "example-id-6de78555",
+      "type": "User"
+    },
+    "body": "",
+    "state": "COMMENTED",
+    "author_association": "MEMBER",
+    "submitted_at": "2026-09-12T11:50:58Z",
+    "commit_id": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837"
+  },
+  {
+    "id": "example-id-342b1c24",
+    "user": {
+      "login": "example-user-1e8e16fd",
+      "id": "example-id-c36449d6",
+      "type": "User"
+    },
+    "body": "",
+    "state": "APPROVED",
+    "author_association": "MEMBER",
+    "submitted_at": "2026-09-12T12:00:50Z",
+    "commit_id": "f1x7f77028eb8aedab90be3fe4d8763e3dd26837"
+  }
+]

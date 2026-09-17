@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Stubbed outright, not proxied: every question below would otherwise answer about the
+# runner's own checkout, and a case resting on that tests the clone rather than the script.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+case "$1 $2" in
+  "rev-parse --git-dir") case "$(ask '.no_repo')" in yes) exit 128 ;; esac; echo ".git"; exit 0 ;;
+  "rev-parse --show-toplevel")
+    # Answered differently depending on WHERE it was asked from, which is the whole
+    # point of the case using it: `--repo-dir` names the repository to scan, and the
+    # caller stands wherever it stands. A stub blind to its own cwd cannot tell the two
+    # apart, and a script asking the wrong one looks correct in every case.
+    v=$(ask '.here')
+    case "$PWD" in *"$(ask '.repo_dir_marker')") [ -n "$(ask '.repo_dir_marker')" ] && v=$(ask '.here_repo') ;; esac
+    case "$v" in ""|fail) echo "fatal: not a git repository" >&2; exit 128 ;;
+      *) printf '%s\n' "$v"; exit 0 ;; esac ;;
+  "worktree list")
+    v=$(ask '.worktrees')
+    case "$v" in ""|fail) echo "fatal: could not list worktrees" >&2; exit 128 ;; esac
+    # The envelope holds the line form; `-z` is that same shape with NUL where the
+    # newlines are, which is what git prints. `no_z` plays a git too old to take the
+    # flag, so the fallback path is a case rather than an assumption.
+    for a in "$@"; do [ "$a" = "-z" ] || continue
+      case "$(ask '.no_z')" in yes) echo "error: unknown option \`z'" >&2; exit 129 ;; esac
+      printf '%s' "$v" | tr '\n' '\0'; exit 0
+    done
+    printf '%s\n' "$v"; exit 0 ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3

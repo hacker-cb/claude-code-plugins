@@ -1,0 +1,19 @@
+{
+ "rules": [
+  {
+   "type": "copilot_code_review",
+   "parameters": {
+    "review_on_push": true,
+    "review_draft_pull_requests": false
+   }
+  }
+ ],
+ "reviews": "captured/many-reviews/reviews.json",
+ "timeline": "captured/many-reviews/timeline.json",
+ "pr_view": {
+  "url": "https://forge.example.com/example-org/example-repo/pull/7",
+  "headRefOid": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "baseRefName": "dev",
+  "isDraft": true
+ }
+}

@@ -73,3 +73,69 @@ Then supply the gates yourself — the Step 4 loop's bar becomes the authoritati
 one — and be *more* conservative, not less: keep the explicit-go-ahead gate, avoid
 irreversible force-pushes, and tell the user their judgment is the only safety net
 here.
+
+## What `commit-checks.mjs` answers, and what each verdict asks
+
+`github-pr-workflow` Step 4 reads one commit with it and Step 6 reads two. Both route on
+`.verdict`, which is the field this answer is designed to be read by: the rollup a server
+computes can say `failure` over rows that all passed, so a caller assembling a verdict out
+of the counts reports green on a red base.
+
+| `.verdict` | the step |
+|---|---|
+| `retry` | the answer is not published yet — re-poll the same call; a merge commit appears late behind a queue or a replica |
+| `unread` | the feeds were not read: unread, never unchecked — take the platform path and claim nothing about this base |
+| `running` | poll, on Step 4's budget and its escalation |
+| `failing` | attribute, then report |
+| `empty` | nothing registered yet where the base's own tip has rows; where that is `empty` too, this base runs nothing on a push — say it is unchecked and that the step guaranteed nothing |
+| `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, and `null` that none was ever asked, so a required check may exist that the run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
+
+**`--require-from-gates` is why no check name is ever written into a call.** The names
+come out of the base's own gates and travel between forge responses as data, never
+through a command line, where a workflow called `Team's CI` has to be quoted exactly
+right every time. `.gates` is what the base requires, and `null` there is a question
+never asked rather than an empty list.
+
+**Read the base's own tip before believing what the merge commit lacks.** An unread
+answer carries empty `runs` and `statuses` too, so "the base does not run this" and
+"nothing was read" look identical in the rows — only an answer whose `verdict` says it
+was read may say the base runs nothing on a push.
+
+**Wait by name, never for the count to settle**, which is what `--require-from-gates`
+does: the aggregate registers after the checks it aggregates, so the moment every check
+has finished is a moment it does not exist. One name it brings needs judgement — a gate
+belonging to a `pull_request`-only workflow never appears on a merge commit, so the merge
+commit stays `running` on it while every push check is green. The base's own tip settles
+that: a required name absent there is absent from the base's pushes, and waiting for it
+spends the budget for nothing. Report the weaker guarantee rather than waiting it out.
+
+A budget that runs out mid-poll is not waited out: report the state the feeds stood at,
+empty included. **What a report claims is what these reads saw**, never that the base is
+quiet — a check that registers after them, and one that runs for the pull request and not
+for the push that landed it, are both outside what they can see.
+
+Captured in variables, never redirected to a file: these run inside the user's checkout,
+where a stray `merged.json` is an untracked file the report, `git-cleanup` and branch
+retirement all read as work in progress. **A non-zero exit is the invocation being
+wrong**, never a state to retry.
+
+## The two exit items a round cannot close
+
+**Drift, where the base does not require the branch current.** That enum never arrives, so
+a head sitting well behind its base reads `CLEAN` and the drift is measured rather than read
+off a status. `drift.behind` above zero is a judgement, not a gate: re-sync when what
+`drift.paths` carries can break this head — the same files or modules, an interface a caller
+here uses, a migration, a dependency — and merge without one when the base moved elsewhere.
+Neither answer is free: a re-sync is a push, which restarts the checks and the review; a
+skipped one that was needed puts the break in the base, where only the post-merge read finds
+it.
+
+**The approval.** Every other exit item answers to a push; this one answers to a reviewer,
+and all a round can do is remove reasons to withhold it. Read the **requirement** — the
+`pull_request` row above — before spending an iteration against it, never one reviewer's
+verdict. Where it is outstanding and the head's review has settled without closing it, which
+of the two kinds of review that is ([`copilot.md`](copilot.md), *What the review lands as*)
+decides: findings still outstanding are the loop's work where a rule in force reviews pushes
+or a request stands, since the next review can close the requirement. Where neither holds no
+next review comes — that, and a reviewer handing the decision to a human, are stops, carrying
+the reason the review gave and what would answer it.

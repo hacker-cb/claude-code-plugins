@@ -1,0 +1,7 @@
+{
+ "remotes": "upstream\norigin",
+ "branch": "feat/example-export",
+ "base_present": "yes",
+ "pr_list": "silent",
+ "request_base": "[{\"baseRefName\": \"dev\", \"isCrossRepository\": false}]"
+}

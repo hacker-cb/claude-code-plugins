@@ -295,12 +295,77 @@ the plan stages them.
   tables it classifies by are
   [`skills/git-cleanup/references/verdicts.md`](skills/git-cleanup/references/verdicts.md).
 
+## Shared scripts
+
+A question with one right answer, and a set of wrong ones that look alike, belongs in
+code rather than in prose a reader re-derives each time. Each script here answers ONE
+question, prints JSON, and is held to what a forge actually sends by a suite under
+[`../../tests/suites`](../../tests/suites) in the repository root. They never load into a
+session's context — a skill invokes one and reads its answer.
+
+- [`scripts/default-branch.mjs`](scripts/default-branch.mjs) — which branch this
+  repository treats as its default, and the remote that says so. Asks the remote even
+  when the local pointer verified, because a pointer at a ref that still exists is the
+  case verification cannot catch.
+- [`scripts/resolve-base.mjs`](scripts/resolve-base.mjs) — which remote to read a base
+  from, which one a push actually goes to, and whether the ref for a base is CURRENT
+  rather than whatever the last fetch left. Refuses where several remotes exist and none
+  is preferred: for a read that costs a wrong review, for a push it can publish a branch
+  in somebody else's repository.
+- [`scripts/worktree-owners.mjs`](scripts/worktree-owners.mjs) — whose is each worktree
+  of this repository right now, read from Claude Code's live-session registry. Presence
+  only: a live session proves a worktree is in use, and its absence proves nothing,
+  because the host leases worktrees to sessions rather than to processes.
+- [`scripts/cleanup-scan.mjs`](scripts/cleanup-scan.mjs) — what a sweep would find in a
+  repository and what each thing carries: the git state of every worktree, and the proof
+  every branch has that its work landed. Classifies, and deletes nothing.
+- [`scripts/pr-state.mjs`](scripts/pr-state.mjs) — what the forge says about one change
+  request and what is outstanding on it: its own enums, the review threads no `pr view`
+  field carries, and the drift against its base, measured rather than read off
+  `mergeStateStatus`. `mayMerge` is permission, never readiness.
+- [`scripts/commit-checks.mjs`](scripts/commit-checks.mjs) — what the two check feeds
+  say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
+  reader of one is blind to the other, and answers with a single `verdict` so a caller
+  never assembles one out of counts.
+- [`scripts/copilot-state.mjs`](scripts/copilot-state.mjs) — whether the automated
+  reviewer is expected on this request, whether it has answered the head, and what it
+  said. Reads the request the repository's own settings describe, never a list of
+  reviewers that a completed review has already emptied.
+- [`scripts/copilot-findings.mjs`](scripts/copilot-findings.mjs) — what that reviewer
+  actually said on one request, in both of the places it says it, and what is still owed.
+  A finding that opened no thread is held by no gate and counted by nothing, so reading
+  one half is half a review and this says which half it got.
+- [`scripts/retire-check.mjs`](scripts/retire-check.mjs) — is this branch safe to retire,
+  and on which side. The local half and the published half fail separately and are
+  answered separately; it reads and judges, and deletes nothing.
+- [`scripts/branch-publish.mjs`](scripts/branch-publish.mjs) — the name a branch ships
+  under, put on the remote, and the names it used to carry taken off it. **The one script
+  here that acts**, because the order of the three is the hazard: a rename is refused
+  where a request pins the name, the publish is unconditional, and a name comes off the
+  remote only after the new one is up.
+- [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
+  stands on the epic issue, whether the next write fits under a cap that announces itself
+  only by refusing one, and whether the archives beside it and the index naming them
+  agree. It reads: what may be archived out of a ledger is a judgement about content.
+
+They refuse rather than guess, and a refusal says which question could not be answered —
+never "nothing matched".
+
 ## Shared references
 
 Guidance more than one skill needs is kept in one place rather than copied into
 each — copies drift, and a fix then lands in some of them while the rest go on
 saying something else. Each file opens by saying what it owns.
 
+- [`references/invariants.md`](references/invariants.md) — how a signal is read,
+  and what an authority permits. Twelve rules that hold wherever a tool, a forge,
+  a remote or another session answers: an empty result is not a negative one, an
+  unread one is not empty, configuration predicts nothing, an authority narrows
+  and never widens. Read once per run, by every skill here.
+- [`references/forge-behaviour.md`](references/forge-behaviour.md) — what a
+  forge actually does, measured: which signals lie, when, and what to measure
+  instead. Read wherever a skill acts on what a forge reports. A new
+  measurement is a row here, never a paragraph elsewhere.
 - [`references/base-resolution.md`](references/base-resolution.md) — resolving a
   base branch and its remote without guessing either name. Read wherever a base
   or a remote is resolved.
@@ -311,13 +376,23 @@ saying something else. Each file opens by saying what it owns.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name, a commit subject and a change-request title take. Read wherever a
   branch is named, renamed or landed under its name.
+- [`references/branch-publish.md`](references/branch-publish.md) — the act rather
+  than the name: renaming, publishing, and taking a name this branch used to carry
+  off the remote. Read by whatever renames or publishes.
 - [`references/branch-retirement.md`](references/branch-retirement.md) — what
   becomes of a branch once its merge is confirmed. Read by whatever lands work.
 - [`references/merge-message.md`](references/merge-message.md) — keeping a change
   request's body true to what is landing, and the message a collapsing merge
   leaves on the base. Read by whatever lands work, before the merge.
-- [`references/slice-completion.md`](references/slice-completion.md) — how a slice
-  *ends*, across both backends. Read by whatever finishes a slice.
+- [`references/slice-completion.md`](references/slice-completion.md) — the contract
+  a slice *ends* under: the inputs a caller threads in, the outputs a report reads
+  back, and what outranks a merge authorization. Read by everything that hands a
+  slice on, not only by what completes one.
+- [`references/completion-backends.md`](references/completion-backends.md) — what
+  each completion mode actually does. Read by whatever executes a completion.
+- [`references/feature-branch.md`](references/feature-branch.md) — the branch a set
+  of slices shares: keeping it current, and the three cases where any branch takes
+  its base by merge rather than rebase.
 - [`references/architecture-decisions.md`](references/architecture-decisions.md) —
   the decision protocol: what to ask about, what to act on, and the form a stop
   takes. Read at every planning gate and every stop-and-ask.
@@ -454,7 +529,7 @@ Per skill, on top of those:
   `implementation-workflow` by identifier.
 - **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
   branch, and without it the skill degrades to git-only. To tell which worktrees
-  are occupied it also reads Claude Code's live-session registry under
-  `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, and the probe
-  proves presence only — a worktree the host created for another session is
+  are occupied, `scripts/worktree-owners.mjs` reads Claude Code's live-session
+  registry under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, and
+  it proves presence only — a worktree the host created for another session is
   reported either way.

@@ -31,6 +31,39 @@ cd "$ROOT" || exit 1
 # without it each would fail in its own words several layers down. Say it once, here.
 command -v jq >/dev/null 2>&1 || { echo "tests need jq on PATH"; exit 1; }
 
+# Two repository-level checks run before any suite, because what they guard is not a
+# script's behaviour but the tree's: that no rule the refactor moved went missing, and
+# that no private data reached a fixture. Neither drives an engine, so neither is a suite
+# — a suite's shape is a stand-in CLI answering a saved envelope, and these read files.
+#
+# --self-test first: it proves the leak detectors still read both ways. A detector that
+# quietly stopped matching would otherwise report a clean tree, which is the failure mode
+# the whole check exists to prevent.
+if command -v node >/dev/null 2>&1; then
+  for guard in \
+    "check-fixtures.mjs --self-test" \
+    "check-fixtures.mjs" \
+    "check-registry.mjs"
+  do
+    # shellcheck disable=SC2086 # deliberate: the entry supplies script plus its flags
+    if ! out=$(node "$ROOT/scripts/"$guard 2>&1); then
+      printf '%-16s %s\n' "${guard%% *}" "FAILED"
+      printf '%s\n' "$out" | sed 's/^/         /'
+      exit 1
+    fi
+    printf '%-16s %s\n' "${guard%% *}" "$(printf '%s' "$out" | tail -1)"
+  done
+else
+  # Not a skip. The fixture gate is the only thing standing between capture data taken from
+  # private repositories and this public one, and a run that did not check it must not exit
+  # 0 saying everything passed — "not run" is not "clean", which is the distinction every
+  # script under test here is written around.
+  echo "node is not on PATH, so the registry and fixture guards could not run — and a run"
+  echo "that cannot check them has not checked them."
+  exit 1
+fi
+echo
+
 want_suites=()
 want_names=()
 while [ "$#" -gt 0 ]; do
@@ -299,15 +332,42 @@ for suite in "${all_suites[@]}"; do
     # every failure prints the same first line, so a status implies its line and
     # checking one against the other asserts nothing. What separates the branches is
     # the advice underneath, and that is what these fragments hold.
-    missing=""
+    missing="" present=""
     saved_ifs=$IFS
     IFS='|'
     for fragment in $expect; do
-      case "$out" in *"$fragment"*) ;; *) missing="$fragment" ;; esac
+      # A fragment opening `NOT:` asserts the rest is ABSENT. Presence is all a substring
+      # test can say by itself, so a guarantee shaped "the answer does not carry this" —
+      # a field deliberately left out, a value that must not reach a reader — had nothing
+      # to hold it, and putting it back read as green.
+      case "$fragment" in
+        NOT:*) case "$out" in *"${fragment#NOT:}"*) present="${fragment#NOT:}" ;; esac ;;
+        # `BEFORE:a<<b` asserts a comes before b. A substring test cannot see ORDER, and a
+        # pretty-printed array puts its entries on their own lines, so the one thing a
+        # ranking is FOR — that this entry precedes that one — had nothing to hold it:
+        # reversing a sort read as green in every case that named both.
+        BEFORE:*)
+          pair=${fragment#BEFORE:}
+          first=${pair%%'<<'*}; second=${pair#*'<<'}
+          if [ "$first" = "$pair" ] || [ -z "$first" ] || [ -z "$second" ]; then
+            missing="$fragment (BEFORE: wants a<<b)"
+          else
+            head_part=${out%%"$second"*}
+            case "$out" in
+              *"$second"*) case "$head_part" in *"$first"*) ;; *) missing="$first before $second" ;; esac ;;
+              *) missing="$second" ;;
+            esac
+          fi ;;
+        *) case "$out" in *"$fragment"*) ;; *) missing="$fragment" ;; esac ;;
+      esac
     done
     IFS=$saved_ifs
     if [ -n "$missing" ]; then
       report_failure "$suite/$fixture" "exit $got as wanted, but never printed: $missing" "$note"
+      suite_fail=$((suite_fail + 1)); continue
+    fi
+    if [ -n "$present" ]; then
+      report_failure "$suite/$fixture" "exit $got as wanted, but printed what it must not: $present" "$note"
       suite_fail=$((suite_fail + 1)); continue
     fi
     pass=$((pass + 1))

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+say() {
+  case "$1" in silent) echo "that list could not be read" >&2; exit 1 ;; esac
+  printf '%s' "$1"; [ -n "$1" ] && echo; exit 0
+}
+if [ "$1 $2" = "pr list" ]; then
+  case " $* " in
+    *" --head "*) say "$(ask '.request_base')" ;;
+    *) say "$(ask '.pr_list')" ;;
+  esac
+fi
+echo "stub gh: no envelope answer for: $*" >&2; exit 3

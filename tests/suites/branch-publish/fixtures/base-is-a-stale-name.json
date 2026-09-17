@@ -1,0 +1,14 @@
+{
+ "head": "dev",
+ "pr_list_default": "[]",
+ "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "base_present": "yes",
+ "object_default": "yes",
+ "stood_on": "yes",
+ "in_base": "no",
+ "ls_remote": {
+  "refs/heads/feat/example-export": "absent",
+  "refs/heads/dev": "f1x7dddddddddddddddddddddddddddddddddddd\trefs/heads/dev"
+ },
+ "ship_stood_on": "yes"
+}

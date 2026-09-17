@@ -1,0 +1,3 @@
+Fixtures here were captured from a real pull request and sanitized by
+scripts/collect-fixtures.mjs. scripts/check-fixtures.mjs holds them to the
+invented shapes because of this marker. Never add a file here by hand.

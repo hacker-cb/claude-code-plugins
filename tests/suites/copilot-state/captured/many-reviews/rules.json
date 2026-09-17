@@ -1,0 +1,55 @@
+[
+  {
+    "type": "required_status_checks",
+    "parameters": {
+      "strict_required_status_checks_policy": false,
+      "required_status_checks": [
+        {
+          "context": "CI success"
+        }
+      ]
+    },
+    "ruleset_source_type": "Repository",
+    "ruleset_source": "example-org/example-repo",
+    "ruleset_id": "example-id-d61194a6"
+  },
+  {
+    "type": "pull_request",
+    "parameters": {
+      "required_approving_review_count": 1,
+      "dismiss_stale_reviews_on_push": true,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_review_thread_resolution": true,
+      "allowed_merge_methods": [
+        "merge",
+        "squash"
+      ]
+    },
+    "ruleset_source_type": "Repository",
+    "ruleset_source": "example-org/example-repo",
+    "ruleset_id": "example-id-d61194a6"
+  },
+  {
+    "type": "copilot_code_review",
+    "parameters": {
+      "review_on_push": true,
+      "review_draft_pull_requests": false
+    },
+    "ruleset_source_type": "Repository",
+    "ruleset_source": "example-org/example-repo",
+    "ruleset_id": "example-id-d61194a6"
+  },
+  {
+    "type": "deletion",
+    "ruleset_source_type": "Repository",
+    "ruleset_source": "example-org/example-repo",
+    "ruleset_id": "example-id-d61194a6"
+  },
+  {
+    "type": "non_fast_forward",
+    "ruleset_source_type": "Repository",
+    "ruleset_source": "example-org/example-repo",
+    "ruleset_id": "example-id-d61194a6"
+  }
+]

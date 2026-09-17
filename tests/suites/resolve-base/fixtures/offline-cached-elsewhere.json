@@ -1,0 +1,8 @@
+{
+ "remotes": "origin\nupstream",
+ "branch": "feat/example-export",
+ "cached": {
+  "refs/remotes/upstream/dev": "no",
+  "refs/remotes/origin/dev": "yes"
+ }
+}

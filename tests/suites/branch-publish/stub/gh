@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+if [ "$1 $2" = "repo view" ]; then
+  v=$(ask '.repo_view'); [ -z "$v" ] && v=example-org/example-repo
+  case "$v" in silent) echo "could not read the repository" >&2; exit 1 ;; esac
+  printf '%s\n' "$v"; exit 0
+fi
+if [ "$1 $2" = "pr list" ]; then
+  # Keyed by the name asked about, which is the whole point of the probe: a run asks
+  # about two names and a stub blind to which one cannot tell the answers apart.
+  name="" prev=""
+  for a in "$@"; do [ "$prev" = "--head" ] && { name=$a; break; }; prev=$a; done
+  v=$(ask ".pr_list[\"$name\"] // .pr_list_default")
+  case "$v" in
+    ""|silent) echo "could not read the request list" >&2; exit 1 ;;
+    *) printf '%s\n' "$v"; exit 0 ;;
+  esac
+fi
+echo "stub gh: no envelope answer for: $*" >&2; exit 3

@@ -15,117 +15,89 @@ description: >-
 
 # Implementation workflow
 
-Take one or more tasks from intake all the way to done: analysis, slicing, one
-planning gate, an autonomous per-slice run, then a report. This is the front half
-the other skills assume has already happened — it owns the whole-set concerns
-(intake, slices, branch layout, the cross-slice report) and hands each slice's
-completion to `hcb-dev:shipping-workflow`. It runs in the **main conversation**,
-and it is a skill, not the host's workflow tool: a rule that limits workflows or
-subagents to what the user or a skill asks for is met by the invocation that
-started it and by the skills it calls, and skips nothing here.
-
-The completion **mode** — `local` (merge each slice into its parent, no forge) or
-`request` (a change request per slice) — changes only how a slice *ends*. Analysis,
-slicing, development, and review are identical either way. This skill elicits the
-mode once, at the gate, and threads it down; the mechanics live in
-[`../../references/slice-completion.md`](../../references/slice-completion.md).
+Take one or more tasks from intake all the way to done: analysis, slicing, one planning gate, an
+autonomous per-slice run, then a report. This is the front half the other skills assume has
+happened — it owns the whole-set concerns (intake, slices, branch layout, the cross-slice report)
+and hands each slice's completion to `hcb-dev:shipping-workflow`. It runs in the **main
+conversation**, and it is a skill, not the host's workflow tool: a rule limiting workflows or
+subagents to what the user or a skill asks for is met by the invocation that started it. The
+completion **mode** — `local` (merge each slice into its parent, no forge) or `request` (a change
+request per slice) — changes only how a slice *ends*; analysis, slicing, development and review
+are identical either way. This skill elicits it once, at the gate, and threads it down; the
+contract is [`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
 
 ## Phase 0 — Analysis
 
-- **Intake, forge-neutrally.** A task is free text from the conversation, or an
-  issue/ticket number, or a mix. Read a number through the mirrored CLIs — GitHub
-  `gh issue view <n> --json title,body,comments`, GitLab `glab issue view <n>` —
-  detecting the forge from the remote and what answers there, never the hostname.
-  Resolve any invocation this skill does not spell out per
-  [`../../references/forge-docs.md`](../../references/forge-docs.md).
-  Reading an issue is reading a *spec*, not a mandate to do everything written in
-  it: surface the actual asks and let the gate confirm scope.
+- **Intake, forge-neutrally.** A task is free text from the conversation, or an issue number, or a
+  mix. Read a number through the mirrored CLIs — GitHub `gh issue view <n> --json
+  title,body,comments`, GitLab `glab issue view <n>` — detecting the forge from the remote and
+  what answers there, never the hostname; anything not spelled out here is
+  [`../../references/forge-docs.md`](../../references/forge-docs.md)'s. Reading an issue is
+  reading a *spec*: surface the actual asks and let the gate confirm scope.
 - **Be findable.** Where this session opened the run, title it per
   [`../../references/session-naming.md`](../../references/session-naming.md).
-- **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue
-  already covering these tasks changes the scope; one covering part of them
-  changes the slicing.
-- **Refresh the base before reading the code against it** — resolve it and fetch,
-  per [`../../references/base-resolution.md`](../../references/base-resolution.md).
-  The fetch moves the remote-tracking ref and nothing else, so the deep-read is
-  still on what is checked out: read against the refreshed ref, and where the
-  checkout cannot move onto it, say the tree is older and treat what the base moved
-  past as unread.
-- **Rule each issue task current, or not** — a number taken in is a claim about
-  the tree, and it earns a verdict against the base just refreshed, per
-  [`../../references/issue-currency.md`](../../references/issue-currency.md).
-  Free text from the conversation is the user's own ask and takes none.
-- **Deep-read the codebase against the tasks** — what is affected, what is risky,
-  where the genuinely-open questions are.
-- **Draft a slicing.** Split the work into **independently reviewable slices** — a
-  slice is a chunk that can be reviewed and completed on its own. **One slice is
-  the normal case.** Keep each small enough to review and coherent enough to stand
-  alone; more than one usually stacks on a shared feature branch and the slices
-  can depend on each other.
-- **The lower bound (Tier 0).** Trivial work — one slice, no architectural
-  decisions, a couple of files — skips the gate and this whole orchestration: just
-  make the edit and hand it to `hcb-dev:shipping-workflow`. The gate is for work
-  worth planning; a one-line fix does not earn it. A verdict of anything but
-  `current` is never trivial, whatever the edit it implies: it carries a fork,
-  and a fork is the gate. Skipping the gate skips the **asking**, never the
-  **threading**: settlements the invocation carried travel on to
-  `hcb-dev:shipping-workflow` exactly as they arrived; what none carried,
-  `slice-completion.md`'s ladders settle there, and nothing was approved here,
-  so no approval is what those ladders read. Say the result in the one line that
-  narrates the edit; a user who wants the merge names it in the ask.
+- **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue already
+  covering these tasks changes the scope; one covering part of them changes the slicing.
+- **Refresh the base before reading the code against it**
+  ([`../../references/base-resolution.md`](../../references/base-resolution.md)). The fetch moves
+  the remote-tracking ref and nothing else, so read against the refreshed ref; where the checkout
+  cannot move onto it, say the tree is older and treat what the base moved past as unread.
+- **Rule each issue task current, or not** — a number taken in is a claim about the tree and earns
+  a verdict against the base just refreshed
+  ([`../../references/issue-currency.md`](../../references/issue-currency.md)); free text from the
+  conversation is the user's own ask and takes none.
+- **Deep-read the codebase against the tasks** — what is affected, what is risky, where the open
+  questions are.
+- **Draft a slicing** into **independently reviewable slices**, each small enough to review and
+  coherent enough to stand alone. **One slice is the normal case**; more than one stacks on a
+  shared feature branch.
+- **The lower bound (Tier 0).** Trivial work — one slice, no architectural decisions, a couple of
+  files — skips the gate and this whole orchestration: make the edit and hand it to
+  `hcb-dev:shipping-workflow`. A verdict of anything but `current` is never trivial, whatever edit
+  it implies: it carries a fork, and a fork is the gate. Skipping the gate skips the **asking**,
+  never the **threading** — settlements the invocation carried travel on exactly as they arrived,
+  what none carried `slice-completion.md`'s ladders settle downstream, and nothing was approved
+  here, so no approval is what those ladders read.
 
 ## Phase 1 — The planning gate
 
-The one interactive point. Present the whole plan and take a single approval,
-deciding everything foreseeable at once so Phase 2 has no routine questions left.
-Every fork carries a **recommendation shown first**, never a bare question, and a
-project rule that fights good architecture gets flagged — see
-[`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
+The one interactive point. Present the whole plan and take a single approval, deciding everything
+foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
+**recommendation shown first**, and a project rule that fights good architecture gets flagged
+([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 
-**A settlement the invocation carried is shown, not asked.** Where this session
-was started by an order
-([`../../references/order-anatomy.md`](../../references/order-anatomy.md)), its
-completion mode and merge authority arrive settled: display them with the plan
-and act on them. Re-asking re-opens what the order closed. Everything the order
-left open is settled here as usual.
+**A settlement the invocation carried is shown, not asked.** Where this session was started by an
+order ([`../../references/order-anatomy.md`](../../references/order-anatomy.md)), its completion
+mode and merge authority arrive settled: display them with the plan and act on them — re-asking
+re-opens what the order closed. Everything it left open is settled here as usual.
 
 Settle, in one gate:
 
-- **What a non-`current` verdict changes** — an issue ruled stale, needing a
-  rewrite or unverifiable carries the fork the rest of the plan is built on, so
-  it is settled first and the slicing below is shown as what the recommended
-  answer makes: recommend what becomes of it — built as written, built down to
-  the part that still holds, its body rewritten first, closed as already met —
-  from what its own verdict leaves open (`issue-currency.md`), and carrying the
-  coordinate that verdict stands on. Where another answer is taken, the layout it
-  invalidates is re-drawn before the gate closes rather than carried into Phase 2
-  as approved. `hcb-dev:issue-tracking` writes to the tracker on the answer, never
-  ahead of it.
-- **Slice breakdown + branch layout** — a shared feature branch only for more than
-  one slice; a single slice's parent is the base. Name both the feature branch and
-  its slices per
-  [`../../references/branch-naming.md`](../../references/branch-naming.md), which
-  owns the feature/slice layout. Show the names in the plan; they are mechanical,
-  so present them, don't ask about them.
+- **What a non-`current` verdict changes** — an issue ruled stale, needing a rewrite or
+  unverifiable carries the fork the rest of the plan is built on, so it is settled first and the
+  slicing is shown as what the recommended answer makes. Recommend from what its own verdict
+  leaves open (`issue-currency.md`), carrying the coordinate that verdict stands on; where
+  another answer is taken, re-draw the layout it invalidates before the gate closes.
+  `hcb-dev:issue-tracking` writes to the tracker on the answer, never ahead of it.
+- **Slice breakdown + branch layout** — a shared feature branch only for more than one slice; a
+  single slice's parent is the base. Both names come from
+  [`../../references/branch-naming.md`](../../references/branch-naming.md), which owns the
+  layout: show them, don't ask about them.
 - **Architectural / implementation forks** — the choices the code cannot answer.
-- **Completion mode** — `local` or `request` (default `request` if the user is
-  silent and phrasing does not decide).
-- **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request;
-  the real choice is the final `feature → base` change request: `merge-commit` to
-  keep slice history, `squash` to collapse), filtered for request mode to the
-  repo's allowed methods.
-- **Merge authorization** — the `merge-auth` of `slice-completion.md`, value
-  and addressee both. In `request` mode `on-green` is the shown default and
-  approving the plan *is* that authorization, threaded down so the run does not
-  stop to re-ask; the addressee is the user, unless an order above this session
-  named another. In `local` mode choosing the mode is the consent and the
-  default is `on-green`, with the default-branch merge separately gated in
-  Phase 2 — so the gate shows it rather than asking again.
-- **Coverage policy** — an **actionable** coverage gap stops the run; this is not
-  waivable (a reviewer you did not know would go missing is exactly what the gate
-  exists to catch). A structural gap is noted, never blocking.
+- **Completion mode** — `local` or `request` (default `request` where the user is silent and
+  phrasing does not decide).
+- **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request; the real
+  choice is the final `feature → base` request), filtered in request mode to the repo's allowed
+  methods.
+- **Merge authorization** — `slice-completion.md`'s `merge-auth`, value and addressee both, shown
+  rather than asked: `on-green` is the default in both modes, approving the plan *is* that
+  authorization, and the addressee is the user unless an order above named another. The
+  default-branch merge stays separately gated in Phase 2.
+- **Coverage policy** — an **actionable** coverage gap stops the run, not waivable: a reviewer you
+  did not know would go missing is what the gate exists to catch. A structural gap is noted,
+  never blocking.
 
-**Gate weight scales by tier**, so the normal case stays light:
+**Gate weight scales by tier**, so the normal case stays light.
 
 | Tier | Work | Gate | Persistence |
 |---|---|---|---|
@@ -133,139 +105,96 @@ Settle, in one gate:
 | 1 | a slice or two | a brief inline confirm | native task-list; a plan-doc where there is more than one slice |
 | 2 | multi-slice, real forks | native plan mode | plan-doc under the resolved plans dir + task-list; where the work is large, shared with a team or spread over sessions, offer a forge tracking issue as well |
 
-For anything multi-slice, **persist the plan and the captured authorizations** so
-a long autonomous run survives context compaction — track slice progress on the
-native task list, and keep the plan (mode, merge authorization, strategy, and
-each slice's cut point as it is cut) in a
-durable plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans` (resolve the
-path from the variable; never hardcode `~/.claude`).
-
-Where this session titled itself at intake, the approved scope is what that
-title settles on — `session-naming.md`'s second step.
+For anything multi-slice, **persist the plan and the captured authorizations** so a long
+autonomous run survives context compaction: slice progress on the native task list, and the plan
+— mode, merge authorization, strategy, and each slice's cut point as it is cut — in a durable
+plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, the path resolved from the variable
+and never hardcoded. Where this session titled itself at intake, the approved scope is what that
+title settles on (`session-naming.md`'s second step).
 
 ## Phase 2 — Autonomous execution
 
-Per slice, **in order** (slices run sequentially — they stack and depend on each
-other):
+Per slice, **in order** — slices stack and depend on each other:
 
-1. **Cut the slice branch from the current tip of its parent** (the feature
-   branch, or the base for a single slice) — not all up front, so a later slice
-   sees the ones below it and conflicts less. Where that parent is the base,
-   refresh it again here and take the cut point from `base-resolution.md`'s table
-   — Phase 0's fetch does not still hold. The feature branch is cut the same way,
-   once, before the first slice — and in `request` mode published then, since
-   the first slice's request targets it on the remote. **Before each later slice
-   is cut, bring the feature branch current** per `slice-completion.md`: from
-   the worktree that holds it, to its remote tip first, then the base merged in,
-   then pushed forward in `request` mode. Cut the slice under the name the gate
-   showed (`branch-naming.md`), and record its cut point in the plan-doc.
-2. **Develop the slice** — the normal coding work; `dependency-versions` and
-   `seeding-gitignore` apply exactly as they always do. What the work turns up
-   along the way goes through the test in
-   [`../../references/findings.md`](../../references/findings.md) as it
-   is noticed, here rather than at Phase 3 — what that test turns down still rides
-   the slice's `incidental` output onward to the Phase 3 report.
-3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the
-   completion signals as invocation prose: `mode`, `parent`, `diff-base` (the
-   commit this slice was cut from — only the orchestrator knows it),
-   `merge-strategy`, `merge-auth` with the addressee it names, and `issues` —
-   the ones this slice alone settles (`slice-completion.md`).
+1. **Cut the slice branch from the current tip of its parent** — the feature branch, or the base
+   for a single slice — not all up front, so a later slice sees the ones below it and conflicts
+   less. Where that parent is the base, refresh it again here and take the cut point from
+   `base-resolution.md`'s table: Phase 0's fetch does not still hold. The feature branch is cut
+   once, before the first slice, and in `request` mode published then, the first slice's request
+   targeting it on the remote; **before each later slice is cut, bring it current** per
+   [`../../references/feature-branch.md`](../../references/feature-branch.md). Cut the slice
+   under the name the gate showed, and record its cut point in the plan-doc.
+2. **Develop the slice** — the normal coding work; `dependency-versions` and `seeding-gitignore`
+   apply as always. What the work turns up goes through
+   [`../../references/findings.md`](../../references/findings.md) as it is noticed, here rather
+   than at Phase 3 — what that test turns down still rides the slice's `incidental` output onward.
+3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the completion signals as
+   invocation prose: `mode`, `parent`, `diff-base` (the commit this slice was cut from — only the
+   orchestrator knows it), `merge-strategy`, `merge-auth` with its addressee, and `issues`, the
+   ones this slice alone settles.
 
-**Autonomy is "no routine questions", not "never pauses".** The legitimate stops
-remain and are honored — this skill does not waive the downstream skills' own
-safety gates:
+**Autonomy is "no routine questions", not "never pauses".** The downstream skills' own gates are
+honored, not waived: an **actionable** coverage gap; a local merge into the **default** branch, or
+one that cannot be resolved as non-default; fix rounds ending with findings still open; CI that
+will not go green within the driver's budget; a Critical or Important finding needing a product
+decision; a genuinely-ambiguous merge strategy the gate did not settle; a git operation that
+would lose work on a shared branch; a genuinely-**unforeseen** architectural fork. Front-loading
+the gate keeps these rare.
 
-- an **actionable** coverage gap (Phase 1's non-waivable policy);
-- a local merge into the **default** branch — or one it cannot resolve as
-  non-default (`slice-completion.md`);
-- fix rounds that end with findings still open (`shipping-workflow`);
-- CI that will not go green within the driver's fix-iteration budget
-  (`github-pr-workflow`);
-- a Critical/Important finding that needs a product/design decision;
-- a genuinely-ambiguous merge strategy the gate did not settle;
-- a git operation that would lose work on a shared branch;
-- a genuinely-**unforeseen** architectural fork.
+On a slice **failure** — tests won't pass, a blocking finding, a conflict needing a real decision
+— **stop**, do **not** auto-revert the slices already completed, report the partial state, and
+skip the later slices that depended on it, saying so. A half-finished set is reported as
+half-finished, never packaged as whole.
 
-Front-loading the gate is what keeps these rare. On a slice **failure** (tests
-won't pass, a blocking finding, a conflict needing a real decision): **stop**, do
-**not** auto-revert the slices already completed, report the partial state, and if
-later slices depended on the failed one, skip them and say so. A half-finished set
-is reported as half-finished, never packaged as whole.
-
-**Finishing a multi-slice set.** Once the slices are done, the set still has to
-land as a whole — and this is where `local` and `request` diverge:
-
-- **`request`** — the per-slice change requests have stacked on the feature
-  branch; now open and drive the final `feature → base` change request through the
-  forge driver (`hcb-dev:github-pr-workflow` on GitHub), with the gate's
-  `merge-strategy` and `merge-auth`, addressee included, and the `issues` the
-  set settles, whose closing keywords its body carries. This is **completion,
-  not an offer** —
-  request mode was chosen, so the integration change request is driven like any
-  other, or the set's work is left stranded on the feature branch.
-- **`local`** — the slices are already merged into the feature branch, so there is
-  nothing left to drive; Phase 3 makes the whole-feature offer.
-
-A single-slice set has no feature branch and no integration step — the one slice
-completed straight onto the base in Phase 2.
+**Finishing a multi-slice set** is where the modes diverge. In `request` mode the per-slice
+requests have stacked on the feature branch, and the final `feature → base` request is opened and
+driven through the forge driver with the gate's `merge-strategy`, `merge-auth` and the `issues`
+the set settles: **completion, not an offer** — request mode was chosen, so it is driven like any
+other request or the set's work is stranded on the feature branch. In `local` mode the slices are
+already merged in, nothing is left to drive, and Phase 3 makes the whole-feature offer. A
+single-slice set has no feature branch and no integration step.
 
 ## Phase 3 — Report and offers
 
-- **The report** — [`../../references/report-format.md`](../../references/report-format.md):
-  its frame, and the final report's body under it — per-slice outcomes, review
-  coverage and what stayed uncovered, incidental findings rated by importance (or
-  an explicit "none").
-- **After a local set** — offer, never force, **one** whole-feature
-  `feature → base` change request on the feature branch. This is the consented
-  exit from local mode, and the offer is an ask: it stands in the report's block
-  rather than beside it.
-- **Issues output** — the incidental findings whose outcome is still the user's to
-  give, and the follow-ups, reach the user as proposals in the report's ask block,
-  per `findings.md`;
-  `hcb-dev:issue-tracking` owns the tracker operations their answer authorizes. In local mode no change request
-  closes the intake issue, so closing or linking it rides with that handoff or the
-  issue is left open against work that landed.
+- **The report** — [`../../references/report-format.md`](../../references/report-format.md): its
+  frame, and the final report's body under it.
+- **After a local set** — offer, never force, **one** whole-feature `feature → base` change
+  request. This is the consented exit from local mode, and being an ask it stands in the report's
+  block rather than beside it.
+- **Issues output** — the incidental findings whose outcome is still the user's, and the
+  follow-ups, reach them as proposals in that same block (`findings.md`), and
+  `hcb-dev:issue-tracking` owns what their answer authorizes. In local mode no change request
+  closes the intake issue: closing or linking it rides with that handoff, or the issue is left
+  open against work that landed.
 - **Cleanup** — a branch retires with the merge that landed it
-  ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)),
-  so what a run leaves is the worktrees, the older residue, and any local branch no
-  merge took or retirement kept standing: point at `/hcb-dev:git-cleanup` (it is
-  manual-only; suggest, don't run it).
+  ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)), so a run
+  leaves the worktrees, the older residue, and any local branch no merge took: point at
+  `/hcb-dev:git-cleanup` (manual-only — suggest, don't run it).
 
 ## After a restart or compaction
 
-The plan-doc and the task list are what survived, so they are read before
-anything rests on memory: the plan-doc for the gate's settlements — the slices,
-the mode, `merge-strategy`, `merge-auth` with its addressee, each slice's cut
-point — and the task list for which slice is in flight. Then the tree is read
-against them, and it outranks both: for each slice the plan names, the parent's
-own history says whether it landed — the merge or squash commit that took it —
-and in `request` mode so does its request (`gh pr list --head <slice> --state
-merged`); the slice in flight stands where its branch does — cut only,
-developed, or handed to `hcb-dev:shipping-workflow`, whose committed steps (the
-commit, the landing, committed fixes) are resumed past and whose review is run
-again: a coverage record that lived only in the lost context is no record, and
-the gate has nothing else to read. What the task list says and the tree does not
-confirm is unknown, not done. Where no plan-doc was kept — a single-slice run —
-the branch and the task list are the record: resume from what is committed and
-say what may have been lost. A title this session gave itself stands as it was.
+The plan-doc and the task list are what survived, so they are read before anything rests on
+memory: the plan-doc for the gate's settlements — slices, mode, `merge-strategy`, `merge-auth`
+with its addressee, each slice's cut point — and the task list for which slice is in flight. Then
+the tree is read against them, and it outranks both: for each slice the plan names, the parent's
+own history says whether it landed, and in `request` mode so does its request (`gh pr list --head
+<slice> --state merged`). The slice in flight stands where its branch does — cut, developed, or
+handed on, and `shipping-workflow`'s committed steps are resumed past while its review is run
+again, a coverage record that lived only in the lost context being no record. What the task list
+says and the tree does not confirm is unknown, not done. Where no plan-doc was kept, the branch
+and the task list are the record. A title this session gave itself stands as it was.
 
 ## Reference files
 
-- [`../../references/slice-completion.md`](../../references/slice-completion.md) —
-  read at Phase 0's Tier 0 call, and before Phase 2's first cut.
-- [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
-  — read before Phase 1.
-- [`../../references/report-format.md`](../../references/report-format.md) — the
-  Phase 3 report shape.
-- [`../../references/findings.md`](../../references/findings.md) — read
-  before Phase 2's development, and again before Phase 3's issues output.
-- [`../../references/issue-currency.md`](../../references/issue-currency.md) —
-  read at Phase 0, before anything is built on an issue.
-- [`../../references/base-resolution.md`](../../references/base-resolution.md) —
-  read before Phase 0's refresh and Phase 2's cut.
-- [`../../references/branch-naming.md`](../../references/branch-naming.md) — read
-  before Phase 1's branch layout and Phase 2's cut.
-- [`../../references/forge-docs.md`](../../references/forge-docs.md) — read before
-  reading a task out of an issue or writing any `gh` / `glab` invocation.
-- [`../../references/session-naming.md`](../../references/session-naming.md) —
-  read at Phase 0's intake, and again once Phase 1's scope is settled.
+| file | read it |
+|---|---|
+| [`../../references/invariants.md`](../../references/invariants.md) | once, before the first read of anything a tool, a forge or another session answers |
+| [`../../references/slice-completion.md`](../../references/slice-completion.md) | at Phase 0's Tier 0 call, and before Phase 2's first cut |
+| [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) | before Phase 1 |
+| [`../../references/issue-currency.md`](../../references/issue-currency.md) | at Phase 0, before anything is built on an issue |
+| [`../../references/base-resolution.md`](../../references/base-resolution.md) | before Phase 0's refresh and Phase 2's cut |
+| [`../../references/branch-naming.md`](../../references/branch-naming.md) | before Phase 1's layout and Phase 2's cut |
+| [`../../references/findings.md`](../../references/findings.md) | before Phase 2's development, and again before Phase 3's issues output |
+| [`../../references/report-format.md`](../../references/report-format.md) | the Phase 3 report shape |
+| [`../../references/session-naming.md`](../../references/session-naming.md) | at Phase 0's intake, and again once Phase 1's scope is settled |
+| [`../../references/forge-docs.md`](../../references/forge-docs.md) | before writing any `gh` / `glab` invocation this skill does not spell out |

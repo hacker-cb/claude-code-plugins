@@ -18,71 +18,69 @@ description: >-
 
 # Shipping workflow
 
-Finished work completes automatically. Do not ask for confirmation **about the
-steps below**; the coverage gate is the one exception in the shared front half,
-and local completion (step 7) adds its own, mode-specific: a stop before merging
-into the default branch, and the consent-gated post-merge offer. **Completing is
-not merging**, and the merge is gated separately: `merge-auth` decides it, and
-in `request` mode its default drives the change request to ready and waits there
-for the addressee — which is not this paragraph's confirmation, but the
-authorization the contract defines. Work counts as ready once the
-change is complete and verified — tests pass, or the behavior is confirmed — and
-the tree is committable.
+Read [`../../references/invariants.md`](../../references/invariants.md) first: the
+gate below, the fix rounds and the completion all turn on reading an answer for what
+it says.
 
-This skill runs either standalone (a bare "ship this" on finished work) or as the
-per-slice step `hcb-dev:implementation-workflow` calls. Either way it is a skill,
-not the host's workflow tool: a rule that limits workflows or subagents to what
-the user or a skill asks for is met by the invocation and by the skills this one
-calls, and skips nothing below. Steps 0–6 are identical in
-both **completion modes** — `local` (merge into the parent, no forge) and
-`request` (a change request) — because the mode is read only at step 7. When
-driven by the orchestrator, the caller threads the completion signals as
-invocation prose: `mode`, `parent`, `diff-base`, `issues`, `merge-strategy` and
-`merge-auth`.
-Standalone, they default — mode and
-`parent` by the ladders in
-[`../../references/slice-completion.md`](../../references/slice-completion.md),
-mode ending at `request`, and `merge-auth` off the same ladder, addressed to
-the user: a phrase asking to ship, finish or complete the work settles the
-mode and authorizes no merge, where one about the merge itself does. That
-reference owns the mechanics of completion; steps 0–6 below are the mode-blind
-front half. Entered on its own, this session also
-titles itself — the session, not the branch of step 0 — per
+Finished work completes automatically. Do not ask for confirmation **about the steps below**;
+the coverage gate is the one exception in the shared front half, and local completion (step 7)
+adds its own, mode-specific: a stop before merging into the default branch, and the
+consent-gated post-merge offer. **Completing is not merging** — `merge-auth` decides the merge,
+and in `request` mode its default drives the change request to ready and waits there for the
+addressee. Work counts as ready once the change is complete and verified — tests pass, or the
+behaviour is confirmed — and the tree is committable.
+
+This skill runs either standalone (a bare "ship this" on finished work) or as the per-slice step
+`hcb-dev:implementation-workflow` calls. Either way it is a skill, not the host's workflow tool:
+a rule limiting workflows or subagents to what the user or a skill asks for is met by the
+invocation and by the skills this one calls. Steps 0–6 are identical in both **completion
+modes** — `local` (merge into the parent, no forge) and `request` (a change request) — because
+the mode is read only at step 7. Driven by the orchestrator, the caller threads the completion
+signals as invocation prose: `mode`, `parent`, `diff-base`, `issues`, `merge-strategy` and
+`merge-auth`. Standalone they default, by the ladders in
+[`../../references/slice-completion.md`](../../references/slice-completion.md) — mode ending at
+`request`, and `merge-auth` off the same ladder addressed to the user: a phrase asking to ship,
+finish or complete the work settles the mode and authorizes no merge, where one about the merge
+itself does. Entered on its own, this session also titles itself — the session, not the branch
+of step 0 — per
 [`../../references/session-naming.md`](../../references/session-naming.md).
 
 0. **Normalize the branch name** — rename an auto-generated or placeholder name
    (a host session's `claude/…`, a `wip`) to the shape in
    [`../../references/branch-naming.md`](../../references/branch-naming.md),
-   **first and in both modes** — the local half of that reference only, since
-   nothing before step 7 writes to the network. Carry the name renamed away to
-   step 7 as `old-name` (`slice-completion.md`): what stands published under it
-   is read there, by whoever can reach the remote.
-1. **Refresh the base** — what this work is ranged against and lands on: the
-   threaded `diff-base` and `parent` where a caller handed them down, otherwise
-   what the ladder in
-   [`../../references/base-resolution.md`](../../references/base-resolution.md)
-   resolves. Fetch whichever of them a remote actually carries — an orchestrated
-   slice's `parent` is often a feature branch that exists nowhere else, and that
-   reference says what refreshing means for one. Fetch here, because the sweep below is already
-   a consumer of it and every step after that one is too. **Both modes** — what
-   local completion promises is that it writes to no network (`slice-completion.md`),
-   and a read leaves that promise intact.
+   **first and in both modes**. Without `--publish` the call below writes to no
+   network and asks no forge, which is what lets it run here:
+
+   ```bash
+   NEW="<the name from branch-naming.md>"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-publish.mjs" --new "$NEW"
+   ```
+
+   Read `branch.ships`, not `$NEW`: a second worktree standing on this branch refuses the
+   rename, and so does a worktree listing that could not be read. Carry the name renamed away to
+   step 7 as `old-name` — what stands published under it is read there, by whoever can reach the
+   remote.
+1. **Refresh the base** — what this work is ranged against and lands on: the threaded
+   `diff-base` and `parent` where a caller handed them down, otherwise what the ladder in
+   [`../../references/base-resolution.md`](../../references/base-resolution.md) resolves. Fetch
+   whichever of them a remote actually carries — an orchestrated slice's `parent` is often a
+   feature branch that exists nowhere else. Fetch **here**, since the sweep below is already a
+   consumer of it and every later step is too. **Both modes**: what local completion promises is
+   that it writes to no network, and a read leaves that promise intact.
 2. **Commit the change first**, new files included — a reviewer handed a commit
    range reads only committed work, and only the one reading the working tree
    directly is exempt, so a review launched over a dirty tree covers less than the
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect the range-fed reviewers to come back short.
 
-   **Sweep what the change orphaned.** Take every path the branch deletes or
-   renames — the whole range and not only this commit, with step 1's `diff-base`:
-   `git diff --name-status <diff-base>...HEAD`, plus what is not committed —
-   `git diff --name-status --cached` and `git diff --name-status`, two calls
-   because one against `HEAD` collapses a rename staged and then renamed again —
-   and search the worktree for each old name.
-   Search every file type, not the ones you edited: what stays behind otherwise is
-   the citation in a config comment, the sentence in the docs, the stale header
-   inside the renamed file. Vendored trees are out, and so is any other worktree's
-   checkout — those are someone else's tree, not yours to edit.
+   **Sweep what the change orphaned.** Take every path the branch deletes or renames — the whole
+   range and not only this commit, with step 1's `diff-base`: `git diff --name-status
+   <diff-base>...HEAD`, plus what is not committed (`git diff --name-status --cached` and `git
+   diff --name-status`, two calls because one against `HEAD` collapses a rename staged and then
+   renamed again) — and search the worktree for each old name. Search every file type, not the
+   ones you edited: what stays behind otherwise is the citation in a config comment, the
+   sentence in the docs, the stale header inside the renamed file. Vendored trees are out, and
+   so is any other worktree's checkout.
 
    Rule on each hit before touching it: a migration path, a compatibility alias, a
    test asserting the old name and a changelog entry are all still true. A tracked
@@ -100,8 +98,9 @@ titles itself — the session, not the branch of step 0 — per
    the slice sits on whatever that branch is behind by. **Both modes** — the write
    is local, and publishing a rewritten history is step 7's driver's.
 
-   Rebase by default; merge where `slice-completion.md` puts this branch in one
-   of its merge-never-rebase cases, and where that cannot be read, ask.
+   Rebase by default; merge where
+   [`../../references/feature-branch.md`](../../references/feature-branch.md) puts this branch
+   in one of its merge-never-rebase cases, and where that cannot be read, ask.
 
    Landing re-cuts the slice, so `diff-base` moves to the tip landed on
    (`slice-completion.md`); step 4 gets the moved value.
@@ -163,8 +162,9 @@ titles itself — the session, not the branch of step 0 — per
    under the line. Step 7's driver then loops again against a reviewer of its
    own, on a budget of its own; neither is drawn from the other.
 6. **Check the coverage** — the gate below, over the last round there was.
-7. **Complete the slice by mode** — hand off to the completion contract in
-   `slice-completion.md`, which owns every mechanic of both backends. `local`
+7. **Complete the slice by mode** — the contract is `slice-completion.md`'s and the mechanics
+   are
+   [`../../references/completion-backends.md`](../../references/completion-backends.md)'s. `local`
    merges the slice into its `parent` with git alone, no forge and no network
    write;
    `request` hands to the forge's change-request driver
@@ -175,28 +175,25 @@ titles itself — the session, not the branch of step 0 — per
 
 ## The coverage gate
 
-The review reports what each reviewer actually covered, with the coverage status
-already classified. Two of those statuses reach you closed: `n/a`, a deliberate
-skip with a stated reason, and `partial (structural)`, a limit of the reviewer
-itself that no answer from the user could lift. Say both out loud every time;
+The review reports what each reviewer actually covered, the status already classified. Two reach
+you closed: `n/a`, a deliberate skip with a stated reason, and `partial (structural)`, a limit of
+the reviewer itself that no answer from the user could lift. Say both out loud every time;
 neither stops the ship. Everything else is an **actionable** gap.
 
-With no gaps, go straight to completion; no confirmation needed. **With an
-actionable gap, stop before completing.** Report it, pass on whatever the review
-says would close it, and complete only once the user says to. This holds in
-**both modes**: a *local* merge with a reviewer silently missing is just as
-unreviewed as a change request would be — the gate is mode-blind because the
-danger is. When `implementation-workflow` drives the run autonomously, this stop
-is one of its legitimate interrupts, not something the autonomy waives.
+With no gaps, go straight to completion, no confirmation needed. **With an actionable gap, stop
+before completing**: report it, pass on whatever the review says would close it, and complete
+only once the user says to. This holds in **both modes** — a *local* merge with a reviewer
+silently missing is as unreviewed as a change request would be, the gate being mode-blind because
+the danger is. Under `implementation-workflow`'s autonomous run this stop is one of its
+legitimate interrupts, not something the autonomy waives.
 
-Every stop this skill takes — this gate, fix rounds that end with findings still
-open, step 7's default-branch merge, several remotes with none preferred — carries
-your recommended option **first**, per
-[`../../references/architecture-decisions.md`](../../references/architecture-decisions.md).
+Every stop this skill takes — this gate, fix rounds ending with findings still open, step 7's
+default-branch merge, several remotes with none preferred — carries your recommended option
+**first**
+([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 
-A project's own rules outrank this one: where the repository says to commit
-straight to a branch, or not to commit until asked, or not to open change requests
-at all, follow that and say which step you are skipping and why. Where such a rule
-fights what the work actually needs, flag it and go on following it
-(`architecture-decisions.md` §3) — except where it blocks correct work outright:
-a rule forbidding the commit a required fix needs leaves nothing to complete.
+A project's own rules outrank this one: where the repository says to commit straight to a branch,
+or not to commit until asked, or not to open change requests at all, follow that and say which
+step you are skipping and why. Where such a rule fights what the work needs, flag it and go on
+following it (§3 there) — except where it blocks correct work outright: a rule forbidding the
+commit a required fix needs leaves nothing to complete.

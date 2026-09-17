@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+if [ "$1 $2" = "auth status" ]; then
+  case "$(ask '.auth')" in
+    gh|none) echo "not logged in" >&2; exit 1 ;;
+    *) echo "logged in"; exit 0 ;;
+  esac
+fi
+
+if [ "$1" = "api" ]; then
+  # The host a call went to is a boundary the suite asserts: a run that dropped the flag would
+  # read an unrelated repository of the same name on the SaaS and look correct doing it.
+  host="" prev=""
+  for a in "$@"; do [ "$prev" = "--hostname" ] && { host=$a; break; }; prev=$a; done
+  want=$(ask '.want_host')
+  [ "$want" = "$host" ] || { echo "that call went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+
+  # The run's own identity, which is a different question from whether a repository answers.
+  # Each forge names the field itself — `login` here, `username` on the other — and the stub
+  # answers with ONE of them, so a script reading the wrong field reads nothing.
+  is_user=0
+  for a in "$@"; do [ "$a" = user ] && is_user=1; done
+  if [ "$is_user" = 1 ]; then
+    v=$(ask '.me')
+    case "$v" in
+      ""|yes) echo '{"username":"example-user-00000001"}'; exit 0 ;;
+      # A repository's own token and an App installation token both get 403 from this call.
+      silent) echo "$(basename "$0"): Resource not accessible (HTTP 403)" >&2; exit 1 ;;
+      notjson) echo 'not json at all'; exit 0 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac
+  fi
+
+  # The path, so a case can assert WHICH repository and issue were asked for.
+  path=""
+  for a in "$@"; do case "$a" in repos/*|projects/*) path=$a ;; esac; done
+  case "$path" in
+    */issues/*) ;;
+    *) v=$(ask '.probe_glab')
+       case "$v" in
+         ""|yes) echo '{"full_name":"team/app"}'; exit 0 ;;
+         *) echo "no such repository here" >&2; exit 1 ;;
+       esac ;;
+  esac
+
+  want_path=$(ask '.want_path')
+  if [ -n "$want_path" ]; then
+    [ "$path" = "$want_path" ] || { echo "asked for '$path', not '$want_path'" >&2; exit 1; }
+  fi
+
+
+  # `--paginate` is what walks the feed to its end; a run that dropped it would read page one
+  # and call it the list.
+  case " $* " in *" --paginate "*) ;; *) echo "the feed was read unpaginated" >&2; exit 1 ;; esac
+
+  v=$(ask '.comments')
+  case "$v" in
+    ""|silent) echo "could not read the comment feed" >&2; exit 1 ;;
+    notfound) echo "$(basename "$0"): Not Found (HTTP 404)" >&2; exit 1 ;;
+    # A paginated walk prints the pages it DID get before dying on a later one, and an epic
+    # discussing a forge's 404s carries those words in a comment body.
+    halfway) printf '%s\n' '[{"id":1,"body":"the forge answered 404 Not Found here"}]'
+             echo "$(basename "$0"): Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+    noproject) echo "$(basename "$0"): 404 Project Not Found (HTTP 404)" >&2; exit 1 ;;
+    *) printf '%s\n' "$v"; exit 0 ;;
+  esac
+fi
+echo "unplanned glab call: $*" >&2; exit 1

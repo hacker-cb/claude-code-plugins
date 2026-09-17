@@ -1,0 +1,4 @@
+A DIRECTORY wearing a record's name. `readFileSync` answers EISDIR, which is the parse
+failure this case needs without putting an unparseable `.json` in the tree — the fixture
+gate reads every one of those to clear it of private data, and a file it cannot read is a
+file it cannot clear.

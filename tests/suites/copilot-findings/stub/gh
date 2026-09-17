@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+answer() {
+  case "$1" in
+    ""|silent) echo "could not read that feed" >&2; exit 1 ;;
+    *) printf '%s\n' "$1"; exit 0 ;;
+  esac
+}
+# The host a call went to is a boundary the suite has to be able to assert: a run that
+# dropped it would read an unrelated repository of the same name on the SaaS and look
+# correct doing it. Checked as "the host this case WANTED", so an absent flag fails too.
+host="" prev=""
+for a in "$@"; do [ "$prev" = "--hostname" ] && { host=$a; break; }; prev=$a; done
+want=$(ask '.want_host')
+guard() { [ "$want" = "$host" ] || { echo "that call went to '${host:-the default host}', not '$want'" >&2; exit 1; }; }
+
+if [ "$1 $2" = "pr view" ]; then answer "$(ask '.pr_view')"; fi
+if [ "$1" = "api" ]; then
+  # Scanned rather than positional: `--hostname <host>` sits between `api` and the path.
+  for a in "$@"; do
+    [ "$a" = "user" ] || continue
+    v=$(ask '.me'); [ -z "$v" ] && v=example-author
+    case "$v" in silent) echo "could not read the authenticated user" >&2; exit 1 ;; esac
+    printf '%s\n' "$v"; exit 0
+  done
+fi
+if [ "$1" = "api" ]; then
+  for a in "$@"; do
+    case "$a" in
+      graphql)
+        guard
+        # A second page is asked for by cursor, and answering the first again is how a
+        # walk that never ends looks from in here.
+        case " $* " in *" -f after="*) after=1 ;; *) after=0 ;; esac
+        case " $* " in
+          *" -f owner="*) ;;
+          *) echo "owner reached the query typed: a repository named 2048 becomes an integer and String! refuses it" >&2; exit 1 ;;
+        esac
+        case " $* " in
+          *" -f repo="*) ;;
+          *) echo "repo reached the query typed, and String! refuses an integer" >&2; exit 1 ;;
+        esac
+        if [ "$after" = 1 ]; then answer "$(ask '.threads_2')"; else answer "$(ask '.threads')"; fi ;;
+      */reviews)   guard; answer "$(ask '.reviews')" ;;
+    esac
+  done
+fi
+echo "stub gh: no envelope answer for: $*" >&2; exit 3

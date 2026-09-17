@@ -110,15 +110,34 @@ closes as its slice lands on its parent branch. The issue the whole set settles
 closes with the change request that integrates the set
 ([`../../references/slice-completion.md`](../../references/slice-completion.md)),
 never with the last slice to land. A follow-up the
-work raised is opened in the same effort, on the answer that authorizes any
-tracker write (`../../references/findings.md`).
+work raised is opened in the same effort, on the answer below.
+
+## Only the authorized answer writes to the tracker
+
+The answer is the user's, and where this session works to an order — one written by another
+session, whatever carried it here — whoever that order names **for writing to the tracker**; an
+addressee named for its forks is not that, and an order naming none leaves the user. Opening or
+updating anything waits for it, every time. **A standing instruction to work autonomously is not
+that answer** — it authorizes the work, not the tracker — and an approval covers the batch it
+was given for, never what turns up afterwards.
+
+**The answer takes the form the person gives it**, and three forms answer: agreement with what
+was recommended; a bar — "file the important ones" — settling every candidate of that pass which
+clears this file's bar once re-measured, anything beyond them being a new candidate, proposed
+rather than filed; and a delegation of the ruling.
+
+What no form of it moves is the **target** and the **outcome**. Content the re-measure corrected
+is written, with the correction named in the report; a changed target or outcome — narrowed to
+closed, **INTO** to **OPEN**, one issue to another — waits for a new answer, except under a
+delegation, the one form that carries it. An answer by numbers that passes over one leaves that
+one unanswered: ask again rather than filling it in.
 
 ## Reference files
 
 - [`../../references/classification.md`](../../references/classification.md) — read
   it before applying anything to an issue, and before proposing one.
 - [`../../references/findings.md`](../../references/findings.md) — read
-  it before proposing an out-of-scope finding, and to see who authorizes a
-  tracker write.
+  it before proposing an out-of-scope finding: it owns the rating, the scope test
+  and the outcome each one ends in.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

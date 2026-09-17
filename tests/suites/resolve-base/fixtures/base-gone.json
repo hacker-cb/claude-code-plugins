@@ -1,0 +1,7 @@
+{
+ "remotes": "origin\nupstream",
+ "branch": "feat/example-export",
+ "base_present": "yes",
+ "want_base": "dev",
+ "ls_remote_default": "missing"
+}

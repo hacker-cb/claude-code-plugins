@@ -1,0 +1,8 @@
+{
+ "pid": 999999,
+ "cwd": "/tmp/example-checkout/.claude/worktrees/example-slice-a1b2c3",
+ "kind": "interactive",
+ "entrypoint": "example-client",
+ "name": "example-session",
+ "startedAt": 1767225600000
+}
