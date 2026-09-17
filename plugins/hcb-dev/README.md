@@ -335,8 +335,9 @@ session's context — a skill invokes one and reads its answer.
 - [`scripts/copilot-findings.mjs`](scripts/copilot-findings.mjs) — what that reviewer
   actually said on one request, in both of the places it says it, and what is still owed.
   A finding that opened no thread is held by no gate and counted by nothing, so reading
-  one half is half a review and this says which half it got. A body in a layout it does
-  not recognise is read rather than passed over, and named.
+  one half is half a review and this says which half it got. Every body goes over whole
+  for reading, with what it carries counted as a check on that reading, never as a gate
+  before it.
 - [`scripts/retire-check.mjs`](scripts/retire-check.mjs) — is this branch safe to retire,
   and on which side. The local half and the published half fail separately and are
   answered separately; it reads and judges, and deletes nothing.

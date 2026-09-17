@@ -47,6 +47,15 @@ or a **comment beside the line of code that acts on it**. What stays in the proc
 link and the step, never the explanation — a distinction re-explained wherever it applies is
 how one rule becomes fourteen paragraphs that drift apart.
 
+## What a script answers, and what the agent reads
+
+A script answers what a forge's structure says where a slip is silent — which commit a review
+covers, which feed carries a request, whose word is last in a thread, whether a listing ended —
+and its suite holds every trap once it is found. The **meaning** of prose a tool hands back — a
+review body, a finding, a log — is the agent's to read, whole. A script may count what that prose
+carries, as a checksum the reading is held to; it never decides whether the prose is read, since
+a pattern over a layout nobody published is the reading that goes quiet the day the layout moves.
+
 ## A reference owns what it covers
 
 Never restate a shared reference beside the link to it. Where a paragraph both

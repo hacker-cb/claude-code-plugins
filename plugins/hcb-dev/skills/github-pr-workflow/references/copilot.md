@@ -146,4 +146,4 @@ request reached the later commits** — no rule in force, none that reviews push
 wait recorded at its cutoff, a removal included; **the ceiling reached**, and the addressee's
 word to merge past it; **a review still outstanding**, which `latestMove` tells and which after a
 merge is the late review Step 7 goes back for; or **a login this does not take for Copilot**, as
-a note named it. A body that came back `unrecognised` (`copilot-findings.md`) is named there too.
+a note named it. Every body `copilot-findings.md` tells the report to name goes on that line too.

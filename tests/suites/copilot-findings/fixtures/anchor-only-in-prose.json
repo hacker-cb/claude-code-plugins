@@ -2,5 +2,5 @@
  "want_host": "forge.example",
  "pr_view": "{\"url\":\"https://forge.example/example-org/example-repo/pull/7\",\"headRefOid\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
  "threads": "{\"data\":{\"repository\":{\"pullRequest\":{\"reviewThreads\":{\"pageInfo\":{\"hasNextPage\":false},\"nodes\":[]}}}}}",
- "reviews": "[{\"submitted_at\":\"2026-09-16T10:00:00Z\",\"commit_id\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"COMMENTED\",\"body\":\"### Review\\n\\nThe guard in `docs/suppressed.md` reads the review body and counts what it finds.\",\"user\":{\"login\":\"copilot-pull-request-reviewer[bot]\",\"type\":\"Bot\"}}]"
+ "reviews": "[{\"submitted_at\":\"2026-09-16T10:00:00Z\",\"commit_id\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"COMMENTED\",\"body\":\"### Review\\n\\nThe guard reads the suppressed block of a review and counts what it finds.\",\"user\":{\"login\":\"copilot-pull-request-reviewer[bot]\",\"type\":\"Bot\"}}]"
 }

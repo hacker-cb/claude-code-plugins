@@ -241,7 +241,7 @@ if (!answer.repo) {
 // run as often as plain text, and the forge may reword either of them.
 //
 // A TAG, and one that cannot cross a line. `<[^>]*>` is not "a tag" but "from any `<` to
-// the next `>`", so a `<` in ordinary prose — `stops when \`i < len\`` — deletes everything
+// the next `>`", so a `<` in ordinary prose — `stops when i < len` — deletes everything
 // up to the next `>` anywhere below, the block this is looking for included. Measured: the
 // count then comes back `null` with nothing marking it unknown.
 const plain = (s) => String(s ?? '')
@@ -252,8 +252,8 @@ const plain = (s) => String(s ?? '')
 //
 // `null` and not `0` where there is no match at all: a body carrying no such block and a
 // block reporting none are different readings, taking different next steps. `null` again
-// where there are SEVERAL — which of them is the block cannot be told from here, and the
-// unknown resolves toward reading the body rather than toward skipping it.
+// where there are SEVERAL — which of them is the block cannot be told from here, and a count
+// that cannot be pinned is one the reading of the body has nothing to be checked against.
 const countIn = (body, re) => {
   const all = [...plain(body).matchAll(re)];
   if (all.length === 0) return { n: null, ambiguous: false };
@@ -288,12 +288,21 @@ const FINDINGS = /^\*\*[^*\n]+:\d+(?:-\d+)?\*\*/gm;
 // three-character line, and take everything between them — findings included — out of the body.
 const unfenced = (s) => String(s ?? '')
   .replace(/^ {0,3}((`|~)\2{2,})(?!\2)[^\n]*\n[\s\S]*?^ {0,3}\1\2*[ \t]*$/gm, '');
+// And code spans with them, fences first so a fence's own backticks are gone by then: a
+// finding's prose names what it is about in backticks as readily as in a fence, and a review
+// of THIS file names these very labels inside its sentences — each one a second match that
+// leaves the real count unpinned. A span closes on a run of exactly its own length, and crosses
+// a line break but never a blank line: a paragraph is as far as CommonMark lets one reach, and a
+// span held to one line leaves a label split across two standing as a count nobody wrote.
+// `(?<!`)` opens a span only at the start of a run: a search free to start one character in
+// takes the tail of a longer run for an opener of its own, and pairs it with a later line.
+const uncoded = (s) => unfenced(s).replace(/(?<!`)(`+)(?!`)(?:(?!\n[ \t]*\r?\n)[\s\S])*?(?<!`)\1(?!`)/g, ' ');
 // The review's own `body` field as the feed sent it. An empty string is a review that said
 // nothing; a field that is not a string at all is the feed no longer carrying what this reads.
 const unrecognisedIn = (body, sup) => {
   if (typeof body !== 'string') return 'it carries no body at all — the field this reads was not there';
   if (body.trim() === '') return null;
-  const rest = unfenced(body);
+  const rest = uncoded(body);
   const flat = plain(rest);
   if (!ANCHORS.some((re) => re.test(flat))) {
     return 'it carries none of the labels this reads, so the layout may have moved';
@@ -346,9 +355,13 @@ if (!reviews.ok) {
         }
         const body = typeof r?.body === 'string' ? r.body : '';
         const commit = typeof r?.commit_id === 'string' ? r.commit_id : null;
-        const sup = countIn(body, /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
-        const opened = countIn(body, /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
+        const prose = uncoded(body);
+        const sup = countIn(prose, /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
+        const opened = countIn(prose, /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
         const unrecognised = unrecognisedIn(r?.body, sup);
+        // The block's label standing with no number reachable. `null` alone says there is no
+        // such block — the one reading a checksum would then hold the body to, and a false one.
+        const uncounted = sup.n === null && !sup.ambiguous && /suppressed/i.test(plain(prose));
         answer.bodies.items.push({
           at: text(r?.submitted_at), commit, state: text(r?.state),
           // Every review that posted is read, whichever commit it covers: the head handed
@@ -358,26 +371,29 @@ if (!reviews.ok) {
           // The body's first line and nothing more — where the assessment sits when the
           // review carries one, and a pointer to the body rather than a substitute for it.
           opening: text((body.split('\n')[0] || '').replace(/^#+ */, '').replace(/\s+$/, '')),
-          // The body itself, because the decision below is to READ one: telling a caller
-          // to open something and handing it a first line is telling it to classify a
-          // finding by the heading above it.
+          // The body itself, because the body is what gets READ — every one the pull request's
+          // conversation is silent about, whatever the counts beside it say. Handing a caller
+          // a first line is telling it to classify a finding by the heading above it.
           body: whole(body), truncated: clipped(body),
+          // The block's own count: what a reading of the body is checked against, and never
+          // whether the body is read — a pattern over a layout nobody published is exactly
+          // the reading that goes quiet when the layout moves.
           suppressed: sup.n,
           // What the review OPENED, which is a count of threads and never of findings: a
           // review whose findings all went to the suppressed block opened none, so zero
           // here is that class's signature rather than evidence against it.
           opened: opened.n,
-          ambiguous: sup.ambiguous || opened.ambiguous,
+          ambiguous: sup.ambiguous || opened.ambiguous || uncounted,
           // What of this body the layout above could not account for, and `null` where all
           // of it was. Not null is a layout that may have moved, never a body with nothing
-          // in it — so it turns `readBody` on, and says why.
+          // in it: the report names the review, and a count pinned beside it still checks the
+          // reading — a finding outside the block is exactly a reading the count comes up short of.
           unrecognised,
-          // The decision, made here rather than left as an inference a reader re-derives:
-          // a block with findings in it, or a count that could not be pinned at all — the
-          // label standing in the body with no number reachable being one such, since a
-          // block that is there and unreadable is not a body with nothing in it.
-          readBody: sup.ambiguous || opened.ambiguous || (sup.n !== null && sup.n > 0)
-            || (sup.n === null && /suppressed/i.test(body)) || unrecognised !== null,
+          // Kept for one release after the reading moved to the agent, and `true` on every body:
+          // the plugin updates under a running session, and one still holding the reference that
+          // routed on this field then reads every body — what the reading now asks — instead of
+          // taking a field gone missing for "do not read". It decides nothing; the next major drops it.
+          readBody: true,
         });
       }
     }
@@ -385,7 +401,7 @@ if (!reviews.ok) {
     const unknown = answer.bodies.items.filter((b) => b.unrecognised !== null).length;
     if (unknown > 0) {
       answer.notes.push(`${unknown} review ${unknown === 1 ? 'body' : 'bodies'} came in a layout`
-        + ' this does not recognise — each is marked readBody, and its `unrecognised` says why');
+        + ' this does not recognise — each is named in the report, and its `unrecognised` says why');
     }
   }
 }

@@ -2,5 +2,5 @@
  "want_host": "forge.example",
  "pr_view": "{\"url\":\"https://forge.example/example-org/example-repo/pull/7\",\"headRefOid\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
  "threads": "{\"data\":{\"repository\":{\"pullRequest\":{\"reviewThreads\":{\"pageInfo\":{\"hasNextPage\":false},\"nodes\":[]}}}}}",
- "reviews": "[{\"submitted_at\":\"2026-09-16T10:00:00Z\",\"commit_id\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"COMMENTED\",\"user\":{\"login\":\"copilot-pull-request-reviewer[bot]\",\"type\":\"Bot\"},\"body\":\"### Review\\r\\n\\r\\n### Suppressed comments (0)\\r\\n\\r\\n```\\r\\n### Notes (3)\\r\\n```\\r\\n\\r\\n- **Files reviewed:** 2/2 changed files\\r\\n- **Comments generated:** 0 new\\r\\n- **Review effort level:** Lite\"}]"
+ "reviews": "[{\"submitted_at\":\"2026-09-16T10:00:00Z\",\"commit_id\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"COMMENTED\",\"user\":{\"login\":\"copilot-pull-request-reviewer[bot]\",\"type\":\"Bot\"},\"body\":\"### Review\\r\\n\\r\\n### Suppressed comments (0)\\r\\n\\r\\n```\\r\\n\\r\\n### Notes (3)\\r\\n```\\r\\n\\r\\n- **Files reviewed:** 2/2 changed files\\r\\n- **Comments generated:** 0 new\\r\\n- **Review effort level:** Lite\"}]"
 }
