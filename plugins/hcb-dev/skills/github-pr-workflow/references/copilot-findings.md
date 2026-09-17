@@ -30,10 +30,9 @@ ours, and every thread stays owed for the life of the run.
 | `threads.items[]` | one per review thread: `resolved`, `outdated`, `resolvedBy`, `byReviewer`, the `path` and `line`, and each comment with the `id` a reply is posted to |
 | `threads.items[].answered` | whether a comment of **ours** follows the reviewer's LAST word. Anyone at all can reply in a thread, so a reply is ours by identity and an answer by position; `othersSpoke` beside it is a third party having attended to the thread, which is not an answer to the finding. `null` where that thread's own comments paginated, which owes exactly as much as no answer does |
 | `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head`, `opening` and the `body` itself |
-| `bodies.items[].readBody` | **the decision**: this body has findings in it that opened no thread, a count that could not be pinned — a block standing there with no number reachable being one such — or a layout this does not recognise. Everything else is `false` |
-| `bodies.items[].suppressed` | the findings that opened no thread. **`null` is "no such block", never zero** — and `null` beside `ambiguous` is a count the body's own file list answered for, which resolves toward reading rather than skipping |
+| `bodies.items[].suppressed` | the block's own count of the findings that opened no thread, taken with the body's quoted code left out — **the checksum a reading is held to**: the thread-less findings you classify from the body number exactly this, and where they do not, the body is read again. **`null` is "no such block", never zero**, and `null` beside `ambiguous` is a count that could not be pinned — a reading with nothing to check it against, never a body to skip |
 | `bodies.items[].opened` | what the review OPENED, a count of threads and never of findings: a review whose findings all went to the suppressed block opened none, so zero there is that class's signature rather than evidence against it. It holds whatever the verdict says — an approving review carries a suppressed block as readily as a declining one |
-| `bodies.items[].unrecognised` | what of the body this could not account for — none of the labels it reads, a counted block it has no name for, findings outside any block it read — and `null` where it accounted for all of it. Not `null` is a layout that may have moved ([`../../../references/invariants.md`](../../../references/invariants.md), *An unrecognised shape is not an empty one*): read the body whole and classify its findings by what they say, and the report names the review (`copilot.md`) |
+| `bodies.items[].unrecognised` | what of the body this could not account for — none of the labels it reads, a counted block it has no name for, findings outside any block it read — and `null` where it accounted for all of it. Not `null` is a layout that may have moved ([`../../../references/invariants.md`](../../../references/invariants.md), *An unrecognised shape is not an empty one*): its count checks nothing, and the report names the review (`copilot.md`) |
 | `open[]` | every thread still owed something, each carrying the `why` that says which state it is in |
 | `notes[]` | what the answer says beyond its fields. One naming a bot this does not take for Copilot is read before `open` is believed: where that bot is Copilot under a new login, its threads and its body are owed as this reviewer's are, and nothing here counted them |
 
@@ -42,12 +41,17 @@ resolve — it ends in the fix, and is named, fixed or turned down with its reas
 request's conversation, which is where the reply protocol below would otherwise have put it. A `truncated`
 flag beside a body or a comment says the text was clipped; nothing else is lossy.
 
-**`readBody` is a property of the body, not of the round.** Every review this reviewer ever
-posted is in the answer, so a body settled three pushes ago still carries its findings and still
-asks to be read. What settles one is the pull request's conversation, which this does not read:
-**a body whose findings the conversation already names was read in an earlier round**, and
-re-classifying it posts the same answers again every iteration. Read the ones the conversation
-is silent about.
+**Every body this reviewer posted that the pull request's conversation is silent about is read
+whole**, whatever the fields beside it say: they count what a body carries and never decide
+whether it is read. Every review this reviewer ever posted is in the answer, so a body settled
+three pushes ago still carries its findings. What settles one is the conversation, which this
+does not read: **a body whose findings the conversation already names was read in an earlier
+round**, and re-classifying it posts the same answers again every iteration.
+
+**A body also says what it did not review.** The files it skipped are files nobody reviewed:
+read them against the change, and name in the report every one that is code this change writes.
+A review that reviewed no file at all leaves the head unreviewed by this reviewer — the stop
+`copilot.md` takes where a wait runs out, never the exit.
 
 ## Classifying, fixing, replying
 
