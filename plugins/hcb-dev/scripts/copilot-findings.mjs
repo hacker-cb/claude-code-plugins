@@ -274,10 +274,13 @@ const ANCHORS = [/suppressed/i, /files reviewed/i, /comments generated/i,
 const SECTIONS = new Set(['suppressed comments', 'files not reviewed',
   'comments suppressed due to low confidence']);
 // A finding's own heading, which no measured body carried outside the block it belongs in.
-const FINDING = /^\*\*[^*\s]+:\d+(?:-\d+)?\*\*/m;
+// A path is a name somebody chose, and it may carry a space.
+const FINDING = /^\*\*[^*\n]+:\d+(?:-\d+)?\*\*/m;
 // Fences out first: a finding quotes the file it is about, and a quoted README brings
-// headings of its own.
-const unfenced = (s) => String(s ?? '').replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$/gm, '');
+// headings of its own. CommonMark's fence, not a stricter one: indented up to three
+// spaces, and closed by a run of the same character at least as long as the one opening it.
+const unfenced = (s) => String(s ?? '')
+  .replace(/^ {0,3}((`|~)\2{2,})[^\n]*\n[\s\S]*?^ {0,3}\1\2*[ \t]*$/gm, '');
 const unrecognisedIn = (body, sup) => {
   if (body.trim() === '') return null;
   const rest = unfenced(body);

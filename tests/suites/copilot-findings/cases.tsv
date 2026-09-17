@@ -54,3 +54,6 @@ files-not-reviewed-known	--pr 7	0	"unrecognised": null|"readBody": false	the oth
 degraded-overview-known	--pr 7	0	"unrecognised": null|"readBody": false	the layout a degraded run posts carries neither the labels nor the counts, and it is still a layout this knows
 other-bot-thread	--pr 7	0	bots this does not take for Copilot spoke on this request|example-review-bot[bot]|"open": []	a thread opened by a bot this does not take for Copilot is counted nowhere, so it is named rather than dropped
 other-bot-review	--pr 7	0	bots this does not take for Copilot spoke on this request|example-review-bot[bot]|"items": []	and a review by one leaves no body behind, which is what the reviewer under a new login looks like from in here
+finding-path-with-a-space	--pr 7	0	lists findings outside any block this reads|"readBody": true	a path is a name somebody chose, and a finding about one carrying a space is still a finding outside any block
+longer-closing-fence	--pr 7	0	lists findings outside any block this reads|"readBody": true	a fence closed by a longer run is closed there; pairing it with the next fence instead cuts away the finding standing between them
+indented-fence	--pr 7	0	"suppressed": 1|"unrecognised": null|NOT:has no name for	a fence indented up to three spaces is a fence, and a heading inside it is quoted text rather than a block of this review
