@@ -283,12 +283,15 @@ const FINDINGS = /^\*\*[^*\n]+:\d+(?:-\d+)?\*\*/gm;
 // Fences out first: a finding quotes the file it is about, and a quoted README brings
 // headings of its own. CommonMark's fence, not a stricter one: indented up to three
 // spaces, and closed by a run of the same character at least as long as the one opening it.
-// `(?!\2)` holds the opening run whole: allowed to give a character back, a four-character
-// opener with no closer of its own matches as three and pairs with the next three-character
-// line, taking everything between them — findings included — out of the body.
+// `(?!\2)` holds the opening run whole. Without it the run could give a character back, and a
+// four-character opener with no closer of its own would match as three, pair with the next
+// three-character line, and take everything between them — findings included — out of the body.
 const unfenced = (s) => String(s ?? '')
   .replace(/^ {0,3}((`|~)\2{2,})(?!\2)[^\n]*\n[\s\S]*?^ {0,3}\1\2*[ \t]*$/gm, '');
+// The review's own `body` field as the feed sent it. An empty string is a review that said
+// nothing; a field that is not a string at all is the feed no longer carrying what this reads.
 const unrecognisedIn = (body, sup) => {
+  if (typeof body !== 'string') return 'it carries no body at all — the field this reads was not there';
   if (body.trim() === '') return null;
   const rest = unfenced(body);
   const flat = plain(rest);
@@ -300,7 +303,10 @@ const unrecognisedIn = (body, sup) => {
   // — a heading, a bold run, or neither, all of which flatten to the same line.
   const counted = [...rest.matchAll(/<summary>(.*?)\(\d+\)\s*<\/summary>/gi)].map((m) => m[1]);
   for (const line of flat.split('\n')) {
-    const m = /^\s*([A-Za-z][A-Za-z ']{1,59}?)\s*\(\d+\)\s*$/.exec(line);
+    // A name somebody at the forge will choose next: letters in any script, digits, and the
+    // punctuation a label carries — `Low-confidence comments` among them — but no brackets or
+    // operators, which is what keeps a quoted line of code from reading as a block.
+    const m = /^\s*(\p{L}[\p{L}\p{N} '’.:\/-]{1,59}?)\s*\(\d+\)\s*$/u.exec(line);
     if (m) counted.push(m[1]);
   }
   for (const name of counted) {
@@ -342,7 +348,7 @@ if (!reviews.ok) {
         const commit = typeof r?.commit_id === 'string' ? r.commit_id : null;
         const sup = countIn(body, /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
         const opened = countIn(body, /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
-        const unrecognised = unrecognisedIn(body, sup);
+        const unrecognised = unrecognisedIn(r?.body, sup);
         answer.bodies.items.push({
           at: text(r?.submitted_at), commit, state: text(r?.state),
           // Every review that posted is read, whichever commit it covers: the head handed
