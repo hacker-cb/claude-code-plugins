@@ -22,8 +22,8 @@ node <plugin root>/scripts/platform-status.mjs --feed <url>
 |---|---|---|
 | `0` | the named component is up — or, with none named, nothing is down and nothing is open | resume the parked step |
 | `3` | degraded: a component down, an incident open, or maintenance running | wait and ask again |
-| `4` | the feed was not reached — no answer, a timeout, or any HTTP status outside 2xx | wait and ask again. **Unread is not operational**, and a loop reading it as one resumes into the outage |
-| `2` | a call it cannot answer — a 2xx body that is not a feed, a document in neither shape it reads, a component name matching none or several | **stop.** Each of these answers the same however long anyone waits |
+| `4` | the feed was not reached — no answer, a timeout, a 5xx, or the two 4xx that say *not now* (408, 429) | wait and ask again. **Unread is not operational**, and a loop reading it as one resumes into the outage |
+| `2` | a call it cannot answer — any other status outside 2xx (a 404, a 403, a redirect it does not follow), a 2xx body that is not a feed, a document in neither shape it reads, one carrying no components or missing the incidents beside them, a component name matching none or several | **stop.** Each of these answers the same however long anyone waits |
 
 **`--feed` carries the whole url and has no default.** Which url that is per forge is
 [`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md) —
@@ -35,6 +35,12 @@ them. A host written into the plugin would be identifying a forge by its hostnam
 health lives wherever its operator publishes it. Where nothing publishes it there is no
 url to pass: say the failure could not be attributed and put the wait to the user, rather
 than reading a verdict off the failure's shape.
+
+**Nothing found is not nothing wrong.** The script says `operational` only where the
+document carried everything it judges by — the components, the incidents, the maintenance
+beside them. A feed missing one of those (Statuspage's `components.json` is the measured
+case) stops instead, because every component reading up says nothing about an incident
+that document never carried.
 
 **A name resolving to two components resolves to neither.** The script refuses instead of
 taking the first, and `--component-id` is what settles it: a tie broken silently parks the
@@ -52,9 +58,10 @@ COMPONENT="<the component, spelled as the feed spells it>"
 while :; do
   node "<plugin root>/scripts/platform-status.mjs" --feed "$FEED" --component "$COMPONENT"
   code=$?
-  [ "$code" = 0 ] && break
-  [ "$code" = 2 ] && { echo "the feed cannot answer this — read what it printed"; exit 1; }
-  sleep 1800
+  # Only 3 and 4 wait. Anything else stops — a `node` that could not find the script
+  # exits 1, and a loop calling that a wait sleeps forever on a wrong path.
+  case "$code" in 0) break ;; 3|4) sleep 1800 ;;
+    *) echo "platform-status exited $code — read what it printed"; exit 1 ;; esac
 done
 echo "$COMPONENT is back — resume the parked step"
 ```

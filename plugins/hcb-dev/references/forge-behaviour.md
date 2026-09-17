@@ -78,10 +78,16 @@ written into the plugin would be identifying a forge by its hostname.
 | GitLab's | **not Statuspage.** Measured 2026-09-17: `status.gitlab.com` serves a status.io page, and `/api/v2/summary.json` under it answers **404**. The document is `https://api.status.io/1.0/status/5b36dc6502d06804c08349f7`, shaped `result.status[]` with `result.incidents[]` and `result.maintenance.active[]` beside it | — |
 | status.io's own "up" | a **numeric** `status_code`, where `100` is operational. The `status` string beside it is what the page renders — measured `Operational` on every component of one instance — and it is not the value to compare: a feed wording it differently reads as down | a document carrying no `status_code`, where the string is all there is |
 | a Statuspage base url with no document under it | **200 and an HTML page**, not a 404. Measured on `https://www.githubstatus.com/api/v2` | — |
+| Statuspage's `components.json` | the components and **neither** the incidents nor the maintenances. Every component can read `operational` there while an incident is open, so the document says nothing about one | — |
 
-That last row is why a successful answer that is not JSON is a **stop** rather than a
-retry: the typo answers 200 forever, and a loop that treats every non-feed body as "ask
-again later" never ends. A status outside 2xx is the opposite case and does retry.
+The 200-with-HTML row is why a successful answer that is not a feed is a **stop** rather
+than a retry: the typo answers 200 forever, and a loop treating every non-feed body as
+"ask again later" never ends. The `components.json` row is the same failure one step in —
+a document that IS JSON, in the right shape, and still cannot say the platform is up.
+
+Outside 2xx the split is by what waiting could change: a 5xx, a 408 and a 429 retry;
+every other 4xx and every 3xx stops, since the document is not there, not ours to read,
+or behind a redirect this deliberately does not follow.
 
 ## What is not here
 

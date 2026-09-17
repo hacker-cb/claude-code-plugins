@@ -22,7 +22,15 @@ statusio-no-code	-	0	"shape": "status.io"|"verdict": "operational"	no numeric co
 statusio-code-over-wording	--component Website	0	"verdict": "operational"|"status": "Fully Operational"|"up": true	the code and the string disagree: 100 says up while the wording is not the literal "operational". A reader comparing the string parks a caller on a component that is fine
 statusio-wording-lies	-	3	"verdict": "degraded"|1 component(s) not operational|"status": "Operational"	and the other way round — the string reads Operational over code 500. The string is what a page renders; the code is the value
 statusio-maintenance	-	3	Storage migration|1 maintenance(s) in progress	status.io keeps running work under `maintenance.active`, which is a different field from Statuspage and the same answer
-http-404	-	4	"verdict": "unread"|HTTP 404|"read": false	a status the feed did not answer with 2xx is UNREAD — never operational, which is the one reading that resumes a run into an outage
+http-404	-	2	"verdict": "unresolved"|waiting cannot change that|HTTP 404	measured: a Statuspage path under the wrong host answers 404 forever. Waiting on it is a detached job sleeping on a typo until somebody notices
+http-301	-	2	HTTP 301|waiting cannot change that	a redirect this deliberately does not follow is not an outage — it answers the same every half hour
+http-403	-	2	HTTP 403|waiting cannot change that	not ours to read is a url or a token to fix, not a platform to wait for
+http-429	-	4	HTTP 429|"verdict": "unread"	the two 4xx that DO say "not now" keep the retry — this one and 408, and nothing else
+http-408	-	4	HTTP 408|"verdict": "unread"	the other one: a timeout the server itself reports is the same answer as one curl reports
+components-only	-	2	no incidents|no scheduled_maintenances|"verdict": "unresolved"	Statuspage's components.json carries the components and neither of the other two. A missing array is not an empty one, so every component reading operational still says nothing about an open incident
+components-empty	-	2	no components|"verdict": "unresolved"	a document carrying no component at all cannot say the platform is up — nothing was looked at
+statusio-code-only	-	3	1 component(s) not operational|"verdict": "degraded"	a status.io row with a code and no display string is a row this CAN rule on: selecting by the string dropped it, and unnamed mode answered 0 where --component answered 3
+incident-many-components	-	3	"truncated": true|Everything is slow	one incident naming every component a forge has is the array the cap did not reach — it emptied the whole response into a reader under a truncated that read false
 http-503	-	4	HTTP 503|"verdict": "unread"	the outage taking the status page with it is exactly what the retry is for
 ok-but-html	-	2	"verdict": "unresolved"|HTTP 200 with something that is not JSON	measured on a url one segment short: the server answers 200 with HTML, and treating that as a retry sleeps on the typo forever
 ok-but-array	-	2	JSON that is not an object|"verdict": "unresolved"	a successful answer that parsed into a list is still not a feed, and waiting will not make it one

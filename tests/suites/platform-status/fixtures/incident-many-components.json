@@ -1,0 +1,122 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-api requests",
+    "name": "API Requests",
+    "status": "operational"
+   }
+  ],
+  "scheduled_maintenances": [],
+  "incidents": [
+   {
+    "id": "i1",
+    "name": "Everything is slow",
+    "status": "investigating",
+    "impact": "major",
+    "components": [
+     {
+      "id": "c0",
+      "name": "Component 00"
+     },
+     {
+      "id": "c1",
+      "name": "Component 01"
+     },
+     {
+      "id": "c2",
+      "name": "Component 02"
+     },
+     {
+      "id": "c3",
+      "name": "Component 03"
+     },
+     {
+      "id": "c4",
+      "name": "Component 04"
+     },
+     {
+      "id": "c5",
+      "name": "Component 05"
+     },
+     {
+      "id": "c6",
+      "name": "Component 06"
+     },
+     {
+      "id": "c7",
+      "name": "Component 07"
+     },
+     {
+      "id": "c8",
+      "name": "Component 08"
+     },
+     {
+      "id": "c9",
+      "name": "Component 09"
+     },
+     {
+      "id": "c10",
+      "name": "Component 10"
+     },
+     {
+      "id": "c11",
+      "name": "Component 11"
+     },
+     {
+      "id": "c12",
+      "name": "Component 12"
+     },
+     {
+      "id": "c13",
+      "name": "Component 13"
+     },
+     {
+      "id": "c14",
+      "name": "Component 14"
+     },
+     {
+      "id": "c15",
+      "name": "Component 15"
+     },
+     {
+      "id": "c16",
+      "name": "Component 16"
+     },
+     {
+      "id": "c17",
+      "name": "Component 17"
+     },
+     {
+      "id": "c18",
+      "name": "Component 18"
+     },
+     {
+      "id": "c19",
+      "name": "Component 19"
+     },
+     {
+      "id": "c20",
+      "name": "Component 20"
+     },
+     {
+      "id": "c21",
+      "name": "Component 21"
+     },
+     {
+      "id": "c22",
+      "name": "Component 22"
+     },
+     {
+      "id": "c23",
+      "name": "Component 23"
+     },
+     {
+      "id": "c24",
+      "name": "Component 24"
+     }
+    ]
+   }
+  ]
+ }
+}

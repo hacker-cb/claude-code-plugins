@@ -116,6 +116,15 @@ const cut = raw.lastIndexOf('\n');
 const code = Number(cut === -1 ? raw.trim() : raw.slice(cut + 1).trim());
 const body = cut === -1 ? '' : raw.slice(0, cut);
 if (!Number.isInteger(code) || code < 100) unread('curl reported no HTTP status');
+// Outside 2xx splits again. A 5xx is the outage this exists to wait out, and so are the
+// two 4xx that say "not now" — 408 and 429. Every other 4xx, and every 3xx, says
+// something waiting cannot change: the document is not there, or is not ours to read, or
+// sits behind a redirect this deliberately does not follow. Measured: a Statuspage path
+// under the wrong host answers 404 forever, and that is a url to fix, not an outage.
+const TRY_AGAIN = [408, 429];
+if (code >= 300 && code <= 499 && !TRY_AGAIN.includes(code)) {
+  stop(`${opts.feed} answered HTTP ${code} — waiting cannot change that; check the url`);
+}
 if (code < 200 || code > 299) unread(`the feed answered HTTP ${code}`);
 
 // From here the server answered SUCCESSFULLY, so what came back is what that url serves —
@@ -186,7 +195,10 @@ counts.incidents = incidentRows.length;
 answer.incidents = cap(incidentRows
   .map((i) => ({
     name: named(i), status: text(str(i.status)), impact: text(str(i.impact)),
-    components: arr(i.components).map((c) => (typeof c === 'string' ? text(c) : named(c))).filter(Boolean),
+    // Capped like every other list: one incident can name every component a forge has,
+    // and an uncapped nested array puts the whole response into a reader's context under
+    // a `truncated` that still reads false.
+    components: cap(arr(i.components).map((c) => (typeof c === 'string' ? text(c) : named(c))).filter(Boolean)),
   })));
 const maintenanceRows = answer.shape === 'statuspage'
   ? arr(doc.scheduled_maintenances).filter((m) => m && str(m.status) === 'in_progress')
@@ -231,10 +243,33 @@ if (opts.component !== null || opts.componentId !== null) {
 // --- everything, which is the attribution
 // A group row is a roll-up of the components under it, not a component anyone parks on,
 // and one with no status at all is a row this cannot rule on either way.
-const degradedRows = components.filter((c) => c && c.group !== true && str(c.status) && !isUp(c));
+// "Has something to judge" has to match what `isUp` actually judges by: a status.io row
+// carrying a numeric code and no display string is a row this CAN rule on, and dropping
+// it here made unnamed mode answer 0 where --component on the same row answered 3.
+const judgeable = (c) => str(c.status) !== null
+  || (answer.shape === 'status.io' && typeof c.status_code === 'number');
+const degradedRows = components.filter((c) => c && c.group !== true && judgeable(c) && !isUp(c));
 counts.degraded = degradedRows.length;
 answer.degraded = cap(degradedRows.map(row));
 if (!counts.degraded && !counts.incidents && !counts.maintenances) {
+  // Nothing found is only "nothing is wrong" where everything that could be wrong was
+  // actually looked at. A MISSING array is not an empty one — measured: Statuspage's
+  // `components.json` carries the components and neither the incidents nor the
+  // maintenances, so a reader taking absence for emptiness calls an active incident an
+  // operational platform. Strictness belongs to this verdict alone: a degradation already
+  // found stands whatever else the document lacks.
+  const missing = [];
+  if (!components.length) missing.push('no components');
+  if (answer.shape === 'statuspage') {
+    if (!Array.isArray(doc.incidents)) missing.push('no incidents');
+    if (!Array.isArray(doc.scheduled_maintenances)) missing.push('no scheduled_maintenances');
+  } else {
+    if (!Array.isArray(result.incidents)) missing.push('no incidents');
+    if (!Array.isArray(result.maintenance && result.maintenance.active)) missing.push('no maintenance.active');
+  }
+  if (missing.length) {
+    stop(`${opts.feed} carries ${missing.join(', ')} — nothing here says the platform is up; name the whole document`);
+  }
   answer.verdict = 'operational';
   finish(0);
 }
