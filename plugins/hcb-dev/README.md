@@ -346,9 +346,10 @@ session's context — a skill invokes one and reads its answer.
   where a request pins the name, the publish is unconditional, and a name comes off the
   remote only after the new one is up.
 - [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
-  stands on the epic issue, whether the next write fits under a cap that announces itself
-  only by refusing one, and whether the archives beside it and the index naming them
-  agree. It reads: what may be archived out of a ledger is a judgement about content.
+  stands on the epic issue, whether the next write fits under the cap — in bytes, whatever
+  unit the forge's own refusal names — and whether the archives beside it and the index
+  naming them agree. It reads: what may be archived out of a ledger is a judgement about
+  content.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".

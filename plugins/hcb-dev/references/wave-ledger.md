@@ -19,17 +19,17 @@ the two are not copies.
 
 ```text
 node <plugin root>/scripts/ledger.mjs --issue <n> [--repo <owner/name>] [--forge gh|glab]
-  [--host <host>] [--body-file <path>] [--limit <n>] [--me <login>]
+  [--host <host>] [--body-file <path>] [--limit <bytes>] [--me <login>]
 ```
 
 | field | what it settles |
 |---|---|
 | `read` | the comment feed answered. `false` is unread, never "no ledger there" |
-| `ledger.found` / `.id` / `.nodeId` / `.chars` / `.mine` | whether one is open, which comment it is — `id` for a REST edit, `nodeId` for GraphQL — how large it stands, and whose it is: `mine` is three-valued, and `null` is *not attributable* rather than somebody else's |
+| `ledger.found` / `.id` / `.nodeId` / `.bytes` / `.mine` | whether one is open, which comment it is — `id` for a REST edit, `nodeId` for GraphQL — how large it stands, and whose it is: `mine` is three-valued, and `null` is *not attributable* rather than somebody else's |
 | `ledger.ambiguous` | **two comments carry the marker** — a coordinate resolving to two states resolves to neither, whoever wrote them |
 | `archives[]` | one row per `<!-- wave-journal-<n> -->` comment, with its own size |
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
-| `write.fits` / `.headroom` | whether a body handed in `--body-file` fits under the cap, and by how much |
+| `write.fits` / `.headroom` | whether a body handed in `--body-file` fits under the cap, and by how many bytes — every size here is judged in `bytes`, and `chars` / `utf16` only travel beside it |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
 | `reason` | why nothing could be answered — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), or **both forges answering for this repository**, which a mirror makes ordinary and `--forge` settles |
 
@@ -47,13 +47,13 @@ would drop the older ledger. An archive nothing indexes is the same fault, repai
 
 ## Archiving — what leaves, and in what order
 
-**The write is measured before it is made.** The cap announces itself by refusing a write
-([`forge-behaviour.md`](forge-behaviour.md) carries the number measured and says GitLab's is
-unmeasured), so `write.fits` is read first and the refusal stays the backstop rather than the
-mechanism — and **a refusal that arrives anyway is answered in the same step**, not reported: the
-oldest archivable block moves out and the entry is written again, as many times over as it takes
-to fit, on whichever comment refused. All of it is bookkeeping and not a decision: it needs no
-permission, and it is reported in one line once done rather than announced while it is coming.
+**The write is measured before it is made**, in UTF-8 bytes against the cap
+[`forge-behaviour.md`](forge-behaviour.md) carries — which also says how the cap's own refusal is
+told from transport — so `write.fits` is read first and the refusal stays the backstop rather than
+the mechanism. **A refusal by the cap that arrives anyway is answered in the same step**, not
+reported: the oldest archivable block moves out and the entry is written again, as many times over
+as it takes to fit, on whichever comment refused. All of it is bookkeeping and not a decision: it
+needs no permission, and it is reported in one line once done rather than announced while coming.
 
 **What may leave, in this order**: the journal while it is still inline, and after that a closed
 wave — one whose batches have all ended, with anything they left standing accounted for outside
@@ -70,9 +70,9 @@ journal section lists every archive in order, in those markers, and new journal 
 the most recent journal archive — never into a closed wave's snapshot, which is written once and
 left. **Two writes, and they are ordered**: the archive comment first, the ledger's own edit
 second, so an interruption leaves an archive nothing points at — which `index.unlisted` catches
-— rather than an index naming one that was never written. A refused write to the archive taking
-new entries opens the next archive and writes there instead: moving anything out of the ledger
-would not free a byte of the comment that refused.
+— rather than an index naming one that was never written. The cap refusing a write to the archive
+taking new entries opens the next archive and writes there instead: moving anything out of the
+ledger would not free a byte of the comment that refused.
 
 ## What it holds
 
