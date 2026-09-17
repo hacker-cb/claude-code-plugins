@@ -1,0 +1,15 @@
+{
+ "want_timeout": "4",
+ "want_connect": "4",
+ "doc": {
+  "components": [
+   {
+    "id": "c1",
+    "name": "API",
+    "status": "operational"
+   }
+  ],
+  "incidents": [],
+  "scheduled_maintenances": []
+ }
+}

@@ -62,6 +62,8 @@ curl-silent	--feed https://status.example.test/api/v2/summary.json	4	no detail|"
 no-status-line	--feed https://status.example.test/api/v2/summary.json	4	curl reported no HTTP status|"verdict": "unread"	the trailer is read rather than trusted: a body arriving without one says curl answered nothing usable
 -	--feed https://status.example.test/api/v2/summary.json --component A --component-id B	2	name one of	two ways to name one component, and no rule for which wins — refused before anything is fetched
 -	--feed https://status.example.test/api/v2/summary.json --timeout abc	2	not a whole number	a timeout that is not a number would reach curl as text and be taken for a flag
+timeout-honoured	--feed https://status.example.test/api/v2/summary.json --timeout 90	0	"verdict": "operational"	a valid --timeout reaches curl: nothing in any answer shows it, so only the stub can hold it — and a regression that silently ignored the option would otherwise leave the suite green
+timeout-below-the-floor	--feed https://status.example.test/api/v2/summary.json --timeout 4	0	"verdict": "operational"	and under the ten-second connect floor the two values collapse to one: a connect timeout longer than the whole transfer is a wait that outlives what it waits for
 -	--feed file:///etc/passwd	2	is not http(s)	the url reaches curl, which would happily read a local path — so what a feed may be is settled here
 -	--feed https://u:p@status.example.test/x	2	carries credentials	a status feed is public everywhere it exists; one carrying a password is a mistake to say out loud rather than forward
 -	--feed notaurl	2	is not a url	a bare word is not a feed, and the failure belongs at the argument rather than three layers down

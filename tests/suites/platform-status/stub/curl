@@ -28,6 +28,19 @@ case "$(ask '.curl')" in
   flood) head -c 9000000 /dev/zero | tr '\0' 'a'; exit 0 ;;
 esac
 
+# The timeouts, when a case pins them: `--timeout` is a public option whose only visible
+# effect is on this invocation, so nothing in any answer could hold it.
+want_timeout=$(ask '.want_timeout')
+if [ -n "$want_timeout" ]; then
+  prev=""; got_max=""; got_conn=""
+  for a; do
+    case "$prev" in --max-time) got_max=$a ;; --connect-timeout) got_conn=$a ;; esac
+    prev=$a
+  done
+  want_conn=$(ask '.want_connect')
+  [ "$got_max" = "$want_timeout" ] && [ "$got_conn" = "$want_conn" ]     || { echo "stub curl: timeouts were '$got_conn'/'$got_max', wanted '$want_conn'/'$want_timeout'" >&2; exit 9; }
+fi
+
 # A url curl itself refuses, before any request is made.
 case "$(ask '.curl')" in malformed) echo "curl: (3) URL rejected: Malformed input" >&2; exit 3 ;; esac
 
