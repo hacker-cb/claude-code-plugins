@@ -265,22 +265,29 @@ const countIn = (body, re) => {
 // not one with nothing in it but a layout that may have moved: it is READ, with the reason
 // said, rather than passing as nothing to find.
 //
-// The word the thread-less block goes under, the labels every review of the current layout
-// carries, and the sentence a degraded run writes in their place.
-const ANCHORS = [/suppressed/i, /files reviewed/i, /comments generated/i,
-  /review effort level/i, /reviewed \d+ out of \d+ changed files/i];
+// The block the thread-less findings go under, the labels every review of the current layout
+// carries, and the sentence a degraded run writes in their place — each anchored on the value
+// beside it rather than on its words alone, since a review of THIS file quotes every one of
+// them as prose, and a layout recognised by a quotation of itself is recognised by nothing.
+const ANCHORS = [/suppressed[^(\n]{0,40}\(\d+\)/i, /files reviewed:?\s*\d+\s*\/\s*\d+/i,
+  /comments generated:?\s*\d+/i, /review effort level:?\s*[A-Za-z]/i,
+  /reviewed \d+ out of \d+ changed files/i];
 // Each block that carries a count, by its name. A counted block under any other name is
 // one this does not read, and findings in it would open no thread and reach no count.
 const SECTIONS = new Set(['suppressed comments', 'files not reviewed',
   'comments suppressed due to low confidence']);
 // A finding's own heading, which no measured body carried outside the block it belongs in.
-// A path is a name somebody chose, and it may carry a space.
-const FINDING = /^\*\*[^*\n]+:\d+(?:-\d+)?\*\*/m;
+// A path is a name somebody chose, and it may carry a space. Counted rather than tested for,
+// since what settles the question is how many of them stand against the block that was read.
+const FINDINGS = /^\*\*[^*\n]+:\d+(?:-\d+)?\*\*/gm;
 // Fences out first: a finding quotes the file it is about, and a quoted README brings
 // headings of its own. CommonMark's fence, not a stricter one: indented up to three
 // spaces, and closed by a run of the same character at least as long as the one opening it.
+// `(?!\2)` holds the opening run whole: allowed to give a character back, a four-character
+// opener with no closer of its own matches as three and pairs with the next three-character
+// line, taking everything between them — findings included — out of the body.
 const unfenced = (s) => String(s ?? '')
-  .replace(/^ {0,3}((`|~)\2{2,})[^\n]*\n[\s\S]*?^ {0,3}\1\2*[ \t]*$/gm, '');
+  .replace(/^ {0,3}((`|~)\2{2,})(?!\2)[^\n]*\n[\s\S]*?^ {0,3}\1\2*[ \t]*$/gm, '');
 const unrecognisedIn = (body, sup) => {
   if (body.trim() === '') return null;
   const rest = unfenced(body);
@@ -288,15 +295,25 @@ const unrecognisedIn = (body, sup) => {
   if (!ANCHORS.some((re) => re.test(flat))) {
     return 'it carries none of the labels this reads, so the layout may have moved';
   }
-  for (const m of rest.matchAll(/^#{1,6}[ \t]+(.+?)[ \t]*\(\d+\)[ \t]*$|<summary>(.*?)\(\d+\)\s*<\/summary>/gim)) {
-    const name = plain(m[1] ?? m[2]).replace(/\s+/g, ' ').trim().toLowerCase();
-    if (!SECTIONS.has(name)) {
-      return `it counts a block this has no name for ("${text(name)}"), which may hold findings`
+  // Two readings, because a counted block arrives two ways: inside a `<summary>`, which the
+  // flattening below would leave standing beside the text after it, and as a line of its own
+  // — a heading, a bold run, or neither, all of which flatten to the same line.
+  const counted = [...rest.matchAll(/<summary>(.*?)\(\d+\)\s*<\/summary>/gi)].map((m) => m[1]);
+  for (const line of flat.split('\n')) {
+    const m = /^\s*([A-Za-z][A-Za-z ']{1,59}?)\s*\(\d+\)\s*$/.exec(line);
+    if (m) counted.push(m[1]);
+  }
+  for (const name of counted) {
+    const label = plain(name).replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!SECTIONS.has(label)) {
+      return `it counts a block this has no name for ("${text(label)}"), which may hold findings`
         + ' no thread opened';
     }
   }
-  // Only where no block was read: inside one, these lines are that block's findings.
-  if (FINDING.test(rest) && !sup.ambiguous && !(sup.n > 0)) {
+  // Against the block that WAS read, never against whether one was: a body carrying more
+  // findings than the block counts has the rest of them standing outside every block this
+  // could read, which is the same silence as a block it could not read at all.
+  if (!sup.ambiguous && [...rest.matchAll(FINDINGS)].length > (sup.n ?? 0)) {
     return 'it lists findings outside any block this reads';
   }
   return null;
