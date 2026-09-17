@@ -1,0 +1,6 @@
+{
+ "want_host": "forge.example",
+ "pr_view": "{\"url\":\"https://forge.example/example-org/example-repo/pull/7\",\"headRefOid\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
+ "threads": "{\"data\":{\"repository\":{\"pullRequest\":{\"reviewThreads\":{\"pageInfo\":{\"hasNextPage\":false},\"nodes\":[]}}}}}",
+ "reviews": "[{\"submitted_at\":\"2026-09-16T10:00:00Z\",\"commit_id\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"COMMENTED\",\"body\":\"## Pull Request Overview\\n\\n| File | Description |\\n| docs/deprecations suppressed (0).md | wording |\\n\\nSuppressed comments (4)\\n\\n**src/example.ts:12**\\n* the config is read before it is validated\\n\\nComments generated: 1\",\"user\":{\"login\":\"copilot-pull-request-reviewer[bot]\",\"type\":\"Bot\"}}]"
+}

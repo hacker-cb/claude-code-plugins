@@ -165,6 +165,12 @@ export const isCopilot = (who) => {
   return type === 'Bot' && /^copilot/i.test(login);
 };
 
+// A bot the pair above does not take for Copilot. Nothing is decided on it: it is what a
+// reader is TOLD, because the reviewer answering under a login the pair no longer matches
+// looks, from inside every filter here, exactly like the reviewer not being there at all.
+export const otherBot = (who) => Boolean(who) && typeof who === 'object'
+  && who.type === 'Bot' && !isCopilot(who);
+
 // Another process wrote it, so it is quoted rather than repeated: a string, with the
 // control characters that would end a line or a record taken out, and bounded — a value
 // of any length or shape would otherwise travel into a reader's context whole.

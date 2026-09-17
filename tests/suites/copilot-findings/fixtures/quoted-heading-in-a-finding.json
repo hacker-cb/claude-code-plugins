@@ -1,0 +1,6 @@
+{
+ "want_host": "forge.example",
+ "pr_view": "{\"url\":\"https://forge.example/example-org/example-repo/pull/7\",\"headRefOid\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
+ "threads": "{\"data\":{\"repository\":{\"pullRequest\":{\"reviewThreads\":{\"pageInfo\":{\"hasNextPage\":false},\"nodes\":[]}}}}}",
+ "reviews": "[{\"submitted_at\":\"2026-09-16T10:00:00Z\",\"commit_id\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"COMMENTED\",\"body\":\"### Review\\n\\n### Suppressed comments (1)\\n\\n**docs/example.md:3**\\n* the heading below counts entries in prose\\n\\n```\\n### Notes (3)\\n```\\n\\n- **Files reviewed:** 2/2 changed files\\n- **Comments generated:** 0 new\\n- **Review effort level:** Lite\",\"user\":{\"login\":\"copilot-pull-request-reviewer[bot]\",\"type\":\"Bot\"}}]"
+}

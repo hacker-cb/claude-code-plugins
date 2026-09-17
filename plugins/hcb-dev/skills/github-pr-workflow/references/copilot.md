@@ -91,6 +91,7 @@ is nothing to wait for — `verdict: not-expected` says exactly that.
 
 | `verdict` | the step |
 |---|---|
+| any but `reviewed` and `waiting`, with a note naming a bot this does not take for Copilot | **read before the verdict's own row**: that bot reviewed the head. Copilot under a new login makes the head reviewed — take its findings by hand, since neither script counted them, and say so in the report; any other reviewer leaves the verdict's own row standing |
 | `reviewed` | the head's own review is in hand — go to *Finding the findings* |
 | `waiting` | a request stands: wait, on the budget below |
 | `unrequested`, `expects.more: true` | no review of the head and nothing standing — the cutoff below decides whether that is final |
@@ -140,8 +141,9 @@ The end-of-session report gives Copilot one line among the gates: **the review o
 merged** and the `state` it carries — or, where that head has none, the commit the last review
 covered and why. `headReview` and `reviews` are both, and they survive the merge and the
 deletion of the branch, so the line is available after the merge as well as before it. No review
-of the head exists for one of three reasons, which take different steps, so report which: **no
+of the head exists for one of four reasons, which take different steps, so report which: **no
 request reached the later commits** — no rule in force, none that reviews pushes, or what the
 wait recorded at its cutoff, a removal included; **the ceiling reached**, and the addressee's
-word to merge past it; or **a review still outstanding**, which `latestMove` tells and which
-after a merge is the late review Step 7 goes back for.
+word to merge past it; **a review still outstanding**, which `latestMove` tells and which after a
+merge is the late review Step 7 goes back for; or **a login this does not take for Copilot**, as
+a note named it. A body that came back `unrecognised` (`copilot-findings.md`) is named there too.

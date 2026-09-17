@@ -15,7 +15,7 @@
 //
 // Exit 0 either way. Exit 2 only for a call this script cannot act on at all.
 
-import { dirOk, hostOk, isCopilot, parsePages, repoOk, runner, text, writeAll } from './lib/forge.mjs';
+import { dirOk, hostOk, isCopilot, otherBot, parsePages, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 // A finding's own words, kept whole. `text()` is for the short identity fields beside
 // them — a login, a state, a timestamp — and its 200 characters would take the rationale
@@ -76,6 +76,12 @@ const answer = {
 };
 const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const refuse = (reason) => { answer.reason = reason; finish(); };
+
+// Bots this does not take for Copilot, by login, wherever one spoke. Nothing they said is
+// counted below, which is the reason to name them rather than drop them: the reviewer
+// renamed again reads, from inside the filter, as a request no reviewer ever spoke on.
+const strangers = new Set();
+const noteStranger = (who) => { if (otherBot(who) && text(who.login)) strangers.add(text(who.login)); };
 
 // --- where the request lives
 const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid', ...repoArgs]);
@@ -189,6 +195,7 @@ if (!answer.repo) {
           path: whole(c?.path), line: typeof c?.line === 'number' ? c.line : null,
           body: whole(c?.body), truncated: clipped(c?.body),
         }));
+        for (const c of comments) noteStranger({ login: c?.author?.login, type: c?.author?.__typename });
         // The LAST thing the reviewer said, not the first. It answers our reply and closes
         // the thread often enough — "the fix is incomplete" — and anchoring to the first
         // leaves that follow-up answered by the reply it was written about.
@@ -253,6 +260,70 @@ const countIn = (body, re) => {
   if (all.length > 1) return { n: null, ambiguous: true };
   return { n: Number.parseInt(all[0][1], 10), ambiguous: false };
 };
+// What a body looks like when this knows it. GitHub publishes none of the layout, so every
+// name below is a measurement rather than a contract — and a body matching none of it is
+// not one with nothing in it but a layout that may have moved: it is READ, with the reason
+// said, rather than passing as nothing to find.
+//
+// The block the thread-less findings go under, the labels every review of the current layout
+// carries, and the sentence a degraded run writes in their place — each anchored on the value
+// beside it rather than on its words alone, since a review of THIS file quotes every one of
+// them as prose, and a layout recognised by a quotation of itself is recognised by nothing.
+const ANCHORS = [/suppressed[^(\n]{0,40}\(\d+\)/i, /files reviewed:?\s*\d+\s*\/\s*\d+/i,
+  /comments generated:?\s*\d+/i, /review effort level:?\s*[A-Za-z]/i,
+  /reviewed \d+ out of \d+ changed files/i];
+// Each block that carries a count, by its name. A counted block under any other name is
+// one this does not read, and findings in it would open no thread and reach no count.
+const SECTIONS = new Set(['suppressed comments', 'files not reviewed',
+  'comments suppressed due to low confidence']);
+// A finding's own heading, which no measured body carried outside the block it belongs in.
+// A path is a name somebody chose, and it may carry a space. Counted rather than tested for,
+// since what settles the question is how many of them stand against the block that was read.
+const FINDINGS = /^\*\*[^*\n]+:\d+(?:-\d+)?\*\*/gm;
+// Fences out first: a finding quotes the file it is about, and a quoted README brings
+// headings of its own. CommonMark's fence, not a stricter one: indented up to three
+// spaces, and closed by a run of the same character at least as long as the one opening it.
+// `(?!\2)` holds the opening run whole. Without it the run could give a character back, and a
+// four-character opener with no closer of its own would match as three, pair with the next
+// three-character line, and take everything between them — findings included — out of the body.
+const unfenced = (s) => String(s ?? '')
+  .replace(/^ {0,3}((`|~)\2{2,})(?!\2)[^\n]*\n[\s\S]*?^ {0,3}\1\2*[ \t]*$/gm, '');
+// The review's own `body` field as the feed sent it. An empty string is a review that said
+// nothing; a field that is not a string at all is the feed no longer carrying what this reads.
+const unrecognisedIn = (body, sup) => {
+  if (typeof body !== 'string') return 'it carries no body at all — the field this reads was not there';
+  if (body.trim() === '') return null;
+  const rest = unfenced(body);
+  const flat = plain(rest);
+  if (!ANCHORS.some((re) => re.test(flat))) {
+    return 'it carries none of the labels this reads, so the layout may have moved';
+  }
+  // Two readings, because a counted block arrives two ways: inside a `<summary>`, which the
+  // flattening below would leave standing beside the text after it, and as a line of its own
+  // — a heading, a bold run, or neither, all of which flatten to the same line.
+  const counted = [...rest.matchAll(/<summary>(.*?)\(\d+\)\s*<\/summary>/gi)].map((m) => m[1]);
+  for (const line of flat.split('\n')) {
+    // A name somebody at the forge will choose next: letters in any script, digits, and the
+    // punctuation a label carries — `Low-confidence comments` among them — but no brackets or
+    // operators, which is what keeps a quoted line of code from reading as a block.
+    const m = /^\s*(\p{L}[\p{L}\p{N} '’.:\/-]{1,59}?)\s*\(\d+\)\s*$/u.exec(line);
+    if (m) counted.push(m[1]);
+  }
+  for (const name of counted) {
+    const label = plain(name).replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!SECTIONS.has(label)) {
+      return `it counts a block this has no name for ("${text(label)}"), which may hold findings`
+        + ' no thread opened';
+    }
+  }
+  // Against the block that WAS read, never against whether one was: a body carrying more
+  // findings than the block counts has the rest of them standing outside every block this
+  // could read, which is the same silence as a block it could not read at all.
+  if (!sup.ambiguous && [...rest.matchAll(FINDINGS)].length > (sup.n ?? 0)) {
+    return 'it lists findings outside any block this reads';
+  }
+  return null;
+};
 // The placeholders where the url did not parse: `gh` fills them from the current
 // directory, which is the same repository `gh pr view` resolved a moment ago — so the two
 // halves still describe one request. Only the thread query is left out, GraphQL needing a
@@ -269,11 +340,15 @@ if (!reviews.ok) {
     for (const page of pages) {
       if (!Array.isArray(page)) { answer.bodies.reason = 'a page of reviews was not a list'; break; }
       for (const r of page) {
-        if (!isCopilot({ login: r?.user?.login, type: r?.user?.type })) continue;
+        if (!isCopilot({ login: r?.user?.login, type: r?.user?.type })) {
+          noteStranger({ login: r?.user?.login, type: r?.user?.type });
+          continue;
+        }
         const body = typeof r?.body === 'string' ? r.body : '';
         const commit = typeof r?.commit_id === 'string' ? r.commit_id : null;
         const sup = countIn(body, /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
         const opened = countIn(body, /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
+        const unrecognised = unrecognisedIn(r?.body, sup);
         answer.bodies.items.push({
           at: text(r?.submitted_at), commit, state: text(r?.state),
           // Every review that posted is read, whichever commit it covers: the head handed
@@ -293,16 +368,25 @@ if (!reviews.ok) {
           // here is that class's signature rather than evidence against it.
           opened: opened.n,
           ambiguous: sup.ambiguous || opened.ambiguous,
+          // What of this body the layout above could not account for, and `null` where all
+          // of it was. Not null is a layout that may have moved, never a body with nothing
+          // in it — so it turns `readBody` on, and says why.
+          unrecognised,
           // The decision, made here rather than left as an inference a reader re-derives:
           // a block with findings in it, or a count that could not be pinned at all — the
           // label standing in the body with no number reachable being one such, since a
           // block that is there and unreadable is not a body with nothing in it.
           readBody: sup.ambiguous || opened.ambiguous || (sup.n !== null && sup.n > 0)
-            || (sup.n === null && /suppressed/i.test(body)),
+            || (sup.n === null && /suppressed/i.test(body)) || unrecognised !== null,
         });
       }
     }
     if (answer.bodies.reason === null) answer.bodies.read = true;
+    const unknown = answer.bodies.items.filter((b) => b.unrecognised !== null).length;
+    if (unknown > 0) {
+      answer.notes.push(`${unknown} review ${unknown === 1 ? 'body' : 'bodies'} came in a layout`
+        + ' this does not recognise — each is marked readBody, and its `unrecognised` says why');
+    }
   }
 }
 
@@ -333,6 +417,11 @@ if (answer.threads.read) {
     }
     if (why) answer.open.push({ id: t.id, why });
   }
+}
+if (strangers.size > 0) {
+  answer.notes.push(`bots this does not take for Copilot spoke on this request (${[...strangers].join(', ')})`
+    + ' — nothing they said is counted here, and if one of them is Copilot under a new login,'
+    + ' neither are its findings');
 }
 // Set last, and only where BOTH halves answered: one of them read is half a review, and a
 // caller acting on half of it drops exactly the findings nothing else would catch.

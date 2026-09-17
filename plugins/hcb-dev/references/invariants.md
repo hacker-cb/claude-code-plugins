@@ -13,6 +13,11 @@ a skill names the invariant it is leaning on and goes on.
 - **Unread is not empty, and a failed call prints what an empty one prints.**
   Capture every read with its exit status rather than piping it onward; a
   non-zero exit is a third outcome that takes its own step.
+- **An unrecognised shape is not an empty one.** Where a reading rests on a layout
+  nobody published — a review body's blocks and counts, a bot's login — the markers
+  going missing say the layout may have moved, never that nothing was there. Lean
+  the reading toward what arrived, mark it unrecognised, and name it in the report;
+  the run goes on.
 - **A count is of the moment it was taken.** Whatever registers afterwards was
   not measured, so "none outstanding" is true only about that instant. Where a
   named aggregate exists, wait on it rather than on a count reaching zero.
