@@ -291,8 +291,10 @@ const unfenced = (s) => String(s ?? '')
 // And code spans with them, fences first so a fence's own backticks are gone by then: a
 // finding's prose names what it is about in backticks as readily as in a fence, and a review
 // of THIS file names these very labels inside its sentences — each one a second match that
-// leaves the real count unpinned. A span closes on a run of exactly its own length.
-const uncoded = (s) => unfenced(s).replace(/(`+)(?!`)[^\n]*?(?<!`)\1(?!`)/g, ' ');
+// leaves the real count unpinned. A span closes on a run of exactly its own length, and crosses
+// a line break but never a blank line: a paragraph is as far as CommonMark lets one reach, and a
+// span held to one line leaves a label split across two standing as a count nobody wrote.
+const uncoded = (s) => unfenced(s).replace(/(`+)(?!`)(?:(?!\n[ \t]*\r?\n)[\s\S])*?(?<!`)\1(?!`)/g, ' ');
 // The review's own `body` field as the feed sent it. An empty string is a review that said
 // nothing; a field that is not a string at all is the feed no longer carrying what this reads.
 const unrecognisedIn = (body, sup) => {
@@ -351,9 +353,13 @@ if (!reviews.ok) {
         }
         const body = typeof r?.body === 'string' ? r.body : '';
         const commit = typeof r?.commit_id === 'string' ? r.commit_id : null;
-        const sup = countIn(uncoded(body), /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
-        const opened = countIn(uncoded(body), /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
+        const prose = uncoded(body);
+        const sup = countIn(prose, /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
+        const opened = countIn(prose, /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
         const unrecognised = unrecognisedIn(r?.body, sup);
+        // The block's label standing with no number reachable. `null` alone says there is no
+        // such block — the one reading a checksum would then hold the body to, and a false one.
+        const uncounted = sup.n === null && !sup.ambiguous && /suppressed/i.test(prose);
         answer.bodies.items.push({
           at: text(r?.submitted_at), commit, state: text(r?.state),
           // Every review that posted is read, whichever commit it covers: the head handed
@@ -375,7 +381,7 @@ if (!reviews.ok) {
           // review whose findings all went to the suppressed block opened none, so zero
           // here is that class's signature rather than evidence against it.
           opened: opened.n,
-          ambiguous: sup.ambiguous || opened.ambiguous,
+          ambiguous: sup.ambiguous || opened.ambiguous || uncounted,
           // What of this body the layout above could not account for, and `null` where all
           // of it was. Not null is a layout that may have moved, never a body with nothing
           // in it: the report names the review, and its count checks nothing.

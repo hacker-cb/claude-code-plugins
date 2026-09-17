@@ -48,10 +48,11 @@ three pushes ago still carries its findings. What settles one is the conversatio
 does not read: **a body whose findings the conversation already names was read in an earlier
 round**, and re-classifying it posts the same answers again every iteration.
 
-**A body also says what it did not review.** The files it skipped are files nobody reviewed:
-read them against the change, and name in the report every one that is code this change writes.
-A review that reviewed no file at all leaves the head unreviewed by this reviewer — the stop
-`copilot.md` takes where a wait runs out, never the exit.
+**The head's review also says what it did not review** — the body whose `head` is `true`. The
+files it skipped are files nobody reviewed on the head: read them against the change, and name in
+the report every one that is code this change writes. Where it reviewed no file at all, the head
+is unreviewed by this reviewer — the stop `copilot.md` takes where a wait runs out, never the
+exit. A review of an earlier commit says neither about the head.
 
 ## Classifying, fixing, replying
 
