@@ -1,0 +1,31 @@
+{
+ "doc": {
+  "components": [
+   {
+    "id": "c-api",
+    "name": "API",
+    "status": "operational"
+   },
+   {
+    "id": "c-actions",
+    "name": "Actions",
+    "status": "operational"
+   }
+  ],
+  "scheduled_maintenances": [],
+  "incidents": [
+   {
+    "id": "i1",
+    "name": "Actions is flaky",
+    "status": "investigating",
+    "impact": "minor",
+    "components": [
+     {
+      "id": "c-actions",
+      "name": "Actions"
+     }
+    ]
+   }
+  ]
+ }
+}

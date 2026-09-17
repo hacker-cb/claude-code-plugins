@@ -118,9 +118,14 @@ const r = spawnSync('curl', [
   env: { ...process.env, LC_ALL: 'C', LANG: 'C', LC_MESSAGES: 'C' },
 });
 if (r.error && r.error.code === 'ENOENT') die('curl is not on PATH — nothing here can read a feed');
-// A body past what this reads, and a url curl itself refuses (exit 3), are both permanent:
-// the document does not shrink and the argument does not improve while anyone waits.
-if (r.error && r.error.code === 'ENOBUFS') stop(`${url.href} answered more than this reads`);
+// Everything else `spawnSync` itself reports is the command failing to RUN — a curl that
+// is not executable (EACCES), a body past what this reads (ENOBUFS) — and none of it
+// improves while anyone waits. The timeout is the one exception: that is the transfer,
+// which is exactly what an outage does to it.
+if (r.error && r.error.code !== 'ETIMEDOUT') {
+  stop(`curl could not run (${r.error.code || 'no code'}) — waiting cannot change that`);
+}
+// And a url curl refuses before making a request at all.
 if (r.status === 3) stop(`curl refused ${url.href} as malformed — waiting cannot change that`);
 const errLine = () => (r.stderr || '').trim().split('\n').filter(Boolean).pop() || 'no detail';
 if (r.status !== 0) unread(`the feed did not answer (${errLine()})`);
@@ -200,7 +205,9 @@ const groupOf = (c) => {
 // carrying a numeric code and no display string is a row this CAN rule on, while a row
 // with neither is one nothing here can. Both paths ask it — the aggregate to leave such a
 // row out, the named one to refuse rather than call it down.
-const judgeable = (c) => str(c.status) !== null
+// An EMPTY string is not a status: `str()` only says the field was a string at all, and a
+// row carrying `""` was being called degraded — `"<name> is "` — instead of unjudgeable.
+const judgeable = (c) => (str(c.status) || '') !== ''
   || (answer.shape === 'status.io' && typeof c.status_code === 'number');
 const row = (c) => ({
   id: text(str(c.id)), name: named(c), group: groupOf(c),
@@ -229,9 +236,13 @@ answer.incidents = cap(incidentRows
     // a `truncated` that still reads false.
     components: cap(arr(i.components).map((c) => (typeof c === 'string' ? text(c) : named(c))).filter(Boolean)),
   })));
-const maintenanceRows = answer.shape === 'statuspage'
-  ? arr(doc.scheduled_maintenances).filter((m) => m && !['scheduled', 'completed'].includes(str(m.status) || ''))
-  : arr(result.maintenance && result.maintenance.active);
+// Both sides filter to OBJECTS first. A `[null]` in either array reached the mapper and
+// threw, and an uncaught throw exits 1 with no answer at all — the one outcome this
+// script's whole contract says cannot happen.
+const isRow = (m) => m && typeof m === 'object' && !Array.isArray(m);
+const maintenanceRows = (answer.shape === 'statuspage'
+  ? arr(doc.scheduled_maintenances).filter((m) => isRow(m) && !['scheduled', 'completed'].includes(str(m.status) || ''))
+  : arr(result.maintenance && result.maintenance.active).filter(isRow));
 counts.maintenances = maintenanceRows.length;
 answer.maintenances = cap(maintenanceRows.map((m) => ({ name: named(m), status: text(str(m.status)) })));
 
@@ -247,7 +258,10 @@ if (opts.component !== null || opts.componentId !== null) {
   // match here either — nor something `available` suggests parking on.
   const matches = byName.filter((c) => c.group !== true);
   if (byName.length && !matches.length) {
-    answer.available = cap(byName.map(row));
+    // What is under it, never the group itself: `available` is what the caller is being
+    // told to park on, and offering back the row just refused is no repair at all.
+    const ids = byName.map((g) => str(g.id)).filter(Boolean);
+    answer.available = cap(components.filter((c) => c && c.group !== true && ids.includes(str(c.group_id))).map(row));
     stop(`${asked} names a group, not a component — park on one of the components under it`);
   }
   if (matches.length === 0) {
@@ -276,7 +290,16 @@ if (opts.component !== null || opts.componentId !== null) {
     // Said, not acted on: the component this caller waits for is up, and an incident
     // elsewhere is not its business — but a caller reading only the exit code would
     // never learn one was open.
-    if (counts.incidents) answer.notes.push(`${counts.incidents} incident(s) open elsewhere`);
+    // "Elsewhere" was asserted without looking. An open incident naming this very component
+    // — or naming none, which reaches everything — is not elsewhere, and a report saying so
+    // is wrong about the one thing the caller asked about.
+    if (counts.incidents) {
+      const here = answer.incidents.filter((i) => !i.components.length
+        || i.components.includes(answer.component.name));
+      answer.notes.push(here.length
+        ? `${counts.incidents} incident(s) open, ${here.length} of them naming this component or no component`
+        : `${counts.incidents} incident(s) open elsewhere`);
+    }
     finish(0);
   }
   answer.verdict = 'degraded';

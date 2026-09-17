@@ -21,6 +21,13 @@ if [ -n "$want_url" ]; then
   [ "$last" = "$want_url" ] || { echo "stub curl: url '$last' is not the normalized '$want_url'" >&2; exit 9; }
 fi
 
+# More than the caller reads. `spawnSync` answers this with an error rather than a status,
+# which is the same branch a curl that cannot execute lands in — and the only one of the
+# two a stub can produce.
+case "$(ask '.curl')" in
+  flood) head -c 9000000 /dev/zero | tr '\0' 'a'; exit 0 ;;
+esac
+
 # A url curl itself refuses, before any request is made.
 case "$(ask '.curl')" in malformed) echo "curl: (3) URL rejected: Malformed input" >&2; exit 3 ;; esac
 

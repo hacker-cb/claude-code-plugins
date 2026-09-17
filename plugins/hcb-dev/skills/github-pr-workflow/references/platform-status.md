@@ -23,7 +23,7 @@ node <plugin root>/scripts/platform-status.mjs --feed <url>
 | `0` | the named component is up — or, with none named, nothing is down and nothing is open | resume the parked step |
 | `3` | degraded: a component down, an incident open, or maintenance running | wait and ask again |
 | `4` | the feed was not reached — no answer, a timeout, a 5xx, or the two 4xx that say *not now* (408, 429) | wait and ask again. **Unread is not operational**, and a loop reading it as one resumes into the outage |
-| `2` | a call it cannot answer — any other status outside 2xx (a 404, a 403, a redirect it does not follow), a 2xx body that is not a feed, a document in neither shape it reads, one carrying no components or missing the incidents beside them, a component name matching none or several, or one naming a component the feed states no status for | **stop.** Each of these answers the same however long anyone waits |
+| `2` | a call it cannot answer — any other status outside 2xx (a 404, a 403, a redirect it does not follow), a 2xx body that is not a feed, a document in neither shape it reads, one carrying no component it can rule on, or missing either the incidents or the maintenance beside them, a component name matching none or several, or one naming a component the feed states no status for | **stop.** Each of these answers the same however long anyone waits |
 
 **`--feed` carries the whole url and has no default.** Which url that is per forge is
 [`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md) —

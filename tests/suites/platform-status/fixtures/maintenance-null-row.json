@@ -1,0 +1,20 @@
+{
+ "doc": {
+  "result": {
+   "status": [
+    {
+     "id": "io-1",
+     "name": "Website",
+     "status": "Operational",
+     "status_code": 100
+    }
+   ],
+   "incidents": [],
+   "maintenance": {
+    "active": [
+     null
+    ]
+   }
+  }
+ }
+}
