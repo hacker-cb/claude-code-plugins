@@ -5,8 +5,8 @@
 // The coordinating session keeps its durable state in ONE comment on the epic issue, found
 // by a marker rather than by position, with what has left it in archive comments the ledger
 // indexes. Three things there are mechanical and were prose: finding the comment across a
-// paginated feed, measuring a body against a cap that announces itself only by refusing the
-// write, and checking that the index and the archives standing on the issue agree.
+// paginated feed, measuring a body against a cap whose own refusal names the wrong number and
+// the wrong unit, and checking that the index and the archives standing on the issue agree.
 //
 // It READS. Writing the ledger is the caller's, because what may be archived out of it is a
 // judgement about the content — the journal while it is inline, then a closed wave — and a
@@ -22,13 +22,15 @@ const LEDGER = /<!--\s*wave-ledger\s*-->/;
 // search for one never returns the other however the two are spelled.
 const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
 
-// Measured once at 65536 on GitHub (`references/forge-behaviour.md`), and unmeasured on
-// GitLab, which is why it is a flag with a default rather than a constant: a caller that
-// knows its own forge's cap passes it, and one that does not gets the conservative number.
-const DEFAULT_LIMIT = 65536;
+// GitHub's cap in UTF-8 BYTES, measured on both sides of the boundary
+// (`references/forge-behaviour.md`). Its refusal says `maximum is 65536 characters`, which is
+// neither the number nor the unit — a constant copied out of that text refuses bodies the forge
+// stores. Unmeasured on GitLab, which is why it is a flag with a default rather than a constant:
+// a caller that knows its own forge's cap passes it, and one that does not gets GitHub's.
+const DEFAULT_LIMIT = 262144;
 
 const usage = 'usage: node ledger.mjs --issue <n> [--repo <owner/name>] [--forge gh|glab]'
-  + ' [--host <host>] [--body-file <path>] [--limit <n>] [--me <login>] [--repo-dir <path>]';
+  + ' [--host <host>] [--body-file <path>] [--limit <bytes>] [--me <login>] [--repo-dir <path>]';
 
 const opts = { issue: null, repo: null, forge: null, host: null, bodyFile: null,
   limit: DEFAULT_LIMIT, me: null, dir: process.cwd() };
@@ -78,7 +80,7 @@ if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 // A count, and nothing about how big a sensible one is: what a forge accepts is the caller's
 // to know, and a range invented here would refuse a cap somebody measured. Converted whatever
 // it came as, so `limit` is a number in the answer even when the caller passed the default.
-if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a character count');
+if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a byte count');
 opts.limit = Number(opts.limit);
 // A login, which is neither a path segment nor a ref. Admitting what BOTH forges allow rather
 // than one of them: GitHub takes letters, digits and hyphens up to 39; GitLab takes dots and
@@ -98,11 +100,12 @@ const answer = {
   //
   // `mine` is three-valued on purpose: true, false, and null for a run that could not name its
   // own user. A ledger nobody can confirm as ours is not a ledger proved foreign.
-  ledger: { found: false, id: null, nodeId: null, url: null, chars: null, utf16: null,
+  ledger: { found: false, id: null, nodeId: null, url: null, bytes: null, chars: null, utf16: null,
     ambiguous: false, at: null, author: null, mine: null },
   archives: [],
   index: { listed: null, present: [], missing: [], unlisted: [] },
-  write: { asked: false, chars: null, utf16: null, fits: null, headroom: null, limit: opts.limit },
+  write: { asked: false, bytes: null, chars: null, utf16: null, fits: null, headroom: null,
+    limit: opts.limit },
   me: null,
   faults: [],
   reason: null,
@@ -234,10 +237,12 @@ for (const page of pages) {
 
 answer.read = true;
 
-// UTF-16 units and characters are two numbers, and which one a forge counts is not stated
-// anywhere: an emoji is one character and two units. Both travel, and `fits` is judged on the
-// larger, so a body that fits under either measure is the only one called safe.
-const measure = (s) => ({ chars: [...String(s)].length, utf16: String(s).length });
+// The cap is in UTF-8 bytes, and `fits` is judged on bytes alone. Characters and UTF-16 units
+// travel beside them because they are what a reader has to hand (`jq length` counts one of
+// them), and a character count falls short of the cap's own count by half on Cyrillic and by
+// three quarters on an emoji — wrong by unit, not by margin.
+const measure = (s) => ({ bytes: Buffer.byteLength(String(s), 'utf8'), chars: [...String(s)].length,
+  utf16: String(s).length });
 
 // Whose comment this is, by the field the resolved forge uses for it. Compared case-folded:
 // both forges treat a login as case-insensitive and hand back the canonical spelling, while
@@ -342,8 +347,8 @@ if (ledgers.length > 1) {
     answer.faults.push({ fault: 'the only ledger comment is not ours', ids: [l.id],
       authors: [l.author] });
   }
-  answer.ledger = { found: true, id: l.id, nodeId: l.nodeId, url: l.url, chars: m.chars,
-    utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine };
+  answer.ledger = { found: true, id: l.id, nodeId: l.nodeId, url: l.url, bytes: m.bytes,
+    chars: m.chars, utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine };
 }
 
 // One archive per comment is the shape; a comment carrying two markers is a fault rather than
@@ -351,7 +356,7 @@ if (ledgers.length > 1) {
 const byN = new Map();
 for (const a of archives) {
   const m = measure(a.body);
-  const row = { n: a.n, id: a.id, url: a.url, chars: m.chars, utf16: m.utf16,
+  const row = { n: a.n, id: a.id, url: a.url, bytes: m.bytes, chars: m.chars, utf16: m.utf16,
     author: a.author, mine: a.mine };
   const held = byN.get(a.n);
   if (held === undefined) { byN.set(a.n, row); continue; }
@@ -392,11 +397,11 @@ for (const n of answer.index.unlisted) {
 
 if (answer.write.asked) {
   const m = measure(body);
+  answer.write.bytes = m.bytes;
   answer.write.chars = m.chars;
   answer.write.utf16 = m.utf16;
-  const used = Math.max(m.chars, m.utf16);
-  answer.write.fits = used <= opts.limit;
-  answer.write.headroom = opts.limit - used;
+  answer.write.fits = m.bytes <= opts.limit;
+  answer.write.headroom = opts.limit - m.bytes;
 }
 
 out();
