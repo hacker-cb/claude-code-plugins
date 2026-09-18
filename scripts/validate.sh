@@ -459,7 +459,11 @@ done < <(md_files)
 # Each check reads the RAW file rather than `prose()`: every violation this gate exists
 # for sits inside a fenced block, which `prose()` blanks.
 binding_line='**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.'
-placeholder_re='\$\{?(CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_SKILL_DIR|CLAUDE_PROJECT_DIR|CLAUDE_SESSION_ID|CLAUDE_EFFORT)\}?'
+# One list, two patterns built from it: a name in only one of them is a name one check
+# stops and the other waves through.
+placeholder_names='CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_SKILL_DIR|CLAUDE_PROJECT_DIR|CLAUDE_SESSION_ID|CLAUDE_EFFORT'
+placeholder_re="\\\$\\{?($placeholder_names)\\}?"
+bare_re="\\\$($placeholder_names)([^A-Za-z0-9_{]|\$)"
 
 # 1. A file Claude reads by path carries no substitution placeholder. README.md is a
 #    person's file and names the mechanism freely; `commands/` is substituted content.
@@ -483,7 +487,7 @@ while IFS= read -r f; do
     err "$f: '<plugin root>' outside the binding line — substituted content writes \${CLAUDE_PLUGIN_ROOT}"
   done < <(grep -F '<plugin root>' "$f" 2>/dev/null)
   # Unbraced is not substituted, and the Bash tool has no such variable either.
-  grep -qE '\$(CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_SKILL_DIR|CLAUDE_PROJECT_DIR)([^A-Za-z0-9_{]|$)' "$f" 2>/dev/null \
+  grep -qE "$bare_re" "$f" 2>/dev/null \
     && err "$f: a bare \$CLAUDE_… — write \${…}, the form Claude Code substitutes"
   # `commands/*.md` is a flat skill file — custom commands are skills, and the placeholder is
   # substituted there as in any skill content, which is why check 1 leaves them alone.
