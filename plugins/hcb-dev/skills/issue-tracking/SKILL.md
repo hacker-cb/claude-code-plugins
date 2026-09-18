@@ -51,8 +51,23 @@ glab issue list --all --per-page <n> --search "<terms>"
 ```
 
 Three outcomes — **covered** → cite it and open nothing; **covered, but the
-finding adds something** (new facts, wider scope, a changed trigger) → update it;
-**not covered** → open one.
+finding adds something** (new facts, wider scope, a changed trigger) → update an
+open one, a closed one by the table below; **not covered** → open one.
+
+## What a closed issue takes
+
+An issue's state is read **when the record is written**, not when the finding was
+found: a ruling decided cold comes after the landing, and the change in hand may
+itself close the target. A closed issue takes no comment as the record — nobody
+is sent to one — so what closed it decides, the same for a search hit and for the
+issue a finding came out of:
+
+| what closed it | the record |
+|---|---|
+| **done**, and the finding lies beside what that settled — another input, another path, a part consciously not taken | **OPEN** of its own, linked both ways |
+| **done**, and what the issue says is fixed is not | **INTO** it, reopened, naming what does not hold |
+| **declined**, and nothing in the finding moves that decision | **DROP**, citing it |
+| **declined**, and the finding carries what overturns it | reopening is put to the user |
 
 ## What goes in the issue
 
