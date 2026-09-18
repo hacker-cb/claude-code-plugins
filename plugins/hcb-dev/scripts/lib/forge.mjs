@@ -110,9 +110,18 @@ export const runner = (cwd, cmd = 'gh') => (args, timeout = 120000) => {
     // with 1 and "I could not answer" with 128, and a caller that cannot tell them apart
     // reports an unrelated base where it should report an unknown one.
     code: typeof r.status === 'number' ? r.status : null,
+    // The timeout above KILLED it, which is not an answer of any kind — the process was
+    // stopped before it said yes or no, and a caller reading that as a no states what it
+    // never measured. `error.code` is the one mark of it: `signal` arrives as `SIGTERM`
+    // or as `SIGPIPE` depending on where the kill landed, and a process killed by
+    // somebody else carries a signal with no error at all.
+    timedOut: Boolean(r.error && r.error.code === 'ETIMEDOUT'),
     out: (r.stdout || '').trim(),
     err: (r.stderr || '').trim(),
-    line: () => (r.stderr || '').trim().split('\n').filter(Boolean).pop() || 'no detail',
+    // Split on BOTH separators: a progress line ends in `\r`, so a whole `Writing
+    // objects` chain is one `\n`-line and reaches a reader as kilobytes of it.
+    line: () => (r.stderr || '').split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean).pop()
+      || 'no detail',
   };
 };
 

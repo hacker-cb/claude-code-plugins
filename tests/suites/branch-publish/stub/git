@@ -3,6 +3,16 @@
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 fail() { echo "${1:-fatal: stub git refused}" >&2; exit "${2:-1}"; }
+# A remote answers differently before and after an act reaches it, and a case about a push
+# nobody waited out is exactly that difference. The count lives beside the marker, under the
+# envelope's own name: the runner hands each case a fresh work directory and one envelope, so
+# no two cases share a file and nothing survives a run.
+reads() {
+  [ -n "${STUB_MARKER_FILE:-}" ] || { echo 0; return; }
+  f="$STUB_MARKER_FILE.$(basename "${env:-none}" .json).$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')"
+  n=$(cat "$f" 2>/dev/null || echo 0)
+  n=$((n + 1)); printf '%s\n' "$n" > "$f"; printf '%s\n' "$n"
+}
 
 case "$1 $2" in
   "rev-parse --git-dir") echo ".git"; exit 0 ;;
@@ -27,12 +37,36 @@ case "$1 $2" in
     # `$4` is `<rev>^{commit}`. Two questions arrive here: whether the base tracking ref
     # is in this checkout at all, and whether a remote's tip is an object it carries.
     case "$4" in
-      refs/remotes/*) case "$(ask '.base_present')" in no) exit 1 ;; esac ;;
+      refs/remotes/*)
+        # A tracking ref a fetch just wrote, where a case needs it to hold something other
+        # than this branch's tip — the remote having moved between the read and the fetch.
+        t=$(ask ".object_tip[\"${4%^*}\"]")
+        [ -n "$t" ] && { printf '%s\n' "$t"; exit 0; }
+        case "$(ask '.base_present')" in no) exit 1 ;; esac ;;
       *) case "$(ask ".object[\"${4%^*}\"] // .object_default")" in no) exit 1 ;; esac ;;
     esac
     echo "cafe"; exit 0 ;;
   "ls-remote --heads")
-    v=$(ask ".ls_remote[\"$4\"] // .ls_remote_default")
+    # The ref is the LAST argument and the repository the one before it: what stands there
+    # is the push url wherever one differs from the fetch url, and a case pins which was
+    # asked. Reading either by position from the front breaks the moment a flag moves.
+    for ls_ref; do :; done
+    ls_repo=$4
+    want_repo=$(ask '.expect_ls_repo')
+    [ -n "$want_repo" ] && [ "$want_repo" != "$ls_repo" ] \
+      && fail "stub git: ls-remote asked $ls_repo, not $want_repo" 3
+    v=$(ask ".ls_remote[\"$ls_ref\"] // .ls_remote_default")
+    later=$(ask ".ls_remote_later[\"$ls_ref\"]")
+    seq_len=$(ask ".ls_remote_seq[\"$ls_ref\"] | length")
+    if [ -n "$seq_len" ] && [ "$seq_len" -gt 0 ]; then
+      # One answer per read, the last one standing: a remote that moves twice — a ref
+      # standing, then moved, then gone — is three answers, not two.
+      n=$(reads "$ls_ref"); [ "$n" -gt "$seq_len" ] && n=$seq_len
+      v=$(ask ".ls_remote_seq[\"$ls_ref\"][$((n - 1))]")
+    elif [ -n "$later" ]; then
+      lag=$(ask '.ls_remote_lag'); [ -z "$lag" ] && lag=1
+      [ "$(reads "$ls_ref")" -gt "$lag" ] && v=$later
+    fi
     case "$v" in
       ""|silent) fail "fatal: could not read from remote repository" 128 ;;
       absent) exit 0 ;;
@@ -71,10 +105,16 @@ esac
 case "$1 $2" in
   "remote get-url")
     # The url that RECEIVES pushes, which is what says WHICH repository a deletion here
-    # would land in — a different question from the one `gh` answers for.
-    v=$(ask '.push_url'); [ -z "$v" ] && v=https://forge.example/example-org/example-repo.git
+    # would land in — a different question from the one `gh` answers for. Without
+    # `--push` it is the fetch url, the same one unless a case says otherwise; `push_url`
+    # may hold several, one per line, and only `--all` prints past the first.
+    push=0 all=0
+    for a in "$@"; do case "$a" in --push) push=1 ;; --all) all=1 ;; esac; done
+    if [ "$push" = 1 ]; then v=$(ask '.push_url'); else v=$(ask '.fetch_url // .push_url'); fi
+    [ -z "$v" ] && v=https://forge.example/example-org/example-repo.git
     case "$v" in fail) fail "fatal: no such remote" 128 ;; esac
-    printf '%s\n' "$v"; exit 0 ;;
+    if [ "$all" = 1 ]; then printf '%s\n' "$v"; else printf '%s\n' "$v" | head -1; fi
+    exit 0 ;;
 esac
 case "$1" in
   fetch)
@@ -84,15 +124,31 @@ case "$1" in
     case "$3" in +*) ;; *) fail "! [rejected] $3 (non-fast-forward)" 1 ;; esac
     case "$(ask '.fetch')" in fail) fail "fatal: couldn't find remote ref" 128 ;; esac
     exit 0 ;;
+  config)
+    # What `push -u` writes, written here where a push that was killed never got to it.
+    case "$(ask '.config')" in fail) fail "error: could not lock config file" 255 ;; esac
+    exit 0 ;;
   push)
     case "$*" in
-      *--delete*) case "$(ask '.delete')" in fail) fail "remote: refusing to delete the ref" 1 ;; esac ;;
+      *--delete*) case "$(ask '.delete')" in
+          fail) fail "remote: refusing to delete the ref" 1 ;;
+          # Never answering, which is the case this suite is otherwise blind to: the runner
+          # kills it on its own budget. `exec` so the kill lands on the sleep rather than
+          # leaving it behind the shell that started it.
+          hang) v=$(ask '.delete_says'); [ -n "$v" ] && printf '%s\n' "$v" >&2; exec sleep 30 ;;
+        esac ;;
       *)
         # A tag of the same name, which is what the full refname on the source side is
         # for: a bare branch name matches both and git refuses rather than choosing.
         case "$*" in *refs/heads/*:refs/heads/*) ;;
           *) fail "error: src refspec matches more than one" 1 ;; esac
-        case "$(ask '.push')" in fail) fail "! [rejected] stale info" 1 ;; esac ;;
+        case "$(ask '.push')" in
+          fail) fail "! [rejected] stale info" 1 ;;
+          # Exit 128, where a refusal exits 1: the transport died, so the remote's verdict
+          # — if it ever reached one — never came back.
+          hangup) fail "fatal: the remote end hung up unexpectedly" 128 ;;
+          hang) v=$(ask '.push_says'); [ -n "$v" ] && printf '%s\n' "$v" >&2; exec sleep 30 ;;
+        esac ;;
     esac
     exit 0 ;;
 esac

@@ -1,0 +1,20 @@
+{
+ "head": "claude/example-work",
+ "pr_list_default": "[]",
+ "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "base_present": "yes",
+ "object_default": "yes",
+ "stood_on": "yes",
+ "in_base": "no",
+ "ls_remote": {
+  "refs/heads/feat/example-export": "absent",
+  "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work"
+ },
+ "ls_remote_later": {
+  "refs/heads/feat/example-export": "cafe\trefs/heads/feat/example-export"
+ },
+ "ls_remote_lag": 2,
+ "push": "hang",
+ "push_says": "Writing objects: 100% (5/5), 512 bytes | 512.00 KiB/s, done.\rremote: Resolving deltas:  24% (189/784)",
+ "ship_stood_on": "yes"
+}

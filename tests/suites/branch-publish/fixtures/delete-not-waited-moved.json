@@ -1,0 +1,17 @@
+{
+ "head": "claude/example-work",
+ "pr_list_default": "[]",
+ "reflog": "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nf1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "base_present": "yes",
+ "object_default": "yes",
+ "stood_on": "yes",
+ "in_base": "no",
+ "ship_stood_on": "yes",
+ "ls_remote": {
+  "refs/heads/feat/example-export": "absent",
+  "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work"
+ }
+ ,
+ "delete": "hang",
+ "ls_remote_later": { "refs/heads/claude/example-work": "f1x7cccccccccccccccccccccccccccccccccccc\trefs/heads/claude/example-work" }
+}

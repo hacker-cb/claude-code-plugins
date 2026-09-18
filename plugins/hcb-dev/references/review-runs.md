@@ -41,8 +41,8 @@ review** — a file left inside becomes an untracked file the next run reads as 
 ## Running it detached
 
 Launch with `Bash(run_in_background: true)`, whoever asked and however small the diff looks. Read
-inline, the call is killed on the tool's own limit, and the kill takes the coverage record and the
-failure branch with it — the run comes back as neither a review nor a named failure. Give the call a
+inline, the call is moved to the background at the tool's limit, or stopped in a foreground subagent,
+and the step goes on without its coverage record or failure branch — neither a review nor a failure. Give the call a
 `description` naming the engine, so the run is recognizable in the task list. Detached is how it
 runs, not permission to answer without it: collect the finished task's output and read it back
 before answering.

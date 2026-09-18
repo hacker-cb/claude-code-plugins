@@ -11,8 +11,14 @@
 // What it does NOT do: rebase, merge, or move HEAD. The branch arrives where it is going
 // to land, and taking the base is the caller's own step.
 //
+// A push that did not report success is answered by READING the remote, because its exit
+// status is what the client saw and a client stopped on a budget saw nothing: measured, a
+// receiving side that outlives it lands the ref seconds later, and a pre-push hook longer
+// than the budget leaves a push that was never refused at all.
+//
 // Usage: node branch-publish.mjs --new <name> [--old-name <name>]
 //          [--publish --push-remote <name>] [--base <name> --base-remote <name>]
+//          [--push-timeout <seconds>] [--settle <seconds>]
 //          [--repo <owner/name>] [--repo-dir <path>]
 //
 // Exit 0 either way: `"published": true` is the one thing a caller carries forward, and
@@ -23,14 +29,16 @@ import { dirOk, refNameOk, repoOk, runner, text, worktrees, writeAll } from './l
 
 const USAGE = 'usage: node branch-publish.mjs --new <name> [--old-name <name>]'
   + ' [--publish --push-remote <name>] [--base <name> --base-remote <name>]'
+  + ' [--push-timeout <seconds>] [--settle <seconds>]'
   + ' [--repo <owner/name>] [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `branch-publish: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
 const opts = { new: null, oldName: null, pushRemote: null, base: null, baseRemote: null,
-  repo: null, repoDir: null, publish: false };
+  repo: null, repoDir: null, publish: false, pushTimeout: null, settle: null };
 const VALUED = { '--new': 'new', '--old-name': 'oldName', '--push-remote': 'pushRemote',
-  '--base': 'base', '--base-remote': 'baseRemote', '--repo': 'repo', '--repo-dir': 'repoDir' };
+  '--base': 'base', '--base-remote': 'baseRemote', '--repo': 'repo', '--repo-dir': 'repoDir',
+  '--push-timeout': 'pushTimeout', '--settle': 'settle' };
 const BARE = { '--publish': 'publish' };
 for (let i = 0; i < argv.length; i += 1) {
   if (BARE[argv[i]]) { opts[BARE[argv[i]]] = true; continue; }
@@ -63,6 +71,26 @@ if ((opts.base === null) !== (opts.baseRemote === null)) {
 if (opts.base !== null && !refNameOk(opts.base)) die(`--base '${opts.base}' is not a branch name`);
 if (opts.baseRemote !== null && !refNameOk(opts.baseRemote)) die(`--base-remote '${opts.baseRemote}' is not a remote name git would take`);
 if (opts.repo && !repoOk(opts.repo)) die(`--repo '${opts.repo}' is not owner/name`);
+// Seconds, because both are budgets a caller sets from what a repository actually costs:
+// how long its pre-push hook runs, and how long its remote takes to finish a push whose
+// client is already gone.
+const seconds = (flag, v, fallback, floor) => {
+  if (v === null) return fallback;
+  // A digit string of any length converts, and a long enough one converts to `Infinity`,
+  // which passes a floor test and then throws out of `spawnSync` or polls forever.
+  const n = Number(v);
+  if (!/^[0-9]+$/.test(v) || !Number.isSafeInteger(n) || n < floor || n > 86400) {
+    die(`${flag} '${v}' is not a number of seconds (${floor} to 86400)`);
+  }
+  return n;
+};
+const PUSH_TIMEOUT = seconds('--push-timeout', opts.pushTimeout, 120, 1);
+const SETTLE = seconds('--settle', opts.settle, 30, 0);
+// One read every couple of seconds rather than a tight loop: what is being waited on is a
+// remote finishing work, and a ref appearing two seconds late costs nothing.
+const SETTLE_STEP = 2000;
+const SETTLE_READ = 15;
+const settledAfter = SETTLE ? `${SETTLE}s later` : 'when read straight after';
 
 // A directory, proved here: passed on as `cwd` it would come back as a call that failed
 // with nothing on stderr, which reads as a forge that would not answer.
@@ -89,11 +117,15 @@ const answer = {
   // and the branch ships under it after all.
   restored: false,
   publish: { asked: opts.publish, mode: null, reason: null },
-  // Three states, and `null` is "not asked" rather than "no". A caller reading a false
-  // here as a refused push would stop on a run that never tried.
+  // What a READ of the remote showed, never what a call's exit status suggested: `true` the
+  // remote carries this branch's tip under `ships` and this checkout tracks it, `false` a
+  // read showed it does not, `null` nothing settled it — the remote would not answer, or a
+  // push this run stopped waiting for may yet land. `asked` tells that last one from "not
+  // asked", where `null` also stands.
   published: null,
   // One entry per name this branch used to carry. `retired` is a deletion this run made,
-  // `absent` is a name that was not there, `kept` is every refusal — with its reason.
+  // `absent` is a name that was not there, `kept` is every refusal — with its reason — and
+  // `unknown` is a deletion whose outcome no read settled.
   stale: [],
   // Every call that CHANGED something, in the order it was made. The reads that prove each
   // one stay out: they are what this run asked, not what it did, and a run that touched
@@ -107,11 +139,28 @@ const refuse = (reason) => { answer.reason = reason; finish(); };
 const note = (m) => { answer.notes.push(m); };
 // `git` for a question, `run` for an act — the split IS the contract of `ran` above, so a read
 // sent through here stops being distinguishable from a change this run made.
+// A url's userinfo is a credential as often as a name — `https://<token>@host/…` is how CI
+// hands one over — and `ran` is printed: the call gets the url whole, the record does not.
+const redact = (a) => a.replace(/^([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^/@]*@/, '$1***@');
 const run = (args, timeout = 120000) => {
   const r = git(args, timeout);
-  answer.ran.push(['git', ...args].join(' '));
+  answer.ran.push(['git', ...args.map(redact)].join(' '));
   return r;
 };
+// Why a call did not answer. A process this run KILLED said nothing about whether it would
+// have succeeded, so it is named by the wait rather than by whatever line it had got to.
+const detail = (r, budget = 120) => (r.timedOut
+  ? `no answer within ${budget}s${r.err ? `, last: ${r.line()}` : ''}`
+  : r.line());
+
+// Whether the remote ever gave a verdict. Exit 1 is git reporting one — a ref refused, a
+// hook that said no — while 128 and a kill are the call ending without one, and that
+// difference decides both what the answer may claim and whether the remote is asked again.
+const unanswered = (r) => r.timedOut || r.code !== 1;
+
+// Everything here is synchronous, and a poll returning to the event loop would mean
+// rewriting the script around it.
+const sleep = (ms) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
 
 if (!git(['rev-parse', '--git-dir']).ok) die('not inside a git checkout');
 
@@ -170,11 +219,31 @@ const repoOfUrl = (url) => {
   return path.includes('/') ? path : null;
 };
 let here = null;
+// Where every read and fetch below goes. `git ls-remote <name>` and `git fetch <name>` both
+// go to the FETCH url — measured — so under a `pushurl` they answer about a repository this
+// run never writes to. The name stays wherever the two urls agree, keeping every setting a
+// remote carries by name; the push url itself stands in where they do not.
+let endpoint = opts.pushRemote;
+// How many urls a push goes to. Each gets every push and every deletion, and a read of one
+// settles nothing about the others — so with several, an act that did not report success
+// stays unsettled rather than opening the retirement on the one url that took it.
+let pushUrls = 1;
 if (mayAsk) {
   // The url that RECEIVES pushes: a `pushurl` sends them somewhere the fetch url never
   // published to, and it is the receiving side a deletion lands on.
-  const u = git(['remote', 'get-url', '--push', opts.pushRemote]);
-  if (u.ok) here = repoOfUrl(u.out.split('\n').filter(Boolean)[0] || '');
+  const u = git(['remote', 'get-url', '--push', '--all', opts.pushRemote]);
+  if (u.ok) {
+    const urls = u.out.split('\n').filter(Boolean);
+    pushUrls = Math.max(urls.length, 1);
+    // One repository or none: with several, a request whose head lives on any of them is
+    // one a push here reaches, and naming the first would drop the rest as foreign.
+    here = urls.length === 1 ? repoOfUrl(urls[0]) : null;
+    // A fetch url that cannot be read is not one the push url agrees with. With several,
+    // the first — the one git itself treats as the remote's push url — is read: a
+    // repository the push reaches, where the fetch url may be none of them.
+    const f = git(['remote', 'get-url', opts.pushRemote]);
+    if (urls.length > 0 && !(f.ok && f.out.split('\n')[0] === urls[0])) [endpoint] = urls;
+  }
 }
 
 // Does an open change request head this name? Three answers, and the third carries the
@@ -276,30 +345,95 @@ if (!mayAsk && cur !== ships) {
 answer.branch.ships = ships;
 const shipRef = `refs/heads/${ships}`;
 
+// What the remote carries for a ref, and the three answers it has. A ref line is a branch
+// that is there, exit 0 with nothing is one that is not, and a call that did not answer is
+// NEITHER — publishing blind on the third is how a force lands where a first push was meant,
+// and reporting it as the second states what nothing measured.
+const remoteAt = (ref, budget = 120) => {
+  const r = git(['ls-remote', '--heads', '--', endpoint, ref], budget * 1000);
+  return r.ok
+    ? { read: true, tip: r.out ? r.out.split(/\s/)[0] : '', why: null }
+    : { read: false, tip: null, why: detail(r, budget) };
+};
+// The same read, asked again until it shows what `done` wants or the budget is spent. One
+// read answers for the instant it was taken: a receiving side that outlived the client keeps
+// working, and the ref it is holding lands seconds after this run stopped waiting.
+const settled = (ref, done, patient) => {
+  const until = Date.now() + (patient ? SETTLE * 1000 : 0);
+  for (;;) {
+    // Each read inside the budget rather than on the default one, so the budget is what
+    // bounds the wait; the floor is the one read that must happen however little is left.
+    const at = remoteAt(ref, Math.max(Math.ceil((until - Date.now()) / 1000), SETTLE_READ));
+    // A remote that would not answer is not one to keep asking: the budget is for a
+    // receiving side still working, never for one nothing here can reach.
+    if (!at.read || done(at.tip)) return at;
+    const left = until - Date.now();
+    if (left <= 0) return at;
+    sleep(Math.min(SETTLE_STEP, left));
+  }
+};
+
 // --- the publication, which is what everything downstream stands on
 if (opts.publish) {
-  // Three answers again: a ref line is a branch that is there, exit 0 with nothing is one
-  // that is not, and a call that did not answer is NEITHER — publishing blind on the
-  // third is how a force lands where a first push was meant.
-  const ls = git(['ls-remote', '--heads', opts.pushRemote, shipRef]);
-  if (!ls.ok) {
-    answer.published = false;
-    answer.publish.reason = `${opts.pushRemote} could not be read (${ls.line()})`;
+  // Said out loud rather than failed on: a push reaching several urls succeeds only where
+  // every one of them took it, and a lease pinned to the tip read on one is refused by any
+  // other that moved — so what a mode and a lease rest on is a reading, not a risk.
+  if (pushUrls > 1) {
+    note(`${opts.pushRemote} pushes to ${pushUrls} urls, and what stands under ${ships} is read`
+      + ' on one of them — the mode and any lease rest on that one');
+  }
+  const tracking = `refs/remotes/${opts.pushRemote}/${ships}`;
+  const here = git(['rev-parse', '--verify', '-q', `${shipRef}^{commit}`]);
+  const tip = here.ok && here.out ? here.out : null;
+  // What `published: true` has to mean: the remote carries this tip, and this checkout
+  // tracks it — every step downstream assumes an upstream and none of them creates one.
+  // `push -u` writes both, a push that was killed wrote neither even where the ref itself
+  // landed, so a publication settled by reading the remote writes what the push did not.
+  const track = () => {
+    const f = run(['fetch', endpoint, `+${shipRef}:${tracking}`]);
+    if (!f.ok) return `its tracking ref could not be fetched (${detail(f)})`;
+    // What the fetch BROUGHT, not that it ran: the remote can move between the read that
+    // settled the publication and this, and an upstream left pointing at someone else's
+    // commit would be reported as this branch's published tip.
+    const at = git(['rev-parse', '--verify', '-q', `${tracking}^{commit}`]);
+    if (!at.ok || at.out !== tip) {
+      return `${tracking} came back at ${at.ok ? text(at.out) : 'nothing'} rather than`
+        + ` ${text(tip)}, so the remote moved while this was being read`;
+    }
+    // Not `branch --set-upstream-to`, which resolves the tracking ref through the remote's
+    // CONFIGURED fetch refspec and refuses in a single-branch clone. These two values are
+    // what `push -u` itself writes, measured in both shapes of clone.
+    const r = run(['config', `branch.${ships}.remote`, opts.pushRemote]);
+    const m = run(['config', `branch.${ships}.merge`, shipRef]);
+    if (!r.ok || !m.ok) return `its upstream could not be set (${detail(r.ok ? m : r)})`;
+    return null;
+  };
+  const ls = remoteAt(shipRef);
+  if (!ls.read) {
+    // Nothing was pushed and nothing was read, so what the remote carries is unknown —
+    // which a `false` here would state as a fact.
+    answer.published = null;
+    answer.publish.reason = `${opts.pushRemote} could not be read (${ls.why}), so what it`
+      + ` carries under ${ships} is unknown`;
   } else {
-    const remoteTip = ls.out ? ls.out.split(/\s/)[0] : '';
-    const tracking = `refs/remotes/${opts.pushRemote}/${ships}`;
+    const remoteTip = ls.tip;
     let ready = true;
     if (remoteTip) {
       // Not for the lease, which carries its own value below: for the two readings that
       // need the remote's tip as an OBJECT here — whether this branch already contains it,
       // and whether it ever stood on it. A tip that was never fetched answers neither, and
       // an `is-ancestor` that errored reads exactly like one that said no.
-      const f = run(['fetch', opts.pushRemote, `+${shipRef}:${tracking}`]);
+      const f = run(['fetch', endpoint, `+${shipRef}:${tracking}`]);
       if (!f.ok) {
         ready = false;
-        answer.published = false;
+        // Nothing was pushed, and what the remote already carries decides which of the two
+        // this is: a tip that is not this branch's is a `false` a read proved, and this
+        // branch's own tip is a ref that is up with no way to track it from here.
+        answer.published = remoteTip === tip ? null : false;
         answer.publish.reason = `the tracking ref for ${ships} could not be refreshed`
-          + ` (${f.line()}), so its age is unknown and a lease would rest on nothing`;
+          + ` (${detail(f)}), so its age is unknown and a lease would rest on nothing`
+          + (remoteTip === tip ? `; ${opts.pushRemote} does carry ${ships} at ${text(tip)},`
+            + ' but nothing here tracks it' : '');
       }
     }
     if (ready) {
@@ -309,7 +443,9 @@ if (opts.publish) {
       if (!remoteTip) answer.publish.mode = 'first';
       else if (git(['merge-base', '--is-ancestor', tracking, shipRef]).ok) answer.publish.mode = 'fast-forward';
       else answer.publish.mode = 'leased';
-      let args = ['push', opts.pushRemote, '-u', spec];
+      // `--progress`: with stderr a pipe git says nothing until it is asked to, so a push
+      // this run stops waiting for leaves no trace of which phase it stood in.
+      let args = ['push', opts.pushRemote, '-u', '--progress', spec];
       if (answer.publish.mode === 'leased') {
         // What is being overwritten has to be work this branch itself put there. A bare
         // `--force-with-lease` plus `--force-if-includes` is git's way of saying that, and
@@ -328,12 +464,54 @@ if (opts.publish) {
             + ' not this branch\'s to drop';
           ready = false;
         }
-        args = ['push', `--force-with-lease=${shipRef}:${remoteTip}`, opts.pushRemote, '-u', spec];
+        args = ['push', `--force-with-lease=${shipRef}:${remoteTip}`, opts.pushRemote, '-u',
+          '--progress', spec];
       }
       if (ready) {
-        const p = run(args);
-        answer.published = p.ok;
-        if (!p.ok) answer.publish.reason = `the push was refused (${p.line()})`;
+        const p = run(args, PUSH_TIMEOUT * 1000);
+        if (p.ok) answer.published = true;
+        else {
+          // Asked of the remote, not of the exit status. A push refused and a push stopped
+          // mid-way both come back non-zero, and only the first of them measured anything:
+          // the ref this branch is publishing may be up already, put there by a receiving
+          // side that outlived the client.
+          const pending = unanswered(p);
+          const stopped = p.timedOut
+            ? `the push was not waited out — ${PUSH_TIMEOUT}s passed with no answer`
+              + `${p.err ? ` (last: ${p.line()})` : ''}`
+            : (pending
+              ? `the push ended without a verdict from ${opts.pushRemote} (${p.line()})`
+              : `the push was refused (${p.line()})`);
+          const at = pushUrls > 1 ? null
+            : settled(shipRef, (t) => tip !== null && t === tip, pending);
+          if (at === null) {
+            answer.published = null;
+            answer.publish.reason = `${stopped}, and ${opts.pushRemote} pushes to ${pushUrls}`
+              + ' urls — a read of one settles nothing about the others';
+          } else if (at.read && tip !== null && at.tip === tip) {
+            const missing = track();
+            answer.published = missing === null ? true : null;
+            answer.publish.reason = missing === null
+              ? `${stopped}, and ${opts.pushRemote} carries ${ships} at ${text(tip)} — the ref`
+                + ' is up, and the upstream the push never recorded was set here'
+              : `${stopped}; ${opts.pushRemote} carries ${ships} at ${text(tip)}, but`
+                + ` ${missing}, so a step downstream would push to nothing`;
+          } else if (!at.read) {
+            // A refusal measured something the read failing does not undo: the remote
+            // answered, and what it answered was no.
+            answer.published = pending ? null : false;
+            answer.publish.reason = `${stopped}, and ${opts.pushRemote} could not be read`
+              + ` afterwards (${at.why})${pending ? ` — whether ${ships} is up is unknown` : ''}`;
+          } else if (pending) {
+            answer.published = null;
+            answer.publish.reason = `${stopped}, and ${opts.pushRemote} was not carrying`
+              + ` ${ships} at this branch's tip ${settledAfter} — nothing may have been sent,`
+              + ' or a receiving side still working may yet land the ref';
+          } else {
+            answer.published = false;
+            answer.publish.reason = stopped;
+          }
+        }
       }
     }
   }
@@ -367,7 +545,7 @@ let baseUnusable = null;
 if (mayRetire && tracking !== null) {
   const f = run(['fetch', opts.baseRemote, `+refs/heads/${opts.base}:${tracking}`]);
   if (!f.ok) baseUnusable = `${opts.base} could not be refreshed from ${opts.baseRemote}`
-    + ` (${f.line()}), and a base of unknown age proves nothing about what a ref holds past it`;
+    + ` (${detail(f)}), and a base of unknown age proves nothing about what a ref holds past it`;
   else if (!git(['rev-parse', '--verify', '-q', `${tracking}^{commit}`]).ok) {
     baseUnusable = `${tracking} is not a ref this checkout carries, so what the old ref`
       + ' holds past the base is unknown';
@@ -393,6 +571,9 @@ for (const name of candidates) {
       + ' the base, it is not a publication of this branch';
   } else if (!opts.publish) {
     it.reason = 'nothing was published, so no name is stale yet';
+  } else if (answer.published === null) {
+    it.reason = `whether ${ships} is published is unknown, and removing this now could`
+      + ' unpublish the branch';
   } else if (answer.published !== true) {
     it.reason = `${ships} is not published, and removing this now would unpublish the branch`;
   } else if (!baseUsable) {
@@ -403,15 +584,19 @@ for (const name of candidates) {
       + ' whether another session holds this name and would push it straight back is unknown';
   } else if (heldElsewhere.has(ref)) {
     it.reason = `another worktree holds it and can push it straight back: ${heldElsewhere.get(ref)}`;
+  } else if (pushUrls > 1) {
+    // Every proof below reads one repository, and the deletion goes to all of them.
+    it.reason = `${opts.pushRemote} pushes to ${pushUrls} urls, and what a ref holds is read on`
+      + ' one of them while a deletion lands on every one';
   } else {
-    const ls = git(['ls-remote', '--heads', opts.pushRemote, ref]);
-    if (!ls.ok) {
-      it.reason = `${opts.pushRemote} did not answer for ${ref} (${ls.line()}) — report it as possibly standing`;
-    } else if (!ls.out) {
+    const ls = remoteAt(ref);
+    if (!ls.read) {
+      it.reason = `${opts.pushRemote} did not answer for ${ref} (${ls.why}) — report it as possibly standing`;
+    } else if (!ls.tip) {
       it.verdict = 'absent';
       it.reason = `not on ${opts.pushRemote} — there is nothing to retire`;
     } else {
-      const tip = ls.out.split(/\s/)[0];
+      const { tip } = ls;
       it.tip = text(tip);
       if (!git(['rev-parse', '--verify', '-q', `${tip}^{commit}`]).ok) {
         it.reason = `it is at ${it.tip}, which is not an object this checkout carries —`
@@ -438,9 +623,48 @@ for (const name of candidates) {
           // Leased to the tip just read rather than to a tracking ref: nothing here
           // fetched this name, so what the remote said a moment ago is the only current
           // thing to lease against.
-          const del = run(['push', `--force-with-lease=${ref}:${tip}`, opts.pushRemote, '--delete', ref]);
+          const del = run(['push', `--force-with-lease=${ref}:${tip}`, opts.pushRemote,
+            '--delete', ref], PUSH_TIMEOUT * 1000);
           if (del.ok) it.verdict = 'retired';
-          else it.reason = `the delete was refused (${del.line()}) — a stale lease or a deletion rule`;
+          else {
+            // Read, for the publish's reason and with more riding on it: a deletion is the
+            // act that cannot be taken back, and one this run stopped waiting for may have
+            // landed — reporting that as `kept` says a ref is standing that is gone.
+            const pending = unanswered(del);
+            const stopped = del.timedOut
+              ? `the delete was not waited out — ${PUSH_TIMEOUT}s passed with no answer`
+                + `${del.err ? ` (last: ${del.line()})` : ''}`
+              : (pending
+                ? `the delete ended without a verdict from ${opts.pushRemote} (${del.line()})`
+                : `the delete was refused (${del.line()})`);
+            // Stops at the first move away from the leased tip, not only at its absence: a
+            // ref that moved is one this lease cannot remove, and whatever takes it off
+            // later took it off without this run.
+            const at = settled(ref, (t) => t !== tip, pending);
+            if (at.read && at.tip === '') {
+              // Gone — and whose deletion that was is what the verdict says. With a refusal
+              // the remote answered and this run's delete never ran, so the ref came off
+              // somewhere else; `retired` would claim an act this run did not make.
+              it.verdict = pending ? 'retired' : 'absent';
+              it.reason = `${stopped}, and ${opts.pushRemote} no longer carries it`
+                + (pending ? '' : ' — something else took it off');
+            } else if (at.read && at.tip !== tip) {
+              it.reason = `${stopped}, and ${opts.pushRemote} now carries it at`
+                + ` ${text(at.tip)} — it moved, and a lease pinned to ${it.tip} takes nothing`
+                + ' off';
+            } else if (at.read && !pending) {
+              it.reason = `${stopped} — a stale lease or a deletion rule`;
+            } else if (at.read) {
+              it.verdict = 'unknown';
+              it.reason = `${stopped}, and ${opts.pushRemote} still carried it ${settledAfter}`
+                + ' — it may yet come off';
+            } else {
+              // The read that would settle it failed; a refusal settled it by itself.
+              it.verdict = pending ? 'unknown' : 'kept';
+              it.reason = `${stopped}, and ${opts.pushRemote} could not be read afterwards`
+                + ` (${at.why})`;
+            }
+          }
         }
       }
     }
