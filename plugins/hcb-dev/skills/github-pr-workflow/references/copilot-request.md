@@ -19,21 +19,23 @@ These hold as well, each read off `copilot-state.mjs` rather than remembered:
 
 - a Copilot review of an earlier head is in hand — where it never reviewed, there is nothing to
   ask again;
-- the pull request is open ready for review and `verdict` is `unrequested` — where a request
-  stands, the review it brings reads the head it posts on, and one placed beside it is a
-  duplicate;
+- no rule in force reviews pushes (`expects.onPush` false) — where one does, the push itself
+  brings the head its review, and a request beside it is a duplicate;
+- the pull request is open ready for review, and `verdict` is `unrequested` past the cutoff
+  (`copilot.md`) — before it a request still registering reads as none, and where one stands
+  the review it brings reads the head it posts on;
 - the local review of the turn has settled (`copilot-findings.md`), and the head it settled on is
   pushed — a request placed before the push reviews the head behind it.
 
 **One request per turn, not one per pull request.** Nothing else earns one: not a fix, not a
-rebase, not a head left unrequested at the cutoff (`copilot.md`), not an approval still
-outstanding, not findings you would like more of.
+rebase, not a head the cutoff left unreviewed on its own, not an approval still outstanding, not
+findings you would like more of.
 
 ## How
 
 ```bash
 REPO="<owner/name>"; PR="<n>"
-node "<plugin root>/scripts/copilot-state.mjs" --pr "$PR"   # the reading before the call
+node "<plugin root>/scripts/copilot-state.mjs" --pr "$PR" --repo "$REPO"   # the reading before
 # The login with its [bot] suffix: the bare login answers 422.
 gh api --silent -X POST "repos/$REPO/pulls/$PR/requested_reviewers" \
   -f 'reviewers[]=copilot-pull-request-reviewer[bot]'

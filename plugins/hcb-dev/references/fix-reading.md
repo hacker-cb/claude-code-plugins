@@ -34,7 +34,8 @@ the rounds spent and closed is readable off the branch rather than out of a sess
 **On what they find, not on how many there were.** A round that turns up no new `Critical` or
 `Important` finding belonging to this change is the last one; so is a round whose finding lands
 where an earlier round already fixed something, which is the loop trading one break for another.
-Up to ~3 rounds otherwise, then stop and ask. Running out is a stop and never a completion: never
+Up to ~3 rounds otherwise — counted per series, each set of fixes that sends something to a
+reviewer opening one — then stop and ask. Running out is a stop and never a completion: never
 complete, never merge, and never re-rate a finding to get under the line. The rounds belong to
 the loop that opened them and spend its budget; no other loop's is drawn into them.
 
