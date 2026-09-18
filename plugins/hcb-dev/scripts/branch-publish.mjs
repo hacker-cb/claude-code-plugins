@@ -238,9 +238,11 @@ if (mayAsk) {
     // One repository or none: with several, a request whose head lives on any of them is
     // one a push here reaches, and naming the first would drop the rest as foreign.
     here = urls.length === 1 ? repoOfUrl(urls[0]) : null;
-    // A fetch url that cannot be read is not one the push url agrees with.
+    // A fetch url that cannot be read is not one the push url agrees with. With several,
+    // the first — the one git itself treats as the remote's push url — is read: a
+    // repository the push reaches, where the fetch url may be none of them.
     const f = git(['remote', 'get-url', opts.pushRemote]);
-    if (urls.length === 1 && !(f.ok && f.out.split('\n')[0] === urls[0])) [endpoint] = urls;
+    if (urls.length > 0 && !(f.ok && f.out.split('\n')[0] === urls[0])) [endpoint] = urls;
   }
 }
 
