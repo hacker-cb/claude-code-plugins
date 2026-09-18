@@ -40,7 +40,12 @@ set -uo pipefail
 export LC_ALL=C
 
 MARKET=.claude-plugin/marketplace.json
-SEMVER='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+# The semver.org grammar in full: no leading zero on a numeric identifier, prerelease
+# ones included, and no empty identifier. semver_gt below leans on the first — it
+# compares numbers as digit strings, which a leading zero would make lie.
+NUM='(0|[1-9][0-9]*)'
+PRE_ID='(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
+SEMVER="^$NUM\.$NUM\.$NUM(-$PRE_ID(\.$PRE_ID)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?\$"
 
 base="" head=""
 while [ "$#" -gt 0 ]; do
@@ -97,6 +102,11 @@ source_in() { printf '%s\n' "$2" | awk -F'\t' -v n="$1" '$1 == n { print $2; hit
 # its own prereleases, then prerelease identifiers one at a time — numeric ones
 # numerically and below alphanumeric ones, which compare as ASCII — with a shorter run
 # of equal identifiers below a longer one. Build metadata never counts.
+#
+# Numbers compare as digit strings, never as shell integers: semver puts no bound on a
+# field, and bash arithmetic overflows past 2^63. With no leading zero (SEMVER), the
+# longer string is the larger number and equal lengths compare as ASCII.
+num_gt() { [ "${#1}" -gt "${#2}" ] || { [ "${#1}" -eq "${#2}" ] && [[ $1 > $2 ]]; }; }
 semver_gt() {
   local a=${1%%+*} b=${2%%+*} a_pre="" b_pre="" x y i
   local -a ac bc ap bp
@@ -104,8 +114,8 @@ semver_gt() {
   case $b in *-*) b_pre=${b#*-}; b=${b%%-*} ;; esac
   IFS=. read -ra ac <<<"$a"; IFS=. read -ra bc <<<"$b"
   for i in 0 1 2; do
-    [ "${ac[i]}" -gt "${bc[i]}" ] && return 0
-    [ "${ac[i]}" -lt "${bc[i]}" ] && return 1
+    [ "${ac[i]}" = "${bc[i]}" ] && continue
+    num_gt "${ac[i]}" "${bc[i]}"; return
   done
   [ -z "$a_pre" ] && [ -n "$b_pre" ] && return 0
   [ -z "$b_pre" ] && return 1
@@ -113,8 +123,7 @@ semver_gt() {
   for ((i = 0; i < ${#ap[@]} && i < ${#bp[@]}; i++)); do
     x=${ap[i]} y=${bp[i]}
     if [[ $x =~ ^[0-9]+$ && $y =~ ^[0-9]+$ ]]; then
-      ((10#$x > 10#$y)) && return 0
-      ((10#$x < 10#$y)) && return 1
+      [ "$x" = "$y" ] || { num_gt "$x" "$y"; return; }
     elif [[ $x =~ ^[0-9]+$ ]]; then return 1
     elif [[ $y =~ ^[0-9]+$ ]]; then return 0
     elif [[ $x > $y ]]; then return 0

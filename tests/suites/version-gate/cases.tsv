@@ -13,6 +13,8 @@ stacked-on-squashed	-	0	hcb-alpha          unchanged (1.0.2)|bumped 0.3.0 -> 0.3
 lowered	-	1	verdict: hcb-alpha changed, but 1.0.0 is not above base 1.0.1	a different version is not enough: it has to be above the base's
 version-dropped	-	1	verdict: hcb-alpha changed, and drops its version (base has 1.0.1)	dropping the version is a change of versioning, not a way past the gate
 not-semver	-	1	verdict: hcb-alpha changed, and '1.1' is not semver	a version that is not semver cannot be ranked, so it cannot pass
+prerelease-leading-zero	-	1	verdict: hcb-alpha changed, and '1.0.2-01' is not semver	a numeric prerelease identifier with a leading zero is not semver, and would make a digit-string comparison lie
+empty-prerelease-identifier	-	1	verdict: hcb-alpha changed, and '1.0.2-.x' is not semver	an empty prerelease identifier is not semver
 plugin-json-unparsable	-	1	verdict: hcb-alpha changed, and its plugin.json does not parse	a manifest the change broke is the change's failure, not a run that could not evaluate
 plugin-json-only	-	1	verdict: hcb-alpha changed, but 1.0.1 is not above base 1.0.1	plugin.json is part of the plugin: editing it alone is a change that ships
 wrapper-changed	-	0	wrapper            unversioned - updates follow the commit|elsewhere          not a path in this repository|verdict: ok - no versioned plugin changed	a plugin with no version is versioned by commit, and is never held to a bump
@@ -32,6 +34,9 @@ alphanumeric-over-numeric	-	0	bumped 1.1.0-beta.9 -> 1.1.0-beta.x	an alphanumeri
 longer-prerelease	-	0	bumped 1.1.0-beta -> 1.1.0-beta.1	with every shared identifier equal, the longer prerelease is the higher
 numeric-below-alphanumeric	-	1	1.1.0-beta.9 is not above base 1.1.0-beta.x	a numeric identifier ranks below an alphanumeric one, whichever side carries it
 build-metadata-on-base	-	0	bumped 1.0.1+build.7 -> 1.0.2	build metadata on the base is dropped before ranking, not read as part of the patch number
+huge-core-longer	-	0	bumped 999999999999999999999.0.0 -> 1000000000000000000000.0.0	semver bounds no field: numbers past 2^63 still rank, the longer digit string above
+huge-core-same-length	-	0	bumped 1.0.9223372036854775807 -> 1.0.9223372036854775808	digit strings of one length rank as text: across 2^63 shell arithmetic wraps negative and ranks the bump below its base
+huge-prerelease-numeric	-	0	bumped 1.1.0-rc.9223372036854775807 -> 1.1.0-rc.9223372036854775808	a numeric prerelease identifier across 2^63 ranks as a number too
 plain	--head nope	3	verdict: could not evaluate - 'nope' is not a commit here	a revision that is not here is a run that could not evaluate, never a pass
 no-base-manifest	-	3	verdict: could not evaluate - .claude-plugin/marketplace.json on the base is missing	a base with no marketplace is the base's problem, not a verdict on the change
 -	--base	2	--base needs a value	a flag without its value is a call this script cannot act on, before git is reached
