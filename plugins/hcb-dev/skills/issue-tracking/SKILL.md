@@ -69,7 +69,7 @@ finding came out of:
 |---|---|
 | **done**, and the finding lies beside what the issue set out to settle — another input, another path, a part left for later, a consequence of the fix | a finding of its own — searched, weighed and proposed like any other — linked both ways |
 | **done**, and what the issue says is fixed is not — the same defect back included | **INTO** it, reopened, naming what does not hold |
-| **another issue** — a duplicate, a rewrite, a split | the issue that took this finding's part is the target, open or closed; none having taken it, a finding of its own |
+| **another issue** — a duplicate, a rewrite, a split | the issue that took this finding's part is the target: open, **INTO** it; closed, this table again. None having taken it, a finding of its own |
 | **a decision against it** | the decision stands: **DROP** citing it, unless the finding carries what overturns it — and then **INTO** it, reopened, proposed as the reversal it is |
 | **nothing that decided anything** — a sweep, a timeout | **INTO** it, reopened |
 
