@@ -16,7 +16,6 @@ description: >-
   skips both.
 ---
 
-
 # GitHub PR Workflow
 
 Take committed work on a feature branch and drive it to a merged PR, autonomously where safe.
@@ -25,6 +24,7 @@ pick up from there. `hcb-dev:shipping-workflow` sits upstream and hands off here
 mode: finished work with no local review yet goes there first, since this skill starts at the
 PR and runs no reviewers. GitHub-specific by design; which driver a forge routes to is
 [`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Autonomy model
 
@@ -66,7 +66,7 @@ carries now, and it fetches the base for Step 2 as it goes.
 
 ```bash
 BASE_JSON="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" \
-  --base "<the base, or drop the flag to let the ladder pick one>")"
+  --base "<the base: the one named, else the one base-resolution.md's ladder settled>")"
 PUSH_REMOTE="<.remotes.push>"; BASE_REMOTE="<.base.remote>"; BASE="<.base.name>"
 NEW="<the name from branch-naming.md — MAY equal the current one>"
 OLD_NAME="<the bare old-name shipping-workflow step 0 threaded in — empty where none>"
@@ -154,9 +154,9 @@ either becomes a stop.
    # Re-resolving is what STOPS the drift read where the base cannot be refreshed: an older
    # tracking ref measures cleanly and answers `behind: 0`, the one wrong answer this cannot
    # give. Pass no --base-ref rather than a ref that is not current.
-   BASE_JSON="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" --base "$BASE")"
+   BASE_JSON="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" --base "<.base.name, Step 1>")"
    node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr> \
-     ${BASE_REF:+--base-ref "$BASE_REF"}   # BASE_REF="<.base.ref>" only where .base.current
+     --base-ref "<.base.ref — drop the flag entirely unless .base.current>"
    node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates
    node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-state.mjs" --pr <pr>
    node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-findings.mjs" --pr <pr>

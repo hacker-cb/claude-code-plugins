@@ -4,9 +4,8 @@ How to find, classify, fix, and respond to GitHub Copilot's PR review findings.
 
 ## The state is read by a script, not by hand
 
-`scripts/copilot-state.mjs` answers one question — **what is Copilot's state on this
-pull request's current head** — and the skill invokes it (skill content is where the
-plugin root is substituted; here the placeholder would stay literal text). It reads
+`node "<plugin root>/scripts/copilot-state.mjs" --pr <n>` answers one question —
+**what is Copilot's state on this pull request's current head**. It reads
 the rules in force on the base, every Copilot review that posted, and the request's
 own timeline, and returns:
 

@@ -16,6 +16,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, sep } from 'node:path';
 import { dirOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
 
@@ -69,9 +70,14 @@ const within = (child, parent) => child === parent || child.startsWith(parent + 
 // --- the live-session registry
 // `CLAUDE_CONFIG_DIR` is a real environment variable the user may set, and this reads
 // Claude Code's own state, so it takes the expansion rather than a pinned `$HOME`.
-const cfg = process.env.CLAUDE_CONFIG_DIR || join(process.env.HOME || '', '.claude');
-const sessionsDir = join(cfg, 'sessions');
-answer.registry.path = sessionsDir;
+// `homedir()` answers from the account where `HOME` is unset, which `process.env.HOME`
+// cannot. An empty answer names no directory at all: joining `.claude` onto it yields a
+// path relative to wherever the command runs, and a `.claude/sessions` that happens to
+// exist there would read as this host's registry.
+const home = homedir();
+const cfg = process.env.CLAUDE_CONFIG_DIR || (home ? join(home, '.claude') : '');
+const sessionsDir = cfg ? join(cfg, 'sessions') : '';
+answer.registry.path = sessionsDir || null;
 
 // `process.kill(pid, 0)` and the shell's `kill -0` are not the same test. EPERM means the
 // process EXISTS and is not ours to signal — a session run by another user — and the
@@ -118,6 +124,7 @@ for (let pid = process.pid, i = 0; i < 24; i += 1) {
 const sessions = [];
 let files = [];
 try {
+  if (!sessionsDir) throw new Error('no home directory to find the registry under');
   files = readdirSync(sessionsDir).filter((n) => n.endsWith('.json'));
   answer.registry.present = true;
 } catch { answer.registry.present = false; }

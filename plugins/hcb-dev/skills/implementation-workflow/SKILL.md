@@ -25,6 +25,7 @@ completion **mode** — `local` (merge each slice into its parent, no forge) or 
 request per slice) — changes only how a slice *ends*; analysis, slicing, development and review
 are identical either way. This skill elicits it once, at the gate, and threads it down; the
 contract is [`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Phase 0 — Analysis
 
@@ -86,9 +87,8 @@ Settle, in one gate:
 - **Architectural / implementation forks** — the choices the code cannot answer.
 - **Completion mode** — `local` or `request` (default `request` where the user is silent and
   phrasing does not decide).
-- **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request; the real
-  choice is the final `feature → base` request), filtered in request mode to the repo's allowed
-  methods.
+- **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request; the real choice
+  is the final `feature → base` request), filtered in request mode to the repo's allowed methods.
 - **Merge authorization** — `slice-completion.md`'s `merge-auth`, value and addressee both, shown
   rather than asked: `on-green` is the default in both modes, approving the plan *is* that
   authorization, and the addressee is the user unless an order above named another. The

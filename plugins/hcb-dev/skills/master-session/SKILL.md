@@ -25,6 +25,7 @@ reaches its batches per
 [`../../references/session-comms.md`](../../references/session-comms.md), and
 it accepts their returns per
 [`../../references/order-return.md`](../../references/order-return.md).
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Assuming the role
 

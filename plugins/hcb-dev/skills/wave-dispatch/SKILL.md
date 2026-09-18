@@ -24,6 +24,7 @@ analysis — and launches them. The order it
 writes obeys [`../../references/session-prompts.md`](../../references/session-prompts.md),
 settles every slot of [`../../references/order-anatomy.md`](../../references/order-anatomy.md),
 and addresses its receiver per [`../../references/session-comms.md`](../../references/session-comms.md).
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Preflight — before anything is hung
 

@@ -20,6 +20,8 @@ description: >-
 
 # Backlog survey
 
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
+
 ## Scope, then scale
 
 Name the slice — a milestone, a label, everything open — and count it before

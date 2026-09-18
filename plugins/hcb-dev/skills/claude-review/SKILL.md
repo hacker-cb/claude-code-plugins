@@ -17,6 +17,7 @@ description: >-
 `claude -p "/code-review …"` runs Claude Code's own reviewer in a fresh headless
 session, reachable from anywhere `Bash` is, and scoped by the range it is handed
 rather than by what the calling session takes the change to be.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 This skill is **review-only**. Never fix what it reports — return the findings
 and let the caller decide.

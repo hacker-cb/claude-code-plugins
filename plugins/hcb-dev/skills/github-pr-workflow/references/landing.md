@@ -55,7 +55,7 @@ this base runs on a push at all, and which of it to wait for.
 ```bash
 # Quoted as one word at every use: the plugin root is a path like any other and may
 # carry spaces, and unquoted, `node` is handed its first segment.
-CHECKS="${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs"
+CHECKS="<plugin root>/scripts/commit-checks.mjs"
 BEFORE="$(node "$CHECKS" --pr <pr> --sha base  --require-from-gates)" \
   || echo "CALLED WRONG: $BEFORE"
 AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
@@ -104,7 +104,7 @@ the report.
 when a ref may go. The reading is the script's; the acting is this step's:
 
 ```bash
-if RETIRE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/retire-check.mjs" \
+if RETIRE="$(node "<plugin root>/scripts/retire-check.mjs" \
     --branch "<branch>" --pr <pr> --push-remote "<push-remote>")"; then
   printf '%s\n' "$RETIRE"   # the whole answer — a projection hides the field the
                             # next action needs, and the lease is one of them

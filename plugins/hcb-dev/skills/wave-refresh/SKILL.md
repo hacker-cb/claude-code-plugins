@@ -24,6 +24,7 @@ issue's verdict is
 [`../../references/issue-currency.md`](../../references/issue-currency.md)'s,
 what the user approves goes out through `hcb-dev:wave-dispatch`, and the role
 around it is `hcb-dev:master-session`.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 **Differential by construction.** This pass reads a delta and the ground the
 running batches hold. What it needs to exist is a recorded point to diff from —

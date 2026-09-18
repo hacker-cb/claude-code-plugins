@@ -301,7 +301,10 @@ A question with one right answer, and a set of wrong ones that look alike, belon
 code rather than in prose a reader re-derives each time. Each script here answers ONE
 question, prints JSON, and is held to what a forge actually sends by a suite under
 [`../../tests/suites`](../../tests/suites) in the repository root. They never load into a
-session's context — a skill invokes one and reads its answer.
+session's context — a skill invokes one and reads its answer. A skill spells the path to
+one with the placeholder Claude Code substitutes as it loads the skill; a reference, read
+verbatim, writes `<plugin root>` instead, and the skill that links it says once what that
+name stands for.
 
 - [`scripts/default-branch.mjs`](scripts/default-branch.mjs) — which branch this
   repository treats as its default, and the remote that says so. Asks the remote even

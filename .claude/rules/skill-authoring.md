@@ -57,6 +57,21 @@ that prose over uninterpreted: no count taken from it and no pattern run over it
 over a layout nobody published is the reading that goes quiet the day the layout moves, and a
 count taken from one place in the prose passes for a count of all of it.
 
+## Values a block runs on
+
+The Bash tool keeps nothing between calls but the working directory, so a `$NAME` a
+block did not assign is empty when the block runs — and a script handed an empty flag
+usually falls back rather than refusing, which reads as an answer. A block therefore
+either assigns what it names, or takes it as `NAME="<slot>"` on its first lines, or —
+where it is a continuation — says in its first line which call it shares and what that
+call assigned. A value read out of a script's answer is read in the block that uses it,
+never pasted: a path or a branch name carries whatever a filesystem allows.
+
+A command in a reference is written for the reader who will run it, so the plugin root
+is `<plugin root>` there, a slot like any other. Why it is not the placeholder is
+`CLAUDE.md`'s, not the reference's — it is an argument for the shape, and the shape is
+what the file carries.
+
 ## A reference owns what it covers
 
 Never restate a shared reference beside the link to it. Where a paragraph both

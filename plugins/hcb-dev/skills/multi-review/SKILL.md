@@ -21,6 +21,7 @@ most of this skill exists to keep it visible. Report-only: never fix what comes 
 findings and coverage to the caller. Read
 [`../../references/invariants.md`](../../references/invariants.md) first — every count, every
 empty answer and every reviewer that did not report is read by it.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## 1. Scope
 
@@ -108,9 +109,10 @@ shell commands of this session, not as subagents — no rule about delegating to
 workflows reaches them. The one reviewer that fans out into subagents is the security review.
 
 - **codex-review** and **claude-review** — invoke the `hcb-dev:codex-review` and
-  `hcb-dev:claude-review` skills, each passed the base and the rung §1 fixed for it, and no base
-  at all where the scope is the working tree alone, which is how both are told to review one.
-  Whatever narrowed the review goes down with it, in the same prose.
+  `hcb-dev:claude-review` skills through the Skill tool, never by reading their `SKILL.md`: only
+  the tool substitutes the plugin root in one. Each is passed the base and the rung §1 fixed for
+  it, and no base at all where the scope is the working tree alone, which is how both are told to
+  review one. Whatever narrowed the review goes down with it, in the same prose.
 - **security-review** — invoke the skill inline, last, and run it as written: the sub-tasks it
   asks for are launched as subagents of this session — the finder first, then the filtering pass
   as parallel sub-tasks. The skill asking for them is the ask a rule admitting subagents only on
@@ -130,14 +132,13 @@ own output — and its findings. Never carry one reviewer's count across to anot
 borrowed number is how a reviewer that read nothing gets recorded as having read the change.
 
 **Wait for every reviewer you launched.** None of the four statuses in §6 says "still running",
-so a row filled before its reviewer returns asserts something about a run that has not finished
-— and the one status that fits an empty cell, `n/a`, is the one the coverage gate treats as
-closed. **How to wait is
-[`../../references/review-runs.md`](../../references/review-runs.md)'s, and this skill is the
-caller it was written for** — several runs out at once, and never a session that may end its
-turn: it runs inside subagents and dispatched sessions, where doing so ends the work the review
-was gating. A reviewer that has not returned by the ceiling is a row and a reason, never an
-empty cell and never a stall.
+so a row filled before its reviewer returns asserts something about a run that has not finished —
+and the one status that fits an empty cell, `n/a`, is the one the coverage gate treats as closed.
+**How to wait is [`../../references/review-runs.md`](../../references/review-runs.md)'s, and this
+skill is the caller it was written for** — several runs out at once, and never a session that may
+end its turn: it runs inside subagents and dispatched sessions, where doing so ends the work the
+review was gating. A reviewer that has not returned by the ceiling is a row and a reason, never
+an empty cell and never a stall.
 
 **A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage gate treats as
 closed, so recording a reviewer that did not run passes a completion with it missing — which is
@@ -162,8 +163,7 @@ ladder.
 
 ## 6. Report
 
-Coverage first, as a table — one row per reviewer, what it covered before its
-verdict:
+Coverage first, as a table — one row per reviewer, what it covered before its verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|

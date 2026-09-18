@@ -47,12 +47,6 @@ node <plugin root>/scripts/retire-check.mjs \
   --branch <name> (--tip <ref> | --pr <n>) [--push-remote <name>]
 ```
 
-**Every skill that performs a retirement writes that command itself**, because the plugin
-root is substituted in skill content and stays literal text here. Three do:
-`github-pr-workflow` Step 6, `hcb-dev:wave-worker` on a landing it finds already taken,
-and whatever drives a local completion ([`slice-completion.md`](slice-completion.md)). A
-skill that only *mentions* the retirement links this file and stops there.
-
 | field | what it settles |
 |---|---|
 | `read` | every reading answered. `false` retires nothing, on either side |

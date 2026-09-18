@@ -13,6 +13,7 @@ description: >-
 
 `codex exec review` is Codex's built-in reviewer, running non-interactively in a
 read-only sandbox. It needs `codex` on `PATH`, `jq`, and a live `codex login`.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 This skill is **review-only**. Never fix what it reports — return the findings
 and let the caller decide.

@@ -7,6 +7,9 @@ here routes on, and every step number is the skill's.
 ## In this order
 
 ```bash
+# One Bash call with step 4's block at its head — it assigns PROJECT and SCAN, and the shell
+# keeps neither between calls. `<n>` is the item's index in that answer.
+WT="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.worktrees[$i].path')"
 git -C "$PROJECT" worktree remove "$WT"      # 1. --force ONLY on a confirmed class-3 item: a
                                              #    dirty worktree, or one the removal refuses
                                              #    over a submodule. Plain remove re-checks
@@ -27,6 +30,7 @@ report which `proof` each deletion stood on. Per branch it still calls `delete`,
 index in that fresh answer:
 
 ```bash
+# One Bash call, step 1's block and step 4's re-run at its head: they assign PROJECT, D and SCAN.
 BR="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].name')"
 # The oid the GATE's row carried, read BEFORE the wait. Both values from one reading makes the
 # comparison say nothing: a branch that moved comes back with its new tip and matches itself.
@@ -58,6 +62,7 @@ acting on a name instead is how every surviving branch loses its upstream on the
 could not answer.
 
 ```bash
+# Same shape of call: PROJECT and D from step 1's block, BR read out of SCAN as above.
 git -C "$PROJECT" branch --set-upstream-to="$D" -- "$BR"   # repair: set-upstream
 git -C "$PROJECT" branch --unset-upstream -- "$BR"         # repair: unset-upstream
 ```

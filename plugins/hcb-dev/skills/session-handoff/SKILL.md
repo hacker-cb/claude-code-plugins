@@ -19,6 +19,7 @@ description: >-
 The envelope every crossing prompt obeys is
 [`../../references/session-prompts.md`](../../references/session-prompts.md).
 This skill fills it with what this session finished.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Posture
 

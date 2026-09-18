@@ -29,7 +29,9 @@ node <plugin root>/scripts/resolve-base.mjs [--base <name>] [--forge gh|glab]
 | `requestBase` / `landings` | the open request's base, and where this repository's changes actually land, where `--forge` named one. Read, never chosen: which rung wins is the ladder's. A request whose head is in a **fork** is dropped — the filter is by branch name alone and matches across them, so its base is one somebody else chose — and open requests disagreeing about the base refuse rather than settle on the first. `--no-network` asks neither |
 
 **The remote you *read* a base from is not the one you *write* a branch to**: in a fork
-the base is in `upstream`, which you cannot push to.## The ladder — first hit wins
+the base is in `upstream`, which you cannot push to.
+
+## The ladder — first hit wins
 
 1. **A base the caller named.** An explicit base always wins.
 
@@ -43,9 +45,8 @@ the base is in `upstream`, which you cannot push to.## The ladder — first hit 
    judgement is this rung's, not the script's.
 
 4. **The repo default branch.** A question narrow enough to have its own script:
-   `scripts/default-branch.mjs`, which the calling **skill** invokes — skill content is
-   where the plugin root is substituted, while here the placeholder would stay literal
-   text. It reads `<remote>/HEAD` without dereferencing it (after a rename that pointer
+   `node "<plugin root>/scripts/default-branch.mjs"`.
+   It reads `<remote>/HEAD` without dereferencing it (after a rename that pointer
    keeps printing the old name with status 0 forever), verifies the ref it claims, asks
    the remote where the pointer is absent or dead, and materialises the tracking ref
    before answering. It refuses rather than guessing, and a refusal is "the question
@@ -65,8 +66,7 @@ A resolved default gets used two ways, and they want opposite forms:
 Hand on **both**, and take each from the resolver's own answer rather than trimming
 one out of the other — `${ref#*/}` over a fully qualified `refs/remotes/<remote>/<name>`
 yields `remotes/origin/<name>`, which compares equal to nothing. Both are needed because
-each direction of
-the mistake fails differently and only one of them tells you.
+each direction of the mistake fails differently and only one of them tells you.
 
 **A bare name where a ref belongs is loud** — in a clone that never checked out the
 default, `git branch --merged <default>` and `git rev-list <default>..<branch>` die.
