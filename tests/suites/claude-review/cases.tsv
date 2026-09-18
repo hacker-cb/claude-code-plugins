@@ -89,6 +89,7 @@ denied-reads-shaped-as-builds	-	0	scope:|6 tool call(s) were denied|NOT:run-warn
 report	STUB_ECHO_PROMPT=1	0	scope:|do not build, test, lint or run the project	the prompt tells the reviewer the boundary, so it does not spend the run reaching for the project's own tooling
 report	STUB_ECHO_PROMPT=1	0	stub prompt: /code-review low|NOT:...HEAD — a read-only review	the engine is handed the head as a commit, not as a name it resolves minutes later — a commit made while the run is out stays outside the range the record counts
 report	-	0	scope:|coverage-warning: HEAD is at or behind the base	a run standing on its base, or behind it, names the empty range, rather than reading as a clean review of nothing
+no-findings	STUB_GIT_ECHO=1	0	stub git: diff --name-only|NOT:...HEAD	the count behind the scope line is taken over the pinned range as well, never over a symbolic head the engine would resolve again
 #
 # What the run reports about itself, which nothing asserted before: a warning from
 # stderr, the boundary it was launched inside, and a model that answered other than
