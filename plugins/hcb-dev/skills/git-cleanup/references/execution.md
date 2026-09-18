@@ -8,8 +8,13 @@ here routes on, and every step number is the skill's.
 
 ```bash
 # One Bash call with step 4's block at its head — it assigns PROJECT and SCAN, and the shell
-# keeps neither between calls. `<n>` is the item's index in that answer.
-WT="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.worktrees[$i].path')"
+# keeps neither between calls. `<n>` indexes THIS answer, which renumbers as items go, so the
+# path it lands on is held against the one the gate approved before anything is removed:
+# `jq -e` refuses an index past the end rather than handing back the string `null` to delete.
+WT="$(printf '%s' "$SCAN" | jq -er --argjson i <n> '.worktrees[$i].path')" \
+  || { echo "no worktree at index <n> in this answer — re-read it and ask again"; exit 1; }
+[ "$WT" = '<the path the gate approved>' ] \
+  || { echo "the answer renumbered: $WT is not the approved path — ask again over it"; exit 1; }
 git -C "$PROJECT" worktree remove "$WT"      # 1. --force ONLY on a confirmed class-3 item: a
                                              #    dirty worktree, or one the removal refuses
                                              #    over a submodule. Plain remove re-checks
@@ -31,12 +36,14 @@ index in that fresh answer:
 
 ```bash
 # One Bash call, step 1's block and step 4's re-run at its head: they assign PROJECT, D and SCAN.
-BR="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].name')"
-# The oid the GATE's row carried, read BEFORE the wait. Both values from one reading makes the
-# comparison say nothing: a branch that moved comes back with its new tip and matches itself.
+# `<n>` indexes THIS answer, which renumbers; two branches cut from one commit share a tip, so
+# the name is held against the approved one as well as the oid.
+BR="$(printf '%s' "$SCAN" | jq -er --argjson i <n> '.branches[$i].name')" \
+  || { echo "no branch at index <n> in this answer — re-read it and ask again"; exit 1; }
+[ "$BR" = '<the branch name the gate approved>' ] || { echo "renumbered: $BR"; exit 1; }
+# The oid the GATE's row carried, read BEFORE the wait — one reading for both matches itself.
 APPROVED="<the oid this branch's gate row carried>"
-# The ref this instant. `--verify -q` for the empty answer, `|| true` for the exit status, so a
-# vanished ref still leaves a value to test.
+# The ref this instant: `--verify -q` for the empty answer, `|| true` so a vanished ref tests.
 NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/$BR" || true)"
 if [ "$NOW" = "$APPROVED" ]; then
   git -C "$PROJECT" branch -D -- "$BR"

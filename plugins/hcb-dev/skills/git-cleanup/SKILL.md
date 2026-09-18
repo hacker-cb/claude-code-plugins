@@ -49,7 +49,7 @@ One script reads every worktree of the repository at once:
 # `--repo-dir` names WHICH repository to sweep; where this run stands comes from the directory
 # the command runs in, and they are two questions. `$PROJECT` for both would make the main
 # worktree the one you stand in — the one `worktree remove` refuses.
-PROJECT="<step 1's primary worktree path>"
+PROJECT="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/worktree-owners.mjs" --repo-dir "$PROJECT"
 ```
 
@@ -81,9 +81,13 @@ whole list in front of the user before a single deletion.
 ## Step 4 — Discovery (read-only, one call)
 
 ```bash
-# Step 1's values, empty where it printed DEFAULT-UNRESOLVED: the shell keeps none of them
-# between calls, and an empty `--default` reads as "not passed" rather than as unresolved.
-PROJECT="<step 1's primary worktree path>"; DEF="<step 1's name>"; D="<step 1's ref>"
+# Step 1's readings, taken again here rather than pasted in: the shell keeps nothing between
+# calls, and a path or a ref name may carry what a double-quoted slot would run. Both stay
+# empty where step 1 said DEFAULT-UNRESOLVED, which is what drops the flags.
+PROJECT="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
+DB="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/default-branch.mjs")"
+D="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .ref  else "" end')"
+DEF="$(printf '%s' "$DB" | jq -r 'if .resolved and .confirmed then .name else "" end')"
 SCAN="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-scan.mjs" \
   --repo-dir "$PROJECT" --default "$DEF" --default-ref "$D")"
 printf '%s\n' "$SCAN"

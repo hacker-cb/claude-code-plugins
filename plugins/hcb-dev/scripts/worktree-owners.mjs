@@ -74,7 +74,11 @@ const within = (child, parent) => child === parent || child.startsWith(parent + 
 // cannot. An empty answer names no directory at all: joining `.claude` onto it yields a
 // path relative to wherever the command runs, and a `.claude/sessions` that happens to
 // exist there would read as this host's registry.
-const home = homedir();
+// Asked only where the override did not answer, and caught: with `HOME` unset and no account
+// record for this uid — a container running as a bare number — `homedir()` throws, and the
+// crash would take down a run the override had already answered.
+let home = '';
+if (!process.env.CLAUDE_CONFIG_DIR) { try { home = homedir(); } catch { home = ''; } }
 const cfg = process.env.CLAUDE_CONFIG_DIR || (home ? join(home, '.claude') : '');
 const sessionsDir = cfg ? join(cfg, 'sessions') : '';
 answer.registry.path = sessionsDir || null;

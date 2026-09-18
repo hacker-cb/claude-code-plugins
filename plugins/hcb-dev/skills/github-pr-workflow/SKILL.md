@@ -155,8 +155,8 @@ either becomes a stop.
    # tracking ref measures cleanly and answers `behind: 0`, the one wrong answer this cannot
    # give. Pass no --base-ref rather than a ref that is not current.
    BASE_JSON="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" --base "<.base.name, Step 1>")"
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr> \
-     --base-ref "<.base.ref — drop the flag entirely unless .base.current>"
+   BASE_REF="$(printf '%s' "$BASE_JSON" | jq -r 'if .base.current then .base.ref else "" end')"
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr> ${BASE_REF:+--base-ref "$BASE_REF"}
    node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates
    node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-state.mjs" --pr <pr>
    node "${CLAUDE_PLUGIN_ROOT}/scripts/copilot-findings.mjs" --pr <pr>
