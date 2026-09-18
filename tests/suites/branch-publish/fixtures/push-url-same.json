@@ -11,8 +11,6 @@
   "refs/heads/feat/example-export": "f1x7dddddddddddddddddddddddddddddddddddd\trefs/heads/feat/example-export",
   "refs/heads/claude/example-work": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/claude/example-work"
  },
- "push_url": "https://forge.example/other-org/fork-repo.git",
- "expect_ls_repo": "https://forge.example/other-org/fork-repo.git",
- "fetch_url": "https://forge.example/example-org/example-repo.git",
+ "expect_ls_repo": "origin",
  "fast_forward": "yes"
 }

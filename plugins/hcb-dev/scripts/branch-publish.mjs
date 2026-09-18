@@ -215,18 +215,25 @@ const repoOfUrl = (url) => {
   return path.includes('/') ? path : null;
 };
 let here = null;
-// Every read below asks this rather than the remote's name: `git ls-remote <name>` goes to
-// the FETCH url — measured — so under a `pushurl` it answers about a repository this run
-// never writes to, and a ref read there would settle a publication that landed elsewhere.
+// Where every read and fetch below goes. `git ls-remote <name>` and `git fetch <name>` both
+// go to the FETCH url — measured — so under a `pushurl` they answer about a repository this
+// run never writes to. The name stays wherever the two urls agree, keeping every setting a
+// remote carries by name; the push url itself stands in where they do not.
 let endpoint = opts.pushRemote;
+// How many urls a push goes to. Each gets every push and every deletion, and a read of one
+// settles nothing about the others — so with several, an act that did not report success
+// stays unsettled rather than opening the retirement on the one url that took it.
+let pushUrls = 1;
 if (mayAsk) {
   // The url that RECEIVES pushes: a `pushurl` sends them somewhere the fetch url never
   // published to, and it is the receiving side a deletion lands on.
-  const u = git(['remote', 'get-url', '--push', opts.pushRemote]);
+  const u = git(['remote', 'get-url', '--push', '--all', opts.pushRemote]);
   if (u.ok) {
-    const url = u.out.split('\n').filter(Boolean)[0] || '';
-    here = repoOfUrl(url);
-    if (url) endpoint = url;
+    const urls = u.out.split('\n').filter(Boolean);
+    here = repoOfUrl(urls[0] || '');
+    pushUrls = Math.max(urls.length, 1);
+    const f = git(['remote', 'get-url', opts.pushRemote]);
+    if (urls.length === 1 && f.ok && f.out.split('\n')[0] !== urls[0]) [endpoint] = urls;
   }
 }
 
@@ -365,7 +372,7 @@ if (opts.publish) {
   // `push -u` writes both, a push that was killed wrote neither even where the ref itself
   // landed, so a publication settled by reading the remote writes what the push did not.
   const track = () => {
-    const f = run(['fetch', opts.pushRemote, `+${shipRef}:${tracking}`]);
+    const f = run(['fetch', endpoint, `+${shipRef}:${tracking}`]);
     if (!f.ok) return `its tracking ref could not be fetched (${detail(f)})`;
     // What the fetch BROUGHT, not that it ran: the remote can move between the read that
     // settled the publication and this, and an upstream left pointing at someone else's
@@ -398,7 +405,7 @@ if (opts.publish) {
       // need the remote's tip as an OBJECT here — whether this branch already contains it,
       // and whether it ever stood on it. A tip that was never fetched answers neither, and
       // an `is-ancestor` that errored reads exactly like one that said no.
-      const f = run(['fetch', opts.pushRemote, `+${shipRef}:${tracking}`]);
+      const f = run(['fetch', endpoint, `+${shipRef}:${tracking}`]);
       if (!f.ok) {
         ready = false;
         // Nothing was pushed, and what the remote already carries decides which of the two
@@ -455,10 +462,15 @@ if (opts.publish) {
             ? `the push was not waited out — ${PUSH_TIMEOUT}s passed with no answer`
               + `${p.err ? ` (last: ${p.line()})` : ''}`
             : (pending
-              ? `the push ended with no answer from ${opts.pushRemote} (${p.line()})`
+              ? `the push ended without a verdict from ${opts.pushRemote} (${p.line()})`
               : `the push was refused (${p.line()})`);
-          const at = settled(shipRef, (t) => tip !== null && t === tip, pending);
-          if (at.read && tip !== null && at.tip === tip) {
+          const at = pushUrls > 1 ? null
+            : settled(shipRef, (t) => tip !== null && t === tip, pending);
+          if (at === null) {
+            answer.published = null;
+            answer.publish.reason = `${stopped}, and ${opts.pushRemote} pushes to ${pushUrls}`
+              + ' urls — a read of one settles nothing about the others';
+          } else if (at.read && tip !== null && at.tip === tip) {
             const missing = track();
             answer.published = missing === null ? true : null;
             answer.publish.reason = missing === null
@@ -601,10 +613,14 @@ for (const name of candidates) {
               ? `the delete was not waited out — ${PUSH_TIMEOUT}s passed with no answer`
                 + `${del.err ? ` (last: ${del.line()})` : ''}`
               : (pending
-                ? `the delete ended with no answer from ${opts.pushRemote} (${del.line()})`
+                ? `the delete ended without a verdict from ${opts.pushRemote} (${del.line()})`
                 : `the delete was refused (${del.line()})`);
-            const at = settled(ref, (t) => t === '', pending);
-            if (at.read && at.tip === '') {
+            const at = pushUrls > 1 ? null : settled(ref, (t) => t === '', pending);
+            if (at === null) {
+              it.verdict = 'unknown';
+              it.reason = `${stopped}, and ${opts.pushRemote} pushes to ${pushUrls} urls — a`
+                + ' read of one settles nothing about the others';
+            } else if (at.read && at.tip === '') {
               // Gone — and whose deletion that was is what the verdict says. With a refusal
               // the remote answered and this run's delete never ran, so the ref came off
               // somewhere else; `retired` would claim an act this run did not make.

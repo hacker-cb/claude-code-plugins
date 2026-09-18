@@ -99,10 +99,16 @@ esac
 case "$1 $2" in
   "remote get-url")
     # The url that RECEIVES pushes, which is what says WHICH repository a deletion here
-    # would land in — a different question from the one `gh` answers for.
-    v=$(ask '.push_url'); [ -z "$v" ] && v=https://forge.example/example-org/example-repo.git
+    # would land in — a different question from the one `gh` answers for. Without
+    # `--push` it is the fetch url, the same one unless a case says otherwise; `push_url`
+    # may hold several, one per line, and only `--all` prints past the first.
+    push=0 all=0
+    for a in "$@"; do case "$a" in --push) push=1 ;; --all) all=1 ;; esac; done
+    if [ "$push" = 1 ]; then v=$(ask '.push_url'); else v=$(ask '.fetch_url // .push_url'); fi
+    [ -z "$v" ] && v=https://forge.example/example-org/example-repo.git
     case "$v" in fail) fail "fatal: no such remote" 128 ;; esac
-    printf '%s\n' "$v"; exit 0 ;;
+    if [ "$all" = 1 ]; then printf '%s\n' "$v"; else printf '%s\n' "$v" | head -1; fi
+    exit 0 ;;
 esac
 case "$1" in
   fetch)

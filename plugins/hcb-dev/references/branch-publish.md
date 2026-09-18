@@ -37,12 +37,13 @@ push, add up past it: a call outlasting the tool's limit comes back without its 
 | `notes` | why the name it ships under is not the one asked for |
 
 **An unsettled publication is neither a refusal nor a publication.** `null` with `asked` true is a
-push that ended with no verdict — not waited out, or its transport gone — or a remote that would
-not answer, and its `reason` quotes the last line git got to. Re-run the same call: the answer
-is read off the remote, so a ref that landed in the meantime comes back `true` whether or not the
-new push is waited out. Where that last line is the repository's own pre-push hook rather than
-git's transfer, raise `--push-timeout` past what the hook takes, since every re-run runs the hook
-again.
+push that ended without a verdict — not waited out, or stopped by an error rather than refused —
+or one the remote could not be read after, or one sent to several push urls, which no single read
+settles; its `reason` quotes the last line git got to. Re-run the same call: the answer is read off
+the remote, so a ref that landed in the meantime comes back `true` whether or not the new push is
+waited out. Where that last line is the repository's own pre-push hook rather than git's transfer,
+raise `--push-timeout` past what the hook takes, since every re-run runs the hook again; where it is
+an error no re-run changes — access refused, a url that does not resolve — report it instead.
 
 **A proof that cannot run keeps the ref.** Five have to hold before a name comes off the remote —
 no open change request heads it (deleting a head ref closes the request along with its review),
