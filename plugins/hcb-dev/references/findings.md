@@ -71,7 +71,7 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 |---|---|
 | **FIX** | done in this work — no proposal, no number |
 | **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change |
-| **INTO #N** | an **open** issue already carries this mechanism — a comment, or an update where it adds facts; a closed one is [`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)'s |
+| **INTO #N** | an issue already carries this mechanism — a comment, or an update where it adds facts — and is open, or reopened by it where [`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md) rules a closed one so |
 | **OPEN** | a number of its own, carrying what says when to come back to it and, in one sentence, what it costs to never do it |
 | **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one |
 

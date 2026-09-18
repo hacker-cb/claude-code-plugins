@@ -51,33 +51,27 @@ glab issue list --all --per-page <n> --search "<terms>"
 ```
 
 Three outcomes — **covered** → cite it and open nothing; **covered, but the
-finding adds something** (new facts, wider scope, a changed trigger) → update an
-open one, a closed one by the table below; **not covered** → open one.
+finding adds something** (new facts, wider scope, a changed trigger) → update it;
+**not covered** → open one. The first two are for an open issue; a closed one goes
+by the table below.
 
 ## What a closed issue takes
 
-An issue's state is the one it stands in **once the work in hand lands** — the
-change that closes it having closed it, and a ruling decided cold being read
-after that landing. A closed issue takes no comment as the record, so what closed
-it decides, the same for a search hit and for the issue a finding came out of:
+An issue's state is the one it stands in **once the work in hand lands** — a
+closing keyword the forge will act on counting as closed, and a ruling decided
+cold being read after that landing. A closed issue takes no comment as the
+record. What closed it decides instead — the change, the words, the label on the
+closure, never its closed state alone — measured against what the issue says
+rather than what its fix touched, the same for a search hit and for the issue a
+finding came out of:
 
 | what closed it | the record |
 |---|---|
-| **done**, and the finding lies beside what that settled — another input, another path, a part left for later, a consequence of the fix | recorded on its own, linked both ways |
-| **done**, and what the issue says is fixed is not | **INTO** it, reopened, naming what does not hold |
-| **another issue** — a duplicate, a rewrite, a split | that issue is the target, read by this same table |
+| **done**, and the finding lies beside what the issue set out to settle — another input, another path, a part left for later, a consequence of the fix | a finding of its own — searched, weighed and proposed like any other — linked both ways |
+| **done**, and what the issue says is fixed is not — the same defect back included | **INTO** it, reopened, naming what does not hold |
+| **another issue** — a duplicate, a rewrite, a split | the issue that took this finding's part is the target, open or closed; none having taken it, a finding of its own |
 | **a decision against it** | the decision stands: **DROP** citing it, unless the finding carries what overturns it — and then **INTO** it, reopened, proposed as the reversal it is |
 | **nothing that decided anything** — a sweep, a timeout | **INTO** it, reopened |
-
-What closed it is the reason the forge records where it keeps one, else the change
-or the words that closed it:
-
-```bash
-# GitHub
-gh issue view <n> --json state,stateReason,closedByPullRequestsReferences
-# GitLab
-glab issue view <n> --output json --comments
-```
 
 ## What goes in the issue
 
