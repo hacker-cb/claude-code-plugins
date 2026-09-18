@@ -1,0 +1,43 @@
+# fixture	args	exit	expect	note
+#
+# Every case runs `--base base --head pr` over the repository its envelope builds on
+# top of seed.json: hcb-alpha at 1.0.1, hcb-beta at 0.3.0, a version-less wrapper, and
+# an entry whose source is not a path here. Exit 0 every changed plugin is bumped, 1 one
+# is not or the merge conflicts, 2 called wrong, 3 could not evaluate.
+bumped	-	0	hcb-alpha          bumped 1.0.1 -> 1.0.2|hcb-beta           unchanged (0.3.0)|verdict: ok - bumped hcb-alpha 1.0.2	a changed plugin with its version raised passes, and the verdict names what it landed with
+not-bumped	-	1	FAIL  changed, but 1.0.1 is not above base 1.0.1|verdict: hcb-alpha changed, but 1.0.1 is not above base 1.0.1	content changed under the version the base already carries is what users would never receive
+twin-bump-landed	-	1	verdict: hcb-alpha changed, but 1.0.2 is not above base 1.0.2|merge   clean	two branches bumping to the same version merge cleanly; once one lands, the other's bump is above nothing
+twin-bump-pending	-	0	bumped 1.0.1 -> 1.0.2	the same branch before its sibling lands passes: the verdict is against the base as it is, not against other branches
+untouched-plugin-behind	-	0	hcb-alpha          unchanged (1.0.2)|bumped 0.3.0 -> 0.3.1|NOT:FAIL	a branch the base moved past carries the base's old copy of a plugin it never touched, which is not a change and not a downgrade
+stacked-on-squashed	-	0	hcb-alpha          unchanged (1.0.2)|bumped 0.3.0 -> 0.3.1|NOT:FAIL	commits a squash already landed are not this branch's changes, though a diff from the merge base still shows them
+lowered	-	1	verdict: hcb-alpha changed, but 1.0.0 is not above base 1.0.1	a different version is not enough: it has to be above the base's
+version-dropped	-	1	verdict: hcb-alpha changed, and drops its version (base has 1.0.1)	dropping the version is a change of versioning, not a way past the gate
+not-semver	-	1	verdict: hcb-alpha changed, and '1.1' is not semver	a version that is not semver cannot be ranked, so it cannot pass
+prerelease-leading-zero	-	1	verdict: hcb-alpha changed, and '1.0.2-01' is not semver	a numeric prerelease identifier with a leading zero is not semver, and would make a digit-string comparison lie
+empty-prerelease-identifier	-	1	verdict: hcb-alpha changed, and '1.0.2-.x' is not semver	an empty prerelease identifier is not semver
+plugin-json-unparsable	-	1	verdict: hcb-alpha changed, and its plugin.json does not parse	a manifest the change broke is the change's failure, not a run that could not evaluate
+plugin-json-only	-	1	verdict: hcb-alpha changed, but 1.0.1 is not above base 1.0.1	plugin.json is part of the plugin: editing it alone is a change that ships
+wrapper-changed	-	0	wrapper            unversioned - updates follow the commit|elsewhere          not a path in this repository|verdict: ok - no versioned plugin changed	a plugin with no version is versioned by commit, and is never held to a bump
+no-plugin-change	-	0	verdict: ok - no versioned plugin changed	a change outside every plugin passes with nothing to bump
+new-plugin	-	0	hcb-gamma          new - nothing to be above|verdict: ok - no versioned plugin changed	a plugin the base does not list has no version to be above
+removed-plugin	-	0	hcb-beta           removed|NOT:FAIL	a plugin the change removes has nothing left to version
+moved-plugin	-	0	hcb-beta           unchanged (0.3.0)|NOT:FAIL	content is compared by tree, so a plugin moved to another directory unchanged is unchanged
+market-unparsable	-	1	verdict: .claude-plugin/marketplace.json is missing or does not parse after the merge	a marketplace the change broke fails the change instead of passing with nothing listed
+conflict	-	1	merge   conflicts in:|plugins/hcb-alpha/skills/one/SKILL.md|verdict: conflicts with the base	a head that does not merge cleanly has no merged version to judge, and says which files hold it back
+two-not-bumped	-	1	verdict: hcb-alpha changed, but 1.0.1 is not above base 1.0.1; hcb-beta changed, but 0.3.0 is not above base 0.3.0	every plugin that fails is named, not only the first
+core-numeric	-	0	bumped 0.3.0 -> 0.10.0	version fields rank as numbers: 0.10.0 is above 0.3.0, though it sorts below it as text
+prerelease-below-release	-	1	1.0.1-rc.1 is not above base 1.0.1	a prerelease ranks below the release it leads to
+build-metadata	-	1	1.0.1+build.7 is not above base 1.0.1	build metadata never counts toward precedence
+prerelease-numeric	-	0	bumped 1.1.0-beta.2 -> 1.1.0-beta.10	numeric prerelease identifiers rank as numbers: beta.10 is above beta.2
+release-over-prerelease	-	0	bumped 1.1.0-rc.1 -> 1.1.0	the release is above every prerelease of it
+alphanumeric-over-numeric	-	0	bumped 1.1.0-beta.9 -> 1.1.0-beta.x	an alphanumeric identifier ranks above a numeric one
+longer-prerelease	-	0	bumped 1.1.0-beta -> 1.1.0-beta.1	with every shared identifier equal, the longer prerelease is the higher
+numeric-below-alphanumeric	-	1	1.1.0-beta.9 is not above base 1.1.0-beta.x	a numeric identifier ranks below an alphanumeric one, whichever side carries it
+build-metadata-on-base	-	0	bumped 1.0.1+build.7 -> 1.0.2	build metadata on the base is dropped before ranking, not read as part of the patch number
+huge-core-longer	-	0	bumped 999999999999999999999.0.0 -> 1000000000000000000000.0.0	semver bounds no field: numbers past 2^63 still rank, the longer digit string above
+huge-core-same-length	-	0	bumped 1.0.9223372036854775807 -> 1.0.9223372036854775808	digit strings of one length rank as text: across 2^63 shell arithmetic wraps negative and ranks the bump below its base
+huge-prerelease-numeric	-	0	bumped 1.1.0-rc.9223372036854775807 -> 1.1.0-rc.9223372036854775808	a numeric prerelease identifier across 2^63 ranks as a number too
+plain	--head nope	3	verdict: could not evaluate - 'nope' is not a commit here	a revision that is not here is a run that could not evaluate, never a pass
+no-base-manifest	-	3	verdict: could not evaluate - .claude-plugin/marketplace.json on the base is missing	a base with no marketplace is the base's problem, not a verdict on the change
+-	--base	2	--base needs a value	a flag without its value is a call this script cannot act on, before git is reached
+-	--nope	2	unknown argument '--nope'	an unknown flag stops rather than being read as a revision

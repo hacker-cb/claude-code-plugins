@@ -1,0 +1,45 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "on": "pr",
+      "write": {
+        ".claude-plugin/marketplace.json": {
+          "name": "fixture-market",
+          "plugins": [
+            {
+              "name": "hcb-alpha",
+              "source": "./plugins/hcb-alpha"
+            },
+            {
+              "name": "hcb-beta",
+              "source": "./plugins/hcb-beta"
+            },
+            {
+              "name": "wrapper",
+              "source": "./external_plugins/wrapper"
+            },
+            {
+              "name": "elsewhere",
+              "source": {
+                "source": "npm",
+                "package": "fixture-elsewhere"
+              }
+            },
+            {
+              "name": "hcb-gamma",
+              "source": "./plugins/hcb-gamma"
+            }
+          ]
+        },
+        "plugins/hcb-gamma/.claude-plugin/plugin.json": {
+          "name": "hcb-gamma",
+          "version": "0.1.0"
+        }
+      }
+    }
+  ]
+}

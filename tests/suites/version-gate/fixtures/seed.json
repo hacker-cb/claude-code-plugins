@@ -1,0 +1,55 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        ".claude-plugin/marketplace.json": {
+          "name": "fixture-market",
+          "plugins": [
+            {
+              "name": "hcb-alpha",
+              "source": "./plugins/hcb-alpha"
+            },
+            {
+              "name": "hcb-beta",
+              "source": "./plugins/hcb-beta"
+            },
+            {
+              "name": "wrapper",
+              "source": "./external_plugins/wrapper"
+            },
+            {
+              "name": "elsewhere",
+              "source": {
+                "source": "npm",
+                "package": "fixture-elsewhere"
+              }
+            }
+          ]
+        },
+        "plugins/hcb-alpha/.claude-plugin/plugin.json": {
+          "name": "hcb-alpha",
+          "version": "1.0.1"
+        },
+        "plugins/hcb-alpha/skills/one/SKILL.md": "one\n",
+        "plugins/hcb-beta/.claude-plugin/plugin.json": {
+          "name": "hcb-beta",
+          "version": "0.3.0"
+        },
+        "plugins/hcb-beta/README.md": "beta\n",
+        "external_plugins/wrapper/.claude-plugin/plugin.json": {
+          "name": "wrapper"
+        },
+        "external_plugins/wrapper/.mcp.json": {
+          "wrapper": {
+            "command": "npx",
+            "args": [
+              "fixture-wrapper@1.0.0"
+            ]
+          }
+        },
+        "README.md": "fixture\n"
+      }
+    }
+  ]
+}

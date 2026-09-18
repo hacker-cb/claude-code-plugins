@@ -1,0 +1,106 @@
+name: Version gate
+
+# Every plugin a pull request changes must land with a version above the one the
+# default branch carries: Claude Code keys its plugin cache on that version, so content
+# merged without a bump never reaches anyone who already has it. How "changed" and
+# "lands with" are read is scripts/version-gate.sh's to say.
+#
+# The verdict is a commit STATUS, `Plugin version bump`, posted on each open pull
+# request's head — not this job's own check, which only says whether the statuses got
+# posted. A check run answers for one run of one event, and the event that makes a
+# verdict stale is not the pull request's own: when another pull request merges, a
+# sibling that bumped to the same version is wrong without a commit of its own, and
+# nothing reruns its checks. So every run of this workflow — a pull request opened,
+# pushed, retargeted or closed, a push to the default branch, a manual dispatch —
+# evaluates EVERY open pull request against the default branch as it is at that
+# moment, and rewrites every status. A ruleset requires the status, not this job.
+#
+# `closed` is what notices a merge whose push runs nothing: GitHub starts no push
+# workflow for a head commit carrying `[skip ci]` or its kin — which a squash message
+# inherits from any commit of the branch — and that directive does not reach
+# pull_request_target.
+#
+# pull_request_target, not pull_request: a fork's or Dependabot's pull_request run gets
+# a read-only token and could not post its own status. What runs is the default
+# branch's workflow and script; a pull request's commits are only fetched and read as
+# git objects — never checked out, never executed. Keep it that way: code from a head
+# run here would hold a token that writes statuses.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, closed]
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+# One run at a time, the newest winning. Each run re-reads everything it judges, so a
+# run cancelled halfway loses nothing its successor will not redo — and running them
+# one after another is what keeps a verdict read off an older default branch from
+# being posted after one read off a newer one.
+concurrency:
+  group: version-gate
+  cancel-in-progress: true
+
+jobs:
+  statuses:
+    name: Post plugin version statuses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The default branch whatever the event: pull_request_target already runs
+          # its code, and a dispatch from another branch must not swap the script.
+          ref: ${{ github.event.repository.default_branch }}
+          # Full history: the merge a verdict is read off needs both sides' bases.
+          fetch-depth: 0
+
+      - name: Evaluate every open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          base=$(git rev-parse --verify "refs/remotes/origin/$DEFAULT_BRANCH")
+          echo "base: $DEFAULT_BRANCH at $base"
+          prs=$(gh api --paginate \
+                  "repos/$GITHUB_REPOSITORY/pulls?state=open&base=$DEFAULT_BRANCH&per_page=100" \
+                  --jq '.[].number')
+          # The job goes red only when a pull request could not be judged or its status
+          # not posted. A verdict of "not bumped" is that pull request's own status: it
+          # must not paint every other pull request's checks red with it.
+          broken=0
+          for n in $prs; do
+            # The head as it is now, which may be past the one the listing named — a
+            # verdict is posted on the commit it was read off, and the push that moved
+            # the head has queued a run of its own.
+            if ! git fetch -q --no-tags origin "+refs/pull/$n/head:refs/remotes/pull/$n"; then
+              echo "::error::#$n: could not fetch its head"; broken=1; continue
+            fi
+            head=$(git rev-parse "refs/remotes/pull/$n")
+            rc=0
+            out=$(bash scripts/version-gate.sh --base "$base" --head "$head" 2>&1) || rc=$?
+            case $rc in
+              0) state=success ;;
+              1) state=failure ;;
+              *) state=error; broken=1 ;;
+            esac
+            echo "::group::#$n at $head: $state"
+            printf '%s\n' "$out"
+            echo "::endgroup::"
+            # A status description holds 140 characters. The verdict is ASCII by design,
+            # but a version string comes from the head, and cutting bytes out of UTF-8
+            # leaves a description the API refuses.
+            desc=$(printf '%s\n' "$out" | sed -n 's/^verdict: //p' | tail -n 1 \
+                     | LC_ALL=C tr -cd '\040-\176' | cut -c 1-140)
+            gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$head" \
+              -f state="$state" -f context="Plugin version bump" \
+              -f description="${desc:-no verdict - see the run}" -f target_url="$RUN_URL" \
+              >/dev/null \
+              || { echo "::error::#$n: could not post its status"; broken=1; }
+          done
+          exit "$broken"

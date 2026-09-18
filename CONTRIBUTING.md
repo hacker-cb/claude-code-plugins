@@ -69,6 +69,8 @@ A **rule** is the same artifact: a skill whose body is guidance rather than a st
 
    Keep `version` (semver) in `plugin.json` only — it's the single source of truth for the plugin. Don't add a version to the marketplace entry or anywhere else; `scripts/validate.sh` enforces both (valid semver, and no `version` on the marketplace entry).
 
+   **Bump it in every PR that changes the plugin** — anything under its directory, `plugin.json` included — to a version above the one on the default branch. Claude Code [keys its plugin cache on the version](https://code.claude.com/docs/en/plugins-reference#version-management), so a change merged under an unchanged version never reaches anyone who already has that version. The `Plugin version bump` status holds every open PR to this, and is re-evaluated whenever the default branch moves: if another PR lands the same bump first, yours turns red until you bring the default branch in and bump again. To see the verdict before pushing, fetch and run `bash scripts/version-gate.sh --base <remote>/<default> --head HEAD`.
+
 ## Add an external MCP wrapper
 
 For an MCP server that lives in its **own** repo / npm package (third-party or your own), don't re-host its code — add a thin wrapper under `external_plugins/`, mirroring the [`anthropics/claude-plugins-official`](https://github.com/anthropics/claude-plugins-official) layout:

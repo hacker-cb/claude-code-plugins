@@ -1,0 +1,14 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "on": "pr",
+      "write": {
+        ".claude-plugin/marketplace.json": "{\n"
+      }
+    }
+  ]
+}

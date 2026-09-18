@@ -1,0 +1,14 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "remove": [
+        ".claude-plugin/marketplace.json"
+      ]
+    },
+    {
+      "branch": "pr",
+      "from": "base"
+    }
+  ]
+}

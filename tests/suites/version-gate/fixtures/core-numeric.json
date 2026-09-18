@@ -1,0 +1,18 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "on": "pr",
+      "write": {
+        "plugins/hcb-beta/README.md": "beta, revised\n",
+        "plugins/hcb-beta/.claude-plugin/plugin.json": {
+          "name": "hcb-beta",
+          "version": "0.10.0"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "on": "pr",
+      "write": {
+        "external_plugins/wrapper/.mcp.json": {
+          "wrapper": {
+            "command": "npx",
+            "args": [
+              "fixture-wrapper@2.0.0"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
