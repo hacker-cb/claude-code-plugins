@@ -30,7 +30,7 @@ ours, and every thread stays owed for the life of the run.
 | `me` | who this run is authenticated as, which is what "answered" is measured against. `null` leaves every thread owed |
 | `threads.items[]` | one per review thread: `resolved`, `outdated`, `resolvedBy`, `byReviewer`, the `path` and `line`, and each comment with the `id` a reply is posted to |
 | `threads.items[].answered` | whether a comment of **ours** follows the reviewer's LAST word. Anyone at all can reply in a thread, so a reply is ours by identity and an answer by position; `othersSpoke` beside it is a third party having attended to the thread, which is not an answer to the finding. `null` where that thread's own comments paginated, which owes exactly as much as no answer does |
-| `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head`, `opening` and the `body` itself, whole. `body: null` is the feed carrying no body at all — a note says so — never a review that said nothing |
+| `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head` and the `body` itself, whole. `body: null` is the feed carrying no body at all — a note says so — never a review that said nothing |
 | `open[]` | every thread still owed something, each carrying the `why` that says which state it is in |
 | `notes[]` | what the answer says beyond its fields. One naming a bot this does not take for Copilot is read before `open` is believed: where that bot is Copilot under a new login, its threads and its body are owed as this reviewer's are, and nothing here counted them |
 
@@ -63,17 +63,17 @@ that settles it, or on its own where nothing is pushed — which is where the re
 would otherwise have put it, and it is what the next round finds there. A count a body states is
 never the length of that list: it counts one of the places, not the body.
 
-**The head's review also says what it did not review** — the newest body whose `head` is `true`,
-since a review that could not run and the one requested after it are two reviews of one commit. It
-says so in two places: a block naming the files it did not review, and a count of files reviewed
-against files changed. Files it names are read against the change. Where the count comes up short
-and nothing names the files, which ones went unreviewed is unknown: read every changed file that
-is code this change writes against the change, the largest diffs first (`forge-behaviour.md`),
-rather than a guess at which ones they were. The end-of-session report names the shortfall, and
-the files it named that are code this change writes. Where it reviewed no file at all —
-a count of none, or a body saying the review could not run — the head is unreviewed by this
-reviewer: the stop `copilot.md` takes where a wait runs out, never the exit. A review of an earlier
-commit says neither about the head.
+**The head's review also says what it did not review** — the newest body whose `head` is `true`
+among those that ran: a review that could not run says nothing about a commit another review of it
+covered, whichever came first. It says so in two places: a block naming the files it did not
+review, and a count of files reviewed against files changed. Files it names are read against the
+change. Where the count comes up short and nothing names the files, which ones went unreviewed is
+unknown: read every changed file that is code this change writes against the change, the largest
+diffs first (`forge-behaviour.md`), rather than a guess at which ones they were. The end-of-session
+report names the shortfall, and the files it named that are code this change writes. Where it
+reviewed no file at all — a count of none, or every review of it saying it could not run — the head
+is unreviewed by this reviewer: the stop `copilot.md` takes where a wait runs out, never the exit.
+A review of an earlier commit says neither about the head.
 
 **The end-of-session report carries, for the head's review**, the files-reviewed count and the
 effort level its body states — the level as a fact about that round, never as grounds for any step.

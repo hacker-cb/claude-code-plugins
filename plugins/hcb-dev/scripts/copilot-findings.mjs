@@ -277,13 +277,14 @@ if (!reviews.ok) {
           // in may never earn one of its own, and a later review carries findings an
           // earlier one did not.
           head: commit !== null && answer.head !== null ? commit === answer.head : null,
-          // The body's first line and nothing more — where the assessment sits when the
-          // review carries one, and a pointer to the body rather than a substitute for it.
-          opening: text(((body ?? '').split('\n')[0] || '').replace(/^#+ */, '').replace(/\s+$/, '')),
           // The body itself, because the body is what gets READ — every one the pull request's
           // conversation is silent about. `null` is the feed not carrying the field at all, which
           // is not a review that said nothing: an empty string is that.
           body: clean(body),
+          // Constant, and read by nothing here: a session still holding a reference from before
+          // the reading moved to the agent routes on this field, and would take its absence for
+          // "do not read". It decides nothing; the major after this one drops it.
+          readBody: true,
         });
       }
     }
