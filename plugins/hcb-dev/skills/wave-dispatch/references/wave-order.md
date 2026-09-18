@@ -9,10 +9,11 @@ Every slot is
 the wave adds boundaries, the master contact, the reporting protocol, and the
 master as the addressee of the merge authority.
 
-**The receiver reads this text, not the references** — it may be a session with no
-plugin at all. That is why the closing steps spell themselves out instead of
-pointing, and why rules stated elsewhere in this plugin are restated here in full:
-the duplication is the delivery mechanism, not drift.
+**The receiver reads this text, not the references** — it carries this plugin, the
+order naming its skills by identifier, but this text is what it reads before any of
+them. That is why the closing steps spell themselves out instead of pointing, and why
+rules stated elsewhere in this plugin are restated here in full: the duplication is
+the delivery mechanism, not drift.
 
 ```text
 Batch `<epic>/<id> — <topic> (<issues>)`, wave <n>, dispatched from its master
