@@ -2,10 +2,12 @@
 // copilot-findings.mjs — what has the automated reviewer actually said on this request,
 // and what of it is still unanswered? Prints JSON.
 //
-// A review puts its findings in TWO places and only one of them opens threads. Reading
-// one alone is half the review, and the half it drops is the half nothing else catches:
-// a suppressed finding has no thread, so no gate holds it, no count includes it, and the
-// check that unresolved threads are zero reads a clean field while it stands.
+// A review speaks in its threads and in its body, and only the threads are held by any
+// gate: a finding in the body has no thread, so no gate holds it and the check that
+// unresolved threads are zero reads a clean field while it stands. This collects both —
+// every thread, and every body whole — and keeps the threads' ledger: who spoke last, and
+// what is still owed. What a body SAYS is not this script's to read: it is prose in a
+// layout nobody published, and the caller reads it.
 //
 // This READS. It replies to nothing and resolves nothing — those are the caller's, and
 // deliberately: a reply folded into the reading is sent before the reading is believed.
@@ -237,102 +239,11 @@ if (!answer.repo) {
 
 // --- reading two: the bodies, where the findings that opened no thread are
 //
-// Markup stripped before either count is read: both labels arrive as a heading or a bold
-// run as often as plain text, and the forge may reword either of them.
+// Handed over whole and never interpreted. What a body says — where in it a finding sits,
+// whether it reviewed every file, whether it reviewed at all — is prose in a layout GitHub
+// publishes none of, and the agent reads it (copilot-findings.md): a pattern here is the
+// reading that goes quiet the day the layout moves.
 //
-// A TAG, and one that cannot cross a line. `<[^>]*>` is not "a tag" but "from any `<` to
-// the next `>`", so a `<` in ordinary prose — `stops when i < len` — deletes everything
-// up to the next `>` anywhere below, the block this is looking for included. Measured: the
-// count then comes back `null` with nothing marking it unknown.
-const plain = (s) => String(s ?? '')
-  .replace(/<\/?[A-Za-z][^>\n]{0,200}>/g, ' ').replace(/[*_#]/g, ' ');
-// Every match, not the first. A review body carries the paths of the files it reviewed
-// above the block this is looking for, and a path is a name somebody chose: one shaped
-// `docs/deprecations suppressed (0).md` sits above the real block and answers for it.
-//
-// `null` and not `0` where there is no match at all: a body carrying no such block and a
-// block reporting none are different readings, taking different next steps. `null` again
-// where there are SEVERAL — which of them is the block cannot be told from here, and a count
-// that cannot be pinned is one the reading of the body has nothing to be checked against.
-const countIn = (body, re) => {
-  const all = [...plain(body).matchAll(re)];
-  if (all.length === 0) return { n: null, ambiguous: false };
-  if (all.length > 1) return { n: null, ambiguous: true };
-  return { n: Number.parseInt(all[0][1], 10), ambiguous: false };
-};
-// What a body looks like when this knows it. GitHub publishes none of the layout, so every
-// name below is a measurement rather than a contract — and a body matching none of it is
-// not one with nothing in it but a layout that may have moved: it is READ, with the reason
-// said, rather than passing as nothing to find.
-//
-// The block the thread-less findings go under, the labels every review of the current layout
-// carries, and the sentence a degraded run writes in their place — each anchored on the value
-// beside it rather than on its words alone, since a review of THIS file quotes every one of
-// them as prose, and a layout recognised by a quotation of itself is recognised by nothing.
-const ANCHORS = [/suppressed[^(\n]{0,40}\(\d+\)/i, /files reviewed:?\s*\d+\s*\/\s*\d+/i,
-  /comments generated:?\s*\d+/i, /review effort level:?\s*[A-Za-z]/i,
-  /reviewed \d+ out of \d+ changed files/i];
-// Each block that carries a count, by its name. A counted block under any other name is
-// one this does not read, and findings in it would open no thread and reach no count.
-const SECTIONS = new Set(['suppressed comments', 'files not reviewed',
-  'comments suppressed due to low confidence']);
-// A finding's own heading, which no measured body carried outside the block it belongs in.
-// A path is a name somebody chose, and it may carry a space. Counted rather than tested for,
-// since what settles the question is how many of them stand against the block that was read.
-const FINDINGS = /^\*\*[^*\n]+:\d+(?:-\d+)?\*\*/gm;
-// Fences out first: a finding quotes the file it is about, and a quoted README brings
-// headings of its own. CommonMark's fence, not a stricter one: indented up to three
-// spaces, and closed by a run of the same character at least as long as the one opening it.
-// `(?!\2)` holds the opening run whole. Without it the run could give a character back, and a
-// four-character opener with no closer of its own would match as three, pair with the next
-// three-character line, and take everything between them — findings included — out of the body.
-const unfenced = (s) => String(s ?? '')
-  .replace(/^ {0,3}((`|~)\2{2,})(?!\2)[^\n]*\n[\s\S]*?^ {0,3}\1\2*[ \t]*$/gm, '');
-// And code spans with them, fences first so a fence's own backticks are gone by then: a
-// finding's prose names what it is about in backticks as readily as in a fence, and a review
-// of THIS file names these very labels inside its sentences — each one a second match that
-// leaves the real count unpinned. A span closes on a run of exactly its own length, and crosses
-// a line break but never a blank line: a paragraph is as far as CommonMark lets one reach, and a
-// span held to one line leaves a label split across two standing as a count nobody wrote.
-// `(?<!`)` opens a span only at the start of a run: a search free to start one character in
-// takes the tail of a longer run for an opener of its own, and pairs it with a later line.
-const uncoded = (s) => unfenced(s).replace(/(?<!`)(`+)(?!`)(?:(?!\n[ \t]*\r?\n)[\s\S])*?(?<!`)\1(?!`)/g, ' ');
-// The review's own `body` field as the feed sent it. An empty string is a review that said
-// nothing; a field that is not a string at all is the feed no longer carrying what this reads.
-const unrecognisedIn = (body, sup) => {
-  if (typeof body !== 'string') return 'it carries no body at all — the field this reads was not there';
-  if (body.trim() === '') return null;
-  const rest = uncoded(body);
-  const flat = plain(rest);
-  if (!ANCHORS.some((re) => re.test(flat))) {
-    return 'it carries none of the labels this reads, so the layout may have moved';
-  }
-  // Two readings, because a counted block arrives two ways: inside a `<summary>`, which the
-  // flattening below would leave standing beside the text after it, and as a line of its own
-  // — a heading, a bold run, or neither, all of which flatten to the same line.
-  const counted = [...rest.matchAll(/<summary>(.*?)\(\d+\)\s*<\/summary>/gi)].map((m) => m[1]);
-  for (const line of flat.split('\n')) {
-    // A name somebody at the forge will choose next: letters in any script, digits, and the
-    // punctuation a label carries — `Low-confidence comments` among them — but no brackets or
-    // operators, which is what keeps a quoted line of code from reading as a block.
-    const m = /^\s*(\p{L}[\p{L}\p{N} '’.:\/-]{1,59}?)\s*\(\d+\)\s*$/u.exec(line);
-    if (m) counted.push(m[1]);
-  }
-  for (const name of counted) {
-    const label = plain(name).replace(/\s+/g, ' ').trim().toLowerCase();
-    if (!SECTIONS.has(label)) {
-      return `it counts a block this has no name for ("${text(label)}"), which may hold findings`
-        + ' no thread opened';
-    }
-  }
-  // Against the block that WAS read, never against whether one was: a body carrying more
-  // findings than the block counts has the rest of them standing outside every block this
-  // could read, which is the same silence as a block it could not read at all.
-  if (!sup.ambiguous && [...rest.matchAll(FINDINGS)].length > (sup.n ?? 0)) {
-    return 'it lists findings outside any block this reads';
-  }
-  return null;
-};
 // The placeholders where the url did not parse: `gh` fills them from the current
 // directory, which is the same repository `gh pr view` resolved a moment ago — so the two
 // halves still describe one request. Only the thread query is left out, GraphQL needing a
@@ -343,6 +254,7 @@ if (!reviews.ok) {
   answer.bodies.reason = `the review bodies could not be read (${reviews.line()})`;
 } else {
   const pages = parsePages(reviews.out);
+  let missing = 0;
   if (pages === null) {
     answer.bodies.reason = 'the reviews came back as something this cannot parse';
   } else {
@@ -353,15 +265,9 @@ if (!reviews.ok) {
           noteStranger({ login: r?.user?.login, type: r?.user?.type });
           continue;
         }
-        const body = typeof r?.body === 'string' ? r.body : '';
+        const body = typeof r?.body === 'string' ? r.body : null;
         const commit = typeof r?.commit_id === 'string' ? r.commit_id : null;
-        const prose = uncoded(body);
-        const sup = countIn(prose, /[Ss]uppressed[^(]{0,40}\((\d+)\)/g);
-        const opened = countIn(prose, /[Cc]omments generated[^0-9]{0,20}(\d+)/g);
-        const unrecognised = unrecognisedIn(r?.body, sup);
-        // The block's label standing with no number reachable. `null` alone says there is no
-        // such block — the one reading a checksum would then hold the body to, and a false one.
-        const uncounted = sup.n === null && !sup.ambiguous && /suppressed/i.test(plain(prose));
+        if (body === null) missing += 1;
         answer.bodies.items.push({
           at: text(r?.submitted_at), commit, state: text(r?.state),
           // Every review that posted is read, whichever commit it covers: the head handed
@@ -370,38 +276,19 @@ if (!reviews.ok) {
           head: commit !== null && answer.head !== null ? commit === answer.head : null,
           // The body's first line and nothing more — where the assessment sits when the
           // review carries one, and a pointer to the body rather than a substitute for it.
-          opening: text((body.split('\n')[0] || '').replace(/^#+ */, '').replace(/\s+$/, '')),
+          opening: text(((body ?? '').split('\n')[0] || '').replace(/^#+ */, '').replace(/\s+$/, '')),
           // The body itself, because the body is what gets READ — every one the pull request's
-          // conversation is silent about, whatever the counts beside it say. Handing a caller
-          // a first line is telling it to classify a finding by the heading above it.
+          // conversation is silent about. `null` is the feed not carrying the field at all, which
+          // is not a review that said nothing: an empty string is that.
           body: whole(body), truncated: clipped(body),
-          // The block's own count: what a reading of the body is checked against, and never
-          // whether the body is read — a pattern over a layout nobody published is exactly
-          // the reading that goes quiet when the layout moves.
-          suppressed: sup.n,
-          // What the review OPENED, which is a count of threads and never of findings: a
-          // review whose findings all went to the suppressed block opened none, so zero
-          // here is that class's signature rather than evidence against it.
-          opened: opened.n,
-          ambiguous: sup.ambiguous || opened.ambiguous || uncounted,
-          // What of this body the layout above could not account for, and `null` where all
-          // of it was. Not null is a layout that may have moved, never a body with nothing
-          // in it: the report names the review, and a count pinned beside it still checks the
-          // reading — a finding outside the block is exactly a reading the count comes up short of.
-          unrecognised,
-          // Kept for one release after the reading moved to the agent, and `true` on every body:
-          // the plugin updates under a running session, and one still holding the reference that
-          // routed on this field then reads every body — what the reading now asks — instead of
-          // taking a field gone missing for "do not read". It decides nothing; the next major drops it.
-          readBody: true,
         });
       }
     }
     if (answer.bodies.reason === null) answer.bodies.read = true;
-    const unknown = answer.bodies.items.filter((b) => b.unrecognised !== null).length;
-    if (unknown > 0) {
-      answer.notes.push(`${unknown} review ${unknown === 1 ? 'body' : 'bodies'} came in a layout`
-        + ' this does not recognise — each is named in the report, and its `unrecognised` says why');
+    if (missing > 0) {
+      answer.notes.push(`${missing} ${missing === 1 ? 'review carries' : 'reviews carry'} no body`
+        + ' field at all — the feed no longer carries what this hands over, which is not a review'
+        + ' that said nothing');
     }
   }
 }
