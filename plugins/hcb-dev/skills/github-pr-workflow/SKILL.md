@@ -22,16 +22,17 @@ Take committed work on a feature branch and drive it to a merged PR, autonomousl
 The user may enter at any stage — just-finished code, or an already-open PR; detect which and
 pick up from there. `hcb-dev:shipping-workflow` sits upstream and hands off here in **request**
 mode: finished work with no local review yet goes there first, since this skill starts at the
-PR and runs no reviewers. GitHub-specific by design; which driver a forge routes to is
-[`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
+PR, past the local review and its coverage gate. GitHub-specific by design; which driver a forge
+routes to is [`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Autonomy model
 
 Autonomous, without asking: renaming the branch, rebasing onto base, pushing (with
 `--force-with-lease`, never plain `--force`), opening the PR, committing and pushing fixes,
-replying to Copilot, reading state, and parking the run on a platform outage — each narrated
-in a line as you go.
+replying to Copilot and the one request of its own
+[`references/copilot-request.md`](references/copilot-request.md) allows, reading state, and
+parking the run on a platform outage — each narrated in a line as you go.
 
 **Merging is the one action this skill never takes on its own authority.** `merge-auth` — a
 value and the addressee it names — governs it, and `slice-completion.md` owns the three values
@@ -140,8 +141,7 @@ body describing the head about to land
 ([`../../references/merge-message.md`](../../references/merge-message.md), rewritten with `gh
 pr edit <pr> --body`); and every Copilot review **this driver waits for** settled with its
 Critical and Important findings fixed, its comments answered and its threads resolved — or,
-where a wait ran out, the addressee's word to merge with the head unreviewed, said in the
-report.
+where a wait ran out, the addressee's word to merge with the head unreviewed, said in the report.
 
 **Two exit items no round of this loop closes** — the drift, where the base does not require the
 branch current with it, and the approval — are

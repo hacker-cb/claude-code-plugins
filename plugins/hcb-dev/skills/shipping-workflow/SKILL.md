@@ -139,29 +139,11 @@ of step 0 — per
    and takes the route anything incidental takes (`findings.md`): the conditions
    there, then its own commit or the report.
 
-   **Then put the fixes through the same test the change went through.** Apply
-   `multi-review`'s high-risk test to what the fixes wrote rather than to the
-   change: a fix that stays inside the finding it answers was covered by the pass
-   that raised it, and one that would have earned a rung of its own is code no
-   reviewer has read — go back to step 4, hand it the same base as the first
-   round and never one narrowed to the fixes, and come back here with what it
-   returns. A `Minor` never opens a round on its own
-   (`../../references/findings.md`); it rides one opened for something else, or
-   it goes to the report. Where the call is borderline the mode decides: in
-   `request` a reviewer reads these fixes downstream on the driver's own budget,
-   while in `local` nothing reads them after you, so the doubt buys the round
-   there. Commit each round's fixes naming the findings they close, so what the
-   rounds spent and closed is readable off the branch rather than out of this
-   session's memory.
-
-   **The rounds end on what they find, not on how many there were.** A round that
-   turns up no new `Critical` or `Important` finding belonging to this change is
-   the last one; so is a round whose finding lands where an earlier round already
-   fixed something, which is the loop trading one break for another. Up to ~3
-   rounds otherwise, then stop and ask. Running out is a stop and never a
-   completion: never complete, never merge, and never re-rate a finding to get
-   under the line. Step 7's driver then loops again against a reviewer of its
-   own, on a budget of its own; neither is drawn from the other.
+   **Then put the fixes through
+   [`../../references/fix-reading.md`](../../references/fix-reading.md).** A fix it
+   sends back to a reviewer goes to step 4, handed the same base as the first
+   round, and comes back here with what it returns. Once the rounds end, step 7's
+   driver loops again against a reviewer of its own, on its own budget.
 6. **Check the coverage** — the gate below, over the last round there was.
 7. **Complete the slice by mode** — the contract is `slice-completion.md`'s and the mechanics
    are

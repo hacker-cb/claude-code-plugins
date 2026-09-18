@@ -112,12 +112,12 @@ test on a passage is whether deleting it changes what anyone does next.
    (`hcb-dev:wave-refresh`). A line leaves when its issue does.
 4. **Decisions** — every fork settled during the epic: who asked, what was decided, where it is
    recorded — the decision, not the case that was made for it.
-5. **Standing constraints** — what no batch may violate while the epic runs: a
-   change request that must not merge, a foreign stash, a pinned version. A
-   return whose claims touch one of these is checked against it before either
-   is believed. Each is written as the rule a batch acts on, together with what
-   would lift it; how it came to be known is journal, and a constraint carrying
-   its own derivation is where the ledger grows.
+5. **Standing constraints** — what no batch may violate while the epic runs: a change request
+   that must not merge, a foreign stash, a pinned version — never a workflow's own policy
+   (`order-anatomy.md`). A return whose claims touch one of these is checked against it before
+   either is believed. Each is written as the rule a batch acts on, together with what would lift
+   it; how it came to be known is journal, and a constraint carrying its own derivation is where
+   the ledger grows.
 6. **Merge queue and gates** — the current wave's launch order (at once, or staged with what
    each step waits on), the merge order inside it, each batch whose authority the header's policy
    was narrowed for and why, which batch stands ready and waiting for its slot in either mode
