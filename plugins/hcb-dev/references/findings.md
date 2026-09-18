@@ -71,7 +71,7 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 |---|---|
 | **FIX** | done in this work — no proposal, no number |
 | **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change |
-| **INTO #N** | an **open** issue already carries this mechanism — a comment, or an update where it adds facts; a closed one is `../skills/issue-tracking/SKILL.md`'s |
+| **INTO #N** | an **open** issue already carries this mechanism — a comment, or an update where it adds facts; a closed one is [`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)'s |
 | **OPEN** | a number of its own, carrying what says when to come back to it and, in one sentence, what it costs to never do it |
 | **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one |
 
@@ -116,9 +116,8 @@ everything left unfixed that the next reader would want.
 
 Three things happen before the finding is proposed, never after it is accepted:
 
-- **Search the tracker**, closed entries included
-  ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — its result decides
-  which of the three states below applies.
+- **Search the tracker**, closed entries included (`../skills/issue-tracking/SKILL.md`) — its
+  result decides which of the three states below applies.
 - **Re-measure it** at its coordinate on the tree the work stands on — the base where the code is
   already in it, the branch carrying it where it is not — with whatever will judge it there.
 - **Read the repository's own classification** ([`classification.md`](classification.md)), once
@@ -137,7 +136,8 @@ report, and an autonomous run is never interrupted to ask. One line each:
 - **untracked** → what it is and where, the classification it would carry, the rating a review
   gave it ([`report-format.md`](report-format.md)), what it costs to never do it, and the outcome
   proposed for it;
-- **tracked, and the finding adds something** → `#N`, its state, what changes, and the outcome;
+- **tracked, and the finding adds something** → `#N`, its state, what changes, and the outcome,
+  carrying the line above's fields where that outcome is a record of its own;
 - **tracked as it stands** → no entry; say so where it came up.
 
 Where the response wears a report's frame, the proposals stand in its ask block and the

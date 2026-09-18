@@ -56,18 +56,28 @@ open one, a closed one by the table below; **not covered** → open one.
 
 ## What a closed issue takes
 
-An issue's state is read **when the record is written**, not when the finding was
-found: a ruling decided cold comes after the landing, and the change in hand may
-itself close the target. A closed issue takes no comment as the record — nobody
-is sent to one — so what closed it decides, the same for a search hit and for the
-issue a finding came out of:
+An issue's state is the one it stands in **once the work in hand lands** — the
+change that closes it having closed it, and a ruling decided cold being read
+after that landing. A closed issue takes no comment as the record, so what closed
+it decides, the same for a search hit and for the issue a finding came out of:
 
 | what closed it | the record |
 |---|---|
-| **done**, and the finding lies beside what that settled — another input, another path, a part consciously not taken | **OPEN** of its own, linked both ways |
+| **done**, and the finding lies beside what that settled — another input, another path, a part left for later, a consequence of the fix | recorded on its own, linked both ways |
 | **done**, and what the issue says is fixed is not | **INTO** it, reopened, naming what does not hold |
-| **declined**, and nothing in the finding moves that decision | **DROP**, citing it |
-| **declined**, and the finding carries what overturns it | reopening is put to the user |
+| **another issue** — a duplicate, a rewrite, a split | that issue is the target, read by this same table |
+| **a decision against it** | the decision stands: **DROP** citing it, unless the finding carries what overturns it — and then **INTO** it, reopened, proposed as the reversal it is |
+| **nothing that decided anything** — a sweep, a timeout | **INTO** it, reopened |
+
+What closed it is the reason the forge records where it keeps one, else the change
+or the words that closed it:
+
+```bash
+# GitHub
+gh issue view <n> --json state,stateReason,closedByPullRequestsReferences
+# GitLab
+glab issue view <n> --output json --comments
+```
 
 ## What goes in the issue
 
