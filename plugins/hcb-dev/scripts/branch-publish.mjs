@@ -89,6 +89,7 @@ const SETTLE = seconds('--settle', opts.settle, 30, 0);
 // One read every couple of seconds rather than a tight loop: what is being waited on is a
 // remote finishing work, and a ref appearing two seconds late costs nothing.
 const SETTLE_STEP = 2000;
+const SETTLE_READ = 15;
 const settledAfter = SETTLE ? `${SETTLE}s later` : 'when read straight after';
 
 // A directory, proved here: passed on as `cwd` it would come back as a call that failed
@@ -230,10 +231,13 @@ if (mayAsk) {
   const u = git(['remote', 'get-url', '--push', '--all', opts.pushRemote]);
   if (u.ok) {
     const urls = u.out.split('\n').filter(Boolean);
-    here = repoOfUrl(urls[0] || '');
     pushUrls = Math.max(urls.length, 1);
+    // One repository or none: with several, a request whose head lives on any of them is
+    // one a push here reaches, and naming the first would drop the rest as foreign.
+    here = urls.length === 1 ? repoOfUrl(urls[0]) : null;
+    // A fetch url that cannot be read is not one the push url agrees with.
     const f = git(['remote', 'get-url', opts.pushRemote]);
-    if (urls.length === 1 && f.ok && f.out.split('\n')[0] !== urls[0]) [endpoint] = urls;
+    if (urls.length === 1 && !(f.ok && f.out.split('\n')[0] === urls[0])) [endpoint] = urls;
   }
 }
 
@@ -340,11 +344,11 @@ const shipRef = `refs/heads/${ships}`;
 // that is there, exit 0 with nothing is one that is not, and a call that did not answer is
 // NEITHER — publishing blind on the third is how a force lands where a first push was meant,
 // and reporting it as the second states what nothing measured.
-const remoteAt = (ref) => {
-  const r = git(['ls-remote', '--heads', '--', endpoint, ref]);
+const remoteAt = (ref, budget = 120) => {
+  const r = git(['ls-remote', '--heads', '--', endpoint, ref], budget * 1000);
   return r.ok
     ? { read: true, tip: r.out ? r.out.split(/\s/)[0] : '', why: null }
-    : { read: false, tip: null, why: detail(r) };
+    : { read: false, tip: null, why: detail(r, budget) };
 };
 // The same read, asked again until it shows what `done` wants or the budget is spent. One
 // read answers for the instant it was taken: a receiving side that outlived the client keeps
@@ -352,7 +356,9 @@ const remoteAt = (ref) => {
 const settled = (ref, done, patient) => {
   const until = Date.now() + (patient ? SETTLE * 1000 : 0);
   for (;;) {
-    const at = remoteAt(ref);
+    // Each read inside the budget rather than on the default one, so the budget is what
+    // bounds the wait; the floor is the one read that must happen however little is left.
+    const at = remoteAt(ref, Math.max(Math.ceil((until - Date.now()) / 1000), SETTLE_READ));
     // A remote that would not answer is not one to keep asking: the budget is for a
     // receiving side still working, never for one nothing here can reach.
     if (!at.read || done(at.tip)) return at;
@@ -566,6 +572,10 @@ for (const name of candidates) {
       + ' whether another session holds this name and would push it straight back is unknown';
   } else if (heldElsewhere.has(ref)) {
     it.reason = `another worktree holds it and can push it straight back: ${heldElsewhere.get(ref)}`;
+  } else if (pushUrls > 1) {
+    // Every proof below reads one repository, and the deletion goes to all of them.
+    it.reason = `${opts.pushRemote} pushes to ${pushUrls} urls, and what a ref holds is read on`
+      + ' one of them while a deletion lands on every one';
   } else {
     const ls = remoteAt(ref);
     if (!ls.read) {
@@ -615,12 +625,11 @@ for (const name of candidates) {
               : (pending
                 ? `the delete ended without a verdict from ${opts.pushRemote} (${del.line()})`
                 : `the delete was refused (${del.line()})`);
-            const at = pushUrls > 1 ? null : settled(ref, (t) => t === '', pending);
-            if (at === null) {
-              it.verdict = 'unknown';
-              it.reason = `${stopped}, and ${opts.pushRemote} pushes to ${pushUrls} urls — a`
-                + ' read of one settles nothing about the others';
-            } else if (at.read && at.tip === '') {
+            // Stops at the first move away from the leased tip, not only at its absence: a
+            // ref that moved is one this lease cannot remove, and whatever takes it off
+            // later took it off without this run.
+            const at = settled(ref, (t) => t !== tip, pending);
+            if (at.read && at.tip === '') {
               // Gone — and whose deletion that was is what the verdict says. With a refusal
               // the remote answered and this run's delete never ran, so the ref came off
               // somewhere else; `retired` would claim an act this run did not make.

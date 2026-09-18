@@ -57,7 +57,13 @@ case "$1 $2" in
       && fail "stub git: ls-remote asked $ls_repo, not $want_repo" 3
     v=$(ask ".ls_remote[\"$ls_ref\"] // .ls_remote_default")
     later=$(ask ".ls_remote_later[\"$ls_ref\"]")
-    if [ -n "$later" ]; then
+    seq_len=$(ask ".ls_remote_seq[\"$ls_ref\"] | length")
+    if [ -n "$seq_len" ] && [ "$seq_len" -gt 0 ]; then
+      # One answer per read, the last one standing: a remote that moves twice — a ref
+      # standing, then moved, then gone — is three answers, not two.
+      n=$(reads "$ls_ref"); [ "$n" -gt "$seq_len" ] && n=$seq_len
+      v=$(ask ".ls_remote_seq[\"$ls_ref\"][$((n - 1))]")
+    elif [ -n "$later" ]; then
       lag=$(ask '.ls_remote_lag'); [ -z "$lag" ] && lag=1
       [ "$(reads "$ls_ref")" -gt "$lag" ] && v=$later
     fi
