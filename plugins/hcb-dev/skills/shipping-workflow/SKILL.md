@@ -79,9 +79,9 @@ of step 0 — per
    the call that fails where no merge base exists, then `git log --name-status --diff-filter=DR
    --format= <diff-base>..HEAD` for a path the range created and then renamed or deleted; plus what
    is not committed (`git diff --name-status --cached` and `git diff --name-status` — one call
-   against `HEAD` collapses a rename staged and then renamed again). Search for all old names in one
-   pass, `git grep -F --untracked -f -`, in every file type: a config comment, a docs sentence, the
-   renamed file's stale header. Vendored trees and other worktrees' checkouts are out.
+   against `HEAD` collapses a rename staged and then renamed again). Search every file type for the
+   old names in one pass — `git grep -F --untracked -f -`, one name per line, skipped when there are
+   none — config comments and docs included; vendored trees and other worktrees' checkouts are out.
 
    Rule on each hit before touching it: a migration path, a compatibility alias, a
    test asserting the old name and a changelog entry are all still true. A tracked
