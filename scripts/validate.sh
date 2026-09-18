@@ -15,7 +15,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 MARKET=".claude-plugin/marketplace.json"
-SEMVER='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+# The semver.org grammar in full — no leading zero on a numeric identifier, prerelease
+# ones included, and no empty identifier — and the same one scripts/version-gate.sh
+# holds. A version this accepted and the gate did not could land with a new plugin,
+# which the gate does not judge, and then stop every later change to that plugin.
+NUM='(0|[1-9][0-9]*)'
+PRE_ID='(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
+SEMVER="^$NUM\.$NUM\.$NUM(-$PRE_ID(\.$PRE_ID)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?\$"
 errors=0
 warnings=0
 
@@ -211,11 +217,13 @@ else
             if [ "$is_external" = 0 ]; then
               case "$pjname" in hcb-* | "") : ;; *) err "$name: plugin.json name '$pjname' must start with 'hcb-'" ;; esac
 
-              # version: required and valid semver (the repo's single version axis)
+              # version: required and valid semver (the repo's single version axis).
+              # Matched as one string, the way the gate matches it: grep matches per
+              # line, so a version carrying a newline passed on its first line alone.
               pjver=$(jq -r '.version // empty' "$pj")
               if [ -z "$pjver" ]; then
                 err "$name: $pj missing 'version'"
-              elif ! printf '%s' "$pjver" | grep -Eq "$SEMVER"; then
+              elif ! [[ $pjver =~ $SEMVER ]]; then
                 err "$name: version '$pjver' is not valid semver (expected e.g. 1.2.3)"
               fi
             else
