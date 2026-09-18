@@ -612,7 +612,7 @@ esac
 # SEPARATE lines, never appended to the scope one.
 [ -n "$BASE" ] \
   || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
-[ "$ON_BASE" = 0 ] \
+[ "${ON_BASE:-0}" = 0 ] \
   || echo "coverage-warning: HEAD is at or behind the base — the range is empty, and nothing was reviewed"
 [ "$OUTSIDE" = 0 ] \
   || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"

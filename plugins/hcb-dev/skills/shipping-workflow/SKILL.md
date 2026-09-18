@@ -81,7 +81,7 @@ of step 0 — per
    renamed or deleted; `git diff --name-status --cached` and `git diff --name-status` for what is not
    committed, apart, as one against `HEAD` collapses a rename staged and renamed again. Pipe the
    names, deduplicated, into one `git grep -F --untracked -f -`, skipped when there are none; every
-   file type, config comments and docs included; vendored trees and other worktrees are out.
+   file type, config comments and docs included, vendored roots excluded with `:(exclude)` pathspecs.
 
    Rule on each hit before touching it: a migration path, a compatibility alias, a
    test asserting the old name and a changelog entry are all still true. A tracked
