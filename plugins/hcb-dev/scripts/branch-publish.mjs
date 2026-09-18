@@ -370,6 +370,13 @@ const settled = (ref, done, patient) => {
 
 // --- the publication, which is what everything downstream stands on
 if (opts.publish) {
+  // Said out loud rather than failed on: a push reaching several urls succeeds only where
+  // every one of them took it, and a lease pinned to the tip read on one is refused by any
+  // other that moved — so what a mode and a lease rest on is a reading, not a risk.
+  if (pushUrls > 1) {
+    note(`${opts.pushRemote} pushes to ${pushUrls} urls, and what stands under ${ships} is read`
+      + ' on one of them — the mode and any lease rest on that one');
+  }
   const tracking = `refs/remotes/${opts.pushRemote}/${ships}`;
   const here = git(['rev-parse', '--verify', '-q', `${shipRef}^{commit}`]);
   const tip = here.ok && here.out ? here.out : null;
