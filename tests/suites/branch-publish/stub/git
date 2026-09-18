@@ -3,6 +3,16 @@
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 fail() { echo "${1:-fatal: stub git refused}" >&2; exit "${2:-1}"; }
+# A remote answers differently before and after an act reaches it, and a case about a push
+# nobody waited out is exactly that difference. The count lives beside the marker, under the
+# envelope's own name: the runner hands each case a fresh work directory and one envelope, so
+# no two cases share a file and nothing survives a run.
+reads() {
+  [ -n "${STUB_MARKER_FILE:-}" ] || { echo 0; return; }
+  f="$STUB_MARKER_FILE.$(basename "${env:-none}" .json).$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')"
+  n=$(cat "$f" 2>/dev/null || echo 0)
+  n=$((n + 1)); printf '%s\n' "$n" > "$f"; printf '%s\n' "$n"
+}
 
 case "$1 $2" in
   "rev-parse --git-dir") echo ".git"; exit 0 ;;
@@ -33,6 +43,11 @@ case "$1 $2" in
     echo "cafe"; exit 0 ;;
   "ls-remote --heads")
     v=$(ask ".ls_remote[\"$4\"] // .ls_remote_default")
+    later=$(ask ".ls_remote_later[\"$4\"]")
+    if [ -n "$later" ]; then
+      lag=$(ask '.ls_remote_lag'); [ -z "$lag" ] && lag=1
+      [ "$(reads "$4")" -gt "$lag" ] && v=$later
+    fi
     case "$v" in
       ""|silent) fail "fatal: could not read from remote repository" 128 ;;
       absent) exit 0 ;;
@@ -84,15 +99,28 @@ case "$1" in
     case "$3" in +*) ;; *) fail "! [rejected] $3 (non-fast-forward)" 1 ;; esac
     case "$(ask '.fetch')" in fail) fail "fatal: couldn't find remote ref" 128 ;; esac
     exit 0 ;;
+  config)
+    # What `push -u` writes, written here where a push that was killed never got to it.
+    case "$(ask '.config')" in fail) fail "error: could not lock config file" 255 ;; esac
+    exit 0 ;;
   push)
     case "$*" in
-      *--delete*) case "$(ask '.delete')" in fail) fail "remote: refusing to delete the ref" 1 ;; esac ;;
+      *--delete*) case "$(ask '.delete')" in
+          fail) fail "remote: refusing to delete the ref" 1 ;;
+          # Never answering, which is the case this suite is otherwise blind to: the runner
+          # kills it on its own budget. `exec` so the kill lands on the sleep rather than
+          # leaving it behind the shell that started it.
+          hang) v=$(ask '.delete_says'); [ -n "$v" ] && printf '%s\n' "$v" >&2; exec sleep 30 ;;
+        esac ;;
       *)
         # A tag of the same name, which is what the full refname on the source side is
         # for: a bare branch name matches both and git refuses rather than choosing.
         case "$*" in *refs/heads/*:refs/heads/*) ;;
           *) fail "error: src refspec matches more than one" 1 ;; esac
-        case "$(ask '.push')" in fail) fail "! [rejected] stale info" 1 ;; esac ;;
+        case "$(ask '.push')" in
+          fail) fail "! [rejected] stale info" 1 ;;
+          hang) v=$(ask '.push_says'); [ -n "$v" ] && printf '%s\n' "$v" >&2; exec sleep 30 ;;
+        esac ;;
     esac
     exit 0 ;;
 esac

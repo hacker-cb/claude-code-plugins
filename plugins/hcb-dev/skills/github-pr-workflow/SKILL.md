@@ -76,9 +76,9 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-publish.mjs" --new "$NEW" \
   --base "$BASE" --base-remote "$BASE_REMOTE"
 ```
 
-`published` anything but `true` stops the run here; `branch.ships` — not always the name asked
-for — is what every step below uses; and every `stale` entry that came back `kept` is a ref
-still standing, its `reason` going in the report.
+Run and read it per [`../../references/branch-publish.md`](../../references/branch-publish.md):
+`published` anything but `true` stops the run — a `null` once the re-run it names leaves it so;
+every step below uses `branch.ships`, and a `stale` entry `kept` or `unknown` goes in the report.
 
 ## Step 2 — Bring the branch up to date with base
 

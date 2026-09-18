@@ -349,7 +349,9 @@ name stands for.
   under, put on the remote, and the names it used to carry taken off it. **The one script
   here that acts**, because the order of the three is the hazard: a rename is refused
   where a request pins the name, the publish is unconditional, and a name comes off the
-  remote only after the new one is up.
+  remote only after the new one is up. What each push did is read off the remote rather
+  than its exit status, so a push nobody waited out is reported as unsettled, never as
+  refused.
 - [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
   stands on the epic issue, whether the next write fits under the cap — in bytes, whatever
   unit the forge's own refusal names — and whether the archives beside it and the index
