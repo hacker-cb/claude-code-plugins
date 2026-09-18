@@ -15,7 +15,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 MARKET=".claude-plugin/marketplace.json"
-SEMVER='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+# The semver.org grammar in full — no leading zero on a numeric identifier, prerelease
+# ones included, and no empty identifier — and the same one scripts/version-gate.sh
+# holds. A version this accepted and the gate did not could land with a new plugin,
+# which the gate does not judge, and then stop every later change to that plugin.
+NUM='(0|[1-9][0-9]*)'
+PRE_ID='(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)'
+SEMVER="^$NUM\.$NUM\.$NUM(-$PRE_ID(\.$PRE_ID)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?\$"
 errors=0
 warnings=0
 
