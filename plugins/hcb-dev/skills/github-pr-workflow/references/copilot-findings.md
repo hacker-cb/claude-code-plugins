@@ -112,10 +112,22 @@ rephrased. Focused commits, and batch them into as few pushes as is reasonable: 
 another review wait where a rule reviews pushes, and the approval standing on the head it leaves
 behind where the base dismisses stale reviews.
 
+**What reads the fix** is
+[`../../../references/fix-reading.md`](../../../references/fix-reading.md)'s question, answered off
+`copilot-state.mjs`: Copilot reads a push only where `expects.onPush` holds or a request stands
+(`copilot.md`), and only there is a borderline fix left to it. A fix that file sends back to a
+reviewer goes through `hcb-dev:multi-review` before the push either way; its findings are this
+loop's as Copilot's are — rated on the same ladder, fixed before the exit, the round named in the
+report.
+
 **Every Copilot comment gets a reply**, fixed or skipped — what changed and where, or the reason
 it is out of scope or not a defect — and then the thread is resolved, where the comment sits in
 one, so the review state says what was settled rather than what the repo happens to enforce. A
 review summary carries no thread and needs no resolving.
+
+**Nothing written here is addressed to the reviewer** — a reply, the list a body's findings go to,
+a body quoted into either: each is for people. `@copilot` is never typed into any of them, quoted
+review text included ([`../../../references/forge-docs.md`](../../../references/forge-docs.md)).
 
 **A thread this reviewer resolved is not by itself an answered thread**, and *Finding the
 findings* tells the two apart: `byReviewer` says it closed its own, `answered` says whether a

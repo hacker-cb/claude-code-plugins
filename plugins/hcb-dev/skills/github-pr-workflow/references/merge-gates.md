@@ -126,9 +126,9 @@ a head sitting well behind its base reads `CLEAN` and the drift is measured rath
 off a status. `drift.behind` above zero is a judgement, not a gate: re-sync when what
 `drift.paths` carries can break this head — the same files or modules, an interface a caller
 here uses, a migration, a dependency — and merge without one when the base moved elsewhere.
-Neither answer is free: a re-sync is a push, which restarts the checks and the review; a
-skipped one that was needed puts the break in the base, where only the post-merge read finds
-it.
+Neither answer is free: a re-sync is a push, which restarts the checks — and the review, where
+a rule reviews pushes — and is no fix, earning no request of the driver's own; a skipped one
+that was needed puts the break in the base, where only the post-merge read finds it.
 
 **The approval.** Every other exit item answers to a push; this one answers to a reviewer,
 and all a round can do is remove reasons to withhold it. Read the **requirement** — the
@@ -138,4 +138,9 @@ of the two kinds of review that is ([`copilot.md`](copilot.md), *What the review
 decides: findings still outstanding are the loop's work where a rule in force reviews pushes
 or a request stands, since the next review can close the requirement. Where neither holds no
 next review comes — that, and a reviewer handing the decision to a human, are stops, carrying
-the reason the review gave and what would answer it.
+the reason the review gave and what would answer it, and neither is a reason to place a request.
+
+**An approval standing on the head says nothing about what was pushed under it.** Where the base
+does not dismiss stale reviews on push, one given to an earlier head survives every push after
+it; what reads those pushes is [`copilot-findings.md`](copilot-findings.md)'s *What reads the
+fix*, never the approval.

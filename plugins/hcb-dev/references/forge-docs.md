@@ -77,6 +77,8 @@ implies one mechanism per forge will be wrong on both.
 | review comments | [reviews](https://docs.github.com/en/rest/pulls/reviews.md), [comments](https://docs.github.com/en/rest/pulls/comments.md) | [discussions REST](https://docs.gitlab.com/api/discussions/index.md) |
 | what a gate can demand | [the rules a ruleset can carry](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets.md), [rules REST](https://docs.github.com/en/rest/repos/rules.md) | [approval rules](https://docs.gitlab.com/user/project/merge_requests/approvals/index.md), [protected branches](https://docs.gitlab.com/user/project/repository/branches/protected/index.md), [REST](https://docs.gitlab.com/api/protected_branches/index.md) |
 | the automated reviewer | [Copilot code review](https://docs.github.com/en/copilot/concepts/agents/code-review.md) | [Duo Code Review](https://docs.gitlab.com/user/gitlab_duo/code_review/index.md) |
+| a reply to the automated reviewer's comment | [not seen by it, and never answered](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review.md) | answered where it mentions `@GitLabDuo` — [a follow-up question in the thread](https://docs.gitlab.com/user/gitlab_duo/code_review/index.md) |
+| the reviewer's handle written into the conversation | `@copilot` [starts the cloud agent](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-on-github.md) on any pull request, from anyone with write access, and it pushes commits to the branch | `@GitLabDuo` answers in the thread and changes nothing |
 
 ## Issues: the porcelain stops at the flat issue
 

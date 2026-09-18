@@ -59,7 +59,12 @@ a receiver told only what is known treats the rest as known.
   session that wrote the order
   ([`architecture-decisions.md`](architecture-decisions.md)).
 - **The negative constraint** — the envelope's, plus any workaround
-  deliberately left in place elsewhere.
+  deliberately left in place elsewhere. A workflow's own policy is never one —
+  which reviews a driver waits for or asks for, how its findings close: the
+  workflow the order names owns it, and a fact a batch reported about a base
+  goes in as that fact
+  ([`invariants.md`](invariants.md), *Configuration predicts nothing; read the
+  result*).
 - **The closing act** — never empty: the return of
   [`order-return.md`](order-return.md), or a named end state with nothing coming
   back. A return travelling by message also carries the address to answer — the

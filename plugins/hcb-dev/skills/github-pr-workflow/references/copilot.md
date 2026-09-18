@@ -29,9 +29,10 @@ Two things the script is built around, and a caller reading its answer relies on
   `Bot` and a case-insensitive `^copilot`) and lives in `scripts/lib/forge.mjs` rather than in
   any caller. The same pair survives a deleted account leaving `"user": null`.
 
-**Never place a request** — every review waited for is one already requested; the request list
-answers nothing either way
-([`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md)).
+**Never place a request** but the one [`copilot-request.md`](copilot-request.md) owns — every
+review waited for is one already requested; the request list answers nothing either way
+([`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md)), and a push
+after Copilot's review is read locally (`copilot-findings.md`, *What reads the fix*).
 
 **What a review SAID is `copilot-findings.md`'s** (*Finding the findings*): this one answers
 about the head's state.
@@ -63,8 +64,8 @@ under it is *about*:
 
 - **The findings** — some number outstanding, named or counted. That is the fix loop's own case:
   fix and push; where a rule reviews pushes, take the wait and the next review can approve.
-  Where none does and no request stands, no next review comes, and an approval the base still
-  requires is the main skill's Step 4 stop.
+  Where none does and no request stands, no next review comes — nor is one placed to seek it —
+  and an approval the base still requires is the main skill's Step 4 stop.
 - **The change itself** — its breadth, the planes it crosses, what it commits the product to, or
   something the reviewer could not reach and so could not judge. Nothing in the diff is being
   asked for: the reviewer is handing the decision to a human, and another round buys another
@@ -104,7 +105,7 @@ time after the push has *landed* (a pre-push hook delays the landing, not the re
 unrequested only once **both** hold: the head's checks have settled, **and** a couple of minutes
 have passed since the push landed — or, where a request for an earlier head was standing, since
 that released. At the cutoff, go on and say so in the report: never requested, or requested and
-removed. Never place one in its stead.
+removed. Never place one in its stead: `copilot-request.md` answers a pull request that turned.
 
 **A review of an earlier commit is not a decline.** It consumes the request and leaves the head
 unreviewed; where a rule reviews pushes, the request for this head registers as that review
@@ -145,4 +146,5 @@ request reached the later commits** — no rule in force, none that reviews push
 wait recorded at its cutoff, a removal included; **the ceiling reached**, and the addressee's
 word to merge past it; **a review still outstanding**, which `latestMove` tells and which after a
 merge is the late review Step 7 goes back for; or **a login this does not take for Copilot**, as
-a note named it. Every body `copilot-findings.md` tells the report to name goes on that line too.
+a note named it. Every body `copilot-findings.md` tells the report to name goes on that line too,
+and so does a request of this driver's own (`copilot-request.md`), with the turn that earned it.
