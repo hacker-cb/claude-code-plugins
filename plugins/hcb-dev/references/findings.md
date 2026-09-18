@@ -55,8 +55,8 @@ instances are its evidence. They are still fixed on whatever terms they were owe
 finding already ruled on is *The same finding twice*, below.
 **Where it came from decides what it is measured against.** One turned up while working on an
 issue, or reviewing the change that closes it, is measured against that issue **before any search
-by words**: the same mechanism, or a consequence of the fix just made, is recorded there — as a
-comment, reopened where this run closed it. A different mechanism is recorded on its own.
+by words**: the same mechanism, or a consequence of the fix just made, belongs to it, and where
+that is recorded follows the issue's own state. A different mechanism is recorded on its own.
 
 **Worth remembering.** Everything below `Critical` passes this before it earns a number of its
 own. Three questions, one *yes* ending it: does it come back on its own, tripping a gate, a test,
@@ -71,7 +71,7 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 |---|---|
 | **FIX** | done in this work — no proposal, no number |
 | **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change |
-| **INTO #N** | an issue already carries this mechanism — a comment, or an update where it adds facts |
+| **INTO #N** | an issue already carries this mechanism — a comment, or an update where it adds facts — and is open, or reopened by it where [`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md) rules a closed one so |
 | **OPEN** | a number of its own, carrying what says when to come back to it and, in one sentence, what it costs to never do it |
 | **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one |
 
@@ -116,9 +116,8 @@ everything left unfixed that the next reader would want.
 
 Three things happen before the finding is proposed, never after it is accepted:
 
-- **Search the tracker**, closed entries included
-  ([`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md)) — its result decides
-  which of the three states below applies.
+- **Search the tracker**, closed entries included (`../skills/issue-tracking/SKILL.md`) — its
+  result decides which of the three states below applies.
 - **Re-measure it** at its coordinate on the tree the work stands on — the base where the code is
   already in it, the branch carrying it where it is not — with whatever will judge it there.
 - **Read the repository's own classification** ([`classification.md`](classification.md)), once
@@ -137,7 +136,8 @@ report, and an autonomous run is never interrupted to ask. One line each:
 - **untracked** → what it is and where, the classification it would carry, the rating a review
   gave it ([`report-format.md`](report-format.md)), what it costs to never do it, and the outcome
   proposed for it;
-- **tracked, and the finding adds something** → `#N` and what changes, then **INTO #N** or **DROP**;
+- **tracked, and the finding adds something** → `#N`, its state, what changes, and the outcome,
+  carrying the line above's fields where that outcome is a record of its own;
 - **tracked as it stands** → no entry; say so where it came up.
 
 Where the response wears a report's frame, the proposals stand in its ask block and the

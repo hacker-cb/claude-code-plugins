@@ -77,8 +77,9 @@ form: you paste every one of them yourself.
 
 - **`issue-tracking`** — `/hcb-dev:issue-tracking`
   The backlog side of the pipeline, on GitHub and GitLab alike: what earns an
-  issue and what does not, searching the tracker, the shape of the issue body,
-  and the three moments worth consulting open issues at. Classification against the
+  issue and what does not, searching the tracker, what record a closed issue
+  takes, the shape of the issue body, and the three moments worth consulting open
+  issues at. Classification against the
   mechanism you adopted, else against what the repository itself defines and
   uses, is `references/classification.md`. Called by `implementation-workflow` at intake and in its report, and by
   `github-pr-workflow` after a merge.
