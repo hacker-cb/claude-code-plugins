@@ -217,11 +217,13 @@ else
             if [ "$is_external" = 0 ]; then
               case "$pjname" in hcb-* | "") : ;; *) err "$name: plugin.json name '$pjname' must start with 'hcb-'" ;; esac
 
-              # version: required and valid semver (the repo's single version axis)
+              # version: required and valid semver (the repo's single version axis).
+              # Matched as one string, the way the gate matches it: grep matches per
+              # line, so a version carrying a newline passed on its first line alone.
               pjver=$(jq -r '.version // empty' "$pj")
               if [ -z "$pjver" ]; then
                 err "$name: $pj missing 'version'"
-              elif ! printf '%s' "$pjver" | grep -Eq "$SEMVER"; then
+              elif ! [[ $pjver =~ $SEMVER ]]; then
                 err "$name: version '$pjver' is not valid semver (expected e.g. 1.2.3)"
               fi
             else
