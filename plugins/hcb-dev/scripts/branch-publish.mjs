@@ -139,9 +139,12 @@ const refuse = (reason) => { answer.reason = reason; finish(); };
 const note = (m) => { answer.notes.push(m); };
 // `git` for a question, `run` for an act — the split IS the contract of `ran` above, so a read
 // sent through here stops being distinguishable from a change this run made.
+// A url's userinfo is a credential as often as a name — `https://<token>@host/…` is how CI
+// hands one over — and `ran` is printed: the call gets the url whole, the record does not.
+const redact = (a) => a.replace(/^([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^/@]*@/, '$1***@');
 const run = (args, timeout = 120000) => {
   const r = git(args, timeout);
-  answer.ran.push(['git', ...args].join(' '));
+  answer.ran.push(['git', ...args.map(redact)].join(' '));
   return r;
 };
 // Why a call did not answer. A process this run KILLED said nothing about whether it would
