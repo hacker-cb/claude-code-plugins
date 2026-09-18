@@ -28,9 +28,10 @@ and let the caller decide.
 every detached review shares; read it first — below is only this engine's own.
 
 What that base buys here: §2 hands the review the range
-`merge-base(base, HEAD)...HEAD` — **the branch's commits, and nothing
-uncommitted**. Whatever is not committed is named as uncovered instead, so
-committing before the run is what puts it under review.
+`merge-base(base, HEAD)...HEAD`, the head pinned to the commit it names at launch —
+**the branch's commits, and nothing uncommitted**. Whatever is not committed is named
+as uncovered instead, so committing before the run is what puts it under review; a
+commit made while the run is out is outside it.
 
 ## 2. Run it
 

@@ -110,13 +110,22 @@ for guarded in "$TOP" "$GITCOMMON" "$GITDIR"; do
 done
 
 if [ -n "$BASE" ]; then
+  # The head is pinned to a commit before anything reads it. Handed the name, the
+  # engine resolves it minutes later, so a commit the caller makes while the run is out
+  # widens what gets read while the count below still describes the range at launch.
+  HEAD_SHA="$(git rev-parse --verify -q HEAD)" || HEAD_SHA=""
+  [ -n "$HEAD_SHA" ] \
+    || { echo "claude review failed: HEAD does not name a commit, so there is no range to review"; exit 1; }
   # Empty covers both an unknown ref and no shared history, and the two are not
   # told apart here — unguarded either reaches the count and the target as a blank.
-  MERGE_BASE="$(git merge-base "$BASE" HEAD)" || MERGE_BASE=""
+  MERGE_BASE="$(git merge-base "$BASE" "$HEAD_SHA")" || MERGE_BASE=""
   [ -n "$MERGE_BASE" ] \
     || { echo "claude review failed: $BASE is unusable as a base — unknown ref, or no history shared with HEAD"; exit 1; }
-  TARGET="$MERGE_BASE...HEAD"
-  COVERED=$(git diff --name-only "$MERGE_BASE...HEAD" | wc -l | tr -d ' ')
+  TARGET="$MERGE_BASE...$HEAD_SHA"
+  COVERED=$(git diff --name-only "$MERGE_BASE...$HEAD_SHA" | wc -l | tr -d ' ')
+  # Standing on the base collapses the merge-base onto the head: the range is empty,
+  # and a run over it reads nothing while its record looks like any other.
+  [ "$MERGE_BASE" = "$HEAD_SHA" ] && ON_BASE=1 || ON_BASE=0
   OUTSIDE=$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')
   OUTSIDE_NOTE="uncommitted path(s) are NOT reviewed — the range covers commits only"
 else
@@ -124,6 +133,7 @@ else
   # run may set prose aside and diff its own default range instead, which is why
   # the warning below calls the scope unfixed rather than merely baseless.
   TARGET="only the uncommitted changes in the working tree, not any commit"
+  ON_BASE=0
   # What `git diff` shows, which is what the review reads — never `git status`,
   # which counts untracked files no diff shows.
   COVERED=$(git diff --name-only HEAD | wc -l | tr -d ' ')
@@ -602,6 +612,8 @@ esac
 # SEPARATE lines, never appended to the scope one.
 [ -n "$BASE" ] \
   || echo "coverage-warning: no base — the commits are NOT reviewed, and with no range to pin it the run may have read them anyway"
+[ "$ON_BASE" = 0 ] \
+  || echo "coverage-warning: HEAD is at the base — the range is empty, and nothing was reviewed"
 [ "$OUTSIDE" = 0 ] \
   || echo "coverage-warning: $OUTSIDE $OUTSIDE_NOTE"
 # A coverage line, not a run one: a report salvaged from a run that ended badly can be
