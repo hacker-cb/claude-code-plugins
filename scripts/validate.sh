@@ -450,7 +450,7 @@ done < <(md_files)
 
 # --- the plugin root, by how a file reaches Claude ---------------------------
 # Claude Code substitutes `${CLAUDE_PLUGIN_ROOT}` where it LOADS the content — a
-# SKILL.md, an agent — and nowhere else. A `references/*.md` reaches Claude through
+# SKILL.md, a flat commands/*.md skill file, an agent — and nowhere else. A `references/*.md` reaches Claude through
 # `Read`, verbatim, and the Bash tool's environment has no such variable, so a command
 # copied out of one runs from `/`. So a by-path file names the root `<plugin root>`,
 # and every skill whose links reach such a file binds that name once, in a line the
@@ -485,7 +485,10 @@ while IFS= read -r f; do
   # Unbraced is not substituted, and the Bash tool has no such variable either.
   grep -qE '\$(CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_SKILL_DIR|CLAUDE_PROJECT_DIR)([^A-Za-z0-9_{]|$)' "$f" 2>/dev/null \
     && err "$f: a bare \$CLAUDE_… — write \${…}, the form Claude Code substitutes"
-done < <(find plugins -type f \( -path '*/skills/*/SKILL.md' -o -path '*/agents/*.md' \) 2>/dev/null | sort)
+  # `commands/*.md` is a flat skill file — custom commands are skills, and the placeholder is
+  # substituted there as in any skill content, which is why check 1 leaves them alone.
+done < <(find plugins -type f \( -path '*/skills/*/SKILL.md' -o -path '*/agents/*.md' \
+  -o -path '*/commands/*.md' \) 2>/dev/null | sort)
 
 # 3. The binding stands exactly where a skill can reach a by-path file that names
 #    `<plugin root>` — following relative links transitively, which is how a reader
