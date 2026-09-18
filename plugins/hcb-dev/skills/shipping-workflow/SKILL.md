@@ -74,14 +74,14 @@ of step 0 — per
    change and trips the gate below on every ship. Where the project forbids
    committing yet, say so and expect the range-fed reviewers to come back short.
 
-   **Sweep what the change orphaned.** Take every path the branch deletes or renames — the whole
-   range and not only this commit, with step 1's `diff-base`: `git diff --name-status
-   <diff-base>...HEAD`, plus what is not committed (`git diff --name-status --cached` and `git
-   diff --name-status`, two calls because one against `HEAD` collapses a rename staged and then
-   renamed again) — and search the worktree for each old name. Search every file type, not the
-   ones you edited: what stays behind otherwise is the citation in a config comment, the
-   sentence in the docs, the stale header inside the renamed file. Vendored trees are out, and
-   so is any other worktree's checkout.
+   **Sweep what the change orphaned.** Take the old name — field 2 of each `D` or `R` row — of every
+   path the whole range deletes or renames, from step 1's `diff-base`: `git diff --name-status
+   <diff-base>...HEAD` first and alone, the call that fails where no merge base exists; `git log
+   --name-status --diff-filter=DR --format= <diff-base>..HEAD` for a path the range created and then
+   renamed or deleted; `git diff --name-status --cached` and `git diff --name-status` for what is not
+   committed, apart, as one against `HEAD` collapses a rename staged and renamed again. Pipe the
+   names, deduplicated, into one `git grep -F --untracked -f -`, skipped when there are none; every
+   file type, config comments and docs included, vendored roots excluded with `:(exclude)` pathspecs.
 
    Rule on each hit before touching it: a migration path, a compatibility alias, a
    test asserting the old name and a changelog entry are all still true. A tracked

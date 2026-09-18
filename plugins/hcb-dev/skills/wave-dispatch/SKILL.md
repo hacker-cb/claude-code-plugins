@@ -100,9 +100,9 @@ rather than waiting silently.
 ## The wave order
 
 One per batch, and its text is
-[`references/wave-order.md`](references/wave-order.md) — the receiver may be a
-session with no plugin, so that file is written to be read whole rather than to
-point.
+[`references/wave-order.md`](references/wave-order.md) — the receiver carries this
+plugin, but the order is what it reads before any of it, so that file is written to
+be read whole rather than to point.
 
 ## While batches run
 

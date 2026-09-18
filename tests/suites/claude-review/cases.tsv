@@ -87,6 +87,9 @@ denied-a-build	-	0	scope:|run-warning: 2 command(s) that build|cargo xtask lint|
 denied-a-build-and-a-read	-	0	scope:|1 command(s) that build|`cargo xtask lint`|2 tool call(s) were denied	a run denied a build and a read reports each as what it was — and a command that reads as well as runs stays on the coverage side
 denied-reads-shaped-as-builds	-	0	scope:|6 tool call(s) were denied|NOT:run-warning:	a read wearing a build's name stays unread ground — an interpreter, a lone `&`, a pipe into a reader, a command substitution, a launcher, an install running lifecycle scripts
 report	STUB_ECHO_PROMPT=1	0	scope:|do not build, test, lint or run the project	the prompt tells the reviewer the boundary, so it does not spend the run reaching for the project's own tooling
+report	STUB_ECHO_PROMPT=1	0	stub prompt: /code-review low|NOT:...HEAD — a read-only review	the engine is handed the head as a commit, not as a name it resolves minutes later — a commit made while the run is out stays outside the range the record counts
+report	-	0	scope:|coverage-warning: HEAD is at or behind the base	a run standing on its base, or behind it, names the empty range, rather than reading as a clean review of nothing
+no-findings	STUB_GIT_ECHO=1	0	stub git: diff --name-only|NOT:...HEAD	the count behind the scope line is taken over the pinned range as well, never over a symbolic head the engine would resolve again
 #
 # What the run reports about itself, which nothing asserted before: a warning from
 # stderr, the boundary it was launched inside, and a model that answered other than
@@ -110,6 +113,7 @@ report	STUB_CHECK_BOUNDARY=1 WORKTREE=1	0	scope:|read-only boundary held	and in 
 -	STUB_GIT_TOP=/tmp	1	is not the directory this run starts in	a working tree git names elsewhere than the run stands in is refused, since the boundary would hold the wrong one
 -	STUB_GIT_FAIL=--git-common-dir	1	could not be resolved	a git directory that does not resolve is refused, never left writable
 -	STUB_GIT_FAIL=--absolute-git-dir	1	could not be resolved	and so is the other one
+-	STUB_GIT_FAIL=HEAD^{commit}	1	HEAD does not name a commit	a head that is not a commit — a ref pointing at a tree or a blob — is refused before a range is built on it
 -	TMPDIR=.	1	TMPDIR is inside the repository under review	a relative temp root inside the checkout is caught once it is resolved
 #
 # The engine's own exit status, which the script currently ignores.
