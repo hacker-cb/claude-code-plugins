@@ -11,9 +11,14 @@ name: Version gate
 # verdict stale is not the pull request's own: when another pull request merges, a
 # sibling that bumped to the same version is wrong without a commit of its own, and
 # nothing reruns its checks. So every run of this workflow — a pull request opened,
-# pushed or retargeted, a push to the default branch, a manual dispatch — evaluates
-# EVERY open pull request against the default branch as it is at that moment, and
-# rewrites every status. A ruleset requires the status, not this job.
+# pushed, retargeted or closed, a push to the default branch, a manual dispatch —
+# evaluates EVERY open pull request against the default branch as it is at that
+# moment, and rewrites every status. A ruleset requires the status, not this job.
+#
+# `closed` is what notices a merge whose push runs nothing: GitHub starts no push
+# workflow for a head commit carrying `[skip ci]` or its kin — which a squash message
+# inherits from any commit of the branch — and that directive does not reach
+# pull_request_target.
 #
 # pull_request_target, not pull_request: a fork's or Dependabot's pull_request run gets
 # a read-only token and could not post its own status. What runs is the default
@@ -22,7 +27,7 @@ name: Version gate
 # run here would hold a token that writes statuses.
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, edited]
+    types: [opened, reopened, synchronize, edited, closed]
     branches: [master]
   push:
     branches: [master]
