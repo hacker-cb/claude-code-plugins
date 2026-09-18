@@ -18,11 +18,11 @@ node "<plugin root>/scripts/branch-publish.mjs" --new <name> [--old-name <name>]
 
 `--publish` is opt-in rather than inferred from a
 remote being named: a caller that forgot it would otherwise get a silent no-op where the push is
-the whole point. With it, run the call with the Bash tool's `timeout` at its ceiling — the push
-waits out the repository's pre-push hook, and a call outlasting the tool's limit comes back
-without its answer. `--push-timeout` bounds each push — the publication and every deletion, both of
-which run the repository's pre-push hook — and `--settle` is how long the remote is read again
-after one of them was not waited out.
+the whole point. `--push-timeout` bounds each push — the publication and every deletion, each of
+which runs the repository's pre-push hook — and `--settle` is how long the remote is read again
+after one that gave no verdict, so a run can spend both once per push. With `--publish`, run the
+call with the Bash tool's `timeout` at its ceiling, and detached where those budgets, taken per
+push, add up past it: a call outlasting the tool's limit comes back without its answer.
 
 | field | what it settles |
 |---|---|
@@ -37,11 +37,12 @@ after one of them was not waited out.
 | `notes` | why the name it ships under is not the one asked for |
 
 **An unsettled publication is neither a refusal nor a publication.** `null` with `asked` true is a
-push that was not waited out, or a remote that would not answer, and its `reason` quotes the last
-line git got to. Re-run the same call: the answer is read off the remote, so a ref that landed in
-the meantime comes back `true` whether or not the new push is waited out. Where that last line is
-the repository's own pre-push hook rather than git's transfer, raise `--push-timeout` past what
-the hook takes, since every re-run runs the hook again.
+push that ended with no verdict — not waited out, or its transport gone — or a remote that would
+not answer, and its `reason` quotes the last line git got to. Re-run the same call: the answer
+is read off the remote, so a ref that landed in the meantime comes back `true` whether or not the
+new push is waited out. Where that last line is the repository's own pre-push hook rather than
+git's transfer, raise `--push-timeout` past what the hook takes, since every re-run runs the hook
+again.
 
 **A proof that cannot run keeps the ref.** Five have to hold before a name comes off the remote —
 no open change request heads it (deleting a head ref closes the request along with its review),

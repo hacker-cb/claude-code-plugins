@@ -37,16 +37,29 @@ case "$1 $2" in
     # `$4` is `<rev>^{commit}`. Two questions arrive here: whether the base tracking ref
     # is in this checkout at all, and whether a remote's tip is an object it carries.
     case "$4" in
-      refs/remotes/*) case "$(ask '.base_present')" in no) exit 1 ;; esac ;;
+      refs/remotes/*)
+        # A tracking ref a fetch just wrote, where a case needs it to hold something other
+        # than this branch's tip — the remote having moved between the read and the fetch.
+        t=$(ask ".object_tip[\"${4%^*}\"]")
+        [ -n "$t" ] && { printf '%s\n' "$t"; exit 0; }
+        case "$(ask '.base_present')" in no) exit 1 ;; esac ;;
       *) case "$(ask ".object[\"${4%^*}\"] // .object_default")" in no) exit 1 ;; esac ;;
     esac
     echo "cafe"; exit 0 ;;
   "ls-remote --heads")
-    v=$(ask ".ls_remote[\"$4\"] // .ls_remote_default")
-    later=$(ask ".ls_remote_later[\"$4\"]")
+    # The ref is the LAST argument and the repository the one before it: what stands there
+    # is the push url wherever one differs from the fetch url, and a case pins which was
+    # asked. Reading either by position from the front breaks the moment a flag moves.
+    for ls_ref; do :; done
+    ls_repo=$4
+    want_repo=$(ask '.expect_ls_repo')
+    [ -n "$want_repo" ] && [ "$want_repo" != "$ls_repo" ] \
+      && fail "stub git: ls-remote asked $ls_repo, not $want_repo" 3
+    v=$(ask ".ls_remote[\"$ls_ref\"] // .ls_remote_default")
+    later=$(ask ".ls_remote_later[\"$ls_ref\"]")
     if [ -n "$later" ]; then
       lag=$(ask '.ls_remote_lag'); [ -z "$lag" ] && lag=1
-      [ "$(reads "$4")" -gt "$lag" ] && v=$later
+      [ "$(reads "$ls_ref")" -gt "$lag" ] && v=$later
     fi
     case "$v" in
       ""|silent) fail "fatal: could not read from remote repository" 128 ;;
@@ -119,6 +132,9 @@ case "$1" in
           *) fail "error: src refspec matches more than one" 1 ;; esac
         case "$(ask '.push')" in
           fail) fail "! [rejected] stale info" 1 ;;
+          # Exit 128, where a refusal exits 1: the transport died, so the remote's verdict
+          # — if it ever reached one — never came back.
+          hangup) fail "fatal: the remote end hung up unexpectedly" 128 ;;
           hang) v=$(ask '.push_says'); [ -n "$v" ] && printf '%s\n' "$v" >&2; exec sleep 30 ;;
         esac ;;
     esac
