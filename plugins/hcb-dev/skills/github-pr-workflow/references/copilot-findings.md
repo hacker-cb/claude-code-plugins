@@ -34,7 +34,8 @@ ours, and every thread stays owed for the life of the run.
 | `open[]` | every thread still owed something, each carrying the `why` that says which state it is in |
 | `notes[]` | what the answer says beyond its fields. One naming a bot this does not take for Copilot is read before `open` is believed: where that bot is Copilot under a new login, its threads and its body are owed as this reviewer's are, and nothing here counted them |
 
-A `truncated` flag beside a body or a comment says the text was clipped; nothing else is lossy.
+A `truncated` flag beside a comment says its text was clipped; a body comes back whole, and
+nothing else is lossy.
 
 **Every body this reviewer posted that the pull request's conversation is silent about is read
 whole.** Every review this reviewer ever posted is in the answer, so a body settled three pushes
@@ -50,30 +51,32 @@ ones measured), so where findings have been seen is a guide, never the list:
   body counting no new comments carries one there as readily as any, and often nothing else;
 - **a counted block** of comments that opened no thread, each under its path and line;
 - **anything else** in the body that asserts a defect. A body you cannot place in any layout you
-  know is read as prose all the same, and named in the report
+  know is read as prose all the same, and named in the end-of-session report
   ([`../../../references/invariants.md`](../../../references/invariants.md), *An unrecognised
   shape is not an empty one*).
 
 **Write the reading down.** For each body read, list its findings — where each sits, what it is
-about, and what became of it: fixed and where, turned down with its reason, or the thread it
-repeats. A finding in a body carries no comment id, so there is no thread to answer in and none to
-resolve: the list goes to the pull request's conversation with the push that settles it, which is
-where the reply protocol below would otherwise have put it — and it is what the next round finds
-there. A count a body states is never the length of that list: it counts one of the places, not
-the body.
+about, and what became of it: fixed and where, already gone at the head, turned down with its
+reason, or the thread it repeats. A finding in a body carries no comment id, so there is no thread
+to answer in and none to resolve: the list goes to the pull request's conversation — with the push
+that settles it, or on its own where nothing is pushed — which is where the reply protocol below
+would otherwise have put it, and it is what the next round finds there. A count a body states is
+never the length of that list: it counts one of the places, not the body.
 
-**The head's review also says what it did not review** — the body whose `head` is `true`, in two
-places: a block naming the files it did not review, and a count of files reviewed against files
-changed. Files it names are read against the change. Where the count comes up short and nothing
-names the files, the files whose own diff is past the per-file size `forge-behaviour.md` measures
-are the candidates, and they are read the same way. The report names the shortfall and every file
-it covers, named or candidate, that is code this change writes. Where it reviewed no file at all —
+**The head's review also says what it did not review** — the newest body whose `head` is `true`,
+since a review that could not run and the one requested after it are two reviews of one commit. It
+says so in two places: a block naming the files it did not review, and a count of files reviewed
+against files changed. Files it names are read against the change. Where the count comes up short
+and nothing names the files, which ones went unreviewed is unknown: read every changed file that
+is code this change writes against the change, the largest diffs first (`forge-behaviour.md`),
+rather than a guess at which ones they were. The end-of-session report names the shortfall, and
+the files it named that are code this change writes. Where it reviewed no file at all —
 a count of none, or a body saying the review could not run — the head is unreviewed by this
 reviewer: the stop `copilot.md` takes where a wait runs out, never the exit. A review of an earlier
 commit says neither about the head.
 
-**The report carries, for the head's review**, the files-reviewed count and the effort level its
-body states — the level as a fact about that round, never as grounds for any step.
+**The end-of-session report carries, for the head's review**, the files-reviewed count and the
+effort level its body states — the level as a fact about that round, never as grounds for any step.
 
 ## Classifying, fixing, replying
 

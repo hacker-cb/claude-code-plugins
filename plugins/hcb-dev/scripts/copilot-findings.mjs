@@ -24,10 +24,13 @@ import { dirOk, hostOk, isCopilot, otherBot, parsePages, repoOk, runner, text, w
 // off a real finding and leave a path naming no file. Control characters still go, since
 // they would end a line in a reader's terminal, and the ceiling is high enough that only
 // something pathological reaches it — which then SAYS it was clipped rather than looking
-// like the whole of it.
+// like the whole of it. A review BODY takes no ceiling at all: it is the only place a finding
+// that opened no thread stands, so a clipped one hides its tail from the only reader it has, and
+// the forge caps a body's size itself.
 const CEILING = 20000;
-const whole = (v) => (typeof v === 'string'
-  ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ').slice(0, CEILING) : null);
+const clean = (v) => (typeof v === 'string'
+  ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ') : null);
+const whole = (v) => clean(v)?.slice(0, CEILING) ?? null;
 const clipped = (v) => typeof v === 'string' && v.length > CEILING;
 
 const USAGE = 'usage: node copilot-findings.mjs --pr <n> [--repo <owner/name>]'
@@ -280,7 +283,7 @@ if (!reviews.ok) {
           // The body itself, because the body is what gets READ — every one the pull request's
           // conversation is silent about. `null` is the feed not carrying the field at all, which
           // is not a review that said nothing: an empty string is that.
-          body: whole(body), truncated: clipped(body),
+          body: clean(body),
         });
       }
     }
