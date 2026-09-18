@@ -142,10 +142,8 @@ of step 0 — per
    **Then put the fixes through
    [`../../references/fix-reading.md`](../../references/fix-reading.md).** A fix it
    sends back to a reviewer goes to step 4, handed the same base as the first
-   round, and comes back here with what it returns. The reader downstream it asks
-   about is, in `request`, the change request's opening review where the base
-   gets one — read, never assumed; in `local`, nothing. Once the rounds end,
-   step 7's driver loops again against a reviewer of its own, on its own budget.
+   round, and comes back here with what it returns. Once the rounds end, step 7's
+   driver loops again against a reviewer of its own, on its own budget.
 6. **Check the coverage** — the gate below, over the last round there was.
 7. **Complete the slice by mode** — the contract is `slice-completion.md`'s and the mechanics
    are

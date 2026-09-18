@@ -135,9 +135,9 @@ form: you paste every one of them yourself.
   auto-generated branch and retire what it was published under, rebase onto base,
   open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
-  clean — a fix no reviewer downstream will read goes back through `multi-review`
-  before it is pushed, and Copilot is asked for a review only when the PR itself
-  turned — then merge on the authority it was handed — `ask` by default, so it
+  clean — a fix reaching past its finding goes back through `multi-review` before
+  it is pushed, and Copilot is asked for a review only when the PR itself turned —
+  then merge on the authority it was handed — `ask` by default, so it
   stops at ready and asks — monitor, watch the base's own checks on the merge
   commit, and report.
   Discovers the merge gates the base branch actually enforces — two bases of one
@@ -450,9 +450,9 @@ saying something else. Each file opens by saying what it owns.
   reviewer, a step or a completion turns something up; the tracker operations
   themselves stay with `issue-tracking`.
 - [`references/fix-reading.md`](references/fix-reading.md) — what reads a fix
-  made after a review: whether anything downstream still will, which fix goes
-  back through `multi-review` before it is pushed, and when those rounds end. Read
-  wherever review fixes are made, before a change request opens and after.
+  made after a review: which fix goes back through `multi-review` before it is
+  pushed, and when those rounds end — on what they find and what they covered.
+  Read wherever review fixes are made, before a change request opens and after.
 - [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
   endpoint or a concept name gets resolved on either forge. Read before writing an
   invocation or naming a concept in prose.

@@ -42,7 +42,8 @@ gh api --silent -X POST "repos/$REPO/pulls/$PR/requested_reviewers" \
 **Confirm it on the timeline, never from the call.** The call answers alike whether it placed a
 request or not, and the request list reads empty either way
 ([`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md)): re-read
-`copilot-state.mjs` until `latestMove` is `review_requested` and `verdict` is `waiting`, and from
-there it is the ordinary wait (`copilot.md`, *Wait for the review of the CURRENT head*). A reading
-still `unrequested` at the end of the first wait window placed nothing: it is not placed twice —
-the addressee `merge-auth` names hears it.
+`copilot-state.mjs` until it moves. `verdict` `waiting` is the request standing — the ordinary
+wait from there (`copilot.md`, *Wait for the review of the CURRENT head*); `reviewed`, with the
+head's own review in hand, is the request already answered — its findings are next
+(`copilot-findings.md`). A reading still `unrequested` at the end of the first wait window placed
+nothing: it is not placed twice — the addressee `merge-auth` names hears it.

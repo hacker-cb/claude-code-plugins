@@ -113,12 +113,11 @@ another review wait where a rule reviews pushes, and the approval standing on th
 behind where the base dismisses stale reviews.
 
 **What reads the fix** is
-[`../../../references/fix-reading.md`](../../../references/fix-reading.md)'s question, answered off
-`copilot-state.mjs`: Copilot reads a push only where `expects.onPush` holds or a request stands
-(`copilot.md`), and only there is a borderline fix left to it. A fix that file sends back to a
-reviewer goes through `hcb-dev:multi-review` before the push either way; its findings are this
-loop's as Copilot's are — rated on the same ladder, fixed before the exit, the round named in the
-report.
+[`../../../references/fix-reading.md`](../../../references/fix-reading.md)'s question, and Copilot
+is never its answer: a fix that file sends to a reviewer goes through `hcb-dev:multi-review`
+before the push, whatever review `copilot-state.mjs` shows coming. Its findings are this loop's as
+Copilot's are — rated on the same ladder, fixed before the exit — and the round goes in the
+report with its coverage.
 
 **Every Copilot comment gets a reply**, fixed or skipped — what changed and where, or the reason
 it is out of scope or not a defect — and then the thread is resolved, where the comment sits in

@@ -5,14 +5,10 @@ request opens, and in the loop driving one after. It owns which fix goes back to
 when those rounds end; how the finding it answers is rated and scoped is
 [`findings.md`](findings.md)'s, and the forge's own reviewer is its driver's.
 
-## Whether anything still reads it
-
-**What reads a fix is read, never assumed.** Downstream of this point there is a reader only where
-something is still coming to the head the fix will sit on: a change request not yet opened, whose
-base has a rule that reviews it at opening; a rule that reviews pushes; a review request already
-standing. Each is read off the forge when it is asked, never off what the repository's rules were
-last seen to say ([`invariants.md`](invariants.md), *Configuration predicts nothing; read the
-result*). Where the answer is nothing, this file is the only reading the fix gets.
+**Nothing still to come stands in for this reading.** A later review of the whole change is not a
+reading of the fix ([`forge-behaviour.md`](forge-behaviour.md)), and may not run at all: what this
+file sends to a reviewer goes there before the fix is pushed, whatever else is due to read the
+head.
 
 ## Which fix a reviewer reads again
 
@@ -26,10 +22,8 @@ result*). Where the answer is nothing, this file is the only reading the fix get
 - **A fix that would meet `hcb-dev:multi-review`'s own high-risk test**
   ([`../skills/multi-review/SKILL.md`](../skills/multi-review/SKILL.md), *Scope*), **or answers
   more than its finding asked**, is code no reviewer has read: it goes back through
-  `hcb-dev:multi-review` on the change's own base, never one narrowed to the fixes, before it is
-  pushed.
-- **A borderline call goes to a reviewer** wherever the answer above is nothing, and is left to
-  the reader downstream where one is coming.
+  `hcb-dev:multi-review` on the change's own base, never one narrowed to the fixes.
+- **A borderline call goes to a reviewer.**
 
 A `Minor` never opens a round on its own (`findings.md`); it rides one opened for something
 else, or it goes to the report. Commit each round's fixes naming the findings they close, so what
@@ -43,3 +37,7 @@ where an earlier round already fixed something, which is the loop trading one br
 Up to ~3 rounds otherwise, then stop and ask. Running out is a stop and never a completion: never
 complete, never merge, and never re-rate a finding to get under the line. The rounds belong to
 the loop that opened them and spend its budget; no other loop's is drawn into them.
+
+**A round counts only as far as it covered.** One whose coverage report carries a gap other than
+`n/a` or `partial (structural)` (`hcb-dev:multi-review`, *Report*) ends nothing, however clean its
+findings: it is a stop at whoever the loop answers to, with the gap named.
