@@ -151,10 +151,10 @@ either becomes a stop.
 1. **Read the live state** — four scripts, one question each, none by hand:
 
    ```bash
-   # Re-resolving is what STOPS the drift read where the base cannot be refreshed: an older
-   # tracking ref measures cleanly and answers `behind: 0`, the one wrong answer this cannot
-   # give. Pass no --base-ref rather than a ref that is not current.
-   BASE_JSON="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" --base "<.base.name, Step 1>")"
+   # Re-resolving STOPS the drift read where the base cannot be refreshed: an older tracking ref
+   # answers `behind: 0`, which THIS answer is what rules out. The base is read, never pasted.
+   BASE_JSON="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" \
+     --base "$(gh pr view <pr> --json baseRefName --jq .baseRefName)")"
    BASE_REF="$(printf '%s' "$BASE_JSON" | jq -r 'if .base.current then .base.ref else "" end')"
    node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr <pr> ${BASE_REF:+--base-ref "$BASE_REF"}
    node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr <pr> --sha head --require-from-gates

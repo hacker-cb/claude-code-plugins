@@ -43,7 +43,7 @@ a deletion folded into the reading runs before the reading is believed, and what
 reports is then not what it did.
 
 ```text
-node <plugin root>/scripts/retire-check.mjs \
+node "<plugin root>/scripts/retire-check.mjs" \
   --branch <name> (--tip <ref> | --pr <n>) [--push-remote <name>]
 ```
 

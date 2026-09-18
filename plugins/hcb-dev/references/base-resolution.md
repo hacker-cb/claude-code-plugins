@@ -15,7 +15,7 @@ them, which one to **read** a base from, which one a push actually goes to, and 
 base — whether the ref for it is CURRENT.
 
 ```text
-node <plugin root>/scripts/resolve-base.mjs [--base <name>] [--forge gh|glab]
+node "<plugin root>/scripts/resolve-base.mjs" [--base <name>] [--forge gh|glab]
 ```
 
 | field | what it settles |

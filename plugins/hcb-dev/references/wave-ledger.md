@@ -18,7 +18,7 @@ the two are not copies.
 **`scripts/ledger.mjs` answers where it stands**, and is read before every write:
 
 ```text
-node <plugin root>/scripts/ledger.mjs --issue <n> [--repo <owner/name>] [--forge gh|glab]
+node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--forge gh|glab]
   [--host <host>] [--body-file <path>] [--limit <bytes>] [--me <login>]
 ```
 

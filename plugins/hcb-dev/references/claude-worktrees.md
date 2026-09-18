@@ -40,7 +40,7 @@ directories it names. A check built on it answers confidently and wrongly.
 repository at once:
 
 ```text
-node <plugin root>/scripts/worktree-owners.mjs [--repo-dir <path>]
+node "<plugin root>/scripts/worktree-owners.mjs" [--repo-dir <path>]
 ```
 
 | field | what it settles |

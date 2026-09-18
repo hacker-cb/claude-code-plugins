@@ -11,7 +11,7 @@ whole hazard — a rename is refused wherever a change request pins a name, the 
 unconditional, and a name comes off the remote only after the new one is up.
 
 ```text
-node <plugin root>/scripts/branch-publish.mjs --new <name> [--old-name <name>]
+node "<plugin root>/scripts/branch-publish.mjs" --new <name> [--old-name <name>]
   [--publish --push-remote <name>] [--base <name> --base-remote <name>]
 ```
 
