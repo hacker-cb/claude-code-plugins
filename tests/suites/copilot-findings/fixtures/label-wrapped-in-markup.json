@@ -1,6 +1,0 @@
-{
- "pr_view": "{\"url\": \"https://forge.example/example-org/example-repo/pull/7\", \"headRefOid\": \"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
- "threads": "{\"data\": {\"repository\": {\"pullRequest\": {\"reviewThreads\": {\"pageInfo\": {\"hasNextPage\": false}, \"nodes\": [{\"id\": \"T_one\", \"isResolved\": true, \"isOutdated\": false, \"resolvedBy\": {\"login\": \"example-author\"}, \"comments\": {\"pageInfo\": {\"hasNextPage\": false}, \"nodes\": [{\"databaseId\": 101, \"author\": {\"login\": \"copilot-pull-request-reviewer[bot]\", \"__typename\": \"Bot\"}, \"body\": \"null check missing\", \"path\": \"src/example.ts\", \"line\": 12}, {\"databaseId\": 102, \"author\": {\"login\": \"example-author\", \"__typename\": \"User\"}, \"body\": \"Fixed in abc123\", \"path\": \"src/example.ts\", \"line\": 12}]}}]}}}}}",
- "reviews": "[{\"submitted_at\": \"2026-09-16T10:00:00Z\", \"commit_id\": \"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"state\": \"COMMENTED\", \"body\": \"Suppressed <span class=\\\"review-summary-hidden-comments-block\\\">comments</span> (4)\\n\\nComments generated: 1\", \"user\": {\"login\": \"copilot-pull-request-reviewer[bot]\", \"type\": \"Bot\"}}]",
- "want_host": "forge.example"
-}

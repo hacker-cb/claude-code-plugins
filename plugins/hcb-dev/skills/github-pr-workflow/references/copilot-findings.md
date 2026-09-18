@@ -1,19 +1,20 @@
 # What a Copilot review said, and what to do with it
 
 Read once a review of the current head is in hand — [`copilot.md`](copilot.md) owns whether one
-is, and what it lands as. This file owns the two places a review puts its findings, how they are
-rated, and what closes each one out.
+is, and what it lands as. This file owns where a review puts its findings, how they are rated,
+and what closes each one out.
 
-## Two readings, not one
+## Finding the findings
 
-A review puts its findings in **two** places, and only one opens threads. Both are read every
-round: one alone is half the review, and the half it drops is the half nothing else catches — a
-finding in the suppressed block has no thread, so `required_review_thread_resolution` does not
-hold it and a check that unresolved threads are zero reads a clean field while it stands.
+A review speaks in its **threads** and in its **body**, and only the threads are held by anything:
+a finding in the body has no thread, so `required_review_thread_resolution` does not hold it and a
+check that unresolved threads are zero reads a clean field while it stands. Both are read every
+round.
 
-`scripts/copilot-findings.mjs` does both readings and says what is still owed. It reads;
-replying and resolving are this file's too, and a reply folded into the reading is sent before the
-reading is believed.
+`scripts/copilot-findings.mjs` collects both — every thread, every body whole — and says which
+threads are still owed. It reads; replying and resolving are this file's too, and a reply folded
+into the reading is sent before the reading is believed. What a body says is yours to read: the
+script hands it over uninterpreted.
 
 ```text
 node <plugin root>/scripts/copilot-findings.mjs --pr <n> [--repo <owner/name>] [--me <login>]
@@ -29,30 +30,53 @@ ours, and every thread stays owed for the life of the run.
 | `me` | who this run is authenticated as, which is what "answered" is measured against. `null` leaves every thread owed |
 | `threads.items[]` | one per review thread: `resolved`, `outdated`, `resolvedBy`, `byReviewer`, the `path` and `line`, and each comment with the `id` a reply is posted to |
 | `threads.items[].answered` | whether a comment of **ours** follows the reviewer's LAST word. Anyone at all can reply in a thread, so a reply is ours by identity and an answer by position; `othersSpoke` beside it is a third party having attended to the thread, which is not an answer to the finding. `null` where that thread's own comments paginated, which owes exactly as much as no answer does |
-| `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head`, `opening` and the `body` itself |
-| `bodies.items[].suppressed` | the block's own count of the findings that opened no thread, taken with the body's quoted code left out — **the checksum a reading is held to**: the thread-less findings you classify from the body number exactly this, and where they do not, the body is read again. **`null` is "no such block", never zero**, and `null` beside `ambiguous` is a count that could not be pinned — a reading with nothing to check it against, never a body to skip |
-| `bodies.items[].opened` | what the review OPENED, a count of threads and never of findings: a review whose findings all went to the suppressed block opened none, so zero there is that class's signature rather than evidence against it. It holds whatever the verdict says — an approving review carries a suppressed block as readily as a declining one |
-| `bodies.items[].unrecognised` | what of the body this could not account for — none of the labels it reads, a counted block it has no name for, findings outside any block it read — and `null` where it accounted for all of it. Not `null` is a layout that may have moved ([`../../../references/invariants.md`](../../../references/invariants.md), *An unrecognised shape is not an empty one*): the report names the review (`copilot.md`), and a `suppressed` pinned beside it still checks the reading — a finding outside the block is exactly the reading it comes up short of |
+| `bodies.items[]` | one per review this reviewer posted, whichever commit it covers, with `state`, `head` and the `body` itself, whole. `body: null` is the feed carrying no body at all — a note says so — never a review that said nothing |
 | `open[]` | every thread still owed something, each carrying the `why` that says which state it is in |
 | `notes[]` | what the answer says beyond its fields. One naming a bot this does not take for Copilot is read before `open` is believed: where that bot is Copilot under a new login, its threads and its body are owed as this reviewer's are, and nothing here counted them |
 
-A suppressed finding carries no comment id, so there is no thread to answer in and none to
-resolve — it ends in the fix, and is named, fixed or turned down with its reason, in the pull
-request's conversation, which is where the reply protocol below would otherwise have put it. A `truncated`
-flag beside a body or a comment says the text was clipped; nothing else is lossy.
+A `truncated` flag beside a comment says its text was clipped; a body comes back whole, and
+nothing else is lossy.
 
 **Every body this reviewer posted that the pull request's conversation is silent about is read
-whole**, whatever the fields beside it say: they count what a body carries and never decide
-whether it is read. Every review this reviewer ever posted is in the answer, so a body settled
-three pushes ago still carries its findings. What settles one is the conversation, which this
-does not read: **a body whose findings the conversation already names was read in an earlier
-round**, and re-classifying it posts the same answers again every iteration.
+whole.** Every review this reviewer ever posted is in the answer, so a body settled three pushes
+ago still carries its findings. What settles one is the conversation, which the script does not
+read: **a body whose findings the conversation already names was read in an earlier round**, and
+re-classifying it posts the same answers again every iteration.
 
-**The head's review also says what it did not review** — the body whose `head` is `true`. The
-files it skipped are files nobody reviewed on the head: read them against the change, and name in
-the report every one that is code this change writes. Where it reviewed no file at all, the head
-is unreviewed by this reviewer — the stop `copilot.md` takes where a wait runs out, never the
-exit. A review of an earlier commit says neither about the head.
+**A body's findings are wherever it asserts a defect.** The layout is published nowhere and moves
+([`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md) carries the
+ones measured), so where findings have been seen is a guide, never the list:
+
+- **the sentence under the heading.** A claim about a defect there is a finding of its own — a
+  body counting no new comments carries one there as readily as any, and often nothing else;
+- **a counted block** of comments that opened no thread, each under its path and line;
+- **anything else** in the body that asserts a defect. A body you cannot place in any layout you
+  know is read as prose all the same, and named in the end-of-session report
+  ([`../../../references/invariants.md`](../../../references/invariants.md), *An unrecognised
+  shape is not an empty one*).
+
+**Write the reading down.** For each body read, list its findings — where each sits, what it is
+about, and what became of it: fixed and where, already gone at the head, turned down with its
+reason, or the thread it repeats. A finding in a body carries no comment id, so there is no thread
+to answer in and none to resolve: the list goes to the pull request's conversation — with the push
+that settles it, or on its own where nothing is pushed — which is where the reply protocol below
+would otherwise have put it, and it is what the next round finds there. A count a body states is
+never the length of that list: it counts one of the places, not the body.
+
+**The head's review also says what it did not review** — the newest body whose `head` is `true`
+among those that ran: a review that could not run says nothing about a commit another review of it
+covered, whichever came first. It says so in two places: a block naming the files it did not
+review, and a count of files reviewed against files changed. Files it names are read against the
+change. Where the count comes up short and nothing names the files, which ones went unreviewed is
+unknown: read every changed file that is code this change writes against the change, the largest
+diffs first (`forge-behaviour.md`), rather than a guess at which ones they were. The end-of-session
+report names the shortfall, and the files it named that are code this change writes. Where it
+reviewed no file at all — a count of none, or every review of it saying it could not run — the head
+is unreviewed by this reviewer: the stop `copilot.md` takes where a wait runs out, never the exit.
+A review of an earlier commit says neither about the head.
+
+**The end-of-session report carries, for the head's review**, the files-reviewed count and the
+effort level its body states — the level as a fact about that round, never as grounds for any step.
 
 ## Classifying, fixing, replying
 

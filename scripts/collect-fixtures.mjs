@@ -78,15 +78,15 @@ const PUBLIC_ACTORS = new Set([
   'github-actions[bot]', 'github-actions', 'dependabot[bot]', 'dependabot',
 ]);
 
-// Structural markers a review body carries that a script actually parses, each paired
-// with the canonical form written in its place.
+// Structural markers a review body carries, each paired with the canonical form written in
+// its place. No script under test reads a body for what it says — the agent reads it whole —
+// so the markers kept here are a redacted capture's skeleton: which blocks a body carried,
+// and nothing of what they said.
 //
 // The canon is the point. Keeping the matched text looks safe and is not: two of these
 // anchors are a word, then arbitrary text, then a number — so `suppressed for
 // northwind-bank (2)` matches, and the customer's name rides along inside the match.
-// The parser downstream reads the number and the anchor, never the middle
-// (`copilot.md`'s body reader captures `(?<n>[0-9]+)` alone), so rebuilding the marker
-// from the capture loses nothing and carries nothing.
+// Rebuilt from the number alone, the marker carries nothing.
 const BODY_MARKERS = [
   [/comments?\s+generated\D{0,20}?(\d+)/i, (m) => `Comments generated: ${m[1]}`],
   [/suppressed\D{0,40}?\((\d+)\)/i, (m) => `suppressed (${m[1]})`],
@@ -169,16 +169,16 @@ function sanitizeBody(body) {
   const kept = [];
   for (const line of body.split('\n')) {
     // Every marker on the line, not the first. A body reporting `Comments generated: 0;
-    // Suppressed comments (2)` carries two signals the parser reads separately, and
-    // stopping at the first publishes a fixture that says the suppressed block is
-    // absent — a fixture asserting the opposite of what was measured.
+    // Suppressed comments (2)` carries two blocks, and stopping at the first publishes a
+    // fixture that says the suppressed block is absent — a fixture asserting the opposite
+    // of what was measured.
     for (const [marker, canon] of BODY_MARKERS) {
       const hit = line.match(marker);
       if (hit) kept.push(canon(hit));
     }
   }
   // The marker says something stood here, so an empty body and a redacted one stay
-  // different readings — which is exactly the distinction a body-parsing test needs.
+  // different readings — the one distinction a redacted capture still has to carry.
   return [...kept, '[body redacted by collect-fixtures]'].join('\n');
 }
 

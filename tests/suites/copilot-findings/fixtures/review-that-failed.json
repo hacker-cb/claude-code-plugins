@@ -1,0 +1,6 @@
+{
+ "want_host": "forge.example",
+ "pr_view": "{\"url\":\"https://forge.example/example-org/example-repo/pull/7\",\"headRefOid\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
+ "threads": "{\"data\":{\"repository\":{\"pullRequest\":{\"reviewThreads\":{\"pageInfo\":{\"hasNextPage\":false},\"nodes\":[]}}}}}",
+ "reviews": "[{\"submitted_at\":\"2026-09-16T10:00:00Z\",\"commit_id\":\"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"COMMENTED\",\"body\":\"Copilot encountered an error and was unable to review this pull request. You can try again by re-requesting a review.\",\"user\":{\"login\":\"copilot-pull-request-reviewer[bot]\",\"type\":\"Bot\"}}]"
+}

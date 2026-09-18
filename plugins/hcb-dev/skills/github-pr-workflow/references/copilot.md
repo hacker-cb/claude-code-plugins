@@ -34,7 +34,7 @@ Two things the script is built around, and a caller reading its answer relies on
 answers nothing either way
 ([`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md)).
 
-**What a review SAID is a second script's** (*Finding the findings* below): this one answers
+**What a review SAID is `copilot-findings.md`'s** (*Finding the findings*): this one answers
 about the head's state.
 
 ## What the review lands as
@@ -70,7 +70,7 @@ under it is *about*:
   something the reviewer could not reach and so could not judge. Nothing in the diff is being
   asked for: the reviewer is handing the decision to a human, and another round buys another
   review of the same kind. Confirm that on the head you are handing in rather than from the
-  sentence alone — neither reading under *Finding the findings* leaves a finding unanswered —
+  sentence alone — nothing *Finding the findings* turns up in threads or body is unanswered —
   and take it to the Step 4 stop.
 
 **Read the assessment as a fact about this head, never as a prediction about the pull request.**
@@ -92,7 +92,7 @@ is nothing to wait for — `verdict: not-expected` says exactly that.
 | `verdict` | the step |
 |---|---|
 | any but `reviewed` and `waiting`, with a note naming a bot this does not take for Copilot | **read before the verdict's own row**: that bot reviewed the head. Copilot under a new login makes the head reviewed — take its findings by hand, since neither script counted them, and say so in the report; any other reviewer leaves the verdict's own row standing |
-| `reviewed` | the head's own review is in hand — go to *Finding the findings* |
+| `reviewed` | the head's own review is in hand — go to *Finding the findings*, which also says when that review reviewed nothing |
 | `waiting` | a request stands: wait, on the budget below |
 | `unrequested`, `expects.more: true` | no review of the head and nothing standing — the cutoff below decides whether that is final |
 | `unrequested`, `expects.more: false` | **nothing is coming at all**, so there is no cutoff to wait out: a draft no rule in force reviews — open it ready for review (Step 3), or Copilot never runs on it. Act, do not wait |
@@ -131,7 +131,7 @@ last one included.
 
 ## What the review said, and what to do with it
 
-Two readings, the severity ladder, the fix and the reply-and-resolve protocol are
+Where findings sit, the severity ladder, the fix and the reply-and-resolve protocol are
 [`copilot-findings.md`](copilot-findings.md)'s — read once a review of the head is in hand, and
 not before.
 
