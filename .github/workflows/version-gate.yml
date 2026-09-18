@@ -54,7 +54,7 @@ jobs:
     name: Post plugin version statuses
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # The default branch whatever the event: pull_request_target already runs
           # its code, and a dispatch from another branch must not swap the script.
