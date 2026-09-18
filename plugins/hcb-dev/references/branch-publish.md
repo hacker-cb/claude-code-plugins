@@ -11,12 +11,11 @@ whole hazard — a rename is refused wherever a change request pins a name, the 
 unconditional, and a name comes off the remote only after the new one is up.
 
 ```text
-node <plugin root>/scripts/branch-publish.mjs --new <name> [--old-name <name>]
+node "<plugin root>/scripts/branch-publish.mjs" --new <name> [--old-name <name>]
   [--publish --push-remote <name>] [--base <name> --base-remote <name>]
 ```
 
-**Every skill that renames writes that command itself**, the plugin root being substituted in
-skill content and staying literal text here. `--publish` is opt-in rather than inferred from a
+`--publish` is opt-in rather than inferred from a
 remote being named: a caller that forgot it would otherwise get a silent no-op where the push is
 the whole point.
 

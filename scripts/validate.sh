@@ -448,6 +448,105 @@ while IFS= read -r md; do
   done < <(printf '%s\n' "$body" | grep -o '`[^`]*\.md`' 2>/dev/null | tr -d '`' | sort -u)
 done < <(md_files)
 
+# --- the plugin root, by how a file reaches Claude ---------------------------
+# Claude Code substitutes `${CLAUDE_PLUGIN_ROOT}` where it LOADS the content — a
+# SKILL.md, a flat commands/*.md skill file, an agent — and nowhere else. A `references/*.md` reaches Claude through
+# `Read`, verbatim, and the Bash tool's environment has no such variable, so a command
+# copied out of one runs from `/`. So a by-path file names the root `<plugin root>`,
+# and every skill whose links reach such a file binds that name once, in a line the
+# substitution turns into the real path.
+#
+# Each check reads the RAW file rather than `prose()`: every violation this gate exists
+# for sits inside a fenced block, which `prose()` blanks.
+binding_line='**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.'
+# One list, two patterns built from it: a name in only one of them is a name one check
+# stops and the other waves through.
+placeholder_names='CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_SKILL_DIR|CLAUDE_PROJECT_DIR|CLAUDE_SESSION_ID|CLAUDE_EFFORT'
+placeholder_re="\\\$\\{?($placeholder_names)\\}?"
+bare_re="\\\$($placeholder_names)([^A-Za-z0-9_{]|\$)"
+
+# 1. A file Claude reads by path carries no substitution placeholder. README.md is a
+#    person's file and names the mechanism freely; `commands/` is substituted content.
+while IFS= read -r md; do
+  [ -n "$md" ] || continue
+  case "$md" in plugins/*) ;; *) continue ;; esac
+  case "$md" in */SKILL.md|*/agents/*.md|*/commands/*.md|*/README.md) continue ;; esac
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    err "$md: '$hit' reaches Claude as literal text here — name the root '<plugin root>'"
+  done < <(grep -oE "$placeholder_re" "$md" 2>/dev/null | sort -u)
+done < <(md_files)
+
+# 2. Substituted content names the root through the placeholder. `<plugin root>` is the
+#    references' name for it, and the binding line is the one place it is written here.
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    [ "$hit" = "$binding_line" ] && continue
+    err "$f: '<plugin root>' outside the binding line — substituted content writes \${CLAUDE_PLUGIN_ROOT}"
+  done < <(grep -F '<plugin root>' "$f" 2>/dev/null)
+  # Unbraced is not substituted, and the Bash tool has no such variable either.
+  grep -qE "$bare_re" "$f" 2>/dev/null \
+    && err "$f: a bare \$CLAUDE_… — write \${…}, the form Claude Code substitutes"
+  # `commands/*.md` is a flat skill file — custom commands are skills, and the placeholder is
+  # substituted there as in any skill content, which is why check 1 leaves them alone.
+done < <(find plugins -type f \( -path '*/skills/*/SKILL.md' -o -path '*/agents/*.md' \
+  -o -path '*/commands/*.md' \) 2>/dev/null | sort)
+
+# 3. The binding stands exactly where a skill can reach a by-path file that names
+#    `<plugin root>` — following relative links transitively, which is how a reader
+#    gets there. Bound without reaching one is a line that instructs nothing.
+norm_path() {
+  awk -v p="$1" 'BEGIN {
+    n = split(p, a, "/"); k = 0
+    for (i = 1; i <= n; i++) {
+      if (a[i] == "." || a[i] == "") continue
+      if (a[i] == "..") { if (k > 0) k--; continue }
+      s[++k] = a[i]
+    }
+    out = s[1]; for (i = 2; i <= k; i++) out = out "/" s[i]; print out
+  }'
+}
+
+md_link_targets() {
+  grep -o '](\([^)#[:space:]]*\.md\)' "$1" 2>/dev/null | sed 's/^](//' \
+    | while IFS= read -r t; do
+        case "$t" in http*|*'$'*) continue ;; esac
+        norm_path "$(dirname "$1")/$t"
+      done
+}
+
+while IFS= read -r skill; do
+  [ -n "$skill" ] || continue
+  seen=$skill; queue=$skill; reached=""
+  while [ -n "$queue" ]; do
+    cur=${queue%%$'\n'*}
+    if [ "$cur" = "$queue" ]; then queue=""; else queue=${queue#*$'\n'}; fi
+    [ -f "$cur" ] || continue
+    case "$cur" in
+      */references/*.md)
+        [ -z "$reached" ] && grep -qF '<plugin root>' "$cur" 2>/dev/null && reached=$cur ;;
+    esac
+    while IFS= read -r t; do
+      [ -n "$t" ] || continue
+      case "$t" in plugins/*) ;; *) continue ;; esac
+      printf '%s\n' "$seen" | grep -qxF -- "$t" && continue
+      seen="$seen"$'\n'"$t"
+      queue=${queue:+$queue$'\n'}$t
+    done < <(md_link_targets "$cur")
+  done
+  bound=$(grep -cxF "$binding_line" "$skill" 2>/dev/null || true)
+  [ -n "$bound" ] || bound=0
+  if [ -n "$reached" ] && [ "$bound" -eq 0 ]; then
+    err "$(basename "$(dirname "$skill")"): reaches $reached, which names '<plugin root>', and does not bind it"
+  elif [ -z "$reached" ] && [ "$bound" -gt 0 ]; then
+    err "$(basename "$(dirname "$skill")"): binds '<plugin root>' and reaches no file that names it"
+  elif [ "$bound" -gt 1 ]; then
+    err "$(basename "$(dirname "$skill")"): the binding line stands $bound times — one is the contract"
+  fi
+done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
+
 # --- the size gate ----------------------------------------------------------
 # What a skill costs a session is what it loads, and prose grows one paragraph at a
 # time while every paragraph looks worth its line. These two ceilings are the gate

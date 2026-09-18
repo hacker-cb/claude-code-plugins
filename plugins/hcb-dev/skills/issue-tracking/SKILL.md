@@ -20,6 +20,7 @@ description: >-
 
 The backlog holds work you are **not** doing now. Detect the forge from the remote
 and what answers there, never from the hostname.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## What earns an issue
 

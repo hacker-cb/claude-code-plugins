@@ -7,10 +7,18 @@ here routes on, and every step number is the skill's.
 ## In this order
 
 ```bash
-git -C "$PROJECT" worktree remove "$WT"      # 1. --force ONLY on a confirmed class-3 item: a
-                                             #    dirty worktree, or one the removal refuses
-                                             #    over a submodule. Plain remove re-checks
-                                             #    clean now; --force does not
+# One call: step 4's block at its head assigns PROJECT and SCAN. `<n>` indexes THAT answer and
+# it renumbers, so the path is held against the approved one — arriving through a heredoc, the
+# one form no `'` or `$(…)` breaks out of — and `jq -e` refuses an index past the end.
+APPROVED_WT="$(cat <<'GATE'
+<the path the gate approved>
+GATE
+)"
+WT="$(printf '%s' "$SCAN" | jq -er --argjson i <n> '.worktrees[$i].path')" || exit 1
+[ "$WT" = "$APPROVED_WT" ] || { echo "renumbered: $WT is not the approved path"; exit 1; }
+git -C "$PROJECT" worktree remove "$WT"      # 1. --force ONLY on a confirmed class-3 item — a
+                                             #    dirty tree, or one a submodule refuses; plain
+                                             #    remove re-checks clean now, --force does not
 rm -rf "$WT"                                 # 2. approved class-3 items only
 git -C "$PROJECT" worktree prune --verbose   # 3. AFTER the rm, or the entry it orphaned
                                              #    still blocks its branch
@@ -27,13 +35,16 @@ report which `proof` each deletion stood on. Per branch it still calls `delete`,
 index in that fresh answer:
 
 ```bash
-BR="$(printf '%s' "$SCAN" | jq -r --argjson i <n> '.branches[$i].name')"
-# The oid the GATE's row carried, read BEFORE the wait. Both values from one reading makes the
-# comparison say nothing: a branch that moved comes back with its new tip and matches itself.
-APPROVED="<the oid this branch's gate row carried>"
-# The ref this instant. `--verify -q` for the empty answer, `|| true` for the exit status, so a
-# vanished ref still leaves a value to test.
-NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/$BR" || true)"
+# One call: step 1's and step 4's blocks at its head assign PROJECT, D and SCAN. `<n>` indexes
+# THAT answer and renumbers; one tip can carry two branches, so the name is held too, by heredoc.
+APPROVED_BR="$(cat <<'GATE'
+<the branch name the gate approved>
+GATE
+)"
+BR="$(printf '%s' "$SCAN" | jq -er --argjson i <n> '.branches[$i].name')" || exit 1
+[ "$BR" = "$APPROVED_BR" ] || { echo "renumbered: $BR"; exit 1; }
+APPROVED="<the oid this branch's gate row carried>"   # BEFORE the wait: one reading matches itself
+NOW="$(git -C "$PROJECT" rev-parse --verify -q "refs/heads/$BR" || true)"   # empty where gone
 if [ "$NOW" = "$APPROVED" ]; then
   git -C "$PROJECT" branch -D -- "$BR"
 else
@@ -58,6 +69,8 @@ acting on a name instead is how every surviving branch loses its upstream on the
 could not answer.
 
 ```bash
+# Same shape of call: step 4's block assigns PROJECT, D and SCAN, and BR is read out of SCAN
+# as above — step 1 alone leaves SCAN empty, and the repair then runs on nothing.
 git -C "$PROJECT" branch --set-upstream-to="$D" -- "$BR"   # repair: set-upstream
 git -C "$PROJECT" branch --unset-upstream -- "$BR"         # repair: unset-upstream
 ```

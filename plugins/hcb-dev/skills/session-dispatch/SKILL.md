@@ -22,6 +22,7 @@ and the slots every order settles are
 [`../../references/order-anatomy.md`](../../references/order-anatomy.md). This
 skill fills them for the pasteable channel: the user carries the block, and the
 receiving session has nothing of its own in flight and no view of this one.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 Every order is work to execute — a build, or an investigation whose deliverable
 is recorded tracker state or a verdict. A question is answered here — by a

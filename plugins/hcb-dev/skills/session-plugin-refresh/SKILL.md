@@ -18,6 +18,7 @@ A session acts under text it was handed once. When the plugin holding that text
 moves, the session goes on acting under the old one — so this run reads what is
 current and settles what the difference costs. It works from any role: what
 changes with the role is where the version is pinned and who hears about it.
+**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## The four versions
 
@@ -49,6 +50,9 @@ report rather than something to work around.
   A `read_root_reason` means the installed tree is not on disk at all, so what
   follows is the loaded tree read against itself — a missing delta, reported as
   such and never as "nothing changed".
+- **From the re-read on, `read_root` is the root every script runs from** — it replaces
+  the one the **Paths** line above names, and it is what a `CLAUDE_PLUGIN_ROOT`
+  placeholder stands for in a `SKILL.md` re-read by path, which keeps it as literal text.
 - **`update_pending=yes` means the marketplace's repository carries more than the
   tree this run reads.** Where that tree is one the registry installed, report the
   command that closes it (`/plugin marketplace update <marketplace>`, then the

@@ -17,7 +17,7 @@ into the reading is sent before the reading is believed. What a body says is you
 script hands it over uninterpreted.
 
 ```text
-node <plugin root>/scripts/copilot-findings.mjs --pr <n> [--repo <owner/name>] [--me <login>]
+node "<plugin root>/scripts/copilot-findings.mjs" --pr <n> [--repo <owner/name>] [--me <login>]
 ```
 
 `--me` where the token cannot read its own user — a repository's `GITHUB_TOKEN` and an App
