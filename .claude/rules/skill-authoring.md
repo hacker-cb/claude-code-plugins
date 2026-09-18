@@ -52,10 +52,10 @@ how one rule becomes fourteen paragraphs that drift apart.
 A script answers what a forge's structure says where a slip is silent — which commit a review
 covers, which feed carries a request, whose word is last in a thread, whether a listing ended —
 and its suite holds every trap once it is found. The **meaning** of prose a tool hands back — a
-review body, a finding, a log — is the agent's to read, whole. A script hands that prose over
-uninterpreted: no count taken from it and no pattern run over it, since a pattern over a layout
-nobody published is the reading that goes quiet the day the layout moves, and a count taken from
-one place in the prose passes for a count of all of it.
+review body, a finding, a log — is the agent's to read, whole. A script answering the agent hands
+that prose over uninterpreted: no count taken from it and no pattern run over it, since a pattern
+over a layout nobody published is the reading that goes quiet the day the layout moves, and a
+count taken from one place in the prose passes for a count of all of it.
 
 ## A reference owns what it covers
 
