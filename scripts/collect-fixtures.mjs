@@ -79,8 +79,9 @@ const PUBLIC_ACTORS = new Set([
 ]);
 
 // Structural markers a review body carries, each paired with the canonical form written in
-// its place. No script parses a body — the agent reads it whole — so these are a redacted
-// capture's skeleton: which blocks a body carried, and nothing of what they said.
+// its place. No script under test reads a body for what it says — the agent reads it whole —
+// so the markers kept here are a redacted capture's skeleton: which blocks a body carried,
+// and nothing of what they said.
 //
 // The canon is the point. Keeping the matched text looks safe and is not: two of these
 // anchors are a word, then arbitrary text, then a number — so `suppressed for

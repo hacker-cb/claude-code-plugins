@@ -278,8 +278,8 @@ if (!reviews.ok) {
           // earlier one did not.
           head: commit !== null && answer.head !== null ? commit === answer.head : null,
           // The body itself, because the body is what gets READ — every one the pull request's
-          // conversation is silent about. `null` is the feed not carrying the field at all, which
-          // is not a review that said nothing: an empty string is that.
+          // conversation is silent about. `null` is the feed carrying no text there — the field
+          // absent or not a string — which is not a review that said nothing: an empty string is that.
           body: clean(body),
           // Constant, and read by nothing here: a session still holding a reference from before
           // the reading moved to the agent routes on this field, and would take its absence for
@@ -291,8 +291,8 @@ if (!reviews.ok) {
     if (answer.bodies.reason === null) answer.bodies.read = true;
     if (missing > 0) {
       answer.notes.push(`${missing} ${missing === 1 ? 'review carries' : 'reviews carry'} no body`
-        + ' field at all — the feed no longer carries what this hands over, which is not a review'
-        + ' that said nothing');
+        + ' text — the field absent or not a string, so the feed no longer carries what this hands'
+        + ' over, which is not a review that said nothing');
     }
   }
 }
