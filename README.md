@@ -43,8 +43,9 @@ external_plugins/<name>/          # thin wrapper around an external npm MCP serv
   .claude-plugin/plugin.json      #   upstream name, no version
   .mcp.json                       #   npx <pkg>@latest
 scripts/validate.sh               # structural validation (CI + local)
+scripts/version-gate.sh           # every changed plugin bumped above the default branch (CI + local)
 tests/suites/<suite>/             # one script under test, its cases, fixtures and stubs
-.github/workflows/                # validate (PR/push), link-check (weekly)
+.github/workflows/                # validate (PR/push), version-gate (PR statuses), link-check (weekly)
 ```
 
 ## Development

@@ -1,0 +1,36 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "on": "pr",
+      "write": {
+        ".claude-plugin/marketplace.json": {
+          "name": "fixture-market",
+          "plugins": [
+            {
+              "name": "hcb-alpha",
+              "source": "./plugins/hcb-alpha"
+            },
+            {
+              "name": "wrapper",
+              "source": "./external_plugins/wrapper"
+            },
+            {
+              "name": "elsewhere",
+              "source": {
+                "source": "npm",
+                "package": "fixture-elsewhere"
+              }
+            }
+          ]
+        }
+      },
+      "remove": [
+        "plugins/hcb-beta"
+      ]
+    }
+  ]
+}

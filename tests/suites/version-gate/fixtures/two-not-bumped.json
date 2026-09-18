@@ -1,0 +1,15 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "on": "pr",
+      "write": {
+        "plugins/hcb-alpha/skills/one/SKILL.md": "one, revised\n",
+        "plugins/hcb-beta/README.md": "beta, revised\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    }
+  ]
+}

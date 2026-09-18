@@ -1,0 +1,18 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "on": "pr",
+      "write": {
+        "plugins/hcb-alpha/.claude-plugin/plugin.json": {
+          "name": "hcb-alpha",
+          "version": "1.0.1",
+          "description": "now described"
+        }
+      }
+    }
+  ]
+}

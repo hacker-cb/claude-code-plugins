@@ -1,0 +1,36 @@
+{
+  "steps": [
+    {
+      "branch": "pr",
+      "from": "base"
+    },
+    {
+      "branch": "sibling",
+      "from": "base"
+    },
+    {
+      "on": "sibling",
+      "write": {
+        "plugins/hcb-alpha/skills/two/SKILL.md": "two\n",
+        "plugins/hcb-alpha/.claude-plugin/plugin.json": {
+          "name": "hcb-alpha",
+          "version": "1.0.2"
+        }
+      }
+    },
+    {
+      "on": "pr",
+      "write": {
+        "plugins/hcb-alpha/skills/one/SKILL.md": "one, revised\n",
+        "plugins/hcb-alpha/.claude-plugin/plugin.json": {
+          "name": "hcb-alpha",
+          "version": "1.0.2"
+        }
+      }
+    },
+    {
+      "on": "base",
+      "merge": "sibling"
+    }
+  ]
+}
