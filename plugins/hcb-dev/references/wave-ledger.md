@@ -81,14 +81,14 @@ test on a passage is whether deleting it changes what anyone does next.
 
 1. **Header** — the epic; the master's name, rewritten whenever it changes; the base pin the
    wave's live step was hung on (`<remote>/<branch>@<sha>`); the pin of the last whole reading of
-   the slice — a capacity refresh's or a survey's — with the moment it read the tracker at and
-   the ground it covered, the two halves the next refresh takes its delta from, since an issue
-   closes without a commit (`hcb-dev:wave-refresh`), and a reading of less than this slice does
-   not take the slot; the epic's merge authority as the user settled it
-   ([`slice-completion.md`](slice-completion.md)); the plugin version this role last reconciled
-   against, which is what a later **plugin** refresh diffs from and not necessarily what the
-   session is running — it starts as the running version and `hcb-dev:session-plugin-refresh`
-   moves it; and when last updated.
+   the slice — a capacity refresh's or a survey's — with the moment it read the tracker at, the
+   graph of links a refresh leaves beside it (`hcb-dev:wave-refresh` owns its form) and the ground
+   it covered: what the next refresh takes its delta from, since an issue closes without a commit
+   and a link moves without either; a lesser reading does not take the slot; the epic's merge
+   authority as the user settled it ([`slice-completion.md`](slice-completion.md)); the plugin
+   version this role last reconciled against, which is what a later **plugin** refresh diffs from
+   and not necessarily what the session is running — it starts as the running version and
+   `hcb-dev:session-plugin-refresh` moves it; and when last updated.
 2. **Batches** — one row each: id, topic, the issues and where each now stands, the order's ask
    and terminal deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the file zone its order drew, the order's base pin,
