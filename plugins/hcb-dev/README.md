@@ -178,9 +178,10 @@ work is **done** — not how the ask is worded.
 
 - **`backlog-survey`** — `/hcb-dev:backlog-survey`
   A whole slice of the backlog — a milestone, a label, everything open —
-  read issue by issue and verified against the code, not against the
-  tracker: each issue ruled current, stale, needing a rewrite or unverifiable
-  per `references/issue-currency.md`, with the coordinate that shows it. Reports
+  read in two tiers, wide for the picture and deep for the verdicts
+  (`references/issue-currency.md` gives the one form), and verified against the
+  code, not against the tracker: each issue ruled current, stale, needing a
+  rewrite or unverifiable, with the coordinate that shows it. Reports
   tiers of importance beside the priority the tracker declares, the dependency
   graph and critical path, parallel lanes per
   `references/wave-planning.md`, and one recommendation for what to take next.
@@ -198,8 +199,9 @@ work is **done** — not how the ask is worded.
   follow rather than masters to run beside it. A layout of one batch nothing
   holds goes to `implementation-workflow` instead, and carries no epic.
   Titles the session by the slice it surveys, per
-  `references/session-naming.md`. Scales by fanning readers out as subagents
-  when the slice runs to hundreds; its lanes are the wave plan's input.
+  `references/session-naming.md`. Scales by fanning readers out as subagents,
+  by the bytes a read costs rather than by the count of issues; its lanes are
+  the wave plan's input.
 
 ### Fanning work out in waves
 
@@ -210,7 +212,8 @@ the plan stages them.
 
 - **`master-session`** — `/hcb-dev:master-session`
   The coordinating role itself: assume it on assignment (title the session per
-  `references/session-naming.md`, file the umbrella where none exists, open the
+  `references/session-naming.md`, file the umbrella where none exists, hang the
+  epic's own issues under it so the forge counts what is done, open the
   wave ledger on the epic), draw the split per `references/wave-planning.md` and
   get the user's word on the table — the epic's merge authority settled with
   it — launch through `wave-dispatch`, then run the

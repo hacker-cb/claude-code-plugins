@@ -25,22 +25,41 @@ description: >-
 ## Scope, then scale
 
 Name the slice — a milestone, a label, everything open — and count it before
-reading. Where this session opened the run, the slice named is its title, per
+reading it deep. Where this session opened the run, the slice named is its title, per
 [`../../references/session-naming.md`](../../references/session-naming.md).
-**Count exhaustively** (per
-[`../../references/forge-docs.md`](../../references/forge-docs.md)) — a survey of
-the first page reads as a survey of the whole. The count picks the
-mechanics: a slice a session can read, it reads itself; hundreds of issues
-fan out to parallel reader subagents, each handed a sub-slice, the verdict
-reference by path, and the one priority scale resolved below, with every
-conclusion synthesized back here. Whichever mechanics run, the conclusions
-below are this session's — a reader's summary is input, not a verdict.
+
+**Read it in two tiers**, both through the one form
+[`../../references/issue-currency.md`](../../references/issue-currency.md) gives
+under "What is read":
+
+- **Wide, whole, and here** — the slice's filter, every page, written to a file
+  rather than into the conversation. Its first line is the count (`total`
+  against `fetched`) and whether the slice came back whole; short of that, the
+  report's first line says which part was surveyed, since a survey of part
+  reads as a survey of the whole. On GitLab that slice holds issues and tasks
+  alone, and the report's first line says so: incidents and the other work item
+  types stay outside it. The picture, the graph and the tiers are drawn from
+  this file in this session whatever the slice's size — projected with `jq` to
+  the keys a section needs where the file would not fit whole.
+- **Deep, for the verdicts** — bodies and comments, which weigh several times
+  what a wide line does
+  ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md),
+  "what a slice read costs the reader"). **Bytes pick the mechanics, not the
+  count of issues**: the numbers this session can hold deep beside its own work
+  it reads itself, one call for all of them; past that, they fan out to parallel
+  reader subagents, each handed numbers weighed by their comment count (`c` on
+  the wide line) rather than an equal share, the verdict reference by path, the
+  plugin root `${CLAUDE_PLUGIN_ROOT}` its command resolves against — a reader
+  session binds none of its own — and the one priority scale resolved below,
+  with every conclusion synthesized back here.
+
+Whichever mechanics run, the conclusions below are this session's — a reader's
+summary is input, not a verdict.
 
 ## Read against the code, not against the tracker
 
-Every issue in the slice carries a verdict, reached per
-[`../../references/issue-currency.md`](../../references/issue-currency.md), and
-carrying the coordinate it stands on together with the base pin
+Every issue in the slice carries a verdict, reached per `issue-currency.md` on
+its deep read, and carrying the coordinate it stands on together with the base pin
 (`<remote>/<branch>@<sha>`) and the tracker moment the slice was read at — the
 survey's whole reading dates to those two, and a session that adopts this layout
 records them ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — and
@@ -69,7 +88,11 @@ the cut it recommends. Between them, in this order, each section explicit even
 when empty:
 
 1. **The picture** — the slice by milestone or theme: open counts, what each
-   group is, where the current front line runs.
+   group is, where the current front line runs. A wide line names a milestone
+   and nothing more, so the milestones are listed once, with their state and
+   description, by the read `classification.md` gives; the counts come from the
+   wide lines — on GitLab counted by `ty`, tasks standing beside the issues they
+   belong to — never from a milestone's own counters.
 2. **Tiers of importance**, each issue placed by three tests: does it block
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only
@@ -86,7 +109,12 @@ when empty:
    vertices, and the constraints visible only from reading the slice whole
    (the classes
    [`../../references/wave-planning.md`](../../references/wave-planning.md) rules
-   sequential).
+   sequential). The edges are the wide lines' links; what the first line
+   names as `unavailable`, and the issues it lists under `cut` and `hidden`,
+   are drawn as the part of the graph this reading could not see — named in
+   the section, never read as edges that are not there. On GitHub a parent
+   out of this token's sight is in none of them and reads as no parent at
+   all: the search `forge-behaviour.md` names is what finds one.
 4. **The parallel layout** — candidate batches in the columns of
    `wave-planning.md`'s closing table, every pair carrying what that file's
    axes say of it — what clears the ones placed side by side, what separates
@@ -101,15 +129,19 @@ when empty:
 6. **Incidental findings** — epics closable as already met, change requests
    stuck with their reason, contradictions between issues — and the hygiene
    plan: bodies to rewrite, issues to close or re-milestone, links to fix, and
-   the issues read here that `../../references/classification.md` leaves out of
+   the issues read here that `classification.md` leaves out of
    line. Where it leaves any, the rest of the repository's carrying that same
    value ride the item with them — closed ones included, found by filtering on the
    value itself in every mechanism that can carry it, the stray one as much as the
    ones the resolution names, and over every state rather than the open ones a
    listing answers with by default; never by a text search a title can answer, and
-   never by reading the closed backlog through. They are counted rather than
-   listed, save the ones carrying a second value that contradicts it: those are
-   named one by one, the value on them being the user's. The count is what the
+   never by reading the closed backlog through. A label or a milestone is counted
+   on the first line alone of a wide read over `--state all` with it as the
+   filter — on GitLab within that slice's own types — one label a call; a native
+   type, which the script does not filter on, by the forge's own filter for it.
+   They are counted rather than listed, save the ones carrying a second value
+   that contradicts it: those are named one by one, the value on them being the
+   user's. The count is what the
    item proposes — taking it enumerates them, each edit going through the tracker
    as any other, and what the enumeration finds past that count goes back to the
    user before it is touched; where the forge answers for no such value the item

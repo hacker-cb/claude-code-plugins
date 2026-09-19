@@ -73,10 +73,10 @@ are not yours>
 Master: <its name>. The wave ledger — standing constraints included — is
 <its coordinate>, and it carries that name too, should this order's go stale.
 Before you build, read the whole batch through — this order, the ledger, its
-issues on the forge in full, the code they name — and send the master your
-start report: what the work turned out to be. The name you answer to, the
-scope you now read as yours — the files and the issues it touches, and what
-taking it involves — the
+issues on the forge in full, in one call for all of them as hcb-dev:wave-worker
+reads them, the code they name — and send the master your start report: what
+the work turned out to be. The name you answer to, the scope you now read as
+yours — the files and the issues it touches, and what taking it involves — the
 order you will take it in, and everything that came back different from this
 order: a boundary wrong from where you stand, a premise that fell, a fork nobody
 foresaw. Then build: you do not wait for an answer to the report itself, and

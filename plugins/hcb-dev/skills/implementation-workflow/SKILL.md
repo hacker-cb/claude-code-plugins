@@ -30,11 +30,11 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
 ## Phase 0 — Analysis
 
 - **Intake, forge-neutrally.** A task is free text from the conversation, or an issue number, or a
-  mix. Read a number through the mirrored CLIs — GitHub `gh issue view <n> --json
-  title,body,comments`, GitLab `glab issue view <n>` — detecting the forge from the remote and
-  what answers there, never the hostname; anything not spelled out here is
-  [`../../references/forge-docs.md`](../../references/forge-docs.md)'s. Reading an issue is
-  reading a *spec*: surface the actual asks and let the gate confirm scope.
+  mix. Read every number in one call, whole — the form
+  [`../../references/issue-currency.md`](../../references/issue-currency.md) gives under "What is
+  read", which resolves the forge from what answers rather than from the hostname; anything not
+  spelled out here is [`../../references/forge-docs.md`](../../references/forge-docs.md)'s.
+  Reading an issue is reading a *spec*: surface the actual asks and let the gate confirm scope.
 - **Be findable.** Where this session opened the run, title it per
   [`../../references/session-naming.md`](../../references/session-naming.md).
 - **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue already
@@ -44,8 +44,7 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
   the remote-tracking ref and nothing else, so read against the refreshed ref; where the checkout
   cannot move onto it, say the tree is older and treat what the base moved past as unread.
 - **Rule each issue task current, or not** — a number taken in is a claim about the tree and earns
-  a verdict against the base just refreshed
-  ([`../../references/issue-currency.md`](../../references/issue-currency.md)); free text from the
+  a verdict against the base just refreshed (`issue-currency.md`); free text from the
   conversation is the user's own ask and takes none.
 - **Deep-read the codebase against the tasks** — what is affected, what is risky, where the open
   questions are.

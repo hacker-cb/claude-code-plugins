@@ -31,6 +31,30 @@ The body, every comment, the labels, native type, milestone and state reason
 dependency links (read per [`forge-docs.md`](forge-docs.md)), the change
 requests that touch it — then the tree itself at the issue's coordinates.
 
+**One call reads it for every issue at once, rather than a call per issue**: the
+script's deep tier reads each number named whole — the body, every comment, and on its
+line the fields above, with the change requests that close it and its children as a
+count — and its wide tier a slice without bodies and comments, one call per hundred
+issues, from which a set too big to read deep is picked. Where the line carries no
+children by name, they are read by the forms `forge-docs.md` gives, for the issues whose
+verdict turns on them; a change request that touches an issue without closing it is on
+neither tier's line at all. The script's first line says whether what came back is
+whole: read it before any other line, against the contract in
+[`../scripts/issue-slice.mjs`](../scripts/issue-slice.mjs)'s header, and carry what it
+names as not read — a key `unavailable` here, a list `cut`, an end `hidden`, a number
+`unread` — into the verdict as unread, never as nothing there.
+
+```bash
+# A label and a milestone title are the forge's own text, so each goes in through a
+# variable — assigned from the listing that named it, since a quote of either kind
+# pasted into the command would be the shell's.
+S="<plugin root>/scripts/issue-slice.mjs"; L='<one>'; M='<number|title>'
+node "$S" --deep "<n>[,<n>…]"                                       # these issues, whole
+node "$S" [--state open|closed|all] [--label "$L"] [--milestone "$M"]          # a slice
+# A milestone is GitHub's number, GitLab's title. Either tier: --repo <path> [--host <host>]
+# for another repository; --forge gh|glab where both CLIs answer for the same path.
+```
+
 A parked reason that still holds is read with the rest and named with the
 verdict: work can be `current` and still not be for picking up.
 
