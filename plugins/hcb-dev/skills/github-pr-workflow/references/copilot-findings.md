@@ -120,9 +120,10 @@ Copilot's are — rated on the same ladder, fixed before the exit — and the ro
 report with its coverage.
 
 **Every Copilot comment gets a reply**, fixed or skipped — what changed and where, or the reason
-it is out of scope or not a defect — and then the thread is resolved, where the comment sits in
-one, so the review state says what was settled rather than what the repo happens to enforce. A
-review summary carries no thread and needs no resolving.
+it is out of scope or not a defect — and once it reads back as posted, the thread is resolved,
+where the comment sits in one, so the review state says what was settled rather than what the repo
+happens to enforce (`invariants.md`, *A write's exit 0 is not what it wrote*). A review summary
+carries no thread and needs no resolving.
 
 **Nothing written here is addressed to the reviewer** — a reply, the list a body's findings go to,
 a body quoted into either: each is for people. `@copilot` is never typed into any of them, quoted
@@ -137,10 +138,13 @@ lands *after* the reply, so a list taken as you answer is already stale: **retak
 you hand in** rather than answering twice.
 
 ```bash
-# reply to a review comment thread:
-gh api repos/{owner}/{repo}/pulls/<pr>/comments/<comment_id>/replies -f body="<reply text>"
-# resolve a thread (GraphQL mutation):
-gh api graphql -f query='
+# reply to a review comment thread, read back what landed, and resolve the thread only once it matches:
+pr="<pr>" comment="<comment_id>" file="<reply file>" thread="<thread_node_id>"  # -F reads the file, -f posts its path; $(…) drops the trailing newline on both sides
+if ! host=$(gh pr view "$pr" --json url --jq '.url | split("/")[2]') || [ -z "$host" ]; then echo "unread: the pull request's host"; false  # gh api defaults to the SaaS host
+elif ! id=$(gh api --hostname "$host" "repos/{owner}/{repo}/pulls/$pr/comments/$comment/replies" -F body=@"$file" --jq .id) || [ -z "$id" ]; then echo "unsettled: read the thread before posting again"; false
+elif ! got=$(gh api --hostname "$host" "repos/{owner}/{repo}/pulls/comments/$id" --jq .body); then echo "unread: $id — read it again, never post again"; false
+elif [ "$got" != "$(cat "$file")" ]; then echo "landed wrong: $id — edit it in place"; false
+else echo "landed: $id"; gh api graphql --hostname "$host" -f query='
   mutation($threadId:ID!){ resolveReviewThread(input:{threadId:$threadId}){ thread{ isResolved } } }' \
-  -F threadId=<thread_node_id>
+  -F threadId="$thread" --jq 'if .data.resolveReviewThread.thread.isResolved then "resolved" else error("not resolved") end'; fi
 ```

@@ -377,10 +377,10 @@ each — copies drift, and a fix then lands in some of them while the rest go on
 saying something else. Each file opens by saying what it owns.
 
 - [`references/invariants.md`](references/invariants.md) — how a signal is read,
-  and what an authority permits. Twelve rules that hold wherever a tool, a forge,
+  and what an authority permits. Fourteen rules that hold wherever a tool, a forge,
   a remote or another session answers: an empty result is not a negative one, an
-  unread one is not empty, configuration predicts nothing, an authority narrows
-  and never widens. Read once per run, by every skill here.
+  unread one is not empty, configuration predicts nothing, a write's exit 0 is not
+  what it wrote, an authority narrows and never widens. Read once per run, by every skill here.
 - [`references/forge-behaviour.md`](references/forge-behaviour.md) — what a
   forge actually does, measured: which signals lie, when, and what to measure
   instead. Read wherever a skill acts on what a forge reports. A new

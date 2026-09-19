@@ -30,6 +30,9 @@ a skill names the invariant it is leaning on and goes on.
 - **Configuration predicts nothing; read the result.** A setting says what was
   asked for, never what happened — so read what actually posted, landed or
   answered, whatever the configuration says it would do.
+- **A write's exit 0 is not what it wrote.** It says the call was taken, never
+  what was stored: read back what landed and compare it with what was meant
+  before anything rests on it — a resolve, a report, the next step.
 - **Never guess a name.** A branch, a remote, a label, a check, a field: a guess
   that resolves is not a guess that is right. Resolve it, or say the question
   cannot be answered.
