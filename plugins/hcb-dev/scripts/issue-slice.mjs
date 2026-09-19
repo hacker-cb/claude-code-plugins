@@ -62,6 +62,10 @@ if (opts.forge === 'gh' && opts.repo !== null && !repoOk(opts.repo)) {
   die('--repo on GitHub is <owner>/<name>');
 }
 if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
+// A host is where a repository lives, and without `--repo` the checkout names both: a GitHub
+// probe then reads the repository — and its host — off the remote, and a host given beside it
+// would be dropped without a word.
+if (opts.host !== null && opts.repo === null) die('--host needs --repo: without one the checkout names the host');
 // Passed on as `cwd`, a directory that is not there comes back as a call that failed with
 // nothing on stderr — which reads as a forge that would not answer.
 if (!dirOk(opts.dir)) die(`--repo-dir '${opts.dir}' is not a directory`);
@@ -92,7 +96,7 @@ const head = {
   forge: null, repo: null, host: null,
   ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone } }),
   total: null, fetched: 0, pages: 0, types: {}, untyped: 0,
-  ...(asked ? { missing: [] } : {}),
+  ...(asked ? { missing: [], unread: [] } : {}),
   // Issue numbers whose own lists were cut short, and those with ends this token cannot see.
   cut: [], hidden: [],
   errors: [], reason: null, notes: [],
@@ -149,6 +153,10 @@ const failure = (cli, r) => (r.timedOut ? `${cli} timed out — that is no answe
 // issues as this repository's is a wrong answer indistinguishable from the right one.
 const PROBES = {
   gh: () => {
+    // `gh repo view` reads a three-part argument as HOST/OWNER/REPO, so a GitLab group path
+    // handed on would send the probe — and the token for that host — to whatever its first
+    // segment names.
+    if (opts.repo && !repoOk(opts.repo)) return { reason: 'gh: a group path is not a GitHub repository' };
     const target = opts.repo ? (opts.host ? `${opts.host}/${opts.repo}` : opts.repo) : null;
     const r = call('gh', ['repo', 'view', ...(target ? [target] : []), '--json', 'nameWithOwner,url'],
       null, 60000);
@@ -457,9 +465,14 @@ const WIDE = {
       : 'the repository was not found, or this token cannot see it'),
   },
   glab: {
-    query: () => `query($fullPath: ID!, $endCursor: String, $state: IssuableState, $milestoneTitle: [String!], $labelName: [String!]) {
+    // A milestone title that matches nothing filters to nothing, and GitLab answers that with
+    // an empty list and no error — so the milestone is looked up beside the slice, by exact
+    // title, its ancestor groups' included, and a slice under a milestone that is not there is
+    // unread rather than empty.
+    query: () => `query($fullPath: ID!, $endCursor: String, $state: IssuableState, $milestoneTitle: [String!], $labelName: [String!]${opts.milestone === null ? '' : ', $milestone: String'}) {
   queryComplexity { score limit }
   project(fullPath: $fullPath) {
+    ${opts.milestone === null ? '' : 'milestones(title: $milestone, includeAncestors: true, first: 1) { nodes { title } }'}
     workItems(state: $state, types: [ISSUE, TASK], milestoneTitle: $milestoneTitle, labelName: $labelName, sort: CREATED_ASC, first: 100, after: $endCursor) {
       pageInfo { hasNextPage endCursor }
       nodes { ${GL_WIDE} }
@@ -469,8 +482,14 @@ const WIDE = {
 }`,
     variables: () => ({ fullPath: head.repo, state: state === 'open' ? 'opened' : state,
       milestoneTitle: opts.milestone === null ? null : [opts.milestone],
-      labelName: opts.label === null ? null : [opts.label] }),
-    at: (d) => (d && d.project ? d.project.workItems : null),
+      labelName: opts.label === null ? null : [opts.label],
+      ...(opts.milestone === null ? {} : { milestone: opts.milestone }) }),
+    at: (d) => {
+      if (!d || !d.project) return null;
+      if (opts.milestone !== null && !(d.project.milestones && Array.isArray(d.project.milestones.nodes)
+        && d.project.milestones.nodes.length)) return null;
+      return d.project.workItems;
+    },
     total: (c) => c.count,
     number: (n) => Number(n.iid),
     line: glLine,
@@ -480,7 +499,9 @@ const WIDE = {
     },
     // GitLab answers a project it will not show with `null` and NO error: without this, a
     // project the token cannot see reads as a project with no issues.
-    none: () => 'the project was not found, or this token cannot see it',
+    none: (d) => (d && d.project
+      ? `there is no milestone ${opts.milestone} in this project`
+      : 'the project was not found, or this token cannot see it'),
   },
 };
 
@@ -548,6 +569,14 @@ fragment deep on Issue { ${GH_WIDE} body ${GH_COMMENTS} }`,
       if (!d || !d.repository) return null;
       return Object.values(d.repository).filter((v) => v && typeof v === 'object');
     },
+    // A number is settled when its alias came back as an issue, or came back null beside a
+    // NOT_FOUND naming it. Null beside any other error is a lookup that failed, not an absence.
+    settled: (d, nums, errors) => new Set(nums.filter((n) => {
+      const v = d && d.repository ? d.repository[`i${n}`] : undefined;
+      if (v) return true;
+      return v === null && errors.some((e) => e && e.type === 'NOT_FOUND'
+        && Array.isArray(e.path) && e.path[1] === `i${n}`);
+    })),
     number: (n) => n.number,
     line: ghLine,
     body: (n) => n.body,
@@ -585,6 +614,12 @@ fragment deep on WorkItem { ${GL_WIDE} widgets { ... on WorkItemWidgetDescriptio
       const lists = Object.entries(d).filter(([k, v]) => /^b\d+$/.test(k) && v && Array.isArray(v.nodes));
       return lists.length ? lists.flatMap(([, v]) => v.nodes.filter(Boolean)) : null;
     },
+    // A list that came back settles its ten references, found or dropped; one that came back
+    // null beside an error settles none of them.
+    settled: (d, nums) => new Set(nums.filter((n, i) => {
+      const list = d ? d[`b${Math.floor(i / 10)}`] : null;
+      return Boolean(list && Array.isArray(list.nodes));
+    })),
     number: (n) => Number(n.iid),
     line: glLine,
     body: (n) => {
@@ -610,15 +645,15 @@ fragment deep on WorkItem { ${GL_WIDE} widgets { ... on WorkItemWidgetDescriptio
     // GitLab counts no comments here, so the run ends on the forge's own last page.
     counted: () => null,
     spend: WIDE.glab.spend,
-    none: WIDE.glab.none,
+    none: () => 'the project was not found, or this token cannot see it',
   },
 };
 
 const deep = () => {
   const w = DEEP[cli];
   const got = new Map();
-  // The numbers a batch that ANSWERED asked about. Only those can be missing: a number whose
-  // batch never came back was not read, and calling it absent would say what nobody measured.
+  // The numbers an answer settled. Only those can be missing: a number whose lookup never came
+  // back was not read, and calling it absent would say what nobody measured.
   const answered = new Set();
   for (let at = 0; at < asked.length; at += w.batch) {
     const nums = asked.slice(at, at + w.batch);
@@ -636,7 +671,9 @@ const deep = () => {
       const alias = e && Array.isArray(e.path) ? e.path[1] : null;
       return !(e && e.type === 'NOT_FOUND' && typeof alias === 'string' && /^i\d+$/.test(alias));
     });
-    head.errors.push(...messages({ errors: errs }));
+    // The response as it came, the missing numbers' own errors taken out: a bare HTTP refusal
+    // carries its message outside `errors`, and dropping the rest of the response drops it.
+    head.errors.push(...messages({ ...json, errors: errs }));
     if (!items) {
       if (head.pages === 0) unread(head.errors.length ? head.errors[0] : w.none(json.data));
       head.reason = 'a batch held no issues';
@@ -644,7 +681,7 @@ const deep = () => {
     }
     head.pages += 1;
     head.read = true;
-    for (const k of nums) answered.add(k);
+    for (const k of w.settled(json.data, nums, Array.isArray(json.errors) ? json.errors : [])) answered.add(k);
     for (const n of items) {
       const k = w.number(n);
       if (!nums.includes(k) || got.has(k)) continue;
@@ -655,18 +692,28 @@ const deep = () => {
     const n = got.get(k);
     // GitLab drops a reference it cannot resolve without a word, so what came back is checked
     // against what was asked for rather than trusted to have said so.
-    if (!n) { if (answered.has(k)) head.missing.push(k); continue; }
+    if (!n) { (answered.has(k) ? head.missing : head.unread).push(k); continue; }
     const line = w.line(n);
     const c = w.comments(n);
     const cm = [];
     let conn = c;
     let short = null;
-    let guard = 0;
+    const counted = c ? w.counted(c) : null;
+    // More pages than the count can fill is a forge that will not stop. GitLab counts nothing
+    // here, so its bound is only a backstop against a run that never ends.
+    const cap = counted === null ? 1000 : Math.ceil(Math.max(counted, 1) / 100) + 2;
+    const cursors = new Set();
+    let pages = 1;
     while (conn && Array.isArray(conn.nodes)) {
       cm.push(...conn.nodes.filter(Boolean).map(w.comment));
       const pi = conn.pageInfo || {};
       if (!pi.hasNextPage) break;
-      if (!pi.endCursor || (guard += 1) > 1000) { short = 'its comment pages would not advance'; break; }
+      // A cursor already asked for is the same page again, and following it appends the same
+      // comments until something else stops the loop.
+      if (!pi.endCursor || cursors.has(pi.endCursor)) { short = 'its comment pages would not advance'; break; }
+      if (pages >= cap) { short = 'its comment pages ran past their own count'; break; }
+      cursors.add(pi.endCursor);
+      pages += 1;
       const more = w.more(k);
       const { json, reason } = gql({ query: more.query, variables: { ...more.variables, endCursor: pi.endCursor } });
       if (!json) { short = `a page of its comments could not be read (${reason})`; break; }
@@ -676,7 +723,6 @@ const deep = () => {
       if (!conn) { short = 'a page of its comments held none'; break; }
     }
     if (!c) short = 'its comments were not in the answer';
-    const counted = c ? w.counted(c) : null;
     if (!short && counted !== null && counted !== cm.length) short = `${cm.length} of its ${counted} comments came back`;
     if (short) {
       head.notes.push(`#${k}: ${short}`);
@@ -688,6 +734,7 @@ const deep = () => {
   }
   head.fetched = got.size;
   head.total = asked.length;
+  if (!head.reason && head.unread.length) head.reason = `${head.unread.length} of the numbers asked could not be read`;
   if (!head.reason && head.missing.length) head.reason = `${head.missing.length} of the numbers asked are not issues this token can see`;
   if (!head.reason && head.errors.length) head.reason = 'the forge reported errors beside the data';
   if (!head.reason && lines.some((l) => (l.cut || []).includes('cm'))) head.reason = 'some comments did not come back';

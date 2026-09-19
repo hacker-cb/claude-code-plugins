@@ -1,0 +1,17 @@
+{
+ "gh_repo": "{\"nameWithOwner\":\"example-org/example-repo\",\"url\":\"https://github.example/example-org/example-repo\"}",
+ "glab_project": "fail",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null
+   },
+   "rc": 1,
+   "stderr": "gh: API rate limit exceeded (HTTP 403)",
+   "out": {
+    "message": "API rate limit exceeded for user ID 1.",
+    "documentation_url": "https://docs.github.example/rest"
+   }
+  }
+ ]
+}

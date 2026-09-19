@@ -1,0 +1,33 @@
+{
+ "gh_repo": "fail",
+ "glab_project": "{\"path\":\"example-project\",\"namespace\":{\"full_path\":\"example-group/example-sub\"},\"web_url\":\"https://gitlab.example/example-group/example-sub/example-project\"}",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null,
+    "milestone": "v9.9"
+   },
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 68,
+      "limit": 250
+     },
+     "project": {
+      "milestones": {
+       "nodes": []
+      },
+      "workItems": {
+       "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "G-last"
+       },
+       "nodes": [],
+       "count": 0
+      }
+     }
+    }
+   }
+  }
+ ]
+}
