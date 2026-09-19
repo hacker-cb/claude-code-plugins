@@ -1,0 +1,5 @@
+{"slice":{"read":true,"complete":true,"tier":"wide","forge":"glab","repo":"example-group/example-sub/example-project","host":"gitlab.example","filter":{"state":"open","label":null,"milestone":null,"types":["ISSUE"]},"delta":{"since":"2026-09-19T11:00:00Z","moment":"2026-09-19T12:00:00Z"}}}
+{"n":1}
+{"n":2,"bb":["#7"]}
+{"n":3,"p":"#9"}
+{"n":5,"ch":"0/1","chl":["#20"]}

@@ -959,7 +959,12 @@ const ends = (v) => {
   }
   return out;
 };
-const setOf = (v) => JSON.stringify(Array.isArray(v) ? [...v].map(String).sort() : v ?? null);
+// A list compares as a set and an object by its keys, whichever order either arrived in: a graph
+// written by hand, or by a forge that reordered its answer, would otherwise differ from itself.
+const setOf = (v) => JSON.stringify(Array.isArray(v) ? [...v].map(String).sort()
+  : (v && typeof v === 'object'
+    ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : 1)))
+    : v ?? null));
 // A list the forge cut short is a window and not a set: an end outside it is in neither reading,
 // so the window sliding would write edges nobody added and hide the ones somebody did.
 const windowed = (key, v) => (Array.isArray(v) ? v.some((x) => String(x).startsWith('+'))
@@ -1048,6 +1053,11 @@ const delta = () => {
   d.reason = why.length ? why.join('; ') : null;
 };
 
+// What a GitLab slice asks for, said out loud: an incident or a test case is outside it, and a
+// verdict calling the slice whole is whole of these two types. Known before `--was` is judged,
+// since the types a reading asked for are part of which slice it is.
+if (cli === 'glab' && !asked) head.filter.types = ['ISSUE', 'TASK'];
+
 // The earlier reading is of this slice or of none: set against another repository's, or another
 // filter's, every issue would read as entered or left.
 if (pinned) {
@@ -1056,7 +1066,8 @@ if (pinned) {
   if (v.forge !== cli || typeof v.repo !== 'string' || !same(v.repo, head.repo)
     || typeof v.host !== 'string' || !same(v.host, head.host)
     || (f.state ?? null) !== state || (f.label ?? null) !== opts.label
-    || (f.milestone ?? null) !== opts.milestone) {
+    || (f.milestone ?? null) !== opts.milestone
+    || JSON.stringify(f.types ?? null) !== JSON.stringify(head.filter.types)) {
     die('the reading in --was is of another slice: another forge, repository, host or filter');
   }
 }
@@ -1096,9 +1107,6 @@ if (cli === 'gh') {
   }
 }
 // GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.
-// What a GitLab slice asks for, said out loud: an incident or a test case is outside it, and a
-// verdict calling the slice whole is whole of these two types.
-if (cli === 'glab' && !asked) head.filter.types = ['ISSUE', 'TASK'];
 if (cli === 'glab' && head.delta) head.unavailable.push('ev.p', 'ev.ch', 'ev.chl', 'ev.pr');
 
 if (asked) deep();
