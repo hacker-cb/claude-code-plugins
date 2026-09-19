@@ -10,15 +10,18 @@ this file is the form.
 
 ## The tracker's delta
 
-One call per hundred issues, on either forge, reading the slice's edges again
-and setting them against the graph of the last whole reading:
+One call per hundred issues, on either forge: the wide tier read again and set
+against the graph of the last whole reading. What that tier is, and every flag
+that narrows it, is
+[`../../../references/issue-currency.md`](../../../references/issue-currency.md);
+these two are what make it a delta.
 
 ```bash
-node "<plugin root>/scripts/issue-slice.mjs" --since <moment> --was <graph file> \
-  [--state open|closed|all] [--label <name>] [--milestone <number|title>]
+S="<plugin root>/scripts/issue-slice.mjs"; W="<the graph file>"
+node "$S" --since "<moment>" --was "$W" <the slice's own flags, as that file gives them>
 ```
 
-The filters are the ones the pinned graph was read under — the script refuses a
+Those flags are the ones the pinned graph was read under — the script refuses a
 graph of any other slice — and `<moment>` is the moment the ledger records
 beside it. The verdict's `delta` is what the pass acts on:
 
