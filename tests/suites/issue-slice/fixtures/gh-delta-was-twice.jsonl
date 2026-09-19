@@ -1,11 +1,11 @@
-{"slice":{"read":true,"complete":true,"tier":"wide","forge":"gh","repo":"example-org/example-repo","host":"github.example","filter":{"state":"open","label":null,"milestone":null},"delta":{"moment":"2026-09-19T12:00:00Z"}}}
+{"slice":{"read":true,"complete":true,"tier":"wide","forge":"gh","repo":"example-org/example-repo","host":"github.example","filter":{"state":"open","label":null,"milestone":null},"delta":{"since":"2026-09-19T11:00:00Z","moment":"2026-09-19T12:00:00Z"}}}
 {"n":1}
 {"n":2}
 {"n":3,"bb":["#9"]}
 {"n":5}
 {"n":6,"p":"#8"}
 {"n":7}
-{"n":10}
 {"n":11,"bb":["#12","+3"]}
 {"n":3,"bb":[]}
 {"n":14,"bb":["#15"]}
+{"n":10}

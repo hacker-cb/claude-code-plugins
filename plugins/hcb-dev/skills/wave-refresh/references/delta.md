@@ -59,11 +59,12 @@ there — a window wider than it needs, never shorter.
 
 ## The graph to compare against
 
-The pinned graph is the same script's output, projected down to the verdict
+The pinned graph is the same script's own delta output — a reading taken
+without `--since` carries no children by name — projected down to the verdict
 line, the numbers and the link keys:
 
 ```bash
-jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> > <graph file>
+jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> > <graph file>
 ```
 
 **It lives in the ledger** ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)),
@@ -87,24 +88,31 @@ whose old path is the ground it still holds and which only the second read
 carries — are read again:
 
 ```bash
-# GitHub — every open request beside the counts that say whether either list is whole
+# GitHub — every open request, with the counts that say whether either list is whole
 gh api graphql -F owner='{owner}' -F name='{repo}' -F endCursor='' -f query='query($owner: String!, $name: String!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequests(states: OPEN, first: 100, after: $endCursor) { totalCount pageInfo { hasNextPage endCursor } nodes { number baseRefName changedFiles files(first: 100) { nodes { path changeType } } } } } }' \
-  --jq '.data.repository.pullRequests | {open: .totalCount, more: .pageInfo.hasNextPage, cursor: .pageInfo.endCursor}, (.nodes[] | {n: .number, base: .baseRefName, short: (.changedFiles > (.files.nodes | length)), renamed: [.files.nodes[] | select(.changeType == "RENAMED") | .path], files: [.files.nodes[].path]})'
-# GitHub — one marked short or renaming: both paths, and the count to check what came back against
-N="<number>"; gh api --paginate "repos/{owner}/{repo}/pulls/$N/files" --jq '.[] | .filename, (.previous_filename // empty)'
-# GitLab — the same, its own two counts beside it
+  --jq '.data.repository.pullRequests | {open: .totalCount, more: .pageInfo.hasNextPage, cursor: .pageInfo.endCursor}, (.nodes[] | {n: .number, base: .baseRefName, changed: .changedFiles, read: (.files.nodes | length), renamed: [.files.nodes[] | select(.changeType == "RENAMED") | .path], files: [.files.nodes[].path]})'
+# GitHub — one marked short or renaming: both paths, and each page's own record count beside them
+N="<number>"; gh api --paginate "repos/{owner}/{repo}/pulls/$N/files" --jq '{records: length}, (.[] | .filename, (.previous_filename // empty))'
+# GitLab — the listing, a hundred a call: the paths, and the count to hold them against
 glab api graphql -f query='query($endCursor: String) { project(fullPath: "<path>") { mergeRequests(state: opened, first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } count nodes { iid targetBranch diffStatsSummary { fileCount } diffStats { path } } } } }'
-# GitLab — one whose counts disagree, or whose renames matter: REST carries both paths
-P="<path>"; glab api --paginate "projects/${P//\//%2F}/merge_requests/$N/diffs?per_page=100" | jq -r '.[] | .new_path, (if .renamed_file then .old_path else empty end)'
+# GitLab — both paths, which only this field carries, and which answers for ten requests a call
+glab api graphql -f query='query { project(fullPath: "<path>") { mergeRequests(state: opened, first: 10) { nodes { iid diffStatsSummary { fileCount } diffs(first: 100) { pageInfo { hasNextPage } nodes { newPath oldPath renamedFile } } } } } }'
 ```
 
 **Where `more` is true, the next call takes `endCursor` as `$endCursor`** — the
 requests past the first hundred hold ground like any other, and a pass that
 stopped at the page boundary measured less than it claims.
 
+**A renamed file holds the path it came from as much as the one it went to.**
+GitHub's listing marks the rename and its REST read carries the old path;
+GitLab's listing marks nothing, so the field that carries both paths is read for
+every request whose zone could meet a candidate, and one left unread is a zone
+nobody measured.
+
 **Every read is checked against the count that belongs to it**: GitHub's REST
-files stop at three thousand however far the pages run, and GitLab's own two
-counts can part. A read still short of `changedFiles` or of `fileCount` leaves
+files stop at three thousand however far the pages run — each page states its
+own `records`, and their sum is what `changedFiles` is held against — while on
+GitLab the two counts can part. A read short of `changedFiles` or of `fileCount` leaves
 that request's zone unmeasured rather than small: it then holds everything a
 candidate would touch, by the rule [`../SKILL.md`](../SKILL.md) gives for a zone
 no source settles.

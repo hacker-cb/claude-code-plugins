@@ -162,9 +162,11 @@ if (opts.since !== null) {
     die('--since takes a moment in UTC, as 2026-01-02T03:04:05Z');
   }
 }
-// The earlier reading, as this script printed it — whole, or projected down to the verdict line,
-// `n` and the link keys. A file that is not one is refused rather than compared: read as a slice
-// that held nothing, it would report every issue as entered.
+// The earlier reading, as this script printed it with `--since` — whole, or projected down to
+// the verdict line, `n` and the link keys. A file that is not one is refused rather than
+// compared: read as a slice that held nothing, it would report every issue as entered, and a
+// reading taken without `--since` carries no children by name, which would put every edge from a
+// parent to its child under `added` on every pass.
 let pinned = null;
 if (opts.was !== null) {
   if (opts.since === null) die('--was is the reading --since compares against, and needs --since');
@@ -177,6 +179,9 @@ if (opts.was !== null) {
   const v = rows.length && rows[0] && typeof rows[0] === 'object' ? rows[0].slice : null;
   if (!v || typeof v !== 'object' || v.tier !== 'wide') {
     die(`--was '${opts.was}' does not open with the verdict of a wide reading`);
+  }
+  if (!v.delta || typeof v.delta !== 'object' || typeof v.delta.since !== 'string') {
+    die(`--was '${opts.was}' was not read as a delta: only a reading taken with --since carries the whole graph`);
   }
   const byN = new Map();
   for (const l of rows.slice(1)) {
@@ -941,7 +946,9 @@ const ends = (v) => {
   const out = new Map();
   for (const ref of (Array.isArray(v) ? v : v ? [v] : []).map(String)) {
     if (ref.startsWith('+')) continue;
-    const m = ref.match(/^(.*?)(?::([a-z_]+))?$/);
+    // `[\s\S]` and not `.`: a hand-edited graph can carry a newline inside a reference, and a
+    // pattern that simply fails to match there would throw where a comparison belongs.
+    const m = ref.match(/^([\s\S]*?)(?::([a-z_]+))?$/);
     out.set(m[1], m[2] || 'open');
   }
   return out;
@@ -1079,7 +1086,7 @@ if (cli === 'gh') {
     // The children read by name are counted by the same events as the summary above them; a
     // closing change request by none at all, so its edges have no count to disagree with.
     if (!has('subIssues')) head.unavailable.push('chl');
-    else if (head.unavailable.includes('ev.ch')) head.unavailable.push('ev.chl');
+    else if (!evKinds.includes('ch')) head.unavailable.push('ev.chl');
     if (!head.unavailable.includes('pr')) head.unavailable.push('ev.pr');
   }
 }
