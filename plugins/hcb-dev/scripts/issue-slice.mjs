@@ -64,7 +64,8 @@
 //                       outside it is in neither, so no edge is taken from that key at all
 //   events              the forge's own count of link events since `since`: GitHub's timeline,
 //                       GitLab's links created since — which sees no link removed. Null where
-//                       nothing counts; the kinds that go uncounted are `ev.<key>` in `unavailable`
+//                       nothing counts, and every key whose kind goes uncounted here — a closing
+//                       change request on either forge among them — is `ev.<key>` in `unavailable`
 //   added, removed      edges, each once whichever end it was read from
 //   moved               ends whose state changed, written with the state they have now
 //   check               an edge added or removed where the count covering its kind counted none
@@ -1068,11 +1069,15 @@ if (cli === 'gh') {
       else head.unavailable.push(`ev.${key}`);
     }
     GH_EV = types.length ? `timelineItems(since: $since, itemTypes: [${types.join(', ')}]) { filteredCount }` : '';
+    // The children read by name are counted by the same events as the summary above them; a
+    // closing change request by none at all, so its edges have no count to disagree with.
     if (!has('subIssues')) head.unavailable.push('chl');
+    else if (head.unavailable.includes('ev.ch')) head.unavailable.push('ev.chl');
+    if (!head.unavailable.includes('pr')) head.unavailable.push('ev.pr');
   }
 }
 // GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.
-if (cli === 'glab' && head.delta) head.unavailable.push('ev.p', 'ev.ch');
+if (cli === 'glab' && head.delta) head.unavailable.push('ev.p', 'ev.ch', 'ev.chl', 'ev.pr');
 
 if (asked) deep();
 else {

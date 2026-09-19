@@ -43,7 +43,8 @@ the one this pass could not compare.
 the slice whole — every candidate's verdict re-derived — and the report says
 which half was a delta and why the other was not.
 
-`unavailable` carrying `ev.<key>` is a kind this server counts no events for;
+`unavailable` carrying `ev.<key>` is a kind nothing counts events for here — a
+closing change request on either forge among them, and the hierarchy on GitLab;
 the comparison stands alone there, and `check` cannot speak for that kind. An
 end the token cannot see is in neither the comparison nor the count: the line's
 own `hid` is the only sign, and a slice carrying one says so in the report.
@@ -61,7 +62,7 @@ The pinned graph is the same script's output, projected down to the verdict
 line, the numbers and the link keys:
 
 ```bash
-jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","bb","bl","rel","pr"))) end' <reading> > <graph file>
+jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr"))) end' <reading> > <graph file>
 ```
 
 **It lives in the ledger** ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)),
