@@ -165,7 +165,10 @@ section explicit even when empty:
 - **The ledger takes the pass before anything else moves**: the pin, tracker
   moment and graph this refresh ran on (`references/delta.md`) and the ground it
   covered — the three taking the header's slot only where that ground was the
-  ledger's whole slice, a narrower pass leaving the reading that stands there — every verdict this pass read into
+  ledger's whole slice, a narrower pass leaving the reading that stands there;
+  a pass whose reading names no moment writes the graph beside the moment the
+  header already carried and says that one was not read here, rather than
+  leaving the slot to be read as this pass's — every verdict this pass read into
   its verdicts section, the layout it produced, and what it ruled about the
   sources that disagreed.
 - **Tracker edits execute on the user's word**, item by item through
