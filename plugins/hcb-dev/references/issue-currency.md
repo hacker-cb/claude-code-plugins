@@ -28,9 +28,8 @@ which may be stale or mid-feature.
 
 The body, every comment, the labels, native type, milestone and state reason
 (classified per [`classification.md`](classification.md)), the sub-issue and
-dependency links (both sit past either CLI's issue commands — the entry points
-are resolved per [`forge-docs.md`](forge-docs.md)), the change requests that
-touch it — then the tree itself at the issue's coordinates.
+dependency links (read per [`forge-docs.md`](forge-docs.md)), the change
+requests that touch it — then the tree itself at the issue's coordinates.
 
 A parked reason that still holds is read with the rest and named with the
 verdict: work can be `current` and still not be for picking up.
