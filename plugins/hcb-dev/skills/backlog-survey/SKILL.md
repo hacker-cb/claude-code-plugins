@@ -36,9 +36,11 @@ under "What is read":
   rather than into the conversation. Its first line is the count (`total`
   against `fetched`) and whether the slice came back whole; short of that, the
   report's first line says which part was surveyed, since a survey of part
-  reads as a survey of the whole. The picture, the graph and the tiers are drawn
-  from this file in this session whatever the slice's size — projected with `jq`
-  to the keys a section needs where the file would not fit whole.
+  reads as a survey of the whole. On GitLab that slice holds issues and tasks
+  alone, and the report's first line says so: incidents and the other work item
+  types stay outside it. The picture, the graph and the tiers are drawn from
+  this file in this session whatever the slice's size — projected with `jq` to
+  the keys a section needs where the file would not fit whole.
 - **Deep, for the verdicts** — bodies and comments, which weigh several times
   what a wide line does
   ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md),
@@ -129,10 +131,10 @@ when empty:
    value itself in every mechanism that can carry it, the stray one as much as the
    ones the resolution names, and over every state rather than the open ones a
    listing answers with by default; never by a text search a title can answer, and
-   never by reading the closed backlog through. The wide read over `--state all`
-   counts them on its first line alone — a label or a milestone as its filter, one
-   label a call, and a native type from that line's `types`. They are counted
-   rather than listed, save the ones carrying a second value that contradicts it: those are
+   never by reading the closed backlog through. A label or a milestone is counted
+   on the first line alone of a wide read over `--state all` with it as the
+   filter, one label a call; a native type, which the script does not filter on,
+   by the forge's own filter for it. They are counted rather than listed, save the ones carrying a second value that contradicts it: those are
    named one by one, the value on them being the user's. The count is what the
    item proposes — taking it enumerates them, each edit going through the tracker
    as any other, and what the enumeration finds past that count goes back to the

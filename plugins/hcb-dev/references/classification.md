@@ -32,7 +32,7 @@ gh issue list --state all --limit <n> --json number,title,labels,issueType,miles
 # GitLab — <project> is URL-encoded ("group%2Frepo"); never apply an archived label.
 glab api --paginate "projects/<project>/labels?per_page=100"
 glab api --paginate "projects/<project>/milestones?include_ancestors=true&per_page=100"
-glab api "projects/<project>/issues?state=all&order_by=created_at&per_page=<n>" \
+glab api "projects/<project>/issues?state=all&order_by=created_at&per_page=<n up to 100>" \
   | jq -c '.[] | {iid, title, type, labels, milestone: .milestone.title}'
 ```
 

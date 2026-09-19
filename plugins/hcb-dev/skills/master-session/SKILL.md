@@ -40,11 +40,11 @@ it accepts their returns per
    than something it decides. A slice of the backlog needs one exactly as a
    named epic does. **Every issue the epic runs on hangs under it** — the ones
    there now on that same word, the ones filed later as they are filed — so the
-   forge keeps its count: read each one's parent first (`p`
-   on its line, per
-   [`../../references/issue-currency.md`](../../references/issue-currency.md))
-   — hanging it moves it off a parent it has without a word
-   ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)).
+   forge keeps its count: read each one's parent first — `p` on its line, per
+   [`../../references/issue-currency.md`](../../references/issue-currency.md),
+   and a parent this token cannot see by the search
+   [`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)
+   names for it — since hanging it moves it off a parent it has without a word.
 
    ```bash
    # GitHub — a sub-issue, counted in the epic's subIssuesSummary

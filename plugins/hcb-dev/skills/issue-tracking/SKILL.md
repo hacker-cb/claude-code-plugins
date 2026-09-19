@@ -43,8 +43,9 @@ Both answer a page, and a cap they do not announce
 ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) — a
 search that silently ends at the first page reads as "nothing covers this". Read
 on past a full page, and narrow the terms of a search that came back at its cap.
-Each hit arrives with its state, and on GitHub its state reason, which the table
-below reads: no second call per hit.
+Each hit arrives with its state, and on GitHub its state reason, in that same
+call; what closed a closed one, which the table below turns on, is read for that
+hit alone.
 
 ```bash
 # GitHub — --state all, or gh adds state:open itself; 1 000 hits is the cap, not a total
@@ -135,10 +136,11 @@ explicitly once the work lands, with the user's go-ahead — the close carrying
 what settled it, which the table above reads back:
 
 ```bash
-# GitHub — completed | not planned; a duplicate takes --duplicate-of <m> instead
-gh issue close <n> --reason "<reason>" --comment "<what settled it>"
-# GitLab — the close takes no reason, so the comment carries it
-glab issue note <n> -m "<what settled it>" && glab issue close <n>
+# The comment goes from a file: inline in quotes, the shell runs the backquotes it holds.
+# GitHub — completed | not planned; a duplicate: --reason duplicate --duplicate-of <m>
+gh issue comment <n> --body-file "<file>" && gh issue close <n> --reason "<reason>"
+# GitLab — the close takes no reason, so the comment carries it; -F reads the file, -f not
+glab api "projects/<project>/issues/<n>/notes" -F body=@"<file>" && glab issue close <n>
 ```
 
 In a set, each child

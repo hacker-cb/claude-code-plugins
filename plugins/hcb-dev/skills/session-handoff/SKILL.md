@@ -141,8 +141,9 @@ Do this, in order:
 1. <the opening step from the table above>
 2. Read the changes yourself — start at <where>
 3. Re-read every issue and change request above in full, comments included —
-   the discussion may have moved on, and what is there now outranks this. One
-   marked deleted you confirm is still gone
+   the issues in one call, the form hcb-dev's `references/issue-currency.md`
+   gives — the discussion may have moved on, and what is there now outranks
+   this. One marked deleted you confirm is still gone
 4. <answering an order — check the four answers above against what the order
    asked for>
    <unbidden — weigh this against your own work in flight, summarize it back to
