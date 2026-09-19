@@ -5,7 +5,8 @@
 # `lacks` is not — so a filter or a cursor that never reached the request, or a field asked
 # of a server that lacks it, has no answer, and the case fails.
 # An entry marked `once` answers one request only, which is how a page that fails and then
-# succeeds on the retry is written.
+# succeeds on the retry is written. A request carrying `--include` is answered with headers
+# first, as the real one is — the entry's `date`, or the envelope's, or none at all.
 if [ -n "${STUB_MARKER_FILE:-}" ]; then
   # The runner removes the marker before each case, so its absence is this case's first call.
   [ -f "$STUB_MARKER_FILE" ] || rm -f "$STUB_MARKER_FILE.seen"
@@ -31,12 +32,14 @@ case "$1" in
   *) echo "stub gh: no envelope answer for: $*" >&2; exit 3 ;;
 esac
 
-host="" input="" endpoint=""
+host="" input="" include="" endpoint=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hostname) host=$2; shift 2 ;;
     -H) shift 2 ;;
     --input) input=$2; shift 2 ;;
+    # `--include` is how the delta reads the forge's own clock: headers, a blank line, the body.
+    -i|--include) include=1; shift ;;
     # Each of these is a trap the script is written around: `--paginate` stops at the first
     # nested pageInfo, `--jq` filters page by page, and a `-f` list is not a list on glab.
     --paginate|--slurp|--jq|-q|-f|-F|--field|--raw-field)
@@ -65,6 +68,13 @@ pick=$(jq -r --argjson body "$body" --rawfile seen "${seen:-/dev/null}" '
 [ -n "$pick" ] || { echo "stub gh: no envelope answer for this request" >&2; exit 3; }
 entry=$(jq -c ".graphql[$pick]" "$env")
 [ "$(jq -r '.once // false' <<<"$entry")" = true ] && [ -n "$seen" ] && echo "$pick" >> "$seen"
+if [ -n "$include" ]; then
+  printf 'HTTP/2.0 200 OK\n'
+  d=$(jq -r '.date // empty' <<<"$entry")
+  [ -n "$d" ] || d=$(ask '.date')
+  [ -z "$d" ] || printf 'Date: %s\r\n' "$d"
+  printf 'X-Stub: issue-slice\r\n\r\n'
+fi
 jq -r '.out | if type == "string" then . else tojson end' <<<"$entry"
 err=$(jq -r '.stderr // empty' <<<"$entry")
 [ -z "$err" ] || printf '%s\n' "$err" >&2

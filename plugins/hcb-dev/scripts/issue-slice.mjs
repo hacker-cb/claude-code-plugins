@@ -12,6 +12,7 @@
 //                             [--repo-dir <path>] [--state open|closed|all]
 //                             [--label <name>] [--milestone <number|title>]
 //        node issue-slice.mjs --deep <n>[,<n>…] [--forge …] [--repo …] [--host …]
+//        node issue-slice.mjs --since <moment> [--was <file>] [the wide tier's flags]
 //
 // Line 1 is the verdict, `{"slice": {…}}`; every line after it is one issue. What the
 // verdict separates, because each leads somewhere else:
@@ -22,7 +23,8 @@
 //
 // The rest of the verdict:
 //   forge, repo, host   which CLI answered, the repository it resolved, and where it lives
-//   tier                `wide` with its `filter`, or `deep` with the numbers `asked`
+//   tier                `wide` with its `filter` — whose `types` are the work item types the
+//                       slice asked the forge for, GitLab's alone; GitHub filters by none
 //   total, fetched      the forge's own count, and how many issues came back
 //   pages               the calls the issues took
 //   types, untyped      issues per type — every GitLab work item has one; `untyped` is GitHub's
@@ -40,26 +42,55 @@
 //   ty m l a c          type, milestone (GitHub its number, GitLab its title), labels,
 //                       assignees, comments (GitLab: discussion threads)
 //   p ch                parent; children as `<done>/<total>`, `<done>+` where the list was cut
+//   chl                 delta only: the children themselves, which `ch` only counts — a child
+//                       swapped for another leaves that count where it was
 //   bb bl rel pr        blocked by, blocking, related (GitLab), closing change requests: `#N`
 //                       for this repository, `<path>#N` for another, `:closed`/`:merged` after
 //                       an end not open, and `+N` last where the list was cut, `+?` where the
 //                       forge counted nothing
 //   hid cut             ends out of sight, by kind; the keys whose list was cut
 //   b cm                deep only: the body, and every comment as `{a, d, b}`
+//
+// The DELTA (`--since`) is the wide tier read again and set against an earlier reading of the
+// same slice (`--was`: this script's own output, or a projection of it keeping the verdict line,
+// `n` and the link keys). A time filter cannot stand in for it: a link added, removed or moved
+// raises no `updatedAt`, and neither does the other end of one closing. The verdict gains `delta`:
+//   since, moment       the moment asked from; the forge's own clock read BEFORE the slice was,
+//                       less ten seconds — the next reading's `since`
+//   was                 how many issues the earlier reading held
+//   entered, left       in the slice now and not then; then and not now
+//   edited              `updatedAt` at or after `since`
+//   linked              a link key — p ch chl bb bl rel pr, and `hid` beside them — that differs
+//                       from the earlier reading
+//   cut                 a link list one reading or the other only saw a window of: what fell
+//                       outside it is in neither, so no edge is taken from that key at all
+//   events              the forge's own count of link events since `since`: GitHub's timeline,
+//                       GitLab's links created since — which sees no link removed. Null where
+//                       nothing counts, and every key whose kind goes uncounted here — a closing
+//                       change request on either forge among them — is `ev.<key>` in `unavailable`
+//   added, removed      edges, each once whichever end it was read from
+//   moved               ends whose state changed, written with the state they have now
+//   check               an edge added or removed where the count covering its kind counted none
+//   complete, reason    whether this is a whole delta, and what it lacks where it is not
+// A list that cannot be known is null, never empty, and the verdict's own `read` and `complete`
+// still answer for the SLICE — whether the delta is whole is `delta.complete` and nothing else.
+// A line gains `ev`, its own count, and `was`, the earlier value of every link key that differs.
 
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirOk, hostOk, readable, repoOk, text, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node issue-slice.mjs [--forge gh|glab] [--repo <path>] [--host <host>]'
   + ' [--repo-dir <path>] [--state open|closed|all] [--label <name>]'
-  + ' [--milestone <number|title>] [--deep <n>[,<n>…]]\n';
+  + ' [--milestone <number|title>] [--deep <n>[,<n>…]] [--since <moment> [--was <file>]]\n';
 const die = (m) => { writeAll(2, `issue-slice: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
 const opts = { forge: null, repo: null, host: null, dir: process.cwd(), state: null,
-  label: null, milestone: null, deep: null };
+  label: null, milestone: null, deep: null, since: null, was: null };
 const FLAGS = { '--forge': 'forge', '--repo': 'repo', '--host': 'host', '--repo-dir': 'dir',
-  '--state': 'state', '--label': 'label', '--milestone': 'milestone', '--deep': 'deep' };
+  '--state': 'state', '--label': 'label', '--milestone': 'milestone', '--deep': 'deep',
+  '--since': 'since', '--was': 'was' };
 const seen = new Set();
 for (let i = 0; i < argv.length; i += 1) {
   const key = FLAGS[argv[i]];
@@ -118,21 +149,76 @@ if (opts.deep !== null) {
 }
 const state = opts.state || 'open';
 
+// --- the delta: a moment, and the earlier reading it is set against
+// A moment in UTC to the second, and one that exists: the forge's clock is what it is measured
+// on, and an offset or a day past the month's end would move the window without a word.
+const iso = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+let sinceMs = null;
+if (opts.since !== null) {
+  if (asked) die('--since reads the delta of a slice, and --deep reads the numbers named');
+  sinceMs = Date.parse(opts.since);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(opts.since) || Number.isNaN(sinceMs)
+    || iso(sinceMs) !== opts.since) {
+    die('--since takes a moment in UTC, as 2026-01-02T03:04:05Z');
+  }
+}
+// The earlier reading, as this script printed it with `--since` — whole, or projected down to
+// the verdict line, `n` and the link keys. A file that is not one is refused rather than
+// compared: read as a slice that held nothing, it would report every issue as entered, and a
+// reading taken without `--since` carries no children by name, which would put every edge from a
+// parent to its child under `added` on every pass.
+let pinned = null;
+if (opts.was !== null) {
+  if (opts.since === null) die('--was is the reading --since compares against, and needs --since');
+  let raw = null;
+  try { raw = readFileSync(opts.was, 'utf8'); } catch { die(`--was '${opts.was}' could not be read`); }
+  const rows = [];
+  for (const row of raw.split(/\r?\n/).filter((l) => l.trim() !== '')) {
+    try { rows.push(JSON.parse(row)); } catch { die(`--was '${opts.was}' is not JSONL`); }
+  }
+  const v = rows.length && rows[0] && typeof rows[0] === 'object' ? rows[0].slice : null;
+  if (!v || typeof v !== 'object' || v.tier !== 'wide') {
+    die(`--was '${opts.was}' does not open with the verdict of a wide reading`);
+  }
+  if (!v.delta || typeof v.delta !== 'object' || typeof v.delta.since !== 'string') {
+    die(`--was '${opts.was}' was not read as a delta: only a reading taken with --since carries the whole graph`);
+  }
+  const byN = new Map();
+  for (const l of rows.slice(1)) {
+    if (!l || typeof l !== 'object' || !Number.isInteger(l.n) || l.n < 1) {
+      die(`--was '${opts.was}' holds a line that is no issue`);
+    }
+    if (byN.has(l.n)) die(`--was '${opts.was}' holds issue ${l.n} twice`);
+    byN.set(l.n, l);
+  }
+  pinned = { v, byN };
+}
+
 // --- the verdict, and the one way out
 const head = {
   read: false, complete: false, tier: asked ? 'deep' : 'wide',
   forge: null, repo: null, host: null,
-  ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone } }),
+  ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone, types: null } }),
   // Keyed by names the forge hands back, so no key can be one an object already inherits:
   // a type called `constructor` would read a function where its count belongs.
   total: null, fetched: 0, pages: 0, types: Object.create(null), untyped: 0,
   ...(asked ? { missing: [], unread: [] } : {}),
   cut: [], hidden: [], unavailable: [],
+  ...(opts.since === null ? {} : { delta: {
+    since: opts.since, moment: null, was: pinned ? pinned.byN.size : null,
+    entered: null, left: null, edited: null, linked: null, cut: null, events: null,
+    added: null, removed: null, moved: null, check: null, complete: false, reason: null,
+  } }),
   errors: [], reason: null, notes: [],
 };
 const lines = [];
+// The forge's own clock, taken before the slice is read, and from nothing else: a page answered
+// slower than the margin would pin a moment later than the rows it brought back, and an issue
+// edited in between would be in neither this reading nor the next. No clock, no moment.
+let clock = null;
 const finish = () => {
   if (head.forge !== 'gh') delete head.untyped;
+  if (head.delta && !head.delta.complete && !head.delta.reason) head.delta.reason = head.reason;
   // Bounded: a forge failing every page says the same thing on every page, and the verdict is
   // read before anything else on the output.
   if (head.errors.length > 20) head.errors = [...head.errors.slice(0, 20), `…and ${head.errors.length - 20} more`];
@@ -145,6 +231,15 @@ const unread = (reason) => {
   // Nothing was read, so every number asked is one to ask again — none of them is missing.
   if (asked) { head.unread = [...asked]; head.missing = []; }
   finish();
+};
+
+// `--include` puts the status line and the headers before the body, a blank line between; an
+// answer that does not open with one is a body and nothing else.
+const split = (out) => {
+  const gap = /\r?\n\r?\n/.exec(out);
+  if (!gap || !/^HTTP\/\S+ \d{3}/.test(out)) return { body: out, date: null };
+  const m = out.slice(0, gap.index).match(/^date:[ \t]*(.*?)[ \t]*\r?$/im);
+  return { body: out.slice(gap.index + gap[0].length), date: m ? m[1] : null };
 };
 
 // --- one call to a CLI
@@ -204,10 +299,13 @@ const PROBES = {
   },
   glab: () => {
     const path = opts.repo ? `projects/${encodeURIComponent(opts.repo)}` : 'projects/:fullpath';
-    const r = call('glab', ['api', ...(opts.host ? ['--hostname', opts.host] : []), path], null, 60000);
+    const r = call('glab', ['api', ...(opts.since === null ? [] : ['--include']),
+      ...(opts.host ? ['--hostname', opts.host] : []), path], null, 60000);
     if (!r.ok) return { reason: failure('glab', r) };
+    const answer = opts.since === null ? { body: r.out, date: null } : split(r.out);
+    if (answer.date) clock = answer.date;
     try {
-      const v = JSON.parse(r.out);
+      const v = JSON.parse(answer.body);
       const host = new URL(v.web_url).host;
       const full = v.namespace && typeof v.namespace.full_path === 'string' ? v.namespace.full_path : null;
       if (!full || typeof v.path !== 'string') return { reason: 'glab: an unreadable project' };
@@ -243,9 +341,11 @@ head.host = answered[0].host;
 if (cli === 'gh' && opts.milestone !== null && !intOk(opts.milestone)) {
   die(`--milestone on GitHub is the milestone's number, and '${opts.milestone}' is not one`);
 }
-const gql = (body) => {
+// `include` asks for the response's headers too — both CLIs print them, a blank line, then the
+// body — for the one header the delta needs: `Date`, the forge's own clock.
+const gql = (body, include = false) => {
   const input = JSON.stringify(body);
-  const args = ['api', '--hostname', head.host, 'graphql',
+  const args = ['api', ...(include ? ['--include'] : []), '--hostname', head.host, 'graphql',
     '-H', 'Content-Type: application/json', '--input', '-'];
   // Twice, where the first call brought back nothing that parses. A page of a long read is
   // lost to a gateway or a dropped connection often enough that one retry is the difference
@@ -254,12 +354,13 @@ const gql = (body) => {
   // timeout: that one was killed at the deadline, and a second wait only doubles it.
   for (let attempt = 0; ; attempt += 1) {
     const r = call(cli, args, input);
+    const { body: out, date } = include ? split(r.out) : { body: r.out, date: null };
     // Both CLIs exit 1 on a PARTIAL error with the good data already on stdout, so the exit
     // status decides nothing here: what was printed does.
     let json = null;
-    try { json = JSON.parse(r.out); } catch { json = null; }
-    if (json && typeof json === 'object') return { json, reason: null };
-    if (attempt > 0 || r.timedOut || r.missing) return { json: null, reason: failure(cli, r) };
+    try { json = JSON.parse(out); } catch { json = null; }
+    if (json && typeof json === 'object') return { json, reason: null, date };
+    if (attempt > 0 || r.timedOut || r.missing) return { json: null, reason: failure(cli, r), date: null };
   }
 };
 // GraphQL errors, and the bare `{"message": …}` an HTTP refusal carries instead — a token
@@ -315,13 +416,26 @@ const compact = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v 
 // are read off the server's own schema before the first page, on whatever host answered:
 // one call, and the fragment carries what that server has. Filled in below the probe.
 let GH_WIDE = null;
+// The delta's count: every link event on an issue's timeline since the moment, one connection
+// asking nothing but `filteredCount` — `totalCount` there ignores `since` and counts the whole
+// history. An event lands on both ends of its edge. Each kind is counted by both of its events,
+// and only where the server has them. Filled in below the probe too.
+const EVENTS = {
+  p: ['PARENT_ISSUE_ADDED_EVENT', 'PARENT_ISSUE_REMOVED_EVENT'],
+  ch: ['SUB_ISSUE_ADDED_EVENT', 'SUB_ISSUE_REMOVED_EVENT'],
+  bb: ['BLOCKED_BY_ADDED_EVENT', 'BLOCKED_BY_REMOVED_EVENT'],
+  bl: ['BLOCKING_ADDED_EVENT', 'BLOCKING_REMOVED_EVENT'],
+};
+let GH_EV = '';
+const evKinds = [];
 const ghWide = (has) => [
   'number title state stateReason updatedAt milestone { number }',
   'labels(first: 30) { totalCount nodes { name } }',
   'assignees(first: 10) { totalCount nodes { login } }',
   has('issueType') && 'issueType { name }',
   has('parent') && 'parent { url state }',
-  has('subIssues') && 'subIssues { totalCount }',
+  has('subIssues') && (opts.since === null ? 'subIssues { totalCount }'
+    : 'subIssues(first: 30) { totalCount nodes { url state } }'),
   has('subIssuesSummary') && 'subIssuesSummary { total completed }',
   has('issueDependenciesSummary') && 'issueDependenciesSummary { blockedBy blocking }',
   has('blockedBy') && 'blockedBy(first: 30) { totalCount nodes { url state } }',
@@ -335,6 +449,9 @@ const ghLacks = (has) => [
   ['ty', has('issueType')], ['p', has('parent')], ['ch', has('subIssuesSummary')],
   ['bb', has('blockedBy')], ['bl', has('blocking')],
   ['pr', has('closedByPullRequestsReferences', 'includeClosedPrs')],
+  // GitHub counts hidden parents nowhere — a parent the token cannot see reads as `null` and
+  // nothing stands beside it — so this detector cannot fire here whatever the server carries.
+  ['hid.p', false],
   ['hid.ch', has('subIssuesSummary') && has('subIssues')],
   ['hid.bb', has('issueDependenciesSummary') && has('blockedBy')],
   ['hid.bl', has('issueDependenciesSummary') && has('blocking')],
@@ -377,6 +494,8 @@ const ghLine = (i) => {
     c: i.comments ? i.comments.totalCount : null,
     p: i.parent ? ghRef(i.parent) : null,
     ch: ss && ss.total > 0 ? `${ss.completed}/${ss.total}` : null,
+    chl: opts.since === null ? [] : mark('chl', nodes(i.subIssues).map(ghRef),
+      i.subIssues ? i.subIssues.totalCount : null),
     bb: mark('bb', bb.map(ghRef), i.blockedBy ? i.blockedBy.totalCount : null),
     bl: mark('bl', bl.map(ghRef), i.blocking ? i.blocking.totalCount : null),
     pr: mark('pr', nodes(i.closedByPullRequestsReferences).map(ghRef),
@@ -391,8 +510,8 @@ const ghLine = (i) => {
 const GL_WIDE = `iid title state updatedAt userDiscussionsCount workItemType { name }
   widgets {
     type
-    ... on WorkItemWidgetHierarchy { hasParent parent { reference(full: true) state } hasChildren children(first: 20) { count nodes { state } } }
-    ... on WorkItemWidgetLinkedItems { linkedItems(first: 20) { pageInfo { hasNextPage } nodes { linkType workItemState workItem { reference(full: true) } } } }
+    ... on WorkItemWidgetHierarchy { hasParent parent { reference(full: true) state } hasChildren children(first: 20) { count nodes { state${opts.since === null ? '' : ' reference(full: true)'} } } }
+    ... on WorkItemWidgetLinkedItems { linkedItems(first: 20) { pageInfo { hasNextPage } nodes { linkType${opts.since === null ? '' : ' linkCreatedAt'} workItemState workItem { reference(full: true) } } } }
     ... on WorkItemWidgetMilestone { milestone { title } }
     ... on WorkItemWidgetDevelopment { closingMergeRequests(first: 5) { count nodes { mergeRequest { reference(full: true) state } } } }
     ... on WorkItemWidgetLabels { labels { count nodes { title } } }
@@ -437,6 +556,8 @@ const glLine = (w) => {
     ch: h.children && h.children.count > 0
       ? `${kids.filter((k) => k.state !== 'OPEN').length}${h.children.count > kids.length ? '+' : ''}/${h.children.count}`
       : null,
+    chl: opts.since === null ? [] : mark('chl', kids.map((k) => glRef(k.reference, k.state)),
+      h.children ? h.children.count : null),
     bb: kind('is_blocked_by'),
     bl: kind('blocks'),
     rel: kind('relates_to'),
@@ -465,6 +586,10 @@ const take = (line) => {
 };
 
 // --- the wide tier: every page of the slice, to the end
+// The delta's count rides every page as one more field and one more variable; without it the
+// request is the wide tier's, word for word.
+const evVar = () => (GH_EV ? ', $since: DateTime!' : '');
+const evField = () => (GH_EV ? ` ${GH_EV}` : '');
 const WIDE = {
   gh: {
     // A milestone is read through the milestone's OWN connection, not through
@@ -473,24 +598,24 @@ const WIDE = {
     // milestone's own answers in three seconds. Its `totalCount` is also the honest
     // denominator — the milestone's `open_issues`/`closed_issues` count pull requests in.
     query: () => (opts.milestone === null
-      ? `query($owner: String!, $repo: String!, $endCursor: String, $states: [IssueState!], $labels: [String!]) {
+      ? `query($owner: String!, $repo: String!, $endCursor: String, $states: [IssueState!], $labels: [String!]${evVar()}) {
   rateLimit { cost remaining }
   repository(owner: $owner, name: $repo) {
     issues(first: 100, after: $endCursor, states: $states, labels: $labels, orderBy: {field: CREATED_AT, direction: ASC}) {
       pageInfo { hasNextPage endCursor }
       totalCount
-      nodes { ${GH_WIDE} comments { totalCount } }
+      nodes { ${GH_WIDE} comments { totalCount }${evField()} }
     }
   }
 }`
-      : `query($owner: String!, $repo: String!, $endCursor: String, $states: [IssueState!], $labels: [String!], $milestoneNumber: Int!) {
+      : `query($owner: String!, $repo: String!, $endCursor: String, $states: [IssueState!], $labels: [String!], $milestoneNumber: Int!${evVar()}) {
   rateLimit { cost remaining }
   repository(owner: $owner, name: $repo) {
     milestone(number: $milestoneNumber) {
       issues(first: 100, after: $endCursor, states: $states, labels: $labels, orderBy: {field: CREATED_AT, direction: ASC}) {
         pageInfo { hasNextPage endCursor }
         totalCount
-        nodes { ${GH_WIDE} comments { totalCount } }
+        nodes { ${GH_WIDE} comments { totalCount }${evField()} }
       }
     }
   }
@@ -500,7 +625,8 @@ const WIDE = {
       return { owner, repo,
         states: state === 'all' ? ['OPEN', 'CLOSED'] : [state.toUpperCase()],
         labels: opts.label === null ? null : [opts.label],
-        ...(opts.milestone === null ? {} : { milestoneNumber: Number(opts.milestone) }) };
+        ...(opts.milestone === null ? {} : { milestoneNumber: Number(opts.milestone) }),
+        ...(GH_EV ? { since: opts.since } : {}) };
     },
     // Where the slice lives in the answer, and null where the answer holds neither the
     // repository nor the milestone.
@@ -512,6 +638,7 @@ const WIDE = {
     total: (c) => c.totalCount,
     number: (n) => n.number,
     line: ghLine,
+    ev: (n) => (n.timelineItems && Number.isInteger(n.timelineItems.filteredCount) ? n.timelineItems.filteredCount : null),
     spend: (d) => { if (d && d.rateLimit) { head.cost = (head.cost || 0) + d.rateLimit.cost; head.remaining = d.rateLimit.remaining; } },
     none: (d) => (d && d.repository
       ? `there is no milestone ${opts.milestone} in this repository`
@@ -546,6 +673,13 @@ const WIDE = {
     total: (c) => c.count,
     number: (n) => Number(n.iid),
     line: glLine,
+    // No count of events here: a link created since the moment carries the moment itself. A link
+    // removed and the hierarchy leave nothing behind, so only the comparison sees those.
+    ev: (w) => {
+      const li = (Array.isArray(w.widgets) ? w.widgets : []).find((x) => x && x.type === 'LINKED_ITEMS');
+      const got = li && li.linkedItems && Array.isArray(li.linkedItems.nodes) ? li.linkedItems.nodes : [];
+      return got.filter((x) => x && Date.parse(x.linkCreatedAt) >= sinceMs).length;
+    },
     spend: (d) => {
       const q = d && d.queryComplexity;
       if (q && (!head.complexity || q.score > head.complexity.score)) head.complexity = { score: q.score, limit: q.limit };
@@ -587,7 +721,10 @@ const wide = () => {
       const k = w.number(n);
       if (got.has(k)) continue;
       got.set(k, true);
-      take(w.line(n));
+      const line = w.line(n);
+      const ev = head.delta ? w.ev(n) : null;
+      if (ev) line.ev = ev;
+      take(line);
     }
     const pi = conn.pageInfo || {};
     if (!pi.hasNextPage) break;
@@ -805,8 +942,139 @@ const deep = () => {
   head.complete = head.read && !head.reason;
 };
 
+// --- the delta: this reading set against the earlier one
+// `hid` among them: an end the token cannot see leaves the counters as its only mark, and one
+// added or closed out there moves nothing else at all.
+const LINKS = ['p', 'ch', 'chl', 'bb', 'bl', 'rel', 'pr', 'hid'];
+// An end as a map of where it points to the state it is in: `#12:closed` points at `#12`, closed.
+// A `+N` or `+?` closing a cut list is no end, and a value in any order is the same set.
+const ends = (v) => {
+  const out = new Map();
+  for (const ref of (Array.isArray(v) ? v : v ? [v] : []).map(String)) {
+    if (ref.startsWith('+')) continue;
+    // `[\s\S]` and not `.`: a hand-edited graph can carry a newline inside a reference, and a
+    // pattern that simply fails to match there would throw where a comparison belongs.
+    const m = ref.match(/^([\s\S]*?)(?::([a-z_]+))?$/);
+    out.set(m[1], m[2] || 'open');
+  }
+  return out;
+};
+// A list compares as a set and an object by its keys, whichever order either arrived in: a graph
+// written by hand, or by a forge that reordered its answer, would otherwise differ from itself.
+const setOf = (v) => JSON.stringify(Array.isArray(v) ? [...v].map(String).sort()
+  : (v && typeof v === 'object'
+    ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : 1)))
+    : v ?? null));
+// A list the forge cut short is a window and not a set: an end outside it is in neither reading,
+// so the window sliding would write edges nobody added and hide the ones somebody did.
+const windowed = (key, v) => (Array.isArray(v) ? v.some((x) => String(x).startsWith('+'))
+  : key === 'ch' && typeof v === 'string' && v.includes('+'));
+// An edge written the same from either end, so the two ends of one count once.
+const edge = (key, end, n) => {
+  const own = `#${n}`;
+  if (key === 'p') return `${end} parent of ${own}`;
+  if (key === 'chl') return `${own} parent of ${end}`;
+  if (key === 'bb') return `${end} blocks ${own}`;
+  if (key === 'bl') return `${own} blocks ${end}`;
+  if (key === 'pr') return `${end} closes ${own}`;
+  return `${[end, own].sort().join(' relates to ')}`;
+};
+// Whether the count covers an edge of this kind: GitHub's timeline both ways for every kind it
+// has both events of; GitLab's links created since, one way, and none of the hierarchy.
+const covers = (key, added) => (cli === 'gh' ? evKinds.includes(key === 'chl' ? 'ch' : key)
+  : added && ['bb', 'bl', 'rel'].includes(key));
+const delta = () => {
+  const d = head.delta;
+  d.edited = lines.filter((l) => Date.parse(l.u) >= sinceMs).map((l) => l.n);
+  const counted = cli === 'glab' || GH_EV !== '';
+  d.events = counted ? lines.filter((l) => l.ev > 0).map((l) => l.n) : null;
+  const why = [];
+  const clockMs = clock ? Date.parse(clock) : NaN;
+  if (Number.isNaN(clockMs)) {
+    head.notes.push('the forge sent no Date before the slice was read, so this reading names no'
+      + ' moment: the next one needs one taken before this read began');
+  } else {
+    // Ten seconds under the forge's own clock, read before the slice: an event is stamped a
+    // second or two apart from the change it records, and a window that overlaps loses nothing.
+    d.moment = iso(clockMs - 10000);
+    if (sinceMs > clockMs) why.push(`--since is later than the forge's own clock (${text(clock)})`);
+  }
+  const pm = pinned && pinned.v.delta && typeof pinned.v.delta.moment === 'string' ? pinned.v.delta.moment : null;
+  if (pm && sinceMs > Date.parse(pm)) {
+    why.push(`--since is later than the moment the reading in --was names (${text(pm)}), so an edit between the two is in neither`);
+  }
+  if (!pinned) {
+    why.push('no earlier reading was given (--was): an edge removed and an end that changed state'
+      + ' cannot be seen without one — this reading is the one to keep');
+  } else if (pinned.v.read !== true || pinned.v.complete !== true) {
+    why.push(`the reading in --was is not whole${pinned.v.reason ? ` (${text(pinned.v.reason)})` : ''}`);
+  } else {
+    const now = new Set(lines.map((l) => l.n));
+    d.entered = lines.filter((l) => !pinned.byN.has(l.n)).map((l) => l.n);
+    // A page that did not come back holds issues that are still there, and would read as gone.
+    d.left = head.complete ? [...pinned.byN.keys()].filter((n) => !now.has(n)).sort((a, b) => a - b) : null;
+    d.linked = [];
+    d.cut = [];
+    d.check = counted ? [] : null;
+    const added = new Set();
+    const removed = new Set();
+    const moved = new Set();
+    for (const l of lines) {
+      const was = pinned.byN.get(l.n);
+      if (!was) continue;
+      // Named whether or not anything visible differs: a change outside the window shows nowhere
+      // else, and an issue whose links cannot be compared is one to read by hand.
+      const cut = LINKS.filter((k) => windowed(k, l[k]) || windowed(k, was[k]));
+      if (cut.length) d.cut.push(l.n);
+      const diff = LINKS.filter((k) => setOf(l[k]) !== setOf(was[k]));
+      if (!diff.length) continue;
+      d.linked.push(l.n);
+      l.was = Object.fromEntries(diff.map((k) => [k, was[k] ?? null]));
+      let uncounted = false;
+      for (const k of LINKS.filter((x) => !['ch', 'hid'].includes(x) && !cut.includes(x))) {
+        const a = ends(was[k]);
+        const b = ends(l[k]);
+        for (const [e, st] of b) {
+          if (!a.has(e)) { added.add(edge(k, e, l.n)); uncounted ||= covers(k, true); }
+          else if (a.get(e) !== st) moved.add(`${e}:${st}`);
+        }
+        for (const e of a.keys()) {
+          if (!b.has(e)) { removed.add(edge(k, e, l.n)); uncounted ||= covers(k, false); }
+        }
+      }
+      if (counted && uncounted && !(l.ev > 0)) d.check.push(l.n);
+    }
+    d.added = [...added].sort();
+    d.removed = [...removed].sort();
+    d.moved = [...moved].sort();
+  }
+  if (!head.complete) why.push(`this reading is not whole (${head.reason})`);
+  d.complete = why.length === 0;
+  d.reason = why.length ? why.join('; ') : null;
+};
+
+// What a GitLab slice asks for, said out loud: an incident or a test case is outside it, and a
+// verdict calling the slice whole is whole of these two types. Known before `--was` is judged,
+// since the types a reading asked for are part of which slice it is.
+if (cli === 'glab' && !asked) head.filter.types = ['ISSUE', 'TASK'];
+
+// The earlier reading is of this slice or of none: set against another repository's, or another
+// filter's, every issue would read as entered or left.
+if (pinned) {
+  const v = pinned.v;
+  const f = v.filter && typeof v.filter === 'object' ? v.filter : {};
+  if (v.forge !== cli || typeof v.repo !== 'string' || !same(v.repo, head.repo)
+    || typeof v.host !== 'string' || !same(v.host, head.host)
+    || (f.state ?? null) !== state || (f.label ?? null) !== opts.label
+    || (f.milestone ?? null) !== opts.milestone
+    || JSON.stringify(f.types ?? null) !== JSON.stringify(head.filter.types)) {
+    die('the reading in --was is of another slice: another forge, repository, host or filter');
+  }
+}
+
 if (cli === 'gh') {
-  const { json, reason } = gql({ query: 'query { rateLimit { cost remaining } issue: __type(name: "Issue") { fields { name args { name } } } }', variables: {} });
+  const { json, reason, date } = gql({ query: `query { rateLimit { cost remaining } issue: __type(name: "Issue") { fields { name args { name } } }${head.delta ? ' events: __type(name: "IssueTimelineItemsItemType") { enumValues { name } }' : ''} }`, variables: {} }, Boolean(head.delta));
+  if (date) clock = date;
   // A schema that would not read is an unread slice, never a server that carries nothing:
   // the second would drop every link from every line and call the slice whole.
   if (!json) unread(reason);
@@ -818,8 +1086,32 @@ if (cli === 'gh') {
   const has = (field, arg) => schema.has(field) && (arg === undefined || schema.get(field).has(arg));
   GH_WIDE = ghWide(has);
   head.unavailable = ghLacks(has);
+  if (head.delta) {
+    // Only a kind the line itself carries is counted, and only by both of its events: a kind
+    // whose removals went uncounted would pass a removed edge as one nobody touched.
+    const names = new Set(json.data.events && Array.isArray(json.data.events.enumValues)
+      ? json.data.events.enumValues.map((e) => e && e.name) : []);
+    const counts = has('timelineItems', 'since') && has('timelineItems', 'itemTypes');
+    const types = [];
+    for (const [key, pair] of Object.entries(EVENTS)) {
+      if (head.unavailable.includes(key)) continue;
+      if (counts && pair.every((t) => names.has(t))) { evKinds.push(key); types.push(...pair); }
+      else head.unavailable.push(`ev.${key}`);
+    }
+    GH_EV = types.length ? `timelineItems(since: $since, itemTypes: [${types.join(', ')}]) { filteredCount }` : '';
+    // The children read by name are counted by the same events as the summary above them; a
+    // closing change request by none at all, so its edges have no count to disagree with.
+    if (!has('subIssues')) head.unavailable.push('chl');
+    else if (!evKinds.includes('ch')) head.unavailable.push('ev.chl');
+    if (!head.unavailable.includes('pr')) head.unavailable.push('ev.pr');
+  }
 }
+// GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.
+if (cli === 'glab' && head.delta) head.unavailable.push('ev.p', 'ev.ch', 'ev.chl', 'ev.pr');
 
 if (asked) deep();
-else wide();
+else {
+  wide();
+  if (head.delta) delta();
+}
 finish();

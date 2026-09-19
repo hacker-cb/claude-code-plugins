@@ -1,0 +1,12 @@
+{"slice":{"read":true,"complete":true,"tier":"wide","forge":"gh","repo":"example-org/example-repo","host":"github.example","filter":{"state":"open","label":null,"milestone":null},"delta":{"since":"2026-09-19T11:00:00Z","moment":"2026-09-19T12:00:00Z"}}}
+{"n":1}
+{"n":2}
+{"n":3,"bb":["#9"]}
+{"n":5}
+{"n":6,"p":"#8"}
+{"n":7}
+{"n":11,"bb":["#12","+3"]}
+{"n":3,"bb":[]}
+{"n":14,"bb":["#15"]}
+{"n":10}
+{"n":16,"bb":["#18"],"ch":"0/2","chl":["#17"],"hid":{"ch":1,"bb":1}}

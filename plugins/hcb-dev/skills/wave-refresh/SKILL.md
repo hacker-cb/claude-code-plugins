@@ -64,9 +64,10 @@ disagreement is itself a finding:
 - **the live registry**
   ([`../../references/session-comms.md`](../../references/session-comms.md)) — who
   is running now, since a row outlives the session it describes;
-- **the files the running batches' open change requests touch**, resolved per
-  [`../../references/forge-docs.md`](../../references/forge-docs.md) — what a
-  batch is actually writing, which may reach past the zone its order drew.
+- **the files every open change request touches**, read per
+  [`references/delta.md`](references/delta.md) — what is actually being written,
+  which may reach past the zone an order drew, and which a request no batch row
+  claims holds just as much.
 
 Every disagreement goes to the user — a request reaching past its zone, a row
 with no session, a session with no row. Until one is settled the ground is read
@@ -82,19 +83,22 @@ Two halves, because an issue closes without a commit:
 - **the base**, from the pin the point below names to the pin taken now:
   what landed, and which premises those landings moved;
 - **the tracker**, from the moment that point read it: every change a verdict
-  reads (`issue-currency.md`), and what entered or left the slice.
+  reads (`issue-currency.md`), what entered or left the slice, and every link
+  that moved — which no filter by update time reports, so this half is taken
+  per `references/delta.md`.
 
 Both together are the re-verification list — not the slice, which is what makes
 this pass cheap.
 
 **The point to diff from, first that answers**: the newest whole reading of the
-slice the ledger records — a refresh's own pin and tracker moment, or a
-survey's, whichever read the slice later; else the pin the ledger's header
+slice the ledger records — a refresh's own pin, tracker moment and graph, or a
+survey's pin and moment, whichever read the slice later; else the pin the ledger's header
 carries for the wave's live step; else the newest pin among the orders the
 ledger records, ended batches included. Where none of the three answers, this is
 a survey rather than a refresh — say so and stop. A rung carrying no tracker
-moment fixes the base half alone: the tracker half is then read over the slice
-whole, and the report says which half was a delta.
+moment fixes the base half alone, and one whose graph the ledger does not hold
+fixes it without the links: what no delta covers is read over the slice whole
+instead, and the report says which half was a delta and how much of it.
 
 A premise a landing knocked out — an issue whose blocker is now closed, whose
 coordinate moved, whose defect is gone — takes its verdict into the layout by
@@ -158,10 +162,13 @@ section explicit even when empty:
 
 ## After the report
 
-- **The ledger takes the pass before anything else moves**: the pin and tracker
-  moment this refresh ran on and the ground it covered — which takes the
-  header's slot only where that ground was the ledger's whole slice, a narrower
-  pass leaving the reading that stands there — every verdict this pass read into
+- **The ledger takes the pass before anything else moves**: the pin, tracker
+  moment and graph this refresh ran on (`references/delta.md`) and the ground it
+  covered — the three taking the header's slot only where that ground was the
+  ledger's whole slice, a narrower pass leaving the reading that stands there;
+  a pass whose reading names no moment writes the graph beside the moment the
+  header already carried and says that one was not read here, rather than
+  leaving the slot to be read as this pass's — every verdict this pass read into
   its verdicts section, the layout it produced, and what it ruled about the
   sources that disagreed.
 - **Tracker edits execute on the user's word**, item by item through
@@ -173,6 +180,7 @@ section explicit even when empty:
 
 ## Reference files
 
+- [`references/delta.md`](references/delta.md)
 - [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)
 - [`../../references/report-format.md`](../../references/report-format.md)

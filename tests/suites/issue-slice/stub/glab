@@ -3,7 +3,7 @@
 # `api … graphql --input -` for every page, answered the way `stub/gh` answers them. Two
 # rules of the real one are kept, since the script is written around both: `--input` with no
 # Content-Type header reaches GitLab as an empty document, and a reference list longer than
-# ten is refused by the server.
+# ten is refused by the server. `--include` answers with headers first, as the real one does.
 if [ -n "${STUB_MARKER_FILE:-}" ]; then
   [ -f "$STUB_MARKER_FILE" ] || rm -f "$STUB_MARKER_FILE.seen"
   : > "$STUB_MARKER_FILE"
@@ -13,12 +13,14 @@ ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 
 [ "$1" = api ] || { echo "stub glab: no envelope answer for: $*" >&2; exit 3; }
 shift
-host="" input="" ctype="" endpoint=""
+host="" input="" include="" ctype="" endpoint=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hostname) host=$2; shift 2 ;;
     -H) [ "$2" = "Content-Type: application/json" ] && ctype=1; shift 2 ;;
     --input) input=$2; shift 2 ;;
+    # `--include` is how the delta reads the forge's own clock: headers, a blank line, the body.
+    -i|--include) include=1; shift ;;
     --paginate|--slurp|--jq|-q|-f|-F|--field|--raw-field)
       echo "stub glab: $1 is not how issue-slice calls" >&2; exit 3 ;;
     *) endpoint=$1; shift ;;
@@ -38,6 +40,12 @@ case "$endpoint" in
     want=$(ask '.glab_target')
     if [ -n "$want" ] && [ "$endpoint" != "projects/$want" ]; then
       echo "stub glab: probe asked '$endpoint', wanted 'projects/$want'" >&2; exit 1
+    fi
+    if [ -n "$include" ]; then
+      d=$(ask '.probe_date')
+      printf 'HTTP/2.0 200 OK\n'
+      [ -z "$d" ] || printf 'Date: %s\r\n' "$d"
+      printf 'X-Stub: issue-slice\r\n\r\n'
     fi
     printf '%s\n' "$v"; exit 0 ;;
   graphql) [ "$input" = - ] || { echo "stub glab: the request must come on stdin" >&2; exit 3; } ;;
@@ -68,6 +76,13 @@ pick=$(jq -r --argjson body "$body" --rawfile seen "${seen:-/dev/null}" '
 [ -n "$pick" ] || { echo "stub glab: no envelope answer for this request" >&2; exit 3; }
 entry=$(jq -c ".graphql[$pick]" "$env")
 [ "$(jq -r '.once // false' <<<"$entry")" = true ] && [ -n "$seen" ] && echo "$pick" >> "$seen"
+if [ -n "$include" ]; then
+  printf 'HTTP/2.0 200 OK\n'
+  d=$(jq -r '.date // empty' <<<"$entry")
+  [ -n "$d" ] || d=$(ask '.date')
+  [ -z "$d" ] || printf 'Date: %s\r\n' "$d"
+  printf 'X-Stub: issue-slice\r\n\r\n'
+fi
 jq -r '.out | if type == "string" then . else tojson end' <<<"$entry"
 err=$(jq -r '.stderr // empty' <<<"$entry")
 [ -z "$err" ] || printf '%s\n' "$err" >&2

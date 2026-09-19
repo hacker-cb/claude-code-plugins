@@ -235,12 +235,15 @@ the plan stages them.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
   What can start right now, recomputed rather than recalled: pin and refresh the
   base and read every fact through that ref rather than through a working tree,
-  measure the ground the running batches hold from three sources at once (the
-  ledger's rows, the live registry, the files their open change requests touch)
-  and read a zone they disagree about the safer way, take the delta in both its
-  halves — what landed since the last pin, and what the tracker did since the
-  moment that reading read it — a refresh's own reading, or a survey's where
-  that one read the whole slice later — then rule what clears the ground:
+  measure the ground that is occupied from three sources at once (the ledger's
+  rows, the live registry, the files every open change request touches, each
+  list checked against its own count) and read a zone they disagree about the
+  safer way, take the delta in both its halves — what landed since the last pin,
+  and what the tracker did since the moment that reading read it, links included:
+  the slice's edges read again and set against the graph that reading left in
+  the ledger, since no filter by update time sees a link move — a refresh's own
+  reading, or a survey's where that one read the whole slice later — then rule
+  what clears the ground:
   verdicts per
   `references/issue-currency.md`, where each verdict leaves its batch and how
   the survivors pair per `references/wave-planning.md`. Reports the capacity
@@ -249,7 +252,9 @@ the plan stages them.
   `backlog-survey` is exhaustive: use the survey where nothing records a point
   to diff from. Writes the pass to the ledger, then hands what you approve to
   `wave-dispatch` — the capacity you named is a ceiling, not the word that
-  launches.
+  launches. How the delta and the open requests' files are read, and where the
+  graph lives between passes, is
+  [`skills/wave-refresh/references/delta.md`](skills/wave-refresh/references/delta.md).
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   One chip per batch — title per `references/session-naming.md` (the launched
   session is asked to wear it; what later messages match on is what its start
@@ -368,7 +373,9 @@ name stands for.
   forge, and whether what came back is the whole slice: unread, short and whole are told
   apart, as are link ends the token cannot see and the fields a self-hosted instance is too
   old to carry. Bodies and comments stay out of the wide read; `--deep` reads the numbers
-  named in full.
+  named in full; `--since` reads the slice again against an earlier reading of it and says
+  what entered, left, was edited or moved a link — each edge once, the forge's own count of
+  link events beside it as a cross-check.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
@@ -541,9 +548,10 @@ Per skill, on top of those:
   slice's issues; nothing else — the hygiene it proposes runs through
   `issue-tracking` on your word.
 - **`wave-refresh`**: `git` against the resolved base — every fact it rules on
-  is read from that ref, not from a working tree — plus the forge CLI for the
-  running batches' change requests and the live registry for who is still
-  running. It hangs nothing itself; `wave-dispatch` does that.
+  is read from that ref, not from a working tree — plus the forge CLI and `jq`
+  for the tracker's delta and the open change requests' files, and the live
+  registry for who is still running. It hangs nothing itself; `wave-dispatch`
+  does that.
 - **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
   Code's own cross-session tools — the chip tool for launching
   (`spawn_task`/`dismiss_task`, the desktop app's) and, for coordination, the
