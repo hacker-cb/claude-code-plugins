@@ -13,9 +13,10 @@ fields of the build actually installed, which is not the build the site
 documents. Read it before writing an invocation, and treat a flag it does not
 list as absent whatever the site says.
 
-**Both CLIs answer with a small first page.** Paginate to the end, or set the
-limit above the listing's own total, before counting or sweeping anything — a
-short read is indistinguishable from an empty one.
+**Both CLIs answer with a small first page.** Paginate to the end before
+counting or sweeping anything — a short read is indistinguishable from an empty
+one, and a limit asked above a page's own cap is not always honoured
+([`forge-behaviour.md`](forge-behaviour.md)).
 
 **The sites are authoritative about meaning** — what a field holds, which values
 an enum takes, and every operation the porcelain never wrapped. Both serve their
