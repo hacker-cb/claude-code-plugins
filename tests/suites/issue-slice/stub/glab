@@ -41,6 +41,12 @@ case "$endpoint" in
     if [ -n "$want" ] && [ "$endpoint" != "projects/$want" ]; then
       echo "stub glab: probe asked '$endpoint', wanted 'projects/$want'" >&2; exit 1
     fi
+    if [ -n "$include" ]; then
+      d=$(ask '.probe_date')
+      printf 'HTTP/2.0 200 OK\n'
+      [ -z "$d" ] || printf 'Date: %s\r\n' "$d"
+      printf 'X-Stub: issue-slice\r\n\r\n'
+    fi
     printf '%s\n' "$v"; exit 0 ;;
   graphql) [ "$input" = - ] || { echo "stub glab: the request must come on stdin" >&2; exit 3; } ;;
   *) echo "stub glab: no envelope answer for: api $endpoint" >&2; exit 3 ;;

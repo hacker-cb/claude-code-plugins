@@ -50,8 +50,8 @@ end the token cannot see is in neither the count nor any list of edges: the
 line's `hid` counter is its only mark, which is why the comparison carries it
 and why a slice holding one says so in the report.
 
-**The moment for the next pass is `delta.moment`** — the forge's own clock at
-the first page, less the margin an event's timestamp needs — never this
+**The moment for the next pass is `delta.moment`** — the forge's own clock, read
+before the slice was and less the margin an event's timestamp needs — never this
 session's clock, which is not the one the events are stamped by. A reading that
 names none leaves its graph all the same, the comparison needing no clock: the
 ledger then keeps the moment it already carried, and the next pass asks from
@@ -89,14 +89,15 @@ carries — are read again:
 
 ```bash
 # GitHub — every open request, with the counts that say whether either list is whole
-gh api graphql -F owner='{owner}' -F name='{repo}' -F endCursor='' -f query='query($owner: String!, $name: String!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequests(states: OPEN, first: 100, after: $endCursor) { totalCount pageInfo { hasNextPage endCursor } nodes { number baseRefName changedFiles files(first: 100) { nodes { path changeType } } } } } }' \
+H="<host>"  # gh api answers from the SaaS unless the host is named; glab reads it off the checkout
+gh api graphql --hostname "$H" -F owner='{owner}' -F name='{repo}' -F endCursor='' -f query='query($owner: String!, $name: String!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequests(states: OPEN, first: 100, after: $endCursor) { totalCount pageInfo { hasNextPage endCursor } nodes { number baseRefName changedFiles files(first: 100) { nodes { path changeType } } } } } }' \
   --jq '.data.repository.pullRequests | {open: .totalCount, more: .pageInfo.hasNextPage, cursor: .pageInfo.endCursor}, (.nodes[] | {n: .number, base: .baseRefName, changed: .changedFiles, read: (.files.nodes | length), renamed: [.files.nodes[] | select(.changeType == "RENAMED") | .path], files: [.files.nodes[].path]})'
 # GitHub — one marked short or renaming: both paths, and each page's own record count beside them
-N="<number>"; gh api --paginate "repos/{owner}/{repo}/pulls/$N/files" --jq '{records: length}, (.[] | .filename, (.previous_filename // empty))'
+N="<number>"; gh api --hostname "$H" --paginate "repos/{owner}/{repo}/pulls/$N/files" --jq '{records: length}, (.[] | .filename, (.previous_filename // empty))'
 # GitLab — the listing, a hundred a call: the paths, and the count to hold them against
 glab api graphql -f query='query($endCursor: String) { project(fullPath: "<path>") { mergeRequests(state: opened, first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } count nodes { iid targetBranch diffStatsSummary { fileCount } diffStats { path } } } } }'
-# GitLab — both paths, which only this field carries, and which answers for ten requests a call
-glab api graphql -f query='query { project(fullPath: "<path>") { mergeRequests(state: opened, first: 10) { nodes { iid diffStatsSummary { fileCount } diffs(first: 100) { pageInfo { hasNextPage } nodes { newPath oldPath renamedFile } } } } } }'
+# GitLab — both paths, which only this field carries: the requests named, ten to a call
+glab api graphql -f query='query { project(fullPath: "<path>") { mergeRequests(iids: ["<iid>", "<iid>"]) { nodes { iid diffs(first: 100) { pageInfo { hasNextPage } nodes { newPath oldPath renamedFile } } } } } }'
 ```
 
 **Where `more` is true, the next call takes `endCursor` as `$endCursor`** — the
@@ -105,9 +106,10 @@ stopped at the page boundary measured less than it claims.
 
 **A renamed file holds the path it came from as much as the one it went to.**
 GitHub's listing marks the rename and its REST read carries the old path;
-GitLab's listing marks nothing, so the field that carries both paths is read for
-every request whose zone could meet a candidate, and one left unread is a zone
-nobody measured.
+GitLab's listing marks nothing, so the field that carries both paths is read by
+`iids` for every request whose zone could meet a candidate — ten to a call, and
+its own counts left out of that one, which the complexity limit refuses — and a
+request left unread is a zone nobody measured.
 
 **Every read is checked against the count that belongs to it**: GitHub's REST
 files stop at three thousand however far the pages run — each page states its

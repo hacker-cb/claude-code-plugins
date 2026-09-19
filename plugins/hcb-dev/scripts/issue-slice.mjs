@@ -55,8 +55,8 @@
 // same slice (`--was`: this script's own output, or a projection of it keeping the verdict line,
 // `n` and the link keys). A time filter cannot stand in for it: a link added, removed or moved
 // raises no `updatedAt`, and neither does the other end of one closing. The verdict gains `delta`:
-//   since, moment       the moment asked from; the forge's own clock at the first page, less ten
-//                       seconds — the next reading's `since`
+//   since, moment       the moment asked from; the forge's own clock read BEFORE the slice was,
+//                       less ten seconds — the next reading's `since`
 //   was                 how many issues the earlier reading held
 //   entered, left       in the slice now and not then; then and not now
 //   edited              `updatedAt` at or after `since`
@@ -212,6 +212,10 @@ const head = {
   errors: [], reason: null, notes: [],
 };
 const lines = [];
+// The forge's own clock, taken before the slice is read: a page answered slower than the margin
+// would otherwise pin a moment later than the rows it brought back, and an issue edited in
+// between would be in neither this reading nor the next.
+let clock = null;
 const finish = () => {
   if (head.forge !== 'gh') delete head.untyped;
   if (head.delta && !head.delta.complete && !head.delta.reason) head.delta.reason = head.reason;
@@ -227,6 +231,15 @@ const unread = (reason) => {
   // Nothing was read, so every number asked is one to ask again — none of them is missing.
   if (asked) { head.unread = [...asked]; head.missing = []; }
   finish();
+};
+
+// `--include` puts the status line and the headers before the body, a blank line between; an
+// answer that does not open with one is a body and nothing else.
+const split = (out) => {
+  const gap = /\r?\n\r?\n/.exec(out);
+  if (!gap || !/^HTTP\/\S+ \d{3}/.test(out)) return { body: out, date: null };
+  const m = out.slice(0, gap.index).match(/^date:[ \t]*(.*?)[ \t]*\r?$/im);
+  return { body: out.slice(gap.index + gap[0].length), date: m ? m[1] : null };
 };
 
 // --- one call to a CLI
@@ -286,10 +299,13 @@ const PROBES = {
   },
   glab: () => {
     const path = opts.repo ? `projects/${encodeURIComponent(opts.repo)}` : 'projects/:fullpath';
-    const r = call('glab', ['api', ...(opts.host ? ['--hostname', opts.host] : []), path], null, 60000);
+    const r = call('glab', ['api', ...(opts.since === null ? [] : ['--include']),
+      ...(opts.host ? ['--hostname', opts.host] : []), path], null, 60000);
     if (!r.ok) return { reason: failure('glab', r) };
+    const answer = opts.since === null ? { body: r.out, date: null } : split(r.out);
+    if (answer.date) clock = answer.date;
     try {
-      const v = JSON.parse(r.out);
+      const v = JSON.parse(answer.body);
       const host = new URL(v.web_url).host;
       const full = v.namespace && typeof v.namespace.full_path === 'string' ? v.namespace.full_path : null;
       if (!full || typeof v.path !== 'string') return { reason: 'glab: an unreadable project' };
@@ -338,14 +354,7 @@ const gql = (body, include = false) => {
   // timeout: that one was killed at the deadline, and a second wait only doubles it.
   for (let attempt = 0; ; attempt += 1) {
     const r = call(cli, args, input);
-    let out = r.out;
-    let date = null;
-    const gap = include ? /\r?\n\r?\n/.exec(out) : null;
-    if (gap && /^HTTP\/\S+ \d{3}/.test(out)) {
-      const m = out.slice(0, gap.index).match(/^date:[ \t]*(.*?)[ \t]*\r?$/im);
-      date = m ? m[1] : null;
-      out = out.slice(gap.index + gap[0].length);
-    }
+    const { body: out, date } = include ? split(r.out) : { body: r.out, date: null };
     // Both CLIs exit 1 on a PARTIAL error with the good data already on stdout, so the exit
     // status decides nothing here: what was printed does.
     let json = null;
@@ -692,8 +701,8 @@ const wide = () => {
   for (;;) {
     const first = head.pages === 0;
     const { json, reason, date } = gql({ query: w.query(), variables: { ...w.variables(), endCursor: cursor } },
-      head.delta !== undefined && first);
-    if (head.delta && first) clock = date;
+      head.delta !== undefined && first && clock === null);
+    if (head.delta && first && clock === null) clock = date;
     if (!json) {
       if (head.pages === 0) unread(reason);
       head.reason = `page ${head.pages + 1} could not be read (${reason})`;
@@ -972,8 +981,6 @@ const edge = (key, end, n) => {
 // has both events of; GitLab's links created since, one way, and none of the hierarchy.
 const covers = (key, added) => (cli === 'gh' ? evKinds.includes(key === 'chl' ? 'ch' : key)
   : added && ['bb', 'bl', 'rel'].includes(key));
-let clock = null;
-
 const delta = () => {
   const d = head.delta;
   d.edited = lines.filter((l) => Date.parse(l.u) >= sinceMs).map((l) => l.n);
@@ -985,8 +992,8 @@ const delta = () => {
     head.notes.push('the forge sent no Date with the first page, so this reading names no moment:'
       + ' the next one needs a moment from before this read began');
   } else {
-    // Ten seconds under the forge's own clock: an event is stamped a second or two apart from
-    // the change it records, and a window that overlaps the last one loses nothing to that.
+    // Ten seconds under the forge's own clock, read before the slice: an event is stamped a
+    // second or two apart from the change it records, and a window that overlaps loses nothing.
     d.moment = iso(clockMs - 10000);
     if (sinceMs > clockMs) why.push(`--since is later than the forge's own clock (${text(clock)})`);
   }
@@ -1058,7 +1065,8 @@ if (pinned) {
 }
 
 if (cli === 'gh') {
-  const { json, reason } = gql({ query: `query { rateLimit { cost remaining } issue: __type(name: "Issue") { fields { name args { name } } }${head.delta ? ' events: __type(name: "IssueTimelineItemsItemType") { enumValues { name } }' : ''} }`, variables: {} });
+  const { json, reason, date } = gql({ query: `query { rateLimit { cost remaining } issue: __type(name: "Issue") { fields { name args { name } } }${head.delta ? ' events: __type(name: "IssueTimelineItemsItemType") { enumValues { name } }' : ''} }`, variables: {} }, Boolean(head.delta));
+  if (date) clock = date;
   // A schema that would not read is an unread slice, never a server that carries nothing:
   // the second would drop every link from every line and call the slice whole.
   if (!json) unread(reason);
