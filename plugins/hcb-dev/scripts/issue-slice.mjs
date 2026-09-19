@@ -41,6 +41,8 @@
 //   ty m l a c          type, milestone (GitHub its number, GitLab its title), labels,
 //                       assignees, comments (GitLab: discussion threads)
 //   p ch                parent; children as `<done>/<total>`, `<done>+` where the list was cut
+//   chl                 delta only: the children themselves, which `ch` only counts — a child
+//                       swapped for another leaves that count where it was
 //   bb bl rel pr        blocked by, blocking, related (GitLab), closing change requests: `#N`
 //                       for this repository, `<path>#N` for another, `:closed`/`:merged` after
 //                       an end not open, and `+N` last where the list was cut, `+?` where the
@@ -58,6 +60,8 @@
 //   entered, left       in the slice now and not then; then and not now
 //   edited              `updatedAt` at or after `since`
 //   linked              a link key — p ch bb bl rel pr — that differs from the earlier reading
+//   cut                 a link list one reading or the other only saw a window of: what fell
+//                       outside it is in neither, so no edge is taken from that key at all
 //   events              the forge's own count of link events since `since`: GitHub's timeline,
 //                       GitLab's links created since — which sees no link removed. Null where
 //                       nothing counts; the kinds that go uncounted are `ev.<key>` in `unavailable`
@@ -65,8 +69,9 @@
 //   moved               ends whose state changed, written with the state they have now
 //   check               an edge added or removed where the count covering its kind counted none
 //   complete, reason    whether this is a whole delta, and what it lacks where it is not
-// A list that cannot be known is null, never empty. A line gains `ev`, its own count, and
-// `was`, the earlier value of every link key that differs.
+// A list that cannot be known is null, never empty, and the verdict's own `read` and `complete`
+// still answer for the SLICE — whether the delta is whole is `delta.complete` and nothing else.
+// A line gains `ev`, its own count, and `was`, the earlier value of every link key that differs.
 
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -193,7 +198,7 @@ const head = {
   cut: [], hidden: [], unavailable: [],
   ...(opts.since === null ? {} : { delta: {
     since: opts.since, moment: null, was: pinned ? pinned.byN.size : null,
-    entered: null, left: null, edited: null, linked: null, events: null,
+    entered: null, left: null, edited: null, linked: null, cut: null, events: null,
     added: null, removed: null, moved: null, check: null, complete: false, reason: null,
   } }),
   errors: [], reason: null, notes: [],
@@ -412,7 +417,8 @@ const ghWide = (has) => [
   'assignees(first: 10) { totalCount nodes { login } }',
   has('issueType') && 'issueType { name }',
   has('parent') && 'parent { url state }',
-  has('subIssues') && 'subIssues { totalCount }',
+  has('subIssues') && (opts.since === null ? 'subIssues { totalCount }'
+    : 'subIssues(first: 30) { totalCount nodes { url state } }'),
   has('subIssuesSummary') && 'subIssuesSummary { total completed }',
   has('issueDependenciesSummary') && 'issueDependenciesSummary { blockedBy blocking }',
   has('blockedBy') && 'blockedBy(first: 30) { totalCount nodes { url state } }',
@@ -468,6 +474,8 @@ const ghLine = (i) => {
     c: i.comments ? i.comments.totalCount : null,
     p: i.parent ? ghRef(i.parent) : null,
     ch: ss && ss.total > 0 ? `${ss.completed}/${ss.total}` : null,
+    chl: opts.since === null ? [] : mark('chl', nodes(i.subIssues).map(ghRef),
+      i.subIssues ? i.subIssues.totalCount : null),
     bb: mark('bb', bb.map(ghRef), i.blockedBy ? i.blockedBy.totalCount : null),
     bl: mark('bl', bl.map(ghRef), i.blocking ? i.blocking.totalCount : null),
     pr: mark('pr', nodes(i.closedByPullRequestsReferences).map(ghRef),
@@ -482,7 +490,7 @@ const ghLine = (i) => {
 const GL_WIDE = `iid title state updatedAt userDiscussionsCount workItemType { name }
   widgets {
     type
-    ... on WorkItemWidgetHierarchy { hasParent parent { reference(full: true) state } hasChildren children(first: 20) { count nodes { state } } }
+    ... on WorkItemWidgetHierarchy { hasParent parent { reference(full: true) state } hasChildren children(first: 20) { count nodes { state${opts.since === null ? '' : ' reference(full: true)'} } } }
     ... on WorkItemWidgetLinkedItems { linkedItems(first: 20) { pageInfo { hasNextPage } nodes { linkType${opts.since === null ? '' : ' linkCreatedAt'} workItemState workItem { reference(full: true) } } } }
     ... on WorkItemWidgetMilestone { milestone { title } }
     ... on WorkItemWidgetDevelopment { closingMergeRequests(first: 5) { count nodes { mergeRequest { reference(full: true) state } } } }
@@ -528,6 +536,8 @@ const glLine = (w) => {
     ch: h.children && h.children.count > 0
       ? `${kids.filter((k) => k.state !== 'OPEN').length}${h.children.count > kids.length ? '+' : ''}/${h.children.count}`
       : null,
+    chl: opts.since === null ? [] : mark('chl', kids.map((k) => glRef(k.reference, k.state)),
+      h.children ? h.children.count : null),
     bb: kind('is_blocked_by'),
     bl: kind('blocks'),
     rel: kind('relates_to'),
@@ -916,7 +926,7 @@ const deep = () => {
 };
 
 // --- the delta: this reading set against the earlier one
-const LINKS = ['p', 'ch', 'bb', 'bl', 'rel', 'pr'];
+const LINKS = ['p', 'ch', 'chl', 'bb', 'bl', 'rel', 'pr'];
 // An end as a map of where it points to the state it is in: `#12:closed` points at `#12`, closed.
 // A `+N` or `+?` closing a cut list is no end, and a value in any order is the same set.
 const ends = (v) => {
@@ -929,10 +939,15 @@ const ends = (v) => {
   return out;
 };
 const setOf = (v) => JSON.stringify(Array.isArray(v) ? [...v].map(String).sort() : v ?? null);
+// A list the forge cut short is a window and not a set: an end outside it is in neither reading,
+// so the window sliding would write edges nobody added and hide the ones somebody did.
+const windowed = (key, v) => (Array.isArray(v) ? v.some((x) => String(x).startsWith('+'))
+  : key === 'ch' && typeof v === 'string' && v.includes('+'));
 // An edge written the same from either end, so the two ends of one count once.
 const edge = (key, end, n) => {
   const own = `#${n}`;
   if (key === 'p') return `${end} parent of ${own}`;
+  if (key === 'chl') return `${own} parent of ${end}`;
   if (key === 'bb') return `${end} blocks ${own}`;
   if (key === 'bl') return `${own} blocks ${end}`;
   if (key === 'pr') return `${end} closes ${own}`;
@@ -940,7 +955,7 @@ const edge = (key, end, n) => {
 };
 // Whether the count covers an edge of this kind: GitHub's timeline both ways for every kind it
 // has both events of; GitLab's links created since, one way, and none of the hierarchy.
-const covers = (key, added) => (cli === 'gh' ? evKinds.includes(key)
+const covers = (key, added) => (cli === 'gh' ? evKinds.includes(key === 'chl' ? 'ch' : key)
   : added && ['bb', 'bl', 'rel'].includes(key));
 let clock = null;
 
@@ -975,6 +990,7 @@ const delta = () => {
     // A page that did not come back holds issues that are still there, and would read as gone.
     d.left = head.complete ? [...pinned.byN.keys()].filter((n) => !now.has(n)).sort((a, b) => a - b) : null;
     d.linked = [];
+    d.cut = [];
     d.check = counted ? [] : null;
     const added = new Set();
     const removed = new Set();
@@ -982,12 +998,16 @@ const delta = () => {
     for (const l of lines) {
       const was = pinned.byN.get(l.n);
       if (!was) continue;
+      // Named whether or not anything visible differs: a change outside the window shows nowhere
+      // else, and an issue whose links cannot be compared is one to read by hand.
+      const cut = LINKS.filter((k) => windowed(k, l[k]) || windowed(k, was[k]));
+      if (cut.length) d.cut.push(l.n);
       const diff = LINKS.filter((k) => setOf(l[k]) !== setOf(was[k]));
       if (!diff.length) continue;
       d.linked.push(l.n);
       l.was = Object.fromEntries(diff.map((k) => [k, was[k] ?? null]));
       let uncounted = false;
-      for (const k of LINKS.filter((x) => x !== 'ch')) {
+      for (const k of LINKS.filter((x) => x !== 'ch' && !cut.includes(x))) {
         const a = ends(was[k]);
         const b = ends(l[k]);
         for (const [e, st] of b) {
@@ -1048,6 +1068,7 @@ if (cli === 'gh') {
       else head.unavailable.push(`ev.${key}`);
     }
     GH_EV = types.length ? `timelineItems(since: $since, itemTypes: [${types.join(', ')}]) { filteredCount }` : '';
+    if (!has('subIssues')) head.unavailable.push('chl');
   }
 }
 // GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.

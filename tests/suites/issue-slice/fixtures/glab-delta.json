@@ -21,7 +21,7 @@
         "hasNextPage": false,
         "endCursor": "G-last"
        },
-       "count": 3,
+       "count": 4,
        "nodes": [
         {
          "iid": "1",
@@ -165,6 +165,67 @@
            "children": {
             "count": 0,
             "nodes": []
+           }
+          },
+          {
+           "type": "LINKED_ITEMS",
+           "linkedItems": {
+            "pageInfo": {
+             "hasNextPage": false
+            },
+            "nodes": []
+           }
+          },
+          {
+           "type": "MILESTONE",
+           "milestone": null
+          },
+          {
+           "type": "DEVELOPMENT",
+           "closingMergeRequests": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LABELS",
+           "labels": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "ASSIGNEES",
+           "assignees": {
+            "count": 0,
+            "nodes": []
+           }
+          }
+         ]
+        },
+        {
+         "iid": "5",
+         "title": "Example item 5",
+         "state": "OPEN",
+         "updatedAt": "2026-09-01T00:00:00Z",
+         "userDiscussionsCount": 0,
+         "workItemType": {
+          "name": "Issue"
+         },
+         "widgets": [
+          {
+           "type": "HIERARCHY",
+           "hasParent": false,
+           "parent": null,
+           "hasChildren": true,
+           "children": {
+            "count": 1,
+            "nodes": [
+             {
+              "state": "OPEN",
+              "reference": "example-group/example-sub/example-project#21"
+             }
+            ]
            }
           },
           {

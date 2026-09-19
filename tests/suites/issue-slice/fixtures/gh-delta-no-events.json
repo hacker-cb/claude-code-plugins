@@ -135,7 +135,8 @@
          },
          "parent": null,
          "subIssues": {
-          "totalCount": 0
+          "totalCount": 0,
+          "nodes": []
          },
          "subIssuesSummary": {
           "total": 0,
@@ -179,7 +180,8 @@
          },
          "parent": null,
          "subIssues": {
-          "totalCount": 0
+          "totalCount": 0,
+          "nodes": []
          },
          "subIssuesSummary": {
           "total": 0,
