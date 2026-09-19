@@ -140,11 +140,11 @@ you hand in** rather than answering twice.
 ```bash
 # reply to a review comment thread, read back what landed, and resolve the thread only once it matches:
 pr="<pr>" comment="<comment_id>" file="<reply file>" thread="<thread_node_id>"  # -F reads the file, -f posts its path; $(…) drops the trailing newline on both sides
-host=$(gh pr view "$pr" --json url --jq '.url | split("/")[2]')  # gh pr view follows the remote; gh api defaults to the SaaS host
-if ! id=$(gh api --hostname "$host" "repos/{owner}/{repo}/pulls/$pr/comments/$comment/replies" -F body=@"$file" --jq .id) || [ -z "$id" ]; then echo "unsettled: read the thread before posting again"; false
+if ! host=$(gh pr view "$pr" --json url --jq '.url | split("/")[2]') || [ -z "$host" ]; then echo "unread: the pull request's host"; false  # gh api defaults to the SaaS host
+elif ! id=$(gh api --hostname "$host" "repos/{owner}/{repo}/pulls/$pr/comments/$comment/replies" -F body=@"$file" --jq .id) || [ -z "$id" ]; then echo "unsettled: read the thread before posting again"; false
 elif ! got=$(gh api --hostname "$host" "repos/{owner}/{repo}/pulls/comments/$id" --jq .body); then echo "unread: $id — read it again, never post again"; false
 elif [ "$got" != "$(cat "$file")" ]; then echo "landed wrong: $id — edit it in place"; false
 else echo "landed: $id"; gh api graphql --hostname "$host" -f query='
   mutation($threadId:ID!){ resolveReviewThread(input:{threadId:$threadId}){ thread{ isResolved } } }' \
-  -F threadId="$thread" --jq .data.resolveReviewThread.thread.isResolved; fi
+  -F threadId="$thread" --jq 'if .data.resolveReviewThread.thread.isResolved then "resolved" else error("not resolved") end'; fi
 ```
