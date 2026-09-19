@@ -79,15 +79,17 @@ saying the base passed. None of the four is inferred from the absence of the oth
 Read the state of each, against its own repository where it lives in another:
 
 ```bash
-# Captured, never piped into the loop: a call that failed and a body the forge
-# parsed nothing out of both arrive as no rows, and the two take different steps.
-ISSUES="$(gh pr view <pr> --json closingIssuesReferences \
-  --jq '.closingIssuesReferences[] | "\(.repository.owner.login)/\(.repository.name) \(.number)"')" \
+# One call, each issue's state and the repository its URL names. Captured, never piped onward:
+# a call that failed and one the forge parsed nothing out of both arrive as no rows, and differ.
+ISSUES="$(gh api graphql -F o='{owner}' -F r='{repo}' -F n=<pr> -f query='
+  query($o: String!, $r: String!, $n: Int!) { repository(owner: $o, name: $r) { pullRequest(number: $n) {
+    closingIssuesReferences(first: 100) { totalCount nodes { state url } } } } }' \
+  --jq '.data.repository.pullRequest.closingIssuesReferences | (.nodes[] | "\(.state)\t\(.url)"),
+    (if .totalCount == 0 then "the forge parsed no closing reference out of this body"
+     elif .totalCount > (.nodes | length) then "CUT — \(.nodes | length) of \(.totalCount) read"
+     else empty end)')" \
   || { echo "CANNOT READ the closing references — settle the issues by hand"; exit 1; }
-[ -n "$ISSUES" ] || echo "the forge parsed no closing reference out of this body"
-printf '%s' "$ISSUES" | while read -r ISSUE_REPO ISSUE_NUM; do
-  gh issue view "$ISSUE_NUM" --repo "$ISSUE_REPO" --json state,url --jq '"\(.state)\t\(.url)"'
-done
+printf '%s\n' "$ISSUES"
 ```
 
 That list is what the forge parsed out of the body, not what the work settles — read it

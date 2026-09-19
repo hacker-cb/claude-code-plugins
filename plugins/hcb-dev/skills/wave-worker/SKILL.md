@@ -46,7 +46,9 @@ holds, and what it stops is named in the return as the gap it is.
    carried it here.
 3. **Read the whole batch through before building any of it, and not before the
    order's `Start:` gate is open** — the order, the ledger it names, its issues on
-   the forge in full with their comments, and the code they name. The standing
+   the forge in full with their comments, all of them in one call (the form
+   [`../../references/issue-currency.md`](../../references/issue-currency.md)
+   gives under "What is read"), and the code they name. The standing
    constraints are read here rather than asked for; the scope is what the tree shows
    rather than what the order summarised; and a gated batch reads a tree its
    dependency has not landed on.
@@ -75,9 +77,8 @@ holds, and what it stops is named in the return as the gap it is.
   is named to the master the moment it falls, never saved for the return.
   Where the order carries no base pin, its facts are the tracker's and
   re-verified there. An issue among the facts is ruled either way, per
-  [`../../references/issue-currency.md`](../../references/issue-currency.md) —
-  this session ruling it where the named process carries no verdict of its own
-  — and a verdict past `current` is one of those premises.
+  `issue-currency.md` — this session ruling it where the named process carries
+  no verdict of its own — and a verdict past `current` is one of those premises.
 - **Forks the order marks "agree with the master" go there before building** —
   each with this session's own analysis, a recommendation, and the coordinates
   that let the master re-verify rather than take it on faith. The master's

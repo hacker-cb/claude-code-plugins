@@ -31,6 +31,23 @@ The body, every comment, the labels, native type, milestone and state reason
 dependency links (read per [`forge-docs.md`](forge-docs.md)), the change
 requests that touch it — then the tree itself at the issue's coordinates.
 
+**One call reads it for every issue at once, never a call per issue**: the script's deep
+tier reads each number named whole — the fields above, its closing change requests, the
+body and every comment — and its wide tier a slice without bodies and comments, one call
+per hundred issues, from which a set too big to read deep is picked. Its first line says
+whether what came back is whole: read it before any other line, against the contract in
+[`../scripts/issue-slice.mjs`](../scripts/issue-slice.mjs)'s header, and carry what it
+names as not read — a key `unavailable` here, a list `cut`, an end `hidden`, a number
+`unread` — into the verdict as unread, never as nothing there.
+
+```bash
+S="<plugin root>/scripts/issue-slice.mjs"   # quoted at each use: the root may hold spaces
+node "$S" --deep <n>[,<n>…]                                          # these issues, whole
+node "$S" [--state open|closed|all] [--label <one>] [--milestone <number|title>] # a slice
+# A milestone is GitHub's number, GitLab's title. Either tier: --repo <path> [--host <host>]
+# for another repository; --forge gh|glab where both CLIs answer for the same path.
+```
+
 A parked reason that still holds is read with the rest and named with the
 verdict: work can be `current` and still not be for picking up.
 

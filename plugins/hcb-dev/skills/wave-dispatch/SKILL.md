@@ -39,11 +39,13 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
-- **Check the bodies each batch stands on**: an issue ruled `needs rewrite`
-  ([`../../references/issue-currency.md`](../../references/issue-currency.md))
-  whose body still says otherwise holds its batch exactly as the blocker above
-  does — **not hung**, reported with that rewrite as the condition that releases
-  it. Nothing else releases it, a verdict carried in the order included.
+- **Check the bodies each batch stands on** — every issue of the wave read in
+  one call, the form
+  [`../../references/issue-currency.md`](../../references/issue-currency.md)
+  gives under "What is read": an issue ruled `needs rewrite` whose body still
+  says otherwise holds its batch exactly as the blocker above does — **not
+  hung**, reported with that rewrite as the condition that releases it. Nothing
+  else releases it, a verdict carried in the order included.
 - **Check the round that cleared this wave's gate is closed** — returns accepted,
   candidates ruled, and the tracker writes this wave stands on executed or deferred
   by the user's word (`hcb-dev:master-session`). An epic's first wave, and ground a

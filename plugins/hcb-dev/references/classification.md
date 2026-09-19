@@ -19,15 +19,21 @@ A deliberately deferred defect keeps its kind of work — the deferral lives in 
 
 ## Read the set before proposing or applying anything
 
-Read it whole — both CLIs stop at a small default page, and a short read is indistinguishable
-from a missing family. [`findings.md`](findings.md) sets when this read happens relative to a
-proposal, and how often.
+Read it whole, the labels to the newest issues — a short read is indistinguishable from a missing
+family. [`findings.md`](findings.md) sets when it happens relative to a proposal, and how often.
 
 ```bash
-# GitHub
+# GitHub — the types answer `null` where the repository has none, whatever REST lists
 gh label list --limit <n> --json name,color,description,isDefault
+gh api graphql -F o=<owner> -F r=<repo> -f query='query($o:String!,$r:String!){
+  repository(owner:$o,name:$r){issueTypes(first:100){nodes{name description}}}}'
+gh api --paginate "repos/<owner>/<repo>/milestones?state=all&per_page=100"  # counts PRs too
+gh issue list --state all --limit <n> --json number,title,labels,issueType,milestone
 # GitLab — <project> is URL-encoded ("group%2Frepo"); never apply an archived label.
 glab api --paginate "projects/<project>/labels?per_page=100"
+glab api --paginate "projects/<project>/milestones?include_ancestors=true&per_page=100"
+glab api "projects/<project>/issues?state=all&order_by=created_at&per_page=<n>" \
+  | jq -c '.[] | {iid, title, type, labels, milestone: .milestone.title}'
 ```
 
 Map the roles onto the prefixes that set already uses, reading the descriptions and not only the
@@ -49,26 +55,23 @@ issues carry it in one, or where it was adopted for them. Resolve role by role.
    rule of the project's own: the field, the family, or both. It stands whatever the issues
    carry, and it is the only thing that adopts a field nothing carries yet. A word given in
    conversation holds for that session; ask for it in the project's own rules to outlive one.
-2. **What the newest issues carry** — read the top of a list ordered by creation date, open and
-   closed alike, for what each role is carried in: a native field's value that names the role
-   (the type an issue carries merely by being an issue names none), a label from a family, or
-   both. What they carry it in **as a rule** is what carries it here — the field alone with
-   nothing labelled for it; the family alone; or both, one value in each, and say the repository
-   runs that role two ways. What only a few carry decides nothing, and a reading where neither is
-   plainly the rule adopts no field at all: it falls to the rungs below, which is what keeps a
-   doubt from moving the repository onto one.
-3. **A label family the set declares** — where the newest issues carry the role as a rule in
-   neither.
-4. **Neither** — apply what exists, and name the roles this repository has no vocabulary for,
-   never inventing one silently. An available native field is not vocabulary until rung 1 adopts
-   it; until then it is offered where a set is proposed below rather than applied for being
-   there.
+2. **What the newest issues carry** — the newest-first list above, read for what each role is
+   carried in: a native field's value that names the role (the type an issue carries merely by being
+   an issue names none), a label from a family, or both. What they carry it in **as a rule** is what
+   carries it here — the field alone with nothing labelled for it; the family alone; or both, one
+   value in each, and say the repository runs that role two ways. What only a few carry decides
+   nothing, and a reading where neither is plainly the rule adopts no field at all: it falls to the
+   rungs below, which is what keeps a doubt from moving the repository onto one.
+3. **A label family the set declares** — where the newest issues carry it as a rule in neither.
+4. **Neither** — apply what exists, and name the roles this repository has no vocabulary for, never
+   inventing one silently. An available native field is not vocabulary until rung 1 adopts it; until
+   then it is offered where a set is proposed below rather than applied for being there.
 
-What each forge's native type field is, and what a `404` from its definitions endpoint does and
-does not prove, are `forge-behaviour.md`'s; [`forge-docs.md`](forge-docs.md) has the entry
-points. What this file adds: a field whose values nothing available can read is **not** a field
-the issues carry nothing in — say so and leave the role unresolved, rather than settle it a rung
-down on evidence nobody could read.
+What each forge's native type field is, and what its definitions endpoint does and does not prove,
+are `forge-behaviour.md`'s; [`forge-docs.md`](forge-docs.md) has the entry points. What this file
+adds: a field whose values nothing available can read is **not** a field the issues carry nothing in
+— say so and leave the role unresolved, rather than settle it a rung down on evidence nobody could
+read.
 
 Reading one issue, the role is what that issue carries it in, whatever the repository runs: where
 field and label disagree the role is unresolved there — say so rather than pick one.

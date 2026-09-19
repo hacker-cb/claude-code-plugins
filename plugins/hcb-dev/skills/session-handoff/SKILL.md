@@ -78,8 +78,11 @@ its ask is unbidden.
    | nowhere — findings only | re-establish the load-bearing claims from their sources before building on them |
 
    Then the reader re-reads every number on the forge **in full, comments
-   included** — a discussion may have moved since this was written, and what
-   stands there now outranks what the prompt says.
+   included**, the issues among them in one call — the form
+   [`../../references/issue-currency.md`](../../references/issue-currency.md)
+   gives, which the prompt names as hcb-dev's `references/issue-currency.md` —
+   since a discussion may have moved since this was written, and what stands
+   there now outranks what the prompt says.
 
 5. **The closing part**, by posture — and the two postures put it in different
    places.

@@ -38,7 +38,21 @@ it accepts their returns per
    authorization where the assignment named the epic, and on the user's word
    where it named none, which is the first thing this role asks for rather
    than something it decides. A slice of the backlog needs one exactly as a
-   named epic does.
+   named epic does. **Every issue the epic runs on hangs under it** — the ones
+   there now on that same word, the ones filed later as they are filed — so the
+   forge keeps its count: read each one's parent first (`p`
+   on its line, per
+   [`../../references/issue-currency.md`](../../references/issue-currency.md))
+   — hanging it moves it off a parent it has without a word
+   ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)).
+
+   ```bash
+   # GitHub — a sub-issue, counted in the epic's subIssuesSummary
+   gh issue edit <epic> --add-sub-issue <n>
+   # GitLab — an issue holds no issue under it: a related link, listed but not counted
+   glab api -X POST "projects/<project>/issues/<epic>/links" \
+     -f target_project_id=<project id> -f target_issue_iid=<n> -f link_type=relates_to
+   ```
 3. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
    else is decided; from here on, every event lands in it before the
    conversation moves on. Its header carries the plugin version this role
@@ -52,8 +66,7 @@ yet, `hcb-dev:backlog-survey` produces its input first, and a plan redrawn
 mid-epic starts from `hcb-dev:wave-refresh` rather than from a second survey —
 and hand the user its closing table. **The preconditions that table carries go
 up with it** — a batch
-standing on an issue the survey ruled `needs rewrite`
-([`../../references/issue-currency.md`](../../references/issue-currency.md)) is
+standing on an issue the survey ruled `needs rewrite` (`issue-currency.md`) is
 planned and held, and the rewrite releasing it is a tracker edit like any other:
 `hcb-dev:issue-tracking`, on that same word. The launch waits for their word on
 the table; the click that
@@ -97,7 +110,7 @@ Every event lands in the ledger before the conversation moves on
 | a **landing** — by its batch, by another session, or by the user | speak the queue to the batches it moves: the go to the batch whose slot it freed, BEHIND — with the seam owing a rebase — to the batch it displaced; a queue whose go never reaches its batch is a deadlock, not an order. Check the landing against the gates, and the checks on the landing itself with them — read here where nothing reports them, by the read the change-request driver makes after its own merge and waited out as it waits — an empty answer taken at once is not that read: one nobody has read them for is unread rather than clean, and until it is read neither its gate nor the ground it freed moves. Nothing reporting over such a landing is an answer, and so is a base that runs no checks at all once that read has reached it — neither is that case. Reading it is not clearing it: what the read says is judged against the gates like anything else, and a red row or a wait that ran out holds the gate exactly as an unread one does. A wave whose gate just cleared goes back to Launching once the round that cleared it is closed — the returns of the batches whose landings cleared it accepted, their candidates ruled, and the tracker writes **on which the wave stands** — a body a batch must read, an issue entering or leaving the slice — executed or deferred by the user's word, the rest riding the expectations without holding the wave; the launch is put to the user in that round's wave report, never at the landing. A landing that opens the next step of a staged wave already running goes back there under that step's own gate. A landing that happened without this session's go still reaches its batch before anything else is sent | the landing with whoever took it, what its tail left standing, and what its checks said; the queue and the gates |
 | a **survey** of the slice handed over | record its reading whole before anything is drawn from it — the pin, the moment it read the tracker at, the ground it covered, and its verdicts for what the verdicts section holds, never one part without the rest — and only where it covered this slice whole, stands on a base no older than the reading the ledger already carries, and read the tracker later than it; a reading failing any of the three leaves that reading standing and is reported rather than recorded. Then the pass below | the reading, whole |
 | a landing **freed ground**, its checks outcome recorded as read — an unread one is not that, and the row above holds that ground until it is read —, a **tracker edit** executed — one the pass below reads in its tracker half, whether or not the plan was waiting on it and whether or not the issue was in the slice when it was made — or the user asks what else can run beside what is running, what blocks, or what to take next | recompute, never recall (`hcb-dev:wave-refresh`): it reads the delta from the point it resolves rather than the backlog again, and what it frees goes back to Launching behind the user's word on its layout | what that pass writes |
-| the **plan** is drawn or redrawn, or a **wave** opens or closes | advance the epic's human half too — the wave table in its body, not only the ledger comment | the wave; what a redraw moved |
+| the **plan** is drawn or redrawn, or a **wave** opens or closes | advance the epic's human half too — the wave table in its body, not only the ledger comment; what is done is counted by the forge where the issues hang under the epic, and an issue entering the epic is hung under it | the wave; what a redraw moved |
 | a **lesson** one batch paid for | tell the batches it can still bite, the moment it is learned | journal |
 | the **plugin moved** under this session | it moved under its batches too: refresh here first (`hcb-dev:session-plugin-refresh`), then send every batch still engaged the word that theirs moved as well — each is running under the copy it loaded, and a batch never told goes on building against text this session has already replaced. What that refresh changes for a batch already building travels as an amendment (`session-comms.md`), not as a new order | the header's version |
 

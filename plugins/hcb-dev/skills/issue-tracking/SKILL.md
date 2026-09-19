@@ -39,15 +39,20 @@ A finding out of work on an issue is measured against that issue first
 Closed ones too — a finding already decided against must not return under a new
 number, with the decision left behind on the old one.
 
-Both stop at a small default page, so ask for more than the tracker is likely to
-return — a search that silently ends at the first page reads as "nothing covers
-this".
+Both answer a page, and a cap they do not announce
+([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) — a
+search that silently ends at the first page reads as "nothing covers this". Read
+on past a full page, and narrow the terms of a search that came back at its cap.
+Each hit arrives with its state, and on GitHub its state reason, which the table
+below reads: no second call per hit.
 
 ```bash
-# GitHub
-gh issue list --state all --limit <n> --search "<terms>"
-# GitLab
-glab issue list --all --per-page <n> --search "<terms>"
+# GitHub — --state all, or gh adds state:open itself; 1 000 hits is the cap, not a total
+gh issue list --state all --limit 1000 --search "<terms>" \
+  --json number,title,state,stateReason,url
+# GitLab — -A is every state, not every page, and -P stops at 100: after a full page, -p 2
+glab issue list -A -P 100 -p <page> --search "<terms>" --output json \
+  | jq -c '.[] | {iid, title, state, web_url}'
 ```
 
 Three outcomes — **covered** → cite it and open nothing; **covered, but the
@@ -83,12 +88,13 @@ Where nothing triggers a return, the priority is what says when to pick it up �
 one carrying neither is not deferred work, and is not opened.
 
 Language follows the project; where nothing states one, the **newest** issues
-carry the convention — read the top of a list ordered by creation date, never the
-lowest numbers and never a relevance-ranked search hit. Identifiers and paths stay
-verbatim whatever the language.
+carry the convention — read the top of the newest-first list
+`../../references/classification.md` gives, never the lowest numbers and never a
+relevance-ranked search hit. Identifiers and paths stay verbatim whatever the
+language.
 
-Labels, native types and milestones — `../../references/classification.md`, before
-applying any of them and before proposing one the repository lacks.
+Labels, native types and milestones — that same reference, before applying any of
+them and before proposing one the repository lacks.
 
 ## Hierarchy and dependencies are separate questions
 
@@ -125,7 +131,17 @@ forge acts on it** — which it does for a request targeting the default branch,
 not for one targeting a feature branch or any other trunk the repository merges
 into. Write the keyword anyway; where the forge will not act on it, and wherever
 the work completes with no change request at all, close or link the issue
-explicitly once the work lands, with the user's go-ahead. In a set, each child
+explicitly once the work lands, with the user's go-ahead — the close carrying
+what settled it, which the table above reads back:
+
+```bash
+# GitHub — completed | not planned; a duplicate takes --duplicate-of <m> instead
+gh issue close <n> --reason "<reason>" --comment "<what settled it>"
+# GitLab — the close takes no reason, so the comment carries it
+glab issue note <n> -m "<what settled it>" && glab issue close <n>
+```
+
+In a set, each child
 closes as its slice lands on its parent branch. The issue the whole set settles
 closes with the change request that integrates the set
 ([`../../references/slice-completion.md`](../../references/slice-completion.md)),
