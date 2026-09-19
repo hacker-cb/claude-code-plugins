@@ -25,7 +25,8 @@ a skill names the invariant it is leaning on and goes on.
   what a listing enumerates and what an object actually carries differ; a wait
   keyed to the wrong one has no moment of truth.
 - **The first page is not the list.** Paginate to the end, or set the limit above
-  the listing's own total, before counting, sweeping or concluding absence.
+  the listing's own total where the listing honours one above its page cap,
+  before counting, sweeping or concluding absence.
 - **Configuration predicts nothing; read the result.** A setting says what was
   asked for, never what happened — so read what actually posted, landed or
   answered, whatever the configuration says it would do.

@@ -14,8 +14,9 @@ documents. Read it before writing an invocation, and treat a flag it does not
 list as absent whatever the site says.
 
 **Both CLIs answer with a small first page.** Paginate to the end, or set the
-limit above the listing's own total, before counting or sweeping anything — a
-short read is indistinguishable from an empty one.
+limit above the listing's own total where the listing honours it, before
+counting or sweeping anything — a short read is indistinguishable from an empty
+one. [`forge-behaviour.md`](forge-behaviour.md) names the listings that do not.
 
 **The sites are authoritative about meaning** — what a field holds, which values
 an enum takes, and every operation the porcelain never wrapped. Both serve their
@@ -80,13 +81,29 @@ implies one mechanism per forge will be wrong on both.
 | a reply to the automated reviewer's comment | [not seen by it, and never answered](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review.md) | answered where it mentions `@GitLabDuo` — [a follow-up question in the thread](https://docs.gitlab.com/user/gitlab_duo/code_review/index.md) |
 | the reviewer's handle written into the conversation | `@copilot` [starts the cloud agent](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-on-github.md) on any pull request, from anyone with write access, and it pushes commits to the branch | `@GitLabDuo` answers in the thread and changes nothing |
 
-## Issues: the porcelain stops at the flat issue
+## Issues: what each CLI reads and writes
 
-Both CLIs stop at the single flat issue — create it, list, view, comment, close,
-and edit its own fields (`gh issue edit`, `glab issue update`). Neither wraps
-hierarchy or dependencies on either forge, so both are reached through the `api`
-subcommand — `gh api` / `glab api`, against REST, or with `graphql` as the
-endpoint where the schema carries what REST does not.
+Both CLIs create, list, view, comment on and close an issue, and edit its own
+fields (`gh issue edit`, `glab issue update`). Past the flat issue they part:
+**`gh` reads and writes hierarchy, dependencies and the native type itself;
+`glab` reads none of them and writes links only while creating an issue.** What a
+CLI does not carry is reached through its `api` subcommand — `gh api` / `glab
+api`, against REST, or with `graphql` as the endpoint where the schema carries
+what REST does not.
+
+| | GitHub — `gh` | GitLab — `glab` |
+|---|---|---|
+| read a slice's links | `gh issue list --limit <above the slice's total> --json parent,subIssues,subIssuesSummary,blockedBy,blocking,issueType` — one request per 100 issues, the limit defaulting to 30; `gh issue view --json` carries the same fields | none — `glab api graphql`, one request per 50–100 issues; REST reads links one issue per call |
+| write hierarchy | `gh issue create --parent`; `gh issue edit --parent`, `--remove-parent`, `--add-sub-issue`, `--remove-sub-issue` | `glab issue create --epic` at creation; afterwards `glab api` |
+| write dependencies | `gh issue create --blocked-by`, `--blocking`; `gh issue edit --add-blocked-by`, `--remove-blocked-by`, `--add-blocking`, `--remove-blocking` | `glab issue create --linked-issues <iids> --link-type <type>` at creation; afterwards `glab api` against issue links |
+| write the native type | `gh issue create --type`; `gh issue edit --type`, `--remove-type` | none — `glab api` |
+| write the milestone | `-m` on create and edit, `--remove-milestone` | `-m` on `glab issue create` and `glab issue update` |
+| close as a duplicate | `gh issue close --reason duplicate --duplicate-of <n>` — closing is the only route, the schema has no mutation that marks a duplicate on its own | none — `glab issue close` takes no reason |
+| the CLI build it needs | `gh` 2.94.0 for every hierarchy, dependency and type field and flag; 2.88.0 for `--duplicate-of`; 2.73.0 for `closedByPullRequestsReferences`; 2.48.0 for `gh api --slurp` | `glab` 1.64.0 for a working `glab api graphql`; 1.77.0 for `glab milestone list --include-ancestors` |
+| the server it needs | GHES 3.17 for types, `parent` and `subIssues`; 3.19 for `blockedBy`, `blocking`, `issueDependenciesSummary` and the dependencies REST; the sub-issues REST is absent on GHES through 3.22 | the tier: `relates_to` on Free; `blocks` / `is_blocked_by`, epics, iterations and weight on Premium and up |
+
+What a write does beyond its flag, and the cost and the silent failures of these
+reads, are `forge-behaviour.md`'s.
 
 | | GitHub | GitLab |
 |---|---|---|

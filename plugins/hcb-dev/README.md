@@ -501,8 +501,11 @@ Per skill, on top of those:
   drives per slice need — `multi-review` / `codex`, and in request mode
   `github-pr-workflow`. Runs in the main conversation.
 - **`issue-tracking`**: the forge CLI — every step of it is a tracker read or
-  write. Issue hierarchy and dependencies are past what either CLI's `issue`
-  commands wrap, so those go through its `api` subcommand.
+  write. Issue hierarchy, dependencies and native types need `gh` 2.94.0 or
+  later, whose `issue` commands read and write them — and on GitHub Enterprise
+  Server 3.17 for hierarchy and types, 3.19 for dependencies. `glab` reads none
+  of them and links issues only while creating one, so the rest goes through
+  `glab api` (`references/forge-docs.md`).
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
