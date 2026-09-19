@@ -138,8 +138,10 @@ when empty:
    never by reading the closed backlog through. A label or a milestone is counted
    on the first line alone of a wide read over `--state all` with it as the
    filter — on GitLab within that slice's own types — one label a call; a native
-   type, which the script does not filter on, by the forge's own filter for it. They are counted rather than listed, save the ones carrying a second value that contradicts it: those are
-   named one by one, the value on them being the user's. The count is what the
+   type, which the script does not filter on, by the forge's own filter for it.
+   They are counted rather than listed, save the ones carrying a second value
+   that contradicts it: those are named one by one, the value on them being the
+   user's. The count is what the
    item proposes — taking it enumerates them, each edit going through the tracker
    as any other, and what the enumeration finds past that count goes back to the
    user before it is touched; where the forge answers for no such value the item
