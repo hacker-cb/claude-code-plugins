@@ -1,0 +1,29 @@
+{
+ "gh_repo": "{\"nameWithOwner\":\"example-org/example-repo\",\"url\":\"https://github.example/example-org/example-repo\"}",
+ "glab_project": "fail",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null
+   },
+   "out": {
+    "data": {
+     "rateLimit": {
+      "cost": 5,
+      "remaining": 4000
+     },
+     "repository": {
+      "issues": {
+       "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "C-last"
+       },
+       "totalCount": 0,
+       "nodes": []
+      }
+     }
+    }
+   }
+  }
+ ]
+}

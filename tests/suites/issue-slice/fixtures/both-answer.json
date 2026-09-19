@@ -1,0 +1,5 @@
+{
+ "gh_repo": "{\"nameWithOwner\":\"example-org/example-repo\",\"url\":\"https://github.example/example-org/example-repo\"}",
+ "glab_project": "{\"path\":\"example-project\",\"namespace\":{\"full_path\":\"example-group/example-sub\"},\"web_url\":\"https://gitlab.example/example-group/example-sub/example-project\"}",
+ "graphql": []
+}

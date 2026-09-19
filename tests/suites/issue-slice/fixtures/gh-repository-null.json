@@ -1,0 +1,31 @@
+{
+ "gh_repo": "{\"nameWithOwner\":\"example-org/example-repo\",\"url\":\"https://github.example/example-org/example-repo\"}",
+ "glab_project": "fail",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null
+   },
+   "rc": 1,
+   "stderr": "gh: Could not resolve to a Repository with the name 'example-org/example-repo'.",
+   "out": {
+    "data": {
+     "rateLimit": {
+      "cost": 1,
+      "remaining": 4000
+     },
+     "repository": null
+    },
+    "errors": [
+     {
+      "type": "NOT_FOUND",
+      "path": [
+       "repository"
+      ],
+      "message": "Could not resolve to a Repository with the name 'example-org/example-repo'."
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "gh_repo": "{\"nameWithOwner\":\"example-org/example-repo\",\"url\":\"https://github.example/example-org/example-repo\"}",
+ "glab_project": "fail",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null,
+    "milestoneNumber": 7
+   },
+   "out": {
+    "data": {
+     "rateLimit": {
+      "cost": 1,
+      "remaining": 4000
+     },
+     "repository": {
+      "milestone": null
+     }
+    }
+   }
+  }
+ ]
+}

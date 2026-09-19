@@ -1,0 +1,212 @@
+{
+ "gh_repo": "fail",
+ "glab_project": "{\"path\":\"example-project\",\"namespace\":{\"full_path\":\"example-group/example-sub\"},\"web_url\":\"https://gitlab.example/example-group/example-sub/example-project\"}",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null
+   },
+   "has": "refs: [\"#4\",\"#5\",\"#999\"]",
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 61,
+      "limit": 250
+     },
+     "b0": {
+      "nodes": [
+       {
+        "iid": "4",
+        "title": "Example item 4",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 4"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "N1"
+           },
+           "nodes": [
+            {
+             "author": {
+              "username": "example-user-0000000a"
+             },
+             "createdAt": "2026-01-03T00:00:00Z",
+             "body": "first"
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "iid": "5",
+        "title": "Example item 5",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Task"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 5"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "match": {
+    "endCursor": "N1"
+   },
+   "has": "refs: [\"#4\"]",
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 20,
+      "limit": 250
+     },
+     "b0": {
+      "nodes": [
+       {
+        "widgets": [
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": [
+            {
+             "author": {
+              "username": "example-user-0000000b"
+             },
+             "createdAt": "2026-01-03T00:00:00Z",
+             "body": "second"
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    }
+   }
+  }
+ ]
+}
