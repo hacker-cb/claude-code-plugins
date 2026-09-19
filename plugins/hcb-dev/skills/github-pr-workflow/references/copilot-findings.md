@@ -120,9 +120,10 @@ Copilot's are — rated on the same ladder, fixed before the exit — and the ro
 report with its coverage.
 
 **Every Copilot comment gets a reply**, fixed or skipped — what changed and where, or the reason
-it is out of scope or not a defect — and then the thread is resolved, where the comment sits in
-one, so the review state says what was settled rather than what the repo happens to enforce. A
-review summary carries no thread and needs no resolving.
+it is out of scope or not a defect — and once it reads back as posted, the thread is resolved,
+where the comment sits in one, so the review state says what was settled rather than what the repo
+happens to enforce (`invariants.md`, *A write's exit 0 is not what it wrote*). A review summary
+carries no thread and needs no resolving.
 
 **Nothing written here is addressed to the reviewer** — a reply, the list a body's findings go to,
 a body quoted into either: each is for people. `@copilot` is never typed into any of them, quoted
@@ -137,8 +138,10 @@ lands *after* the reply, so a list taken as you answer is already stale: **retak
 you hand in** rather than answering twice.
 
 ```bash
-# reply to a review comment thread:
-gh api repos/{owner}/{repo}/pulls/<pr>/comments/<comment_id>/replies -f body="<reply text>"
+# reply to a review comment thread, then read back what landed ($(…) drops the trailing newline on both sides):
+pr="<pr>" comment="<comment_id>" file="<reply file>"
+id=$(gh api "repos/{owner}/{repo}/pulls/$pr/comments/$comment/replies" -F body=@"$file" --jq .id)  # -F reads the file; -f posts its path
+[ "$(gh api "repos/{owner}/{repo}/pulls/comments/$id" --jq .body)" = "$(cat "$file")" ] && echo landed || echo "did not land: $id"
 # resolve a thread (GraphQL mutation):
 gh api graphql -f query='
   mutation($threadId:ID!){ resolveReviewThread(input:{threadId:$threadId}){ thread{ isResolved } } }' \
