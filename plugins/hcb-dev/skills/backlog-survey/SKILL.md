@@ -48,9 +48,10 @@ under "What is read":
   count of issues**: the numbers this session can hold deep beside its own work
   it reads itself, one call for all of them; past that, they fan out to parallel
   reader subagents, each handed numbers weighed by their comment count (`c` on
-  the wide line) rather than an equal share, the verdict reference by path, and
-  the one priority scale resolved below, with every conclusion synthesized back
-  here.
+  the wide line) rather than an equal share, the verdict reference by path, the
+  plugin root `${CLAUDE_PLUGIN_ROOT}` its command resolves against — a reader
+  session binds none of its own — and the one priority scale resolved below,
+  with every conclusion synthesized back here.
 
 Whichever mechanics run, the conclusions below are this session's — a reader's
 summary is input, not a verdict.
@@ -90,7 +91,8 @@ when empty:
    group is, where the current front line runs. A wide line names a milestone
    and nothing more, so the milestones are listed once, with their state and
    description, by the read `classification.md` gives; the counts come from the
-   wide lines, never from a milestone's own counters.
+   wide lines — on GitLab counted by `ty`, tasks standing beside the issues they
+   belong to — never from a milestone's own counters.
 2. **Tiers of importance**, each issue placed by three tests: does it block
    others; does it fire today (a reproduced defect, a live hole); does it
    catch regressions (a guard, a gate). Name the tier's meaning, not only
@@ -110,7 +112,9 @@ when empty:
    sequential). The edges are the wide lines' links; what the first line
    names as `unavailable`, and the issues it lists under `cut` and `hidden`,
    are drawn as the part of the graph this reading could not see — named in
-   the section, never read as edges that are not there.
+   the section, never read as edges that are not there. On GitHub a parent
+   out of this token's sight is in none of them and reads as no parent at
+   all: the search `forge-behaviour.md` names is what finds one.
 4. **The parallel layout** — candidate batches in the columns of
    `wave-planning.md`'s closing table, every pair carrying what that file's
    axes say of it — what clears the ones placed side by side, what separates

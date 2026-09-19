@@ -52,8 +52,8 @@ hit alone.
 gh issue list --state all --limit 1000 --search "<terms>" \
   --json number,title,state,stateReason,url
 # GitLab — -A is every state, not every page, and -P stops at 100: after a full page, -p 2
-glab issue list -A -P 100 -p <page> --search "<terms>" --output json \
-  | jq -c '.[] | {iid, title, state, web_url}'
+HITS="$(glab issue list -A -P 100 -p <page> --search "<terms>" --output json)" \
+  && jq -c '.[] | {iid, title, state, web_url}' <<<"$HITS"   # captured: jq alone exits 0 on nothing
 ```
 
 Three outcomes — **covered** → cite it and open nothing; **covered, but the
@@ -90,9 +90,10 @@ one carrying neither is not deferred work, and is not opened.
 
 Language follows the project; where nothing states one, the **newest** issues
 carry the convention — read the top of the newest-first list
-`../../references/classification.md` gives, never the lowest numbers and never a
-relevance-ranked search hit. Identifiers and paths stay verbatim whatever the
-language.
+[`../../references/classification.md`](../../references/classification.md) gives,
+and the bodies of those issues (the deep tier) where their titles do not settle
+it; never the lowest numbers and never a relevance-ranked search hit. Identifiers
+and paths stay verbatim whatever the language.
 
 Labels, native types and milestones — that same reference, before applying any of
 them and before proposing one the repository lacks.

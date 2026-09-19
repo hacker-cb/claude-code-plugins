@@ -44,10 +44,11 @@ names as not read — a key `unavailable` here, a list `cut`, an end `hidden`, a
 `unread` — into the verdict as unread, never as nothing there.
 
 ```bash
-# Every value quoted: a root, a label or a milestone title may hold spaces.
-S="<plugin root>/scripts/issue-slice.mjs"
-node "$S" --deep "<n>[,<n>…]"                                            # these issues, whole
-node "$S" [--state open|closed|all] [--label "<one>"] [--milestone "<number|title>"]  # a slice
+# A label and a milestone title are the forge's own text, so each goes in through a
+# variable: a quote or a backquote written into the command would be the shell's.
+S="<plugin root>/scripts/issue-slice.mjs"; L='<one>'; M='<number|title>'
+node "$S" --deep "<n>[,<n>…]"                                       # these issues, whole
+node "$S" [--state open|closed|all] [--label "$L"] [--milestone "$M"]          # a slice
 # A milestone is GitHub's number, GitLab's title. Either tier: --repo <path> [--host <host>]
 # for another repository; --forge gh|glab where both CLIs answer for the same path.
 ```

@@ -1,9 +1,8 @@
 # Classifying an issue
 
-Read by anything that classifies an issue against what the repository itself defines: the
-families as **roles**, the cardinality between them, how the set carrying each role is read, and
-how one is proposed where none exists. The roles are what travels between repositories; every
-literal is read from the repository at hand.
+Read by anything that classifies an issue against what the repository itself defines: the families
+as **roles**, their cardinality, how each role's set is read, and how one is proposed where none
+exists. The roles travel between repositories; every literal is read from the repository at hand.
 
 ## The roles
 
@@ -23,17 +22,19 @@ Read it whole, the labels to the newest issues — a short read is indistinguish
 family. [`findings.md`](findings.md) sets when it happens relative to a proposal, and how often.
 
 ```bash
-# GitHub — the types answer `null` where the repository has none, whatever REST lists
+# GitHub — `gh api` asks its own default host, so the repository's goes in explicitly; the types
+# answer `null` where there are none, whatever REST lists, and a milestone's counts include PRs.
+HOST="$(gh repo view <owner>/<repo> --json url --jq '.url | split("/")[2]')"
 gh label list --limit <n> --json name,color,description,isDefault
-gh api graphql -F o=<owner> -F r=<repo> -f query='query($o:String!,$r:String!){
+gh api --hostname "$HOST" graphql -F o=<owner> -F r=<repo> -f query='query($o:String!,$r:String!){
   repository(owner:$o,name:$r){issueTypes(first:100){nodes{name description}}}}'
-gh api --paginate "repos/<owner>/<repo>/milestones?state=all&per_page=100"  # counts PRs too
+gh api --hostname "$HOST" --paginate "repos/<owner>/<repo>/milestones?state=all&per_page=100"
 gh issue list --state all --limit <n> --json number,title,labels,issueType,milestone
 # GitLab — <project> is URL-encoded ("group%2Frepo"); never apply an archived label.
 glab api --paginate "projects/<project>/labels?per_page=100"
 glab api --paginate "projects/<project>/milestones?include_ancestors=true&per_page=100"
-glab api "projects/<project>/issues?state=all&order_by=created_at&per_page=<n up to 100>" \
-  | jq -c '.[] | {iid, title, type, labels, milestone: .milestone.title}'
+NEW="$(glab api "projects/<project>/issues?state=all&order_by=created_at&per_page=<n up to 100>")" \
+  && jq -c '.[] | {iid, title, type, labels, milestone: .milestone.title}' <<<"$NEW"
 ```
 
 Map the roles onto the prefixes that set already uses, reading the descriptions and not only the
@@ -42,9 +43,8 @@ never from the order the names sort in; a colour ramp corroborates an order rath
 establishing one. Where nothing settles which end is which, the order is unresolved — say so, and
 compare nothing by it.
 
-**Never pass a name you did not just read**, and confirm the labels that came back rather than
-the exit status — what each forge does with an unread name is
-[`forge-behaviour.md`](forge-behaviour.md)'s.
+**Never pass a name you did not just read**, and confirm what came back rather than the exit
+status — what each forge does with an unread name is [`forge-behaviour.md`](forge-behaviour.md)'s.
 
 ## Resolve the mechanism — first hit wins
 
@@ -68,10 +68,10 @@ issues carry it in one, or where it was adopted for them. Resolve role by role.
    then it is offered where a set is proposed below rather than applied for being there.
 
 What each forge's native type field is, and what its definitions endpoint does and does not prove,
-are `forge-behaviour.md`'s; [`forge-docs.md`](forge-docs.md) has the entry points. What this file
-adds: a field whose values nothing available can read is **not** a field the issues carry nothing in
-— say so and leave the role unresolved, rather than settle it a rung down on evidence nobody could
-read.
+are `forge-behaviour.md`'s; [`forge-docs.md`](forge-docs.md) has the entry points — a GitLab type
+configured on the group among them, which only GraphQL carries. What this file adds: a field whose
+values nothing available can read is **not** a field the issues carry nothing in — say so and leave
+the role unresolved, rather than settle it a rung down on evidence nobody could read.
 
 Reading one issue, the role is what that issue carries it in, whatever the repository runs: where
 field and label disagree the role is unresolved there — say so rather than pick one.
@@ -140,9 +140,9 @@ later takes a free number between its neighbours.
 Which is in force: whatever the existing milestones are named for; where there are none, a
 repository that publishes versioned releases takes **release** and one that publishes none takes
 **phase**. Whichever dimension is left over goes to a label family, and a version already shipped
-needs no grouping at all. Either pattern may hold one milestone meaning *in no release*. Never
-run a phase ladder beside releases: an issue would be in a phase and slated for a version at
-once, and there is one slot.
+needs no grouping. Either pattern may hold one milestone meaning *in no release*. Never run a phase
+ladder beside releases: an issue would be in a phase and slated for a version at once, and there is
+one slot.
 
 An issue joins a milestone only where the release or phase cannot close without it; no milestone
 is the default. Never renumber or rename one — the title is the handle every CLI and saved filter

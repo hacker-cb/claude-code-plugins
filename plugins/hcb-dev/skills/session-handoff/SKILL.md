@@ -80,9 +80,9 @@ its ask is unbidden.
    Then the reader re-reads every number on the forge **in full, comments
    included**, the issues among them in one call — the form
    [`../../references/issue-currency.md`](../../references/issue-currency.md)
-   gives, which the prompt names as hcb-dev's `references/issue-currency.md` —
-   since a discussion may have moved since this was written, and what stands
-   there now outranks what the prompt says.
+   gives, which the prompt carries as the path this session resolves, the reader
+   binding no plugin root of its own — since a discussion may have moved since
+   this was written, and what stands there now outranks what the prompt says.
 
 5. **The closing part**, by posture — and the two postures put it in different
    places.
@@ -141,9 +141,9 @@ Do this, in order:
 1. <the opening step from the table above>
 2. Read the changes yourself — start at <where>
 3. Re-read every issue and change request above in full, comments included —
-   the issues in one call, the form hcb-dev's `references/issue-currency.md`
-   gives — the discussion may have moved on, and what is there now outranks
-   this. One marked deleted you confirm is still gone
+   the issues in one call, per `${CLAUDE_PLUGIN_ROOT}/references/issue-currency.md`
+   — the discussion may have moved on, and what is there now outranks this. One
+   marked deleted you confirm is still gone
 4. <answering an order — check the four answers above against what the order
    asked for>
    <unbidden — weigh this against your own work in flight, summarize it back to

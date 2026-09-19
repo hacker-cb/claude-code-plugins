@@ -45,6 +45,8 @@ it accepts their returns per
    and a parent this token cannot see by the search
    [`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)
    names for it — since hanging it moves it off a parent it has without a word.
+   One already under another parent stays there and rides the epic's own table
+   instead.
 
    ```bash
    # GitHub — a sub-issue, counted in the epic's subIssuesSummary
