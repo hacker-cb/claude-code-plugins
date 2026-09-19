@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # gh, as issue-slice.mjs calls it: `repo view` for the probe, and `api … graphql --input -`
 # for every page. A GraphQL request is answered by the first `graphql` entry of the envelope
-# whose `match` equals the request's own variables and whose `has` is in its query text — so
-# a filter or a cursor that never reached the request has no answer, and the case fails.
+# whose `match` equals the request's own variables, whose `has` is in its query text and whose
+# `lacks` is not — so a filter or a cursor that never reached the request, or a field asked
+# of a server that lacks it, has no answer, and the case fails.
 # An entry marked `once` answers one request only, which is how a page that fails and then
 # succeeds on the retry is written.
 if [ -n "${STUB_MARKER_FILE:-}" ]; then
@@ -59,6 +60,7 @@ pick=$(jq -r --argjson body "$body" --rawfile seen "${seen:-/dev/null}" '
       | select((.value.once // false | not) or ((.key | tostring) as $k | $used | index($k) | not))
       | select((.value.match // {}) | to_entries | all(.value == $body.variables[.key]))
       | select((.value.has // "") as $h | $body.query | contains($h))
+      | select((.value.lacks // null) as $l | $l == null or ($body.query | contains($l) | not))
     ][0].key // empty' "$env")
 [ -n "$pick" ] || { echo "stub gh: no envelope answer for this request" >&2; exit 3; }
 entry=$(jq -c ".graphql[$pick]" "$env")

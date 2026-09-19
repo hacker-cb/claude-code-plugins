@@ -1,5 +1,97 @@
 {
  "gh_repo": "{\"nameWithOwner\":\"example-org/example-repo\",\"url\":\"https://github.example/example-org/example-repo\"}",
  "glab_project": "fail",
- "graphql": []
+ "graphql": [
+  {
+   "has": "__type(name: \"Issue\")",
+   "out": {
+    "data": {
+     "rateLimit": {
+      "cost": 1,
+      "remaining": 4000
+     },
+     "issue": {
+      "fields": [
+       {
+        "name": "number",
+        "args": []
+       },
+       {
+        "name": "title",
+        "args": []
+       },
+       {
+        "name": "state",
+        "args": []
+       },
+       {
+        "name": "stateReason",
+        "args": []
+       },
+       {
+        "name": "updatedAt",
+        "args": []
+       },
+       {
+        "name": "milestone",
+        "args": []
+       },
+       {
+        "name": "labels",
+        "args": []
+       },
+       {
+        "name": "assignees",
+        "args": []
+       },
+       {
+        "name": "comments",
+        "args": []
+       },
+       {
+        "name": "body",
+        "args": []
+       },
+       {
+        "name": "issueType",
+        "args": []
+       },
+       {
+        "name": "parent",
+        "args": []
+       },
+       {
+        "name": "subIssues",
+        "args": []
+       },
+       {
+        "name": "subIssuesSummary",
+        "args": []
+       },
+       {
+        "name": "issueDependenciesSummary",
+        "args": []
+       },
+       {
+        "name": "blockedBy",
+        "args": []
+       },
+       {
+        "name": "blocking",
+        "args": []
+       },
+       {
+        "name": "closedByPullRequestsReferences",
+        "args": [
+         {
+          "name": "includeClosedPrs"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   }
+  }
+ ]
 }

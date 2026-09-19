@@ -63,6 +63,7 @@ pick=$(jq -r --argjson body "$body" --rawfile seen "${seen:-/dev/null}" '
       | select((.value.once // false | not) or ((.key | tostring) as $k | $used | index($k) | not))
       | select((.value.match // {}) | to_entries | all(.value == $body.variables[.key]))
       | select((.value.has // "") as $h | $body.query | contains($h))
+      | select((.value.lacks // null) as $l | $l == null or ($body.query | contains($l) | not))
     ][0].key // empty' "$env")
 [ -n "$pick" ] || { echo "stub glab: no envelope answer for this request" >&2; exit 3; }
 entry=$(jq -c ".graphql[$pick]" "$env")

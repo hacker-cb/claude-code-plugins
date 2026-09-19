@@ -363,8 +363,9 @@ name stands for.
 - [`scripts/issue-slice.mjs`](scripts/issue-slice.mjs) — every issue of a slice with its
   links — parent, children, blockers, closing change requests — one call per page on either
   forge, and whether what came back is the whole slice: unread, short and whole are told
-  apart, as are link ends the token cannot see. Bodies and comments stay out of the wide
-  read; `--deep` reads the numbers named in full.
+  apart, as are link ends the token cannot see and the fields a self-hosted instance is too
+  old to carry. Bodies and comments stay out of the wide read; `--deep` reads the numbers
+  named in full.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".

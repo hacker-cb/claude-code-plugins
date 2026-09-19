@@ -19,6 +19,33 @@
 //   read: true, complete: false   some of it was read; the reason says what is missing.
 //   read: true, complete: true    the whole slice, whatever its size — zero included.
 // Exit 0 whenever a verdict was printed; 2 for a call this script cannot act on at all.
+//
+// The rest of the verdict:
+//   forge, repo, host   which CLI answered, the repository it resolved, and where it lives
+//   tier                `wide` with its `filter`, or `deep` with the numbers `asked`
+//   total, fetched      the forge's own count, and how many issues came back
+//   pages               the calls the issues took
+//   types, untyped      issues per type — every GitLab work item has one; `untyped` is GitHub's
+//   cut, hidden         numbers of the issues with a list cut short, or an end out of sight
+//   unavailable         line keys this server cannot carry, and `hid.<key>` for a detector
+//                       that cannot run there — never "nothing there". Always present: `[]`
+//                       on a server that carries everything
+//   missing, unread     deep only: numbers that are no issue here, and numbers whose lookup
+//                       failed and so were not read
+//   errors, notes       what the forge said beside the data, and what the verdict alone omits
+//   cost, remaining     GitHub's points spent and left; `complexity` is GitLab's
+//
+// An issue line leaves off every key with nothing to say:
+//   n t s u             number, title, `closed[:<reason>]` where not open, updated
+//   ty m l a c          type, milestone (GitHub its number, GitLab its title), labels,
+//                       assignees, comments (GitLab: discussion threads)
+//   p ch                parent; children as `<done>/<total>`, `<done>+` where the list was cut
+//   bb bl rel pr        blocked by, blocking, related (GitLab), closing change requests: `#N`
+//                       for this repository, `<path>#N` for another, `:closed`/`:merged` after
+//                       an end not open, and `+N` last where the list was cut, `+?` where the
+//                       forge counted nothing
+//   hid cut             ends out of sight, by kind; the keys whose list was cut
+//   b cm                deep only: the body, and every comment as `{a, d, b}`
 
 import { spawnSync } from 'node:child_process';
 import { dirOk, hostOk, readable, repoOk, text, writeAll } from './lib/forge.mjs';
@@ -75,6 +102,9 @@ if (opts.state !== null && !['open', 'closed', 'all'].includes(opts.state)) {
 if (opts.label !== null && opts.label.trim() === '') die('--label takes a label name');
 if (opts.milestone !== null && opts.milestone.trim() === '') die('--milestone takes a milestone');
 
+// A GraphQL `Int` is 32-bit, and one number past it fails the whole request it rides in —
+// every other number of its batch with it.
+const intOk = (w) => /^[1-9][0-9]{0,9}$/.test(w) && Number(w) <= 2147483647;
 let asked = null;
 if (opts.deep !== null) {
   // A filter narrows a slice; the deep tier reads the numbers named, and a filter beside them
@@ -83,9 +113,7 @@ if (opts.deep !== null) {
     die('--deep reads the numbers named, so --state, --label and --milestone do not apply');
   }
   const words = opts.deep.split(/[\s,]+/).filter(Boolean);
-  if (!words.length || !words.every((w) => /^[1-9][0-9]{0,9}$/.test(w))) {
-    die('--deep takes issue numbers, separated by commas');
-  }
+  if (!words.length || !words.every(intOk)) die('--deep takes issue numbers, separated by commas');
   asked = [...new Set(words.map(Number))];
 }
 const state = opts.state || 'open';
@@ -95,10 +123,11 @@ const head = {
   read: false, complete: false, tier: asked ? 'deep' : 'wide',
   forge: null, repo: null, host: null,
   ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone } }),
-  total: null, fetched: 0, pages: 0, types: {}, untyped: 0,
+  // Keyed by names the forge hands back, so no key can be one an object already inherits:
+  // a type called `constructor` would read a function where its count belongs.
+  total: null, fetched: 0, pages: 0, types: Object.create(null), untyped: 0,
   ...(asked ? { missing: [], unread: [] } : {}),
-  // Issue numbers whose own lists were cut short, and those with ends this token cannot see.
-  cut: [], hidden: [],
+  cut: [], hidden: [], unavailable: [],
   errors: [], reason: null, notes: [],
 };
 const lines = [];
@@ -206,7 +235,7 @@ head.host = answered[0].host;
 // title — and which one this call is talking to is known only now. A title passed to GitHub
 // would reach `milestone(number:)` as nothing at all, and the slice would come back empty
 // rather than refused.
-if (cli === 'gh' && opts.milestone !== null && !/^[1-9][0-9]{0,9}$/.test(opts.milestone)) {
+if (cli === 'gh' && opts.milestone !== null && !intOk(opts.milestone)) {
   die(`--milestone on GitHub is the milestone's number, and '${opts.milestone}' is not one`);
 }
 const gql = (body) => {
@@ -276,16 +305,35 @@ const compact = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v 
   && !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0)));
 
 // --- GitHub
-const GH_WIDE = `number title state stateReason updatedAt issueType { name } milestone { number }
-  labels(first: 30) { totalCount nodes { name } }
-  assignees(first: 10) { totalCount nodes { login } }
-  parent { url state }
-  subIssues { totalCount }
-  subIssuesSummary { total completed }
-  issueDependenciesSummary { blockedBy blocking }
-  blockedBy(first: 30) { totalCount nodes { url state } }
-  blocking(first: 30) { totalCount nodes { url state } }
-  closedByPullRequestsReferences(first: 10, includeClosedPrs: true) { totalCount nodes { url state } }`;
+// The link fields arrived in stages — types, parents and sub-issues on GHES 3.17,
+// dependencies on 3.19 — and one field a server lacks fails the whole query. So the fields
+// are read off the server's own schema before the first page, on whatever host answered:
+// one call, and the fragment carries what that server has. Filled in below the probe.
+let GH_WIDE = null;
+const ghWide = (has) => [
+  'number title state stateReason updatedAt milestone { number }',
+  'labels(first: 30) { totalCount nodes { name } }',
+  'assignees(first: 10) { totalCount nodes { login } }',
+  has('issueType') && 'issueType { name }',
+  has('parent') && 'parent { url state }',
+  has('subIssues') && 'subIssues { totalCount }',
+  has('subIssuesSummary') && 'subIssuesSummary { total completed }',
+  has('issueDependenciesSummary') && 'issueDependenciesSummary { blockedBy blocking }',
+  has('blockedBy') && 'blockedBy(first: 30) { totalCount nodes { url state } }',
+  has('blocking') && 'blocking(first: 30) { totalCount nodes { url state } }',
+  has('closedByPullRequestsReferences', 'includeClosedPrs')
+    && 'closedByPullRequestsReferences(first: 10, includeClosedPrs: true) { totalCount nodes { url state } }',
+].filter(Boolean).join('\n  ');
+// What a line cannot carry on this server. A detector whose summary is missing is named too:
+// it cannot fire there, and its silence must not read as nothing hidden.
+const ghLacks = (has) => [
+  ['ty', has('issueType')], ['p', has('parent')], ['ch', has('subIssuesSummary')],
+  ['bb', has('blockedBy')], ['bl', has('blocking')],
+  ['pr', has('closedByPullRequestsReferences', 'includeClosedPrs')],
+  ['hid.ch', has('subIssuesSummary') && has('subIssues')],
+  ['hid.bb', has('issueDependenciesSummary') && has('blockedBy')],
+  ['hid.bl', has('issueDependenciesSummary') && has('blocking')],
+].filter(([, ok]) => !ok).map(([key]) => key);
 // `comments` twice with different arguments is a conflict GitHub refuses outright, so the
 // wide count and the deep page are two fragments rather than one with an extra field.
 const GH_COMMENTS = 'comments(first: 100, after: $endCursor) { totalCount pageInfo { hasNextPage endCursor }'
@@ -569,13 +617,18 @@ fragment deep on Issue { ${GH_WIDE} body ${GH_COMMENTS} }`,
       if (!d || !d.repository) return null;
       return Object.values(d.repository).filter((v) => v && typeof v === 'object');
     },
-    // A number is settled when its alias came back as an issue, or came back null beside a
-    // NOT_FOUND naming it. Null beside any other error is a lookup that failed, not an absence.
+    // The lookup itself missing: a NOT_FOUND naming an alias that came back null. One on a
+    // field of an issue that WAS found — `repository.i12.parent` — is that field failing to
+    // read, and taking it for an absence would pass a short read off as a whole one.
+    miss: (e, d) => Boolean(e && e.type === 'NOT_FOUND' && Array.isArray(e.path)
+      && e.path[0] === 'repository' && /^i\d+$/.test(String(e.path[1]))
+      && d && d.repository && d.repository[e.path[1]] === null),
+    // A number is settled when its alias came back as an issue, or as that miss. Null beside
+    // any other error is a lookup that failed, not an absence.
     settled: (d, nums, errors) => new Set(nums.filter((n) => {
       const v = d && d.repository ? d.repository[`i${n}`] : undefined;
       if (v) return true;
-      return v === null && errors.some((e) => e && e.type === 'NOT_FOUND'
-        && Array.isArray(e.path) && e.path[1] === `i${n}`);
+      return v === null && errors.some((e) => DEEP.gh.miss(e, d) && e.path[1] === `i${n}`);
     })),
     number: (n) => n.number,
     line: ghLine,
@@ -614,6 +667,8 @@ fragment deep on WorkItem { ${GL_WIDE} widgets { ... on WorkItemWidgetDescriptio
       const lists = Object.entries(d).filter(([k, v]) => /^b\d+$/.test(k) && v && Array.isArray(v.nodes));
       return lists.length ? lists.flatMap(([, v]) => v.nodes.filter(Boolean)) : null;
     },
+    // GitLab drops a reference it cannot resolve without an error, so no error is a miss.
+    miss: () => false,
     // A list that came back settles its ten references, found or dropped; one that came back
     // null beside an error settles none of them.
     settled: (d, nums) => new Set(nums.filter((n, i) => {
@@ -667,10 +722,7 @@ const deep = () => {
     const items = w.items(json.data);
     // GitHub answers a number that is not an issue with `null` and an error naming it; that
     // one is missing, not a failure of the read. Every other error stands as one.
-    const errs = (Array.isArray(json.errors) ? json.errors : []).filter((e) => {
-      const alias = e && Array.isArray(e.path) ? e.path[1] : null;
-      return !(e && e.type === 'NOT_FOUND' && typeof alias === 'string' && /^i\d+$/.test(alias));
-    });
+    const errs = (Array.isArray(json.errors) ? json.errors : []).filter((e) => !w.miss(e, json.data));
     // The response as it came, the missing numbers' own errors taken out: a bare HTTP refusal
     // carries its message outside `errors`, and dropping the rest of the response drops it.
     head.errors.push(...messages({ ...json, errors: errs }));
@@ -740,6 +792,21 @@ const deep = () => {
   if (!head.reason && lines.some((l) => (l.cut || []).includes('cm'))) head.reason = 'some comments did not come back';
   head.complete = head.read && !head.reason;
 };
+
+if (cli === 'gh') {
+  const { json, reason } = gql({ query: 'query { rateLimit { cost remaining } issue: __type(name: "Issue") { fields { name args { name } } } }', variables: {} });
+  // A schema that would not read is an unread slice, never a server that carries nothing:
+  // the second would drop every link from every line and call the slice whole.
+  if (!json) unread(reason);
+  WIDE.gh.spend(json.data);
+  const fields = json.data && json.data.issue && Array.isArray(json.data.issue.fields) ? json.data.issue.fields : null;
+  if (!fields) unread(messages(json)[0] || 'the server did not say which fields an issue carries');
+  const schema = new Map(fields.filter((f) => f && typeof f.name === 'string')
+    .map((f) => [f.name, new Set((Array.isArray(f.args) ? f.args : []).map((a) => a && a.name))]));
+  const has = (field, arg) => schema.has(field) && (arg === undefined || schema.get(field).has(arg));
+  GH_WIDE = ghWide(has);
+  head.unavailable = ghLacks(has);
+}
 
 if (asked) deep();
 else wide();
