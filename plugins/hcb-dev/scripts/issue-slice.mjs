@@ -140,7 +140,12 @@ const finish = () => {
   writeAll(1, `${out.join('\n')}\n`);
   process.exit(0);
 };
-const unread = (reason) => { head.read = false; head.complete = false; head.reason = reason; finish(); };
+const unread = (reason) => {
+  head.read = false; head.complete = false; head.reason = reason;
+  // Nothing was read, so every number asked is one to ask again — none of them is missing.
+  if (asked) { head.unread = [...asked]; head.missing = []; }
+  finish();
+};
 
 // --- one call to a CLI
 // The whole request goes on stdin as `{query, variables}`, never as `-f` fields: glab drops a
@@ -669,11 +674,14 @@ fragment deep on WorkItem { ${GL_WIDE} widgets { ... on WorkItemWidgetDescriptio
     },
     // GitLab drops a reference it cannot resolve without an error, so no error is a miss.
     miss: () => false,
-    // A list that came back settles its ten references, found or dropped; one that came back
-    // null beside an error settles none of them.
-    settled: (d, nums) => new Set(nums.filter((n, i) => {
-      const list = d ? d[`b${Math.floor(i / 10)}`] : null;
-      return Boolean(list && Array.isArray(list.nodes));
+    // A list that came back clean settles its ten references, found or dropped. One that came
+    // back null, or beside an error naming it, settles none: a node that failed to read is
+    // dropped from the list as silently as a reference that resolved to nothing.
+    settled: (d, nums, errors) => new Set(nums.filter((n, i) => {
+      const key = `b${Math.floor(i / 10)}`;
+      const list = d ? d[key] : null;
+      return Boolean(list && Array.isArray(list.nodes))
+        && !errors.some((e) => e && Array.isArray(e.path) && e.path[0] === key);
     })),
     number: (n) => Number(n.iid),
     line: glLine,
