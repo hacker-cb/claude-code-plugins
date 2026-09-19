@@ -85,7 +85,7 @@ Two halves, because an issue closes without a commit:
 - **the tracker**, from the moment that point read it: every change a verdict
   reads (`issue-currency.md`), what entered or left the slice, and every link
   that moved — which no filter by update time reports, so this half is taken
-  per [`references/delta.md`](references/delta.md).
+  per `references/delta.md`.
 
 Both together are the re-verification list — not the slice, which is what makes
 this pass cheap.
