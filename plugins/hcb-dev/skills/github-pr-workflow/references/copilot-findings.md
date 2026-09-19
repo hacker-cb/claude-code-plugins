@@ -138,12 +138,12 @@ lands *after* the reply, so a list taken as you answer is already stale: **retak
 you hand in** rather than answering twice.
 
 ```bash
-# reply to a review comment thread, then read back what landed ($(…) drops the trailing newline on both sides):
-pr="<pr>" comment="<comment_id>" file="<reply file>"
-id=$(gh api "repos/{owner}/{repo}/pulls/$pr/comments/$comment/replies" -F body=@"$file" --jq .id)  # -F reads the file; -f posts its path
-[ "$(gh api "repos/{owner}/{repo}/pulls/comments/$id" --jq .body)" = "$(cat "$file")" ] && echo landed || echo "did not land: $id"
-# resolve a thread (GraphQL mutation):
-gh api graphql -f query='
+# reply to a review comment thread, read back what landed, and resolve the thread only once it matches:
+pr="<pr>" comment="<comment_id>" file="<reply file>" thread="<thread_node_id>"  # -F reads the file, -f posts its path; $(…) drops the trailing newline on both sides
+if ! id=$(gh api "repos/{owner}/{repo}/pulls/$pr/comments/$comment/replies" -F body=@"$file" --jq .id) || [ -z "$id" ]; then echo "unsettled: read the thread before posting again"
+elif ! got=$(gh api "repos/{owner}/{repo}/pulls/comments/$id" --jq .body); then echo "unread: $id — read it again, never post again"
+elif [ "$got" != "$(cat "$file")" ]; then echo "landed wrong: $id — edit it in place"
+else echo "landed: $id"; gh api graphql -f query='
   mutation($threadId:ID!){ resolveReviewThread(input:{threadId:$threadId}){ thread{ isResolved } } }' \
-  -F threadId=<thread_node_id>
+  -F threadId="$thread" --jq .data.resolveReviewThread.thread.isResolved; fi
 ```
