@@ -1,0 +1,108 @@
+{
+ "gh_repo": "fail",
+ "glab_project": "{\"path\":\"example-project\",\"namespace\":{\"full_path\":\"example-group/example-sub\"},\"web_url\":\"https://gitlab.example/example-group/example-sub/example-project\"}",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null,
+    "labelName": [
+     "example-label-a"
+    ],
+    "milestoneTitle": [
+     "v2.0"
+    ],
+    "milestone": "v2.0",
+    "state": "closed"
+   },
+   "has": "milestones(title: $milestone, includeAncestors: true",
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 68,
+      "limit": 250
+     },
+     "project": {
+      "milestones": {
+       "nodes": [
+        {
+         "title": "v2.0"
+        }
+       ]
+      },
+      "workItems": {
+       "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "G-last"
+       },
+       "nodes": [
+        {
+         "iid": "1",
+         "title": "Example item 1",
+         "state": "CLOSED",
+         "updatedAt": "2026-01-02T03:04:05Z",
+         "userDiscussionsCount": 0,
+         "workItemType": {
+          "name": "Issue"
+         },
+         "widgets": [
+          {
+           "type": "HIERARCHY",
+           "hasParent": false,
+           "parent": null,
+           "hasChildren": false,
+           "children": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LINKED_ITEMS",
+           "linkedItems": {
+            "pageInfo": {
+             "hasNextPage": false
+            },
+            "nodes": []
+           }
+          },
+          {
+           "type": "MILESTONE",
+           "milestone": {
+            "title": "v2.0"
+           }
+          },
+          {
+           "type": "DEVELOPMENT",
+           "closingMergeRequests": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LABELS",
+           "labels": {
+            "count": 1,
+            "nodes": [
+             {
+              "title": "example-label-a"
+             }
+            ]
+           }
+          },
+          {
+           "type": "ASSIGNEES",
+           "assignees": {
+            "count": 0,
+            "nodes": []
+           }
+          }
+         ]
+        }
+       ],
+       "count": 1
+      }
+     }
+    }
+   }
+  }
+ ]
+}

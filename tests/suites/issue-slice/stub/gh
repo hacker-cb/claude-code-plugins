@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# gh, as issue-slice.mjs calls it: `repo view` for the probe, and `api … graphql --input -`
+# for every page. A GraphQL request is answered by the first `graphql` entry of the envelope
+# whose `match` equals the request's own variables, whose `has` is in its query text and whose
+# `lacks` is not — so a filter or a cursor that never reached the request, or a field asked
+# of a server that lacks it, has no answer, and the case fails.
+# An entry marked `once` answers one request only, which is how a page that fails and then
+# succeeds on the retry is written.
+if [ -n "${STUB_MARKER_FILE:-}" ]; then
+  # The runner removes the marker before each case, so its absence is this case's first call.
+  [ -f "$STUB_MARKER_FILE" ] || rm -f "$STUB_MARKER_FILE.seen"
+  : > "$STUB_MARKER_FILE"
+fi
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+case "$1" in
+  repo)
+    v=$(ask '.gh_repo')
+    case "$v" in
+      ""|fail) echo "GraphQL: Could not resolve to a Repository with the name 'x'. (repository)" >&2; exit 1 ;;
+    esac
+    # The repository the probe asked about is its positional argument, where a case can
+    # require it — a host given with --host has to travel inside it.
+    want=$(ask '.gh_target')
+    if [ -n "$want" ] && [ "$3" != "$want" ]; then
+      echo "stub gh: probe asked '$3', wanted '$want'" >&2; exit 1
+    fi
+    printf '%s\n' "$v"; exit 0 ;;
+  api) shift ;;
+  *) echo "stub gh: no envelope answer for: $*" >&2; exit 3 ;;
+esac
+
+host="" input="" endpoint=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --hostname) host=$2; shift 2 ;;
+    -H) shift 2 ;;
+    --input) input=$2; shift 2 ;;
+    # Each of these is a trap the script is written around: `--paginate` stops at the first
+    # nested pageInfo, `--jq` filters page by page, and a `-f` list is not a list on glab.
+    --paginate|--slurp|--jq|-q|-f|-F|--field|--raw-field)
+      echo "stub gh: $1 is not how issue-slice calls" >&2; exit 3 ;;
+    *) endpoint=$1; shift ;;
+  esac
+done
+want=$(ask '.require_host')
+if [ -n "$want" ] && [ "$host" != "$want" ]; then
+  echo "stub gh: asked $host, this instance is $want" >&2; exit 1
+fi
+[ "$endpoint" = graphql ] && [ "$input" = - ] || {
+  echo "stub gh: no envelope answer for: api $endpoint" >&2; exit 3; }
+
+body=$(cat)
+seen=${STUB_MARKER_FILE:+$STUB_MARKER_FILE.seen}
+[ -z "$seen" ] || [ -f "$seen" ] || : > "$seen"
+pick=$(jq -r --argjson body "$body" --rawfile seen "${seen:-/dev/null}" '
+  ($seen | split("\n") | map(select(. != ""))) as $used
+  | [(.graphql // []) | to_entries[]
+      | select((.value.once // false | not) or ((.key | tostring) as $k | $used | index($k) | not))
+      | select((.value.match // {}) | to_entries | all(.value == $body.variables[.key]))
+      | select((.value.has // "") as $h | $body.query | contains($h))
+      | select((.value.lacks // null) as $l | $l == null or ($body.query | contains($l) | not))
+    ][0].key // empty' "$env")
+[ -n "$pick" ] || { echo "stub gh: no envelope answer for this request" >&2; exit 3; }
+entry=$(jq -c ".graphql[$pick]" "$env")
+[ "$(jq -r '.once // false' <<<"$entry")" = true ] && [ -n "$seen" ] && echo "$pick" >> "$seen"
+jq -r '.out | if type == "string" then . else tojson end' <<<"$entry"
+err=$(jq -r '.stderr // empty' <<<"$entry")
+[ -z "$err" ] || printf '%s\n' "$err" >&2
+exit "$(jq -r '.rc // 0' <<<"$entry")"

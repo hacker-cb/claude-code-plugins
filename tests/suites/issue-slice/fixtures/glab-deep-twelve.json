@@ -1,0 +1,868 @@
+{
+ "gh_repo": "fail",
+ "glab_project": "{\"path\":\"example-project\",\"namespace\":{\"full_path\":\"example-group/example-sub\"},\"web_url\":\"https://gitlab.example/example-group/example-sub/example-project\"}",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null
+   },
+   "has": "b1: workItemsByReference",
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 92,
+      "limit": 250
+     },
+     "b0": {
+      "nodes": [
+       {
+        "iid": "1",
+        "title": "Example item 1",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 1"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "2",
+        "title": "Example item 2",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 2"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "3",
+        "title": "Example item 3",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 3"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "4",
+        "title": "Example item 4",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 4"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "5",
+        "title": "Example item 5",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 5"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "6",
+        "title": "Example item 6",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 6"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "7",
+        "title": "Example item 7",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 7"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "8",
+        "title": "Example item 8",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 8"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "9",
+        "title": "Example item 9",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 9"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "10",
+        "title": "Example item 10",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 10"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "b1": {
+      "nodes": [
+       {
+        "iid": "11",
+        "title": "Example item 11",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 11"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       },
+       {
+        "iid": "12",
+        "title": "Example item 12",
+        "state": "OPEN",
+        "updatedAt": "2026-01-02T03:04:05Z",
+        "userDiscussionsCount": 0,
+        "workItemType": {
+         "name": "Issue"
+        },
+        "widgets": [
+         {
+          "type": "HIERARCHY",
+          "hasParent": false,
+          "parent": null,
+          "hasChildren": false,
+          "children": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LINKED_ITEMS",
+          "linkedItems": {
+           "pageInfo": {
+            "hasNextPage": false
+           },
+           "nodes": []
+          }
+         },
+         {
+          "type": "MILESTONE",
+          "milestone": null
+         },
+         {
+          "type": "DEVELOPMENT",
+          "closingMergeRequests": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "LABELS",
+          "labels": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "ASSIGNEES",
+          "assignees": {
+           "count": 0,
+           "nodes": []
+          }
+         },
+         {
+          "type": "DESCRIPTION",
+          "description": "Description of 12"
+         },
+         {
+          "type": "NOTES",
+          "notes": {
+           "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "N-last"
+           },
+           "nodes": []
+          }
+         }
+        ]
+       }
+      ]
+     }
+    }
+   }
+  }
+ ]
+}

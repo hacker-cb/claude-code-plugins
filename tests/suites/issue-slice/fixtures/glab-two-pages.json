@@ -1,0 +1,226 @@
+{
+ "gh_repo": "fail",
+ "glab_project": "{\"path\":\"example-project\",\"namespace\":{\"full_path\":\"example-group/example-sub\"},\"web_url\":\"https://gitlab.example/example-group/example-sub/example-project\"}",
+ "graphql": [
+  {
+   "match": {
+    "endCursor": null,
+    "state": "opened"
+   },
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 68,
+      "limit": 250
+     },
+     "project": {
+      "workItems": {
+       "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "G1"
+       },
+       "nodes": [
+        {
+         "iid": "1",
+         "title": "Example item 1",
+         "state": "OPEN",
+         "updatedAt": "2026-01-02T03:04:05Z",
+         "userDiscussionsCount": 0,
+         "workItemType": {
+          "name": "Issue"
+         },
+         "widgets": [
+          {
+           "type": "HIERARCHY",
+           "hasParent": false,
+           "parent": null,
+           "hasChildren": false,
+           "children": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LINKED_ITEMS",
+           "linkedItems": {
+            "pageInfo": {
+             "hasNextPage": false
+            },
+            "nodes": []
+           }
+          },
+          {
+           "type": "MILESTONE",
+           "milestone": null
+          },
+          {
+           "type": "DEVELOPMENT",
+           "closingMergeRequests": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LABELS",
+           "labels": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "ASSIGNEES",
+           "assignees": {
+            "count": 0,
+            "nodes": []
+           }
+          }
+         ]
+        },
+        {
+         "iid": "2",
+         "title": "Example item 2",
+         "state": "OPEN",
+         "updatedAt": "2026-01-02T03:04:05Z",
+         "userDiscussionsCount": 0,
+         "workItemType": {
+          "name": "Task"
+         },
+         "widgets": [
+          {
+           "type": "HIERARCHY",
+           "hasParent": true,
+           "parent": {
+            "reference": "example-group/example-sub/example-project#1",
+            "state": "OPEN"
+           },
+           "hasChildren": false,
+           "children": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LINKED_ITEMS",
+           "linkedItems": {
+            "pageInfo": {
+             "hasNextPage": false
+            },
+            "nodes": []
+           }
+          },
+          {
+           "type": "MILESTONE",
+           "milestone": null
+          },
+          {
+           "type": "DEVELOPMENT",
+           "closingMergeRequests": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LABELS",
+           "labels": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "ASSIGNEES",
+           "assignees": {
+            "count": 0,
+            "nodes": []
+           }
+          }
+         ]
+        }
+       ],
+       "count": 3
+      }
+     }
+    }
+   }
+  },
+  {
+   "match": {
+    "endCursor": "G1"
+   },
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 68,
+      "limit": 250
+     },
+     "project": {
+      "workItems": {
+       "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "G-last"
+       },
+       "nodes": [
+        {
+         "iid": "3",
+         "title": "Example item 3",
+         "state": "OPEN",
+         "updatedAt": "2026-01-02T03:04:05Z",
+         "userDiscussionsCount": 0,
+         "workItemType": {
+          "name": "Issue"
+         },
+         "widgets": [
+          {
+           "type": "HIERARCHY",
+           "hasParent": false,
+           "parent": null,
+           "hasChildren": false,
+           "children": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LINKED_ITEMS",
+           "linkedItems": {
+            "pageInfo": {
+             "hasNextPage": false
+            },
+            "nodes": []
+           }
+          },
+          {
+           "type": "MILESTONE",
+           "milestone": null
+          },
+          {
+           "type": "DEVELOPMENT",
+           "closingMergeRequests": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "LABELS",
+           "labels": {
+            "count": 0,
+            "nodes": []
+           }
+          },
+          {
+           "type": "ASSIGNEES",
+           "assignees": {
+            "count": 0,
+            "nodes": []
+           }
+          }
+         ]
+        }
+       ],
+       "count": 3
+      }
+     }
+    }
+   }
+  }
+ ]
+}

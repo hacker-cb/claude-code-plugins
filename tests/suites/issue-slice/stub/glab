@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# glab, as issue-slice.mjs calls it: `api projects/<path>` for the probe, and
+# `api … graphql --input -` for every page, answered the way `stub/gh` answers them. Two
+# rules of the real one are kept, since the script is written around both: `--input` with no
+# Content-Type header reaches GitLab as an empty document, and a reference list longer than
+# ten is refused by the server.
+if [ -n "${STUB_MARKER_FILE:-}" ]; then
+  [ -f "$STUB_MARKER_FILE" ] || rm -f "$STUB_MARKER_FILE.seen"
+  : > "$STUB_MARKER_FILE"
+fi
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+[ "$1" = api ] || { echo "stub glab: no envelope answer for: $*" >&2; exit 3; }
+shift
+host="" input="" ctype="" endpoint=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --hostname) host=$2; shift 2 ;;
+    -H) [ "$2" = "Content-Type: application/json" ] && ctype=1; shift 2 ;;
+    --input) input=$2; shift 2 ;;
+    --paginate|--slurp|--jq|-q|-f|-F|--field|--raw-field)
+      echo "stub glab: $1 is not how issue-slice calls" >&2; exit 3 ;;
+    *) endpoint=$1; shift ;;
+  esac
+done
+want=$(ask '.require_host')
+if [ -n "$want" ] && [ -n "$host" ] && [ "$host" != "$want" ]; then
+  echo "stub glab: asked $host, this instance is $want" >&2; exit 1
+fi
+
+case "$endpoint" in
+  projects/*)
+    v=$(ask '.glab_project')
+    case "$v" in
+      ""|fail) echo "glab: 404 Project Not Found (HTTP 404)" >&2; exit 1 ;;
+    esac
+    want=$(ask '.glab_target')
+    if [ -n "$want" ] && [ "$endpoint" != "projects/$want" ]; then
+      echo "stub glab: probe asked '$endpoint', wanted 'projects/$want'" >&2; exit 1
+    fi
+    printf '%s\n' "$v"; exit 0 ;;
+  graphql) [ "$input" = - ] || { echo "stub glab: the request must come on stdin" >&2; exit 3; } ;;
+  *) echo "stub glab: no envelope answer for: api $endpoint" >&2; exit 3 ;;
+esac
+
+body=$(cat)
+if [ -z "$ctype" ]; then
+  printf '%s\n' '{"errors":[{"message":"Unexpected end of document","locations":[]}]}'
+  echo "glab: Unexpected end of document" >&2; exit 1
+fi
+over=$(jq -r '[.query | scan("refs: \\[[^]]*\\]") | [scan("\"#[0-9]+\"")] | length | select(. > 10)] | length' <<<"$body")
+if [ "$over" != 0 ]; then
+  printf '%s\n' '{"errors":[{"message":"Number of references exceeds the limit. Please provide no more than 10 references at the same time."}]}'
+  echo "glab: Number of references exceeds the limit." >&2; exit 1
+fi
+
+seen=${STUB_MARKER_FILE:+$STUB_MARKER_FILE.seen}
+[ -z "$seen" ] || [ -f "$seen" ] || : > "$seen"
+pick=$(jq -r --argjson body "$body" --rawfile seen "${seen:-/dev/null}" '
+  ($seen | split("\n") | map(select(. != ""))) as $used
+  | [(.graphql // []) | to_entries[]
+      | select((.value.once // false | not) or ((.key | tostring) as $k | $used | index($k) | not))
+      | select((.value.match // {}) | to_entries | all(.value == $body.variables[.key]))
+      | select((.value.has // "") as $h | $body.query | contains($h))
+      | select((.value.lacks // null) as $l | $l == null or ($body.query | contains($l) | not))
+    ][0].key // empty' "$env")
+[ -n "$pick" ] || { echo "stub glab: no envelope answer for this request" >&2; exit 3; }
+entry=$(jq -c ".graphql[$pick]" "$env")
+[ "$(jq -r '.once // false' <<<"$entry")" = true ] && [ -n "$seen" ] && echo "$pick" >> "$seen"
+jq -r '.out | if type == "string" then . else tojson end' <<<"$entry"
+err=$(jq -r '.stderr // empty' <<<"$entry")
+[ -z "$err" ] || printf '%s\n' "$err" >&2
+exit "$(jq -r '.rc // 0' <<<"$entry")"
