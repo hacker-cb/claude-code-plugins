@@ -23,7 +23,8 @@
 //
 // The rest of the verdict:
 //   forge, repo, host   which CLI answered, the repository it resolved, and where it lives
-//   tier                `wide` with its `filter`, or `deep` with the numbers `asked`
+//   tier                `wide` with its `filter` — whose `types` are the work item types the
+//                       slice asked the forge for, GitLab's alone; GitHub filters by none
 //   total, fetched      the forge's own count, and how many issues came back
 //   pages               the calls the issues took
 //   types, untyped      issues per type — every GitLab work item has one; `untyped` is GitHub's
@@ -59,7 +60,8 @@
 //   was                 how many issues the earlier reading held
 //   entered, left       in the slice now and not then; then and not now
 //   edited              `updatedAt` at or after `since`
-//   linked              a link key — p ch bb bl rel pr — that differs from the earlier reading
+//   linked              a link key — p ch chl bb bl rel pr, and `hid` beside them — that differs
+//                       from the earlier reading
 //   cut                 a link list one reading or the other only saw a window of: what fell
 //                       outside it is in neither, so no edge is taken from that key at all
 //   events              the forge's own count of link events since `since`: GitHub's timeline,
@@ -191,7 +193,7 @@ if (opts.was !== null) {
 const head = {
   read: false, complete: false, tier: asked ? 'deep' : 'wide',
   forge: null, repo: null, host: null,
-  ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone } }),
+  ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone, types: null } }),
   // Keyed by names the forge hands back, so no key can be one an object already inherits:
   // a type called `constructor` would read a function where its count belongs.
   total: null, fetched: 0, pages: 0, types: Object.create(null), untyped: 0,
@@ -433,6 +435,9 @@ const ghLacks = (has) => [
   ['ty', has('issueType')], ['p', has('parent')], ['ch', has('subIssuesSummary')],
   ['bb', has('blockedBy')], ['bl', has('blocking')],
   ['pr', has('closedByPullRequestsReferences', 'includeClosedPrs')],
+  // GitHub counts hidden parents nowhere — a parent the token cannot see reads as `null` and
+  // nothing stands beside it — so this detector cannot fire here whatever the server carries.
+  ['hid.p', false],
   ['hid.ch', has('subIssuesSummary') && has('subIssues')],
   ['hid.bb', has('issueDependenciesSummary') && has('blockedBy')],
   ['hid.bl', has('issueDependenciesSummary') && has('blocking')],
@@ -927,7 +932,9 @@ const deep = () => {
 };
 
 // --- the delta: this reading set against the earlier one
-const LINKS = ['p', 'ch', 'chl', 'bb', 'bl', 'rel', 'pr'];
+// `hid` among them: an end the token cannot see leaves the counters as its only mark, and one
+// added or closed out there moves nothing else at all.
+const LINKS = ['p', 'ch', 'chl', 'bb', 'bl', 'rel', 'pr', 'hid'];
 // An end as a map of where it points to the state it is in: `#12:closed` points at `#12`, closed.
 // A `+N` or `+?` closing a cut list is no end, and a value in any order is the same set.
 const ends = (v) => {
@@ -1008,7 +1015,7 @@ const delta = () => {
       d.linked.push(l.n);
       l.was = Object.fromEntries(diff.map((k) => [k, was[k] ?? null]));
       let uncounted = false;
-      for (const k of LINKS.filter((x) => x !== 'ch' && !cut.includes(x))) {
+      for (const k of LINKS.filter((x) => !['ch', 'hid'].includes(x) && !cut.includes(x))) {
         const a = ends(was[k]);
         const b = ends(l[k]);
         for (const [e, st] of b) {
@@ -1077,6 +1084,9 @@ if (cli === 'gh') {
   }
 }
 // GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.
+// What a GitLab slice asks for, said out loud: an incident or a test case is outside it, and a
+// verdict calling the slice whole is whole of these two types.
+if (cli === 'glab' && !asked) head.filter.types = ['ISSUE', 'TASK'];
 if (cli === 'glab' && head.delta) head.unavailable.push('ev.p', 'ev.ch', 'ev.chl', 'ev.pr');
 
 if (asked) deep();

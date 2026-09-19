@@ -26,7 +26,7 @@ beside it. The verdict's `delta` is what the pass acts on:
 |---|---|
 | `entered`, `left` | in the slice now and not then, and the other way: an entered issue is ruled from scratch, a left one takes its verdict line out of the ledger |
 | `edited` | `updatedAt` moved — the issue's own content or state |
-| `linked` | a link key differs from the pinned graph: added, removed, reparented, or an end that changed state |
+| `linked` | a link key differs from the pinned graph: added, removed, reparented, or an end that changed state — `hid` among them, since an end out of sight moves nothing else |
 | `cut` | a link list one reading or the other only saw a window of — no edge is taken from it, and what fell outside the window shows nowhere else |
 | `events` | the forge's own count of link events since the moment |
 | `added`, `removed`, `moved` | the edges themselves, each written once whichever end it was read from, and the ends whose state changed — what the report's *what moved* prints |
@@ -46,8 +46,9 @@ which half was a delta and why the other was not.
 `unavailable` carrying `ev.<key>` is a kind nothing counts events for here — a
 closing change request on either forge among them, and the hierarchy on GitLab;
 the comparison stands alone there, and `check` cannot speak for that kind. An
-end the token cannot see is in neither the comparison nor the count: the line's
-own `hid` is the only sign, and a slice carrying one says so in the report.
+end the token cannot see is in neither the count nor any list of edges: the
+line's `hid` counter is its only mark, which is why the comparison carries it
+and why a slice holding one says so in the report.
 
 **The moment for the next pass is `delta.moment`** — the forge's own clock at
 the first page, less the margin an event's timestamp needs — never this
@@ -62,7 +63,7 @@ The pinned graph is the same script's output, projected down to the verdict
 line, the numbers and the link keys:
 
 ```bash
-jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr"))) end' <reading> > <graph file>
+jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> > <graph file>
 ```
 
 **It lives in the ledger** ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)),
@@ -81,26 +82,32 @@ read whole rather than diffed, and this reading is what seeds the graph.
 Every open request, not only the running batches': one that nothing in the
 ledger claims is occupied ground all the same, and the disagreement is itself a
 finding. The file list comes back cut at a hundred with no count, so the count
-travels beside it and the requests it marks short are read again:
+travels beside it; a request that list marks short, and one that renamed a file —
+whose old path is the ground it still holds and which only the second read
+carries — are read again:
 
 ```bash
 # GitHub — every open request beside the counts that say whether either list is whole
-gh api graphql -F owner='{owner}' -F name='{repo}' -F endCursor='' -f query='query($owner: String!, $name: String!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequests(states: OPEN, first: 100, after: $endCursor) { totalCount pageInfo { hasNextPage endCursor } nodes { number baseRefName changedFiles files(first: 100) { nodes { path } } } } } }' \
-  --jq '.data.repository.pullRequests | {open: .totalCount, more: .pageInfo.hasNextPage, cursor: .pageInfo.endCursor}, (.nodes[] | {n: .number, base: .baseRefName, short: (.changedFiles > (.files.nodes | length)), files: [.files.nodes[].path]})'
-# GitHub — the files of one whose count marked it short
-N="<number>"; gh api --paginate "repos/{owner}/{repo}/pulls/$N/files" --jq '.[].filename'
+gh api graphql -F owner='{owner}' -F name='{repo}' -F endCursor='' -f query='query($owner: String!, $name: String!, $endCursor: String) { repository(owner: $owner, name: $name) { pullRequests(states: OPEN, first: 100, after: $endCursor) { totalCount pageInfo { hasNextPage endCursor } nodes { number baseRefName changedFiles files(first: 100) { nodes { path changeType } } } } } }' \
+  --jq '.data.repository.pullRequests | {open: .totalCount, more: .pageInfo.hasNextPage, cursor: .pageInfo.endCursor}, (.nodes[] | {n: .number, base: .baseRefName, short: (.changedFiles > (.files.nodes | length)), renamed: [.files.nodes[] | select(.changeType == "RENAMED") | .path], files: [.files.nodes[].path]})'
+# GitHub — one marked short or renaming: both paths, and the count to check what came back against
+N="<number>"; gh api --paginate "repos/{owner}/{repo}/pulls/$N/files" --jq '.[] | .filename, (.previous_filename // empty)'
 # GitLab — the same, its own two counts beside it
 glab api graphql -f query='query($endCursor: String) { project(fullPath: "<path>") { mergeRequests(state: opened, first: 100, after: $endCursor) { pageInfo { hasNextPage endCursor } count nodes { iid targetBranch diffStatsSummary { fileCount } diffStats { path } } } } }'
+# GitLab — one whose counts disagree, or whose renames matter: REST carries both paths
+P="<path>"; glab api --paginate "projects/${P//\//%2F}/merge_requests/$N/diffs?per_page=100" | jq -r '.[] | .new_path, (if .renamed_file then .old_path else empty end)'
 ```
 
 **Where `more` is true, the next call takes `endCursor` as `$endCursor`** — the
 requests past the first hundred hold ground like any other, and a pass that
 stopped at the page boundary measured less than it claims.
 
-**A short list that cannot be read again** — GitLab's `fileCount` above the
-`diffStats` it came with — leaves that request's zone unmeasured rather than
-small: it then holds everything a candidate would touch, by the rule
-[`../SKILL.md`](../SKILL.md) gives for a zone no source settles.
+**Every read is checked against the count that belongs to it**: GitHub's REST
+files stop at three thousand however far the pages run, and GitLab's own two
+counts can part. A read still short of `changedFiles` or of `fileCount` leaves
+that request's zone unmeasured rather than small: it then holds everything a
+candidate would touch, by the rule [`../SKILL.md`](../SKILL.md) gives for a zone
+no source settles.
 
 A request whose files reach past the zone its order drew, and one no batch row
 claims, both go to the user as the disagreements they are.
