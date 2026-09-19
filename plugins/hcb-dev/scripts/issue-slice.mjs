@@ -212,9 +212,9 @@ const head = {
   errors: [], reason: null, notes: [],
 };
 const lines = [];
-// The forge's own clock, taken before the slice is read: a page answered slower than the margin
-// would otherwise pin a moment later than the rows it brought back, and an issue edited in
-// between would be in neither this reading nor the next.
+// The forge's own clock, taken before the slice is read, and from nothing else: a page answered
+// slower than the margin would pin a moment later than the rows it brought back, and an issue
+// edited in between would be in neither this reading nor the next. No clock, no moment.
 let clock = null;
 const finish = () => {
   if (head.forge !== 'gh') delete head.untyped;
@@ -699,10 +699,7 @@ const wide = () => {
   let pageCap = null;
   const totals = [];
   for (;;) {
-    const first = head.pages === 0;
-    const { json, reason, date } = gql({ query: w.query(), variables: { ...w.variables(), endCursor: cursor } },
-      head.delta !== undefined && first && clock === null);
-    if (head.delta && first && clock === null) clock = date;
+    const { json, reason } = gql({ query: w.query(), variables: { ...w.variables(), endCursor: cursor } });
     if (!json) {
       if (head.pages === 0) unread(reason);
       head.reason = `page ${head.pages + 1} could not be read (${reason})`;
@@ -989,8 +986,8 @@ const delta = () => {
   const why = [];
   const clockMs = clock ? Date.parse(clock) : NaN;
   if (Number.isNaN(clockMs)) {
-    head.notes.push('the forge sent no Date with the first page, so this reading names no moment:'
-      + ' the next one needs a moment from before this read began');
+    head.notes.push('the forge sent no Date before the slice was read, so this reading names no'
+      + ' moment: the next one needs one taken before this read began');
   } else {
     // Ten seconds under the forge's own clock, read before the slice: an event is stamped a
     // second or two apart from the change it records, and a window that overlaps loses nothing.
