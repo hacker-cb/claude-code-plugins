@@ -24,7 +24,7 @@ family. [`findings.md`](findings.md) sets when it happens relative to a proposal
 ```bash
 # GitHub — `gh api` asks its own default host, so the repository's goes in explicitly; the types
 # answer `null` where there are none, whatever REST lists, and a milestone's counts include PRs.
-HOST="$(gh repo view <owner>/<repo> --json url --jq '.url | split("/")[2]')"
+HOST="$(gh repo view --json url --jq '.url | split("/")[2]')"   # this checkout's, not gh's default
 gh label list --limit <n> --json name,color,description,isDefault
 gh api --hostname "$HOST" graphql -F o=<owner> -F r=<repo> -f query='query($o:String!,$r:String!){
   repository(owner:$o,name:$r){issueTypes(first:100){nodes{name description}}}}'
