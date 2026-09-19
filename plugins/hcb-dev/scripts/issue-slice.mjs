@@ -602,7 +602,11 @@ const wide = () => {
   }
   head.fetched = got.size;
   head.total = totals.length ? totals[totals.length - 1] : null;
-  if (new Set(totals).size > 1) head.notes.push(`the slice changed while it was read: its total went ${totals.join(' → ')}`);
+  // A total that moved between pages means the pages are not one moment's slice, whatever the
+  // counts come to at the end: one issue gone and another come leaves them equal.
+  if (!head.reason && new Set(totals).size > 1) {
+    head.reason = `the slice changed while it was read — its total went ${totals.join(' → ')}; read it again`;
+  }
   if (!head.reason && head.errors.length) head.reason = 'the forge reported errors beside the data';
   if (!head.reason && head.fetched !== head.total) head.reason = `${head.fetched} of ${head.total} issues came back`;
   head.complete = head.read && !head.reason;
