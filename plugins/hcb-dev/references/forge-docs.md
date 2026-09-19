@@ -13,10 +13,10 @@ fields of the build actually installed, which is not the build the site
 documents. Read it before writing an invocation, and treat a flag it does not
 list as absent whatever the site says.
 
-**Both CLIs answer with a small first page.** Paginate to the end before
+**Both CLIs answer with a small first page.** Paginate to the end, or set the
+limit above the listing's own total where the listing honours it, before
 counting or sweeping anything — a short read is indistinguishable from an empty
-one, and a limit asked above a page's own cap is not always honoured
-([`forge-behaviour.md`](forge-behaviour.md)).
+one. [`forge-behaviour.md`](forge-behaviour.md) names the listings that do not.
 
 **The sites are authoritative about meaning** — what a field holds, which values
 an enum takes, and every operation the porcelain never wrapped. Both serve their
@@ -103,7 +103,7 @@ what REST does not.
 | the server it needs | GHES 3.17 for types, `parent` and `subIssues`; 3.19 for `blockedBy`, `blocking`, `issueDependenciesSummary` and the dependencies REST; the sub-issues REST is absent on GHES through 3.22 | the tier: `relates_to` on Free; `blocks` / `is_blocked_by`, epics, iterations and weight on Premium and up |
 
 What a write does beyond its flag, and the cost and the silent failures of these
-reads, are [`forge-behaviour.md`](forge-behaviour.md)'s.
+reads, are `forge-behaviour.md`'s.
 
 | | GitHub | GitLab |
 |---|---|---|

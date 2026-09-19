@@ -505,7 +505,7 @@ Per skill, on top of those:
   later, whose `issue` commands read and write them — and on GitHub Enterprise
   Server 3.17 for hierarchy and types, 3.19 for dependencies. `glab` reads none
   of them and links issues only while creating one, so the rest goes through
-  `glab api` ([`references/forge-docs.md`](references/forge-docs.md)).
+  `glab api` (`references/forge-docs.md`).
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
