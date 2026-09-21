@@ -35,9 +35,10 @@ empty has refuted nothing.
 A batch inside a wave never runs it: its candidates ride its return as `not measured — batch`, at
 the revision they were read at. The base is resolved by the ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md) and read only where
-that resolution says the ref is current — a name is not a ref, and a refresh that answered nothing
-leaves a stale one standing: its candidates stay `not measured` rather than checked against objects
-of unknown age.
+that resolution says the ref is current **and** shares history with what the claims name — a name
+is not a ref, a refresh that answered nothing leaves a stale one standing, and a ref sharing no
+history is refused there rather than diffed. Failing either, the candidates stay `not measured`:
+a check against objects of unknown age, or against an unrelated tree, is no verification.
 
 ## 1. Collect
 
