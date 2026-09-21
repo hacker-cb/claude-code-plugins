@@ -173,9 +173,10 @@ first — one row per reviewer, what it covered before its verdict:
 | `security-review` | `<base>`, 1 of 3 files | — | 🔴 partial: rest uncommitted |
 
 Keep the cells short: "Covered" is always `<base>, N files`, effort gets its own column so a
-level is never left implied, and "Result" is a verdict — 🟢 covered, 🔴 a gap someone can close,
-which opens the report as well since a gap is what stops a completion, ⚪ `n/a` or a
-`partial (structural)` no one can — never a finding, which belongs in `## Findings`.
+level is never left implied, and "Result" is a verdict — 🟢 covered; 🔴 a gap someone can close,
+`UNAVAILABLE`, `nothing to review` and a plain `partial` among them, which opens the report as
+well, a gap being what stops a completion; ⚪ `n/a` or a `partial (structural)` no one can —
+never a finding, which belongs in `## Findings`.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not run; `n/a` — it
 was deliberately not run, and why; `nothing to review` — it ran and covered zero files;

@@ -134,17 +134,17 @@ Then the report ([`../../../references/report-format.md`](../../../references/re
 [`../../../references/report-blocks.md`](../../../references/report-blocks.md)):
 
 - **`## What happened`** — the gates the base enforces and how each was met at the merge:
-  required checks, approvals, thread resolution, whatever else the base carries; a base with none
-  says so. Copilot's line among them is its review of the head that merged and the state that
-  review carries — or, where that head has none, the commit the last review covered and why
+  required checks, approvals, thread resolution, whatever else it carries; a base with none says
+  so. Copilot's line among them is its review of the head that merged and the state that review
+  carries — or, where that head has none, the commit the last review covered and why
   ([`copilot.md`](copilot.md)). Then the base's own checks on the merge commit, in whichever of
-  the four shapes above came out; under an orchestrator this is the `base_checks` its completion
-  carries onward (`slice-completion.md`).
+  the four shapes above came out — under an orchestrator, the `base_checks` its completion carries.
 - **`## Findings`** — the lower-severity items the loop skipped, through `findings.md` as the late
-  review's are, laid out by [`../../../references/findings-table.md`](../../../references/findings-table.md). Where nothing
-  called this driver, this report ends the session and `hcb-dev:findings-pass` runs over them
-  first — never in a wave's batch, whose return carries them; under an orchestrator it ends a slice.
+  review's are, laid out by [`../../../references/findings-table.md`](../../../references/findings-table.md).
+  Where nothing called this driver, this report ends the session and `hcb-dev:findings-pass` runs
+  over them first — never in a wave's batch, whose return carries them; under an orchestrator, a slice.
 - **`## Issues`** — the issues this PR was to close, at the state read above: closed, or still
   open and what closing one now waits on.
-- **`## What it leaves`** — a ref Step 6 could not retire, with its side's `blockers`.
-- **`## Needs your word`** — what the rows above leave to the reader, nothing counted twice.
+- **`## What it leaves`** — a ref Step 6 could not retire, with its `blockers`.
+- **`## Needs your word`** — what the rows above leave to the reader, plus the tech debt, tests
+  and related work this merge surfaced. Nothing counted twice.

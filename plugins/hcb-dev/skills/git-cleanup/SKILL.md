@@ -132,8 +132,8 @@ routing, never printed. A branch row's `what it is` carries its tip as it stands
 7 holds the deletion to.
 
 - **🟢 nothing lost** (class 1) — it proceeds without asking.
-- **🟡 recoverable** (class 2) — the cost cell carries the restore command, so the row alone undoes
-  the deletion. A branch whose `freedBy` names a worktree deleted in this same table is one of
+- **🟡 recoverable** (class 2) — the cost cell carries the restore command, that tip in it, so the
+  row alone undoes the deletion. A branch whose `freedBy` names a worktree deleted in this same table is one of
   these, not a kept one: removing that worktree is what makes it deletable, and the user
   approves both at once.
 - **🔴 irreversible** (class 3) — the cost cell says what disappears — the files, a branch's only
