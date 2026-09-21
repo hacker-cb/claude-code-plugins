@@ -127,8 +127,8 @@ form: you paste every one of them yourself.
   may not be rewritten, `--autostash` over a dirty tree — and never a push. A
   branch that is itself a base only catches up with its own remote copy. Then it
   reads what arrived against the work in flight, per `references/base-delta.md` —
-  the code, the environment, the issues the work carries, the plan — runs the
-  project's checks, and hands every fork to whoever the work answers to. In a
+  the code, the environment, the issues the work carries, the plan — without
+  running the project's checks, and hands every fork to whoever the work answers to. In a
   master session it moves the checkout and leaves the reading to `wave-refresh`.
 
 ### Reviewing it

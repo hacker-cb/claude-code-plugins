@@ -57,9 +57,10 @@ repository.
 - Where it changed how the repository is built or judged — its instructions to agents, a linter's
   or formatter's configuration, the checks CI runs — the work now answers to that.
 
-The mechanical part is running the project's own checks on the synced tree: what git merged
-cleanly, it did not prove works. A break the delta caused is named first. Whether it is repaired
-in the same step is the reader's call — a landing repairs it before its review, a sync reports it.
+What git merged cleanly, it did not prove works — but running the project's checks is the
+reader's own step, never this file's: a landing runs them on the integrated tree before its
+review and repairs a break the delta caused; a sync runs none and says the code went unchecked.
+A break that is found is named first.
 
 **The environment.** Installing dependencies from a lockfile the delta changed, and regenerating
 files the project generates locally, are mechanical. Anything that writes state outside this
