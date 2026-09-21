@@ -162,8 +162,9 @@ rank by that same file's ladder.
 
 ## 6. Report
 
-`## Review coverage` first ([`../../references/report-blocks.md`](../../references/report-blocks.md))
-— one row per reviewer, what it covered before its verdict:
+A report in [`../../references/report-format.md`](../../references/report-format.md)'s grammar,
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s `## Review coverage`
+first — one row per reviewer, what it covered before its verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
@@ -173,7 +174,8 @@ rank by that same file's ladder.
 
 Keep the cells short: "Covered" is always `<base>, N files`, effort gets its own column so a
 level is never left implied, and "Result" is a verdict — 🟢 covered, 🔴 a gap someone can close,
-⚪ `n/a` or a `partial (structural)` no one can — never a finding, which belongs in `## Findings`.
+which opens the report as well since a gap is what stops a completion, ⚪ `n/a` or a
+`partial (structural)` no one can — never a finding, which belongs in `## Findings`.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not run; `n/a` — it
 was deliberately not run, and why; `nothing to review` — it ran and covered zero files;
@@ -195,6 +197,3 @@ thing neither engine here does: `/code-review` typed by the user, whose workflow
 over as an ask, ready to run — the rung, then the base and narrowing §1 resolved, spelled out as
 `<base>...HEAD`; left off, it falls back to its own default range, which on an already-pushed
 branch is near-empty. Never launch it yourself.
-
-When the change is about to be completed — merged locally or handed to a change request — say
-the gaps out loud before the handoff rather than burying them under the findings.

@@ -128,8 +128,8 @@ A report ([`../../references/report-format.md`](../../references/report-format.m
 one table over every item **the mode listed**, a kept one included — the gate is the whole plan,
 not the part that deletes: item, what it is, the action, its consequence, and what it costs. The
 circle in the consequence column marks the consequence, not a state; the class it came from is
-routing, never printed. Every branch row carries its tip as it stands now, which step 7 holds
-the deletion to.
+routing, never printed. A branch row's `what it is` carries its tip as it stands now, which step
+7 holds the deletion to.
 
 - **🟢 nothing lost** (class 1) — it proceeds without asking.
 - **🟡 recoverable** (class 2) — the cost cell carries the restore command, so the row alone undoes
@@ -154,7 +154,7 @@ proof re-taken after the wait, and the tracking repair that comes last.
 ## Step 8 — Verify and report
 
 Re-run discovery, then report: `## Without your word` — the class-1 actions taken without
-asking, each with why nothing was lost; `## What happened` — what else went; `## What it
+asking, each with what undoes it, or that nothing was lost and nothing needs undoing; `## What happened` — what else went; `## What it
 leaves` — what was kept and why; and what was surfaced and left for the user to decide, as asks.
 
 ## Never

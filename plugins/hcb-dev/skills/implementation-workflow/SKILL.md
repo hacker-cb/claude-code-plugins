@@ -61,11 +61,11 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
 
 ## Phase 1 — The planning gate
 
-The one interactive point. Present the whole plan at the weight the tier table below gives it —
-where it is a message, a report whose `## The plan` lays out the slices, the branches and each
-settlement shown rather than asked, its ask block every fork
-([`../../references/report-blocks.md`](../../references/report-blocks.md)) — and take a single
-approval, deciding everything foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
+The one interactive point. Present the whole plan in the weight the tier table below gives it;
+where it goes out as a message rather than into plan mode, it is a report whose `## The plan`
+lays out the slices, the branches and each settlement shown rather than asked, its ask block
+every fork ([`../../references/report-blocks.md`](../../references/report-blocks.md)). Take a
+single approval, deciding everything foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
 **recommendation shown first**, and a project rule that fights good architecture gets flagged
 ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 

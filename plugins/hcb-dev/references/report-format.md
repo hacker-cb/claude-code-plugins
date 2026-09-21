@@ -39,9 +39,10 @@ What the report goes on to ask is never announced there as settled.
 
 - **Every block is a `##` heading**, named from the catalogue and standing in its order. No `#`,
   no rule line, no bold line standing in for a heading outside a form below.
-- **A block holds one element**: a bulleted list or a table. Two blocks carry a form of their
-  own instead: `## Findings`, the whole of [`findings-table.md`](findings-table.md)'s, and the ask
-  block, below. What fits none of them belongs to the record the session keeps.
+- **A block holds one element**: a bulleted list or a table, with whatever lines a form of its
+  own puts above or below it — [`findings-table.md`](findings-table.md)'s header and footer, an
+  engine's notice under a coverage table, the ask block's groups and closing line. What fits
+  none of that belongs to the record the session keeps.
 - **`###` stands in one place**: the two groups of the ask block.
 - **Bold marks**: the first line, a bullet's lead phrase, an ask's question, an ask's
   sub-bullet labels, and the lines a form of its own carries — `findings-table.md`'s header and

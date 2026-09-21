@@ -147,4 +147,4 @@ Then the report ([`../../../references/report-format.md`](../../../references/re
 - **`## Issues`** — the issues this PR was to close, at the state read above: closed, or still
   open and what closing one now waits on.
 - **`## What it leaves`** — a ref Step 6 could not retire, with its side's `blockers`.
-- **`## Needs your word`** — tech debt to track, tests to add, related work: an ask each.
+- **`## Needs your word`** — what the rows above leave to the reader, nothing counted twice.

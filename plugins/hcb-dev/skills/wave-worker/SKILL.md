@@ -119,9 +119,8 @@ holds, and what it stops is named in the return as the gap it is.
   permission, this session's reading carries the work — stated as the assumption it
   is, and left **unlanded**, so an answer that differs costs a revert and not a
   rebuild.
-- **Statuses at the order's milestones**, one line each — a line in
-  [`../../references/report-format.md`](../../references/report-format.md)'s sense, save where it
-  asks the reader something, which makes it a report — its first sentence self-contained, each carrying the coordinate it is checked at — the change request
+- **Statuses at the order's milestones**, one line each, the first line
+  self-contained, each carrying the coordinate it is checked at — the change request
   by number and URL, a landing by its commit, its checks by that same commit, a
   stall by what it waits on:
   a change request opened, where the mode opens one; the readiness report a
