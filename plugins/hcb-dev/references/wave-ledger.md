@@ -137,8 +137,8 @@ test on a passage is whether deleting it changes what anyone does next.
    arrived at — and the journal is what moves out first, so this section also indexes what has
    left: every archive in order, and which of them new entries are going to.
 9. **Candidates** — a line per finding a return carries unfixed, as it arrives: the batch, the
-   claim, its coordinate, the revision it was read at, the outcome proposed; then the verdict and
-   ruling `hcb-dev:findings-pass` gave it. A line leaves refuted, or once its ruling is carried out.
+   claim with its severity, coordinate and revision, what would show it, the outcome proposed; then
+   `hcb-dev:findings-pass`'s verdict and ruling. It leaves refuted, or with its ruling carried out.
 
 ## Discipline
 

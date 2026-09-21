@@ -56,8 +56,10 @@ that came out of work on an issue is measured against that issue first (*Where i
 ## 3. Verify
 
 The re-measure `findings.md` asks for before a proposal, done by a check that did not find it.
-Launch one subagent per candidate — a few together where they share a file — in parallel, each
-handed three things and nothing else:
+Launch one subagent per candidate — a few together where they share a file — in parallel and
+read-only: told to edit, commit and write to the tracker nothing, and to put whatever a
+reproduction writes in a scratch directory, never the tree the other checks read. Each is handed
+three things and nothing else:
 
 - the claim in one line, its coordinate, and the tree the table above names;
 - what would show it: the failure scenario to reproduce, the call to run, the line to read;
