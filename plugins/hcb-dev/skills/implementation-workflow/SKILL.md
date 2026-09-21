@@ -61,9 +61,11 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
 
 ## Phase 1 — The planning gate
 
-The one interactive point. Present the whole plan — a report whose `## The plan` lays out the
-slices and branches and whose ask block holds every fork — and take a single approval, deciding
-everything foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
+The one interactive point. Present the whole plan at the weight the tier table below gives it —
+where it is a message, a report whose `## The plan` lays out the slices, the branches and each
+settlement shown rather than asked, its ask block every fork
+([`../../references/report-blocks.md`](../../references/report-blocks.md)) — and take a single
+approval, deciding everything foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
 **recommendation shown first**, and a project rule that fights good architecture gets flagged
 ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 
@@ -74,12 +76,10 @@ re-opens what the order closed. Everything it left open is settled here as usual
 
 Settle, in one gate:
 
-- **What a non-`current` verdict changes** — an issue ruled stale, needing a rewrite or
-  unverifiable carries the fork the rest of the plan is built on, so it is settled first and the
-  slicing is shown as what the recommended answer makes. Recommend from what its own verdict
-  leaves open (`issue-currency.md`), carrying the coordinate that verdict stands on; where
-  another answer is taken, re-draw the layout it invalidates before the gate closes.
-  `hcb-dev:issue-tracking` writes to the tracker on the answer, never ahead of it.
+- **What a non-`current` verdict changes** — the fork the rest of the plan is built on, settled
+  first, the slicing shown as what the recommended answer makes (`issue-currency.md`); another
+  answer re-draws the layout it invalidates before the gate closes. `hcb-dev:issue-tracking`
+  writes to the tracker on the answer, never ahead of it.
 - **Slice breakdown + branch layout** — a shared feature branch only for more than one slice; a
   single slice's parent is the base. Both names come from
   [`../../references/branch-naming.md`](../../references/branch-naming.md), which owns the
@@ -156,8 +156,8 @@ single-slice set has no feature branch and no integration step.
 
 ## Phase 3 — Report and offers
 
-- **The report** — the final report of [`../../references/report-blocks.md`](../../references/report-blocks.md),
-  in [`../../references/report-format.md`](../../references/report-format.md)'s grammar.
+- **The report** — the final report of `report-blocks.md`, in
+  [`../../references/report-format.md`](../../references/report-format.md)'s grammar.
 - **After a local set** — offer, never force, **one** whole-feature `feature → base` change
   request. This is the consented exit from local mode, and being an ask it stands in the report's
   block rather than beside it.
@@ -195,6 +195,6 @@ the task list are the record. A title this session gave itself stands as it was.
 | [`../../references/base-resolution.md`](../../references/base-resolution.md) | before Phase 0's refresh and Phase 2's cut |
 | [`../../references/branch-naming.md`](../../references/branch-naming.md) | before Phase 1's layout and Phase 2's cut |
 | [`../../references/findings.md`](../../references/findings.md) | before Phase 2's development, and again before Phase 3's issues output |
-| [`../../references/report-format.md`](../../references/report-format.md), [`../../references/report-blocks.md`](../../references/report-blocks.md) | the Phase 3 report shape |
+| [`../../references/report-format.md`](../../references/report-format.md), [`../../references/report-blocks.md`](../../references/report-blocks.md) | the shape of the gate's report and Phase 3's |
 | [`../../references/session-naming.md`](../../references/session-naming.md) | at Phase 0's intake, and again once Phase 1's scope is settled |
 | [`../../references/forge-docs.md`](../../references/forge-docs.md) | before writing any `gh` / `glab` invocation this skill does not spell out |

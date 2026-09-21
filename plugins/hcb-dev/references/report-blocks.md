@@ -14,7 +14,7 @@ catalogue is the order of a report; no report invents a heading outside it.
 | `## What moved` | bullets | what this session found had changed under it — the base, the tracker, the plugin |
 | `## The picture` | bullets | a standing reading of ground nothing changed — counts, milestones, the front line, and what could not be seen |
 | `## Where it stands` | table | one row per unit the report tracks — a batch, a slice, an issue, the next wave — its state and what it waits on |
-| `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices and branches, what a sweep would remove |
+| `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices, branches and the settlements a gate shows, what a sweep would remove and what it keeps |
 | `## Review coverage` | table | one row per reviewer — what it covered, at what effort, and the result `multi-review` classified |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
 | `## Issues` | bullets | the issues the run settles, at their state now |
@@ -70,9 +70,9 @@ with nothing to show, its header line alone says `0 after dedup`.
 | a review of one change | Review coverage · Findings · Needs your word |
 | a coverage gate that stopped a completion | Review coverage · Needs your word |
 | a planning gate | The plan · Needs your word |
-| a change request merged | What happened · Findings · Issues · Needs your word |
+| a change request merged | What happened · Findings · Issues · What it leaves · Needs your word |
 | a sweep's gate | The plan · Needs your word |
-| a sweep done | What happened · What it leaves · Needs your word |
+| a sweep done | Without your word · What happened · What it leaves · Needs your word |
 
 ## A wave report
 

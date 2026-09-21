@@ -126,16 +126,18 @@ row's reason.
 A report ([`../../references/report-format.md`](../../references/report-format.md),
 [`../../references/report-blocks.md`](../../references/report-blocks.md)) whose `## The plan` is
 one table over every item **the mode listed**, a kept one included — the gate is the whole plan,
-not the part that deletes: item, what it is, state, and what it costs. The circle beside the
-state names the consequence; the class it came from is routing, never printed.
+not the part that deletes: item, what it is, the action, its consequence, and what it costs. The
+circle in the consequence column marks the consequence, not a state; the class it came from is
+routing, never printed. Every branch row carries its tip as it stands now, which step 7 holds
+the deletion to.
 
-- **🟢 deleting** (class 1) — nothing is lost; it proceeds without asking.
-- **🟡 deleting** (class 2) — recoverable: the cost cell carries the restore command, the tip as
-  it stands now, so the row alone undoes the deletion. A branch whose `freedBy` names a worktree
-  deleted in this same table is one of these, not a kept one: removing that worktree is what
-  makes it deletable, and the user approves both at once.
-- **🔴 deleting** (class 3) — irreversible: the cost cell says what disappears — the files, a
-  branch's only copy, the submodule git dir living in that worktree alone.
+- **🟢 nothing lost** (class 1) — it proceeds without asking.
+- **🟡 recoverable** (class 2) — the cost cell carries the restore command, so the row alone undoes
+  the deletion. A branch whose `freedBy` names a worktree deleted in this same table is one of
+  these, not a kept one: removing that worktree is what makes it deletable, and the user
+  approves both at once.
+- **🔴 irreversible** (class 3) — the cost cell says what disappears — the files, a branch's only
+  copy, the submodule git dir living in that worktree alone.
 - **⚪ kept** — nothing is deleted: the cost cell says why it stays, and the **repair**, if any.
   A keep promises the item survives, not that nothing touches it.
 
@@ -151,9 +153,9 @@ proof re-taken after the wait, and the tracking repair that comes last.
 
 ## Step 8 — Verify and report
 
-Re-run discovery, then report: `## What happened` — what went, the class-1 actions taken
-without asking among it; `## What it leaves` — what was kept and why; and what was surfaced and
-left for the user to decide, as asks.
+Re-run discovery, then report: `## Without your word` — the class-1 actions taken without
+asking, each with why nothing was lost; `## What happened` — what else went; `## What it
+leaves` — what was kept and why; and what was surfaced and left for the user to decide, as asks.
 
 ## Never
 

@@ -172,8 +172,8 @@ rank by that same file's ladder.
 | `security-review` | `<base>`, 1 of 3 files | — | 🔴 partial: rest uncommitted |
 
 Keep the cells short: "Covered" is always `<base>, N files`, effort gets its own column so a
-level is never left implied, and "Result" is a verdict — 🟢 covered, 🔴 a gap, ⚪ `n/a` or
-`partial (structural)` — never a finding, which belongs in `## Findings`, where it can wrap.
+level is never left implied, and "Result" is a verdict — 🟢 covered, 🔴 a gap someone can close,
+⚪ `n/a` or a `partial (structural)` no one can — never a finding, which belongs in `## Findings`.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not run; `n/a` — it
 was deliberately not run, and why; `nothing to review` — it ran and covered zero files;
