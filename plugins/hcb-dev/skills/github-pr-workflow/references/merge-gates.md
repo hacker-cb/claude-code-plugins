@@ -124,8 +124,9 @@ wrong**, never a state to retry.
 **Drift, where the base does not require the branch current.** That enum never arrives, so
 a head sitting well behind its base reads `CLEAN` and the drift is measured rather than read
 off a status. `drift.behind` above zero is a judgement, not a gate: re-sync when what
-`drift.paths` carries can break this head — the same files or modules, an interface a caller
-here uses, a migration, a dependency — and merge without one when the base moved elsewhere.
+`drift.paths` carries can break this head — the code in flight or its environment, read as
+[`../../../references/base-delta.md`](../../../references/base-delta.md) reads them — and merge
+without one when the base moved elsewhere.
 Neither answer is free: a re-sync is a push, which restarts the checks — and the review, where
 a rule reviews pushes — and is no fix, earning no request of the driver's own; a skipped one
 that was needed puts the break in the base, where only the post-merge read finds it.

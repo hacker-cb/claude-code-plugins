@@ -25,12 +25,13 @@ a receiver told only what is known treats the rest as known.
 - **The base pin** — the base as `<remote>/<branch>@<sha>`, the remote-tracking
   form `base-resolution.md` carries forward (the local branch where no remote
   exists): the commit the order's facts were verified on. It dates the payload —
-  the receiver reads the delta from the pin to the tip as the list of facts to
-  re-verify before relying on them, refreshing the base itself where the named
-  process does not. An order whose facts are the tracker's alone has no delta of
-  this kind. An issue among the facts is re-verified either way, and against the
-  code rather than the tracker ([`issue-currency.md`](issue-currency.md)): the pin
-  dates what the tree made true, never what the body claims about it.
+  the receiver reads what the base brought from the pin to the tip
+  ([`base-delta.md`](base-delta.md)) as the list of facts to re-verify before
+  relying on them, refreshing the base itself where the named process does not.
+  An order whose facts are the tracker's alone has no delta of this kind. An
+  issue among the facts is re-verified either way, and against the code rather
+  than the tracker ([`issue-currency.md`](issue-currency.md)): the pin dates
+  what the tree made true, never what the body claims about it.
 - **The process** — the workflow that runs the work:
   `hcb-dev:implementation-workflow` where there is something to build, written as
   running **in full**, since it brings its own slicing, review and completion (*A

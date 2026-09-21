@@ -73,7 +73,7 @@ its ask is unbidden.
 
    | Landed | Opening step |
    |---|---|
-   | merged into the base | fetch the base and read what arrived first; rebase the reader's own work onto it only once that work's overlap is known |
+   | merged into the base | bring the reader's own work onto it with `hcb-dev:sync-base`, which reads what arrived against that work |
    | an open change request | read it — it is not in the base yet |
    | a branch, unmerged | check out or fetch the branch |
    | the tracker alone — issues rewritten, reclassified or closed | read those issues in full; the repository is untouched |

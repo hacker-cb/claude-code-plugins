@@ -91,10 +91,10 @@ signal means, and one answer from it — whether this base requires the branch c
 is routed on by Steps 2, 4 and 6 alike. **Gates are a floor, never a ceiling**, and a bypass is
 not a pass.
 
-Then rebase onto the base: cleaner history, friendlier to a squash. **`base.current` from Step
-1's call is the condition of this rebase, not a step before it** — anything else is a ref of
-unknown age, which rebases "up to date" here and reports `BEHIND` at merge time. Re-run that
-call where it is not; where it still is not, stop.
+Then rebase onto the base, the points [`../../references/base-delta.md`](../../references/base-delta.md)
+reads from fixed first. **`base.current` from Step 1's call is the condition of this rebase, not a
+step before it** — anything else is a ref of unknown age, which rebases "up to date" here and
+reports `BEHIND` at merge time. Re-run that call where it is not; where it still is not, stop.
 
 ```bash
 git rebase --autostash "<.base.ref, on a .base.current of true>"
@@ -105,13 +105,13 @@ git rebase --autostash "<.base.ref, on a .base.current of true>"
   `slice-completion.md` draws — so put it through `hcb-dev:multi-review` unnarrowed (a
   narrowing sends the security review to `n/a`), fix Critical and Important, push here; a
   review that cannot run, or such a finding left open, is a stop.
-- After a successful rebase, push with `--force-with-lease`.
+- After a successful rebase, read what it brought per `base-delta.md`; push with `--force-with-lease`.
 - **Exception:** a branch [`../../references/feature-branch.md`](../../references/feature-branch.md)
   says to merge rather than rebase takes the base by merge, and the report says which case it was.
 - **Whether staying up to date is itself a merge gate is the base's answer, not this
   step's** (`references/merge-gates.md`): where it is, every later `BEHIND` is re-synced with
-  `gh pr update-branch <pr>` until it clears. Either way this rebase stands — what CI reads
-  must be the code that is going to land.
+  `gh pr update-branch <pr>` until it clears, each re-sync read as the rebase is. Either way this
+  rebase stands — what CI reads must be the code that is going to land.
 
 ## Step 3 — Open the PR (if not already open)
 
