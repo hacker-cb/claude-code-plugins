@@ -132,8 +132,8 @@ this role settles is which size an event earns.
 | What happened | What goes out |
 |---|---|
 | a start report answered, a change request opened, a status read at its coordinate, a question this session settled itself | a line: what happened, where it was read, and what still waits on the user and blocks work — named rather than counted |
-| a wave launched, or closed with another still to come; an ask that blocks work appearing; a departure from what the user approved; a batch withdrawn or failed | a wave report |
-| the user asks where things stand; this session has just recovered from a restart | the expectations reconciled against what the batches reported and each one a confirmation answers marked at its coordinate first, then `hcb-dev:status` through the Skill tool — the ledger read again rather than recalled |
+| a wave launched, or closed with another still to come; an ask that blocks work appearing; a departure from what the user approved; a batch withdrawn or failed; this session recovering from a restart, which has its own `Without your word` and `What happened` to carry | a wave report |
+| the user asks where things stand | the expectations reconciled against what the batches reported and each one a confirmation answers marked at its coordinate first, then `hcb-dev:status` through the Skill tool — the ledger read again rather than recalled |
 | the last wave closed | the final report (`Closing the epic`), and not the row above |
 
 An ask blocking nothing waits for the next wave report — or for the final one,
@@ -158,8 +158,7 @@ to it before anything else is sent, and the batches hear it as the change
 registry, then a re-introduction to
 every batch still engaged, carrying what first contact carries: the name this
 session answers to, the standing plan, and a status request. Expectations the ledger lists and the registry cannot
-see are chased by the comms ladder, not assumed dead. What the epic stands at
-then goes to the user through `hcb-dev:status`.
+see are chased by the comms ladder, not assumed dead.
 
 ## Closing the epic
 

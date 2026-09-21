@@ -590,7 +590,7 @@ Per skill, on top of those:
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
 - **`status`**: the forge CLI for the ledger and the issues behind it (`gh` /
-  `glab`), plus `node` and `jq`; the live session registry for presence. It
+  `glab`), plus `node`; the live session registry for presence. It
   writes nothing, and where a forge answers no verdict for a change request it
   says so rather than working around it.
 - **`sync-base`**: `git` against the resolved base, plus `node` and `jq` for the

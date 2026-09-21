@@ -43,8 +43,8 @@ readings stand, and the report says which is this session's own.
 3. **Neither, and something says this session runs its own work** — a plan-doc, a task list, a
    branch of its own: a standalone run.
 4. **Nothing answers** — the role is unread, never standalone by default: say which of the three
-   was looked for and came back empty, and take the worktree's name, the branch and the order's
-   coordinate as the candidates left to try.
+   came back empty and what that leaves unopened, and ask for the epic number rather than taking
+   one out of a path.
 
 A master or a batch is confirmed against the epic's ledger: the header's master name, a batch row
 naming this session. Where the ledger contradicts the candidate — a variant the host handed back,
@@ -57,12 +57,14 @@ stands on the reading this session can defend. Correcting the ledger is the mast
 
 ```bash
 EPIC="<the number the invocation named, or the role's own>"
+DEEP="<the epic, and the return's issue where an order names one — numbers, comma-separated>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$EPIC<,the return's issue, where an order names one>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP"
 ```
 
-`--repo <owner/name>` on both where the epic lives outside this checkout's repository, and on
-every read below with it. `ledger.mjs` first — whether a ledger stands, and whether its
+`--repo <owner/name>` on both where the epic lives outside this checkout's repository. It is the
+epic's repository and no other read's: a request and a return coordinate each resolve against
+the one they live in, which a tracking epic's batches often do not share. `ledger.mjs` first — whether a ledger stands, and whether its
 coordinate resolves to one comment — then that comment out of `--deep`'s, picked by the author
 and moment `ledger.mjs` gave for it rather than by matching its marker again, read whole, as
 prose: its batch rows, the merge queue and the gates, and the expectations the user owes
@@ -87,15 +89,17 @@ merged.
 
 ```bash
 SLICE="<the slice's branch>"
-# GitHub — `--head` matches the NAME across every head repository, forks included
+# GitHub — `--head` matches the NAME across every head repository, forks included, so the
+# listing is judged against this repository's own identity rather than against a name
+gh repo view --json id,nameWithOwner
 gh pr list --head "$SLICE" --state merged --json number,url,mergedAt,headRepository
 # GitLab
 glab mr list --source-branch "$SLICE" --merged --output json
 ```
 
-A request whose `headRepository` is not this repository is another project's
-([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)), and the slice is
-unmerged until one of this repository's own says otherwise.
+A request whose `headRepository` is not this one by that identity is another project's
+([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) — a fork keeps the
+upstream's name — and the slice stays unmerged until one of this repository's own says otherwise.
 
 A run kept without a plan-doc — the common case for a small one — prints its settlements as
 unread, never as their defaults. What the task list says and the tree does not confirm is
@@ -113,8 +117,12 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr "$PR" ${REPO:+--repo
 glab mr view "$PR" --output json ${REPO:+--repo "$REPO"}
 ```
 
-Where no script takes a verdict for the forge, what the forge said is printed as it said it, and
-the report says the verdict was not taken here.
+Where no script takes a verdict for the forge, what the forge said is printed as it said it, the
+report says the verdict was not taken here, and the readings no script covers there — the
+unresolved threads, the base's required checks — stand in `## The picture` as unread. On a merged
+request a gate that runs only on requests never reports over the landing: that is `none` among
+the shapes [`../../references/slice-completion.md`](../../references/slice-completion.md) names
+for `base_checks`, not a run still going.
 
 ## What the report prints
 
@@ -134,7 +142,7 @@ the report says the verdict was not taken here.
 | `read: false` | no batch row: `## The picture` says the rows are unread, and the rest stands on what else answered — never "no batches" |
 | `ledger.ambiguous` | the first row that matches wins, and this one outranks the next: nothing is drawn from the ledger, the ids its `faults[]` carries stand in `## The picture`, and the repair — the master's write, on the user's word — leads the ask block |
 | `ledger.found: false`, the read answered, nothing ambiguous | no ledger on that issue, with its number: for a master, the role not yet opened or another epic; for a batch, the order's epic carrying none |
-| `faults[]` | a bullet each in `## The picture`; one that holds the next write rides the ask block |
+| `faults[]` | a bullet each in `## The picture`; one that holds the next write rides the ask block. In a batch the ledger is the master's, so a fault saying the comment is not this session's is the normal case and not one |
 
 ## Reference files
 

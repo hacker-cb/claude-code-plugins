@@ -142,8 +142,8 @@ stands there stays.
   generated is left alone.
 - **A plan-doc a session keeps for itself is named for its repository and its title's
   identifier**, in that same ref form, under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, where
-  the identifier alone would collide; its first line names the checkout, which two worktrees of
-  one repository share.
+  the identifier alone would collide. Its first line names the checkout it was written for, and a
+  writer finding another checkout's there adds its own to the name rather than overwriting it.
 - **In a wave, the order's tag is `<epic>/<id>`** — no separate tag is coined
   (`order-anatomy.md`).
 - **A branch takes none of this.** It is named for the change it carries

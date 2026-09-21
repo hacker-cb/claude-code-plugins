@@ -115,7 +115,7 @@ Answer by number; "go" takes every recommendation.
 ## A final report
 
 ```markdown
-**🟡 Three slices merged into `feat/export` · needs you: 1, blocking: 0**
+**🟡 Two slices merged into `feat/export` · needs you: 1, blocking: 0**
 
 ## Where it stands
 | slice | what | completion | state |
