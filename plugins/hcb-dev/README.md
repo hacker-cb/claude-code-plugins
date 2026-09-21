@@ -90,9 +90,12 @@ form: you paste every one of them yourself.
   The pass that rules a run's findings cold and together, once the work is done: every
   candidate collected — this session's own, ones handed over from another session, a master's
   batches' — deduplicated, **verified** by subagents that are given the claim and its coordinate
-  and never the finder's argument, then **grouped by mechanism** — the confirmed and unproven findings sharing
-  a cause, or a gate that could hold them all, become one row with its instances listed —
-  searched in the tracker, ranked, and ended in one of the outcomes of `references/findings.md`.
+  and never the finder's argument, then **grouped by mechanism** — the confirmed and unproven
+  findings sharing a cause, or a gate that could hold them all, become one row with its instances
+  listed — searched in the tracker, ranked, and ended in one of the outcomes of
+  `references/findings.md`: a number of its own only for what outlives the work in hand, the rest
+  handed to the work already going there, proposed as units that do not contend for the same
+  files.
   Everything is shown in the one table
   [`references/findings-table.md`](references/findings-table.md) fixes, whose every row says
   whether it was verified and at which revision, with a footer totalling the rows by severity and
@@ -494,8 +497,8 @@ saying something else. Each file opens by saying what it owns.
   classified outside it. Read wherever an issue is
   classified or a backlog is read by what its tracker declares.
 - [`references/findings.md`](references/findings.md) — how a finding is rated,
-  whether it is fixed in the work that found it, whether it is worth a tracker
-  entry at all, and the closed list of outcomes one can end in. Read wherever a
+  whether it is fixed in the work that found it, whether it is work put off and so
+  worth a tracker entry at all, and the closed list of outcomes one can end in. Read wherever a
   reviewer, a step or a completion turns something up; the pass that rules them is
   `findings-pass`, and the tracker operations themselves stay with `issue-tracking`.
 - [`references/findings-table.md`](references/findings-table.md) — the one form

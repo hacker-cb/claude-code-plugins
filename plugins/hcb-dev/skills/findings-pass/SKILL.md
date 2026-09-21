@@ -96,7 +96,12 @@ row's block. The grouping stays provisional through step 6: an instance that the
 ruling sets apart — an issue carrying it alone, a fix cheaper than any record — leaves the row and
 stands as one of its own. A `not measured` candidate is never grouped; it stays a row of its own.
 
-## 5. Search the tracker, and read the classification
+## 5. Search the tracker, read the classification, and read the work already going
+
+The work in flight is read first, since it is what decides which rows need a number at all
+(`findings.md`, *An issue is work put off*): the ledger's batches where a master session holds
+one, the wave or the change a caller named, and what the forge carries open against this base.
+Work nobody here can read is work that is not going: those rows take their own record.
 
 For every row the checks confirmed or left unproven — a mechanism searched for as the mechanism,
 then for each instance no hit on the mechanism carries; a hit carrying only some instances takes
@@ -123,6 +128,17 @@ it as well, the hand-over names that issue for the work to close. Then the rows 
 each other and against what the backlog already holds (*Ranked, not enumerated*). A `not measured`
 row keeps the proposal it arrived with, and a refuted candidate is not ruled at all: it leaves with
 its reason.
+
+**The handed-over rows are proposed as units of work, not as a list.** They gather by the ground
+they touch, so that two units never contend for the same files; a row changing behaviour or a
+contract takes a unit of its own. A call a row settles by itself — mechanical, or of one
+obviously-correct form — is written into the unit's order rather than put to the reader; a fork
+stays a fork ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+§1). A unit reaches a session the way a tracker write reaches the tracker — through
+`hcb-dev:wave-dispatch` where a wave carries it, `hcb-dev:session-dispatch` otherwise, on the
+answer that skill counts as one — and until it does, it is a proposal like every other row. It
+carries no tracker record either, so whoever holds it says so in the report, and where it stalls
+under them, its rows take their numbers then.
 
 **A `Critical` or `Important` on the code the run itself wrote is not this pass's to rule.**
 `findings.md` has it fixed and blocking the completion, so the run goes back to its own fix path

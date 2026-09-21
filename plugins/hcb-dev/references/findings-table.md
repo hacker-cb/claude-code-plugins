@@ -37,9 +37,10 @@ omission.
 - **`Where`** — `file:line` of the first instance, or the coordinate itself where it is not a
   line: a check, a setting, an issue.
 - **`Verified`** — below.
-- **`Outcome`** — with its target: `HAND OVER — <who holds it>`, `INTO #N`, `OPEN` or
+- **`Outcome`** — with its target: `HAND OVER — <the work that takes it>`, `INTO #N`, `OPEN` or
   `DROP — <reason>`; a finding already tracked as it stands is `DROP — tracked as #N`, and one a
-  *Worth remembering* question ended names that question as its reason. One still the reader's to
+  *Worth remembering* question ended names that question as its reason, as one the work of another
+  row takes names `DROP — carried by row <n>`. One still the reader's to
   give reads `proposed: <outcome>` and stands in the report's ask block as well — a row alone puts
   the decision to nobody. `—` only where nothing proposed or ruled it: a review's
   own report, whose rows also read `not measured — none ran`, and a pass that reached no tracker,
@@ -87,8 +88,9 @@ After the `Refuted:` lines, a block per row that needs one, in rank order, led b
 failure scenario as the finding put it; for a mechanism, its instances, each with its coordinate
 and its own verdict and revision; for `OPEN`, the sentence saying what it costs to never do it; for
 `INTO`, the issue and what the finding adds; for `DROP` ended by a *Worth remembering* question,
-the answer that ended it; for `unproven`, what would settle it. A `HAND OVER` naming its receiver
-and any other `DROP` whose reason fits its cell take none.
+the answer that ended it; for `unproven`, what would settle it. A `HAND OVER` naming its receiver and any
+other `DROP` whose reason fits its cell take none; the units the hand-overs gather into are named
+once, under the last of them.
 
 ## Where a row travels
 
