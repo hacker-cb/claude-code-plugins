@@ -39,9 +39,9 @@ route is stopping the run, not filing it. Everything else failing a condition su
 **A fix costing less than the record of it is done rather than written down**, which lifts the
 first and fourth conditions and only those — the two saying the fix does not belong to this work,
 no reason to spend an entry on what a few lines settle. A fork is still a fork, the user's call
-still theirs, and ground that is not yours sends it to **HAND OVER** rather than to your commit.
-The measure is the fix: a few lines with one obviously-correct form, **proposed** rather than
-made where it falls outside the range the reviewers read.
+still theirs, and ground that is not yours sends it to **HAND OVER**. The measure is the fix: a few
+lines with one obviously-correct form, **proposed** rather than made where it falls outside the
+range the reviewers read.
 
 ## What record it leaves
 
@@ -59,15 +59,18 @@ issue, or reviewing the change that closes it, is measured against that issue **
 by words**: the same mechanism, or a consequence of the fix just made, belongs to it, and where
 that is recorded follows the issue's own state. A different mechanism is recorded on its own.
 
+**An issue is work put off.** Where work is already going into that ground, the finding rides it as
+a **HAND OVER** whatever the fix costs, that work's history being its record. A number is for what
+outlives the work in hand: a decision, a measurement nothing here can make, a trigger not yet come.
+
 **Worth remembering.** Everything below `Critical` passes this before it earns a number of its
 own. Three questions, one *yes* ending it: does it come back on its own, tripping a gate, a test,
 a review or a person again? Is it cheap to derive again? Does nothing observable follow from
-leaving it? The first *yes* denies it a number of its own — **DROP**, its reason the question
-that ended it; an **INTO** or a **HAND OVER** it is owed stands, neither being a number. What
-survives says in one sentence what it costs to never do it — the sentence **OPEN** carries — and
-for a `Minor` outside the work in hand that sentence names something observable that breaks;
-where it cannot, the finding is an instance under a mechanism already recorded or **DROP**, never
-a number of its own. `Critical` skips the questions, not the sentence; where it cannot be written,
+leaving it? The first *yes* denies it a number of its own — **DROP**, its reason the question that
+ended it; an **INTO** or a **HAND OVER** it is owed stands, neither being a number. What survives
+says in one sentence what it costs to never do it — the sentence **OPEN** carries — and for a
+`Minor` outside the work in hand that sentence names something observable that breaks; where it
+cannot, it is an instance under a recorded mechanism, or **DROP**. `Critical` skips the questions, not the sentence; where it cannot be written,
 the finding is **DROP**.
 
 Every finding then ends in exactly one outcome, named when it is proposed:
@@ -75,10 +78,10 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 | outcome | what it means |
 |---|---|
 | **FIX** | done in this work — no proposal, no number |
-| **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change — or on work already assigned there and not yet started, where a fix costs less than its record |
+| **HAND OVER** | the ground is someone else's, or work already going there takes it: it reaches whoever holds that work, on their change |
 | **INTO #N** | an issue already carries this mechanism — a comment, or an update where it adds facts — and is open, or reopened by it where `hcb-dev:issue-tracking` rules a closed one so |
 | **OPEN** | a number of its own, carrying what says when to come back to it and, in one sentence, what it costs to never do it |
-| **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one |
+| **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one — `carried by <the row whose work takes it>` being one such reason |
 
 `Critical` and `Important` on the code this work is writing are **FIX**, blocking completion until
 they are; `Minor` on that code is **FIX** where the fix rides a reading happening anyway and

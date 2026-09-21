@@ -124,6 +124,13 @@ each other and against what the backlog already holds (*Ranked, not enumerated*)
 row keeps the proposal it arrived with, and a refuted candidate is not ruled at all: it leaves with
 its reason.
 
+**The handed-over rows are proposed as units of work, not as a list.** They gather by the ground
+they touch, so that two units never contend for the same files; a row changing behaviour or a
+contract takes a unit of its own. A call a row settles by itself — mechanical, or of one
+obviously-correct form — is written into the unit's order rather than put to the reader; a fork
+stays a fork ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
+§1). A unit carries no tracker record, so where one stalls, its rows take their numbers then.
+
 **A `Critical` or `Important` on the code the run itself wrote is not this pass's to rule.**
 `findings.md` has it fixed and blocking the completion, so the run goes back to its own fix path
 with it — ruling it here would let a severe in-scope defect leave as a tracker entry.
