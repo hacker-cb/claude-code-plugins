@@ -140,6 +140,10 @@ stands there stays.
   — a ref is a path, and a prefix match reads two spellings as one name. The role
   marker's brackets stay out of a ref, being shell glob characters. One the host
   generated is left alone.
+- **A plan-doc a session keeps for itself takes the same identifier**, in that
+  same ref form, under the resolved plans directory; its first line names the
+  checkout it was written for, which two repositories sharing that directory
+  cannot tell apart otherwise.
 - **In a wave, the order's tag is `<epic>/<id>`** — no separate tag is coined
   (`order-anatomy.md`).
 - **A branch takes none of this.** It is named for the change it carries

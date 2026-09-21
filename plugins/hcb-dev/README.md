@@ -40,6 +40,7 @@ backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take 
 master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
                └─▶ wave-refresh ─▶ (occupied ground · delta · free capacity) ─▶ back to wave-dispatch
+status ────────────────────────────────── "where do we stand" — any role, read-only, writes nothing
 session-plugin-refresh ────────────────── when the plugin moves under a running session
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
@@ -310,6 +311,18 @@ the plan stages them.
   staying engaged until the master accepts. The building itself runs through
   whatever workflow the order names, usually `implementation-workflow`.
 
+### Asking where things stand
+
+- **`status`** — `/hcb-dev:status`
+  Where the work stands right now, read again rather than recalled, in whichever
+  role the session holds: an epic and its batches for a master, one batch of a
+  wave, or a run and its slices on its own — and, given an epic number, that
+  epic's state from any session at all, since the ledger lives on the epic.
+  Reads the ledger, the live registry, the change requests and the tree; writes
+  nothing anywhere, and names a source it could not read as unread instead of
+  printing it empty. The other roles route their "where do we stand" and their
+  first report after a restart here, so the shape exists once.
+
 ### Staying current with the plugin
 
 - **`session-plugin-refresh`** — `/hcb-dev:session-plugin-refresh`
@@ -576,6 +589,10 @@ Per skill, on top of those:
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
+- **`status`**: the forge CLI for the ledger and the issues behind it (`gh` /
+  `glab`), plus `node` and `jq`; the live session registry for presence. It
+  writes nothing, and where a forge answers no verdict for a change request it
+  says so rather than working around it.
 - **`sync-base`**: `git` against the resolved base, plus `node` and `jq` for the
   two resolver scripts and their answers. The forge CLI answers the ladder's rungs
   that ask a forge — the open change request's base, and where changes land — and

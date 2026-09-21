@@ -132,6 +132,9 @@ holds, and what it stops is named in the return as the gap it is.
   touches the epic, which the master cannot see, quoted in full and written at the
   coordinate the order names; the session stuck; the scope moving off the start
   report; a boundary change agreed mid-flight.
+- **A status the user asks for is `hcb-dev:status`'s**, invoked through the Skill tool: after a
+  restart it reads this batch's row from the master's ledger rather than from what is left of
+  this session, and the milestone statuses above keep going to the master as they are.
 - **A landing this session did not take is still its landing to finish.** Work
   found already landed, in either mode, is never landed a second time: confirm
   the merge, then retire the branch — the reading is the script's and the acting is

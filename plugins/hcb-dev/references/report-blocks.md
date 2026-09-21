@@ -67,6 +67,7 @@ with nothing to show, its header line alone says `0 after dedup`.
 | a plugin this session moved under | What happened · What moved · Needs your word |
 | a branch taken up to a base that moved | What happened · What moved · Needs your word |
 | a pass that ruled a run's findings | Findings · Needs your word |
+| a status asked for | The picture, where a source did not answer · Where it stands · Needs your word |
 | a review of one change | Review coverage · Findings · Needs your word |
 | a coverage gate that stopped a completion | Review coverage · Needs your word |
 | a planning gate | The plan · Needs your word |
