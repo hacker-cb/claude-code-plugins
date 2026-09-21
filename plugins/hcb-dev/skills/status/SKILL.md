@@ -7,8 +7,8 @@ description: >-
   epic number, that epic's state read from its ledger. Use when the user asks
   where things stand ("где мы", "что сейчас происходит", "на чём стоим",
   "какой статус", "статус эпика #N", "where do we stand", "what's the status"),
-  and for the report a role gives once it has recovered from a restart or
-  compaction. Read-only: it writes no ledger, no tracker and no message to
+  and for what a run prints once it has recovered from a restart, where its
+  own role routes that here. Read-only: it writes no ledger, no tracker and no message to
   another session, and a source it could not read it names as unread rather
   than printing it empty. Not the pass that recomputes what can start next
   (`hcb-dev:wave-refresh`); not the coordinating role itself
@@ -57,14 +57,16 @@ stands on the reading this session can defend. Correcting the ledger is the mast
 
 ```bash
 EPIC="<the number the invocation named, or the role's own>"
-DEEP="<the epic, and the return's issue where an order names one — numbers, comma-separated>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP"
+DEEP="<the issues of ONE repository: the epic, and the return's issue where it shares that repository>"
+REPO="<owner/name, where the epic lives outside this checkout's>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC" ${REPO:+--repo "$REPO"}
+node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP" ${REPO:+--repo "$REPO"}
 ```
 
-`--repo <owner/name>` on both where the epic lives outside this checkout's repository. It is the
-epic's repository and no other read's: a request and a return coordinate each resolve against
-the one they live in, which a tracking epic's batches often do not share. `ledger.mjs` first — whether a ledger stands, and whether its
+One repository a call: a tracking epic's batches often return in another, and a number read
+against the wrong one answers with an unrelated issue rather than with nothing. A request and a
+return each resolve against the repository they live in, in a call of their own where that is
+not the epic's. `ledger.mjs` first — whether a ledger stands, and whether its
 coordinate resolves to one comment — then that comment out of `--deep`'s, picked by the author
 and moment `ledger.mjs` gave for it rather than by matching its marker again, read whole, as
 prose: its batch rows, the merge queue and the gates, and the expectations the user owes
@@ -89,17 +91,20 @@ merged.
 
 ```bash
 SLICE="<the slice's branch>"
-# GitHub — `--head` matches the NAME across every head repository, forks included, so the
-# listing is judged against this repository's own identity rather than against a name
-gh repo view --json id,nameWithOwner
+# The repository this branch pushes to — in a fork checkout the fork, where `gh` on its own
+# answers for the upstream. `remotes.push` is a remote's NAME, so its URL is what names a repo.
+PUSH_REMOTE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" | jq -r .remotes.push)"
+# GitHub — `--head` matches the branch NAME across every head repository, forks included
+gh repo view "$(git remote get-url "$PUSH_REMOTE")" --json id,nameWithOwner
 gh pr list --head "$SLICE" --state merged --json number,url,mergedAt,headRepository
-# GitLab
+# GitLab — `source_project_id` against the project's own, which the same view answers
+glab repo view "$(git remote get-url "$PUSH_REMOTE")" --output json
 glab mr list --source-branch "$SLICE" --merged --output json
 ```
 
-A request whose `headRepository` is not this one by that identity is another project's
+A request whose head is not that repository by identity is another project's
 ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) — a fork keeps the
-upstream's name — and the slice stays unmerged until one of this repository's own says otherwise.
+upstream's name — and the slice stays unmerged until one of that repository's own says otherwise.
 
 A run kept without a plan-doc — the common case for a small one — prints its settlements as
 unread, never as their defaults. What the task list says and the tree does not confirm is
@@ -142,7 +147,7 @@ for `base_checks`, not a run still going.
 | `read: false` | no batch row: `## The picture` says the rows are unread, and the rest stands on what else answered — never "no batches" |
 | `ledger.ambiguous` | the first row that matches wins, and this one outranks the next: nothing is drawn from the ledger, the ids its `faults[]` carries stand in `## The picture`, and the repair — the master's write, on the user's word — leads the ask block |
 | `ledger.found: false`, the read answered, nothing ambiguous | no ledger on that issue, with its number: for a master, the role not yet opened or another epic; for a batch, the order's epic carrying none |
-| `faults[]` | a bullet each in `## The picture`; one that holds the next write rides the ask block. In a batch the ledger is the master's, so a fault saying the comment is not this session's is the normal case and not one |
+| `faults[]` | a bullet each in `## The picture`, which stands for them even where every source answered; one that holds the next write rides the ask block. In a batch the ledger is the master's, so a fault saying the comment is not this session's is the normal case and not one |
 
 ## Reference files
 
