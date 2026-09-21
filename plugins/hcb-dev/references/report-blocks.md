@@ -23,7 +23,8 @@ this file leaves to its own skill, below.
 | `## Needs your word` | numbered, under the groups it has | `report-format.md`'s |
 
 `What happened` is what this session did; `What moved` is what it found had changed underneath
-it. A block appears at most once. `## Findings` is never left out of a report that carries it:
+it. A block appears at most once, and `## Without your word` stands first in any report that has
+something for it, whatever its occasion. `## Findings` is never left out of a report that carries it:
 with nothing to show, its header line alone says `0 after dedup`.
 
 ## What each block holds, where it needs saying

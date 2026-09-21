@@ -135,7 +135,7 @@ is a fork for them, not a rule to apply silently.
 **<circle> <what this refresh found, in a phrase> · needs you: <k>, blocking: <m>**
 
 ## Without your word
-- **Repaired** — <the rule, quoted or named> — <what this session did> — <what it now does>
+- **Repaired** — <the rule, quoted or named> — <what this session did> — <what it now does>. Undo: <how>.
 
 ## What happened
 - **Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
@@ -144,11 +144,14 @@ is a fork for them, not a rule to apply silently.
 ## What moved
 - **<Standing | Owed>** — <the rule> — <what this session did> — <what it now does>
 - **New and load-bearing** — <what the remaining plan has to change>
+
+## Needs your word
+<each divergence `to the addressee`, an ask of its own>
 ```
 
 The grammar is [`../../references/report-format.md`](../../references/report-format.md)'s and
-the blocks [`../../references/report-blocks.md`](../../references/report-blocks.md)'s, its ask
-block last, where each divergence `to the addressee` stands as an ask. Ranked, not enumerated. A session that had done nothing under this plugin reports
+the blocks [`../../references/report-blocks.md`](../../references/report-blocks.md)'s. Ranked,
+not enumerated. A session that had done nothing under this plugin reports
 the four versions and that one line — "nothing was done under it" and "checked,
 nothing diverges" are different answers, and neither is written as the other.
 
