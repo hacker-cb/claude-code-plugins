@@ -100,16 +100,18 @@ The grammar is
    could not see — named here, never read as edges that are not there. On GitHub a parent out of
    this token's sight is in none of them and reads as no parent at all: the search
    `forge-behaviour.md` names is what finds one.
-3. What turned up beside the survey: epics closable as already met, change requests stuck with
+3. The tiers of importance the rows below are placed in, each named with its meaning.
+4. What turned up beside the survey: epics closable as already met, change requests stuck with
    their reason, contradictions between issues.
 
-**`## Where it stands`** — a row per issue: its tier of importance, its declared priority, and
-what it blocks or waits on. Each is placed by three tests: does it block others; does it fire today (a reproduced defect, a live hole); does it
-catch regressions (a guard, a gate). Name the tier's meaning, not only its members, and carry
-each issue's declared priority, where it has one, beside the tier the tests put it in. The tests
+**`## Where it stands`** — a row per issue: its verdict (`issue-currency.md`) with the coordinate
+that shows it as its state, its tier, its declared priority, and what it blocks or waits on. The
+tier comes of three tests: does it block others; does it fire today (a reproduced defect, a live hole); does it
+catch regressions (a guard, a gate). Carry each issue's declared priority, where it has one,
+beside the tier the tests put it in. The tests
 measure what the code makes true, the priority what the queue was told to want, and neither
 disproves the other — so where the two are at odds the divergence is a result of its own:
-reported with what the code showed and left to the user to settle, never corrected as an error,
+reported in the row with what the code showed and left to the user to settle, never corrected as an error,
 never claimed where a verdict above or a live parked reason already explains the quiet, and
 never read out of the normal that absence declares. Where the tests leave two issues level, the
 priority orders them.

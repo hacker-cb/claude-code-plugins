@@ -140,13 +140,14 @@ is a fork for them, not a rule to apply silently.
 ## What happened
 - **Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
 - **Re-read** — <skills> + <references>, <n> files, <m> changed, <k> gone
+- **Owed** — <the rule> — <what left under the old text> — <what it now says, and to whom it went>
 
 ## What moved
-- **<Standing | Owed>** — <the rule> — <what this session did> — <what it now does>
+- **Standing** — <the rule> — <what this session did> — <what it now does>
 - **New and load-bearing** — <what the remaining plan has to change>
 
 ## Needs your word
-<each divergence `to the addressee`, an ask of its own>
+<each divergence `to the addressee` whose addressee is the user, an ask of its own>
 ```
 
 The grammar is [`../../references/report-format.md`](../../references/report-format.md)'s and

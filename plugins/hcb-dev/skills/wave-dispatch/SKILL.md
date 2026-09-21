@@ -145,10 +145,10 @@ the receiver verify its worktree instead of trusting how it was launched.
 
 ## Afterwards
 
-The launch goes to the user as a wave report (`report-format.md`), after the
-correction the preflight already owed them: the
-chips stand in its rows — batch id, topic, what each waits on, the boundaries it
-shares and with whom — naming the plan's launch order and, for a staged wave,
+The launch goes to the user as a wave report
+([`../../references/report-blocks.md`](../../references/report-blocks.md)), after the
+correction the preflight already owed them: the chips stand in its `## Where it stands`
+rows, each naming its topic and the boundaries it shares and with whom — naming the plan's launch order and, for a staged wave,
 which step this is and what has to land before the next chip goes up. Record each
 batch beside its tag in the coordinating session's own record, per
 `order-anatomy.md`. A preflight that held every batch hangs no chip, and that
@@ -165,3 +165,4 @@ so.
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
+- [`../../references/report-blocks.md`](../../references/report-blocks.md)

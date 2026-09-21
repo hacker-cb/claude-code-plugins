@@ -151,11 +151,13 @@ many batches are free, against how many were asked for — is what the first lin
 - **`## Without your word`** — what this pass settled inside its authority.
 - **`## What moved`** — what landed since the last reading, premises knocked out, blockers
   lifted, tracker changes in the slice, and every disagreement the three ground sources showed.
-- **`## Where it stands`** — the batches running and the ground each holds.
+- **`## Where it stands`** — the batches running, as the catalogue's rows have them, each with
+  the ground it holds.
 - **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
   what clears each one against the occupied ground, and what holds the ones held.
 - **`## Needs your word`** — the tracker edits the candidates stand on, each named as the
-  condition that releases its batch, and the word the layout launches on.
+  condition that releases its batch, the word the layout launches on, and — where the slice ran
+  out rather than the work — the capacity outside it, as a choice of its own.
 
 ## After the report
 

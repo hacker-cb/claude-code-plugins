@@ -137,7 +137,7 @@ this role settles is which size an event earns.
 
 An ask blocking nothing waits for the next wave report — or for the final one,
 where the last wave has closed — rather than riding every line — and a tracker write the next wave stands on blocks work whatever
-its rating, so it stands in that group until it is answered or the user defers it. The block carrying them is the ledger's expectations addressed to the user
+its rating, so it stands in that group until it is answered or the user defers it. `## Needs your word` carries them: the ledger's expectations addressed to the user
 (`wave-ledger.md`), read first against what the batches have reported: a word the
 user gave a batch in that batch's own chat reaches this session only through it,
 and goes up as a confirmation of what was reported — never as the same question
