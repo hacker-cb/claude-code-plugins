@@ -187,9 +187,9 @@ run the project's checks — tests, builds, linters. A master session only recom
 
 ## Report
 
-Nothing taken is one line: the base, its tip, already current. Anything else wears the frame
-[`../../references/report-format.md`](../../references/report-format.md) fixes — every fork in its
-`Needs your word` block, recommendation first — over this body:
+Nothing taken is a line: the base, its tip, already current. Anything else is a report
+([`../../references/report-format.md`](../../references/report-format.md)), every fork in its ask
+block, whose `## What happened` carries the first four below and whose `## What moved` carries the last:
 
 - **Base** — `<base.short>` at `<sha>`, its outcome, the remote it was read from.
 - **Branch** — `<branch>` from `<H>` to `<new tip>`: a fast-forward, a rebase, or a merge and which

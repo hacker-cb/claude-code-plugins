@@ -143,22 +143,19 @@ outside it as its own choice for the user, not as part of this slice's layout.
 
 ## The report
 
-The frame is
-[`../../references/report-format.md`](../../references/report-format.md)'s: its
-first line, and its ask block last, carrying the tracker edits the candidates
-stand on and the word the layout launches on. Between them, in this order, each
-section explicit even when empty:
+The grammar is
+[`../../references/report-format.md`](../../references/report-format.md)'s and the blocks
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s, each one explicit
+even where it holds only the line saying there is nothing. The capacity — how many batches are
+free, against how many were asked for — stands in the first line.
 
-1. **The front** — batches running, the ground each holds, what landed since the
-   last reading.
-2. **What moved** — premises knocked out, blockers lifted, tracker changes in
-   the slice, and every disagreement the three ground sources showed.
-3. **The candidates** — the columns of `wave-planning.md`'s closing table, plus
-   what clears each one against the occupied ground, and what holds the ones
-   held.
-4. **The capacity** — how many are free, against how many were asked for.
-5. **What launching needs first** — the tracker edits the candidates stand on,
-   each named as the condition that releases its batch.
+- **`## Where it stands`** — the batches running and the ground each holds.
+- **`## What moved`** — what landed since the last reading, premises knocked out, blockers
+  lifted, tracker changes in the slice, and every disagreement the three ground sources showed.
+- **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
+  what clears each one against the occupied ground, and what holds the ones held.
+- **`## Needs your word`** — the tracker edits the candidates stand on, each named as the
+  condition that releases its batch, and the word the layout launches on.
 
 ## After the report
 

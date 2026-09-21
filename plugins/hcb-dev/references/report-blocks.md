@@ -65,6 +65,11 @@ with nothing to show, its header line alone says `0 after dedup`.
 | a wave report, while an epic runs | Without your word · What happened · Where it stands · Findings, where a round closed · Needs your word |
 | a correction before the first chip of a wave | Without your word |
 | the final report, once a run is done | Without your word · Where it stands · Review coverage · Findings · Issues · What it leaves · Needs your word |
+| a capacity pass over a running epic | Without your word · What moved · Where it stands · The plan · Needs your word |
+| a survey of a slice of the backlog | The picture · Where it stands · The plan · Needs your word |
+| a plugin this session moved under | Without your word · What happened · What moved · Needs your word |
+| a branch taken up to a base that moved | What happened · What moved · Needs your word |
+| a pass that ruled a run's findings | Findings · Needs your word |
 
 An occasion this table does not list keeps whatever shape its own skill fixes — its sections,
 and its first line and ask block where that skill fixes those too — until this table lists it,

@@ -54,7 +54,7 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 - **A layout this preflight corrects after the user's word on it** — a zone
   redrawn, a seam found or dissolved — is corrected here, before the steps below
   read it, and goes out as its own message **before the first chip goes up**: the
-  frame's `Without your word` and nothing else
+  report of `Without your word` alone
   ([`../../references/report-format.md`](../../references/report-format.md)), a
   hung chip being clickable before any report arrives. The launch report carries it
   again at the top. The narrowing and the landing order a corrected seam implies

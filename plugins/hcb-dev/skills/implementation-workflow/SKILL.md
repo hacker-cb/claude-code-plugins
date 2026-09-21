@@ -89,9 +89,8 @@ Settle, in one gate:
 - **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request; the real choice
   is the final `feature → base` request), filtered in request mode to the repo's allowed methods.
 - **Merge authorization** — `slice-completion.md`'s `merge-auth`, value and addressee both, shown
-  rather than asked: `on-green` is the default in both modes, approving the plan *is* that
-  authorization, and the addressee is the user unless an order above named another. The
-  default-branch merge stays separately gated in Phase 2.
+  rather than asked: approving the plan *is* that authorization. The default-branch merge stays
+  separately gated in Phase 2.
 - **Coverage policy** — an **actionable** coverage gap stops the run, not waivable: a reviewer you
   did not know would go missing is what the gate exists to catch. A structural gap is noted,
   never blocking.
@@ -156,8 +155,9 @@ single-slice set has no feature branch and no integration step.
 
 ## Phase 3 — Report and offers
 
-- **The report** — [`../../references/report-format.md`](../../references/report-format.md): its
-  frame, and the final report's body under it.
+- **The report** — the final report, whose blocks
+  [`../../references/report-blocks.md`](../../references/report-blocks.md) lists, written to
+  [`../../references/report-format.md`](../../references/report-format.md)'s grammar.
 - **After a local set** — offer, never force, **one** whole-feature `feature → base` change
   request. This is the consented exit from local mode, and being an ask it stands in the report's
   block rather than beside it.
@@ -195,6 +195,6 @@ the task list are the record. A title this session gave itself stands as it was.
 | [`../../references/base-resolution.md`](../../references/base-resolution.md) | before Phase 0's refresh and Phase 2's cut |
 | [`../../references/branch-naming.md`](../../references/branch-naming.md) | before Phase 1's layout and Phase 2's cut |
 | [`../../references/findings.md`](../../references/findings.md) | before Phase 2's development, and again before Phase 3's issues output |
-| [`../../references/report-format.md`](../../references/report-format.md) | the Phase 3 report shape |
+| [`../../references/report-format.md`](../../references/report-format.md) | the Phase 3 report shape, with `report-blocks.md` beside it |
 | [`../../references/session-naming.md`](../../references/session-naming.md) | at Phase 0's intake, and again once Phase 1's scope is settled |
 | [`../../references/forge-docs.md`](../../references/forge-docs.md) | before writing any `gh` / `glab` invocation this skill does not spell out |
