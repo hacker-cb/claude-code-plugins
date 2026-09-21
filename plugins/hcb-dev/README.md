@@ -483,11 +483,17 @@ saying something else. Each file opens by saying what it owns.
   into batches and waves. Read by whatever partitions work into parallel sessions.
 - [`references/wave-ledger.md`](references/wave-ledger.md) — the master's durable
   state. Read on every event it records, and first after any restart.
-- [`references/report-format.md`](references/report-format.md) — the frame a
-  whole-run report wears, and the two bodies under it: a wave report while an epic
-  runs, the final report once a run is done. Read where work is reported to you —
-  a different altitude from a driver's report on one merged change request, and
-  the two do not replace each other.
+- [`references/report-format.md`](references/report-format.md) — how everything
+  reported to you looks: a line or a report, the bold first line counting what
+  waits on you, one `##` heading per block, five status circles — 🟢 fine,
+  🔵 running by itself, 🟡 your move, 🔴 stopped, ⚪ out of play — and the ask
+  block last, each ask with its recommendation first. Read where work is reported
+  to you — a different altitude from a driver's report on one merged change
+  request, and the two do not replace each other.
+- [`references/report-blocks.md`](references/report-blocks.md) — the blocks a
+  report is built from, in the order they stand, what each holds, and which ones
+  each occasion carries: a wave report while an epic runs, the final report once a
+  run is done. Read beside `report-format.md`.
 - [`references/issue-currency.md`](references/issue-currency.md) — whether an
   issue is still true of the tree, and the four verdicts that say so. Read
   wherever an issue is surveyed or taken in as the spec of work about to start.
@@ -503,7 +509,8 @@ saying something else. Each file opens by saying what it owns.
   `findings-pass`, and the tracker operations themselves stay with `issue-tracking`.
 - [`references/findings-table.md`](references/findings-table.md) — the one form
   findings take wherever they reach you: a header line saying what was verified,
-  a table ranked by severity with a verification column on every row, a footer
+  a table ranked by severity — 🔴 Critical, 🟠 Important, ⚪ Minor — with a
+  verification column on every row, a footer
   totalling the rows by severity and by outcome, and refuted findings named under
   that rather than listed as rows. Read wherever findings are
   shown — a review's report, a run's report, a wave report, a batch's return.
