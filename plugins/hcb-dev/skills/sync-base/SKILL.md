@@ -181,9 +181,9 @@ fi
 
 Read each take per `base-delta.md` — step 1's from the `H` it printed, step 5's from step 3's `M`
 and `H`, or from the earlier point the facts were read at where this session holds one. This
-skill's depth is the mechanics and the forks: run the project's checks, restore the environment
-the delta changed, and put a break the delta caused first in the report, with a recommendation,
-rather than repair it. A master session only recommends `hcb-dev:wave-refresh` here.
+skill's depth is the mechanics and the forks: restore the environment the delta changed, put a
+break the delta caused first in the report, recommendation first, rather than repair it, and never
+run the project's checks — tests, builds, linters. A master session only recommends `hcb-dev:wave-refresh` here.
 
 ## Report
 
