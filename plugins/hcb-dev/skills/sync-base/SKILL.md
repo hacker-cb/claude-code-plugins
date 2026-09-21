@@ -44,24 +44,26 @@ branch are this branch's own tip, not the base's.
 
 ```bash
 B="$(git symbolic-ref --quiet --short HEAD)"; echo "H=$(git rev-parse HEAD)"
-PUSH="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" --no-network | jq -r '.remotes.push // ""')"
-if [ -z "$PUSH" ]; then echo "no push remote"; else
+R="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" --no-network)"; PUSH="$(printf '%s' "$R" | jq -r '.remotes.push // ""')"
+if [ -z "$PUSH" ]; then printf '%s' "$R" | jq '{ranked: .remotes.ranked, pushReason: .remotes.pushReason}'; else
   git ls-remote --exit-code --heads --end-of-options "$PUSH" "refs/heads/$B" >/dev/null
   RC=$?; echo "published: exit $RC"            # 0 yes · 2 no · anything else unknown
-  if [ "$RC" -eq 0 ]; then
-    git fetch --end-of-options "$PUSH" "+refs/heads/$B:refs/remotes/$PUSH/$B"
+  if [ "$RC" -eq 0 ] && git fetch --end-of-options "$PUSH" "+refs/heads/$B:refs/remotes/$PUSH/$B"; then
     git log --oneline --cherry-pick --right-only "HEAD...refs/remotes/$PUSH/$B"
-  fi
+    git merge-base --is-ancestor HEAD "refs/remotes/$PUSH/$B"; echo "HEAD under it: exit $?"
+  elif [ "$RC" -eq 0 ]; then echo "the fetch failed: the published copy is unread"; fi
 fi
 ```
 
+- **No push route** — no remote at all (`ranked` empty) publishes nothing; remotes with no route
+  git would push to (`pushReason` says why) leave the published copy unread.
 - **Nothing listed** — go on.
-- **Commits listed, and HEAD an ancestor of them** — that is a take of its own:
+- **Commits listed, `HEAD under it: exit 0`** — that is a take of its own:
   `git merge --ff-only --autostash "refs/remotes/$PUSH/$B"`, `B` and `PUSH` read as above. Steps 6
   and 7 are owed to it, from the `H` printed above, whatever the base turns out to be.
-- **Commits listed otherwise** — diverged over work this branch lacks: stop, that is the user's.
-- **An exit neither 0 nor 2** — the remote did not answer: the published copy is unread, which
-  step 4 carries into the merge-or-rebase choice.
+- **Commits listed, exit 1** — diverged over work this branch lacks: stop, that is the user's.
+- **Any other exit, or a failed fetch** — the published copy is unread, which step 4 carries into
+  the merge-or-rebase choice.
 
 ## Step 2 — Which base
 
@@ -109,7 +111,7 @@ REF="$(jq -r 'if .base.current and .base.sharesHistory then .base.ref else "" en
 if [ -n "$REF" ]; then
   echo "M=$(git merge-base HEAD "$REF") H=$(git rev-parse HEAD)"
   F="$(git merge-base --fork-point "$REF" HEAD)"; echo "F=$F"
-  [ -z "$F" ] || git merge-base --is-ancestor "$F" "$REF" || echo "REWRITTEN: $F is gone from the base"
+  [ -z "$F" ] || { git merge-base --is-ancestor "$F" "$REF"; echo "F in the base: exit $?"; }
   git rev-list --left-right --count "$REF...HEAD"        # behind <TAB> ahead
 fi
 ```
@@ -121,7 +123,8 @@ fi
 | `silent` otherwise | the remote did not answer: run the call once more, and still `silent`, stop — the ref's age is unknown |
 | `gone` | nobody carries that name: back to step 2, and the same name again is a stop |
 | `base.sharesHistory` false, or null | refused, or unknown: stop, saying which |
-| `REWRITTEN` | the base was rewritten under this branch, and a rebase would replay what it dropped as this branch's own: stop, recommending `git rebase --onto` the base's ref from `F` |
+| `F in the base: exit 1` | the base was rewritten under this branch, and a rebase would replay what it dropped as this branch's own: stop, recommending `git rebase --onto` the base's ref from `F` |
+| `F in the base`, any other exit but 0 | whether the base was rewritten is unread: stop before taking it, saying so |
 
 ## Step 4 — What there is to take, and how
 
@@ -136,11 +139,12 @@ fi
 
 ```bash
 HOW='<ff | rebase | merge — step 4 decided>'
-REF="$(jq -r '.base.ref' "$(git rev-parse --git-dir)/hcb-sync-base.json")"   # step 3's answer
-case "$HOW" in
-  ff)     git merge --ff-only --autostash "$REF" ;;
-  rebase) git rebase --autostash "$REF" ;;
-  merge)  git merge --autostash --no-edit "$REF" ;;
+REF="$(jq -r '.base.ref // empty' "$(git rev-parse --git-dir)/hcb-sync-base.json")"   # step 3's answer
+case "$HOW:${REF:+ref}" in
+  ff:ref)     git merge --ff-only --autostash "$REF" ;;
+  rebase:ref) git rebase --autostash "$REF" ;;
+  merge:ref)  git merge --autostash --no-edit "$REF" ;;
+  *)          echo "nothing taken: step 3 left no ref, or step 4 no decision" ;;
 esac
 ```
 
@@ -153,13 +157,14 @@ recommendation first.
 ## Step 6 — Read what landed, not the exit
 
 ```bash
+PUBLISHED='<yes | no — what step 1 read>'
 REF="$(jq -r '.base.ref // empty' "$(git rev-parse --git-dir)/hcb-sync-base.json" 2>/dev/null)"
 git status --porcelain -b; git stash list --format='%H %gs'
 [ -z "$REF" ] || git rev-list --left-right --count "$REF...HEAD"   # behind must now read 0
 B="$(git symbolic-ref --quiet --short HEAD)"
 PUSH="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" --no-network | jq -r '.remotes.push // ""')"
-if [ -n "$B" ] && [ -n "$PUSH" ] && git rev-parse -q --verify "refs/remotes/$PUSH/$B" >/dev/null; then
-  git rev-list --left-right --count "refs/remotes/$PUSH/$B...HEAD"   # the published copy, as step 1 read it
+if [ "$PUBLISHED" = yes ] && [ -n "$B" ] && [ -n "$PUSH" ]; then
+  git rev-list --left-right --count "refs/remotes/$PUSH/$B...HEAD"   # the published copy step 1 fetched
 fi
 ```
 

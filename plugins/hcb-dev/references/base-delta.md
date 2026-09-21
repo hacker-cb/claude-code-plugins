@@ -18,7 +18,7 @@ Three points, all fixed after the base is fetched and **before** it is taken —
 first, and a merge base read afterwards answers the new tip:
 
 ```bash
-REF="<the refreshed base ref>"
+# In the block that read $REF out of the resolver's answer: a ref pasted in is shell.
 M="$(git merge-base HEAD "$REF")"; H="$(git rev-parse HEAD)"
 F="$(git merge-base --fork-point "$REF" HEAD)"   # the base's reflog, remembering tips it dropped
 ```
@@ -36,9 +36,10 @@ F="$(git merge-base --fork-point "$REF" HEAD)"   # the base's reflog, rememberin
 
 - **`M` empty** — a shallow clone, or a ref sharing no history with the work, which
   `base-resolution.md` refuses as a base: the delta is unread, and no range is built from it.
-- **`F` a commit that is not an ancestor of `$REF`** — the base was rewritten under the work, and
-  `M` alone cannot see it, being an ancestor of `$REF` by construction. What the base dropped
-  would come back as the work's own under a rebase: the delta is unknown, and the take is a fork.
+- **`F` a commit that is not an ancestor of `$REF`** (`git merge-base --is-ancestor` answering 1)
+  — the base was rewritten under the work, and `M` alone cannot see it, being an ancestor of `$REF`
+  by construction. What the base dropped would come back as the work's own under a rebase: the
+  delta is unknown, and the take is a fork. Any answer but 0 or 1 leaves the question unread.
 - **The facts' earlier point not an ancestor of `$REF`** — the same rewrite, seen from a pin.
 
 ## What it is read for
@@ -74,9 +75,8 @@ premise gone — is a fork, not something to build around.
 
 ## Who a fork goes to
 
-The addressee `issue-currency.md` names: the order this session runs under, where that order
-names one, and otherwise the user. A master session reads no delta here: what landed is
-`hcb-dev:wave-refresh`'s to read, from the point its ledger records.
+The addressee `issue-currency.md` names — its rule, whole. A master session reads no delta here:
+what landed is `hcb-dev:wave-refresh`'s to read, from the point its ledger records.
 
 ## What it hands back
 
