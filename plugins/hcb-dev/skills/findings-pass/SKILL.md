@@ -53,9 +53,10 @@ stands, and where that outcome was a fix, the fix is what gets looked at.
 
 ## 2. Dedupe
 
-By the key `findings.md` fixes — `(file, line)` **and** mechanism. A mechanism behind several
-instances is one candidate with its instances listed (*Count before deciding anything else*); one
-that came out of work on an issue is measured against that issue first (*Where it came from*).
+By the key `findings.md` fixes (*The same finding twice*) — `(file, line)` **and** mechanism: one
+defect reported more than once, however many lines it was anchored at, is one candidate. Distinct
+defects sharing a cause stay apart here; step 4 joins them once they are measured. One that came
+out of work on an issue is measured against that issue first (*Where it came from*).
 
 ## 3. Verify
 
@@ -83,40 +84,52 @@ coordinate is `unproven`. A check that was refused, could not run or never answe
 at all: its candidate is `not measured — failed`, carried to a later pass and neither searched nor
 ruled here — an unread answer is not a negative one.
 
-## 4. Search the tracker, and read the classification
+## 4. Group by mechanism
 
-For every candidate the checks confirmed or left unproven. One `not measured` is neither searched
-nor ruled — its outcome waits for a pass that can check it — save an `unreachable` one, which is
-`HAND OVER` to whoever holds a tree carrying its coordinate. The search — closed issues included,
+The confirmed and unproven, read together now that each is measured (*Count before deciding
+anything else*). For every cluster, two questions: do they share one cause, and could one gate
+hold them all? Where either is yes, the cluster is one row — the mechanism, or the gate — and its
+members are that row's instances, the row rated by the most severe of them. A member whose outcome
+differs from its cluster's — a fix cheaper than any record, an issue that already carries it
+alone — stays a row of its own. What follows runs over these rows.
+
+## 5. Search the tracker, and read the classification
+
+For every row the checks confirmed or left unproven — a mechanism searched for as the mechanism,
+not as one of its instances. One `not measured` is neither searched nor ruled — its outcome waits
+for a pass that can check it — save an `unreachable` one, which is `HAND OVER` to whoever holds a
+tree carrying its coordinate. The search — closed issues included,
 and what closed a closed hit — is `hcb-dev:issue-tracking`'s: invoke it through the Skill tool.
 The repository's classification is read once for the pass, per
 [`../../references/classification.md`](../../references/classification.md). With no tracker to
 reach, the rows still show, each saying there is nowhere to file it.
 
-## 5. Rule
+## 6. Rule
 
-Each survivor takes its rating and the scope test from `findings.md`, the *Worth remembering*
-questions below `Critical`, and exactly one outcome, its target set by step 4's search: `INTO` the
-issue already carrying the mechanism, `DROP — tracked as #N` where one carries it as it stands, a
-record of its own where none does — and no proposal at all where no tracker could be reached. Then
-they are ranked against each other and against what the backlog already holds (*Ranked, not
-enumerated*). The pass rules no `FIX` — that outcome is settled where the finding is found
-(*Decided cold*): one that still wants fixing in work someone holds is `HAND OVER` to them, and
-the reader may answer an `OPEN` by having it fixed instead. A refuted candidate is not ruled at
-all: it leaves with its reason.
+Each row takes its rating and the scope test from `findings.md`, then the *Worth remembering*
+questions below `Critical`, asked in turn and answered in its block: the first *yes* ends the row
+as `DROP — <the question>`. What survives takes exactly one outcome, its target set by step 5's
+search: `INTO` the issue already carrying the mechanism, `DROP — tracked as #N` where one carries
+it as it stands, a record of its own where none does — and no proposal at all where no tracker
+could be reached. Then the rows are ranked against each other and against what the backlog already
+holds (*Ranked, not enumerated*). The pass rules no `FIX` — that outcome is settled where the
+finding is found (*Decided cold*): one that still wants fixing in work someone holds, or whose fix
+costs less than its record, is `HAND OVER` to the work that will take it — a master session's next
+batch order included — never `OPEN`. A refuted candidate is not ruled at all: it leaves with its
+reason.
 
 **A `Critical` or `Important` on the code the run itself wrote is not this pass's to rule.**
 `findings.md` has it fixed and blocking the completion, so the run goes back to its own fix path
 with it — ruling it here would let a severe in-scope defect leave as a tracker entry.
 
-## 6. Show
+## 7. Show
 
 The table `findings-table.md` fixes: the header line, the rows in rank order, the refuted line
 under them, the blocks under that. Where the response wears a report's frame the table stands in
 its body, and every `proposed:` row stands in its ask block as well, this session's
 recommendation first.
 
-## 7. Write — on the word only
+## 8. Write — on the word only
 
 A tracker write is `hcb-dev:issue-tracking`'s, on the answer that skill counts as one; a standing
 instruction to work autonomously is not that answer, and nothing in this pass is. On the answer,
@@ -129,7 +142,7 @@ rather than dropped.
 - [`../../references/findings.md`](../../references/findings.md) — the rating, the scope test, the
   five outcomes and the ranking; read before step 2.
 - [`../../references/findings-table.md`](../../references/findings-table.md) — the form, and what
-  the `Verified` column may say; read before step 6.
+  the `Verified` column may say; read before step 7.
 - [`../../references/classification.md`](../../references/classification.md) — read before
   anything is proposed for an issue.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) — read before the

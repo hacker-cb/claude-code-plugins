@@ -51,8 +51,10 @@ reaches back into the fix, which this work owes whatever the record says.
 **Count before deciding anything else.** Where several findings share a mechanism — distinct
 defects, each real, one cause — the mechanism is what is recorded, instances listed under it,
 never one entry each; where a gate could hold that mechanism, the gate is recorded and the
-instances are its evidence. They are still fixed on whatever terms they were owed. A repeat of a
-finding already ruled on is *The same finding twice*, below.
+instances are its evidence. They are still fixed on whatever terms they were owed. The count is
+taken over findings already re-measured, never over the claims as their finders worded them. A
+repeat of a finding already ruled on is
+*The same finding twice*, below.
 **Where it came from decides what it is measured against.** One turned up while working on an
 issue, or reviewing the change that closes it, is measured against that issue **before any search
 by words**: the same mechanism, or a consequence of the fix just made, belongs to it, and where
@@ -61,8 +63,11 @@ that is recorded follows the issue's own state. A different mechanism is recorde
 **Worth remembering.** Everything below `Critical` passes this before it earns a number of its
 own. Three questions, one *yes* ending it: does it come back on its own, tripping a gate, a test,
 a review or a person again? Is it cheap to derive again? Does nothing observable follow from
-leaving it? What survives says in one sentence what it costs to never do it — the sentence
-**OPEN** carries. `Critical` skips the questions, not the sentence; where it cannot be written,
+leaving it? The first *yes* makes it **DROP**, its reason the question that ended it. What
+survives says in one sentence what it costs to never do it — the sentence **OPEN** carries — and
+for a `Minor` outside the work in hand that sentence names something observable that breaks;
+where it cannot, the finding is an instance under a mechanism already recorded or **DROP**, never
+a number of its own. `Critical` skips the questions, not the sentence; where it cannot be written,
 the finding is **DROP**.
 
 Every finding then ends in exactly one outcome, named when it is proposed:
@@ -70,7 +75,7 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 | outcome | what it means |
 |---|---|
 | **FIX** | done in this work — no proposal, no number |
-| **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change |
+| **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change — or on work already assigned there and not yet started, where a fix costs less than its record |
 | **INTO #N** | an issue already carries this mechanism — a comment, or an update where it adds facts — and is open, or reopened by it where `hcb-dev:issue-tracking` rules a closed one so |
 | **OPEN** | a number of its own, carrying what says when to come back to it and, in one sentence, what it costs to never do it |
 | **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one |

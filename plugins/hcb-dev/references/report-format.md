@@ -73,7 +73,7 @@ An event that changes nothing for the reader earns no report: one line carries i
 
 ## What happened
 - <event> — verified <how> at <coordinate>; checks <the `base_checks` value, as `slice-completion.md` gives it>.
-- Candidates — <where a round closed: its table follows this list, header line first>.
+- Candidates — <where a round closed: its table follows this list, header line first, footer line under it>.
 
 ## Where it stands
 | batch | issues | state | waiting on |
@@ -141,7 +141,7 @@ Template:
 
 **Coverage** — <per-slice coverage lines; name any gap; "fully covered" if clean>
 
-**Incidental findings** — <the table, header line first; its `proposed:` rows stand in the block below as well; or the header line alone, `0 after dedup`>
+**Incidental findings** — <the table, header line first, footer line under it; its `proposed:` rows stand in the block below as well; or the header line alone, `0 after dedup`>
 
 **What it leaves** — <refs left standing, worktrees, sessions to archive, an offer turned down, cleanup pointer; or "nothing">
 
