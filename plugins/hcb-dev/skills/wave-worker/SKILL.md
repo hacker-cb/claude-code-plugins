@@ -93,8 +93,9 @@ holds, and what it stops is named in the return as the gap it is.
 - **A finding does not become an issue here, and is not verified here.** Every
   one this batch surfaced and left unfixed rides the return as a candidate — a row
   of [`../../references/findings-table.md`](../../references/findings-table.md)
-  reading `not measured — batch` at the revision it was read at, the outcome and
-  the classification of one that earns an issue proposed, never applied, and
+  reading `not measured — batch` at the revision it was read at, every row
+  carrying the outcome proposed for it and the classification of one that earns an
+  issue — `—` where no issue is in it — never applied, and
   ranked against this batch's others
   within whatever budget the order set
   ([`../../references/findings.md`](../../references/findings.md)). The master
