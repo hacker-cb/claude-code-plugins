@@ -255,12 +255,12 @@ the plan stages them.
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
   Reports as `references/report-format.md` and `references/report-blocks.md` fix
-  them: a wave report when a
-  wave moves, an ask that holds work appears, something departs from what you
-  approved, a batch is withdrawn or fails, the session recovers from a restart or
-  you ask where things stand — and the final report at the end —
-  each closing with the one block carrying everything waiting on you — while an
-  event that changes nothing for you gets a line instead of a report.
+  them: a wave report when a wave moves, an ask that blocks work appears,
+  something departs from what you approved, a batch is withdrawn or fails, the
+  session recovers from a restart or you ask where things stand — and the final
+  report at the end — each ending in the block that carries everything waiting on
+  you, where anything does, while an event that changes nothing for you gets a
+  line instead of a report.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`

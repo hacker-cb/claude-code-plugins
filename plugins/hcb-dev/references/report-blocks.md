@@ -15,7 +15,7 @@ catalogue is the order of a report; no report invents a heading outside it.
 | `## The picture` | bullets | a standing reading of ground nothing changed — counts, milestones, the front line, and what could not be seen |
 | `## Where it stands` | table | one row per unit in flight or ended — a batch, a slice, the next wave — its state and what it waits on |
 | `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices and branches, what a sweep would remove |
-| `## Review coverage` | table | one row per reviewer — `multi-review`'s coverage table, its cells as it gave them |
+| `## Review coverage` | table | one row per reviewer — what it covered, at what effort, and the result `multi-review` classified |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
 | `## Issues` | bullets | the issues the run settles, at their state now |
 | `## What it leaves` | bullets | what the run leaves standing behind it |
@@ -42,11 +42,10 @@ with nothing to show, its header line alone says `0 after dedup`.
   epic groups its rows by wave and ends each in what the ledger records for that batch —
   `released`, `withdrawn(<reason>)` or `failed(<what stands>)`. A set that ended partway says so
   in its first line; a summary never reads as complete when it is not.
-- **`Review coverage`** — each slice's `multi-review` coverage rows as that review gave them, the
-  slice named in its own column where a run has several. A reviewer that
-  could not run, ran over nothing, or ran over the wrong range is a gap, and a structural one —
-  a reviewer's own fixed limitation, which no answer could close — is labelled as such. Where
-  every slice was fully covered, one row says so.
+- **`Review coverage`** — `multi-review`'s own rows, the slice in a column of its own where a run
+  has several, and none of them folded together: a reviewer that could not run, ran over nothing,
+  or ran over the wrong range is a gap, and a structural one — a reviewer's own fixed limitation,
+  which no answer could close — is labelled as such.
 - **`Findings`** — as the pass that ruled them left them, each row rated on the ladder in
   [`findings.md`](findings.md) and saying whether it was verified; a row whose outcome is the
   reader's to give stands in the ask block as well.
@@ -60,15 +59,49 @@ with nothing to show, its header line alone says `0 after dedup`.
 
 ## What each occasion carries
 
-| occasion | printed by | blocks, in order |
-|---|---|---|
-| wave report | `hcb-dev:master-session`; the launch, `hcb-dev:wave-dispatch` | Without your word · What happened · Where it stands · Findings, where a round closed · Needs your word |
-| a correction before the first chip | `hcb-dev:wave-dispatch` | Without your word |
-| final report | `hcb-dev:implementation-workflow`; `hcb-dev:master-session` closing an epic | Without your word · Where it stands · Review coverage · Findings · Issues · What it leaves · Needs your word |
+| occasion | blocks, in order |
+|---|---|
+| a wave report, while an epic runs | Without your word · What happened · Where it stands · Findings, where a round closed · Needs your word |
+| a correction before the first chip of a wave | Without your word |
+| the final report, once a run is done | Without your word · Where it stands · Review coverage · Findings · Issues · What it leaves · Needs your word |
 
-An occasion this table does not list, whose skill fixes a body of its own, writes that body as
-the skill names its sections, after `## Without your word` and before the ask block — the
-catalogue's closed list and its order bind it once this table lists it.
+An occasion this table does not list keeps whatever shape its own skill fixes — its sections,
+and its first line and ask block where that skill fixes those too — until this table lists it,
+which is what binds it to the catalogue and to `report-format.md`'s grammar.
+
+## A wave report
+
+```markdown
+**🔴 Wave 3 launched, wave 2 closed · needs you: 2, blocking: 2**
+
+## Without your word
+- **Departed from what you approved** — `w3/api` was drawn over `src/api/**`; its seam with `w3/store` moved to `src/api/store.ts`. Undo: say so, and the zone goes back.
+
+## What happened
+- **`w2/auth` merged** — at `a1b2c3d`, read on `<remote>/<default>`; checks green.
+
+## Where it stands
+| batch | issues | state | waiting on |
+|---|---|---|---|
+| `w3/api` | #91, #94 | 🔵 building | nothing |
+| `w3/store` | #92 | 🔴 chipped | your click — chip 2h old, pin `a1b2c3d` |
+| `w3/docs` | #95 | 🔴 blocked(needs rewrite) | #95's body, rewritten |
+| wave 4 | #96, #97 | ⚪ not open | `w3/api` and `w3/store` merged |
+
+## Needs your word
+### 🔴 Blocking
+1. **Rewrite #95's body, or drop it from wave 3?**
+   - **Recommend** — rewrite it: the zone is uncontested and the batch is otherwise free.
+   - **Turned down** — dropping it, which pushes the docs work behind two merges.
+   - **If unanswered** — `w3/docs` does not launch.
+   - **Where it is acted on** — a word here; the write goes through `hcb-dev:issue-tracking`.
+2. **Click the chip for `w3/store`.**
+   - **Recommend** — click it: the pin is current and nothing contends for its zone.
+   - **If unanswered** — `w3/store` does not start, and wave 4 waits on its merge.
+   - **Where it is acted on** — the chip, hung 2 hours ago.
+
+Answer by number; "go" takes every recommendation.
+```
 
 ## A final report
 
