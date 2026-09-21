@@ -4,8 +4,7 @@ Read by whatever tells the user something about a run of work. It owns how that 
 kinds of message, the first line, the grammar every block obeys, the five status circles, and
 the two blocks any report can carry — what was settled without the reader, and what waits on
 them. Which blocks an occasion carries, and what each one holds, is
-[`report-blocks.md`](report-blocks.md)'s, which writes both shapes out; an occasion that file
-leaves to its own skill keeps the shape that skill fixes. Keep it scannable: short grouped bullets, a small table, not
+[`report-blocks.md`](report-blocks.md)'s, which writes out a wave report and a final report. Keep it scannable: short grouped bullets, a small table, not
 an essay.
 
 Two boundaries. What an engine hands back verbatim ([`review-runs.md`](review-runs.md)) is the
@@ -26,8 +25,9 @@ a batch's own user, who reads those lines and is owed the rule for a line below.
 ## The first line
 
 Bold, one line, first — nothing stands above it but the line that led into it. It opens with the
-circle of the worst state the report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪ — says what happened, and counts what waits on
-the reader, or says that nothing does.
+circle of the worst the report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪, a blocking ask counting as
+🔴 and one that can wait as 🟡 — says what happened, and counts what waits on the reader, or says
+that nothing does.
 What the report goes on to ask is never announced there as settled.
 
 ```text
@@ -37,12 +37,12 @@ What the report goes on to ask is never announced there as settled.
 
 ## The grammar
 
-- **Every block is a `##` heading**, named from the catalogue and standing in its order — save
-  an occasion `report-blocks.md` leaves to its own skill, whose sections stand as that skill
-  names them. No `#`, no rule line, no bold line standing in for a heading outside a form below.
-- **A block holds one element**: a bulleted list or a table. Two blocks carry a form of their
-  own instead: `## Findings`, the whole of [`findings-table.md`](findings-table.md)'s, and the ask
-  block, below. What fits none of them belongs to the record the session keeps.
+- **Every block is a `##` heading**, named from the catalogue and standing in its order. No `#`,
+  no rule line, no bold line standing in for a heading outside a form below.
+- **A block holds one element**: a bulleted list or a table, with whatever a form of its own
+  puts around it — the whole of [`findings-table.md`](findings-table.md)'s under `## Findings`,
+  an engine's notice under a coverage table, the ask block's groups and closing line. What fits
+  none of that belongs to the record the session keeps.
 - **`###` stands in one place**: the two groups of the ask block.
 - **Bold marks**: the first line, a bullet's lead phrase, an ask's question, an ask's
   sub-bullet labels, and the lines a form of its own carries — `findings-table.md`'s header and
@@ -59,7 +59,7 @@ What the report goes on to ask is never announced there as settled.
 
 | circle | means |
 |---|---|
-| 🟢 | done and clean — nothing is owed on it |
+| 🟢 | nothing is owed on it — done, or cleared to go ahead |
 | 🔵 | in flight, moving without the reader |
 | 🟡 | the reader's move — work goes on meanwhile |
 | 🔴 | work stopped — red, blocked, failed, or held until the reader answers |
@@ -70,9 +70,9 @@ column — the one saying where each row stands — and in the two ask-group hea
 stands **beside** the word the occasion's vocabulary gives — a batch state of
 [`wave-ledger.md`](wave-ledger.md), a slice's, a reviewer's status — never instead of it. A source
 that was not read keeps the state its record gives and says `unread` in words: being unread is no
-circle. A findings table's `Sev` column marks severity rather than state, by
-`findings-table.md`'s own, and nothing there sets the first line's circle; no other emoji
-appears, save in content carried verbatim.
+circle. A column whose header names what else its circle marks — a findings table's `Sev`, by
+`findings-table.md`'s own; a sweep's consequence — marks that, and sets nothing in the first
+line; no other emoji appears, save in content carried verbatim.
 
 ## Without your word
 

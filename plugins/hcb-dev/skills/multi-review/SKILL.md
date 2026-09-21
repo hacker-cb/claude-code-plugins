@@ -162,17 +162,21 @@ rank by that same file's ladder.
 
 ## 6. Report
 
-Coverage first, as a table — one row per reviewer, what it covered before its verdict:
+A report in [`../../references/report-format.md`](../../references/report-format.md)'s grammar,
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s `## Review coverage`
+first — one row per reviewer, what it covered before its verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
-| `codex-review` | `<base>`, 3 files | xhigh | 2 findings |
-| `claude-review` | `<base>`, 3 files | medium | no findings |
-| `security-review` | `<base>`, 1 of 3 files | — | partial: rest uncommitted |
+| `codex-review` | `<base>`, 3 files | xhigh | 🟢 2 findings |
+| `claude-review` | `<base>`, 3 files | medium | 🟢 no findings |
+| `security-review` | `<base>`, 1 of 3 files | — | 🔴 partial: rest uncommitted |
 
 Keep the cells short: "Covered" is always `<base>, N files`, effort gets its own column so a
-level is never left implied, and "Result" is a verdict — never the description of a finding,
-which belongs below the table where it can wrap freely.
+level is never left implied, and "Result" is a verdict — 🟢 covered; 🔴 a gap someone can close,
+`UNAVAILABLE`, `nothing to review` and a plain `partial` among them, which opens the report as
+well, a gap being what stops a completion; ⚪ `n/a` or a `partial (structural)` no one can —
+never a finding, which belongs in `## Findings`.
 
 Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not run; `n/a` — it
 was deliberately not run, and why; `nothing to review` — it ran and covered zero files;
@@ -184,17 +188,13 @@ mis-scoped in every repo whose changes target another trunk. Report that as `par
 (structural)` with the reason, so a shipping flow can tell it apart from a gap still worth
 closing.
 
-Then the findings, laid out by [`../../references/findings-table.md`](../../references/findings-table.md)
+Then `## Findings`, laid out by [`../../references/findings-table.md`](../../references/findings-table.md)
 — verified by none, ruling nothing — and nothing else: no fixes, no patches, no offer to apply them.
 
 **Where the report reads thin for the breadth it covered** — the engines agreed on little, or
 the change reaches across far more ground than the findings touch — say so, and offer the one
 thing neither engine here does: `/code-review` typed by the user, whose workflow route puts an
 **independent verifier on every candidate** rather than letting the finder judge itself. Hand it
-over ready to run — the rung, then the base and narrowing §1 resolved, spelled out as
+over as an ask, ready to run — the rung, then the base and narrowing §1 resolved, spelled out as
 `<base>...HEAD`; left off, it falls back to its own default range, which on an already-pushed
-branch is near-empty. Recommend, and let the user decide; never launch it yourself.
-
-When the change is about to be completed — merged locally or handed to a change request — say
-the gaps out loud before the handoff rather than burying them under the findings. A completion
-with a reviewer silently missing is exactly what the coverage lines exist to prevent.
+branch is near-empty. Never launch it yourself.

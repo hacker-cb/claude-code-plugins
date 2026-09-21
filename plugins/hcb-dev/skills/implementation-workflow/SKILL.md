@@ -61,8 +61,11 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
 
 ## Phase 1 — The planning gate
 
-The one interactive point. Present the whole plan and take a single approval, deciding everything
-foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
+The one interactive point, in the weight the tier table below gives it. Where the plan goes out
+as a message of its own, `## The plan` lays out the slices, the branches and each settlement
+shown rather than asked ([`../../references/report-blocks.md`](../../references/report-blocks.md));
+where the tier makes it a brief confirm, the forks alone stand — in the ask block either way.
+Take a single approval, deciding everything foreseeable at once so Phase 2 has none left. Every fork carries a
 **recommendation shown first**, and a project rule that fights good architecture gets flagged
 ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 
@@ -73,12 +76,10 @@ re-opens what the order closed. Everything it left open is settled here as usual
 
 Settle, in one gate:
 
-- **What a non-`current` verdict changes** — an issue ruled stale, needing a rewrite or
-  unverifiable carries the fork the rest of the plan is built on, so it is settled first and the
-  slicing is shown as what the recommended answer makes. Recommend from what its own verdict
-  leaves open (`issue-currency.md`), carrying the coordinate that verdict stands on; where
-  another answer is taken, re-draw the layout it invalidates before the gate closes.
-  `hcb-dev:issue-tracking` writes to the tracker on the answer, never ahead of it.
+- **What a non-`current` verdict changes** — the fork the rest of the plan is built on, settled
+  first, the slicing shown as what the recommended answer makes (`issue-currency.md`); another
+  answer re-draws the layout it invalidates before the gate closes. `hcb-dev:issue-tracking`
+  writes to the tracker on the answer, never ahead of it.
 - **Slice breakdown + branch layout** — a shared feature branch only for more than one slice; a
   single slice's parent is the base. Both names come from
   [`../../references/branch-naming.md`](../../references/branch-naming.md), which owns the
@@ -86,8 +87,8 @@ Settle, in one gate:
 - **Architectural / implementation forks** — the choices the code cannot answer.
 - **Completion mode** — `local` or `request` (default `request` where the user is silent and
   phrasing does not decide).
-- **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request; the real choice
-  is the final `feature → base` request), filtered in request mode to the repo's allowed methods.
+- **Merge strategy** — `slice-completion.md`'s shown default, filtered in request mode to the
+  repo's allowed methods.
 - **Merge authorization** — `slice-completion.md`'s `merge-auth`, value and addressee both, shown
   rather than asked: `on-green` by default in both modes, the addressee the user unless an order
   above named another, and approving the plan *is* that authorization. The default-branch merge
@@ -107,9 +108,8 @@ Settle, in one gate:
 For anything multi-slice, **persist the plan and the captured authorizations** so a long autonomous
 run survives context compaction: slice progress on the native task list, and the plan — mode, merge
 authorization, strategy, Phase 0's read point, each slice's cut point as it is cut — in a durable
-plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, the path resolved from the variable and
-never hardcoded. Where this session titled itself at intake, the approved scope is what that title
-settles on (`session-naming.md`'s second step).
+plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`. Where this session titled itself at
+intake, the approved scope is what that title settles on (`session-naming.md`'s second step).
 
 ## Phase 2 — Autonomous execution
 
@@ -156,8 +156,8 @@ single-slice set has no feature branch and no integration step.
 
 ## Phase 3 — Report and offers
 
-- **The report** — the final report of [`../../references/report-blocks.md`](../../references/report-blocks.md),
-  in [`../../references/report-format.md`](../../references/report-format.md)'s grammar.
+- **The report** — the final report of `report-blocks.md`, in
+  [`../../references/report-format.md`](../../references/report-format.md)'s grammar.
 - **After a local set** — offer, never force, **one** whole-feature `feature → base` change
   request. This is the consented exit from local mode, and being an ask it stands in the report's
   block rather than beside it.
@@ -195,6 +195,6 @@ the task list are the record. A title this session gave itself stands as it was.
 | [`../../references/base-resolution.md`](../../references/base-resolution.md) | before Phase 0's refresh and Phase 2's cut |
 | [`../../references/branch-naming.md`](../../references/branch-naming.md) | before Phase 1's layout and Phase 2's cut |
 | [`../../references/findings.md`](../../references/findings.md) | before Phase 2's development, and again before Phase 3's issues output |
-| [`../../references/report-format.md`](../../references/report-format.md), [`../../references/report-blocks.md`](../../references/report-blocks.md) | the Phase 3 report shape |
+| [`../../references/report-format.md`](../../references/report-format.md), [`../../references/report-blocks.md`](../../references/report-blocks.md) | the shape of the gate's report and Phase 3's |
 | [`../../references/session-naming.md`](../../references/session-naming.md) | at Phase 0's intake, and again once Phase 1's scope is settled |
 | [`../../references/forge-docs.md`](../../references/forge-docs.md) | before writing any `gh` / `glab` invocation this skill does not spell out |
