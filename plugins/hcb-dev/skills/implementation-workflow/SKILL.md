@@ -40,9 +40,9 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
 - **Search the backlog for the work itself** — `hcb-dev:issue-tracking`. An issue already
   covering these tasks changes the scope; one covering part of them changes the slicing.
 - **Refresh the base before reading the code against it**
-  ([`../../references/base-resolution.md`](../../references/base-resolution.md)). The fetch moves
-  the remote-tracking ref and nothing else, so read against the refreshed ref; where the checkout
-  cannot move onto it, say the tree is older and treat what the base moved past as unread.
+  ([`../../references/base-resolution.md`](../../references/base-resolution.md)). Read against the
+  refreshed ref, and keep its sha as the point these facts were read at; where the checkout cannot
+  move onto it, say the tree is older and treat what the base moved past as unread.
 - **Rule each issue task current, or not** — a number taken in is a claim about the tree and earns
   a verdict against the base just refreshed (`issue-currency.md`); free text from the
   conversation is the user's own ask and takes none.
@@ -104,25 +104,26 @@ Settle, in one gate:
 | 1 | a slice or two | a brief inline confirm | native task-list; a plan-doc where there is more than one slice |
 | 2 | multi-slice, real forks | native plan mode | plan-doc under the resolved plans dir + task-list; where the work is large, shared with a team or spread over sessions, offer a forge tracking issue as well |
 
-For anything multi-slice, **persist the plan and the captured authorizations** so a long
-autonomous run survives context compaction: slice progress on the native task list, and the plan
-— mode, merge authorization, strategy, and each slice's cut point as it is cut — in a durable
-plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, the path resolved from the variable
-and never hardcoded. Where this session titled itself at intake, the approved scope is what that
-title settles on (`session-naming.md`'s second step).
+For anything multi-slice, **persist the plan and the captured authorizations** so a long autonomous
+run survives context compaction: slice progress on the native task list, and the plan — mode, merge
+authorization, strategy, Phase 0's read point, each slice's cut point as it is cut — in a durable
+plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, the path resolved from the variable and
+never hardcoded. Where this session titled itself at intake, the approved scope is what that title
+settles on (`session-naming.md`'s second step).
 
 ## Phase 2 — Autonomous execution
 
 Per slice, **in order** — slices stack and depend on each other:
 
-1. **Cut the slice branch from the current tip of its parent** — the feature branch, or the base
-   for a single slice — not all up front, so a later slice sees the ones below it and conflicts
-   less. Where that parent is the base, refresh it again here and take the cut point from
-   `base-resolution.md`'s table: Phase 0's fetch does not still hold. The feature branch is cut
-   once, before the first slice, and in `request` mode published then, the first slice's request
-   targeting it on the remote; **before each later slice is cut, bring it current** per
-   [`../../references/feature-branch.md`](../../references/feature-branch.md). Cut the slice
-   under the name the gate showed, and record its cut point in the plan-doc.
+1. **Cut the slice branch from the current tip of its parent** — the feature branch, or the base for
+   a single slice — not all up front, so a later slice sees the ones below it and conflicts less.
+   Where that parent is the base, refresh it again and take the cut point from `base-resolution.md`'s
+   table. The feature branch is cut once, before the first slice, and in `request` mode published
+   then; **before each later slice, bring it current** per
+   [`../../references/feature-branch.md`](../../references/feature-branch.md). **Before every cut,
+   read what the base brought** ([`../../references/base-delta.md`](../../references/base-delta.md);
+   the first, from Phase 0's read point): a slice it already built or reshaped is a fork, not a cut.
+   Cut under the name the gate showed, and record the cut point in the plan-doc.
 2. **Develop the slice** — the normal coding work; `dependency-versions` and `seeding-gitignore`
    apply as always. What the work turns up goes through
    [`../../references/findings.md`](../../references/findings.md) as it is noticed, here rather
@@ -172,16 +173,16 @@ single-slice set has no feature branch and no integration step.
 
 ## After a restart or compaction
 
-The plan-doc and the task list are what survived, so they are read before anything rests on
-memory: the plan-doc for the gate's settlements — slices, mode, `merge-strategy`, `merge-auth`
-with its addressee, each slice's cut point — and the task list for which slice is in flight. Then
-the tree is read against them, and it outranks both: for each slice the plan names, the parent's
-own history says whether it landed, and in `request` mode so does its request (`gh pr list --head
-<slice> --state merged`). The slice in flight stands where its branch does — cut, developed, or
-handed on, and `shipping-workflow`'s committed steps are resumed past while its review is run
+The plan-doc and the task list are what survived, so they are read before anything rests on memory:
+the plan-doc for the gate's settlements — slices, mode, `merge-strategy`, `merge-auth` with its
+addressee, Phase 0's read point, each slice's cut point — and the task list for which slice is in
+flight. Then the tree is read against them, and it outranks both: for each slice the plan names, the
+parent's own history says whether it landed, and in `request` mode so does its request (`gh pr list
+--head <slice> --state merged`). The slice in flight stands where its branch does — cut, developed,
+or handed on, and `shipping-workflow`'s committed steps are resumed past while its review is run
 again, a coverage record that lived only in the lost context being no record. What the task list
-says and the tree does not confirm is unknown, not done. Where no plan-doc was kept, the branch
-and the task list are the record. A title this session gave itself stands as it was.
+says and the tree does not confirm is unknown, not done. Where no plan-doc was kept, the branch and
+the task list are the record. A title this session gave itself stands as it was.
 
 ## Reference files
 

@@ -70,11 +70,13 @@ holds, and what it stops is named in the return as the gap it is.
   goes to the master with a recommendation. The order's ask and its terminal
   deliverable are the row the return is judged against, and rewriting them from
   here leaves the master accepting against something else.
-- **The order's facts are re-verified before anything rests on them**: read
-  the delta from the order's base pin to the tip they are read against as the
-  list of the order's facts to re-check — this session refreshing a base itself
-  where the named workflow has no refresh of its own — and a premise that falls
-  is named to the master the moment it falls, never saved for the return.
+- **The order's facts are re-verified before anything rests on them**: what the
+  base brought from the order's pin to the tip they are read against, read per
+  [`../../references/base-delta.md`](../../references/base-delta.md), is the list
+  of the order's facts to re-check — this session refreshing a base itself where
+  the named workflow has no refresh of its own, `hcb-dev:sync-base` where it
+  takes one — and a premise that falls is named to the master the moment it
+  falls, never saved for the return.
   Where the order carries no base pin, its facts are the tracker's and
   re-verified there. An issue among the facts is ruled either way, per
   `issue-currency.md` — this session ruling it where the named process carries

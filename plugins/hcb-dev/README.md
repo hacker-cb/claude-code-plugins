@@ -32,6 +32,7 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
 issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
 findings-pass ─────────────────────────── a run's end, or a round's: every finding verified, ruled, one table
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
+sync-base ─────────────────────────────── the base moved: take it, read what it brought — never a push
 session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
 backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
                ├─▶ master-session (the layout, once the hygiene it proposed ran)
@@ -113,6 +114,16 @@ form: you paste every one of them yourself.
   from what the project actually contains. Runs before every commit to keep local
   artifacts out of git. What the canonical templates leave out is
   [`skills/seeding-gitignore/references/tool-artifacts.md`](skills/seeding-gitignore/references/tool-artifacts.md).
+- **`sync-base`** — `/hcb-dev:sync-base`
+  Bring a branch up to date with a base that moved: its own published copy
+  first, then the base the shared ladder resolves — a fast-forward where the
+  branch has nothing of its own, a rebase by default, a merge where its history
+  may not be rewritten, `--autostash` over a dirty tree — and never a push. A
+  branch that is itself a base only catches up with its own remote copy. Then it
+  reads what arrived against the work in flight, per `references/base-delta.md` —
+  the code, the environment, the issues the work carries, the plan — runs the
+  project's checks, and hands every fork to whoever the work answers to. In a
+  master session it moves the checkout and leaves the reading to `wave-refresh`.
 
 ### Reviewing it
 
@@ -412,6 +423,11 @@ saying something else. Each file opens by saying what it owns.
 - [`references/base-resolution.md`](references/base-resolution.md) — resolving a
   base branch and its remote without guessing either name. Read wherever a base
   or a remote is resolved.
+- [`references/base-delta.md`](references/base-delta.md) — what a base that
+  moved brought to the work in flight: where the delta starts, the four kinds of
+  consequence it is read for, and who a fork goes to. Read wherever a base is
+  taken onto work in flight — a sync, a landing, a slice's cut, an order's facts
+  re-verified against a newer tip.
 - [`references/review-runs.md`](references/review-runs.md) — what a review engine
   launched outside the current session owes whoever launched it, and how any
   reviewer's answer is waited on. Read wherever a review runs as its own
@@ -517,7 +533,7 @@ other. What it buys differs per skill: an issue read, a change request opened, a
 squash-merge that git alone cannot see. Where a skill can go on without it, it says
 what it loses rather than stopping.
 
-**`node` and the `claude` CLI itself** are `session-plugin-refresh`'s alone: it
+**The `claude` CLI itself** is `session-plugin-refresh`'s alone: it
 resolves the versions from the plugin's own manifest, `claude plugin list`, and
 the marketplace's git checkout — the last read with `git`, so a marketplace on
 any host answers the same way.
@@ -547,6 +563,10 @@ Per skill, on top of those:
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
+- **`sync-base`**: `git` against the resolved base, plus `node` and `jq` for the
+  two resolver scripts and their answers. The forge CLI answers the ladder's rungs
+  that ask a forge — the open change request's base, and where changes land — and
+  lists the requests targeting this branch; without it each is skipped and said to be.
 - **`codex-review`**: the `codex` CLI installed and `codex login` live, plus `jq`
   to read the run's JSON envelope.
 - **`claude-review`**: the `claude` CLI on `PATH` and authenticated, plus `jq` to

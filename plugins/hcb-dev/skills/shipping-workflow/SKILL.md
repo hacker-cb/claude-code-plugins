@@ -101,15 +101,17 @@ of step 0 — per
 
    Rebase by default; merge where
    [`../../references/feature-branch.md`](../../references/feature-branch.md) puts this branch
-   in one of its merge-never-rebase cases, and where that cannot be read, ask.
+   in one of its merge-never-rebase cases, and where that cannot be read, ask. Before landing,
+   fix the points [`../../references/base-delta.md`](../../references/base-delta.md) reads
+   from, against the parent's ref — not `diff-base`, which step 1's fetch may already have moved.
 
    Landing re-cuts the slice, so `diff-base` moves to the tip landed on
    (`slice-completion.md`); step 4 gets the moved value.
 
-   **Then run what the project runs** on the integrated tree and commit what that
-   takes — what the base moved past leaves no diff for a reviewer to find, and a
-   rename it made is step 2's sweep over again, this time over `parent`'s range. A
-   conflict needing a real decision is an architectural fork
+   **Then read what landing brought, per `base-delta.md`, and run what the project runs**
+   on the integrated tree, committing what that takes — what the base moved past leaves no diff
+   for a reviewer to find, and a rename it made is step 2's sweep over again, this time over
+   `parent`'s range. A conflict needing a real decision is an architectural fork
    (`architecture-decisions.md`): stop and ask.
 4. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it — as step 3 left
