@@ -89,9 +89,9 @@ Settle, in one gate:
 - **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request; the real choice
   is the final `feature → base` request), filtered in request mode to the repo's allowed methods.
 - **Merge authorization** — `slice-completion.md`'s `merge-auth`, value and addressee both, shown
-  rather than asked: `on-green` is the default in both modes, approving the plan *is* that
-  authorization, and the addressee is the user unless an order above named another. The
-  default-branch merge stays separately gated in Phase 2.
+  rather than asked: `on-green` by default in both modes, the addressee the user unless an order
+  above named another, and approving the plan *is* that authorization. The default-branch merge
+  stays separately gated in Phase 2.
 - **Coverage policy** — an **actionable** coverage gap stops the run, not waivable: a reviewer you
   did not know would go missing is what the gate exists to catch. A structural gap is noted,
   never blocking.
@@ -156,15 +156,15 @@ single-slice set has no feature branch and no integration step.
 
 ## Phase 3 — Report and offers
 
-- **The report** — [`../../references/report-format.md`](../../references/report-format.md): its
-  frame, and the final report's body under it.
+- **The report** — the final report of [`../../references/report-blocks.md`](../../references/report-blocks.md),
+  in [`../../references/report-format.md`](../../references/report-format.md)'s grammar.
 - **After a local set** — offer, never force, **one** whole-feature `feature → base` change
   request. This is the consented exit from local mode, and being an ask it stands in the report's
   block rather than beside it.
 - **Issues output** — before the report `hcb-dev:findings-pass` rules every slice's `incidental`,
   invoked through the Skill tool — except in a wave's batch, whose return carries them unruled
-  (`hcb-dev:wave-worker`). Its table is the findings section; its `proposed:` rows and the
-  follow-ups stand in that same block. In local mode no change request closes the intake issue:
+  (`hcb-dev:wave-worker`). Its table is `## Findings`; its `proposed:` rows and the
+  follow-ups stand in `## Needs your word`. In local mode no change request closes the intake issue:
   closing or linking it rides with that handoff, or the issue is left open against landed work.
 - **Cleanup** — a branch retires with the merge that landed it
   ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)), so a run
@@ -195,6 +195,6 @@ the task list are the record. A title this session gave itself stands as it was.
 | [`../../references/base-resolution.md`](../../references/base-resolution.md) | before Phase 0's refresh and Phase 2's cut |
 | [`../../references/branch-naming.md`](../../references/branch-naming.md) | before Phase 1's layout and Phase 2's cut |
 | [`../../references/findings.md`](../../references/findings.md) | before Phase 2's development, and again before Phase 3's issues output |
-| [`../../references/report-format.md`](../../references/report-format.md) | the Phase 3 report shape |
+| [`../../references/report-format.md`](../../references/report-format.md), [`../../references/report-blocks.md`](../../references/report-blocks.md) | the Phase 3 report shape |
 | [`../../references/session-naming.md`](../../references/session-naming.md) | at Phase 0's intake, and again once Phase 1's scope is settled |
 | [`../../references/forge-docs.md`](../../references/forge-docs.md) | before writing any `gh` / `glab` invocation this skill does not spell out |

@@ -187,14 +187,14 @@ run the project's checks — tests, builds, linters. A master session only recom
 
 ## Report
 
-Nothing taken is one line: the base, its tip, already current. Anything else wears the frame
-[`../../references/report-format.md`](../../references/report-format.md) fixes — every fork in its
-`Needs your word` block, recommendation first — over this body:
+Nothing taken is a line: the base, its tip, already current. Anything else is a report
+([`../../references/report-format.md`](../../references/report-format.md), [`../../references/report-blocks.md`](../../references/report-blocks.md)),
+every fork in its ask block and each conflict it resolved under `## Without your word`, with what
+undoes it; **Base** and **What arrived** stand in `## What moved`, the rest in `## What happened`:
 
 - **Base** — `<base.short>` at `<sha>`, its outcome, the remote it was read from.
 - **Branch** — `<branch>` from `<H>` to `<new tip>`: a fast-forward, a rebase, or a merge and which
-  case, and step 1's take where it made one; its commits of its own; each conflict resolved.
-- **Tree** — clean; the uncommitted work the autostash carried back; or the autostash standing as
-  `<sha>`.
+  case, and step 1's take where it made one; its commits of its own.
+- **Tree** — clean; the uncommitted work the autostash carried back; or it standing as `<sha>`.
 - **Published** — nothing published; level; or diverged, and what publishing it would take.
 - **What arrived** — `base-delta.md`'s line per kind, for each take.

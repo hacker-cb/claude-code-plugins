@@ -14,7 +14,7 @@ this file leaves to its own skill, below.
 | `## What happened` | bullets | what this session did or verified since the last report |
 | `## What moved` | bullets | what this session found had changed under it — the base, the tracker, the plugin |
 | `## The picture` | bullets | a standing reading of ground nothing changed — counts, milestones, the front line, and what could not be seen |
-| `## Where it stands` | table | one row per unit in flight or ended — a batch, a slice, the next wave — its state and what it waits on |
+| `## Where it stands` | table | one row per unit the report tracks — a batch, a slice, an issue, the next wave — its state and what it waits on |
 | `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices and branches, what a sweep would remove |
 | `## Review coverage` | table | one row per reviewer — what it covered, at what effort, and the result `multi-review` classified |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
@@ -23,7 +23,8 @@ this file leaves to its own skill, below.
 | `## Needs your word` | numbered, under the groups it has | `report-format.md`'s |
 
 `What happened` is what this session did; `What moved` is what it found had changed underneath
-it. A block appears at most once. `## Findings` is never left out of a report that carries it:
+it. A block appears at most once, and `## Without your word` stands first in any report that has
+something for it, whatever its occasion — the rows below name the rest. `## Findings` is never left out of a report that carries it:
 with nothing to show, its header line alone says `0 after dedup`.
 
 ## What each block holds, where it needs saying
@@ -62,9 +63,14 @@ with nothing to show, its header line alone says `0 after dedup`.
 
 | occasion | blocks, in order |
 |---|---|
-| a wave report, while an epic runs | Without your word · What happened · Where it stands · Findings, where a round closed · Needs your word |
-| a correction before the first chip of a wave | Without your word |
-| the final report, once a run is done | Without your word · Where it stands · Review coverage · Findings · Issues · What it leaves · Needs your word |
+| a wave report, while an epic runs | What happened · Where it stands · Findings, where a round closed · Needs your word |
+| a correction before the first chip of a wave | Without your word, alone |
+| the final report, once a run is done | Where it stands · Review coverage · Findings · Issues · What it leaves · Needs your word |
+| a capacity pass over a running epic | What moved · Where it stands · The plan · Needs your word |
+| a survey of a slice of the backlog | The picture · Where it stands · The plan · Needs your word |
+| a plugin this session moved under | What happened · What moved · Needs your word |
+| a branch taken up to a base that moved | What happened · What moved · Needs your word |
+| a pass that ruled a run's findings | Findings · Needs your word |
 
 An occasion this table does not list keeps whatever shape its own skill fixes — its sections,
 and its first line and ask block where that skill fixes those too — until this table lists it,
