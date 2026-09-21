@@ -25,8 +25,8 @@ a batch's own user, who reads those lines and is owed the rule for a line below.
 
 ## The first line
 
-Bold, one line, first — nothing stands above it. It opens with the circle of the worst thing the
-report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪ — says what happened, and counts what waits on
+Bold, one line, first — nothing stands above it but the line that led into it. It opens with the
+circle of the worst state the report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪ — says what happened, and counts what waits on
 the reader, or says that nothing does.
 What the report goes on to ask is never announced there as settled.
 
@@ -68,11 +68,11 @@ What the report goes on to ask is never announced there as settled.
 A circle stands first in a report's first line (and in a line, as above), in a table's state
 column — the one saying where each row stands — and in the two ask-group headings. There it
 stands **beside** the word the occasion's vocabulary gives — a batch state of
-[`wave-ledger.md`](wave-ledger.md), a `base_checks` value of
-[`slice-completion.md`](slice-completion.md), a reviewer's status — never instead of it. A source
+[`wave-ledger.md`](wave-ledger.md), a slice's, a reviewer's status — never instead of it. A source
 that was not read keeps the state its record gives and says `unread` in words: being unread is no
 circle. A findings table's `Sev` column marks severity rather than state, by
-`findings-table.md`'s own; no other emoji appears, save in content carried verbatim.
+`findings-table.md`'s own, and nothing there sets the first line's circle; no other emoji
+appears, save in content carried verbatim.
 
 ## Without your word
 
@@ -107,7 +107,7 @@ exactly as a question is: a chip nobody has clicked, or an approval the gates or
 authorization leave outstanding, belongs here. An ask leaves only with an outcome — answered,
 deferred by the reader's word (which stops it blocking), withdrawn, failed with what still
 stands, or overtaken — said in the line or report that drops it. Where the session records what
-it awaits ([`wave-ledger.md`](wave-ledger.md) for a coordinating one), the block prints that
+it awaits (`wave-ledger.md` for a coordinating one), the block prints that
 record rather than recall.
 
 ## What a report is not

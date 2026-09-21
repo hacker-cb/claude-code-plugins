@@ -3,7 +3,8 @@
 Read wherever a report is written, beside [`report-format.md`](report-format.md), which fixes how
 every block looks. This file owns the catalogue — the blocks a report is built from, in the order
 they stand — what each one holds, and which blocks each occasion carries. The order of the
-catalogue is the order of a report; no report invents a heading outside it.
+catalogue is the order of a report; no report invents a heading outside it, save an occasion
+this file leaves to its own skill, below.
 
 ## The catalogue
 
@@ -19,7 +20,7 @@ catalogue is the order of a report; no report invents a heading outside it.
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
 | `## Issues` | bullets | the issues the run settles, at their state now |
 | `## What it leaves` | bullets | what the run leaves standing behind it |
-| `## Needs your word` | numbered, under two `###` | `report-format.md`'s |
+| `## Needs your word` | numbered, under the groups it has | `report-format.md`'s |
 
 `What happened` is what this session did; `What moved` is what it found had changed underneath
 it. A block appears at most once. `## Findings` is never left out of a report that carries it:
@@ -123,7 +124,7 @@ Answer by number; "go" takes every recommendation.
 | … | … | … | … | … |
 
 ## Findings
-**Findings — 0 after dedup · verified by none**
+**Findings — 0 after dedup · verified by none · confirmed 0 · unproven 0 · not measured 0 · refuted 0, dropped**
 
 ## Issues
 - **#41** — still open: a local merge closes nothing, and the change request below would.
