@@ -38,8 +38,8 @@ omission.
 - **`Outcome`** — with its target: `HAND OVER — <who holds it>`, `INTO #N`, `OPEN` or
   `DROP — <reason>`; a finding already tracked as it stands is `DROP — tracked as #N`. One still
   the reader's to give reads `proposed: <outcome>` and stands in the report's ask block as well —
-  a row alone puts the decision to nobody. A review's own report rules nothing, and leaves this
-  cell and the next at `—`.
+  a row alone puts the decision to nobody. `—` where nothing ruled the row: a review's own report,
+  whose rows also read `not measured — none ran`, and a row the pass could not measure.
 - **`Classification`** — what `OPEN` would carry, or what `INTO` would change on the issue, read
   per [`classification.md`](classification.md): proposed, never applied. `—` for every other
   outcome.
@@ -56,7 +56,7 @@ record. Cells stay short; whatever wraps goes to the block below.
 | `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), or `none ran` |
 
 **A refuted finding is not a row.** It is counted in the header and leaves the table for one line
-under it — `Refuted: <finding> at <where> — <what showed it does not hold>`, one per finding — so
+under it — `Refuted: <finding> at <where> @<sha> — <what showed it does not hold>`, one each — so
 the reader sees what was cleared without reading it as open. Nothing the finder wrote about its
 own finding fills this column.
 

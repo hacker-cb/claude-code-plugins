@@ -44,7 +44,7 @@ working on something else, a completed slice's `incidental`, another session's f
 observations, a batch's return. Take each as a claim — what, where, the revision it was read at,
 the severity its finder gave — and leave the finder's argument behind: it is not a check's input.
 
-One this run already ruled on is not a candidate again (*The same finding twice*): its outcome
+A candidate this run already ruled on is not one again (*The same finding twice*): its outcome
 stands, and where that outcome was a fix, the fix is what gets looked at.
 
 ## 2. Dedupe
@@ -75,8 +75,10 @@ coordinate is `unproven`.
 
 ## 4. Search the tracker, and read the classification
 
-For every candidate the checks did not refute. The search — closed issues included, and what
-closed a closed hit — is `hcb-dev:issue-tracking`'s: invoke it through the Skill tool for that.
+For every candidate the checks confirmed or left unproven. One `not measured` is neither searched
+nor ruled — its outcome waits for a pass that can check it — save an `unreachable` one, which is
+`HAND OVER` to whoever holds a tree carrying its coordinate. The search — closed issues included,
+and what closed a closed hit — is `hcb-dev:issue-tracking`'s: invoke it through the Skill tool.
 The repository's classification is read once for the pass, per
 [`../../references/classification.md`](../../references/classification.md). With no tracker to
 reach, the rows still show, each saying there is nowhere to file it.
@@ -84,12 +86,14 @@ reach, the rows still show, each saying there is nowhere to file it.
 ## 5. Rule
 
 Each survivor takes its rating and the scope test from `findings.md`, the *Worth remembering*
-questions below `Critical`, and exactly one outcome; then they are ranked against each other and
-against what the backlog already holds (*Ranked, not enumerated*). The pass rules no `FIX` — that
-outcome is settled where the finding is found (*Decided cold*): one that still wants fixing in
-work someone holds is `HAND OVER` to them, and one that no work holds is `OPEN`, which the reader
-may answer by having it fixed instead. A refuted candidate is not ruled at all: it leaves with its
-reason.
+questions below `Critical`, and exactly one outcome, its target set by step 4's search: `INTO` the
+issue already carrying the mechanism, `DROP — tracked as #N` where one carries it as it stands, a
+record of its own where none does — and no proposal at all where no tracker could be reached. Then
+they are ranked against each other and against what the backlog already holds (*Ranked, not
+enumerated*). The pass rules no `FIX` — that outcome is settled where the finding is found
+(*Decided cold*): one that still wants fixing in work someone holds is `HAND OVER` to them, and
+the reader may answer an `OPEN` by having it fixed instead. A refuted candidate is not ruled at
+all: it leaves with its reason.
 
 ## 6. Show
 

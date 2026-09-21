@@ -136,9 +136,9 @@ test on a passage is whether deleting it changes what anyone does next.
    decision, at the length it takes. The ledger carries what is acted on and the journal how it was
    arrived at — and the journal is what moves out first, so this section also indexes what has
    left: every archive in order, and which of them new entries are going to.
-9. **Candidates** — a line per finding a return proposes for the tracker, as it arrives: the
-   batch, the claim, its coordinate, the revision it was read at, the outcome proposed; then the
-   verdict and ruling `hcb-dev:findings-pass` gave it. A line leaves once its ruling is carried out.
+9. **Candidates** — a line per finding a return carries unfixed, as it arrives: the batch, the
+   claim, its coordinate, the revision it was read at, the outcome proposed; then the verdict and
+   ruling `hcb-dev:findings-pass` gave it. A line leaves refuted, or once its ruling is carried out.
 
 ## Discipline
 
