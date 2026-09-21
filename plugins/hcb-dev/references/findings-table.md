@@ -17,7 +17,8 @@ section as on its own:
 ```
 
 `<n>` counts the rows; the refuted are counted beside them and are not rows. Where no check ran
-over any of them the header says `verified by none`, and every row reads `not measured`. A run
+over any of them the header says `verified by none`, and every row reads
+`not measured — none ran`. A run
 with nothing to show still writes the line, `0 after dedup` — a missing table reads as an
 omission.
 

@@ -99,6 +99,10 @@ enumerated*). The pass rules no `FIX` — that outcome is settled where the find
 the reader may answer an `OPEN` by having it fixed instead. A refuted candidate is not ruled at
 all: it leaves with its reason.
 
+**A `Critical` or `Important` on the code the run itself wrote is not this pass's to rule.**
+`findings.md` has it fixed and blocking the completion, so the run goes back to its own fix path
+with it — ruling it here would let a severe in-scope defect leave as a tracker entry.
+
 ## 6. Show
 
 The table `findings-table.md` fixes: the header line, the rows in rank order, the refuted line

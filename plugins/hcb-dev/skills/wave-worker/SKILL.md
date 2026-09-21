@@ -90,11 +90,12 @@ holds, and what it stops is named in the return as the gap it is.
   — except an architectural fork the order could not foresee, which is not
   "everything else": it goes to the master first, exactly as the agree-first forks
   do.
-- **A finding does not become an issue here, and is not verified here.** One that
-  earns an issue rides the return as a candidate — a row of
-  [`../../references/findings-table.md`](../../references/findings-table.md) reading
-  `not measured — batch` at the revision it was read at, its outcome and its
-  classification proposed, never applied, and ranked against this batch's others
+- **A finding does not become an issue here, and is not verified here.** Every
+  one this batch surfaced and left unfixed rides the return as a candidate — a row
+  of [`../../references/findings-table.md`](../../references/findings-table.md)
+  reading `not measured — batch` at the revision it was read at, the outcome and
+  the classification of one that earns an issue proposed, never applied, and
+  ranked against this batch's others
   within whatever budget the order set
   ([`../../references/findings.md`](../../references/findings.md)). The master
   verifies and rules it once the round has landed (`hcb-dev:findings-pass`); it is
