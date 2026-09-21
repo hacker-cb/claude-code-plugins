@@ -1,150 +1,116 @@
-# Reporting to the user — one frame, two reports
+# Reporting to the user — one grammar, one set of blocks
 
-Read by whatever reports to the user on a run of work. One frame, and two bodies under it: **the
-wave report**, an epic in flight, written by the session coordinating it
-(`hcb-dev:master-session`) and by the one launching its batches (`hcb-dev:wave-dispatch`); and
-**the final report**, a finished run — a set of slices (`hcb-dev:implementation-workflow`), or a
-whole epic. A change-request driver's report on one merged request sits at a different altitude
-and keeps its own shape; nor does this frame reach a step whose whole answer is a line. A skill
-whose report has a body of its own — a backlog survey, a capacity pass, a plugin refresh —
-writes that body and wears this frame around it. Keep it scannable: short grouped bullets, a
-small table, not an essay.
+Read by whatever tells the user something about a run of work. It owns how that looks: the two
+kinds of message, the first line, the grammar every block obeys, the five status circles, and
+the two blocks any report can carry — what was settled without the reader, and what waits on
+them. Which blocks an occasion carries, and what each one holds, is
+[`report-blocks.md`](report-blocks.md)'s, which writes both shapes out; an occasion that file
+leaves to its own skill keeps the shape that skill fixes. Keep it scannable: short grouped bullets, a small table, not
+an essay.
 
-## The frame
+Two boundaries. What an engine hands back verbatim ([`review-runs.md`](review-runs.md)) is the
+content of a block, never rewritten here. What one session sends another is
+[`session-prompts.md`](session-prompts.md)'s and [`order-return.md`](order-return.md)'s — save
+a batch's own user, who reads those lines and is owed the rule for a line below.
 
-**The first line** of a report says what happened and how many actions wait on the reader — of those, how
-many hold work — or that none do; what it goes on to ask about is never
-announced there as settled.
+## Two kinds of message
 
-**`## Without your word`** stands above anything the reader acts on: before the first table, chip
-or link, two kinds, a line each — **what departed from what the reader approved** (`<what stood>`
-→ `<what stands now>`, why, and what undoes it), and **what this session settled inside the
-authority it holds**, with what undoes that. Neither is a question: the answer to both is a veto,
-and a veto needs the item in front of the reader. An empty section is left out — it is the ask
-block that is never omitted. Where a report's body keeps these in rows of its own, that is where
-they stand: the frame fixes that they reach the reader ahead of anything to act on, not the
-heading they sit under. **The body** between them is the wave or final report's, below.
+- **A line** — one sentence for an event that changes nothing the reader decides: what happened,
+  where it was read, and what still waits on them, named rather than counted. No heading, no
+  table. It opens with a circle only where that circle is 🟡 or 🔴, no circle reading "running,
+  you are not needed"; 🔴 only as the lead-in to a report following at once, and two things
+  waiting on the reader are a report, not a line.
+- **A report** — the first line, then blocks. A stop that asks is a report whose ask block holds
+  something blocking; it has no shape of its own.
 
-**`## Needs your word`** comes last and is the only place an ask stands — every ask in full text,
-never a label, a count, or a pointer at an earlier message. Each carries **where it is acted on**
-(a word here, a click, an approval on the forge, a tracker write, an archival); **whether it
-holds work**, and behind which ask it stands where it does; **the recommendation**, with what it
-rests on and what it turns down ([`architecture-decisions.md`](architecture-decisions.md) §2);
-**what standing means** — what stops until it is answered, or that nothing does; and **how long
-it has been open**, for one carried over.
+## The first line
 
-Two groups — what holds work, in the order dependency puts them in, then what holds nothing —
-and a closing line saying how an answer can be given. A click, an approval and an archival are
-asks exactly as a question is: "nothing waits on you" is written only where this block is empty,
-and a chip nobody has clicked, or an approval the gates or the merge authorization leave
-outstanding, is not empty. An ask leaves the block only with an outcome — answered, deferred by
-the reader's word (which stops it holding work), withdrawn, failed with what still stands, or
-overtaken — said in the line that drops it. Where the session keeps a record of what it awaits
-([`wave-ledger.md`](wave-ledger.md) for a coordinating one), the block prints that record rather
-than recall.
+Bold, one line, first — nothing stands above it but the line that led into it. It opens with the
+circle of the worst state the report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪ — says what happened, and counts what waits on
+the reader, or says that nothing does.
+What the report goes on to ask is never announced there as settled.
 
-**What a report is not**: the plan of what this session does next, the narration of a step under
-way, the account of a mistake it made. Those belong to the record the session keeps and reach the
-report only as the one line that changes what the reader decides.
-
-## The wave report
-
-Two sections between the frame's halves:
-
-1. **What happened** — the events since the last report, each with the coordinate it was
-   verified at and, over a landing, what its checks showed (`base_checks`, whose values
-   [`slice-completion.md`](slice-completion.md) names). A round that closed brings its candidates,
-   in the table [`findings-table.md`](findings-table.md) fixes, with the rows needing the reader in
-   the ask block as well.
-2. **Where it stands** — one row per batch: id, issues, state in the ledger's vocabulary, and
-   what it waits on: nothing, its slot, the reader's approval, the reader's click with the chip's
-   age and the pin it stands on, another batch, or the condition holding it back — a blocker, a
-   body to rewrite, a tracker write. Then the gate the next wave opens on.
-
-An event that changes nothing for the reader earns no report: one line carries it
-(`hcb-dev:master-session`). Template:
-
-```markdown
-**Wave <n>: <what changed, in a phrase> · needs you: <k>, holding work: <m>**
-
-## Without your word   <— the section stands only where something belongs in it>
-- Departed from what you approved: <what stood> → <what stands now>, because <why>. Undo: <how>.
-- Settled here: <what>, inside <the authority it holds>. Undo: <how>.
-
-## What happened
-- <event> — verified <how> at <coordinate>; checks <the `base_checks` value, as `slice-completion.md` gives it>.
-- Candidates — <where a round closed: its table follows this list, header line first, footer line under it where it has rows>.
-
-## Where it stands
-| batch | issues | state | waiting on |
-|---|---|---|---|
-| <id> | <…> | <ledger state> | <nothing · its slot · your approval · your click (chip <age>, pin <sha>) · batch <id> · <the condition holding it>> |
-
-Next wave opens on: <the gate>.
-
-## Needs your word
-**Holding work**
-1. [<where it is acted on>] <the ask, in full> — open since <when>; recommended <what>, on <what it rests on>; turned down <what>, <why>. Standing: <what stops>.
-2. [<where>] <the ask, in full> — open since <when>, behind 1; …
-
-**Holding nothing**
-3. [<where>] <the ask, in full> — open since <when>; recommended <what>, …; turned down <what>, <why>. Standing: nothing stops.
-
-<how to answer>
+```text
+**<circle> <what happened> · needs you: <n>, blocking: <m>**
+**<circle> <what happened> · nothing waits on you**
 ```
 
-## The final report
+## The grammar
 
-It covers the *whole run*, across slices: a multi-slice set produces one at the end, beside the
-change-request reports its slices produced. Five sections between the frame's halves:
+- **Every block is a `##` heading**, named from the catalogue and standing in its order — save
+  an occasion `report-blocks.md` leaves to its own skill, whose sections stand as that skill
+  names them. No `#`, no rule line, no bold line standing in for a heading outside a form below.
+- **A block holds one element**: a bulleted list or a table. Two blocks carry a form of their
+  own instead: `## Findings`, the whole of [`findings-table.md`](findings-table.md)'s, and the ask
+  block, below. What fits none of them belongs to the record the session keeps.
+- **`###` stands in one place**: the two groups of the ask block.
+- **Bold marks**: the first line, a bullet's lead phrase, an ask's question, an ask's
+  sub-bullet labels, and the lines a form of its own carries — `findings-table.md`'s header and
+  footer among them.
+- **No bracket tags.** A category is a heading, a group, a column or a label — never `[text]`
+  inside a line.
+- **A block or a group with nothing in it is left out**, the ask block included — "nothing waits
+  on you" is the first line's to say — save `## Findings`, which a report whose occasion carries
+  it prints even empty, its header line saying `0 after dedup`.
+- **A block keeps its name** from one report to the next, in whatever language the session
+  speaks.
 
-1. **Per-slice outcome** — one row per slice: what it did, how it completed (merged locally into
-   `<parent>`, or the change-request URL and whether it merged), what the checks on that landing
-   showed (`base_checks`, whose values `slice-completion.md` names), and its state (done /
-   partial / skipped). An epic groups its rows by wave and ends each in what the ledger records
-   for that batch — `released`, `withdrawn(<reason>)` or `failed(<what stands>)`. A set that
-   ended partway says so here plainly; never let a summary read as complete when it isn't.
-2. **The issues the run settles, at their state now** — closed, or still open and why; a merged
-   slice row does not say what became of the issue behind it.
-3. **Review coverage, and what stayed uncovered.** Carry each slice's `multi-review` coverage
-   lines verbatim — a reviewer that could not run, ran over nothing, or ran over the wrong range
-   is a gap, and a structural one (a reviewer's own fixed limitation, which no answer could
-   close) is labelled as such. If every slice was fully covered, say that.
-4. **Incidental findings** — surfaced but not fixed, in the one table `findings-table.md` fixes,
-   as the pass that ruled them left it: each row rated on the ladder in [`findings.md`](findings.md)
-   and saying whether it was verified. A row whose outcome is the reader's to give stands in the
-   ask block as well. **With none, the header line says `0 after dedup`**: an absent section must
-   not read as an omission.
-5. **What the run leaves** — any ref a completion could not retire and why
-   ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions this run is done
-   with and which of them cannot be archived, with why — archiving the rest is an ask and stands
-   in the block — an offer the user turned down (`declined_offer`), and a pointer to
-   `/hcb-dev:git-cleanup`.
+## The five circles
 
-A follow-up worth filing is an ask and stands in the block with everything else waiting on the
-reader. An offer already answered is not one: it is recorded above rather than put again.
-Template:
+| circle | means |
+|---|---|
+| 🟢 | done and clean — nothing is owed on it |
+| 🔵 | in flight, moving without the reader |
+| 🟡 | the reader's move — work goes on meanwhile |
+| 🔴 | work stopped — red, blocked, failed, or held until the reader answers |
+| ⚪ | out of play — planned, queued, withdrawn, not run, not applicable |
 
-```markdown
-**<what the run did> · needs you: <k>, holding work: <m>**
+A circle stands first in a report's first line (and in a line, as above), in a table's state
+column — the one saying where each row stands — and in the two ask-group headings. There it
+stands **beside** the word the occasion's vocabulary gives — a batch state of
+[`wave-ledger.md`](wave-ledger.md), a slice's, a reviewer's status — never instead of it. A source
+that was not read keeps the state its record gives and says `unread` in words: being unread is no
+circle. A findings table's `Sev` column marks severity rather than state, by
+`findings-table.md`'s own, and nothing there sets the first line's circle; no other emoji
+appears, save in content carried verbatim.
 
 ## Without your word
-- <as the frame gives it; or the section is absent>
 
-## Run report
-
-| Slice | What | Completion | State |
-|---|---|---|---|
-| <name> | <one line> | merged → <parent>  /  <CR-url> (merged\|ready) · checks <green\|red: each row + what it is attributed to\|not waited out: state at <when>\|unchecked: what is left unguaranteed\|none> | done\|partial\|skipped; an epic's row: released\|withdrawn(<reason>)\|failed(<what stands>) |
-
-**Issues** — <one line per issue the run settles: closed, or open with why; or "none">
-
-**Coverage** — <per-slice coverage lines; name any gap; "fully covered" if clean>
-
-**Incidental findings** — <the table, header line first, footer line under it; its `proposed:` rows stand in the block below as well; or the header line alone, `0 after dedup`>
-
-**What it leaves** — <refs left standing, worktrees, sessions to archive, an offer turned down, cleanup pointer; or "nothing">
+The first block wherever it has content, above anything the reader acts on — before the first
+table, chip or link. Two kinds, a bullet each: **what departed from what the reader approved**
+(`<what stood>` → `<what stands now>`, and why), and **what this session settled inside the
+authority it holds** — each ending in what undoes it. Neither is a question: the answer to both
+is a veto, and a veto needs the item in front of the reader.
 
 ## Needs your word
-<the frame's block; or "nothing waits on you">
-```
+
+Last, and the only place an ask stands — every ask in full text, never a label, a count, or a
+pointer at an earlier message. Two groups, each a `###` heading: `### 🔴 Blocking` — what holds
+work, in the order dependency puts them in — then `### 🟡 Can wait`. The numbering runs on
+across both.
+
+An ask is a numbered item: its question in bold, one sentence of context where it needs one,
+then these sub-bullets, labelled and in this order, a label left out only where it has nothing
+to say:
+
+- **Recommend** — the choice, and what it rests on
+  ([`architecture-decisions.md`](architecture-decisions.md) §2);
+- **Turned down** — what it turns down, and what that would cost;
+- **If unanswered** — what stops until it is answered, or that nothing does; for one standing
+  behind another, which;
+- **Where it is acted on** — a word here, a click, an approval on the forge, a tracker write, an
+  archival, a command in the terminal;
+- **Open since** — when it was first put, for one carried over.
+
+A closing line says how an answer can be given. A click, an approval and an archival are asks
+exactly as a question is: a chip nobody has clicked, or an approval the gates or the merge
+authorization leave outstanding, belongs here. An ask leaves only with an outcome — answered,
+deferred by the reader's word (which stops it blocking), withdrawn, failed with what still
+stands, or overtaken — said in the line or report that drops it. Where the session records what
+it awaits (`wave-ledger.md` for a coordinating one), the block prints that
+record rather than recall.
+
+## What a report is not
+
+The plan of what this session does next, the narration of a step under way, the account of a
+mistake it made — those reach it only as the one bullet that changes what the reader decides.

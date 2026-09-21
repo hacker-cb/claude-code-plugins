@@ -46,7 +46,7 @@ code.
 Every stop-and-ask point inherits this rule — a finding that needs a product
 decision, a coverage gap, an ambiguous merge strategy: present the defensible
 options with a recommendation, not an open question. **Several forks in one message stand in one
-block**, each in full text with its recommendation first.
+block** — the ask block of [`report-format.md`](report-format.md).
 
 ## 3. Follow the project's rules — but flag when one fights good architecture
 

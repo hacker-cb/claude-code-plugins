@@ -254,13 +254,13 @@ the plan stages them.
   level with every redraw, and opening each wave as its gate clears. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
-  Reports in the sizes `references/report-format.md` fixes: a wave report when a
-  wave moves, an ask that holds work appears, something departs from what you
-  approved, a batch is withdrawn or fails, the session recovers from a restart or
-  you ask where things stand — and the final report at the end —
-  each closing with the one block carrying everything waiting on you — while an
-  event that changes nothing for you gets a bare status line instead, with no
-  block and no frame.
+  Reports as `references/report-format.md` and `references/report-blocks.md` fix
+  them: a wave report when a wave moves, an ask that blocks work appears,
+  something departs from what you approved, a batch is withdrawn or fails, the
+  session recovers from a restart or you ask where things stand — and the final
+  report at the end — each ending in the block that carries everything waiting on
+  you, where anything does, while an event that changes nothing for you gets a
+  line instead of a report.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
@@ -483,11 +483,17 @@ saying something else. Each file opens by saying what it owns.
   into batches and waves. Read by whatever partitions work into parallel sessions.
 - [`references/wave-ledger.md`](references/wave-ledger.md) — the master's durable
   state. Read on every event it records, and first after any restart.
-- [`references/report-format.md`](references/report-format.md) — the frame a
-  whole-run report wears, and the two bodies under it: a wave report while an epic
-  runs, the final report once a run is done. Read where work is reported to you —
-  a different altitude from a driver's report on one merged change request, and
-  the two do not replace each other.
+- [`references/report-format.md`](references/report-format.md) — how everything
+  reported to you looks: a line or a report, the bold first line counting what
+  waits on you, one `##` heading per block, five status circles — 🟢 fine,
+  🔵 running by itself, 🟡 your move, 🔴 stopped, ⚪ out of play — and the ask
+  block last, each ask with its recommendation first. Read where work is reported
+  to you — a different altitude from a driver's report on one merged change
+  request, and the two do not replace each other.
+- [`references/report-blocks.md`](references/report-blocks.md) — the blocks a
+  report is built from, in the order they stand, what each holds, and which ones
+  each occasion carries: a wave report while an epic runs, the final report once a
+  run is done. Read beside `report-format.md`.
 - [`references/issue-currency.md`](references/issue-currency.md) — whether an
   issue is still true of the tree, and the four verdicts that say so. Read
   wherever an issue is surveyed or taken in as the spec of work about to start.
@@ -503,7 +509,8 @@ saying something else. Each file opens by saying what it owns.
   `findings-pass`, and the tracker operations themselves stay with `issue-tracking`.
 - [`references/findings-table.md`](references/findings-table.md) — the one form
   findings take wherever they reach you: a header line saying what was verified,
-  a table ranked by severity with a verification column on every row, a footer
+  a table ranked by severity — 🔴 Critical, 🟠 Important, ⚪ Minor — with a
+  verification column on every row, a footer
   totalling the rows by severity and by outcome, and refuted findings named under
   that rather than listed as rows. Read wherever findings are
   shown — a review's report, a run's report, a wave report, a batch's return.
