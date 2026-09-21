@@ -126,7 +126,8 @@ Asked whether one issue or a few still hold — "is #42 still current?", "пер
 each by [`../../references/issue-currency.md`](../../references/issue-currency.md): one of its four
 verdicts, with the coordinate on the refreshed base it stands on. A verdict past `current` is
 proposed with the edit it calls for — the body rewritten, the issue closed or reclassified — and
-made only on the answer below. A whole slice is `hcb-dev:backlog-survey`'s.
+made only on the answer below; an `unverifiable` one carries its reason and proposes no closure at
+all. A whole slice is `hcb-dev:backlog-survey`'s.
 
 ## Citing and closing
 

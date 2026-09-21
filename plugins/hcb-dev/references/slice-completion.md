@@ -50,7 +50,7 @@ carries whatever structural gaps the gate reported into `uncovered` and re-check
 | `base_checks` | what the checks on that landing showed afterwards: green; red, with the failing rows and what each was attributed to; unchecked, with what that leaves unguaranteed; or the waiting stopped first, with the state it stood at then. `none` where nothing reports over such a landing, or nothing landed |
 | `uncovered` | the coverage gaps carried in |
 | `issues` | what became of each issue this slice settles — closed, or open with why |
-| `incidental` | surfaced-not-fixed findings, severity rated, each with its outcome: reached, or proposed where the decision sits above the slice |
+| `incidental` | surfaced-not-fixed findings, severity rated, each with its outcome: reached, proposed where the decision sits above the slice, or none yet where a wave's batch leaves it unruled for its master's pass |
 | `declined_offer` | local only — a change request the run could have opened and the user turned down, recorded so it is not silently dropped |
 | `follow_ups` | what is left for someone else |
 
