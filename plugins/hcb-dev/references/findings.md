@@ -117,8 +117,9 @@ everything left unfixed that the next reader would want.
 
 Three things happen before the finding is proposed, never after it is accepted:
 
-- **Search the tracker**, closed entries included (`hcb-dev:issue-tracking`) — its
-  result decides which of the three states below applies.
+- **Search the tracker**, closed entries included (`hcb-dev:issue-tracking`) — its result decides
+  the outcome: **INTO** the issue already carrying the mechanism, **DROP** where one carries it as
+  it stands, a record of its own where none does.
 - **Re-measure it** at its coordinate on the tree the work stands on — the base where the code is
   already in it, the branch carrying it where it is not — with whatever will judge it there. In
   the pass that rules it, this is its verification.

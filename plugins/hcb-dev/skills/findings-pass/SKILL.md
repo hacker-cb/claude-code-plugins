@@ -29,8 +29,8 @@ empty has refuted nothing.
 | who | when | the tree each check reads | the candidates |
 |---|---|---|---|
 | a session working alone | once its work is done — past the last completion, before the report that closes it | the base where the work landed, the branch carrying it where it has not | its own, from this session's context |
-| a session handed findings | on the hand-over | the revision each one names, where this session can read it; the refreshed base otherwise | the text handed over |
-| a master session | at a round's close — every batch of the round ended, every change request it lands merged | the refreshed base | the ledger's *Candidates*, which `hcb-dev:master-session` keeps |
+| a session handed findings | on the hand-over | the refreshed base — the revision each one names is read only to find a coordinate the base has since moved | the text handed over |
+| a master session | at a round's close — every return of the round accepted, every change request it lands merged | the tree the round landed on: the refreshed base, or the local parent where it landed in `local` mode | the ledger's *Candidates*, which `hcb-dev:master-session` keeps |
 
 A batch inside a wave never runs it: its candidates ride its return as `not measured — batch`, at
 the revision they were read at. The base is resolved by the ladder in
@@ -67,8 +67,8 @@ handed three things and nothing else:
 Never the finder's reasoning, its confidence, or another candidate's verdict: a check that reads
 the argument grades the argument. A coordinate that no tree this session can read carries is
 `not measured — unreachable`, never refuted. Where there are more candidates than the session can
-check, check them in the order of the severity their finders gave and let the header say how many
-went unchecked — a `Critical` is never among those.
+check, check them in the order of the severity their finders gave, and the rest read
+`not measured — budget` — a `Critical` is never among those.
 
 A verdict is read, not counted: one that restates the claim without the evidence it read at the
 coordinate is `unproven`.
@@ -84,11 +84,12 @@ reach, the rows still show, each saying there is nowhere to file it.
 ## 5. Rule
 
 Each survivor takes its rating and the scope test from `findings.md`, the *Worth remembering*
-questions below `Critical`, and exactly one of the five outcomes; then they are ranked against each
-other and against what the backlog already holds (*Ranked, not enumerated*). The pass makes no
-fix: a candidate ruled `FIX` stands as `proposed: FIX`, and the fix is the next step of whoever
-holds the work — `hcb-dev:implementation-workflow` where no work in hand carries it. A refuted
-candidate is not ruled at all: it leaves with its reason.
+questions below `Critical`, and exactly one outcome; then they are ranked against each other and
+against what the backlog already holds (*Ranked, not enumerated*). The pass rules no `FIX` — that
+outcome is settled where the finding is found (*Decided cold*): one that still wants fixing in
+work someone holds is `HAND OVER` to them, and one that no work holds is `OPEN`, which the reader
+may answer by having it fixed instead. A refuted candidate is not ruled at all: it leaves with its
+reason.
 
 ## 6. Show
 

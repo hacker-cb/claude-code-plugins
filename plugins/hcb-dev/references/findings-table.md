@@ -9,10 +9,11 @@ form is laid on where findings meet a reader.
 
 ## The header line
 
-One line above the table, standing in for a heading of its own:
+One line above the table, bold rather than a heading, so it stands the same inside a report's
+section as on its own:
 
 ```text
-## Findings — <n> after dedup · verified by <what ran> · confirmed <c> · unproven <u> · not measured <m> · refuted <r>, dropped
+**Findings — <n> after dedup · verified by <what ran> · confirmed <c> · unproven <u> · not measured <m> · refuted <r>, dropped**
 ```
 
 `<n>` counts the rows; the refuted are counted beside them and are not rows. Where no check ran
@@ -34,17 +35,17 @@ omission.
 - **`Where`** — `file:line` of the first instance, or the coordinate itself where it is not a
   line: a check, a setting, an issue.
 - **`Verified`** — below.
-- **`Outcome`** — one of the five, with its target: `FIX`, `HAND OVER — <who holds it>`,
-  `INTO #N`, `OPEN`, `DROP — <reason>`; a finding already tracked as it stands is
-  `DROP — tracked as #N`. One still the reader's to give reads `proposed: <outcome>` and stands in
-  the report's ask block as well — a row alone puts the decision to nobody. A review's own report
-  rules nothing, and leaves this cell and the next at `—`.
+- **`Outcome`** — with its target: `HAND OVER — <who holds it>`, `INTO #N`, `OPEN` or
+  `DROP — <reason>`; a finding already tracked as it stands is `DROP — tracked as #N`. One still
+  the reader's to give reads `proposed: <outcome>` and stands in the report's ask block as well —
+  a row alone puts the decision to nobody. A review's own report rules nothing, and leaves this
+  cell and the next at `—`.
 - **`Classification`** — what `OPEN` would carry, or what `INTO` would change on the issue, read
   per [`classification.md`](classification.md): proposed, never applied. `—` for every other
   outcome.
 
-A fix already made is not a row: its commit is its record. Cells stay short; whatever wraps goes
-to the block below.
+`FIX` is settled where the finding is found, and a fix made is not a row: its commit is its
+record. Cells stay short; whatever wraps goes to the block below.
 
 ## Verified
 
@@ -52,7 +53,7 @@ to the block below.
 |---|---|
 | `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision |
 | `unproven @<sha>` | checked there, and neither shown nor ruled out — its block says what would settle it |
-| `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), or `none ran` |
+| `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), or `none ran` |
 
 **A refuted finding is not a row.** It is counted in the header and leaves the table for one line
 under it — `Refuted: <finding> at <where> — <what showed it does not hold>`, one per finding — so

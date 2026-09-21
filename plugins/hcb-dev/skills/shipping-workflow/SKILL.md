@@ -157,7 +157,8 @@ of step 0 — per
    Nothing in steps 0–6 changes with the mode. Standalone, the run closes once this
    step is done with `hcb-dev:findings-pass` — invoked through the Skill tool — over
    whatever it surfaced and left unfixed; driven per slice, that rides `incidental`
-   to the caller instead.
+   to the caller instead, and in a wave's batch the return carries it unruled
+   (`hcb-dev:wave-worker`).
 
 ## The coverage gate
 
