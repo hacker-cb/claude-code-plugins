@@ -93,7 +93,7 @@ merged.
 SLICE="<the slice's branch>"
 # The repository this branch pushes to — in a fork checkout the fork, where `gh` on its own
 # answers for the upstream. `remotes.push` is a remote's NAME, so its URL is what names a repo.
-PUSH_REMOTE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" | jq -r .remotes.push)"
+PUSH_REMOTE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" | jq -r '.remotes.push // ""')"
 # GitHub — `--head` matches the branch NAME across every head repository, forks included
 gh repo view "$(git remote get-url "$PUSH_REMOTE")" --json id,nameWithOwner
 gh pr list --head "$SLICE" --state merged --json number,url,mergedAt,headRepository
@@ -102,7 +102,9 @@ glab repo view "$(git remote get-url "$PUSH_REMOTE")" --output json
 glab mr list --source-branch "$SLICE" --merged --output json
 ```
 
-A request whose head is not that repository by identity is another project's
+An empty `PUSH_REMOTE` leaves the identity unread, and with it the merged state of every slice —
+that is a bullet of `## The picture`, never a slice printed unmerged. A request whose head is not
+that repository by identity is another project's
 ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) — a fork keeps the
 upstream's name — and the slice stays unmerged until one of that repository's own says otherwise.
 

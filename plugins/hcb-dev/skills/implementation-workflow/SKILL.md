@@ -177,8 +177,8 @@ The plan-doc and the task list are what survived, so they are read before anythi
 the plan-doc for the gate's settlements — slices, mode, `merge-strategy`, `merge-auth` with its
 addressee, Phase 0's read point, each slice's cut point — and the task list for which slice is in
 flight. Then the tree is read against them, and it outranks both: for each slice the plan names, the
-parent's own history says whether it landed, and in `request` mode so does its request (`gh pr list
---head <slice> --state merged`). The slice in flight stands where its branch does — cut, developed,
+parent's own history says whether it landed, and in `request` mode so does its request, read as
+`hcb-dev:status` reads one — a listing by branch name alone answers for forks too. The slice in flight stands where its branch does — cut, developed,
 or handed on, and `shipping-workflow`'s committed steps are resumed past while its review is run
 again, a coverage record that lived only in the lost context being no record. What the task list
 says and the tree does not confirm is unknown, not done. What it stands at goes to the user
