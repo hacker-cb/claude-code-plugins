@@ -90,11 +90,14 @@ form: you paste every one of them yourself.
   The pass that rules a run's findings cold and together, once the work is done: every
   candidate collected — this session's own, ones handed over from another session, a master's
   batches' — deduplicated, **verified** by subagents that are given the claim and its coordinate
-  and never the finder's argument, searched in the tracker, ranked, and ended in one of the
-  outcomes of `references/findings.md`. Everything is shown in the one table
+  and never the finder's argument, then **grouped by mechanism** — the confirmed and unproven findings sharing
+  a cause, or a gate that could hold them all, become one row with its instances listed —
+  searched in the tracker, ranked, and ended in one of the outcomes of `references/findings.md`.
+  Everything is shown in the one table
   [`references/findings-table.md`](references/findings-table.md) fixes, whose every row says
-  whether it was verified and at which revision; a refuted finding leaves the table for one line
-  under it rather than standing as noise. Runs at a standalone run's end, and at a master's
+  whether it was verified and at which revision, with a footer totalling the rows by severity and
+  by outcome; a refuted finding leaves the table for one line under it rather than standing as
+  noise. Runs at a standalone run's end, and at a master's
   round close on the tree the round landed on, once every return is accepted and its change
   requests merged — never inside a batch, which returns its candidates unverified. Report-only: it fixes nothing,
   and every tracker write goes through `issue-tracking` on your word.
@@ -497,8 +500,9 @@ saying something else. Each file opens by saying what it owns.
   `findings-pass`, and the tracker operations themselves stay with `issue-tracking`.
 - [`references/findings-table.md`](references/findings-table.md) — the one form
   findings take wherever they reach you: a header line saying what was verified,
-  a table ranked by severity with a verification column on every row, and refuted
-  findings named under it rather than listed as rows. Read wherever findings are
+  a table ranked by severity with a verification column on every row, a footer
+  totalling the rows by severity and by outcome, and refuted findings named under
+  that rather than listed as rows. Read wherever findings are
   shown — a review's report, a run's report, a wave report, a batch's return.
 - [`references/fix-reading.md`](references/fix-reading.md) — what reads a fix
   made after a review: which fix goes back through `multi-review` before it is

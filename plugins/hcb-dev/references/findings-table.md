@@ -16,7 +16,8 @@ section as on its own:
 **Findings — <n> after dedup · verified by <what ran> · confirmed <c> · unproven <u> · not measured <m> · refuted <r>, dropped**
 ```
 
-`<n>` counts the rows; the refuted are counted beside them and are not rows. Where no check ran
+`<n>` counts the rows, and so do the verdicts beside it — a mechanism once, under the verdict its
+row carries; the refuted are counted beside them and are not rows. Where no check ran
 over any of them the header says `verified by none`, and every row reads
 `not measured — none ran`. A run
 with nothing to show still writes the line, `0 after dedup` — a missing table reads as an
@@ -37,9 +38,10 @@ omission.
   line: a check, a setting, an issue.
 - **`Verified`** — below.
 - **`Outcome`** — with its target: `HAND OVER — <who holds it>`, `INTO #N`, `OPEN` or
-  `DROP — <reason>`; a finding already tracked as it stands is `DROP — tracked as #N`. One still
-  the reader's to give reads `proposed: <outcome>` and stands in the report's ask block as well —
-  a row alone puts the decision to nobody. `—` only where nothing proposed or ruled it: a review's
+  `DROP — <reason>`; a finding already tracked as it stands is `DROP — tracked as #N`, and one a
+  *Worth remembering* question ended names that question as its reason. One still the reader's to
+  give reads `proposed: <outcome>` and stands in the report's ask block as well — a row alone puts
+  the decision to nobody. `—` only where nothing proposed or ruled it: a review's
   own report, whose rows also read `not measured — none ran`, and a pass that reached no tracker,
   whose rows stay observations with the reason in their blocks. A row no check measured keeps the
   proposal it arrived with, and an `unreachable` one is handed to whoever holds a tree carrying its
@@ -51,6 +53,18 @@ omission.
 `FIX` is settled where the finding is found, and a fix made is not a row: its commit is its
 record. Cells stay short; whatever wraps goes to the block below.
 
+## The footer line
+
+One line under the table, bold like the header, counting the rows by severity and by outcome:
+
+```text
+**Total — Critical <critical> · Important <important> · Minor <minor> · OPEN <open> · INTO <into> · HAND OVER <hand-over> · DROP <drop>**
+```
+
+A mechanism's or a gate's row counts once, however many instances it carries; a `proposed:` row counts under the
+outcome it proposes, and a row whose outcome is `—` under none. Every term stays, a zero included.
+A table of `0 after dedup` has no footer.
+
 ## Verified
 
 | cell | what it says |
@@ -59,21 +73,26 @@ record. Cells stay short; whatever wraps goes to the block below.
 | `unproven @<sha>` | checked there, and neither shown nor ruled out — its block says what would settle it |
 | `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
 
+A mechanism's cell carries the least verdict among its instances — `unproven` where any instance
+is — and its block carries each instance's own.
+
 **A refuted finding is not a row.** It is counted in the header and leaves the table for one line
-under it — `Refuted: <finding> at <where> @<sha> — <what showed it does not hold>`, one each — so
-the reader sees what was cleared without reading it as open. Nothing the finder wrote about its
-own finding fills this column.
+under the footer — `Refuted: <finding> at <where> @<sha> — <what showed it does not hold>`, one
+each — so the reader sees what was cleared without reading it as open. Nothing the finder wrote
+about its own finding fills this column.
 
 ## Under the table
 
-A block per row that needs one, in rank order, led by its number: the failure scenario as the
-finding put it; for `OPEN`, the sentence saying what it costs to never do it; for `INTO`, the
-issue and what the finding adds; for `unproven`, what would settle it. A `HAND OVER` naming its
-receiver and a `DROP` whose reason fits its cell take none.
+After the `Refuted:` lines, a block per row that needs one, in rank order, led by its number: the
+failure scenario as the finding put it; for a mechanism, its instances, each with its coordinate
+and its own verdict and revision; for `OPEN`, the sentence saying what it costs to never do it; for
+`INTO`, the issue and what the finding adds; for `DROP` ended by a *Worth remembering* question,
+the answer that ended it; for `unproven`, what would settle it. A `HAND OVER` naming its receiver
+and any other `DROP` whose reason fits its cell take none.
 
 ## Where a row travels
 
 A finding leaving the session that found it — in a return, a handoff, an issue body — carries its
-`Verified` cell and the revision it was read at. The receiver re-checks what it is about to act on
-rather than everything, and an issue opened from a row says beside its source whether the finding
-was confirmed, and at which revision.
+`Verified` cell and the revision it was read at — a mechanism's row, each instance's as well. The
+receiver re-checks what it is about to act on rather than everything, and an issue opened from a
+row says beside its source whether the finding was confirmed, and at which revision.
