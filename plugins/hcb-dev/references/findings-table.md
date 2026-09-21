@@ -61,7 +61,7 @@ One line under the table, bold like the header, counting the rows by severity an
 **Total — Critical <critical> · Important <important> · Minor <minor> · OPEN <open> · INTO <into> · HAND OVER <hand-over> · DROP <drop>**
 ```
 
-A mechanism counts once, however many instances it carries; a `proposed:` row counts under the
+A mechanism's or a gate's row counts once, however many instances it carries; a `proposed:` row counts under the
 outcome it proposes, and a row whose outcome is `—` under none. Every term stays, a zero included.
 A table of `0 after dedup` has no footer.
 
@@ -93,6 +93,6 @@ and any other `DROP` whose reason fits its cell take none.
 ## Where a row travels
 
 A finding leaving the session that found it — in a return, a handoff, an issue body — carries its
-`Verified` cell and the revision it was read at. The receiver re-checks what it is about to act on
-rather than everything, and an issue opened from a row says beside its source whether the finding
-was confirmed, and at which revision.
+`Verified` cell and the revision it was read at — a mechanism's row, each instance's as well. The
+receiver re-checks what it is about to act on rather than everything, and an issue opened from a
+row says beside its source whether the finding was confirmed, and at which revision.

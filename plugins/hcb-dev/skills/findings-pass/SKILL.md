@@ -53,10 +53,11 @@ stands, and where that outcome was a fix, the fix is what gets looked at.
 
 ## 2. Dedupe
 
-By the key `findings.md` fixes (*The same finding twice*) — `(file, line)` **and** mechanism: one
-defect reported more than once, however many lines it was anchored at, is one candidate. Distinct
-defects sharing a cause stay apart here; step 4 joins them once they are measured. One that came
-out of work on an issue is measured against that issue first (*Where it came from*).
+By the key `findings.md` fixes (*The same finding twice*): one defect reported more than once — at
+one `(file, line)`, or anchored at several by reviewers naming the same mechanism — is one
+candidate. Distinct defects sharing a cause stay apart here; step 4 joins them once they are
+measured. One that came out of work on an issue is measured against that issue first (*Where it
+came from*).
 
 ## 3. Verify
 
@@ -109,17 +110,19 @@ reach, the rows still show, each saying there is nowhere to file it.
 
 ## 6. Rule
 
-Each row takes its rating and the scope test from `findings.md`, then exactly one outcome, its
-target set by step 5's search: `INTO` the issue already carrying the mechanism,
-`DROP — tracked as #N` where one carries it as it stands, a record of its own where none does — and
-no proposal at all where no tracker could be reached. A row headed for a record of its own below `Critical` first
-passes the *Worth remembering* questions, asked in turn and answered in its block: the first *yes*
-ends it as `DROP — <the question>`. Then the rows are ranked against each other and against what
-the backlog already holds (*Ranked, not enumerated*). The pass rules no `FIX` — that outcome is
-settled where the finding is found (*Decided cold*): one that still wants fixing in work someone
-holds, or whose fix costs less than its record, is `HAND OVER` to the work that will take it — a
-master session's next batch order included — never `OPEN`. A refuted candidate is not ruled at all:
-it leaves with its reason.
+Each confirmed or unproven row takes its rating and the scope test from `findings.md`, then
+exactly one outcome, its target set by step 5's search: `INTO` the issue already carrying the
+mechanism, `DROP — tracked as #N` where one carries it as it stands, a record of its own where none
+does — and no proposal at all where no tracker could be reached. A row headed for a record of its
+own below `Critical` first passes the *Worth remembering* questions, asked in turn and answered in
+its block: the first *yes* ends it as `DROP — <the question>`. The pass rules no `FIX` — that
+outcome is settled where the finding is found (*Decided cold*): one that still wants fixing in
+work someone holds, or whose fix costs less than its record, is `HAND OVER` to the work that will
+take it — a master session's next batch order included — never `OPEN`, and where an issue carries
+it as well, the hand-over names that issue for the work to close. Then the rows are ranked against
+each other and against what the backlog already holds (*Ranked, not enumerated*). A `not measured`
+row keeps the proposal it arrived with, and a refuted candidate is not ruled at all: it leaves with
+its reason.
 
 **A `Critical` or `Important` on the code the run itself wrote is not this pass's to rule.**
 `findings.md` has it fixed and blocking the completion, so the run goes back to its own fix path

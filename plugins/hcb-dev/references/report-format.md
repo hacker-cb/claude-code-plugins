@@ -73,7 +73,7 @@ An event that changes nothing for the reader earns no report: one line carries i
 
 ## What happened
 - <event> — verified <how> at <coordinate>; checks <the `base_checks` value, as `slice-completion.md` gives it>.
-- Candidates — <where a round closed: its table follows this list, header line first, footer line under it>.
+- Candidates — <where a round closed: its table follows this list, header line first, footer line under it where it has rows>.
 
 ## Where it stands
 | batch | issues | state | waiting on |

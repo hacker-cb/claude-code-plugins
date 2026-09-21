@@ -90,7 +90,7 @@ form: you paste every one of them yourself.
   The pass that rules a run's findings cold and together, once the work is done: every
   candidate collected — this session's own, ones handed over from another session, a master's
   batches' — deduplicated, **verified** by subagents that are given the claim and its coordinate
-  and never the finder's argument, then **grouped by mechanism** — the verified findings sharing
+  and never the finder's argument, then **grouped by mechanism** — the confirmed and unproven findings sharing
   a cause, or a gate that could hold them all, become one row with its instances listed —
   searched in the tracker, ranked, and ended in one of the outcomes of `references/findings.md`.
   Everything is shown in the one table
