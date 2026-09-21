@@ -134,18 +134,21 @@ is a fork for them, not a rule to apply silently.
 ```markdown
 **<circle> <what this refresh found, in a phrase> · needs you: <k>, blocking: <m>**
 
+## Without your word
+- **Repaired** — <the rule, quoted or named> — <what this session did> — <what it now does>
+
 ## What happened
 - **Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
 - **Re-read** — <skills> + <references>, <n> files, <m> changed, <k> gone
 
 ## What moved
-- **<the outcome>** — <the rule, quoted or named> — <what this session did> — <what it now does>
+- **<Standing | Owed>** — <the rule> — <what this session did> — <what it now does>
 - **New and load-bearing** — <what the remaining plan has to change>
 ```
 
 The grammar is [`../../references/report-format.md`](../../references/report-format.md)'s and
 the blocks [`../../references/report-blocks.md`](../../references/report-blocks.md)'s, its ask
-block last. Ranked, not enumerated. A session that had done nothing under this plugin reports
+block last, where each divergence `to the addressee` stands as an ask. Ranked, not enumerated. A session that had done nothing under this plugin reports
 the four versions and that one line — "nothing was done under it" and "checked,
 nothing diverges" are different answers, and neither is written as the other.
 
@@ -164,5 +167,6 @@ report is the record.
 
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
+- [`../../references/report-blocks.md`](../../references/report-blocks.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)

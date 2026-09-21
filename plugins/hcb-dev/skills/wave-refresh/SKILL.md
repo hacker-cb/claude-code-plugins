@@ -145,13 +145,13 @@ outside it as its own choice for the user, not as part of this slice's layout.
 
 The grammar is
 [`../../references/report-format.md`](../../references/report-format.md)'s and the blocks
-[`../../references/report-blocks.md`](../../references/report-blocks.md)'s, each one explicit
-even where it holds only the line saying there is nothing. The capacity — how many batches are
-free, against how many were asked for — stands in the first line.
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s. The capacity — how
+many batches are free, against how many were asked for — is what the first line says happened.
 
-- **`## Where it stands`** — the batches running and the ground each holds.
+- **`## Without your word`** — what this pass settled inside its authority.
 - **`## What moved`** — what landed since the last reading, premises knocked out, blockers
   lifted, tracker changes in the slice, and every disagreement the three ground sources showed.
+- **`## Where it stands`** — the batches running and the ground each holds.
 - **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
   what clears each one against the occupied ground, and what holds the ones held.
 - **`## Needs your word`** — the tracker edits the candidates stand on, each named as the
@@ -181,6 +181,7 @@ free, against how many were asked for — stands in the first line.
 - [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
+- [`../../references/report-blocks.md`](../../references/report-blocks.md)
 - [`../../references/issue-currency.md`](../../references/issue-currency.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)

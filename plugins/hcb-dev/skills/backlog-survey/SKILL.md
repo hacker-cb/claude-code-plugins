@@ -83,8 +83,7 @@ them where no scale resolved at all.
 
 The grammar is
 [`../../references/report-format.md`](../../references/report-format.md)'s and the blocks
-[`../../references/report-blocks.md`](../../references/report-blocks.md)'s, each one explicit
-even where it holds only the line saying there is nothing.
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s.
 
 **`## The picture`** — three readings, in this order:
 
@@ -104,8 +103,8 @@ even where it holds only the line saying there is nothing.
 3. What turned up beside the survey: epics closable as already met, change requests stuck with
    their reason, contradictions between issues.
 
-**`## Where it stands`** — a row per issue, in tiers of importance, each issue placed by three
-tests: does it block others; does it fire today (a reproduced defect, a live hole); does it
+**`## Where it stands`** — a row per issue: its tier of importance, its declared priority, and
+what it blocks or waits on. Each is placed by three tests: does it block others; does it fire today (a reproduced defect, a live hole); does it
 catch regressions (a guard, a gate). Name the tier's meaning, not only its members, and carry
 each issue's declared priority, where it has one, beside the tier the tests put it in. The tests
 measure what the code makes true, the priority what the queue was told to want, and neither
@@ -138,8 +137,9 @@ are counted rather than listed, save the ones carrying a second value that contr
 are named one by one, the value on them being the user's. The count is what the ask proposes —
 taking it enumerates them, each edit going through the tracker as any other, and what the
 enumeration finds past that count goes back to the user before it is touched; where the forge
-answers for no such value the ask says so instead of standing on a number nobody read. What a
-batch above stands on is not filed here; this block holds up nothing.
+answers for no such value the ask says so instead of standing on a number nobody read. The
+hygiene plan holds up nothing; a rewrite a candidate batch stands on is an ask of its own, among
+the blocking ones, since the layout launches on it.
 
 ## After the report
 
@@ -149,7 +149,7 @@ batch above stands on is not filed here; this block holds up nothing.
   the tracker has outrun its mandate. What the layout's preconditions change is
   *when* that word is needed, never whether: they are asked with the layout, and
   a batch runs once its own is settled.
-- **The parallel layout is the wave plan's input** — it already carries the
+- **`## The plan` is the wave plan's input** — it already carries the
   closing-table columns as candidates. When the user says to run them, the
   session assumes `hcb-dev:master-session` — or hands the table to the session
   that will.

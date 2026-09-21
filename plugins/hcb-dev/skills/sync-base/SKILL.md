@@ -188,8 +188,8 @@ run the project's checks — tests, builds, linters. A master session only recom
 ## Report
 
 Nothing taken is a line: the base, its tip, already current. Anything else is a report
-([`../../references/report-format.md`](../../references/report-format.md)), every fork in its ask
-block, whose `## What happened` carries the first four below and whose `## What moved` carries the last:
+([`../../references/report-format.md`](../../references/report-format.md), [`../../references/report-blocks.md`](../../references/report-blocks.md)),
+every fork in its ask block; **Base** and **What arrived** stand in `## What moved`, the rest in `## What happened`:
 
 - **Base** — `<base.short>` at `<sha>`, its outcome, the remote it was read from.
 - **Branch** — `<branch>` from `<H>` to `<new tip>`: a fast-forward, a rebase, or a merge and which

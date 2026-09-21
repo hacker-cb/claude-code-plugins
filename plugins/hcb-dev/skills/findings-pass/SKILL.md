@@ -147,8 +147,9 @@ with it — ruling it here would let a severe in-scope defect leave as a tracker
 ## 7. Show
 
 The table `findings-table.md` fixes: the header line, the rows in rank order, the footer line
-under them, the refuted lines under that, then the blocks. Where the response is a report
-([`../../references/report-format.md`](../../references/report-format.md)) the table is its
+under them, the refuted lines under that, then the blocks under the table. Where the response is
+a report ([`../../references/report-format.md`](../../references/report-format.md),
+[`../../references/report-blocks.md`](../../references/report-blocks.md)) the table is its
 `## Findings`, and every `proposed:` row stands in `## Needs your word` as well, this session's
 recommendation first.
 

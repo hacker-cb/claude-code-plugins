@@ -179,5 +179,6 @@ is that session's to sweep. Write the ledger's closing line.
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
+- [`../../references/report-blocks.md`](../../references/report-blocks.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
 - [`../../references/findings.md`](../../references/findings.md)

@@ -14,7 +14,7 @@ this file leaves to its own skill, below.
 | `## What happened` | bullets | what this session did or verified since the last report |
 | `## What moved` | bullets | what this session found had changed under it — the base, the tracker, the plugin |
 | `## The picture` | bullets | a standing reading of ground nothing changed — counts, milestones, the front line, and what could not be seen |
-| `## Where it stands` | table | one row per unit in flight or ended — a batch, a slice, the next wave — its state and what it waits on |
+| `## Where it stands` | table | one row per unit the report tracks — a batch, a slice, an issue, the next wave — its state and what it waits on |
 | `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices and branches, what a sweep would remove |
 | `## Review coverage` | table | one row per reviewer — what it covered, at what effort, and the result `multi-review` classified |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
