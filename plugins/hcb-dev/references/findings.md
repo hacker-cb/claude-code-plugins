@@ -61,7 +61,7 @@ that is recorded follows the issue's own state. A different mechanism is recorde
 
 **An issue is work put off.** Where work is already going into that ground, the finding rides it as
 a **HAND OVER** whatever the fix costs, that work's history being its record. A number is for what
-outlives the work in hand: a decision, a measurement nothing here can make, a trigger not yet come.
+outlives it: a decision, a measurement nothing here can make, a trigger not yet come.
 
 **Worth remembering.** Everything below `Critical` passes this before it earns a number of its
 own. Three questions, one *yes* ending it: does it come back on its own, tripping a gate, a test,
@@ -86,7 +86,7 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 `Critical` and `Important` on the code this work is writing are **FIX**, blocking completion until
 they are; `Minor` on that code is **FIX** where the fix rides a reading happening anyway and
 **DROP** otherwise. Out of scope, severity decides how loudly a finding travels rather than
-whether — one severe enough may stop the run instead of being carried.
+whether — one severe enough stops the run instead of being carried or handed to other work.
 
 **Ranked, not enumerated.** Candidates out of one run are ranked against each other, never listed
 in the order found, and `Critical` never enters that ranking: it travels whatever else does. Under

@@ -96,7 +96,12 @@ row's block. The grouping stays provisional through step 6: an instance that the
 ruling sets apart — an issue carrying it alone, a fix cheaper than any record — leaves the row and
 stands as one of its own. A `not measured` candidate is never grouped; it stays a row of its own.
 
-## 5. Search the tracker, and read the classification
+## 5. Search the tracker, read the classification, and read the work already going
+
+The work in flight is read first, since it is what decides which rows need a number at all
+(`findings.md`, *An issue is work put off*): the ledger's batches where a master session holds
+one, the wave or the change a caller named, and what the forge carries open against this base.
+Work nobody here can read is work that is not going: those rows take their own record.
 
 For every row the checks confirmed or left unproven — a mechanism searched for as the mechanism,
 then for each instance no hit on the mechanism carries; a hit carrying only some instances takes
