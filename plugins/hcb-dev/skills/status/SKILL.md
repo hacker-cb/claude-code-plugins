@@ -23,8 +23,7 @@ Where the work stands now, read again rather than recalled. It writes nothing �
 tracker, no message to another session — and marks nothing answered, which would be a write. The
 report is [`../../references/report-format.md`](../../references/report-format.md)'s grammar, in
 the occasion [`../../references/report-blocks.md`](../../references/report-blocks.md) lists for a
-status. Read [`../../references/invariants.md`](../../references/invariants.md) first: a source
-that did not answer is unread, and an unread one is never printed as empty.
+status. Read [`../../references/invariants.md`](../../references/invariants.md) first.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Which role, and which subject
@@ -41,7 +40,11 @@ readings stand, and the report says which is this session's own.
    ([`../../references/session-comms.md`](../../references/session-comms.md)) — read against
    [`../../references/session-naming.md`](../../references/session-naming.md)'s shapes: the
    master's makes it a master, a batch's a batch.
-3. **Neither** — a standalone run.
+3. **Neither, and something says this session runs its own work** — a plan-doc, a task list, a
+   branch of its own: a standalone run.
+4. **Nothing answers** — the role is unread, never standalone by default: say which of the three
+   was looked for and came back empty, and take the worktree's name, the branch and the order's
+   coordinate as the candidates left to try.
 
 A master or a batch is confirmed against the epic's ledger: the header's master name, a batch row
 naming this session. Where the ledger contradicts the candidate — a variant the host handed back,
@@ -55,13 +58,14 @@ stands on the reading this session can defend. Correcting the ledger is the mast
 ```bash
 EPIC="<the number the invocation named, or the role's own>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$EPIC"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$EPIC<,the return's issue, where an order names one>"
 ```
 
-`--repo <owner/name>` on both where the epic lives outside this checkout's repository.
-`ledger.mjs` first — whether a ledger stands, and whether its coordinate resolves to one comment
-— then the ledger itself out of `--deep`'s comments by its `<!-- wave-ledger -->` marker, read
-whole, as prose: its batch rows, the merge queue and the gates, and the expectations the user owes
+`--repo <owner/name>` on both where the epic lives outside this checkout's repository, and on
+every read below with it. `ledger.mjs` first — whether a ledger stands, and whether its
+coordinate resolves to one comment — then that comment out of `--deep`'s, picked by the author
+and moment `ledger.mjs` gave for it rather than by matching its marker again, read whole, as
+prose: its batch rows, the merge queue and the gates, and the expectations the user owes
 ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)). Each change request the
 queue names is read as below. The live registry says which batch sessions answer now — presence,
 never absence.
@@ -71,7 +75,7 @@ never absence.
 The same two reads, the epic being the order's; from its ledger, this batch's row, the standing
 constraints, the decisions, and the expectations naming this batch. Then its own change request,
 as below; its branch against the order's base pin; and the coordinate the order names for its
-return — a return written there and a return accepted are two states, not one.
+return, read in the call above — a return written there and a return accepted are two states.
 
 ### This run
 
@@ -83,11 +87,15 @@ merged.
 
 ```bash
 SLICE="<the slice's branch>"
-# GitHub
-gh pr list --head "$SLICE" --state merged --json number,url,mergedAt
+# GitHub — `--head` matches the NAME across every head repository, forks included
+gh pr list --head "$SLICE" --state merged --json number,url,mergedAt,headRepository
 # GitLab
 glab mr list --source-branch "$SLICE" --merged --output json
 ```
+
+A request whose `headRepository` is not this repository is another project's
+([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)), and the slice is
+unmerged until one of this repository's own says otherwise.
 
 A run kept without a plan-doc — the common case for a small one — prints its settlements as
 unread, never as their defaults. What the task list says and the tree does not confirm is
@@ -96,12 +104,13 @@ unknown, not done.
 ### A change request, in any role
 
 ```bash
-PR="<n>"
-# GitHub — its state and outstanding blockers, then the checks as one verdict
-node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr "$PR"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr "$PR" --sha head
+PR="<n>"; REPO="<owner/name, where the request is not this checkout's>"
+# GitHub — its state and outstanding blockers, then the checks against the gates its base requires
+node "${CLAUDE_PLUGIN_ROOT}/scripts/pr-state.mjs" --pr "$PR" ${REPO:+--repo "$REPO"}
+node "${CLAUDE_PLUGIN_ROOT}/scripts/commit-checks.mjs" --pr "$PR" ${REPO:+--repo "$REPO"} \
+  --sha "<head while it is open, merge once it has merged>" --require-from-gates
 # GitLab — its state and the pipeline the forge names
-glab mr view "$PR" --output json
+glab mr view "$PR" --output json ${REPO:+--repo "$REPO"}
 ```
 
 Where no script takes a verdict for the forge, what the forge said is printed as it said it, and
@@ -113,9 +122,7 @@ the report says the verdict was not taken here.
   batch or the run, and the pin or moment it was read at), and what waits on the user.
 - **`## The picture`**, only where something did not answer — a bullet per source: what it was,
   what it would have settled, and what therefore stands on the record alone.
-- **`## Where it stands`** — a row per unit: a batch of an epic, as the catalogue's rows while an
-  epic runs; a slice of a run; and in a batch, its own build, request and return. A row the
-  record carries and the tree does not confirm reads unknown, never done.
+- **`## Where it stands`** — the catalogue's rows for a status.
 - **`## Needs your word`** — what the user owes, printed from the record as it stands: the
   ledger's expectations for an epic or a batch, the open gates for a run. This reading answers
   none and opens none; an ask it found that the record does not carry says so.
@@ -125,8 +132,8 @@ the report says the verdict was not taken here.
 | `ledger.mjs` says | what prints |
 |---|---|
 | `read: false` | no batch row: `## The picture` says the rows are unread, and the rest stands on what else answered — never "no batches" |
-| `ledger.ambiguous` | nothing drawn from the ledger: both comments by URL in `## The picture`, and their repair — the master's write, on the user's word — leads the ask block |
-| `ledger.found: false`, the read answered | no ledger on that issue, with its number: for a master, the role not yet opened or another epic; for a batch, the order's epic carrying none |
+| `ledger.ambiguous` | the first row that matches wins, and this one outranks the next: nothing is drawn from the ledger, the ids its `faults[]` carries stand in `## The picture`, and the repair — the master's write, on the user's word — leads the ask block |
+| `ledger.found: false`, the read answered, nothing ambiguous | no ledger on that issue, with its number: for a master, the role not yet opened or another epic; for a batch, the order's epic carrying none |
 | `faults[]` | a bullet each in `## The picture`; one that holds the next write rides the ask block |
 
 ## Reference files
@@ -138,3 +145,5 @@ the report says the verdict was not taken here.
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/order-anatomy.md`](../../references/order-anatomy.md)
+- [`../../references/forge-behaviour.md`](../../references/forge-behaviour.md) — before acting on
+  what a listing, a check or a merge setting the forge reports.

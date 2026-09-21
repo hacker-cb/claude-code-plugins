@@ -43,6 +43,9 @@ with nothing to show, its header line alone says `0 after dedup`.
   epic groups its rows by wave and ends each in what the ledger records for that batch —
   `released`, `withdrawn(<reason>)` or `failed(<what stands>)`. A set that ended partway says so
   in its first line; a summary never reads as complete when it is not.
+- **`Where it stands`, in a status** — a row per unit still in flight: a batch as above, a slice
+  at what its branch and its parent's history make it, and in a batch its own build, request and
+  return; each row says when it was read, and one the tree does not confirm reads unknown.
 - **`Review coverage`** — `multi-review`'s own rows, the slice in a column of its own where a run
   has several, and none of them folded together: a reviewer that could not run, ran over nothing,
   or ran over the wrong range is a gap, and a structural one — a reviewer's own fixed limitation,
@@ -118,14 +121,12 @@ Answer by number; "go" takes every recommendation.
 | slice | what | completion | state |
 |---|---|---|---|
 | `export/csv` | CSV writer | merged → `feat/export` · checks green | 🟢 done |
-| `export/xlsx` | XLSX writer | merged → `feat/export` · checks green | 🟢 done |
 | `export/docs` | usage page | merged → `feat/export` · checks none | 🟢 done |
 
 ## Review coverage
 | slice | reviewer | covered | effort | result |
 |---|---|---|---|---|
 | `export/csv` | `codex-review` | `<base>`, 4 files | xhigh | 🟢 no findings |
-| `export/csv` | `claude-review` | `<base>`, 4 files | medium | 🟢 no findings |
 | … | … | … | … | … |
 
 ## Findings

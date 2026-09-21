@@ -181,8 +181,8 @@ parent's own history says whether it landed, and in `request` mode so does its r
 --head <slice> --state merged`). The slice in flight stands where its branch does — cut, developed,
 or handed on, and `shipping-workflow`'s committed steps are resumed past while its review is run
 again, a coverage record that lived only in the lost context being no record. What the task list
-says and the tree does not confirm is unknown, not done. What the run stands at then goes to the
-user through `hcb-dev:status`, invoked through the Skill tool.
+says and the tree does not confirm is unknown, not done. What it stands at goes to the user
+through `hcb-dev:status`; a title this session gave itself stands as it was.
 
 ## Reference files
 
