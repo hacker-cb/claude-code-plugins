@@ -69,8 +69,10 @@ three things and nothing else:
 Never the finder's reasoning, its confidence, or another candidate's verdict: a check that reads
 the argument grades the argument. A coordinate that no tree this session can read carries is
 `not measured — unreachable`, never refuted. Where there are more candidates than the session can
-check, check them in the order of the severity their finders gave, and the rest read
-`not measured — budget` — a `Critical` is never among those.
+check, every `Critical` is checked before a budget applies at all, and the rest read
+`not measured — budget` in the order of the severity their finders gave. Where the `Critical` ones
+alone outrun what the session can check, the pass stops and says so: none of them is ruled
+unverified.
 
 A verdict is read, not counted: one that restates the claim without the evidence it read at the
 coordinate is `unproven`.

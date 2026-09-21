@@ -38,8 +38,10 @@ omission.
 - **`Outcome`** — with its target: `HAND OVER — <who holds it>`, `INTO #N`, `OPEN` or
   `DROP — <reason>`; a finding already tracked as it stands is `DROP — tracked as #N`. One still
   the reader's to give reads `proposed: <outcome>` and stands in the report's ask block as well —
-  a row alone puts the decision to nobody. `—` where nothing ruled the row: a review's own report,
-  whose rows also read `not measured — none ran`, and a row the pass could not measure.
+  a row alone puts the decision to nobody. `—` only where nothing proposed or ruled it: a review's
+  own report, whose rows also read `not measured — none ran`. A row no check measured keeps the
+  proposal it arrived with, and an `unreachable` one is handed to whoever holds a tree carrying its
+  coordinate.
 - **`Classification`** — what `OPEN` would carry, or what `INTO` would change on the issue, read
   per [`classification.md`](classification.md): proposed, never applied. `—` for every other
   outcome.
