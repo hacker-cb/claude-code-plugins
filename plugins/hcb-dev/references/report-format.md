@@ -26,26 +26,28 @@ that a batch's own user reads those lines too, so the rule for a line below hold
 ## The first line
 
 Bold, one line, first — nothing stands above it. It opens with the circle of the worst thing the
-report holds, says what happened, and counts what waits on the reader, or says that nothing does.
+report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪ — says what happened, and counts what waits on the reader, or says that nothing does.
 What the report goes on to ask is never announced there as settled.
 
 ```text
-**<circle> <what happened> · needs you: <n>, blocking: <m>**   — or: · nothing waits on you
+**<circle> <what happened> · needs you: <n>, blocking: <m>**
+**<circle> <what happened> · nothing waits on you**
 ```
 
 ## The grammar
 
 - **Every block is a `##` heading**, named from the catalogue and standing in its order. No `#`,
   no rule line, no bold line standing in for a heading.
-- **A block holds one element**: a bulleted list, a table, or — the ask block alone — a numbered
-  list. What fits none of them belongs to the record the session keeps, not to the report.
+- **A block holds one element**: a bulleted list or a table. Two blocks carry a form of their
+  own instead: `## Findings`, the whole of [`findings-table.md`](findings-table.md)'s, and the ask
+  block, below. What fits none of them belongs to the record the session keeps.
 - **`###` stands in one place**: the two groups of the ask block.
 - **Bold marks four things**: the first line, a bullet's lead phrase, an ask's question, an
   ask's sub-bullet labels.
 - **No bracket tags.** A category is a heading, a group, a column or a label — never `[text]`
   inside a line.
-- **A block with nothing in it is left out**, the ask block included: "nothing waits on you" is
-  the first line's to say.
+- **A block or a group with nothing in it is left out**, the ask block included — "nothing waits
+  on you" is the first line's to say — save `## Findings`, whose header line says `0 after dedup`.
 - **A block keeps its name** from one report to the next, in whatever language the session
   speaks.
 
@@ -59,14 +61,14 @@ What the report goes on to ask is never announced there as settled.
 | 🔴 | work stopped — red, blocked, failed, or held until the reader answers |
 | ⚪ | out of play — planned, queued, withdrawn, not run, not applicable |
 
-A circle stands in three places and no other: first in a report's first line (and in a line, as
-above), in a table's state column, and in the two ask-group headings. In a column it stands
+A circle stands first in a report's first line (and in a line, as above), in a table's state
+column — the one saying where each row stands — and in the two ask-group headings. There it stands
 **beside** the word the occasion's own vocabulary gives — a batch state of
 [`wave-ledger.md`](wave-ledger.md), a `base_checks` value of
 [`slice-completion.md`](slice-completion.md), a reviewer's status — never instead of it. A
 source that was not read keeps the state its record gives and says `unread` in words; being
-unread is no circle. The severity marks of a findings table are
-[`findings-table.md`](findings-table.md)'s. No other emoji appears.
+unread is no circle. A findings table's `Sev` column marks severity, not state, by
+`findings-table.md`'s own. No other emoji appears, save in content carried verbatim.
 
 ## Without your word
 
@@ -115,10 +117,10 @@ one bullet that changes what the reader decides.
 ## The shape
 
 ```markdown
-**🟡 Wave 3 launched, wave 2 closed · needs you: 2, blocking: 1**
+**🔴 Wave 3 launched, wave 2 closed · needs you: 2, blocking: 2**
 
 ## Without your word
-- **Departed from what you approved** — `w3/api` was drawn over `src/api/**`; its seam with `w3/store` moved to `src/api/store.ts`, where the adapter lives. Undo: say so, and the zone goes back.
+- **Departed from what you approved** — `w3/api` was drawn over `src/api/**`; its seam with `w3/store` moved to `src/api/store.ts`. Undo: say so, and the zone goes back.
 
 ## What happened
 - **`w2/auth` merged** — at `a1b2c3d`, read on `<remote>/<default>`; checks green.
@@ -138,11 +140,9 @@ one bullet that changes what the reader decides.
    - **Turned down** — dropping it, which pushes the docs work behind two merges.
    - **If unanswered** — `w3/docs` does not launch.
    - **Where it is acted on** — a word here; the write goes through `hcb-dev:issue-tracking`.
-
-### 🟡 Can wait
 2. **Click the chip for `w3/store`.**
    - **Recommend** — click it: the pin is current and nothing contends for its zone.
-   - **If unanswered** — nothing stops; the chip goes stale on its own.
+   - **If unanswered** — `w3/store` does not start, and wave 4 waits on its merge.
    - **Where it is acted on** — the chip.
    - **Open since** — 2 hours ago.
 

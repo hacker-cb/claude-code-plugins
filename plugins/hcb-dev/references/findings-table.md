@@ -32,7 +32,7 @@ omission.
 
 - **`#`** — the rank `findings.md` orders them by; `Critical` rows stand first, outside it.
 - **`Sev`** — `🔴 Critical`, `🟠 Important` or `⚪ Minor`, that file's ladder, the mark beside the
-  word; 🟠 appears nowhere else, and the footer line counts in the bare words.
+  word; here the circles rank severity and not state, and the footer counts the bare words.
 - **`Finding`** — the mechanism in one line. A mechanism with several instances is one row, the
   count in the cell and the instances in its block below.
 - **`Where`** — `file:line` of the first instance, or the coordinate itself where it is not a

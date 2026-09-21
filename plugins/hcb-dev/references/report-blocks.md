@@ -15,16 +15,15 @@ catalogue is the order of a report; no report invents a heading outside it.
 | `## The picture` | bullets | a standing reading of ground nothing changed — counts, milestones, the front line, and what could not be seen |
 | `## Where it stands` | table | one row per unit in flight or ended — a batch, a slice, the next wave — its state and what it waits on |
 | `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices and branches, what a sweep would remove |
-| `## Review coverage` | table | one row per reviewer — what it covered, at what effort, its verdict |
+| `## Review coverage` | table | one row per reviewer — `multi-review`'s coverage table, its cells as it gave them |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
 | `## Issues` | bullets | the issues the run settles, at their state now |
 | `## What it leaves` | bullets | what the run leaves standing behind it |
 | `## Needs your word` | numbered, under two `###` | `report-format.md`'s |
 
 `What happened` is what this session did; `What moved` is what it found had changed underneath
-it. A block appears at most once. `## Findings` is the one block a report carrying it never
-leaves out: with nothing to show, its header line alone says `0 after dedup`, since an absent
-block reads as an omission.
+it. A block appears at most once. `## Findings` is never left out of a report that carries it:
+with nothing to show, its header line alone says `0 after dedup`.
 
 ## What each block holds, where it needs saying
 
@@ -43,7 +42,8 @@ block reads as an omission.
   epic groups its rows by wave and ends each in what the ledger records for that batch —
   `released`, `withdrawn(<reason>)` or `failed(<what stands>)`. A set that ended partway says so
   in its first line; a summary never reads as complete when it is not.
-- **`Review coverage`** — each slice's `multi-review` coverage carried verbatim. A reviewer that
+- **`Review coverage`** — each slice's `multi-review` coverage rows as that review gave them, the
+  slice named in its own column where a run has several. A reviewer that
   could not run, ran over nothing, or ran over the wrong range is a gap, and a structural one —
   a reviewer's own fixed limitation, which no answer could close — is labelled as such. Where
   every slice was fully covered, one row says so.
@@ -66,8 +66,9 @@ block reads as an omission.
 | a correction before the first chip | `hcb-dev:wave-dispatch` | Without your word |
 | final report | `hcb-dev:implementation-workflow`; `hcb-dev:master-session` closing an epic | Without your word · Where it stands · Review coverage · Findings · Issues · What it leaves · Needs your word |
 
-An occasion this table does not list, whose skill fixes a body of its own, writes that body
-between the first line and the ask block.
+An occasion this table does not list, whose skill fixes a body of its own, writes that body as
+the skill names its sections, after `## Without your word` and before the ask block — the
+catalogue's closed list and its order bind it once this table lists it.
 
 ## A final report
 
@@ -82,15 +83,20 @@ between the first line and the ask block.
 | `export/docs` | usage page | merged → `feat/export` · checks none | 🟢 done |
 
 ## Review coverage
-| reviewer | covered | effort | result |
-|---|---|---|---|
-| every slice | `<base>`, all files | high | 🟢 fully covered |
+| slice | reviewer | covered | effort | result |
+|---|---|---|---|---|
+| `export/csv` | `codex-review` | `<base>`, 4 files | xhigh | 🟢 no findings |
+| `export/csv` | `claude-review` | `<base>`, 4 files | medium | 🟢 no findings |
+| … | … | … | … | … |
 
 ## Findings
 **Findings — 0 after dedup · verified by none**
 
 ## Issues
 - **#41** — still open: a local merge closes nothing, and the change request below would.
+
+## What it leaves
+- **Worktrees** — the three slices' worktrees stand; `/hcb-dev:git-cleanup` sweeps them.
 
 ## Needs your word
 ### 🟡 Can wait
