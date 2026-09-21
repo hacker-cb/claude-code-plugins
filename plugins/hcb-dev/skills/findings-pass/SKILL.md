@@ -134,7 +134,11 @@ they touch, so that two units never contend for the same files; a row changing b
 contract takes a unit of its own. A call a row settles by itself — mechanical, or of one
 obviously-correct form — is written into the unit's order rather than put to the reader; a fork
 stays a fork ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
-§1). A unit carries no tracker record, so where one stalls, its rows take their numbers then.
+§1). A unit reaches a session the way a tracker write reaches the tracker — through
+`hcb-dev:wave-dispatch` where a wave carries it, `hcb-dev:session-dispatch` otherwise, on the
+answer that skill counts as one — and until it does, it is a proposal like every other row. It
+carries no tracker record either, so whoever holds it says so in the report, and where it stalls
+under them, its rows take their numbers then.
 
 **A `Critical` or `Important` on the code the run itself wrote is not this pass's to rule.**
 `findings.md` has it fixed and blocking the completion, so the run goes back to its own fix path
