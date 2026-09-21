@@ -533,7 +533,7 @@ other. What it buys differs per skill: an issue read, a change request opened, a
 squash-merge that git alone cannot see. Where a skill can go on without it, it says
 what it loses rather than stopping.
 
-**`node` and the `claude` CLI itself** are `session-plugin-refresh`'s alone: it
+**The `claude` CLI itself** is `session-plugin-refresh`'s alone: it
 resolves the versions from the plugin's own manifest, `claude plugin list`, and
 the marketplace's git checkout — the last read with `git`, so a marketplace on
 any host answers the same way.
@@ -563,10 +563,10 @@ Per skill, on top of those:
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
-- **`sync-base`**: `git` against the resolved base and `jq` for the resolvers'
-  answers; the forge CLI only for the ladder's rungs that ask the forge — the open
-  change request's base, and where changes land — which are skipped, and said to
-  be, without it.
+- **`sync-base`**: `git` against the resolved base, plus `node` and `jq` for the
+  two resolver scripts and their answers. The forge CLI answers the ladder's rungs
+  that ask a forge — the open change request's base, and where changes land — and
+  lists the requests targeting this branch; without it each is skipped and said to be.
 - **`codex-review`**: the `codex` CLI installed and `codex login` live, plus `jq`
   to read the run's JSON envelope.
 - **`claude-review`**: the `claude` CLI on `PATH` and authenticated, plus `jq` to

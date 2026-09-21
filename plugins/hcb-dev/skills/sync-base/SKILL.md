@@ -139,7 +139,7 @@ fi
 
 ```bash
 HOW='<ff | rebase | merge — step 4 decided>'
-REF="$(jq -r '.base.ref // empty' "$(git rev-parse --git-dir)/hcb-sync-base.json")"   # step 3's answer
+REF="$(jq -r 'select(.base.current and .base.sharesHistory).base.ref' "$(git rev-parse --git-dir)/hcb-sync-base.json")"  # step 3's, current and related
 case "$HOW:${REF:+ref}" in
   ff:ref)     git merge --ff-only --autostash "$REF" ;;
   rebase:ref) git rebase --autostash "$REF" ;;
@@ -158,7 +158,7 @@ recommendation first.
 
 ```bash
 PUBLISHED='<yes | no — what step 1 read>'
-REF="$(jq -r '.base.ref // empty' "$(git rev-parse --git-dir)/hcb-sync-base.json" 2>/dev/null)"
+REF="$(jq -r 'select(.base.current and .base.sharesHistory).base.ref' "$(git rev-parse --git-dir)/hcb-sync-base.json" 2>/dev/null)"
 git status --porcelain -b; git stash list --format='%H %gs'
 [ -z "$REF" ] || git rev-list --left-right --count "$REF...HEAD"   # behind must now read 0
 B="$(git symbolic-ref --quiet --short HEAD)"
