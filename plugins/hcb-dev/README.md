@@ -500,8 +500,9 @@ saying something else. Each file opens by saying what it owns.
   `findings-pass`, and the tracker operations themselves stay with `issue-tracking`.
 - [`references/findings-table.md`](references/findings-table.md) — the one form
   findings take wherever they reach you: a header line saying what was verified,
-  a table ranked by severity with a verification column on every row, and refuted
-  findings named under it rather than listed as rows. Read wherever findings are
+  a table ranked by severity with a verification column on every row, a footer
+  totalling the rows by severity and by outcome, and refuted findings named under
+  that rather than listed as rows. Read wherever findings are
   shown — a review's report, a run's report, a wave report, a batch's return.
 - [`references/fix-reading.md`](references/fix-reading.md) — what reads a fix
   made after a review: which fix goes back through `multi-review` before it is

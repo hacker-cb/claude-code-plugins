@@ -53,8 +53,7 @@ defects, each real, one cause — the mechanism is what is recorded, instances l
 never one entry each; where a gate could hold that mechanism, the gate is recorded and the
 instances are its evidence. They are still fixed on whatever terms they were owed. The count is
 taken over findings already re-measured, never over the claims as their finders worded them. A
-repeat of a finding already ruled on is
-*The same finding twice*, below.
+repeat of a finding already ruled on is *The same finding twice*, below.
 **Where it came from decides what it is measured against.** One turned up while working on an
 issue, or reviewing the change that closes it, is measured against that issue **before any search
 by words**: the same mechanism, or a consequence of the fix just made, belongs to it, and where
@@ -63,7 +62,8 @@ that is recorded follows the issue's own state. A different mechanism is recorde
 **Worth remembering.** Everything below `Critical` passes this before it earns a number of its
 own. Three questions, one *yes* ending it: does it come back on its own, tripping a gate, a test,
 a review or a person again? Is it cheap to derive again? Does nothing observable follow from
-leaving it? The first *yes* makes it **DROP**, its reason the question that ended it. What
+leaving it? The first *yes* denies it a number of its own — **DROP**, its reason the question
+that ended it; an **INTO** or a **HAND OVER** it is owed stands, neither being a number. What
 survives says in one sentence what it costs to never do it — the sentence **OPEN** carries — and
 for a `Minor` outside the work in hand that sentence names something observable that breaks;
 where it cannot, the finding is an instance under a mechanism already recorded or **DROP**, never
