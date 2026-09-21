@@ -130,7 +130,7 @@ Then bring the local side to what arrived:
 | the consumer | what refreshing means |
 |---|---|
 | cutting a new branch | cut from the **ref**, `<remote>/<base>` — unless the local branch is *ahead* of it, which is exactly what a local completion leaves behind (it merges and never pushes): that work is the parent, so cut from the branch and say the remote does not carry it |
-| landing a merge on the base | `git merge --ff-only <remote>/<base>` **where the base itself is checked out** — from the branch you happen to stand on it fast-forwards *that* instead, quietly, and which worktree holds the base is [`slice-completion.md`](slice-completion.md)'s. A refusal means the base carries commits the remote does not — work to report, never something to reset away |
+| landing a merge on the base | `git merge --ff-only <remote>/<base>` **where the base itself is checked out** — from the branch you happen to stand on it fast-forwards *that* instead, quietly. A refusal means the base carries commits the remote does not — work to report, never something to reset away |
 | a branch already cut | a rebase or a merge, and which one depends on what is built on its tip — the skill doing it owns that call |
 
 ## A base with no shared history is not a base

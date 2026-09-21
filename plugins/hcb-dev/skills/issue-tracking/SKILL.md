@@ -6,8 +6,9 @@ description: >-
   an issue, ticket, bug or piece of tech debt; when something surfaces outside the
   current task that will not be fixed now — a defect, a missing test, a
   duplication, a TODO left behind; before substantive work, to find the issue that
-  already covers it; when the user asks what to pick up next — though a survey
-  of the whole backlog is `hcb-dev:backlog-survey`; and when a
+  already covers it; when the user asks whether an issue is still current — still
+  true of the code ("#42 ещё актуален?"); when the user asks what to pick up next —
+  though a survey of the whole backlog is `hcb-dev:backlog-survey`; and when a
   discussion lands on a topic whose earlier decisions may sit in an issue. GitHub
   and GitLab alike. Not for implementing an issue
   (`hcb-dev:implementation-workflow`), not for completing finished work
@@ -83,7 +84,8 @@ finding came out of:
 
 Body: **what is deferred**, identifiers and paths verbatim · **the trigger** that
 should reopen attention · **what it costs to never do it**, in one sentence ·
-**the source** (`<file>:<line>`, a change request, an audit date).
+**the source** (`<file>:<line>`, a change request, an audit date) — for a finding, with the
+`Verified` cell it carried and the revision it was read at.
 
 Where nothing triggers a return, the priority is what says when to pick it up —
 one carrying neither is not deferred work, and is not opened.
@@ -117,6 +119,14 @@ Both are resolved per
   of choosing one. An issue whose parked reason still holds is waiting, not
   ready. This is the single-pick question; laying out a whole slice is
   `hcb-dev:backlog-survey`.
+
+## Is it still true?
+
+Asked whether one issue or a few still hold — "is #42 still current?", "перепроверь #42" — rule
+each by [`../../references/issue-currency.md`](../../references/issue-currency.md): one of its four
+verdicts, with the coordinate on the refreshed base it stands on. A verdict past `current` is
+proposed with the edit it calls for — the body rewritten, the issue closed or reclassified — and
+made only on the answer below. A whole slice is `hcb-dev:backlog-survey`'s.
 
 ## Citing and closing
 
@@ -178,5 +188,7 @@ one unanswered: ask again rather than filling it in.
 - [`../../references/findings.md`](../../references/findings.md) — read
   it before proposing an out-of-scope finding: it owns the rating, the scope test
   and the outcome each one ends in.
+- [`../../references/issue-currency.md`](../../references/issue-currency.md) — read it
+  before ruling whether an issue is still true.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

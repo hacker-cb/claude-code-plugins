@@ -1,10 +1,9 @@
 # The wave ledger — the master's durable state
 
-Read by the session coordinating an epic's batches. The ledger is what makes
-acceptance, contradiction-checking and restart recovery independent of the
-session's context window: everything the coordination must not forget lives
-here, not in the conversation. For a master, this file **is** the "session's
-own record" that [`order-anatomy.md`](order-anatomy.md) and
+Read by the session coordinating an epic's batches. The ledger is what makes acceptance,
+contradiction-checking and restart recovery independent of the session's context window:
+everything the coordination must not forget lives here, not in the conversation. For a master,
+this file **is** the "session's own record" that [`order-anatomy.md`](order-anatomy.md) and
 [`order-return.md`](order-return.md) match tags against.
 
 ## Where it lives
@@ -116,8 +115,7 @@ test on a passage is whether deleting it changes what anyone does next.
    that must not merge, a foreign stash, a pinned version — never a workflow's own policy
    (`order-anatomy.md`). A return whose claims touch one of these is checked against it before
    either is believed. Each is written as the rule a batch acts on, together with what would lift
-   it; how it came to be known is journal, and a constraint carrying its own derivation is where
-   the ledger grows.
+   it; how it came to be known is journal.
 6. **Merge queue and gates** — the current wave's launch order (at once, or staged with what
    each step waits on), the merge order inside it, each batch whose authority the header's policy
    was narrowed for and why, which batch stands ready and waiting for its slot in either mode
@@ -134,11 +132,13 @@ test on a passage is whether deleting it changes what anyone does next.
    coordinate where that text is written. A row leaves only with its outcome — answered or met,
    deferred by the user's word, withdrawn, failed with what still stands, or overtaken — named in
    the line that drops it.
-8. **Journal** — one line per event, terse, newest last; and the account behind
-   a constraint or a decision, at the length it takes. The ledger carries what
-   is acted on and the journal how it was arrived at — and the journal is what
-   moves out first, so this section also indexes what has left: every archive in
-   order, and which of them new entries are going to.
+8. **Journal** — one line per event, terse, newest last; and the account behind a constraint or a
+   decision, at the length it takes. The ledger carries what is acted on and the journal how it was
+   arrived at — and the journal is what moves out first, so this section also indexes what has
+   left: every archive in order, and which of them new entries are going to.
+9. **Candidates** — a line per finding a return proposes for the tracker, as it arrives: the
+   batch, the claim, its coordinate, the revision it was read at, the outcome proposed; then the
+   verdict and ruling `hcb-dev:findings-pass` gave it. A line leaves once its ruling is carried out.
 
 ## Discipline
 

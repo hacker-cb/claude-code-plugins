@@ -90,14 +90,18 @@ holds, and what it stops is named in the return as the gap it is.
   — except an architectural fork the order could not foresee, which is not
   "everything else": it goes to the master first, exactly as the agree-first forks
   do.
-- **A finding does not become an issue here.** One that earns an issue rides the
-  return as a candidate — its outcome and its classification proposed, never
-  applied, and ranked against this batch's others within whatever budget the
-  order set ([`../../references/findings.md`](../../references/findings.md)) — and
-  it is filed on the confirmation that the order's own text authorizes, where that
-  confirmation reaches this session while it is still engaged; one arriving after
-  its release is the ruling session's to file. What the order's own deliverable
-  writes to the tracker is not this rule's business.
+- **A finding does not become an issue here, and is not verified here.** One that
+  earns an issue rides the return as a candidate — a row of
+  [`../../references/findings-table.md`](../../references/findings-table.md) reading
+  `not measured — batch` at the revision it was read at, its outcome and its
+  classification proposed, never applied, and ranked against this batch's others
+  within whatever budget the order set
+  ([`../../references/findings.md`](../../references/findings.md)). The master
+  verifies and rules it once the round has landed (`hcb-dev:findings-pass`); it is
+  filed on the confirmation that the order's own text authorizes, where that
+  confirmation reaches this session while it is still engaged, and one arriving
+  after its release is the ruling session's to file. What the order's own
+  deliverable writes to the tracker is not this rule's business.
 - **A pending question blocks only what depends on it.** Take the slice that needs
   no answer first — the order says which, or the dependency graph does. Before
   taking up what does depend on it, read the answer where the master writes it
@@ -150,10 +154,10 @@ it. An order naming none is malformed rather than a configuration to work
 around: ask the master for the coordinate instead of returning into the gap —
 and where no master is left to answer, the return ends through the user, below.
 
-With the four parts travel the batch's own extras: findings surfaced but
-left (`../../references/findings.md`),
-hand-offs other batches need to hear about, and candidate issues awaiting the
-master's confirmation.
+With the four parts travel the batch's own extras: its findings table — every
+finding surfaced but left, the candidate issues awaiting the master's
+confirmation among them (`../../references/findings-table.md`) — and the
+hand-offs other batches need to hear about.
 
 The session is not free on sending: acceptance is the master's. A follow-up
 mandate that comes back with it is part of this engagement **when the order's

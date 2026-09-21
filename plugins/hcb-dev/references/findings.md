@@ -71,7 +71,7 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 |---|---|
 | **FIX** | done in this work — no proposal, no number |
 | **HAND OVER** | the ground is someone else's: it reaches whoever holds it, on their change |
-| **INTO #N** | an issue already carries this mechanism — a comment, or an update where it adds facts — and is open, or reopened by it where [`../skills/issue-tracking/SKILL.md`](../skills/issue-tracking/SKILL.md) rules a closed one so |
+| **INTO #N** | an issue already carries this mechanism — a comment, or an update where it adds facts — and is open, or reopened by it where `hcb-dev:issue-tracking` rules a closed one so |
 | **OPEN** | a number of its own, carrying what says when to come back to it and, in one sentence, what it costs to never do it |
 | **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one |
 
@@ -89,8 +89,9 @@ them sees what the budget pushed out rather than a list already cut.
 addressee, a master session, the user — a candidate is not decided in the response that found
 it: it travels with its proposed outcome and waits for the pass reading the run's candidates
 together, against each other and against what the tracker holds. Absent such an authority, the
-run's own end is that pass. **Fixing never waits for it**: **FIX** and **HAND OVER** are settled
-where the finding is found.
+run's own end is that pass. That pass is `hcb-dev:findings-pass`, and it **verifies before it
+rules**: every candidate re-measured by a check that never saw the finder's argument. **Fixing
+never waits for it**: **FIX** and **HAND OVER** are settled where the finding is found.
 
 **The same finding twice.** A finding is identified by `(file, line)` **and** by mechanism, the key
 `hcb-dev:multi-review` dedupes on, since reviewers routinely anchor one root cause at different
@@ -116,10 +117,11 @@ everything left unfixed that the next reader would want.
 
 Three things happen before the finding is proposed, never after it is accepted:
 
-- **Search the tracker**, closed entries included (`../skills/issue-tracking/SKILL.md`) — its
+- **Search the tracker**, closed entries included (`hcb-dev:issue-tracking`) — its
   result decides which of the three states below applies.
 - **Re-measure it** at its coordinate on the tree the work stands on — the base where the code is
-  already in it, the branch carrying it where it is not — with whatever will judge it there.
+  already in it, the branch carrying it where it is not — with whatever will judge it there. In
+  the pass that rules it, this is its verification.
 - **Read the repository's own classification** ([`classification.md`](classification.md)), once
   for the run rather than once per finding. Where a role has no vocabulary there, name the role
   and offer nothing for it.
@@ -128,23 +130,12 @@ With no tracker to reach the search is impossible and the classification reaches
 project states, while the re-measure still runs: the finding surfaces as an observation with no
 proposal, saying there is nowhere to file it.
 
-The form is `## Out-of-scope observations`, at the end of the response that did not fix it,
-proposing the outcome *Decided cold* rules. Under an orchestrator it does not: the finding rides
-its slice's `incidental` output ([`slice-completion.md`](slice-completion.md)) to the run's own
-report, and an autonomous run is never interrupted to ask. One line each:
-
-- **untracked** → what it is and where, the classification it would carry, the rating a review
-  gave it ([`report-format.md`](report-format.md)), what it costs to never do it, and the outcome
-  proposed for it;
-- **tracked, and the finding adds something** → `#N`, its state, what changes, and the outcome,
-  carrying the line above's fields where that outcome is a record of its own;
-- **tracked as it stands** → no entry; say so where it came up.
-
-Where the response wears a report's frame, the proposals stand in its ask block and the
-observations in its body. A line in a report is not this: it records the finding but puts the
-decision to nobody, and a finding recorded that way ends with the response.
+What is proposed is shown in the table [`findings-table.md`](findings-table.md) fixes, at the end
+of the response that did not fix it, each row carrying the outcome *Decided cold* rules. Under an
+orchestrator it does not: the finding rides its slice's `incidental` output to the run's own
+report, and an autonomous run is never interrupted to ask.
 
 **Who authorizes a tracker write, and what answers count as one**, is the skill that does the
-writing: `../skills/issue-tracking/SKILL.md`. Where no answer comes the finding stays undecided
+writing: `hcb-dev:issue-tracking`. Where no answer comes the finding stays undecided
 rather than dropped — re-surface it at the natural end of the session, once the primary work is
 done.

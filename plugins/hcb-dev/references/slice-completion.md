@@ -40,7 +40,7 @@ running the epic.
 Completion is **not** handed a `coverage` signal — it runs only after the gate has passed, so it
 carries whatever structural gaps the gate reported into `uncovered` and re-checks nothing.
 
-**Outputs every backend returns**, for [`report-format.md`](report-format.md):
+**Outputs every backend returns**, for whatever reports the run:
 
 | output | what it carries |
 |---|---|
@@ -76,8 +76,7 @@ An `on-green` does not fire, and a `queued` go is not taken, while any of these 
 - a `Critical` or `Important` finding still open on the change ([`findings.md`](findings.md));
 - a `local` merge into the default branch, or into a parent that cannot be ruled non-default;
 - an `on-green` in a repository where no enforced gate was confirmed — what goes green there is
-  nothing anyone enforced
-  ([`../skills/github-pr-workflow/references/merge-gates.md`](../skills/github-pr-workflow/references/merge-gates.md)).
+  nothing anyone enforced, and confirming one is the change-request driver's reading of the base.
 
 Each stops where the authorization's own addressee decides — except the last, whose addressee is
 a **person** whatever the authorization named: a coordinating session carries that one on rather
@@ -89,9 +88,8 @@ First hit wins:
 
 1. **Explicit user phrasing** — "merge locally / no PR / land it in `dev`" → `local`; "ship it /
    open a PR / get this merged" → `request`.
-2. **What the invocation carried** — an order's own settlements
-   ([`order-anatomy.md`](order-anatomy.md)), threaded on by whatever received them; a gate
-   downstream shows such a value and never re-asks it.
+2. **What the invocation carried** — an order's own settlement of the mode, threaded on by
+   whatever received it; a gate downstream shows such a value and never re-asks it.
 3. **The value the planning gate settled**, threaded down by the orchestrator.
 4. **Fallback: `request`.**
 

@@ -1,7 +1,8 @@
 # Is the issue still true?
 
-Read wherever an issue is about to be relied on — a backlog surveyed issue by
-issue, or one taken in as the spec of work about to start. An issue is a claim
+Read wherever an issue is about to be relied on or is asked about — a backlog
+surveyed issue by issue, one taken in as the spec of work about to start, or one
+someone asks is still true. An issue is a claim
 about a tree that has moved since it was written, and this file owns the verdict
 on whether that claim still holds: the code it stands on, what is read to reach
 it, and the four it can be. It lives outside any one skill because a survey and
