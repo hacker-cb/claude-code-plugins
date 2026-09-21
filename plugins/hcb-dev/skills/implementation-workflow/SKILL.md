@@ -61,8 +61,9 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
 
 ## Phase 1 — The planning gate
 
-The one interactive point. Present the whole plan and take a single approval, deciding everything
-foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
+The one interactive point. Present the whole plan — a report whose `## The plan` lays out the
+slices and branches and whose ask block holds every fork — and take a single approval, deciding
+everything foreseeable at once so Phase 2 has no routine questions left. Every fork carries a
 **recommendation shown first**, and a project rule that fights good architecture gets flagged
 ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 
@@ -86,8 +87,8 @@ Settle, in one gate:
 - **Architectural / implementation forks** — the choices the code cannot answer.
 - **Completion mode** — `local` or `request` (default `request` where the user is silent and
   phrasing does not decide).
-- **Merge strategy** — a shown default (`--no-ff` local; squash per-slice request; the real choice
-  is the final `feature → base` request), filtered in request mode to the repo's allowed methods.
+- **Merge strategy** — `slice-completion.md`'s shown default, filtered in request mode to the
+  repo's allowed methods.
 - **Merge authorization** — `slice-completion.md`'s `merge-auth`, value and addressee both, shown
   rather than asked: `on-green` by default in both modes, the addressee the user unless an order
   above named another, and approving the plan *is* that authorization. The default-branch merge
@@ -107,9 +108,8 @@ Settle, in one gate:
 For anything multi-slice, **persist the plan and the captured authorizations** so a long autonomous
 run survives context compaction: slice progress on the native task list, and the plan — mode, merge
 authorization, strategy, Phase 0's read point, each slice's cut point as it is cut — in a durable
-plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, the path resolved from the variable and
-never hardcoded. Where this session titled itself at intake, the approved scope is what that title
-settles on (`session-naming.md`'s second step).
+plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`. Where this session titled itself at
+intake, the approved scope is what that title settles on (`session-naming.md`'s second step).
 
 ## Phase 2 — Autonomous execution
 

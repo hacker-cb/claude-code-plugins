@@ -123,24 +123,25 @@ row's reason.
 
 ## Step 6 — The gate
 
-Four sections in this order, each a table, never one table with a class column — the class is
-routing, and the number names no consequence a user can weigh. Skip a section that would be
-empty. Every item **the mode listed** appears in exactly one of them, a kept one included: the
-gate is the whole plan, not the part that deletes.
+A report ([`../../references/report-format.md`](../../references/report-format.md),
+[`../../references/report-blocks.md`](../../references/report-blocks.md)) whose `## The plan` is
+one table over every item **the mode listed**, a kept one included — the gate is the whole plan,
+not the part that deletes: item, what it is, state, and what it costs. The circle beside the
+state names the consequence; the class it came from is routing, never printed.
 
-1. **Proceeding without asking — nothing is lost** (class 1): item, what it is, action.
-2. **Deleting — recoverable** (class 2): item, state, how to get it back. The restore command
-   carries the tip as it stands now, so the row alone undoes the deletion. A branch whose
-   `freedBy` names a worktree in this same section belongs **here**, not among the kept:
-   removing that worktree is what makes it deletable, and the user approves both at once.
-3. **Needs an explicit yes — irreversible** (class 3): item, state, what disappears — the files,
-   a branch's only copy, the submodule git dir living in that worktree alone.
-4. **Kept — nothing is deleted**: item, what it is, why it stays, and **repair, if any**. A keep
-   promises the item survives, not that nothing touches it.
+- **🟢 deleting** (class 1) — nothing is lost; it proceeds without asking.
+- **🟡 deleting** (class 2) — recoverable: the cost cell carries the restore command, the tip as
+  it stands now, so the row alone undoes the deletion. A branch whose `freedBy` names a worktree
+  deleted in this same table is one of these, not a kept one: removing that worktree is what
+  makes it deletable, and the user approves both at once.
+- **🔴 deleting** (class 3) — irreversible: the cost cell says what disappears — the files, a
+  branch's only copy, the submodule git dir living in that worktree alone.
+- **⚪ kept** — nothing is deleted: the cost cell says why it stays, and the **repair**, if any.
+  A keep promises the item survives, not that nothing touches it.
 
-Then ask once, over sections 2 and 3 and every `repair` cell in section 4 — a tracking repair is
-class 2 like the recoverable deletions. Section 1 is the only one that proceeds unasked. Wait
-for an explicit answer; a subset means only that subset.
+Then ask, in one message's `## Needs your word`, over the 🟡 and 🔴 rows and every repair — a
+tracking repair is class 2 like the recoverable deletions. The 🟢 rows are the only ones that
+proceed unasked. Wait for an explicit answer; a subset means only that subset.
 
 ## Step 7 — Execute, in this order
 
@@ -150,8 +151,9 @@ proof re-taken after the wait, and the tracking repair that comes last.
 
 ## Step 8 — Verify and report
 
-Re-run discovery. Report what went, what was kept and why, and — separately — what was surfaced
-and left for the user to decide. List the class-1 actions taken without asking.
+Re-run discovery, then report: `## What happened` — what went, the class-1 actions taken
+without asking among it; `## What it leaves` — what was kept and why; and what was surfaced and
+left for the user to decide, as asks.
 
 ## Never
 

@@ -4,8 +4,7 @@ Read by whatever tells the user something about a run of work. It owns how that 
 kinds of message, the first line, the grammar every block obeys, the five status circles, and
 the two blocks any report can carry — what was settled without the reader, and what waits on
 them. Which blocks an occasion carries, and what each one holds, is
-[`report-blocks.md`](report-blocks.md)'s, which writes both shapes out; an occasion that file
-leaves to its own skill keeps the shape that skill fixes. Keep it scannable: short grouped bullets, a small table, not
+[`report-blocks.md`](report-blocks.md)'s, which writes two of them out. Keep it scannable: short grouped bullets, a small table, not
 an essay.
 
 Two boundaries. What an engine hands back verbatim ([`review-runs.md`](review-runs.md)) is the
@@ -37,9 +36,8 @@ What the report goes on to ask is never announced there as settled.
 
 ## The grammar
 
-- **Every block is a `##` heading**, named from the catalogue and standing in its order — save
-  an occasion `report-blocks.md` leaves to its own skill, whose sections stand as that skill
-  names them. No `#`, no rule line, no bold line standing in for a heading outside a form below.
+- **Every block is a `##` heading**, named from the catalogue and standing in its order. No `#`,
+  no rule line, no bold line standing in for a heading outside a form below.
 - **A block holds one element**: a bulleted list or a table. Two blocks carry a form of their
   own instead: `## Findings`, the whole of [`findings-table.md`](findings-table.md)'s, and the ask
   block, below. What fits none of them belongs to the record the session keeps.

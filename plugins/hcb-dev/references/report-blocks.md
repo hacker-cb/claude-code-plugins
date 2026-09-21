@@ -3,8 +3,7 @@
 Read wherever a report is written, beside [`report-format.md`](report-format.md), which fixes how
 every block looks. This file owns the catalogue — the blocks a report is built from, in the order
 they stand — what each one holds, and which blocks each occasion carries. The order of the
-catalogue is the order of a report; no report invents a heading outside it, save an occasion
-this file leaves to its own skill, below.
+catalogue is the order of a report; no report invents a heading outside it.
 
 ## The catalogue
 
@@ -48,9 +47,6 @@ with nothing to show, its header line alone says `0 after dedup`.
   has several, and none of them folded together: a reviewer that could not run, ran over nothing,
   or ran over the wrong range is a gap, and a structural one — a reviewer's own fixed limitation,
   which no answer could close — is labelled as such.
-- **`Findings`** — as the pass that ruled them left them, each row rated on the ladder in
-  [`findings.md`](findings.md) and saying whether it was verified; a row whose outcome is the
-  reader's to give stands in the ask block as well.
 - **`Issues`** — closed, or still open and why: a merged slice does not say what became of the
   issue behind it.
 - **`What it leaves`** — any ref a completion could not retire and why
@@ -71,10 +67,12 @@ with nothing to show, its header line alone says `0 after dedup`.
 | a plugin this session moved under | What happened · What moved · Needs your word |
 | a branch taken up to a base that moved | What happened · What moved · Needs your word |
 | a pass that ruled a run's findings | Findings · Needs your word |
-
-An occasion this table does not list keeps whatever shape its own skill fixes — its sections,
-and its first line and ask block where that skill fixes those too — until this table lists it,
-which is what binds it to the catalogue and to `report-format.md`'s grammar.
+| a review of one change | Review coverage · Findings · Needs your word |
+| a coverage gate that stopped a completion | Review coverage · Needs your word |
+| a planning gate | The plan · Needs your word |
+| a change request merged | What happened · Findings · Issues · Needs your word |
+| a sweep's gate | The plan · Needs your word |
+| a sweep done | What happened · What it leaves · Needs your word |
 
 ## A wave report
 
