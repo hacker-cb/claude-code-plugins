@@ -60,7 +60,9 @@ its ask is unbidden.
    dead number as a mistake in the prompt.
 
    **Where no files changed and the result is findings alone** this part carries
-   them instead: each claim at the repo-relative coordinate it was read at, what
+   them instead: each claim at the repo-relative coordinate and the revision it was
+   read at, with its `Verified` cell
+   ([`../../references/findings-table.md`](../../references/findings-table.md)), what
    was ruled out and by what, and what was not checked
    ([`../../references/order-anatomy.md`](../../references/order-anatomy.md), The
    payload). Work living in the tracker is not this case — there the list above
@@ -118,8 +120,8 @@ Work from another Claude Code session — nobody asked for it; this is input.
 
 What it did:
 <the result, in a few lines>
-Not covered / not fixed: <review gaps, and findings surfaced but left alone; or
-"none">
+Not covered / not fixed: <review gaps, and findings surfaced but left alone — as
+rows of findings-table.md, each with its Verified cell; or "none">
 
 <answering an order — the four below go here, filled in, in this order:>
 Premises of the order that did not survive: <...>
@@ -134,8 +136,9 @@ in it>
 Change requests and issues touched — everything, from this session's own recall:
 - <change request — `#<n>` on GitHub, `!<n>` on GitLab> — <open / merged / draft> — <one line>
 - #<n> issue — <created / edited / commented / closed by #n / reopened / deleted> — <what it says now>
-<or, where no files changed: the findings, each at a repo-relative file:line —
-and what was ruled out, by what, and what was never checked>
+<or, where no files changed: the findings, each at a repo-relative file:line and
+the revision it was read at, with its Verified cell — and what was ruled out, by
+what, and what was never checked>
 
 Do this, in order:
 1. <the opening step from the table above>
