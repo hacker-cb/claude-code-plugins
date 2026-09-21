@@ -14,12 +14,13 @@ unread leaves the next reader starting past it.
 
 ## Where it starts
 
-Two points, both fixed after the base is fetched and **before** it is taken — the take moves the
+Three points, all fixed after the base is fetched and **before** it is taken — the take moves the
 first, and a merge base read afterwards answers the new tip:
 
 ```bash
 REF="<the refreshed base ref>"
 M="$(git merge-base HEAD "$REF")"; H="$(git rev-parse HEAD)"
+F="$(git merge-base --fork-point "$REF" HEAD)"   # the base's reflog, remembering tips it dropped
 ```
 
 - **The delta** — `$M..$REF`: `git log --first-parent --oneline "$M..$REF"` for what landed,
@@ -31,8 +32,14 @@ M="$(git merge-base HEAD "$REF")"; H="$(git rev-parse HEAD)"
   point a build's analysis read the tree at, until its first cut. Read the facts from that point,
   and everything else from `M`.
 
-Where `M`, or that earlier point, is not an ancestor of `$REF`, the base was rewritten under the
-work: the delta is unknown, and saying so replaces reading a range that means nothing.
+**Where the start is no start**, say so rather than read a range that means nothing:
+
+- **`M` empty** — a shallow clone, or a ref sharing no history with the work, which
+  `base-resolution.md` refuses as a base: the delta is unread, and no range is built from it.
+- **`F` a commit that is not an ancestor of `$REF`** — the base was rewritten under the work, and
+  `M` alone cannot see it, being an ancestor of `$REF` by construction. What the base dropped
+  would come back as the work's own under a rebase: the delta is unknown, and the take is a fork.
+- **The facts' earlier point not an ancestor of `$REF`** — the same rewrite, seen from a pin.
 
 ## What it is read for
 
