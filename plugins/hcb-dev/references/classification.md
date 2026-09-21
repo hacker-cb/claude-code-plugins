@@ -19,7 +19,7 @@ A deliberately deferred defect keeps its kind of work — the deferral lives in 
 ## Read the set before proposing or applying anything
 
 Read it whole, the labels to the newest issues — a short read is indistinguishable from a missing
-family. [`findings.md`](findings.md) sets when it happens relative to a proposal, and how often.
+family. Once per run, before anything is proposed.
 
 ```bash
 # GitHub — `gh api` asks its own default host, so the repository's goes in explicitly; the types
@@ -90,7 +90,7 @@ role nowhere is not out of line but unclassified. Align it to a single value, ca
 mechanism resolution names and in none it does not: added where missing, cleared where it stands
 outside them, and put in place of a value that contradicts it. Which value that is, is the user's
 wherever the two disagree. It is a tracker edit — proposed, and made only on the answer that
-authorizes one (`findings.md`), never as a side effect of classifying something else.
+authorizes one (`hcb-dev:issue-tracking`), never as a side effect of classifying something else.
 
 ## Proposing a set the repository does not have
 

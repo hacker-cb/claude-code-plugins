@@ -157,9 +157,8 @@ finding hangs on it. When a reviewer fails, quote its error instead of guessing 
 ## 5. Consolidate
 
 Dedup by the key [`../../references/findings.md`](../../references/findings.md) fixes — `(file,
-line)` **and** mechanism, since reviewers routinely anchor one root cause at different lines —
-keeping whichever write-up carries the concrete failure scenario, and rank by that same file's
-ladder.
+line)` **and** mechanism — keeping whichever write-up carries the concrete failure scenario, and
+rank by that same file's ladder.
 
 ## 6. Report
 
@@ -185,7 +184,8 @@ mis-scoped in every repo whose changes target another trunk. Report that as `par
 (structural)` with the reason, so a shipping flow can tell it apart from a gap still worth
 closing.
 
-Then the findings, and nothing else: no fixes, no patches, no offer to apply them.
+Then the findings, laid out by [`../../references/findings-table.md`](../../references/findings-table.md)
+— verified by none, ruling nothing — and nothing else: no fixes, no patches, no offer to apply them.
 
 **Where the report reads thin for the breadth it covered** — the engines agreed on little, or
 the change reaches across far more ground than the findings touch — say so, and offer the one

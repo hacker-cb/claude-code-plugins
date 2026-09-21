@@ -53,9 +53,9 @@ Two sections between the frame's halves:
 
 1. **What happened** — the events since the last report, each with the coordinate it was
    verified at and, over a landing, what its checks showed (`base_checks`, whose values
-   [`slice-completion.md`](slice-completion.md) names). The round's candidates stand here too —
-   what was ruled and what it was re-measured against — with the ones needing the reader in the
-   ask block and the dropped ones named with their reason.
+   [`slice-completion.md`](slice-completion.md) names). A round that closed brings its candidates,
+   in the table [`findings-table.md`](findings-table.md) fixes, with the rows needing the reader in
+   the ask block as well.
 2. **Where it stands** — one row per batch: id, issues, state in the ledger's vocabulary, and
    what it waits on: nothing, its slot, the reader's approval, the reader's click with the chip's
    age and the pin it stands on, another batch, or the condition holding it back — a blocker, a
@@ -73,7 +73,7 @@ An event that changes nothing for the reader earns no report: one line carries i
 
 ## What happened
 - <event> — verified <how> at <coordinate>; checks <the `base_checks` value, as `slice-completion.md` gives it>.
-- Candidates of the round — <what was ruled, re-measured against what>; dropped: <what, and why>.
+- Candidates — <where a round closed: its table follows this list, header line first>.
 
 ## Where it stands
 | batch | issues | state | waiting on |
@@ -110,11 +110,11 @@ change-request reports its slices produced. Five sections between the frame's ha
    lines verbatim — a reviewer that could not run, ran over nothing, or ran over the wrong range
    is a gap, and a structural one (a reviewer's own fixed limitation, which no answer could
    close) is labelled as such. If every slice was fully covered, say that.
-4. **Incidental findings, rated by importance** — surfaced but not fixed, grouped by category,
-   rated on the ladder in [`findings.md`](findings.md), each with the outcome it ended in. One
-   whose outcome is the reader's to give stands in the ask block instead, and this section says
-   so rather than repeating it. **If there are none, say so explicitly**: its absence must not
-   read as an omission.
+4. **Incidental findings** — surfaced but not fixed, in the one table `findings-table.md` fixes,
+   as the pass that ruled them left it: each row rated on the ladder in [`findings.md`](findings.md)
+   and saying whether it was verified. A row whose outcome is the reader's to give stands in the
+   ask block as well. **With none, the header line says `0 after dedup`**: an absent section must
+   not read as an omission.
 5. **What the run leaves** — any ref a completion could not retire and why
    ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions this run is done
    with and which of them cannot be archived, with why — archiving the rest is an ask and stands
@@ -141,7 +141,7 @@ Template:
 
 **Coverage** — <per-slice coverage lines; name any gap; "fully covered" if clean>
 
-**Incidental findings** — <grouped, rated Critical/Important/Minor per the scale above, each with its outcome; the ones whose outcome is yours stand in the block below; or "none">
+**Incidental findings** — <the table, header line first; its `proposed:` rows stand in the block below as well; or the header line alone, `0 after dedup`>
 
 **What it leaves** — <refs left standing, worktrees, sessions to archive, an offer turned down, cleanup pointer; or "nothing">
 

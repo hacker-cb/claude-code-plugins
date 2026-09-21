@@ -103,5 +103,5 @@ owner has not committed to, and it is stale the moment you read it.
 Git guards most collisions itself, loudly and with the offending path: `git switch` and
 `git branch -f` on a branch checked out elsewhere both exit 128 naming the other
 worktree. The one that passes silently is `git branch -m`, which retargets the other
-session's HEAD without a word — which is why the rename in
-[`branch-naming.md`](branch-naming.md) reads this listing first and refuses there.
+session's HEAD without a word — so a rename reads this listing first and refuses where another
+worktree stands on the name.

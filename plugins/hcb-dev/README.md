@@ -30,6 +30,7 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
                                                            request ─▶ github-pr-workflow ─▶ (merge)
 
 issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
+findings-pass ─────────────────────────── a run's end, or a round's: every finding verified, ruled, one table
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (back to you)
 backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
@@ -81,8 +82,21 @@ form: you paste every one of them yourself.
   takes, the shape of the issue body, and the three moments worth consulting open
   issues at. Classification against the
   mechanism you adopted, else against what the repository itself defines and
-  uses, is `references/classification.md`. Called by `implementation-workflow` at intake and in its report, and by
-  `github-pr-workflow` after a merge.
+  uses, is `references/classification.md`. Asked whether one issue still holds, it rules it by
+  `references/issue-currency.md`'s four verdicts; a whole slice is `backlog-survey`'s. Called by
+  `implementation-workflow` at intake and in its report, and by `github-pr-workflow` after a merge.
+- **`findings-pass`** — `/hcb-dev:findings-pass`
+  The pass that rules a run's findings cold and together, once the work is done: every
+  candidate collected — this session's own, ones handed over from another session, a master's
+  batches' — deduplicated, **verified** by subagents that are given the claim and its coordinate
+  and never the finder's argument, searched in the tracker, ranked, and ended in one of the
+  outcomes of `references/findings.md`. Everything is shown in the one table
+  [`references/findings-table.md`](references/findings-table.md) fixes, whose every row says
+  whether it was verified and at which revision; a refuted finding leaves the table for one line
+  under it rather than standing as noise. Runs at a standalone run's end, and at a master's
+  round close on the tree the round landed on, once every return is accepted and its change
+  requests merged — never inside a batch, which returns its candidates unverified. Report-only: it fixes nothing,
+  and every tracker write goes through `issue-tracking` on your word.
 
 ### Preparing a change
 
@@ -463,8 +477,13 @@ saying something else. Each file opens by saying what it owns.
 - [`references/findings.md`](references/findings.md) — how a finding is rated,
   whether it is fixed in the work that found it, whether it is worth a tracker
   entry at all, and the closed list of outcomes one can end in. Read wherever a
-  reviewer, a step or a completion turns something up; the tracker operations
-  themselves stay with `issue-tracking`.
+  reviewer, a step or a completion turns something up; the pass that rules them is
+  `findings-pass`, and the tracker operations themselves stay with `issue-tracking`.
+- [`references/findings-table.md`](references/findings-table.md) — the one form
+  findings take wherever they reach you: a header line saying what was verified,
+  a table ranked by severity with a verification column on every row, and refuted
+  findings named under it rather than listed as rows. Read wherever findings are
+  shown — a review's report, a run's report, a wave report, a batch's return.
 - [`references/fix-reading.md`](references/fix-reading.md) — what reads a fix
   made after a review: which fix goes back through `multi-review` before it is
   pushed, and when those rounds end — on what they find and what they covered.
@@ -522,6 +541,9 @@ Per skill, on top of those:
   Server 3.17 for hierarchy and types, 3.19 for dependencies. `glab` reads none
   of them and links issues only while creating one, so the rest goes through
   `glab api` (`references/forge-docs.md`).
+- **`findings-pass`**: the host's subagents, which run the checks, and whatever
+  `issue-tracking` needs for the tracker search; with no tracker to reach it still
+  verifies and shows, saying there is nowhere to file.
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).

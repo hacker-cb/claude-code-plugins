@@ -160,11 +160,11 @@ single-slice set has no feature branch and no integration step.
 - **After a local set** — offer, never force, **one** whole-feature `feature → base` change
   request. This is the consented exit from local mode, and being an ask it stands in the report's
   block rather than beside it.
-- **Issues output** — the incidental findings whose outcome is still the user's, and the
-  follow-ups, reach them as proposals in that same block (`findings.md`), and
-  `hcb-dev:issue-tracking` owns what their answer authorizes. In local mode no change request
-  closes the intake issue: closing or linking it rides with that handoff, or the issue is left
-  open against work that landed.
+- **Issues output** — before the report `hcb-dev:findings-pass` rules every slice's `incidental`,
+  invoked through the Skill tool — except in a wave's batch, whose return carries them unruled
+  (`hcb-dev:wave-worker`). Its table is the findings section; its `proposed:` rows and the
+  follow-ups stand in that same block. In local mode no change request closes the intake issue:
+  closing or linking it rides with that handoff, or the issue is left open against landed work.
 - **Cleanup** — a branch retires with the merge that landed it
   ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)), so a run
   leaves the worktrees, the older residue, and any local branch no merge took: point at

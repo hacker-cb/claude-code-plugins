@@ -19,10 +19,9 @@ head.
   earns no reviewer either. Each is still read against what it answers, and a rewritten comment
   against the code it describes. Text something executes — a spec code is generated from, a
   schema, a skill an agent follows — is behaviour, not prose.
-- **A fix that would meet `hcb-dev:multi-review`'s own high-risk test**
-  ([`../skills/multi-review/SKILL.md`](../skills/multi-review/SKILL.md), *Scope*), **or answers
-  more than its finding asked**, is code no reviewer has read: it goes back through
-  `hcb-dev:multi-review` on the change's own base, never one narrowed to the fixes.
+- **A fix that would meet `hcb-dev:multi-review`'s own high-risk test** (its *Scope*), **or
+  answers more than its finding asked**, is code no reviewer has read: it goes back through
+  that skill on the change's own base, never one narrowed to the fixes.
 - **A borderline call goes to a reviewer.**
 
 A `Minor` never opens a round on its own (`findings.md`); it rides one opened for something

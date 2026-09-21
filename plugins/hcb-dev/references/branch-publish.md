@@ -64,4 +64,4 @@ until the same reading is done by hand.
   the branch carries now, and an ambiguity that exits after the rename leaves a branch renamed
   locally and nothing pushed.
 - Where the rename and the publication happen in different steps, the old name travels between
-  them as `old-name` ([`slice-completion.md`](slice-completion.md)).
+  them as the bare `old-name`, empty where nothing was renamed — the value `--old-name` takes.
