@@ -57,7 +57,7 @@ record. Cells stay short; whatever wraps goes to the block below.
 |---|---|
 | `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision |
 | `unproven @<sha>` | checked there, and neither shown nor ruled out — its block says what would settle it |
-| `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), or `none ran` |
+| `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
 
 **A refuted finding is not a row.** It is counted in the header and leaves the table for one line
 under it — `Refuted: <finding> at <where> @<sha> — <what showed it does not hold>`, one each — so

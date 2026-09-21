@@ -79,7 +79,9 @@ alone outrun what the session can check, the pass stops and says so: none of the
 unverified.
 
 A verdict is read, not counted: one that restates the claim without the evidence it read at the
-coordinate is `unproven`.
+coordinate is `unproven`. A check that was refused, could not run or never answered gave no verdict
+at all: its candidate is `not measured — failed`, carried to a later pass and neither searched nor
+ruled here — an unread answer is not a negative one.
 
 ## 4. Search the tracker, and read the classification
 
