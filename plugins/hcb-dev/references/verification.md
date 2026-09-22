@@ -38,6 +38,8 @@ on, the steps are the ones below.
   `not measured — unreachable`.
 - **Candidate text travels as written.** The claim is the finder's own `summary`; nothing is
   reworded on the way in, and a candidate lacking a concrete failure scenario is not one to submit.
+- **Every carrier is in before the grouping.** Once `units` has run, `add` refuses: a carrier
+  that arrives later goes into the next pass.
 
 ## Grouping
 
@@ -45,8 +47,12 @@ on, the steps are the ones below.
 [`findings.md`](findings.md) fixes — one defect at one coordinate, or one mechanism anchored at
 several — and hand the grouping to `units`: every candidate in exactly one group, the lead being the
 member whose failure scenario is the most concrete. The group is rated by its most severe member
-and checked by its lead's claim. Distinct defects sharing a cause stay apart here; joining them is a
-reading of the verdicts, after the checks.
+and checked by its lead's claim, so only the lead's carried verdict can stand for it. Distinct
+defects sharing a cause stay apart here; joining them is a reading of the verdicts, after the
+checks.
+
+Group once and queue once: a second `units` drops the queue and every verdict recorded, and a
+second `queue` drops the verdicts — both start the checks over.
 
 ## Launching the checks
 

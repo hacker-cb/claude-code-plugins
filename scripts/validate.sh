@@ -290,11 +290,18 @@ agent_ceiling=200
 # An agent that submits through a schema-checked subcommand learns the shape from its
 # own body alone, so every field and value the schema holds it to must be named there.
 schema_terms() { # label, agent, schema file, jq filter producing the terms
+  local terms
+  # A schema that is gone, or reshaped past the filter, yields no terms — which would
+  # read as an agent naming all of them.
+  if [ ! -f "$3" ] || ! terms=$(jq -er "$4" "$3" 2>/dev/null) || [ -z "$terms" ]; then
+    err "$1: submits through a subcommand checked against ${3##*/}, and no terms could be read from it — the agent's body cannot be checked against the schema"
+    return
+  fi
   while IFS= read -r term; do
     [ -n "$term" ] || continue
     grep -Fq -- "$term" "$2" \
       || err "$1: never names '$term', which ${3##*/} holds it to — its body is where it learns the shape"
-  done < <(jq -r "$4" "$3")
+  done <<< "$terms"
 }
 while IFS= read -r agent; do
   [ -n "$agent" ] || continue

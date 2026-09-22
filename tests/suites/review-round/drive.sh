@@ -11,9 +11,14 @@
 #
 # Helpers this driver handles itself:
 #   @write <path> <word>   a step: "<word>\n" into that file of the scratch repository
+#   @store <path> <word>   a step: "<word>\n" into that file of the round's work
+#                          directory — a file another process is still writing
 #   @file:<name>           a word: a copy of inputs/<name>, every `@blob:<path>` in it
 #                          replaced by the scratch repository's blob of <path>
 #   INSIDE_REPO=1          environment: TMPDIR is put inside the scratch repository
+#   ROUNDS_ROOT=link|open  environment: $TMPDIR/hcb-review is there before the case, as
+#                          a link to another directory or a directory anyone can write —
+#                          what someone sharing the temp directory could have made first
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
@@ -35,6 +40,12 @@ if [ "${INSIDE_REPO:-}" = 1 ]; then
 else
   export TMPDIR="$tmp"
 fi
+case "${ROUNDS_ROOT:-}" in
+  '') ;;
+  link) { mkdir "$tmp/elsewhere" && ln -s "$tmp/elsewhere" "$TMPDIR/hcb-review"; } || exit 125 ;;
+  open) { mkdir "$TMPDIR/hcb-review" && chmod 777 "$TMPDIR/hcb-review"; } || exit 125 ;;
+  *) echo "drive: ROUNDS_ROOT is link or open, not '$ROUNDS_ROOT'" >&2; exit 125 ;;
+esac
 
 steps=()
 current=""
@@ -53,6 +64,12 @@ for ((n = 0; n < count; n++)); do
   if [ "${words[0]}" = "@write" ]; then
     scratch
     printf '%s\n' "${words[2]}" > "$repo/${words[1]}"
+    continue
+  fi
+  if [ "${words[0]}" = "@store" ]; then
+    [ -n "$round" ] || { echo "drive: @store before any init" >&2; exit 125; }
+    mkdir -p "$(dirname "$TMPDIR/hcb-review/$round/${words[1]}")" || exit 125
+    printf '%s\n' "${words[2]}" > "$TMPDIR/hcb-review/$round/${words[1]}"
     continue
   fi
   args=()

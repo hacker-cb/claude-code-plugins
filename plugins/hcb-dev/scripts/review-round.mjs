@@ -26,7 +26,8 @@
 // wrong; 3 the round or the repository could not be read.
 
 import {
-  existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync,
+  existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync,
+  statSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -79,11 +80,27 @@ const WAIT_CAP_S = 540; // under the Bash tool's 10-minute ceiling, so one windo
 const real = (p) => { try { return realpathSync(p); } catch { return null; } };
 const inside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
-const writeJson = (file, data) => writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
+// Written beside the target and renamed over it: a reader of the store — `wait`, a second
+// checker, `result` — sees the old file or the new one, never a truncated half.
+const writeJson = (file, data) => {
+  const tmp = `${file}.${process.pid}.${randomBytes(3).toString('hex')}.tmp`;
+  writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`);
+  renameSync(tmp, file);
+};
 const roundsRoot = () => {
   const base = real(process.env.TMPDIR || tmpdir());
   return base && path.join(base, 'hcb-review');
 };
+// A shared temp directory lets anyone create this path first — a link to somewhere of
+// theirs, or a directory everybody can write — and a round's diff is the whole change
+// under review. Only a real directory of this user's, closed to others, holds rounds.
+function checkRoot(root) {
+  let st;
+  try { st = lstatSync(root); } catch (e) { cannot(`the rounds directory ${root} cannot be read: ${e.code || e.message}`); }
+  if (st.isSymbolicLink() || !st.isDirectory()) cannot(`${root} is not a directory of its own — it may be a link someone else put there`);
+  if (typeof process.getuid === 'function' && st.uid !== process.getuid()) cannot(`${root} belongs to another user`);
+  if ((st.mode & 0o022) !== 0) cannot(`${root} is writable by others`);
+}
 
 // Raw output, not trimmed: a line count taken after a trim is short by the blank lines
 // the trim ate, and an anchor on the last line of such a file would read as outside it.
@@ -120,6 +137,7 @@ function openRound() {
   if (!dir || !existsSync(path.join(dir, 'request.json'))) {
     cannot(`there is no round '${id}' under ${root} — pass the id init printed`);
   }
+  checkRoot(root);
   return { id, dir, req: readJson(path.join(dir, 'request.json')) };
 }
 
@@ -232,6 +250,12 @@ function init() {
   for (const g of repo.guarded) {
     if (inside(root, g)) cannot(`TMPDIR is inside the repository under review (${g}) — a round kept there becomes part of the change it reviews`);
   }
+  try {
+    mkdirSync(root, { mode: 0o700 });
+  } catch (e) {
+    if (e.code !== 'EEXIST') cannot(`the rounds directory ${root} could not be created: ${e.code || e.message}`);
+  }
+  checkRoot(root);
   const head = repo.git(['rev-parse', '--verify', '-q', 'HEAD^{commit}']);
   if (!head.ok) cannot('HEAD does not name a commit');
   const headSha = head.out.trim();
@@ -323,6 +347,11 @@ function add() {
   if (!source || !SOURCE_ID.test(source)) die('--source is required: lowercase letters, digits, ":" and "-"');
   const task = opts['--task'] || source.replace(/:/g, '-');
   if (!TASK_ID.test(task)) die(`--task '${task}' is not a task id: lowercase letters, digits and "-"`);
+  // Grouping closes collection: a candidate arriving after `units` would sit in no group,
+  // and the result reads groups — it would vanish without anybody having dropped it.
+  if (existsSync(path.join(round.dir, 'units.json'))) {
+    refuse([{ at: '', message: `round ${round.id} is already grouped — this submission came too late to be stored` }], { task });
+  }
   const value = submission();
   const errors = validate(load, 'candidates.json', null, value);
   if (errors.length) refuse(errors, { task });
@@ -413,7 +442,9 @@ function units() {
   const built = value.units.map((u, i) => {
     const lead = byId.get(u.lead);
     const members = u.members.map((m) => byId.get(m));
-    const carried = members.map((m) => m.verdict).filter(Boolean);
+    // Only the lead's own verdict can stand for the group: the group is checked by the
+    // lead's claim, and another member's verdict answered a different one.
+    const carried = lead.verdict ? [lead.verdict] : [];
     return {
       unit: `U${i + 1}`, lead: lead.id, members: u.members,
       file: lead.file, line: lead.line, side: lead.side,
@@ -434,6 +465,10 @@ function units() {
     });
   }
   writeJson(path.join(round.dir, 'units.json'), { units: built });
+  // A new grouping renumbers the groups, so a queue and verdicts built on the old one
+  // would attach to claims they never checked.
+  rmSync(path.join(round.dir, 'queue.json'), { force: true });
+  rmSync(path.join(round.dir, 'verdicts'), { recursive: true, force: true });
   answer({
     accepted: true,
     units: built.map((u) => ({ unit: u.unit, lead: u.lead, members: u.members, severity: u.severity, found_by: u.found_by, unreachable: u.unreachable })),
@@ -450,6 +485,9 @@ function queue() {
   if (!Number.isInteger(budget) && budget !== Infinity) die('--budget must be a whole number');
   if (budget < 0) die('--budget must not be negative');
   const repo = all.some((u) => u.carried.length) ? checkoutOf(round) : null;
+  // A queue starts verification over: a verdict left from an earlier queue answered a
+  // check this one has not asked for, and would count as done.
+  rmSync(path.join(round.dir, 'verdicts'), { recursive: true, force: true });
   mkdirSync(path.join(round.dir, 'verdicts'), { recursive: true, mode: 0o700 });
 
   const reused = [];
@@ -569,7 +607,11 @@ function wait() {
     if (!existsSync(qf)) cannot(`round ${round.id} has no queue yet — run queue first`);
     expected = readJson(qf).queue;
   }
-  const pending = () => expected.filter((x) => (what === 'tasks' ? !statusOf(round.dir, x) : !verdictOf(round.dir, x)));
+  // Presence alone answers: a file lands whole (writeJson renames it into place), so
+  // nothing here needs to parse what another process is writing.
+  const pending = () => expected.filter((x) => !existsSync(what === 'tasks'
+    ? path.join(round.dir, 'sources', `${x}.status.json`)
+    : path.join(round.dir, 'verdicts', `${x}.json`)));
   const t0 = Date.now();
   const tick = () => {
     const left = pending();
@@ -588,6 +630,9 @@ function result() {
   const { req } = round;
   const uf = path.join(round.dir, 'units.json');
   const qf = path.join(round.dir, 'queue.json');
+  const pending = merged(round).candidates.length;
+  // Candidates nobody grouped would leave an empty result that reads as a clean review.
+  if (!existsSync(uf) && pending) cannot(`round ${round.id} holds ${pending} candidate(s) and no groups — run units first`);
   const all = existsSync(uf) ? readJson(uf).units : [];
   const q = existsSync(qf) ? readJson(qf) : null;
   const warnings = [...(req.warnings || [])];
@@ -605,6 +650,13 @@ function result() {
       row.rejected += s.rejected;
       row.notes.push(...(s.notes || []));
       bySource.set(s.source, row);
+    }
+    // A source the round was opened for and that never submitted is a reviewer missing,
+    // not a row to leave out: silence here would read as nothing to report.
+    for (const source of req.sources || []) {
+      if (!bySource.has(source)) {
+        bySource.set(source, { source, states: ['unavailable'], tasks: 0, candidates: 0, rejected: 0, notes: ['no task of this source submitted anything'] });
+      }
     }
     // A source is as covered as its least covered task.
     const worst = ['unavailable', 'partial', 'depth', 'nothing', 'covered', 'n/a'];
