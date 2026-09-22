@@ -1,0 +1,22 @@
+{
+  "candidates": [
+    {
+      "file": "src/extension.ts",
+      "line": 62,
+      "side": "head",
+      "summary": "The command runs a binary named codex from PATH.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Critical",
+      "category": "security"
+    },
+    {
+      "file": "limit.sh",
+      "line": 4,
+      "side": "head",
+      "summary": "The comparison is inverted.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    }
+  ]
+}

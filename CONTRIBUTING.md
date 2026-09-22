@@ -1,6 +1,6 @@
 # Contributing
 
-This repo is a Claude Code plugin marketplace (`hacker-cb-plugins`). It hosts themed plugins; each plugin bundles one or more skills (and, later, commands / agents / rules).
+This repo is a Claude Code plugin marketplace (`hacker-cb-plugins`). It hosts themed plugins; each plugin bundles one or more skills, and the agents those skills launch (and, later, commands / rules).
 
 Official docs:
 
@@ -43,6 +43,29 @@ Official docs:
 3. **Shared between skills?** Put it one level up, in `plugins/hcb-<domain>/references/*.md`, and link it from each skill by relative path (`../../references/<file>.md`). Only `skills/`, `commands/`, `agents/` and `hooks/` are component dirs, so a `references/` at the plugin root is data, not a component — `scripts/validate.sh` skips it when scanning skills, and still applies every link rule to it. Prose copied into two skills drifts: a fix lands in one and the other keeps saying something else. See [`plugins/hcb-dev/references/base-resolution.md`](plugins/hcb-dev/references/base-resolution.md), shared by most of that plugin's skills.
 4. **Two ceilings, enforced by `scripts/validate.sh`:** a `SKILL.md` is at most 200 lines and a `references/*.md` at most 150, with [`plugins/hcb-dev/references/forge-docs.md`](plugins/hcb-dev/references/forge-docs.md) and [`plugins/hcb-dev/references/forge-behaviour.md`](plugins/hcb-dev/references/forge-behaviour.md) named exceptions — both are lookup tables, and the second is where a measured fact goes *instead* of into a skill. A fenced `bash` block longer than 15 lines fails the same gate: that much machinery belongs in a script with a suite under [`tests/suites`](tests/suites). Over a ceiling, the question is never how to phrase it shorter — it is which of the three the content actually is: mechanics (a script), a measurement (the fact table), or a subject of its own (a reference a reader reaches at a different moment).
 5. The skill is invoked as `/hcb-<domain>:<skill-name>`.
+
+## Add an agent a skill launches
+
+An agent is a definition a skill hands work to through the Agent tool — a checker, a finder — never a
+command a user types. It lives at `plugins/hcb-<domain>/agents/<group>/<name>.md` and is launched as
+`hcb-<domain>:<group>:<name>`:
+
+```markdown
+---
+name: <name>
+description: Internal agent of hcb-<domain>: what it does, and who launches it on what.
+tools: Read, Grep, Glob, Bash
+model: opus
+maxTurns: 20
+---
+The whole of what the agent knows: its task, its limits, and the one command it reports through.
+```
+
+It follows the `SKILL.md` rules for scripts and positional parameters, plus its own, which
+[`CLAUDE.md`](CLAUDE.md) gives and `scripts/validate.sh` enforces: the `name` equals the file name,
+`tools` is always declared, nothing but agent definitions sits under `agents/`, no reference is
+linked from the body, and an agent that submits through a schema-checked script names every field
+and enum value of that schema.
 
 A **rule** is the same artifact: a skill whose body is guidance rather than a step-by-step procedure, with the triggering conditions carried by the `description` so it's pulled in exactly when relevant. To keep one out of the `/` menu, add frontmatter `user-invocable: false` (it can still be model-invoked); to keep Claude from auto-invoking it, add `disable-model-invocation: true` (it stays available as a slash command). Setting both makes the skill unreachable.
 

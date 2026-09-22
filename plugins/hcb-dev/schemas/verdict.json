@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hcb-dev/verdict.json",
+  "title": "A verifier's verdict on one group of a round or a pass",
+  "description": "`submitted` is what the verifier hands to `review-round.mjs verdict`; `stored` is what the store keeps and what travels with a finding afterwards, the store having added the unit, the snapshot and a blob for every path read.",
+  "$ref": "#/$defs/submitted",
+  "$defs": {
+    "verdictName": { "type": "string", "enum": ["confirmed", "unproven", "refuted"] },
+    "rules": {
+      "allOf": [
+        {
+          "if": { "properties": { "verdict": { "const": "unproven" } } },
+          "then": { "required": ["settle"] }
+        },
+        {
+          "if": { "properties": { "verdict": { "const": "refuted" } } },
+          "then": { "required": ["refuted_because"] }
+        }
+      ]
+    },
+    "submitted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "evidence"],
+      "properties": {
+        "verdict": { "$ref": "#/$defs/verdictName" },
+        "evidence": {
+          "description": "Every place read to reach the verdict, the claim's own coordinate among them.",
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceSubmitted" }
+        },
+        "settle": {
+          "description": "For unproven: the read or the command that would decide it.",
+          "type": "string", "minLength": 1, "maxLength": 2000
+        },
+        "refuted_because": {
+          "description": "For refuted: what shows the claim does not hold.",
+          "type": "string", "minLength": 1, "maxLength": 2000
+        }
+      },
+      "allOf": [ { "$ref": "#/$defs/rules" } ]
+    },
+    "evidenceSubmitted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "lines", "quote"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "side": { "type": "string", "enum": ["head", "base"] },
+        "lines": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?$" },
+        "quote": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    },
+    "stored": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "snapshot", "evidence"],
+      "properties": {
+        "unit": { "type": "string", "minLength": 1 },
+        "verdict": { "$ref": "#/$defs/verdictName" },
+        "snapshot": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "evidence": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceStored" }
+        },
+        "settle": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "refuted_because": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "reused": { "type": "boolean" }
+      },
+      "allOf": [ { "$ref": "#/$defs/rules" } ]
+    },
+    "evidenceStored": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "side", "lines", "quote", "blob"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "side": { "type": "string", "enum": ["head", "base"] },
+        "lines": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?$" },
+        "quote": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "blob": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 4,
+      "side": "head",
+      "summary": "The comparison is inverted.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness",
+      "verdict": {
+        "verdict": "confirmed",
+        "snapshot": "0a1b2c3",
+        "evidence": [
+          {
+            "path": "limit.sh",
+            "side": "head",
+            "lines": "4",
+            "quote": "if [ \"$count\" -ge \"$limit\" ]",
+            "blob": "5d41402abc4b2a76b9719d911017c592ae2b9b3c5d41402abc4b2a76b9719d91"
+          }
+        ]
+      }
+    }
+  ]
+}

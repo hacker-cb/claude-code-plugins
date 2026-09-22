@@ -1,0 +1,12 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        "limit.sh": "#!/usr/bin/env bash\n# Prints ok when the count is within the limit.\ncount=\"$1\"; limit=\"$2\"\nif [ \"$count\" -le \"$limit\" ]; then echo ok; else echo over; fi\n",
+        "lib/util.sh": "say() { printf '%s\\n' \"$1\"; }\n",
+        "README.md": "# fixture\n"
+      }
+    }
+  ]
+}

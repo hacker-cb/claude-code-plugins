@@ -170,3 +170,9 @@ directory's name.
 
 Name the suite for the script it tests. A suite that reaches no engine still gets its
 stubs: they are what turns "the run was refused early" from a claim into a check.
+
+A script whose subcommands only mean something after one another — a store that `init`
+opens and later calls fill — cannot be tested one call per case. Its suite's `script` is
+then a driver kept in the suite, which runs the chain a case names and prints only the
+last answer; [`suites/review-round/drive.sh`](suites/review-round/drive.sh) is the one to
+copy.

@@ -51,34 +51,39 @@ the severity its finder gave — and leave the finder's argument behind: it is n
 A candidate this run already ruled on is not one again (*The same finding twice*): its outcome
 stands, and where that outcome was a fix, the fix is what gets looked at.
 
+Open a store for the pass on the tree the table above names and hand every carrier's candidates in,
+each claim in the candidate shape and a verdict it already carries riding along whole — the store
+and what each step answers are [`../../references/verification.md`](../../references/verification.md)'s:
+
+```bash
+TREE="<worktree, or the ref the table above names>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" init --mode pass --tree "$TREE"
+```
+
+Then one `add --round <round> --source <carrier>` per carrier, the candidates on its stdin.
+
 ## 2. Dedupe
 
 By the key `findings.md` fixes (*The same finding twice*): one defect reported more than once — at
 one `(file, line)`, or anchored at several by reviewers naming the same mechanism — is one
 candidate. Distinct defects sharing a cause stay apart here; step 4 joins them once they are
 measured. One that came out of work on an issue is measured against that issue first (*Where it
-came from*).
+came from*). `merge` lists what was handed in; the grouping goes to `units`, every candidate in
+exactly one group.
 
 ## 3. Verify
 
-The re-measure `findings.md` asks for before a proposal, done by a check that did not find it.
-Launch one subagent per candidate — a few together where they share a file — in parallel and
-read-only: told to edit, commit and write to the tracker nothing, and to put whatever a
-reproduction writes in a scratch directory, never the tree the other checks read. Each is handed
-three things and nothing else:
+The re-measure `findings.md` asks for before a proposal, done by a check that did not find it:
+`hcb-dev:findings:verifier`, launched and waited on as `verification.md` says — `queue` first, one
+checker per queued group handed its round and group ids alone, then `wait --for verdicts`, then
+`result`. The checker takes the claim from the store, which withholds the finder's reasoning, its
+confidence and every other verdict, and it only reads. A verdict carried in whole stands where
+`queue` finds every file it read unchanged; everything else is checked.
 
-- the claim in one line, its coordinate, and the tree the table above names;
-- what would show it: the failure scenario to reproduce, the call to run, the line to read;
-- the answer it owes — `confirmed`, `unproven` with what would settle it, or `refuted` with what
-  showed it does not hold — each naming the revision it read.
-
-Never the finder's reasoning, its confidence, or another candidate's verdict: a check that reads
-the argument grades the argument. A coordinate that no tree this session can read carries is
-`not measured — unreachable`, never refuted. Where there are more candidates than the session can
-check, every `Critical` is checked before a budget applies at all, and the rest read
-`not measured — budget` in the order of the severity their finders gave. Where the `Critical` ones
-alone outrun what the session can check, the pass stops and says so: none of them is ruled
-unverified.
+A coordinate no tree this session can read carries is `not measured — unreachable`, never refuted.
+Where there are more candidates than the session can check, `queue --budget` puts every `Critical`
+first and cuts the rest, which read `not measured — budget`; where the `Critical` ones alone outrun
+the budget, the pass stops and says so — none of them is ruled unverified.
 
 A verdict is read, not counted: one that restates the claim without the evidence it read at the
 coordinate is `unproven`. A check that was refused, could not run or never answered gave no verdict
@@ -167,6 +172,8 @@ rather than dropped.
   five outcomes and the ranking; read before step 2.
 - [`../../references/findings-table.md`](../../references/findings-table.md) — the form, and what
   the `Verified` column may say; read before step 7.
+- [`../../references/verification.md`](../../references/verification.md) — the store, the checker,
+  and when a carried verdict stands; read before step 1.
 - [`../../references/classification.md`](../../references/classification.md) — read before
   anything is proposed for an issue.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) — read before the

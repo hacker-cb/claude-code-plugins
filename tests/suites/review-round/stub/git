@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# git, answered from a repository the case's envelope describes.
+#
+# What the script under test reads is a working tree against a merge base — commits,
+# uncommitted edits, files nobody added — and a stand-in that invented those answers
+# would be testing its own idea of a checkout. So this is a proxy: the real git, run
+# inside a scratch repository built from the envelope. The runner clears its marker
+# between cases, so a missing marker is this case's first call, and the repository is
+# (re)built then.
+#
+# An envelope is `{"steps": [...]}`, applied after the `seed.json` beside it — the one
+# commit on `base` every case starts from. A step is one of:
+#   {"branch": "feature", "from": "base"}                        a new branch
+#   {"checkout": "feature"}                                      move HEAD
+#   {"on": "feature", "write": {"<path>": "<text>"}, "remove": ["<path>"]}
+#                                                                one commit on it
+#   {"on": "feature", "write": {...}, "commit": false}           edits left uncommitted
+#   {"untracked": {"<path>": "<text>"}}                          files nobody added
+set -u
+stub_dir=$(cd "$(dirname "$0")" && pwd)
+real=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -Fvx "$stub_dir" | paste -sd: -) command -v git)
+repo="${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}.repo"
+# Neither the developer's config nor the runner's reaches the fixture: a global
+# `core.autocrlf`, an excludes file or a signing key would change what it builds.
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+export GIT_AUTHOR_NAME=fixture GIT_AUTHOR_EMAIL=fixture@example.invalid
+export GIT_COMMITTER_NAME=fixture GIT_COMMITTER_EMAIL=fixture@example.invalid
+
+g() { "$real" -C "$repo" "$@"; }
+put() { # write every entry of the JSON object in $1 into the working tree
+  local p
+  while IFS= read -r p; do
+    mkdir -p "$repo/$(dirname "$p")"
+    jq -j --arg p "$p" '.[$p]' <<<"$1" > "$repo/$p" || return 1
+  done < <(jq -r 'keys[]' <<<"$1")
+}
+apply() {
+  local n i step on p
+  n=$(jq '.steps | length' "$1") || return 1
+  for ((i = 0; i < n; i++)); do
+    step=$(jq -c ".steps[$i]" "$1")
+    if [ -n "$(jq -r '.branch // empty' <<<"$step")" ]; then
+      g branch "$(jq -r .branch <<<"$step")" "$(jq -r .from <<<"$step")" || return 1; continue
+    fi
+    if [ -n "$(jq -r '.checkout // empty' <<<"$step")" ]; then
+      g checkout -q "$(jq -r .checkout <<<"$step")" || return 1; continue
+    fi
+    if [ -n "$(jq -r '.untracked // empty' <<<"$step")" ]; then
+      put "$(jq -c .untracked <<<"$step")" || return 1; continue
+    fi
+    on=$(jq -r .on <<<"$step")
+    # The first commit lands on the unborn branch `init` named, which checkout refuses.
+    [ "$(g symbolic-ref --short HEAD)" = "$on" ] || g checkout -q "$on" || return 1
+    put "$(jq -c '.write // {}' <<<"$step")" || return 1
+    while IFS= read -r p; do
+      g rm -rq -- "$p" || return 1
+    done < <(jq -r '.remove // [] | .[]' <<<"$step")
+    # `.commit // true` would read `false` as absent — jq's `//` treats false as empty.
+    [ "$(jq -r 'if .commit == false then "keep" else "commit" end' <<<"$step")" = keep ] && continue
+    g add -A && g commit -qm "step $i of ${1##*/}" || return 1
+  done
+}
+
+if [ ! -e "$STUB_MARKER_FILE" ]; then
+  rm -rf "$repo"
+  "$real" init -q -b base "$repo" || exit 125
+  for envelope in "$(dirname "${STUB_ENVELOPE:?}")/seed.json" "$STUB_ENVELOPE"; do
+    apply "$envelope" || { echo "stub: could not build the repository from ${envelope##*/}" >&2; exit 125; }
+  done
+  : > "$STUB_MARKER_FILE"
+fi
+cd "$repo" && exec "$real" "$@"

@@ -1,0 +1,22 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 5,
+      "side": "head",
+      "summary": "rm -rf runs on an empty third argument.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Critical",
+      "category": "security"
+    },
+    {
+      "file": "limit.sh",
+      "line": 4,
+      "side": "head",
+      "summary": "The comparison is inverted.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Critical",
+      "category": "correctness"
+    }
+  ]
+}

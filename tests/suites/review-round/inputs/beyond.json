@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 99,
+      "side": "head",
+      "summary": "A line the file does not have.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    }
+  ]
+}

@@ -17,9 +17,10 @@ section as on its own:
 ```
 
 `<n>` counts the rows, and so do the verdicts beside it — a mechanism once, under the verdict its
-row carries; the refuted are counted beside them and are not rows. Where no check ran
-over any of them the header says `verified by none`, and every row reads
-`not measured — none ran`. A run
+row carries; the refuted are counted beside them and are not rows. `<what ran>` is `verifier` where
+the shared checker ([`verification.md`](verification.md)) ran, a verdict it let stand counting under
+its own name. Where no check ran over any of them the header says `verified by none`, and every row
+reads `not measured — none ran`. A run
 with nothing to show still writes the line, `0 after dedup` — a missing table reads as an
 omission.
 
@@ -71,12 +72,13 @@ A table of `0 after dedup` has no footer.
 
 | cell | what it says |
 |---|---|
-| `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision |
+| `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision — `+wt` after the sha where the tree it read carried uncommitted edits |
 | `unproven @<sha>` | checked there, and neither shown nor ruled out — its block says what would settle it |
 | `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
 
 A mechanism's cell carries the least verdict among its instances — `unproven` where any instance
-is — and its block carries each instance's own.
+is — and its block carries each instance's own. A verdict let stand rather than made again keeps
+the revision it was made at, and its block says it was reused.
 
 **A refuted finding is not a row.** It is counted in the header and leaves the table for one line
 under the footer — `Refuted: <finding> at <where> @<sha> — <what showed it does not hold>`, one
@@ -96,6 +98,8 @@ once, under the last of them.
 ## Where a row travels
 
 A finding leaving the session that found it — in a return, a handoff, an issue body — carries its
-`Verified` cell and the revision it was read at — a mechanism's row, each instance's as well. The
-receiver re-checks what it is about to act on rather than everything, and an issue opened from a
-row says beside its source whether the finding was confirmed, and at which revision.
+`Verified` cell and the revision it was read at — a mechanism's row, each instance's as well — and,
+where a check ran, the verdict itself with the blobs of what it read, so the next pass can let it
+stand ([`verification.md`](verification.md)). The receiver re-checks what it is about to act on
+rather than everything, and an issue opened from a row says beside its source whether the finding
+was confirmed, and at which revision.

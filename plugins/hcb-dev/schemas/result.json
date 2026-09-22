@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hcb-dev/result.json",
+  "title": "What a review round or a findings pass hands back to the session that opened it",
+  "description": "Built by `review-round.mjs result` from the round's store; no model writes it. The session lays it out by findings-table.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["round", "mode", "snapshot", "language", "coverage", "findings", "refuted", "warnings"],
+  "properties": {
+    "round": { "type": "string", "pattern": "^r-[0-9a-f]{8}$" },
+    "mode": { "type": "string", "enum": ["round", "pass"] },
+    "snapshot": { "type": "string", "minLength": 1 },
+    "base": { "type": ["string", "null"] },
+    "tree": { "type": ["string", "null"] },
+    "files": { "type": "integer", "minimum": 0 },
+    "rung": { "type": ["string", "null"], "enum": ["medium", "high", null] },
+    "language": { "type": "string", "minLength": 2 },
+    "coverage": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/coverageRow" }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "refuted": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/refutedRow" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "state": { "type": "string", "enum": ["covered", "partial", "depth", "unavailable", "nothing", "n/a"] },
+    "coverageRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "state", "tasks", "candidates", "rejected"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "state": { "$ref": "#/$defs/state" },
+        "tasks": { "type": "integer", "minimum": 0 },
+        "candidates": { "type": "integer", "minimum": 0 },
+        "rejected": { "type": "integer", "minimum": 0 },
+        "effort": { "type": "string" },
+        "model": { "type": "string" },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "file", "line", "side", "summary", "failure_scenario", "severity", "category", "found_by", "verified"],
+      "properties": {
+        "unit": { "type": "string", "minLength": 1 },
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "side": { "type": "string", "enum": ["head", "base"] },
+        "summary": { "type": "string", "minLength": 1 },
+        "failure_scenario": { "type": "string", "minLength": 1 },
+        "severity": { "type": "string", "enum": ["Critical", "Important", "Minor"] },
+        "category": { "type": "string", "minLength": 1 },
+        "found_by": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "verified": { "type": "string", "enum": ["confirmed", "unproven", "not measured"] },
+        "reason": { "type": "string", "enum": ["budget", "unreachable", "failed", "depth", "none ran"] },
+        "snapshot": { "type": "string" },
+        "evidence": { "type": "array", "items": { "$ref": "verdict.json#/$defs/evidenceStored" } },
+        "settle": { "type": "string" },
+        "reused": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "verified": { "const": "not measured" } } },
+          "then": { "required": ["reason"] },
+          "else": { "required": ["snapshot", "evidence"] }
+        }
+      ]
+    },
+    "refutedRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "file", "line", "summary", "refuted_because", "snapshot"],
+      "properties": {
+        "unit": { "type": "string", "minLength": 1 },
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "refuted_because": { "type": "string", "minLength": 1 },
+        "snapshot": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

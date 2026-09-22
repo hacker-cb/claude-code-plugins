@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hcb-dev/candidates.json",
+  "title": "The candidates one source hands to a review round or a findings pass",
+  "description": "What a finder, an engine or a caller submits through `review-round.mjs add`. The store adds each candidate's `id` and `source`; the submitter never writes them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidates"],
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/candidate" }
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line", "side", "summary", "failure_scenario", "severity", "category"],
+      "properties": {
+        "file": {
+          "description": "Path relative to the repository root.",
+          "type": "string", "minLength": 1, "maxLength": 512
+        },
+        "line": {
+          "description": "The line on the side named below.",
+          "type": "integer", "minimum": 1
+        },
+        "side": {
+          "description": "head: the reviewed tree. base: the tree the change started from, for code the change removed.",
+          "type": "string", "enum": ["head", "base"]
+        },
+        "summary": {
+          "description": "One sentence: what is wrong. It becomes the claim a verifier checks.",
+          "type": "string", "minLength": 1, "maxLength": 400
+        },
+        "failure_scenario": {
+          "description": "Concrete input or state leading to the wrong output or the damage; for a cleanup, the concrete cost.",
+          "type": "string", "minLength": 1, "maxLength": 4000
+        },
+        "severity": { "type": "string", "enum": ["Critical", "Important", "Minor"] },
+        "category": {
+          "type": "string",
+          "enum": ["correctness", "security", "reuse", "simplification", "efficiency", "altitude", "project-rules"]
+        },
+        "verdict": {
+          "description": "Optional: the verdict this candidate already carries from an earlier round or pass.",
+          "$ref": "verdict.json#/$defs/stored"
+        }
+      }
+    }
+  }
+}
