@@ -5,8 +5,8 @@
 #
 # It prints no envelope, because this script's engine does not write one to
 # stdout — `codex exec` is given `-o <file>` and writes there. A case that wants
-# a real envelope back needs a stub that writes to that path, which is a
-# different stub than claude-review's; write it with the first such case.
+# a real envelope back needs a stub that writes to that path; write it with
+# the first such case.
 
 [ -z "${STUB_MARKER_FILE:-}" ] || : > "$STUB_MARKER_FILE"
 exit "${STUB_EXIT:-0}"

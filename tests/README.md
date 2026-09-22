@@ -8,7 +8,7 @@ every run — so a stub on `PATH` plays the CLI and prints a saved envelope inst
 ```bash
 bash tests/run.sh                          # every case of every suite
 bash tests/run.sh quota org                # only cases whose name contains "quota" or "org"
-bash tests/run.sh --suite claude-review    # only that suite
+bash tests/run.sh --suite review-round     # only that suite
 ```
 
 Needs `jq`, a git checkout, and whatever the scripts under test run under (`bash`, and
@@ -22,7 +22,7 @@ A suite is one directory under [`suites`](suites) — one script under test, wit
 everything that run needs beside it:
 
 ```text
-suites/claude-review/
+suites/pr-state/
   suite.conf      what to run, and the environment to run it in
   cases.tsv       one row per case
   fixtures/       the envelopes those rows name
@@ -84,9 +84,9 @@ Three things meet for each one, all inside the suite:
   stderr, checks the boundary it was launched inside, or exits non-zero — so a case
   can assert what the run did, not only what it returned. What a stub implements is
   its own suite's business:
-  [`suites/claude-review/stub/claude`](suites/claude-review/stub/claude) answers on
-  stdout because that script reads it there, while a script that takes an output path
-  needs a stub that writes to it.
+  [`suites/pr-state/stub/gh`](suites/pr-state/stub/gh) answers on stdout because that
+  script reads it there, while a script that takes an output path needs a stub that
+  writes to it.
 
 The exit statuses are the contract callers read: **0** a review, with a `scope:`
 record; **1** a failure, quoted; **3** a reviewer that could not run. A fourth, **2**,
@@ -102,22 +102,13 @@ separates the branches, so that is what the fragments hold.
 
 ## Where the envelopes come from
 
-Two suites read them, by different routes.
-[`suites/claude-review/fixtures`](suites/claude-review/fixtures) is captured:
-six are verbatim captures of real runs — a full
-report, a clean working tree, a run that found nothing, a connection refused inside
-the local command, a rejected login, and a CLI with no login at all. They are kept
-whole, down to the fields nothing reads, because they are the evidence of what an
-envelope actually looks like.
-
-The rest are built from those six, trimmed to the seven fields the script reads
-(`result`, `errors`, `is_error`, `terminal_reason`, `api_error_status`, `modelUsage`,
-`permission_denials`) so that each one can be read at a glance and edited without
-guessing which fields matter. Every notice is quoted from the CLI binary's own notice
-list rather than paraphrased — a fixture worded from memory would let a phrase list
-look confirmed by data it was itself written from. The verdicts are what reviews of
-this repository actually write, which is the point: a review of the quota branch
-quotes every phrase a quota notice contains.
+By two routes. A captured one comes through the collector below and sits under a
+suite's `captured/`, marked as such —
+[`suites/copilot-state/captured`](suites/copilot-state/captured) holds one request's
+reviews, timeline and rules. It is kept whole, down to the fields nothing reads, because
+it is the evidence of what an answer actually looks like; the fixtures a case names are
+trimmed to the fields the script reads, so that each can be read at a glance and edited
+without guessing which fields matter.
 
 [`suites/plugin-versions/fixtures`](suites/plugin-versions/fixtures) is written
 rather than captured: each envelope is the registry and marketplace answer one

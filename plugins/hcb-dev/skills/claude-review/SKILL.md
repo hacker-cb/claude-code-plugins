@@ -1,107 +1,75 @@
 ---
 name: claude-review
 description: >-
-  Run a code review with Claude's own reviewer, in a separate headless session
-  (`claude -p "/code-review …"`), over a range and at an effort level the caller
-  fixes. Use when `hcb-dev:multi-review` runs this reviewer; when a pipeline, a
-  batch worker or a subagent needs a review pinned to a range handed in and a
-  coverage record handed back; or when the user asks for a cheaper, faster pass
-  than the interactive command's full fan-out. Review-only: returns the findings
-  verbatim and never fixes anything. For one change reviewed by several
-  independent reviewers at once, use `hcb-dev:multi-review` instead. Invoke
-  deliberately, when asked — not as an auto-trigger on every change.
+  Review a change with Claude's own finders — one agent per angle of the rung, every candidate
+  then checked by an independent verifier — over the range and at the rung (medium or high) the
+  caller fixes. Use when `hcb-dev:multi-review` runs this reviewer; when a pipeline, a batch
+  worker or a subagent needs a review pinned to a range, with verified findings and a coverage
+  record handed back; or when the user asks for a Claude review of the current change.
+  Review-only: returns the findings and never fixes anything. For one change reviewed by several
+  independent reviewers at once, use `hcb-dev:multi-review` instead; for more than the high rung,
+  the built-in `/code-review`, typed by the user. Invoke deliberately, when asked — not as an
+  auto-trigger on every change.
 ---
 
 # Claude review
 
-`claude -p "/code-review …"` runs Claude Code's own reviewer in a fresh headless
-session, reachable from anywhere `Bash` is, and scoped by the range it is handed
-rather than by what the calling session takes the change to be.
+One review round whose only source is Claude's finders, run by the plugin's own conductor and
+checked by its own verifier. The round — its store, its rungs, who runs what and what comes back
+— is [`../../references/review-pipeline.md`](../../references/review-pipeline.md)'s; read it
+first. This skill is **review-only**: never fix what it reports, return it and let the caller
+decide.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
-This skill is **review-only**. Never fix what it reports — return the findings
-and let the caller decide.
+## 1. Scope
 
-## 1. Before launching
+- **The base** — the one a caller hands down, refreshed, since a name is not a ref; otherwise
+  what [`../../references/base-resolution.md`](../../references/base-resolution.md) resolves.
+  It must share history with `HEAD`. Where none resolves, stop and say so: a round needs a base.
+- **The rung** — the caller's; `medium` where none is named.
+- **The language** — the one this session reports in.
+- **A narrowing** — a path, or a focus such as "only error handling", where the caller gave one.
 
-[`../../references/review-runs.md`](../../references/review-runs.md) owns what
-every detached review shares; read it first — below is only this engine's own.
-
-What that base buys here: §2 hands the review the range
-`merge-base(base, HEAD)...HEAD`, the head pinned to the commit it names at launch —
-**the branch's commits, and nothing uncommitted**. Whatever is not committed is named
-as uncovered instead, so committing before the run is what puts it under review; a
-commit made while the run is out is outside it.
-
-## 2. Run it
-
-The run is one command, and everything it needs arrives as a flag:
+## 2. Open the round
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/claude-review/scripts/claude-review.sh" \
-  --base "<the ref resolved in §1 — drop the flag entirely for a working-tree review>" \
-  --level "<the rung the caller named, or medium>" \
-  --model "<the model the caller named — drop the flag to let the script resolve one>" \
-  --narrow "<a path, or a focus such as 'only error handling' — drop the flag for none>"
+BASE="<the base>"
+RUNG="<the rung>"
+LANGUAGE="<this session's language, as a tag: en, ru, …>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" init --mode round --base "$BASE" --rung "$RUNG" --sources claude --language "$LANGUAGE"
 ```
 
-Start at `medium`. A caller — a person or another skill — may hand you the base,
-the level, the model or a narrowing; an explicit one wins over anything resolved
-here.
+Add `--narrow "<the narrowing>"` where there is one. Read the answer's `warnings` before
+anything else: an untracked file named there is outside the review — say so, and offer
+`git add -N <path>` rather than running it. A round with nothing to review says so as well, and
+ends there.
 
-The run is read-only: its sandbox denies writes to the working tree and both git
-directories, nothing outside that sandbox is approved, and the file-editing tools are
-off — so it changes nothing in the repository, uncommitted work included. It still
-runs commands, but a build, a test or a probe that has to write into the tree fails
-there, and the prompt says so to the reviewer as well, since a repository whose own
-instructions name its lint as the enforcement of a rule otherwise invites one: a
-finding that needs one of those to settle is the calling session's to check before
-acting on it. Started outside a git working tree it refuses to run.
+Candidates the caller handed in — noticed while working, carried from an earlier pass — go into
+the round now, with their verdicts where they carry one:
 
-Settings still load the way they do in any session, the repository's own among them,
-so its `env` block and its `sandbox` entries reach the run as well — they can widen
-what the run reads, where it connects and what it writes outside the repository, never
-the repository itself — and a settings key whose value is a shell command runs where
-the sandbox does not reach. Hooks are the exception, switched off whatever source they
-come from, and so are MCP servers: the run starts none, since a headless run would
-otherwise load the repository's own `.mcp.json` without asking and a server's command
-runs outside the sandbox. Where an enterprise MCP configuration forbids that, the run
-is refused rather than started carrying them, and §3's failure line says so. Reading outside the tree and the environment the run
-inherits stay open unless something among those same settings narrows them. Weigh all
-of it before pointing this at a repository nobody here wrote.
+```bash
+ROUND="<the round id init printed>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --source noticed < "<the candidates, as JSON>"
+```
 
-Where there is a base the script targets a **ref range**, which fixes what the run
-diffs; a working-tree review has no range to give, so its scope stays prose the run
-may set aside, and §1's reference says what an advisory scope costs the coverage
-record.
+## 3. Run it
 
-## 3. Hand back the findings
+Launch `hcb-dev:review:reviewer`, prompted `round <id>` and with nothing else — where the Agent
+tool offers `run_in_background`, pass `false` — and wait for it to return. Asking for it is
+what this skill does: a rule admitting subagents only on a skill's ask is met by it.
 
-The script prints a `started:` line as it launches the engine, and then nothing
-until the run is done.
+Where the Agent tool is not among your tools, run the round without agents as
+`review-pipeline.md` says: the tasks yourself, on a plan made with `--depth`.
 
-What is this engine's own:
+## 4. Hand back
 
-- A `run warnings:` block means the run printed to stderr while still succeeding —
-  a degradation rather than a failure, so read it before trusting what the scope
-  line claims.
-- **Every failure prints `claude review failed:`** and exits non-zero — that line,
-  not an empty file, is what says the run is over.
-- **A denied build is a `run-warning:`, and not coverage.** The boundary refuses
-  what the reviewer reached for; what it read is untouched, so that line never makes
-  the run partial — it names the command, which is the calling session's to run where
-  a finding hangs on it. A denial the script could not read as one of those stays a
-  `coverage-warning:` and is partial like any other, so the two lines are read apart
-  rather than counted together.
-- **A spent quota gets its own line**, `claude review unavailable:`, and exits 3.
-  Read which limit the notice names; §2 takes `--model`.
-- **A verdict with nothing in it is still a review.** A run that read the range and
-  found nothing prints its `scope:` line like any other, with a verdict of a line or
-  two beneath it, and so does one handed a working tree with nothing changed in it —
-  and so does one cut short after writing it, under a warning that it may be
-  incomplete. Pass the coverage it states; what a count of zero costs that coverage is
-  §1's reference's to say.
-- **One case the run cannot flag for you**: a limit reached partway through comes
-  back where the report belongs, under a scope line that looks complete. A review
-  whose entire body is a sentence about a limit or about switching models is that
-  case — record the reviewer as unavailable, whatever the line above it claims.
+```bash
+ROUND="<the round id init printed>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" result --round "$ROUND"
+```
+
+Report it as `review-pipeline.md` says — `## Review coverage`, one row for `claude-review` with
+the round's base, its file count, its rung and its state; then `## Findings`. The findings' text
+is the finders' own: pass it on as written. Where the round reads thin for the ground the change
+covers, or a caller wants more than the `high` rung buys, offer the built-in `/code-review` as
+`review-pipeline.md` words it; never launch it yourself.

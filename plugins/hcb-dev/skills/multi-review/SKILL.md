@@ -51,20 +51,20 @@ uncommitted edits sitting on top of them.
 lands on a different rung per reviewer, and never the wording it arrived in: "maximum effort"
 maps onto `max`, and a word off the ladder is not a level at all. `codex-review` starts at
 **`xhigh`**, resolving its own model and ladder, so risk mostly moves it *down*;
-`claude-review` starts at **`medium`** and risk moves it both ways, being the reviewer whose
-breadth *and* cost the level actually controls.
+`claude-review` starts at **`medium`** and high risk takes it to `high`, its one other rung —
+the reviewer whose breadth *and* cost the rung actually controls.
 
 Treat the change as high-risk when it reaches past itself (public interface, shared helper,
 config, schema, wire format), cannot be walked back (it writes, migrates, publishes, or persists
 a format someone else reads), meets input whose shape you do not control, has nothing else
 checking it, removes a guard, an error path or a test, or touches paths the project marks
 sensitive. High risk holds both engines at or above their start; mechanics with no behaviour
-change lower both. An explicit instruction from the caller wins.
+change lower Codex and leave `claude-review` at its bottom rung. An explicit word wins.
 
 **Uncommitted work.** Where `git status --short` or `git ls-files --others --exclude-standard`
 shows anything belonging to the change, offer a commit before starting — offer, never commit
-anything yourself — and name the price of declining: Codex sees the working tree either way,
-`claude-review` and the security review are handed commit ranges and leave those edits out, and
+anything yourself — and name the price of declining: Codex and `claude-review` see the working
+tree either way, the security review is handed a commit range and leaves those edits out, and
 files that are not tracked at all are invisible to every reviewer. A refusal is a fine answer
 and goes into the report. Where the scope *is* the working tree, the offer drops (it would empty
 the very diff asked for) while the price of what is untracked still gets named.
@@ -83,7 +83,7 @@ Three questions per reviewer, in order:
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
 | `hcb-dev:codex-review` skill | `command -v codex` and `command -v jq` — it resolves its model from the catalog's JSON | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
-| `hcb-dev:claude-review` skill | `command -v claude` and `command -v jq` — its report is built by parsing the run's JSON | base → `HEAD`, committed work only; the working tree instead when handed no base | yes, passed as a narrowing beside the range | every rung its own `--effort` accepts |
+| `hcb-dev:claude-review` skill | `command -v node` — its round lives in a script's store; without the Agent tool it runs, nothing checked | base → working tree, tracked files | yes, passed as a narrowing beside the range | `medium`, `high` |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
 In practice that turns the security review down on a narrowed or working-tree-only scope, and
@@ -104,15 +104,15 @@ one reading is covered at the bottom rung; breadth is what the upper ones buy.
 
 ## 3. Run
 
-Start the detachable reviewers first so they overlap with the inline one. Both run as background
-shell commands of this session, not as subagents — no rule about delegating to subagents or
-workflows reaches them. The one reviewer that fans out into subagents is the security review.
+Start Codex first so it overlaps with the rest: it runs as a background shell command of this
+session, which no rule about delegating to subagents or workflows reaches. `claude-review` and the
+security review fan out into subagents, each because its own skill asks for them.
 
 - **codex-review** and **claude-review** — invoke the `hcb-dev:codex-review` and
   `hcb-dev:claude-review` skills through the Skill tool, never by reading their `SKILL.md`: only
   the tool substitutes the plugin root in one. Each is passed the base and the rung §1 fixed for
-  it, and no base at all where the scope is the working tree alone, which is how both are told to
-  review one. Whatever narrowed the review goes down with it, in the same prose.
+  it; where the scope is the working tree alone, Codex gets no base and `claude-review` gets
+  `HEAD`. Codex first, then `claude-review`; a narrowing goes down with both, in the same prose.
 - **security-review** — invoke the skill inline, last, and run it as written: the sub-tasks it
   asks for are launched as subagents of this session — the finder first, then the filtering pass
   as parallel sub-tasks. The skill asking for them is the ask a rule admitting subagents only on
@@ -134,11 +134,11 @@ borrowed number is how a reviewer that read nothing gets recorded as having read
 **Wait for every reviewer you launched.** None of the four statuses in §6 says "still running",
 so a row filled before its reviewer returns asserts something about a run that has not finished —
 and the one status that fits an empty cell, `n/a`, is the one the coverage gate treats as closed.
-**How to wait is [`../../references/review-runs.md`](../../references/review-runs.md)'s, and this
-skill is the caller it was written for** — several runs out at once, and never a session that may
-end its turn: it runs inside subagents and dispatched sessions, where doing so ends the work the
-review was gating. A reviewer that has not returned by the ceiling is a row and a reason, never
-an empty cell and never a stall.
+**How to wait for Codex is [`../../references/review-runs.md`](../../references/review-runs.md)'s**
+— never by ending the turn: this skill runs inside subagents and dispatched sessions, where doing
+so ends the work the review was gating. `claude-review` returns when its conductor does, its
+round's result in hand. A reviewer that has not returned by the ceiling is a row and a reason,
+never an empty cell and never a stall.
 
 **A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage gate treats as
 closed, so recording a reviewer that did not run passes a completion with it missing — which is
@@ -189,12 +189,12 @@ mis-scoped in every repo whose changes target another trunk. Report that as `par
 closing.
 
 Then `## Findings`, laid out by [`../../references/findings-table.md`](../../references/findings-table.md)
-— verified by none, ruling nothing — and nothing else: no fixes, no patches, no offer to apply them.
+— each row as its reviewer measured it, ruling nothing — and nothing else: no fixes, no patches.
 
 **Where the report reads thin for the breadth it covered** — the engines agreed on little, or
-the change reaches across far more ground than the findings touch — say so, and offer the one
-thing neither engine here does: `/code-review` typed by the user, whose workflow route puts an
-**independent verifier on every candidate** rather than letting the finder judge itself. Hand it
-over as an ask, ready to run — the rung, then the base and narrowing §1 resolved, spelled out as
-`<base>...HEAD`; left off, it falls back to its own default range, which on an already-pushed
-branch is near-empty. Never launch it yourself.
+the change reaches across far more ground than the findings touch — say so, and offer what no
+rung here reaches: `/code-review` at `xhigh`, `max` or `ultra`, typed by the user — its heavier
+rungs, the last a multi-agent review in the cloud. Hand it over as an ask, ready to run — the rung,
+then the base and narrowing §1 resolved, spelled out as `<base>...HEAD`; left off, it falls back
+to its own default range, which on an already-pushed branch is near-empty. Never launch it
+yourself.

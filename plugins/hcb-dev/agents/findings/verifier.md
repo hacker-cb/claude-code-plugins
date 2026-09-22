@@ -3,8 +3,8 @@ name: verifier
 description: >-
   Internal agent of hcb-dev: checks ONE group of findings of a review round or a findings
   pass, handed only a round id and a group id, and records a verdict through
-  review-round.mjs. Launched by hcb-dev:findings-pass — never for any other task, and
-  never on a finding pasted into its prompt.
+  review-round.mjs. Launched by hcb-dev:findings-pass and by hcb-dev:review:reviewer —
+  never for any other task, and never on a finding pasted into its prompt.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high

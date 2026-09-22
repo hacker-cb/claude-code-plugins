@@ -141,10 +141,11 @@ form: you paste every one of them yourself.
   read-only sandbox. Review-only: returns Codex's findings verbatim and fixes
   nothing.
 - **`claude-review`** — `/hcb-dev:claude-review`
-  The same shape with Claude's own reviewer: `claude -p "/code-review …"` in a
-  separate, read-only headless session, over a range and at a rung the caller
-  fixes — which is what a pipeline, a batch worker or a subagent needs from a
-  review: a known range in, a coverage record back. Review-only.
+  The same shape with Claude's own finders: one review round over a range and at a
+  rung the caller fixes (`medium` or `high`), one finder agent per angle of the
+  rung, every candidate then checked by the plugin's verifier — a known range in,
+  verified findings and a coverage record back. Review-only. The round's shape is
+  [`references/review-pipeline.md`](references/review-pipeline.md).
 - **`multi-review`** — `/hcb-dev:multi-review`
   Run several independent reviewers over one change at once — `codex-review`,
   `claude-review`, the built-in security review — then consolidate the findings
@@ -364,8 +365,15 @@ checked before anything reads it.
 - [`agents/findings/verifier.md`](agents/findings/verifier.md) — `hcb-dev:findings:verifier`,
   the one checker: handed a round and a group id, it takes the claim from the store, reads the
   code — never runs it — and records `confirmed`, `unproven` or `refuted` with the evidence it
-  read. Launched by `findings-pass`; the rules for handing it work and for letting its verdict
-  stand are [`references/verification.md`](references/verification.md).
+  read. Launched by `findings-pass` and by the review conductor; the rules for handing it work
+  and for letting its verdict stand are [`references/verification.md`](references/verification.md).
+- [`agents/review/reviewer.md`](agents/review/reviewer.md) — `hcb-dev:review:reviewer`, the
+  review conductor: handed a round id, it plans the round's tasks from the angle catalog
+  ([`data/review-angles.json`](data/review-angles.json)), launches a finder per task, groups
+  what they hand in, has each group checked, and builds the result. Launched by `claude-review`.
+- [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of
+  one round: it reads its brief and the change, and hands its candidates in through the store.
+  Launched by the conductor.
 
 ## Shared scripts
 
@@ -441,7 +449,7 @@ name stands for.
   directory, outside the repository: candidates, groups and verdicts go in only through it,
   each checked against [`schemas/`](schemas/) and refused with the errors that say what to fix,
   and `result` builds the answer no model writes. Addressed by a short round id, never by a
-  path; the rules it serves are `references/verification.md`.
+  path; the rules it serves are `references/verification.md` and `references/review-pipeline.md`.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
@@ -473,6 +481,12 @@ saying something else. Each file opens by saying what it owns.
   launched outside the current session owes whoever launched it, and how any
   reviewer's answer is waited on. Read wherever a review runs as its own
   process, and wherever one is waited for.
+- [`references/review-pipeline.md`](references/review-pipeline.md) — a review
+  round's shape: the store it keeps, its rungs, who runs what, what each agent's
+  outcome becomes and the coverage it reports. Read by whatever opens a round.
+- [`references/verification.md`](references/verification.md) — the one checker:
+  how a candidate reaches it, and when a verdict it made stands. Read by whatever
+  has findings checked.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name, a commit subject and a change-request title take. Read wherever a
   branch is named, renamed or landed under its name.
@@ -623,9 +637,10 @@ Per skill, on top of those:
   lists the requests targeting this branch; without it each is skipped and said to be.
 - **`codex-review`**: the `codex` CLI installed and `codex login` live, plus `jq`
   to read the run's JSON envelope.
-- **`claude-review`**: the `claude` CLI on `PATH` and authenticated, plus `jq` to
-  read the run's JSON envelope. The review runs as its own session, so it spends
-  its own budget rather than the calling session's context.
+- **`claude-review`**: `node` and `git`, and the Agent tool in the session that runs
+  it — without it the round's tasks run in that session itself and nothing is
+  checked. The finders and the verifier run as subagents, so their reading spends
+  their own context rather than the calling session's.
 - **`multi-review`**: nothing of its own — it picks up whichever reviewers are
   present and records a missing one as a row in the report rather than stopping.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
