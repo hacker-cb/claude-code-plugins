@@ -16,7 +16,7 @@ Candidates, groups and verdicts live in a round's work directory outside the rep
 fix. A round is addressed by the short id `init` prints — never by its path.
 
 ```bash
-node "<plugin root>/scripts/review-round.mjs" init --mode pass --tree "<worktree, or the ref the claims are read on>"
+node "<plugin root>/scripts/review-round.mjs" init --mode pass --tree "<worktree, or the ref the claims are read on>" --language "<the report's language, as a tag>"
 node "<plugin root>/scripts/review-round.mjs" add --round "<round>" --source "<carrier>" < "<candidates JSON>"
 node "<plugin root>/scripts/review-round.mjs" merge --round "<round>"
 node "<plugin root>/scripts/review-round.mjs" units --round "<round>" < "<groups JSON>"
@@ -31,7 +31,8 @@ on, the steps are the ones below.
 ## Handing candidates in
 
 - **One `add` per carrier** — a review's result, a batch's return, a handed-over table — each claim
-  in the candidate shape. A finding that already carries a verdict hands it over whole, in its
+  in the candidate shape, and each carrier under a task name of its own: `--source` gives the
+  default, `--task` another, and a second `add` under a name already taken is refused. A finding that already carries a verdict hands it over whole, in its
   `verdict` field, so it can stand without a new check.
 - **The tree a pass reads is the caller's to name.** A coordinate that tree does not carry is kept
   and marked unreachable: unread, never refuted, and it reaches the result as
@@ -85,12 +86,14 @@ work, where a fix hangs on the answer.
 
 ## When a verdict stands
 
-`queue` reuses a carried verdict in place of a new check where it is `confirmed` or `unproven` and
-**every** file its evidence read still has the blob recorded — on the tree this store reads, the
-working tree through `git hash-object`, a ref through `git rev-parse <ref>:<path>`. Any one file
-changed or gone, and the group is checked again: a verdict depends on everything it read, not only
-the finding's own file. `refuted` never stands: it released work, and a finding that comes back is
-checked again. A reused verdict keeps the snapshot it was made at.
+`queue` reuses a carried verdict in place of a new check where it is `confirmed` or `unproven`, its
+evidence read the finding's own file, and **every** file its evidence read still has the blob
+recorded — on the tree this store reads, the working tree through `git hash-object`, a ref through
+`git rev-parse <ref>:<path>`. Any one file changed or gone, and the group is checked again: a
+verdict depends on everything it read, not only the finding's own file. `refuted` never stands: it
+released work, and a finding that comes back is checked again. A verdict names the revision it
+read — the commit the store opened on, `+wt` where anything it read on the working tree differs
+from it — and a reused one keeps that revision.
 
 **A finding leaving the session keeps its verdict whole.** Where a row travels on — a return, a
 handoff, a ledger entry — the verdict from `result.json`, evidence and blobs included, goes with it,

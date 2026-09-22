@@ -72,7 +72,7 @@ A table of `0 after dedup` has no footer.
 
 | cell | what it says |
 |---|---|
-| `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision — `+wt` after the sha where the tree it read carried uncommitted edits |
+| `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision — `+wt` after the sha where something it read differs from that commit, edited or never committed |
 | `unproven @<sha>` | checked there, and neither shown nor ruled out — its block says what would settle it |
 | `not measured — <why>` | no check ran over it: `batch` (its master verifies), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
 

@@ -57,10 +57,12 @@ and what each step answers are [`../../references/verification.md`](../../refere
 
 ```bash
 TREE="<worktree, or the ref the table above names>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" init --mode pass --tree "$TREE"
+LANGUAGE="<the language this session reports in, as a tag: en, ru, …>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" init --mode pass --tree "$TREE" --language "$LANGUAGE"
 ```
 
-Then one `add --round <round> --source <carrier>` per carrier, the candidates on its stdin.
+Then one `add --round <round> --source <carrier>` per carrier, each under a name of its own, the
+candidates on its stdin.
 
 ## 2. Dedupe
 

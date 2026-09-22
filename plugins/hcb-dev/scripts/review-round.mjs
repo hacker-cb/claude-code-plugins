@@ -34,7 +34,7 @@ import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { refOk, writeAll } from './lib/forge.mjs';
+import { writeAll } from './lib/forge.mjs';
 import { schemaDir, validate } from './lib/schema.mjs';
 
 const load = schemaDir(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'schemas'));
@@ -77,6 +77,9 @@ const UNIT_ID = /^U[1-9][0-9]{0,4}$/;
 const RANK = { Critical: 0, Important: 1, Minor: 2 };
 const WAIT_CAP_S = 540; // under the Bash tool's 10-minute ceiling, so one window is one call
 
+// A revision git is to read — a branch, a tag, a sha, `HEAD~1` — held only to never
+// reading as an option; whether it names anything is git's to say where it is resolved.
+const revOk = (v) => typeof v === 'string' && v !== '' && !v.startsWith('-') && !/[\u0000-\u001f\u007f]/.test(v);
 const real = (p) => { try { return realpathSync(p); } catch { return null; } };
 const inside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
@@ -194,6 +197,10 @@ function readAt(repo, req, file, side) {
   const resolved = real(abs);
   if (!resolved || !inside(resolved, repo.top)) return { missing: `${file} is not in the working tree` };
   if (!statSync(resolved).isFile()) return { missing: `${file} is not a file` };
+  // A round reviews tracked files: an untracked or ignored one is outside every diff.
+  if (req.mode === 'round' && repo.git(['--literal-pathspecs', 'ls-files', '-z', '--', file]).out === '') {
+    return { missing: `${file} is not tracked — a round reviews tracked files only` };
+  }
   return { text: readFileSync(resolved, 'utf8') };
 }
 
@@ -232,7 +239,7 @@ function init() {
   if (mode === 'pass' && (opts['--base'] || opts['--rung'] || opts['--sources'])) {
     die('--base, --rung and --sources belong to --mode round');
   }
-  if (opts['--base'] && !refOk(opts['--base'])) die(`--base '${opts['--base']}' is not a ref this can read`);
+  if (opts['--base'] && !revOk(opts['--base'])) die(`--base '${opts['--base']}' reads as an option, or carries a control character`);
   const rung = mode === 'round' ? (opts['--rung'] || 'medium') : null;
   if (rung && rung !== 'medium' && rung !== 'high') die("--rung must be 'medium' or 'high'");
   const sources = mode === 'round' ? (opts['--sources'] || '').split(',').filter(Boolean) : [];
@@ -242,7 +249,7 @@ function init() {
   const narrow = opts['--narrow'] ?? null;
   if (narrow !== null && [...narrow].length > 500) die('--narrow is prose of a sentence or two, not a document');
   const treeArg = mode === 'pass' ? (opts['--tree'] || 'worktree') : null;
-  if (treeArg && treeArg !== 'worktree' && !refOk(treeArg)) die(`--tree '${treeArg}' is not a ref this can read`);
+  if (treeArg && treeArg !== 'worktree' && !revOk(treeArg)) die(`--tree '${treeArg}' reads as an option, or carries a control character`);
 
   const repo = repository();
   const root = roundsRoot();
@@ -259,8 +266,11 @@ function init() {
   const head = repo.git(['rev-parse', '--verify', '-q', 'HEAD^{commit}']);
   if (!head.ok) cannot('HEAD does not name a commit');
   const headSha = head.out.trim();
-  // Tracked changes only: an untracked file is outside every diff, and is named below.
-  const dirty = repo.git(['status', '--porcelain', '--untracked-files=no']).out.trim() !== '';
+  // A round counts tracked changes only: an untracked file is outside every diff, and is
+  // named below. A pass reads the working tree as it stands, untracked files included.
+  const status = repo.git(['status', '--porcelain', `--untracked-files=${mode === 'pass' ? 'normal' : 'no'}`]);
+  if (!status.ok) cannot(`git could not read the status of ${repo.top}: ${status.err}`);
+  const dirty = status.out.trim() !== '';
   const snapshot = `${headSha.slice(0, 7)}${dirty ? '+wt' : ''}`;
   const id = `r-${randomBytes(4).toString('hex')}`;
   const dir = path.join(root, id);
@@ -351,6 +361,11 @@ function add() {
   // and the result reads groups — it would vanish without anybody having dropped it.
   if (existsSync(path.join(round.dir, 'units.json'))) {
     refuse([{ at: '', message: `round ${round.id} is already grouped — this submission came too late to be stored` }], { task });
+  }
+  // One task, one submission: a second under the same name would replace the first, and
+  // the candidates it carried would leave the round without anybody having dropped them.
+  if (existsSync(path.join(round.dir, 'sources', `${task}.json`))) {
+    refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
   }
   const value = submission();
   const errors = validate(load, 'candidates.json', null, value);
@@ -495,10 +510,12 @@ function queue() {
   const unreachable = [];
   for (const u of all) {
     if (u.unreachable) { unreachable.push(u.unit); continue; }
-    // A carried verdict stands while every file it read is byte-for-byte what it read.
-    // `refuted` never stands: it released work, and a change to anything it read —
-    // not only the finding's own file — may have put the defect back.
+    // A carried verdict stands while every file it read is byte-for-byte what it read —
+    // and only where the finding's own file is among them, since a verdict that never
+    // read it cannot tell that file changed, a fix included. `refuted` never stands: it
+    // released work, and a change to anything it read may have put the defect back.
     const standing = u.carried.find((v) => (v.verdict === 'confirmed' || v.verdict === 'unproven')
+      && v.evidence.some((e) => e.path === u.file && e.side === u.side)
       && v.evidence.every((e) => blobAt(repo, round.req, e.path, e.side) === e.blob));
     if (standing) {
       writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), { ...standing, unit: u.unit, reused: true });
@@ -577,7 +594,17 @@ function verdict() {
     else evidence.push({ path: e.path, side, lines: e.lines, quote: e.quote, blob });
   });
   if (missing.length) refuse(missing, { unit: u.unit });
-  const stored = { unit: u.unit, verdict: value.verdict, snapshot: round.req.snapshot, evidence };
+  // The revision a verdict names is the one it read: the commit the round opened on,
+  // marked `+wt` where anything it read on the working tree differs from that commit —
+  // untracked, edited before the round opened, or edited since.
+  let snapshot = round.req.snapshot;
+  if (treeOf(round.req, 'head').worktree) {
+    const at = round.req.head.sha;
+    const moved = evidence.some((e) => e.side === 'head'
+      && repo.git(['rev-parse', '--verify', '-q', `${at}:${e.path}`]).out.trim() !== e.blob);
+    snapshot = `${at.slice(0, 7)}${moved ? '+wt' : ''}`;
+  }
+  const stored = { unit: u.unit, verdict: value.verdict, snapshot, evidence };
   if (value.settle) stored.settle = value.settle;
   if (value.refuted_because) stored.refuted_because = value.refuted_because;
   const check = validate(load, 'verdict.json', '/$defs/stored', stored);
@@ -670,6 +697,17 @@ function result() {
   const refuted = [];
   const drifted = new Set();
   const headBlob = new Map((req.files || []).map((f) => [f.path, f.blob_head]));
+  let repo = null;
+  // What the finders read of a file: its blob at init where the diff lists it, and
+  // otherwise the merge base's — a tracked file the diff does not list stood as the merge
+  // base has it. An untracked one was never theirs to read.
+  const openedWith = (file) => {
+    if (headBlob.has(file)) return headBlob.get(file);
+    if ((req.untracked || []).includes(file)) return undefined;
+    repo ||= checkoutOf(round);
+    const r = repo.git(['rev-parse', '--verify', '-q', `${req.base.merge_base}:${file}`]);
+    return r.ok ? r.out.trim() : undefined;
+  };
   for (const u of all) {
     const row = {
       unit: u.unit, file: u.file, line: u.line, side: u.side, summary: u.summary,
@@ -686,7 +724,9 @@ function result() {
     }
     if (req.mode === 'round' && !v.reused) {
       for (const e of v.evidence) {
-        if (e.side === 'head' && headBlob.has(e.path) && headBlob.get(e.path) !== e.blob) drifted.add(e.path);
+        if (e.side !== 'head') continue;
+        const was = openedWith(e.path);
+        if (was !== undefined && was !== e.blob) drifted.add(e.path);
       }
     }
     if (v.verdict === 'refuted') {

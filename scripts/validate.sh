@@ -333,13 +333,22 @@ while IFS= read -r agent; do
     [ -n "$ref" ] || continue
     [ -e "$plugin_dir/$ref" ] || err "$label: names \${CLAUDE_PLUGIN_ROOT}/$ref, which $plugin_dir does not have"
   done < <(grep -o '\${CLAUDE_PLUGIN_ROOT}/[A-Za-z0-9._/-]*' "$agent" | sed 's|^\${CLAUDE_PLUGIN_ROOT}/||' | sort -u)
-  if grep -q 'review-round.mjs" verdict' "$agent"; then
-    schema_terms "$label" "$agent" "$plugin_dir/schemas/verdict.json" \
-      '.["$defs"].verdictName.enum[], .["$defs"].submitted.required[], (.["$defs"].submitted.properties | keys[]), (.["$defs"].evidenceSubmitted.properties | keys[])'
-  fi
-  if grep -q 'review-round.mjs" add' "$agent"; then
-    schema_terms "$label" "$agent" "$plugin_dir/schemas/candidates.json" \
-      '.["$defs"].candidate.required[], .["$defs"].candidate.properties.side.enum[], .["$defs"].candidate.properties.severity.enum[], .["$defs"].candidate.properties.category.enum[]'
+  # The subcommands are read off the command itself, a continued line joined first; an
+  # agent naming the script in any other form is refused, so the checks below cannot go
+  # quiet on a command written differently.
+  if grep -q 'review-round\.mjs' "$agent"; then
+    subs=$(awk '{ if (sub(/\\$/, "")) printf "%s ", $0; else print }' "$agent" \
+      | grep -oE 'review-round\.mjs"[[:space:]]+[a-z]+' | awk '{ print $NF }' | sort -u)
+    [ -n "$subs" ] \
+      || err "$label: names review-round.mjs, but never as 'review-round.mjs\" <subcommand>' — the form the schema check reads"
+    if printf '%s\n' "$subs" | grep -qx verdict; then
+      schema_terms "$label" "$agent" "$plugin_dir/schemas/verdict.json" \
+        '.["$defs"].verdictName.enum[], .["$defs"].submitted.required[], (.["$defs"].submitted.properties | keys[]), (.["$defs"].evidenceSubmitted.properties | keys[])'
+    fi
+    if printf '%s\n' "$subs" | grep -qx add; then
+      schema_terms "$label" "$agent" "$plugin_dir/schemas/candidates.json" \
+        '.["$defs"].candidate.required[], .["$defs"].candidate.properties.side.enum[], .["$defs"].candidate.properties.severity.enum[], .["$defs"].candidate.properties.category.enum[]'
+    fi
   fi
   ok "$label"
 done < <(find plugins -type f -path '*/agents/*.md' 2>/dev/null | sort)
