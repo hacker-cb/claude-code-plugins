@@ -16,6 +16,7 @@
 #                          `@file:<name>` in place of the word copies inputs/<name> there
 #   @file:<name>           a word: a copy of inputs/<name>, every `@blob:<path>` in it
 #                          replaced by the scratch repository's blob of <path>
+#   @empty                 a word: the empty string, which a manifest cannot write
 #   INSIDE_REPO=1          environment: TMPDIR is put inside the scratch repository
 #   ROUNDS_ROOT=link|open  environment: $TMPDIR/hcb-review is there before the case, as
 #                          a link to another directory or a directory anyone can write —
@@ -80,6 +81,7 @@ for ((n = 0; n < count; n++)); do
   for w in "${words[@]}"; do
     case "$w" in
       @round) args+=("$round") ;;
+      @empty) args+=("") ;;
       @file:*)
         src="$here/inputs/${w#@file:}"
         dst="$tmp/input.$n.json"

@@ -26,8 +26,8 @@
 // wrong; 3 the round or the repository could not be read.
 
 import {
-  existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync,
-  renameSync, rmSync, statSync, writeFileSync,
+  existsSync, linkSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync,
+  realpathSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -63,6 +63,9 @@ const opts = {};
 for (let i = 0; i < argv.length; i += 1) {
   if (!SPEC[cmd].includes(argv[i])) die(`${cmd} takes no argument '${argv[i]}'`);
   if (argv[i + 1] === undefined) die(`${argv[i]} needs a value`);
+  // An empty one would fall back — to the working tree, to no budget, to English — and
+  // the fallback answers as though it had been asked for.
+  if (argv[i + 1] === '') die(`${argv[i]} was given an empty value — give it one, or drop the flag`);
   opts[argv[i]] = argv[i + 1];
   i += 1;
 }
@@ -85,10 +88,25 @@ const inside = (child, parent) => child === parent || child.startsWith(parent + 
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
 // Written beside the target and renamed over it: a reader of the store — `wait`, a second
 // checker, `result` — sees the old file or the new one, never a truncated half.
-const writeJson = (file, data) => {
+const tmpBeside = (file, data) => {
   const tmp = `${file}.${process.pid}.${randomBytes(3).toString('hex')}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`);
-  renameSync(tmp, file);
+  return tmp;
+};
+const writeJson = (file, data) => renameSync(tmpBeside(file, data), file);
+// The same write, except that it claims a name nobody holds: `link` fails where the
+// target exists, so two writers racing for one name cannot both believe they took it.
+const claimJson = (file, data) => {
+  const tmp = tmpBeside(file, data);
+  try {
+    linkSync(tmp, file);
+  } catch (e) {
+    if (e.code !== 'EEXIST') throw e;
+    return false;
+  } finally {
+    unlinkSync(tmp);
+  }
+  return true;
 };
 const roundsRoot = () => {
   const base = real(process.env.TMPDIR || tmpdir());
@@ -113,6 +131,9 @@ const gitIn = (cwd) => (args, input) => {
     input,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
+    // A clean filter of the checkout's own — git-lfs, a normalizer — runs inside
+    // `hash-object`, and one that hangs would hold the whole round with it.
+    timeout: 120_000,
     env: { ...process.env, LC_ALL: 'C', LANG: 'C', LC_MESSAGES: 'C', GIT_OPTIONAL_LOCKS: '0' },
   });
   return { ok: r.status === 0, code: r.status, out: r.stdout || '', err: (r.stderr || '').trim() };
@@ -217,14 +238,19 @@ function blobAt(repo, req, file, side) {
     return repo.git(['cat-file', '-t', oid]).out.trim() === 'blob' ? oid : null;
   }
   const abs = path.join(repo.top, file);
-  const resolved = real(abs);
-  if (!resolved || !inside(resolved, repo.top)) return null;
-  // What git keeps for a symlink is the link's own text; `hash-object` on the path reads
-  // through it instead, and the two hashes would never meet.
-  if (lstatSync(abs).isSymbolicLink()) {
+  // What git keeps for a symlink is the link's own text, and it keeps it for one that
+  // dangles or points outside as readily — so the link is read before anything resolves
+  // it, and it is the directory holding it that has to be inside the repository.
+  let link = null;
+  try { link = lstatSync(abs).isSymbolicLink(); } catch { link = null; }
+  if (link) {
+    const parent = real(path.dirname(abs));
+    if (!parent || !inside(parent, repo.top)) return null;
     const r = repo.git(['hash-object', '--stdin'], readlinkSync(abs));
     return r.ok ? r.out.trim() : null;
   }
+  const resolved = real(abs);
+  if (!resolved || !inside(resolved, repo.top)) return null;
   const r = repo.git(['hash-object', '--', file]);
   return r.ok ? r.out.trim() : null;
 }
@@ -306,7 +332,7 @@ function init() {
     for (let i = 0; i < tokens.length;) {
       const status = tokens[i];
       const renamed = /^[RC]/.test(status);
-      const from = renamed ? tokens[i + 1] : tokens[i + 1];
+      const from = tokens[i + 1];
       const to = renamed ? tokens[i + 2] : tokens[i + 1];
       i += renamed ? 3 : 2;
       files.push({ path: to, from: renamed ? from : undefined, status: status[0] });
@@ -405,9 +431,12 @@ function add() {
   } else if (rejected.length) {
     notes.push(`run-warning: ${rejected.length} candidate(s) anchored outside the snapshot were dropped`);
   }
-  writeJson(path.join(round.dir, 'sources', `${task}.json`), {
+  const claimed = claimJson(path.join(round.dir, 'sources', `${task}.json`), {
     task, source, submitted_at: new Date().toISOString(), candidates: kept, rejected,
   });
+  if (!claimed) {
+    refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
+  }
   writeJson(path.join(round.dir, 'sources', `${task}.status.json`), {
     task, source, state, candidates: kept.length, rejected: rejected.length, notes, at: new Date().toISOString(),
   });

@@ -97,12 +97,14 @@ export function validate(load, file, pointer, value) {
       if (schema.items) v.forEach((item, i) => walk(owner, schema.items, item, `${at}/${i}`));
     }
     if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      // `hasOwn`, never `in`: `in` answers for every name Object.prototype carries, so
+      // a field called `constructor` or `toString` would pass a closed schema unread.
       for (const key of schema.required || []) {
-        if (!(key in v)) errors.push({ at: `${at}/${key}`, message: 'is required' });
+        if (!Object.hasOwn(v, key)) errors.push({ at: `${at}/${key}`, message: 'is required' });
       }
       const props = schema.properties || {};
       for (const [key, val] of Object.entries(v)) {
-        if (key in props) walk(owner, props[key], val, `${at}/${key}`);
+        if (Object.hasOwn(props, key)) walk(owner, props[key], val, `${at}/${key}`);
         else if (schema.additionalProperties === false) errors.push({ at: `${at}/${key}`, message: 'is not a field this schema has' });
         else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
           walk(owner, schema.additionalProperties, val, `${at}/${key}`);
