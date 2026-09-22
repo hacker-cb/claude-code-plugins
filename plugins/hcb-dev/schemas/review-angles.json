@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hcb-dev/review-angles.json",
+  "title": "The angle catalog a review round is planned from",
+  "description": "data/review-angles.json: each rung's tasks, its candidate limit and check budget, and every task's source, kind, category and instructions. review-round.mjs plan and brief read it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["rungs", "tasks"],
+  "properties": {
+    "rungs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["medium", "high"],
+      "properties": {
+        "medium": { "$ref": "#/$defs/rung" },
+        "high": { "$ref": "#/$defs/rung" }
+      }
+    },
+    "tasks": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/task" }
+    }
+  },
+  "$defs": {
+    "rung": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["limit", "budget", "tasks", "sweep"],
+      "properties": {
+        "limit": { "type": "integer", "minimum": 1 },
+        "budget": { "type": "integer", "minimum": 1 },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,39}$" }
+        },
+        "sweep": { "type": ["string", "null"] }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "kind", "category", "text"],
+      "properties": {
+        "source": { "type": "string", "enum": ["claude", "security", "codex"] },
+        "kind": { "type": "string", "enum": ["finder", "sweep", "codex"] },
+        "category": { "$ref": "candidates.json#/$defs/candidate/properties/category" },
+        "reads": { "type": "string", "enum": ["rules", "listed"] },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

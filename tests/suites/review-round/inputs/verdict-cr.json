@@ -1,0 +1,10 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "note\r",
+      "lines": "1",
+      "quote": "a note whose name ends in a carriage return"
+    }
+  ]
+}

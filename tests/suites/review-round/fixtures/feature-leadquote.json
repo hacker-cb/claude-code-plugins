@@ -1,0 +1,14 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "\"lead.sh": "echo lead\n"
+      }
+    }
+  ]
+}

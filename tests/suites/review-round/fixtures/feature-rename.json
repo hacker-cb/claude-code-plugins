@@ -1,0 +1,16 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "lib/helpers.sh": "say() { printf '%s\\n' \"$1\"; }\n",
+        "quo\"te.sh": "echo quoted\n"
+      },
+      "remove": ["lib/util.sh"]
+    }
+  ]
+}

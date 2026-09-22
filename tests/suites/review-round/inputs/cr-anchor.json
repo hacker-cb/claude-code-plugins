@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "note\r",
+      "line": 1,
+      "side": "head",
+      "summary": "The note's name ends in a carriage return.",
+      "failure_scenario": "a listing prints the name with the cursor thrown back to its start",
+      "severity": "Minor",
+      "category": "simplification"
+    }
+  ]
+}

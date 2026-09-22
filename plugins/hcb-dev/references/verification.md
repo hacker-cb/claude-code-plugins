@@ -112,5 +112,5 @@ What the budget cut reaches the result as `not measured — budget`.
 
 `result` builds `result.json` from the store — no model writes it: the findings ranked by severity,
 each `confirmed`, `unproven` or `not measured` with its reason, the refuted apart, and the warnings.
-Its reasons are the ones `findings-table.md` names — `budget`, `unreachable`, `failed`, `none ran` —
+Its reasons are the ones `findings-table.md` names — `budget`, `unreachable`, `failed`, `depth`, `none ran` —
 and a finding whose verdict was reused says so.

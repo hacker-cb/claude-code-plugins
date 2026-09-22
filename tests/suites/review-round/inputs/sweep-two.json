@@ -1,0 +1,22 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 5,
+      "side": "head",
+      "summary": "The cleanup removes a directory named by an argument nobody checks.",
+      "failure_scenario": "a third argument of .. makes rm -rf reach the parent of TMPDIR",
+      "severity": "Critical",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 2,
+      "side": "head",
+      "summary": "The comment says within the limit, and the code means at or above it.",
+      "failure_scenario": "a reader trusts the comment and passes the limit the wrong way round",
+      "severity": "Minor",
+      "category": "simplification"
+    }
+  ]
+}

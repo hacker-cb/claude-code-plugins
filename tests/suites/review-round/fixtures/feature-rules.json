@@ -1,0 +1,29 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        "CLAUDE.md": "# Rules\nEvery script prints JSON.\n",
+        "lib/CLAUDE.md": "# lib\nHelpers write to stdout.\n",
+        "docs/CLAUDE.md": "# docs\nProse only.\n",
+        ".claude/rules/style.md": "# Style\nNo tabs.\n",
+        ".claude/CLAUDE.md": "# Project\nOne more rule.\n",
+        "lib/.claude/rules/lib.md": "# lib rules\nNo globals.\n",
+        "docs/rules-src.md": "# linked\nA linked rule.\n"
+      },
+      "link": {
+        ".claude/rules/linked.md": "../../docs/rules-src.md"
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "lib/util.sh": "say() { printf '%s\\n' \"$1\" >&2; }\n"
+      }
+    }
+  ]
+}

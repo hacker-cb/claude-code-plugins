@@ -1,0 +1,10 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "\"twin.sh\"",
+      "lines": "1",
+      "quote": "echo the quoted twin"
+    }
+  ]
+}

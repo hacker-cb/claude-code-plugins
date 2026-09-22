@@ -1,0 +1,89 @@
+{
+  "rungs": {
+    "medium": {
+      "limit": 6,
+      "budget": 15,
+      "tasks": ["line-by-line", "removed-behavior", "call-tracing", "reuse", "simplification", "project-rules"],
+      "sweep": null
+    },
+    "high": {
+      "limit": 8,
+      "budget": 30,
+      "tasks": [
+        "line-by-line", "removed-behavior", "call-tracing", "language-traps", "wrappers",
+        "reuse", "simplification", "efficiency", "altitude", "project-rules"
+      ],
+      "sweep": "sweep"
+    }
+  },
+  "tasks": {
+    "line-by-line": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "text": "Walk every hunk of the diff one line at a time, then read the whole function each hunk sits in: a defect on an untouched line of a touched function is in scope, since the change either exposes it or leaves it standing. For each line ask which input, state, ordering or platform makes it do the wrong thing — a condition inverted or off by one, a value that can be absent used as present, a result not awaited, zero or an empty string read as missing, a variable copied from the neighbouring line, an error caught and dropped, a pattern with its metacharacters left unescaped."
+    },
+    "removed-behavior": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "text": "For every line the diff deletes or rewrites, name what it guaranteed — a guard, a validation, an error path, an ordering, a case a deleted test covered — then find where the new code guarantees it again. Where nothing does, the lost guarantee is a candidate: say which input now gets through, or what now fails without a word."
+    },
+    "call-tracing": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "text": "For every function, method, command or exported value the diff changes, find who uses it — grep the name across the repository — and whether each caller still holds: a new precondition, a different return shape, a new way to throw or fail, a changed side effect, exit status or ordering. Then look the other way, at what the changed code calls, for a call another part of the same change made unsafe."
+    },
+    "language-traps": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "text": "Look for the traps particular to the language and framework of each changed file, wherever the diff introduces one: truthiness and loose equality, a closure capturing a loop variable, a default evaluated once, shared mutable state, integer and float edges, encodings and locales, time zones and clock arithmetic, shell word splitting and quoting, regular-expression anchoring, text spliced into a query or a command line. Name the construct and the input that springs it."
+    },
+    "wrappers": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "text": "Where the change adds or edits something that stands in for something else — a cache, a proxy, a decorator, an adapter, a wrapper script, a retry or fallback layer — check that each operation reaches the wrapped thing rather than looping back through a registry, a global or the wrapper itself; that every operation its callers use is passed on; and that arguments, errors and exit statuses come through unchanged."
+    },
+    "reuse": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "reuse",
+      "text": "Look for new code that does again what the repository already does: grep the shared modules, the helpers beside the changed files and whatever the change already imports, and name the existing function, script or file to use instead. A near-duplicate is a candidate only where the existing piece would serve as it stands."
+    },
+    "simplification": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "simplification",
+      "text": "Look for complexity the diff adds and does not need: state that could be derived, branches that end the same way, copies that differ in one detail, nesting an early return would flatten, code the change leaves unreachable. Name the simpler form and why it does the same job."
+    },
+    "efficiency": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "efficiency",
+      "text": "Look for work the change makes the program do in vain: the same value computed, or the same file, command or request repeated, where once would do; independent steps run one after another; something slow added to a start-up path or a loop; memory held long after its last use. Name the cheaper form and where the cost falls."
+    },
+    "altitude": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "altitude",
+      "text": "Check that each change is made at the depth its problem lives at. A special case bolted onto shared machinery, a check patched in at one caller where the callee is what is wrong, a rule written into prose where a script already enforces its siblings — each says the fix sits too high or too low. Name the level it belongs at."
+    },
+    "project-rules": {
+      "source": "claude",
+      "kind": "finder",
+      "category": "project-rules",
+      "reads": "rules",
+      "text": "Read the rules this repository writes for itself that govern the changed paths — the brief lists the files: its CLAUDE.md files, at the root and in the directories above each changed file, and its .claude/rules files, whose own header says which paths each covers. Flag a line of the change that breaks one of those rules only where you can quote both: the rule, with its file, and the line that breaks it. A preference the rules do not state is not a violation. Where no rule file governs the change, submit an empty list."
+    },
+    "sweep": {
+      "source": "claude",
+      "kind": "sweep",
+      "category": "correctness",
+      "reads": "listed",
+      "text": "You come after the first pass, and the brief lists what it already found. Read the diff and the functions around it again for defects that are NOT on that list, and only those — never restate or re-check a listed one. What a first pass most often misses: code moved or extracted that lost a guard or an anchor on the way; a value computed once that should be computed per call; a lock, a transaction or a cleanup that now covers less; a check with a side effect; set-up without its matching tear-down; a default that flipped. Submit an empty list when nothing new stands."
+    }
+  }
+}

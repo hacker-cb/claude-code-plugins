@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "tmp.txt": "scratch\n"
+      }
+    },
+    {
+      "on": "feature",
+      "remove": [
+        "tmp.txt"
+      ]
+    }
+  ]
+}

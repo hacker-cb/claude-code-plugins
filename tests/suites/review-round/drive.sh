@@ -17,15 +17,19 @@
 #   @file:<name>           a word: a copy of inputs/<name>, every `@blob:<path>` in it
 #                          replaced by the scratch repository's blob of <path>
 #   @empty                 a word: the empty string, which a manifest cannot write
-#
-# In the answer printed at the end, the scratch repository's short shas come back as
-# `@head7` and `@base7`: a case cannot know either, and a snapshot is exactly what some of
-# them are about.
+#   @lit:<text>            a word: <text> with %20 read as a space and %25 as %, for a
+#                          path a manifest's word splitting would cut
 #   INSIDE_REPO=1          environment: TMPDIR is put inside the scratch repository
 #   ROUNDS_ROOT=<kind>     environment: $TMPDIR/hcb-review is there before the case — as a
 #                          `link` to another directory, a directory anyone can write
 #                          (`open`) or one anyone can read (`read`) — what someone sharing
-#                          the temp directory could have made first
+#                          the temp directory could have made first; or, as `stale`, a
+#                          proper one holding r-00000001 opened eight days ago and
+#                          r-00000002 opened now
+#
+# In the answer printed at the end, the scratch repository's short shas come back as
+# `@head7` and `@base7`: a case cannot know either, and a snapshot is exactly what some of
+# them are about.
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
@@ -52,7 +56,14 @@ case "${ROUNDS_ROOT:-}" in
   link) { mkdir "$tmp/elsewhere" && ln -s "$tmp/elsewhere" "$TMPDIR/hcb-review"; } || exit 125 ;;
   open) { mkdir "$TMPDIR/hcb-review" && chmod 777 "$TMPDIR/hcb-review"; } || exit 125 ;;
   read) { mkdir "$TMPDIR/hcb-review" && chmod 755 "$TMPDIR/hcb-review"; } || exit 125 ;;
-  *) echo "drive: ROUNDS_ROOT is link, open or read, not '$ROUNDS_ROOT'" >&2; exit 125 ;;
+  stale)
+    { mkdir -m 700 "$TMPDIR/hcb-review" \
+        && mkdir "$TMPDIR/hcb-review/r-00000001" "$TMPDIR/hcb-review/r-00000002" \
+        && echo '{}' > "$TMPDIR/hcb-review/r-00000001/request.json" \
+        && echo '{}' > "$TMPDIR/hcb-review/r-00000002/request.json" \
+        && node -e 'const t = Date.now() / 1000 - 8 * 86400; require("fs").utimesSync(process.argv[1], t, t)' \
+             "$TMPDIR/hcb-review/r-00000001/request.json"; } || exit 125 ;;
+  *) echo "drive: ROUNDS_ROOT is link, open, read or stale, not '$ROUNDS_ROOT'" >&2; exit 125 ;;
 esac
 
 steps=()
@@ -88,6 +99,7 @@ for ((n = 0; n < count; n++)); do
     case "$w" in
       @round) args+=("$round") ;;
       @empty) args+=("") ;;
+      @lit:*) lit=${w#@lit:}; lit=${lit//%20/ }; args+=("${lit//%25/%}") ;;
       @file:*)
         src="$here/inputs/${w#@file:}"
         dst="$tmp/input.$n.json"
