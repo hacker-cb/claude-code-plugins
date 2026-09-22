@@ -120,7 +120,7 @@ function checkRoot(root) {
   try { st = lstatSync(root); } catch (e) { cannot(`the rounds directory ${root} cannot be read: ${e.code || e.message}`); }
   if (st.isSymbolicLink() || !st.isDirectory()) cannot(`${root} is not a directory of its own — it may be a link someone else put there`);
   if (typeof process.getuid === 'function' && st.uid !== process.getuid()) cannot(`${root} belongs to another user`);
-  if ((st.mode & 0o022) !== 0) cannot(`${root} is writable by others`);
+  if ((st.mode & 0o077) !== 0) cannot(`${root} is open to others — a round's diff, its candidates and its evidence are in there`);
 }
 
 // Raw output, not trimmed: a line count taken after a trim is short by the blank lines
@@ -217,14 +217,18 @@ function readAt(repo, req, file, side) {
     return r.ok ? { text: r.out } : { missing: `${file} is not a file in ${tree.ref.slice(0, 7)}` };
   }
   const abs = path.join(repo.top, file);
-  const resolved = real(abs);
+  // A symlink is one line of link text to git, and the file it points at is another file
+  // with lines of its own: an anchor read through it would be counted against those.
+  let link = null;
+  try { link = lstatSync(abs).isSymbolicLink(); } catch { link = null; }
+  const resolved = link ? real(path.dirname(abs)) : real(abs);
   if (!resolved || !inside(resolved, repo.top)) return { missing: `${file} is not in the working tree` };
-  if (!statSync(resolved).isFile()) return { missing: `${file} is not a file` };
+  if (!link && !statSync(resolved).isFile()) return { missing: `${file} is not a file` };
   // A round reviews tracked files: an untracked or ignored one is outside every diff.
   if (req.mode === 'round' && repo.git(['--literal-pathspecs', 'ls-files', '-z', '--', file]).out === '') {
     return { missing: `${file} is not tracked — a round reviews tracked files only` };
   }
-  return { text: readFileSync(resolved, 'utf8') };
+  return { text: link ? readlinkSync(abs) : readFileSync(resolved, 'utf8') };
 }
 
 function blobAt(repo, req, file, side) {
@@ -536,9 +540,10 @@ function queue() {
   const f = path.join(round.dir, 'units.json');
   if (!existsSync(f)) cannot(`round ${round.id} has no units yet — run units first`);
   const all = readJson(f).units;
+  // Digits or no flag at all: `Number` reads `Infinity` and `1e3` as numbers, and the
+  // sentinel for "no budget" is the flag's absence rather than a word a caller can pass.
+  if (opts['--budget'] !== undefined && !/^[0-9]+$/.test(opts['--budget'])) die('--budget must be a whole number');
   const budget = opts['--budget'] === undefined ? Infinity : Number(opts['--budget']);
-  if (!Number.isInteger(budget) && budget !== Infinity) die('--budget must be a whole number');
-  if (budget < 0) die('--budget must not be negative');
   const repo = all.some((u) => u.carried.length) ? checkoutOf(round) : null;
   // A queue starts verification over: a verdict left from an earlier queue answered a
   // check this one has not asked for, and would count as done.
@@ -643,10 +648,13 @@ function verdict() {
   // marked `+wt` where anything it read on the working tree differs from that commit —
   // untracked, edited before the round opened, or edited since.
   let snapshot = round.req.snapshot;
-  if (treeOf(round.req, 'head').worktree) {
+  const onHead = evidence.filter((e) => e.side === 'head');
+  if (!onHead.length && round.req.mode === 'round') {
+    // Read at the merge base and nowhere else: that commit is the revision it read.
+    snapshot = round.req.base.merge_base.slice(0, 7);
+  } else if (treeOf(round.req, 'head').worktree) {
     const at = round.req.head.sha;
-    const moved = evidence.some((e) => e.side === 'head'
-      && repo.git(['rev-parse', '--verify', '-q', `${at}:${e.path}`]).out.trim() !== e.blob);
+    const moved = onHead.some((e) => repo.git(['rev-parse', '--verify', '-q', `${at}:${e.path}`]).out.trim() !== e.blob);
     snapshot = `${at.slice(0, 7)}${moved ? '+wt' : ''}`;
   }
   const stored = { unit: u.unit, verdict: value.verdict, snapshot, evidence };

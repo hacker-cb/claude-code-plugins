@@ -17,10 +17,15 @@
 #   @file:<name>           a word: a copy of inputs/<name>, every `@blob:<path>` in it
 #                          replaced by the scratch repository's blob of <path>
 #   @empty                 a word: the empty string, which a manifest cannot write
+#
+# In the answer printed at the end, the scratch repository's short shas come back as
+# `@head7` and `@base7`: a case cannot know either, and a snapshot is exactly what some of
+# them are about.
 #   INSIDE_REPO=1          environment: TMPDIR is put inside the scratch repository
-#   ROUNDS_ROOT=link|open  environment: $TMPDIR/hcb-review is there before the case, as
-#                          a link to another directory or a directory anyone can write —
-#                          what someone sharing the temp directory could have made first
+#   ROUNDS_ROOT=<kind>     environment: $TMPDIR/hcb-review is there before the case — as a
+#                          `link` to another directory, a directory anyone can write
+#                          (`open`) or one anyone can read (`read`) — what someone sharing
+#                          the temp directory could have made first
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
@@ -46,7 +51,8 @@ case "${ROUNDS_ROOT:-}" in
   '') ;;
   link) { mkdir "$tmp/elsewhere" && ln -s "$tmp/elsewhere" "$TMPDIR/hcb-review"; } || exit 125 ;;
   open) { mkdir "$TMPDIR/hcb-review" && chmod 777 "$TMPDIR/hcb-review"; } || exit 125 ;;
-  *) echo "drive: ROUNDS_ROOT is link or open, not '$ROUNDS_ROOT'" >&2; exit 125 ;;
+  read) { mkdir "$TMPDIR/hcb-review" && chmod 755 "$TMPDIR/hcb-review"; } || exit 125 ;;
+  *) echo "drive: ROUNDS_ROOT is link, open or read, not '$ROUNDS_ROOT'" >&2; exit 125 ;;
 esac
 
 steps=()
@@ -99,6 +105,12 @@ for ((n = 0; n < count; n++)); do
   code=$?
   if [ "${words[0]}" = init ] && [ "$code" = 0 ]; then round=$(printf '%s' "$out" | jq -r '.round // empty'); fi
   if [ "$code" != 0 ] || [ "$n" = $((count - 1)) ]; then
+    # Only where the case names a fixture: a case refused before git must not reach the stub.
+    if [ -n "${STUB_ENVELOPE:-}" ]; then
+      scratch
+      head7=$(git rev-parse --short=7 HEAD 2>/dev/null) && out=${out//$head7/@head7}
+      base7=$(git rev-parse --short=7 base 2>/dev/null) && out=${out//$base7/@base7}
+    fi
     if printf '%s' "$out" | jq -e . >/dev/null 2>&1; then printf '%s' "$out" | jq -c .; else printf '%s\n' "$out"; fi
     exit "$code"
   fi

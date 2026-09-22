@@ -343,7 +343,7 @@ while IFS= read -r agent; do
       || err "$label: names review-round.mjs, but never as 'review-round.mjs\" <subcommand>' — the form the schema check reads"
     if printf '%s\n' "$subs" | grep -qx verdict; then
       schema_terms "$label" "$agent" "$plugin_dir/schemas/verdict.json" \
-        '.["$defs"].verdictName.enum[], .["$defs"].submitted.required[], (.["$defs"].submitted.properties | keys[]), (.["$defs"].evidenceSubmitted.properties | keys[])'
+        '.["$defs"].verdictName.enum[], .["$defs"].submitted.required[], (.["$defs"].submitted.properties | keys[]), (.["$defs"].evidenceSubmitted.properties | keys[]), .["$defs"].evidenceSubmitted.properties.side.enum[]'
     fi
     if printf '%s\n' "$subs" | grep -qx add; then
       schema_terms "$label" "$agent" "$plugin_dir/schemas/candidates.json" \

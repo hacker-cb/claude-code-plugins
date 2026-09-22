@@ -70,7 +70,8 @@ JSON
 ```
 
 - `evidence` lists every place you read to reach the verdict, the claim's own coordinate first;
-  add `"side": "base"` to an entry you read at the merge base.
+  an entry read at the merge base carries `"side": "base"`, one read on the tree the task
+  named `"side": "head"`, which is also what an entry without the field means.
 - `settle` goes with `unproven`, `refuted_because` with `refuted`, both in the task's language;
   quotes stay exactly as the code has them.
 - A refused submission names the field that is wrong: fix it and submit again. Only an accepted
