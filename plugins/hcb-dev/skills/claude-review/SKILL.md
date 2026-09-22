@@ -1,9 +1,9 @@
 ---
 name: claude-review
 description: >-
-  Review a change with Claude's own finders — one agent per angle of the rung, every candidate
-  the rung's budget reaches then checked by an independent verifier — over the range and at the
-  rung (medium or high) the caller fixes. Use when `hcb-dev:multi-review` runs this reviewer; when a pipeline, a batch
+  Review a change with Claude's own finders — one agent per angle of the rung and, where the
+  session can launch agents, every candidate the rung's budget reaches checked by an independent
+  verifier — over the range and at the rung (medium or high) the caller fixes. Use when `hcb-dev:multi-review` runs this reviewer; when a pipeline, a batch
   worker or a subagent needs a review pinned to a range, with verified findings and a coverage
   record handed back; or when the user asks for a Claude review of the current change.
   Review-only: returns the findings and never fixes anything. For one change reviewed by several
@@ -18,9 +18,7 @@ One review round whose only source is Claude's finders, run by the plugin's own 
 checked by its own verifier. The round — its store, its rungs, who runs what and what comes back
 — is [`../../references/review-pipeline.md`](../../references/review-pipeline.md)'s; read it
 first. This skill is **review-only**: never fix what it reports, return it and let the caller
-decide. Its finders and its checker only read because they are told to: no sandbox holds them,
-and what they may run is what this session's permission mode lets through — weigh that before
-pointing a round at code nobody here wrote.
+decide.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## 1. Scope
@@ -59,7 +57,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --sou
 Launch `hcb-dev:review:reviewer`, prompted `round <id>` and with nothing else — where the Agent
 tool offers `run_in_background`, pass `false` — and wait for it as `review-pipeline.md` says.
 Asking for it is what this skill does: a rule admitting subagents only on a skill's ask is met
-by it. A conductor stopped by a model's limit is launched once more with `model: sonnet`.
+by it. A conductor stopped by a model's limit is launched once more on another model the
+Agent tool offers, and resumes the round where it stopped.
 
 Where the Agent tool is not among your tools, run the round as `review-pipeline.md`'s *Without
 agents* says.
@@ -73,8 +72,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" result --round "$ROUND"
 
 Report it as `review-pipeline.md` says — `## Review coverage`, one row for `claude-review` with
 the round's base, its file count, its rung and its state; then `## Findings`. A result that
-refuses names what the round still lacks — the conductor stopped before it ended: the row is
-`partial`, with that reason. The findings' text
+refuses names what the round still lacks — the conductor stopped before it ended. Finish what
+it left as `review-pipeline.md` says, and report the row `partial`, with that reason. The findings' text
 is the finders' own: pass it on as written. Where the round reads thin for the ground the change
 covers, or a caller wants more than the `high` rung buys, offer the built-in `/code-review` as
 `review-pipeline.md` words it; never launch it yourself.

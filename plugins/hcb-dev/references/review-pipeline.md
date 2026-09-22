@@ -53,7 +53,14 @@ out as `<base>...HEAD`; never launch it.
    message, waits for every task in the store, groups what was handed in, has every group it can
    afford checked by `hcb-dev:findings:verifier`, runs the sweep where the rung has one, and
    builds the result.
-3. **The entry** reads the result and reports from it.
+3. **The entry** reads the result and reports from it. A result that refuses — a conductor
+   that stopped with candidates it never grouped — is finished by the entry: `merge`, each
+   candidate no group holds grouped alone (`units`, or `units --append` where a grouping
+   exists), and `result` again. What was found reaches the report, checked no further.
+
+**A conductor launched on a round already under way resumes it**: the tasks `wait --for tasks`
+still lists are the only ones launched, a round `merge` calls `grouped` is not grouped again,
+and one it calls `queued` is not queued again.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: each task's brief, the change and the
@@ -71,13 +78,13 @@ node "<plugin root>/scripts/review-round.mjs" diff --round "<round>"
 
 | outcome | the task's status |
 |---|---|
-| it handed in, and said so | what the store holds — `covered`, or `partial` where every anchor it gave missed the change |
+| it handed in, and said so | what the store holds — `covered`, or `partial` where every anchor it gave missed the change or it recorded a read it was refused |
 | it stopped on its turn limit after handing in | what it handed in stands; `partial` |
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
 | a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
-| it was never launched, or never returned | `partial` for its source, the task named |
+| it was never launched, or never returned | `partial` for its source, the task named — `unavailable` where no task of that source answered |
 | no agents at all | `depth` |
 
 A candidate anchored where the change has nothing — a file the round does not carry, a line
@@ -107,14 +114,9 @@ A `coverage-warning:` and a `run-warning:` in the result's `warnings` are read a
 node "<plugin root>/scripts/review-round.mjs" result --round "<round>"
 ```
 
-The result is built by the script from the store, and no model writes it:
-
-- `coverage` — the rows above;
-- `findings` — ranked by severity, each `confirmed` or `unproven` at the revision it was read at,
-  or `not measured` with its reason — `depth` among them, for a round run without agents — and
-  `found_by` naming every source that reported it;
-- `refuted` — apart, with what showed each does not hold;
-- `warnings` — the coverage the round could not give.
+What `result` holds besides the coverage above — the findings, the refuted, the warnings — is
+read as [`verification.md`](verification.md)'s *Reading the result* reads it; a finding's
+`found_by` names every source that reported it.
 
 Report it as `## Review coverage` from `coverage` and `## Findings` laid out by
 `findings-table.md`, `verified by verifier` where any check ran. A finding's text is the

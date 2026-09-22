@@ -96,7 +96,7 @@ const RANK = { Critical: 0, Important: 1, Minor: 2 };
 // Coverage states, the worst first: a source is as covered as its least covered task.
 const STATE_ORDER = ['unavailable', 'partial', 'depth', 'nothing', 'covered', 'n/a'];
 const worse = (a, b) => (STATE_ORDER.indexOf(a) <= STATE_ORDER.indexOf(b) ? a : b);
-const SOURCES = ['claude', 'security', 'codex'];
+const SOURCES = load('review-angles.json').$defs.task.properties.source.enum;
 const ROUND_DAYS = 7; // a round's store outlives its report by a week, then goes
 const WAIT_CAP_S = 540; // under the Bash tool's 10-minute ceiling, so one window is one call
 
@@ -212,6 +212,9 @@ function submission() {
 
 const relOk = (p) => typeof p === 'string' && p !== '' && !path.isAbsolute(p)
   && !p.includes('\0') && !p.split(/[\\/]/).includes('..');
+// A path git's line-based batches read as itself: they split on newlines, unquote a line
+// opening with `"` and strip a trailing CR. Any other path is asked about alone.
+const batchable = (p) => !/^"|\n|\r$/.test(p);
 const lineCount = (text) => {
   if (text === '') return 0;
   const n = text.split('\n').length;
@@ -288,16 +291,18 @@ function diffChunks(text) {
 function blobsAt(repo, rev, paths) {
   const out = new Map();
   const wanted = [...new Set(paths)].filter((p) => relOk(p));
-  const plain = wanted.filter((p) => !p.includes('\n'));
+  const plain = wanted.filter(batchable);
   if (plain.length) {
     const r = repo.git(['cat-file', '--batch-check=%(objectname) %(objecttype)'], `${plain.map((p) => `${rev}:${p}`).join('\n')}\n`);
     const lines = r.out.split('\n');
     plain.forEach((p, i) => {
-      const [oid, type] = (lines[i] || '').split(' ');
-      if (type === 'blob') out.set(p, oid);
+      // An answer is `<oid> <type>` exactly; a missing one repeats its question, whose
+      // path may hold any word — `blob` among them.
+      const m = /^([0-9a-f]{40,64}) blob$/.exec(lines[i] || '');
+      if (m) out.set(p, m[1]);
     });
   }
-  for (const p of wanted.filter((x) => x.includes('\n'))) {
+  for (const p of wanted.filter((x) => !batchable(x))) {
     const r = repo.git(['rev-parse', '--verify', '-q', `${rev}:${p}`]);
     const oid = r.out.trim();
     if (r.ok && repo.git(['cat-file', '-t', oid]).out.trim() === 'blob') out.set(p, oid);
@@ -312,10 +317,12 @@ function catalog() {
   let c;
   try { c = readJson(file); } catch (e) { cannot(`the angle catalog ${file} cannot be read: ${e.message}`); }
   const bad = validate(load, 'review-angles.json', null, c).map((e) => `${e.at || '/'} ${e.message}`);
-  // What the schema cannot say: a task's id is a task id, and every task a rung names exists.
-  for (const id of Object.keys(bad.length ? {} : c.tasks)) if (!TASK_ID.test(id)) bad.push(`task id '${id}'`);
-  for (const [name, r] of Object.entries(bad.length ? {} : c.rungs)) {
-    for (const id of [...r.tasks, ...(r.sweep ? [r.sweep] : [])]) if (!Object.hasOwn(c.tasks, id)) bad.push(`${name}: no task '${id}'`);
+  if (!bad.length) {
+    // What the schema cannot say: a task's id is a task id, and every task a rung names exists.
+    for (const id of Object.keys(c.tasks)) if (!TASK_ID.test(id)) bad.push(`task id '${id}'`);
+    for (const [name, r] of Object.entries(c.rungs)) {
+      for (const id of [...r.tasks, ...(r.sweep ? [r.sweep] : [])]) if (!Object.hasOwn(c.tasks, id)) bad.push(`${name}: no task '${id}'`);
+    }
   }
   if (bad.length) cannot(`the angle catalog ${file} is malformed: ${bad.join('; ')}`);
   return c;
@@ -445,7 +452,10 @@ function init() {
     if (!e.isDirectory() || !ROUND_ID.test(e.name)) continue;
     let opened = null;
     try { opened = statSync(path.join(root, e.name, 'request.json')).mtimeMs; } catch { opened = null; }
-    if (opened !== null && Date.now() - opened > ROUND_DAYS * 86_400_000) rmSync(path.join(root, e.name), { recursive: true, force: true });
+    // A round that will not go stays: pruning never stops the next one from opening.
+    if (opened !== null && Date.now() - opened > ROUND_DAYS * 86_400_000) {
+      try { rmSync(path.join(root, e.name), { recursive: true, force: true }); } catch { /* left for a later init */ }
+    }
   }
   const head = repo.git(['rev-parse', '--verify', '-q', 'HEAD^{commit}']);
   if (!head.ok) cannot('HEAD does not name a commit');
@@ -475,7 +485,7 @@ function init() {
     // are the user's configuration, and none of them may reach the text a finder reads.
     const listed = repo.git(['diff', '--raw', '-z', '--no-abbrev', mergeBase]);
     const diff = repo.git(['-c', 'core.quotePath=false', 'diff', '--no-color', '--no-ext-diff', '--no-textconv',
-      '--src-prefix=a/', '--dst-prefix=b/', mergeBase]);
+      '--submodule=short', '--src-prefix=a/', '--dst-prefix=b/', mergeBase]);
     const untracked = repo.git(['ls-files', '--others', '--exclude-standard', '-z']);
     if (!listed.ok || !diff.ok || !untracked.ok) cannot(`git could not diff ${mergeBase.slice(0, 7)} against the working tree`);
     const tokens = listed.out.split('\0');
@@ -493,10 +503,7 @@ function init() {
     for (const f of files.filter((x) => x.status !== 'D')) {
       let st = null;
       try { st = lstatSync(path.join(repo.top, f.path)); } catch { st = null; }
-      // The batch reads one path per line and unquotes a line opening with `"` and strips
-      // a trailing CR, so only a path none of that touches travels in it.
-      const plain = !/^"|\n|\r$/.test(f.path);
-      if (st?.isFile() && plain) regular.push(f.path);
+      if (st?.isFile() && batchable(f.path)) regular.push(f.path);
       else if (st?.isFile() || st?.isSymbolicLink()) heads.set(f.path, blobAt(repo, { mode: 'round' }, f.path, 'head'));
     }
     const h = regular.length ? repo.git(['hash-object', '--stdin-paths'], `${regular.join('\n')}\n`) : null;
@@ -619,8 +626,12 @@ function ruleFiles(repo, files) {
     }
   };
   const dirs = new Set(['.']);
+  // The directories a file lands in and, for a move, the ones it left: a rule there may
+  // govern removing it as much as one here governs adding it.
   for (const f of files) {
-    for (let dir = path.posix.dirname(f.path); dir !== '.' && dir !== '/'; dir = path.posix.dirname(dir)) dirs.add(dir);
+    for (const at of [f.path, f.from].filter(Boolean)) {
+      for (let dir = path.posix.dirname(at); dir !== '.' && dir !== '/'; dir = path.posix.dirname(dir)) dirs.add(dir);
+    }
   }
   for (const dir of dirs) {
     const at = dir === '.' ? '' : `${dir}/`;
@@ -720,6 +731,8 @@ function status() {
   const prior = statusOf(round.dir, id);
   const planned = plannedTasks(planOf(round)).find((x) => x.task === id);
   if (!prior && !planned) cannot(`${id} is neither planned nor submitted in round ${round.id}`);
+  // A model alone is a fact about an answer: before one, it would record a loss nobody meant.
+  if (!prior && state === undefined) cannot(`${id} has not answered yet — record its model once it has`);
   const at = new Date().toISOString();
   const base = prior || { task: id, source: planned.source, state: 'unavailable', candidates: 0, rejected: 0, notes: [] };
   const next = {
@@ -744,6 +757,11 @@ function add() {
   const planned = plannedTasks(p).find((x) => x.task === task);
   if (planned && planned.source !== source) {
     refuse([{ at: '', message: `task '${task}' belongs to source '${planned.source}' in this round's plan, not to '${source}'` }], { task });
+  }
+  // A source the plan gave tasks hands in under those tasks: another name would escape the
+  // limit its rung bought.
+  if (!planned && plannedTasks(p).some((x) => x.source === source)) {
+    refuse([{ at: '', message: `source '${source}' hands in under its planned tasks (${plannedTasks(p).filter((x) => x.source === source).map((x) => x.task).join(', ')}), not '${task}'` }], { task });
   }
   // Grouping closes collection: a candidate arriving after `units` would sit in no group,
   // and the result reads groups — it would vanish without anybody having dropped it. The
@@ -801,7 +819,8 @@ function add() {
   if (!claimed) {
     refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
   }
-  writeJson(path.join(round.dir, 'sources', `${task}.status.json`), {
+  // Claimed, not written over: a loss the conductor recorded while this ran stands.
+  claimJson(path.join(round.dir, 'sources', `${task}.status.json`), {
     task, source, state, candidates: kept.length, rejected: rejected.length, notes, at: new Date().toISOString(),
   });
   answer({ accepted: true, task, source, stored: kept.length, rejected, unreachable, state, notes });
@@ -828,6 +847,8 @@ function merge() {
   answer({
     read: true,
     round: round.id,
+    grouped: existsSync(path.join(round.dir, 'units.json')),
+    queued: existsSync(path.join(round.dir, 'queue.json')),
     candidates: candidates.filter(of),
     rejected: rejected.filter(of),
     tasks: statuses(round.dir).filter(of),
@@ -923,7 +944,7 @@ function queue() {
   // `--append` queues the groups an earlier queue never saw, and keeps what it recorded.
   const append = opts['--append'] === true;
   if (append && !existsSync(qf)) cannot(`round ${round.id} has no queue to add to — run queue without --append first`);
-  const prior = append ? readJson(qf) : null;
+  const prior = append ? readJson(qf) : { queue: [], reused: [], budget_cut: [], unreachable: [] };
   // Digits or no flag at all: `Number` reads `Infinity` and `1e3` as numbers, and the
   // sentinel for "no budget" is the flag's absence rather than a word a caller can pass.
   if (opts['--budget'] !== undefined && !/^[0-9]+$/.test(opts['--budget'])) die('--budget must be a whole number');
@@ -932,10 +953,10 @@ function queue() {
   const p = planOf(round);
   let budget = Infinity;
   if (opts['--budget'] !== undefined) budget = Number(opts['--budget']);
-  else if (p) budget = Math.max(0, p.budget - (prior ? prior.queue.length : 0));
+  else if (p) budget = Math.max(0, p.budget - prior.queue.length);
   // A round run without agents checks nothing: its queue only lets carried verdicts stand.
   if (p?.depth) budget = 0;
-  const seen = new Set(prior ? [...prior.queue, ...prior.reused, ...prior.budget_cut, ...prior.unreachable] : []);
+  const seen = new Set([...prior.queue, ...prior.reused, ...prior.budget_cut, ...prior.unreachable]);
   const all = readJson(f).units.filter((u) => !seen.has(u.unit));
   const repo = all.some((u) => u.carried.length) ? checkoutOf(round) : null;
   // A queue starts verification over: a verdict left from an earlier queue answered a
@@ -972,9 +993,10 @@ function queue() {
   } else if (append) {
     // What the budget cuts from an appended queue is never a Critical: the budget was
     // spent on groups the first queue ranked without knowing it existed.
-    const rest = order.filter((u) => !critical.some((c) => c.unit === u));
-    order = [...critical.map((c) => c.unit), ...rest.slice(0, budget)];
-    cut = rest.slice(budget);
+    // `open` is ranked, so the Critical groups lead it; each is charged to the budget.
+    const room = Math.max(0, budget - critical.length);
+    cut = order.slice(critical.length + room);
+    order = order.slice(0, critical.length + room);
   } else if (critical.length > budget) {
     // Every Critical is checked before a budget applies at all; where they alone do not
     // fit, none of them is ruled unverified — the caller stops and says so.
@@ -986,14 +1008,12 @@ function queue() {
     cut = order.slice(budget);
     order = order.slice(0, budget);
   }
-  const before = prior || { queue: [], reused: [], budget_cut: [], unreachable: [], stop: false, reason: null };
+  // What each call stopped on is its answer's; the file keeps what later calls read.
   const q = {
-    queue: [...before.queue, ...order],
-    reused: [...before.reused, ...reused],
-    budget_cut: [...before.budget_cut, ...cut],
-    unreachable: [...before.unreachable, ...unreachable],
-    stop: before.stop || stop,
-    reason: [before.reason, reason].filter(Boolean).join('; ') || null,
+    queue: [...prior.queue, ...order],
+    reused: [...prior.reused, ...reused],
+    budget_cut: [...prior.budget_cut, ...cut],
+    unreachable: [...prior.unreachable, ...unreachable],
     latest: order,
   };
   writeJson(qf, q);
@@ -1158,13 +1178,19 @@ function result() {
       if (!bySource.has(source)) bySource.set(source, { source, state: null, tasks: 0, candidates: 0, rejected: 0, notes: [], missing: [], models: [] });
       return bySource.get(source);
     };
+    // Counts come from what each task handed in, states from its status: a loss recorded
+    // beside a submission changes how covered the task is, not what it found.
+    const handed = new Map(sourceFiles(round.dir).map((f) => {
+      const sub = readJson(path.join(round.dir, 'sources', f));
+      return [sub.task, sub];
+    }));
     const answers = statuses(round.dir);
     for (const s of answers) {
       const row = rowOf(s.source);
       row.state = row.state === null ? s.state : worse(row.state, s.state);
       row.tasks += 1;
-      row.candidates += s.candidates;
-      row.rejected += s.rejected;
+      row.candidates += handed.get(s.task)?.candidates.length ?? 0;
+      row.rejected += handed.get(s.task)?.rejected.length ?? 0;
       row.notes.push(...(s.notes || []));
       if (s.model) row.models.push(`${s.task}: ${s.model}`);
     }
@@ -1197,13 +1223,14 @@ function result() {
   const drifted = new Set();
   const headBlob = new Map((req.files || []).map((f) => [f.path, f.blob_head]));
   const verdicts = new Map(all.map((u) => [u.unit, verdictOf(round.dir, u.unit)]));
-  // What a verdict read on the working tree, where the round's drift is judged: the files
-  // a fresh check read, the ones a reused verdict read having been judged when it stood.
-  const readOnHead = (v) => (req.mode === 'round' && v && !v.reused ? v.evidence.filter((e) => e.side === 'head') : []);
+  // What each verdict read on the working tree, where the round's drift is judged: the
+  // files a fresh check read, the ones a reused verdict read having been judged when it stood.
+  const onHead = new Map([...verdicts].map(([unit, v]) => [unit,
+    req.mode === 'round' && v && !v.reused ? v.evidence.filter((e) => e.side === 'head') : []]));
   // What the finders read of a file: its blob at init where the diff lists it, and
   // otherwise the merge base's — a tracked file the diff does not list stood as the merge
   // base has it. An untracked one was never theirs to read.
-  const elsewhere = [...verdicts.values()].flatMap(readOnHead).map((e) => e.path)
+  const elsewhere = [...onHead.values()].flat().map((e) => e.path)
     .filter((f) => !headBlob.has(f) && !(req.untracked || []).includes(f));
   const atBase = elsewhere.length ? blobsAt(checkoutOf(round), req.base.merge_base, elsewhere) : new Map();
   const openedWith = (file) => (headBlob.has(file) ? headBlob.get(file) : atBase.get(file));
@@ -1224,7 +1251,7 @@ function result() {
       findings.push({ ...row, verified: 'not measured', reason });
       continue;
     }
-    for (const e of readOnHead(v)) {
+    for (const e of onHead.get(u.unit)) {
       const was = openedWith(e.path);
       if (was !== undefined && was !== e.blob) drifted.add(e.path);
     }

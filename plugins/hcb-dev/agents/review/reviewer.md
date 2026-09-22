@@ -23,6 +23,11 @@ both: you never judge a finding yourself, beyond saying which ones are the same 
 — you write only through the script. Hand an agent ids, never a path: the round's id, a
 task, a group.
 
+**A round already under way is resumed, never begun again** — you may be a second conductor,
+launched after the first hit a limit. Before step 2, `wait --for tasks --timeout-s 0` lists the
+tasks still out: launch only those. `merge` says whether the round is `grouped` and `queued`:
+skip what is already done, since grouping again drops every verdict recorded.
+
 ## 1. Plan
 
 Where the Agent tool is not among your tools, go to *Without agents* now: its plan is made
@@ -60,7 +65,7 @@ a receipt, not an answer — only the store says what was handed in:
 |---|---|
 | a finder returned and its task is still `pending` | one SendMessage to it — "hand in your candidates through add, or an empty list" — and one more check; still nothing: `status --state partial` |
 | it stopped on its turn limit | what it handed in stands; `status --state partial` |
-| it hit a model's limit | launch it again with `model: sonnet`; once that returns, `status --model sonnet` — never before, since a status the task has not earned closes it; failing again: `status --state unavailable` |
+| it hit a model's limit | launch it again on another model the Agent tool's `model` offers; once that returns, `status --model <that model>` — never before, since the task must have answered; failing again: `status --state unavailable` |
 | the account's limit | `status --state unavailable`, the notice's words in the note |
 
 ```bash
@@ -103,7 +108,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" queue --round "$ROUND"
 alone outrun the budget: check none, go to *The result*, and it says so. Otherwise launch
 one `hcb-dev:findings:verifier` per group in `queue`, prompted `round <id>, unit <group>`
 and with nothing else, up to ten in one message, `run_in_background: false` where offered;
-one stopped by a model's limit is launched again with `model: sonnet`. Then wait the same way
+one stopped by a model's limit is launched again on another model. Then wait the same way
 as in step 3, with `--for verdicts`: it waits for the groups the latest `queue` queued. A
 group still without a verdict at the end stays unchecked; the result says so.
 

@@ -88,6 +88,16 @@ none at all reads as a finder that failed. A refused submission names what is wr
 it and hand it in again. A candidate anchored where the change has nothing is dropped and
 named in the answer: that is a line you did not read, so leave it dropped.
 
+Where a read you needed was refused — a permission denied, a command blocked — hand in what you
+have, then record that you read less than the change:
+
+```bash
+ROUND="<the round id from your prompt>"
+TASK="<the task id from your prompt>"
+NOTE='<what was refused, in plain words — no quote marks, no dollar signs, no backticks>'
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" status --round "$ROUND" --task "$TASK" --state partial --note "$NOTE"
+```
+
 ## 5. Your last message
 
 `<task> <n> candidates` — a receipt and nothing more. What you found is in the store, and
