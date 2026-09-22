@@ -59,8 +59,9 @@ stands on the reading this session can defend. Correcting the ledger is the mast
 EPIC="<the number the invocation named, or the role's own>"
 DEEP="<the issues of ONE repository: the epic, and the return's issue where it shares that repository>"
 REPO="<owner/name, where the epic lives outside this checkout's>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC" ${REPO:+--repo "$REPO"}
-node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP" ${REPO:+--repo "$REPO"}
+HOST="<the host it lives on, where that is not the one the CLI answers for by default>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
+node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
 ```
 
 One repository a call: a tracking epic's batches often return in another, and a number read
@@ -94,6 +95,7 @@ SLICE="<the slice's branch>"
 # Where THIS slice publishes — the checkout may stand on another branch, and in a fork workflow
 # the two differ. `remotes.push` is a remote's NAME, and a remote may push somewhere else again.
 PUSH_REMOTE="$(git config --get "branch.$SLICE.pushRemote" || git config --get remote.pushDefault \
+  || git config --get "branch.$SLICE.remote" \
   || node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" | jq -r '.remotes.push // ""')"
 PUSH_URL="$(git remote get-url --push "$PUSH_REMOTE")"
 # GitHub — `--head` matches the branch NAME across every head repository, forks included
