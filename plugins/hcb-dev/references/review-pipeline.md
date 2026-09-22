@@ -9,21 +9,10 @@ findings reach a reader in is [`findings-table.md`](findings-table.md)'s.
 
 A round reviews one change: base → working tree, every tracked file, as it stood when `init`
 opened it. Commits and uncommitted edits are both in it; an untracked file is not, and is named
-in a `coverage-warning` with `git add -N <path>` as the way in. Everything the round holds lives
-in a store outside the repository that only `review-round.mjs` writes, addressed by the id
-`init` prints — never by a path.
-
-```bash
-node "<plugin root>/scripts/review-round.mjs" init --mode round --base "<ref>" --rung "<rung>" --sources "<sources>" --language "<tag>"
-```
-
-- `--sources` — who reviews: `claude`, Claude's finders, one agent per angle of the rung.
-- `--language` — the language the report is written in; every finding's text is written in it
-  and reaches the report as written.
-- `--narrow "<a path, or a focus>"` — where the caller narrowed the review; it travels to every
-  finder in prose.
-- Candidates the caller already holds — noticed while working, carried from an earlier pass —
-  go in before the round runs, `add --source noticed`, each with its verdict where one was made.
+in a `coverage-warning` with `git add -N <path>` as the way in — the change goes to Codex's model
+provider too, where Codex is a source, and what nobody added stays out of it. Everything the
+round holds lives in a store outside the repository that only `review-round.mjs` writes,
+addressed by the id `init` prints — never by a path.
 
 **While a round runs, the tree does not change.** A verdict reads the working tree, and one that
 read a file edited since `init` is flagged in the result as read on a tree the finders did not
@@ -33,46 +22,68 @@ see.
 checker may run is what the session's permission mode lets through. Whether a round runs over
 code nobody here wrote is the user's call.
 
-## The rung
+## Running one
 
-`medium` unless the caller names `high`, and an explicit word from the caller wins. `high` buys
-breadth — more angles, more candidates per angle, a larger budget of checks, and a sweep for what
-the first pass missed. The rung's angles and numbers are data in the plugin's angle catalog, read
-by `plan`, never chosen by the one running the round. For more than `high` buys, offer the user
-the built-in `/code-review` at `xhigh`, `max` or `ultra`, typed by them, with the range spelled
-out as `<base>...HEAD`; never launch it.
+1. **Scope.** The base is the one a caller hands down, refreshed, or what
+   [`base-resolution.md`](base-resolution.md) resolves; it must share history with `HEAD`, and
+   where none resolves the round does not open. The working tree alone takes `HEAD`. The rung is
+   the caller's, `medium` where none is named. The language is the one the report is written in.
+2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
+   the rung; `codex`, one pass of the Codex CLI at the rung's level for it — and a narrowing,
+   `--narrow "<a path, or a focus>"`, where the caller gave one. Read the answer's `warnings`
+   before anything else: an untracked file named there is outside the review — say so, and offer
+   `git add -N <path>`, never run it; a round with nothing to review says so, and ends there.
 
-## Who runs it
+   ```bash
+   node "<plugin root>/scripts/review-round.mjs" init --mode round --base "<base>" --rung "<rung>" --sources "<sources>" --language "<tag>"
+   node "<plugin root>/scripts/review-round.mjs" add --round "<round>" --source noticed < "<candidates JSON>"
+   ```
 
-1. **The entry** opens the round, hands in what it already holds, launches
-   `hcb-dev:review:reviewer` prompted `round <id>` alone — `run_in_background: false` where the
-   Agent tool offers it — and waits for it: a subagent always reports its end. Where the call
-   comes back at once, the conductor running in the background, wait for its completion notice;
-   the result is never read while the conductor runs.
-2. **The conductor** plans the round, launches one `hcb-dev:review:finder` per task in a single
-   message, waits for every task in the store, groups what was handed in, has every group it can
-   afford checked by `hcb-dev:findings:verifier`, runs the sweep where the rung has one, and
-   builds the result.
-3. **The entry** reads the result and reports from it. A result that refuses — a conductor
-   that stopped with candidates it never grouped — is finished by the entry: `merge`, each
-   candidate no group holds grouped alone (`units`, or `units --append` where a grouping
-   exists), and `result` again. What was found reaches the report, checked no further.
+   The second line is for candidates the caller already holds — noticed while working, carried
+   from an earlier pass — each with its verdict where one was made.
+3. **Launch the conductor**, `hcb-dev:review:reviewer`, prompted `round <id>` alone —
+   `run_in_background: false` where the Agent tool offers it — and wait for it: a subagent
+   always reports its end. Where the call comes back at once, the conductor running in the
+   background, wait for its completion notice; the result is never read while it runs. A
+   conductor stopped by a model's limit is launched once more on another model the Agent tool
+   offers, and resumes the round. Asking for it is the entry's to do: a rule admitting subagents
+   only on a skill's ask is met by it.
+4. **Read the result** and report from it — *Reading the result* below. One that refuses — a
+   conductor that stopped with candidates it never grouped — is finished by the entry: `merge`,
+   each candidate no group holds grouped alone (`units`, or `units --append` where a grouping
+   exists), and `result` again. What was found reaches the report, checked no further, and the
+   row reads `partial` with that reason.
 
-**A conductor launched on a round already under way resumes it**: the tasks `wait --for tasks`
-still lists are the only ones launched, a round `merge` calls `grouped` is not grouped again,
-and one it calls `queued` is not queued again.
+The conductor plans the round, starts Codex as a background process and one
+`hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups
+what was handed in, has every group it can afford checked by `hcb-dev:findings:verifier`, runs
+the sweep where the rung has one, and builds the result. **A conductor launched on a round
+already under way resumes it**: the tasks `wait --for tasks` still lists are the only ones
+started, a round `merge` calls `grouped` is not grouped again, and one it calls `queued` is not
+queued again.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
-round's tasks itself instead, on a plan made with `--depth`: each task's brief, the change and the
-code as the brief says, the candidates handed in through `add`, then `merge`, `units`, `queue` —
-which checks nothing here, and lets a carried verdict stand — and `result`. Nothing is checked,
-and the result says so.
+round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, in the
+background, being a process; then each finder task's brief, the change and the code as the brief
+says, the candidates handed in through `add`; then `wait` until the Codex task has answered,
+`merge`, `units`, `queue` — which checks nothing here, and lets a carried verdict stand — and
+`result`. Nothing is checked, and the result says so.
 
 ```bash
 node "<plugin root>/scripts/review-round.mjs" plan --round "<round>" --depth
+node "<plugin root>/scripts/review-round.mjs" codex --round "<round>"
 node "<plugin root>/scripts/review-round.mjs" brief --round "<round>" --task "<task>"
-node "<plugin root>/scripts/review-round.mjs" diff --round "<round>"
+node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 ```
+
+## The rung
+
+`high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger
+budget of checks, and a sweep for what the first pass missed. The rung's angles and numbers are
+data in the plugin's angle catalog, read by `plan`, never chosen by the one running the round;
+Codex's model and its ladder come from Codex's own catalog. For more than `high` buys, offer the
+user the built-in `/code-review` at `xhigh`, `max` or `ultra`, typed by them, with the range
+spelled out as `<base>...HEAD`; never launch it.
 
 ## What an agent's outcome becomes
 
@@ -83,9 +94,10 @@ node "<plugin root>/scripts/review-round.mjs" diff --round "<round>"
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
+| Codex answered nothing, or not in time | `unavailable`, the log's last lines or the watchdog in the status |
 | a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
 | it was never launched, or never returned | `partial` for its source, the task named — `unavailable` where no task of that source answered |
-| no agents at all | `depth` |
+| no agents at all | `depth` for the finders' source |
 
 A candidate anchored where the change has nothing — a file the round does not carry, a line
 past a file's end, an untracked file — is dropped and named, and its task carries a
@@ -115,9 +127,10 @@ node "<plugin root>/scripts/review-round.mjs" result --round "<round>"
 ```
 
 What `result` holds besides the coverage above — the findings, the refuted, the warnings — is
-read as [`verification.md`](verification.md)'s *Reading the result* reads it; a finding's
-`found_by` names every source that reported it.
+read as `verification.md`'s *Reading the result* reads it; a finding's `found_by` names every
+source that reported it, and Codex's row names the model and level it ran at.
 
-Report it as `## Review coverage` from `coverage` and `## Findings` laid out by
-`findings-table.md`, `verified by verifier` where any check ran. A finding's text is the
-finder's, in the round's language: pass it on as written.
+Report it as `## Review coverage` from `coverage` — a row per source, with the round's base, its
+file count and its rung — and `## Findings` laid out by `findings-table.md`, `verified by
+verifier` where any check ran. A finding's text is its finder's, in the round's language: pass
+it on as written.

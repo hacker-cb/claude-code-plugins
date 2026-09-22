@@ -19,6 +19,8 @@
 #   @empty                 a word: the empty string, which a manifest cannot write
 #   @lit:<text>            a word: <text> with %20 read as a space and %25 as %, for a
 #                          path a manifest's word splitting would cut
+#   @show <name>           a step: prints what a stub kept beside its marker as <name> —
+#                          the codex stub's codex-stdin, codex-schema, codex-argv
 #   INSIDE_REPO=1          environment: TMPDIR is put inside the scratch repository
 #   ROUNDS_ROOT=<kind>     environment: $TMPDIR/hcb-review is there before the case — as a
 #                          `link` to another directory, a directory anyone can write
@@ -36,6 +38,8 @@ root=$(cd "$here/../../.." && pwd)
 script="$root/plugins/hcb-dev/scripts/review-round.mjs"
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/review-round-suite.XXXXXX") || exit 125
 trap 'rm -rf "$tmp"' EXIT
+# What a stub kept beside the marker belongs to the case that made it, not to the next.
+rm -f "${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}".codex-*
 
 repo=""
 # The scratch repository is the git stub's to build, on the first git call of the case —
@@ -83,6 +87,14 @@ for ((n = 0; n < count; n++)); do
   if [ "${words[0]}" = "@write" ]; then
     scratch
     printf '%s\n' "${words[2]}" > "$repo/${words[1]}"
+    continue
+  fi
+  if [ "${words[0]}" = "@show" ]; then
+    kept="${STUB_MARKER_FILE:?}.${words[1]}"
+    [ -f "$kept" ] || { echo "drive: nothing kept as ${words[1]}"; exit 1; }
+    # JSON compacted, as the answers are, so a case can quote a whole array on one line.
+    if jq -e . "$kept" >/dev/null 2>&1; then jq -c . "$kept"; else cat "$kept"; fi
+    [ "$n" = $((count - 1)) ] && exit 0
     continue
   fi
   if [ "${words[0]}" = "@store" ]; then

@@ -5,48 +5,132 @@
   "description": "data/review-angles.json: each rung's tasks, its candidate limit and check budget, and every task's source, kind, category and instructions. review-round.mjs plan and brief read it.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["rungs", "tasks"],
+  "required": [
+    "rungs",
+    "tasks"
+  ],
   "properties": {
     "rungs": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["medium", "high"],
+      "required": [
+        "medium",
+        "high"
+      ],
       "properties": {
-        "medium": { "$ref": "#/$defs/rung" },
-        "high": { "$ref": "#/$defs/rung" }
+        "medium": {
+          "$ref": "#/$defs/rung"
+        },
+        "high": {
+          "$ref": "#/$defs/rung"
+        }
       }
     },
     "tasks": {
       "type": "object",
-      "additionalProperties": { "$ref": "#/$defs/task" }
+      "additionalProperties": {
+        "$ref": "#/$defs/task"
+      }
     }
   },
   "$defs": {
     "rung": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["limit", "budget", "tasks", "sweep"],
+      "required": [
+        "limit",
+        "budget",
+        "tasks",
+        "sweep"
+      ],
       "properties": {
-        "limit": { "type": "integer", "minimum": 1 },
-        "budget": { "type": "integer", "minimum": 1 },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "budget": {
+          "type": "integer",
+          "minimum": 1
+        },
         "tasks": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,39}$" }
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+          }
         },
-        "sweep": { "type": ["string", "null"] }
+        "sweep": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "codex": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "effort",
+            "limit",
+            "minutes"
+          ],
+          "properties": {
+            "effort": {
+              "type": "string",
+              "minLength": 1
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "minutes": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
       }
     },
     "task": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["source", "kind", "category", "text"],
+      "required": [
+        "source",
+        "kind",
+        "category",
+        "text"
+      ],
       "properties": {
-        "source": { "type": "string", "enum": ["claude", "security", "codex"] },
-        "kind": { "type": "string", "enum": ["finder", "sweep", "codex"] },
-        "category": { "$ref": "candidates.json#/$defs/candidate/properties/category" },
-        "reads": { "type": "string", "enum": ["rules", "listed"] },
-        "text": { "type": "string", "minLength": 1 }
+        "source": {
+          "type": "string",
+          "enum": [
+            "claude",
+            "security",
+            "codex"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "finder",
+            "sweep",
+            "codex"
+          ]
+        },
+        "category": {
+          "$ref": "candidates.json#/$defs/candidate/properties/category"
+        },
+        "reads": {
+          "type": "string",
+          "enum": [
+            "rules",
+            "listed"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }

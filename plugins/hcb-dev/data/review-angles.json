@@ -3,17 +3,44 @@
     "medium": {
       "limit": 6,
       "budget": 15,
-      "tasks": ["line-by-line", "removed-behavior", "call-tracing", "reuse", "simplification", "project-rules"],
-      "sweep": null
+      "tasks": [
+        "line-by-line",
+        "removed-behavior",
+        "call-tracing",
+        "reuse",
+        "simplification",
+        "project-rules",
+        "codex"
+      ],
+      "sweep": null,
+      "codex": {
+        "effort": "high",
+        "limit": 12,
+        "minutes": 25
+      }
     },
     "high": {
       "limit": 8,
       "budget": 30,
       "tasks": [
-        "line-by-line", "removed-behavior", "call-tracing", "language-traps", "wrappers",
-        "reuse", "simplification", "efficiency", "altitude", "project-rules"
+        "line-by-line",
+        "removed-behavior",
+        "call-tracing",
+        "language-traps",
+        "wrappers",
+        "reuse",
+        "simplification",
+        "efficiency",
+        "altitude",
+        "project-rules",
+        "codex"
       ],
-      "sweep": "sweep"
+      "sweep": "sweep",
+      "codex": {
+        "effort": "xhigh",
+        "limit": 20,
+        "minutes": 45
+      }
     }
   },
   "tasks": {
@@ -84,6 +111,12 @@
       "category": "correctness",
       "reads": "listed",
       "text": "You come after the first pass, and the brief lists what it already found. Read the diff and the functions around it again for defects that are NOT on that list, and only those — never restate or re-check a listed one. What a first pass most often misses: code moved or extracted that lost a guard or an anchor on the way; a value computed once that should be computed per call; a lock, a transaction or a cleanup that now covers less; a check with a side effect; set-up without its matching tear-down; a default that flipped. Submit an empty list when nothing new stands."
+    },
+    "codex": {
+      "source": "codex",
+      "kind": "codex",
+      "category": "correctness",
+      "text": "Review the change below for defects it introduces or leaves standing: a condition that is wrong for some input, a value used where it can be absent, a guarantee the old code gave that the new code dropped, a caller the change breaks, input that reaches a command, a query or a path unchecked, work repeated for nothing, code that does again what the repository already does, a rule the repository's own CLAUDE.md or .claude/rules state that a line breaks. Read the code around each hunk and whatever it calls or is called by before you call anything a defect; the code as it was is `git show <merge base>:<path>`. Only read — run nothing the change touches. A candidate is a defect whose failure you can name: the input or state, and the wrong result or the cost. Hand in the half-believed ones too — an independent check decides each — and nothing that is only a taste."
     }
   }
 }

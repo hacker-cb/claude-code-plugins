@@ -80,25 +80,25 @@ Three things meet for each one, all inside the suite:
   topology where a checkout's git directory and its common directory are different
   paths — and removes it afterwards.
 - `stub/<command>` — the stand-in engine, named for the command it replaces. It
-  prints the named envelope, and on request records the argv it was given, writes to
-  stderr, checks the boundary it was launched inside, or exits non-zero — so a case
-  can assert what the run did, not only what it returned. What a stub implements is
+  prints the named envelope, and on request records the argv it was given, keeps what
+  it was handed on stdin, writes to stderr, or exits non-zero — so a case can assert
+  what the run did, not only what it returned. What a stub implements is
   its own suite's business:
   [`suites/pr-state/stub/gh`](suites/pr-state/stub/gh) answers on stdout because that
   script reads it there, while a script that takes an output path needs a stub that
   writes to it.
 
-The exit statuses are the contract callers read: **0** a review, with a `scope:`
-record; **1** a failure, quoted; **3** a reviewer that could not run. A fourth, **2**,
-sits outside that contract on purpose — it means the script was *called* wrong (a flag
-without its value, an argument it does not know) and never reached an engine at all,
-which is a different thing from a run that reached one and failed. Cases pin it too,
-since an argument guard is what keeps `--narrow` from smuggling in a flag.
+The exit statuses are each script's contract with its callers, written in its header,
+and every case pins one. **2** means the same everywhere: the script was *called* wrong
+(a flag without its value, an argument it does not know) and never reached what it
+reads, which is a different thing from a call that reached it and could not answer.
+Cases pin it too, since an argument guard is what keeps a value from smuggling in a
+flag.
 
 What each case must *print* is written out per row rather than derived from the
-status, because every failure opens with the same line: the status implies its line,
-and checking one against the other asserts nothing. The advice underneath is what
-separates the branches, so that is what the fragments hold.
+status, because every refusal opens the same way: the status implies its opening, and
+checking one against the other asserts nothing. The reason underneath is what separates
+the branches, so that is what the fragments hold.
 
 ## Where the envelopes come from
 

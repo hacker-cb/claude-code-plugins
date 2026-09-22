@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Stands in for the codex CLI, for review-round.mjs's codex subcommand.
+#
+#   codex debug models   prints a catalog: gpt-test (low → xhigh) and gpt-small (low,
+#                        medium) listed, gpt-test first by priority, and gpt-hidden unlisted;
+#                        CODEX_NOLIST=1 lists none of them
+#   codex exec … -o F -  keeps what it was handed beside the marker — stdin as .codex-stdin,
+#                        the --output-schema file as .codex-schema, argv as .codex-argv — then
+#                        writes inputs/$CODEX_ANSWER to F. CODEX_SLEEP=<s> waits first;
+#                        CODEX_EMPTY=1 writes nothing and prints a usage-limit notice.
+set -u
+here=$(cd "$(dirname "$0")/.." && pwd)
+mark="${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}"
+if [ "${1:-}" = debug ] && [ "${2:-}" = models ] && [ -n "${CODEX_NOLIST:-}" ]; then
+  echo '{"models": [{"slug": "gpt-hidden", "visibility": "hide", "priority": 0, "supported_reasoning_levels": [{"effort": "high"}]}]}'
+  exit 0
+fi
+if [ "${1:-}" = debug ] && [ "${2:-}" = models ]; then
+  cat <<'JSON'
+{"models": [
+  {"slug": "gpt-small", "visibility": "list", "priority": 2,
+   "supported_reasoning_levels": [{"effort": "low"}, {"effort": "medium"}]},
+  {"slug": "gpt-test", "visibility": "list", "priority": 1,
+   "supported_reasoning_levels": [{"effort": "low"}, {"effort": "medium"}, {"effort": "high"}, {"effort": "xhigh"}]},
+  {"slug": "gpt-hidden", "visibility": "hide", "priority": 0,
+   "supported_reasoning_levels": [{"effort": "high"}]}
+]}
+JSON
+  exit 0
+fi
+[ "${1:-}" = exec ] || { echo "codex stub: '$*' is not a call this stub answers" >&2; exit 64; }
+printf '%s\n' "$@" > "$mark.codex-argv"
+out="" schema=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    --output-schema) schema="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+cat > "$mark.codex-stdin"
+[ -n "$schema" ] && cp "$schema" "$mark.codex-schema"
+[ -n "${CODEX_SLEEP:-}" ] && sleep "$CODEX_SLEEP"
+if [ -n "${CODEX_EMPTY:-}" ]; then
+  echo "ERROR: You've hit your usage limit. Try again later." >&2
+  exit 1
+fi
+[ -n "$out" ] && cp "$here/inputs/${CODEX_ANSWER:?a case names its answer}" "$out"
+echo "codex stub: answered"
+exit 0

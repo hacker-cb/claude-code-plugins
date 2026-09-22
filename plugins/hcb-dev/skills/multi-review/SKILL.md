@@ -47,19 +47,17 @@ before launching anyone.
 **Range.** Base → working tree, so one pass covers the branch's commits together with the
 uncommitted edits sitting on top of them.
 
-**Risk** decides effort in the next step. Always name the level — never "the middle", which
-lands on a different rung per reviewer, and never the wording it arrived in: "maximum effort"
-maps onto `max`, and a word off the ladder is not a level at all. `codex-review` starts at
-**`xhigh`**, resolving its own model and ladder, so risk mostly moves it *down*;
-`claude-review` starts at **`medium`** and high risk takes it to `high`, its one other rung —
-the reviewer whose breadth *and* cost the rung actually controls.
+**Risk** decides the rung in the next step. Always name it — never "the middle", and never the
+wording it arrived in: a word off the ladder is not a rung at all. `codex-review` and
+`claude-review` both start at **`medium`**, and high risk takes both to `high`, their one other
+rung — more angles for Claude, a higher level for Codex, a larger budget of checks for both.
 
 Treat the change as high-risk when it reaches past itself (public interface, shared helper,
 config, schema, wire format), cannot be walked back (it writes, migrates, publishes, or persists
 a format someone else reads), meets input whose shape you do not control, has nothing else
 checking it, removes a guard, an error path or a test, or touches paths the project marks
-sensitive. High risk holds both engines at or above their start; mechanics with no behaviour
-change lower Codex and leave `claude-review` at its bottom rung. An explicit word wins.
+sensitive. Anything else stays at `medium`, mechanics with no behaviour change among it. An
+explicit word wins.
 
 **Uncommitted work.** Where `git status --short` or `git ls-files --others --exclude-standard`
 shows anything belonging to the change, offer a commit before starting — offer, never commit
@@ -82,7 +80,7 @@ Three questions per reviewer, in order:
 
 | Reviewer | Available when | Reads | Narrowing | Ladder |
 |---|---|---|---|---|
-| `hcb-dev:codex-review` skill | `command -v codex` and `command -v jq` — it resolves its model from the catalog's JSON | base → working tree | yes, expressed in prose | whatever the resolved model declares — it reads its own from the catalog |
+| `hcb-dev:codex-review` skill | `command -v codex` and `command -v node` — its round lives in a script's store; the pass runs as a process | base → working tree, tracked files | yes, passed as a narrowing beside the range | `medium`, `high` |
 | `hcb-dev:claude-review` skill | `command -v node` — its round lives in a script's store; without the Agent tool it runs, nothing checked | base → working tree, tracked files | yes, passed as a narrowing beside the range | `medium`, `high` |
 | `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
 
@@ -104,15 +102,14 @@ one reading is covered at the bottom rung; breadth is what the upper ones buy.
 
 ## 3. Run
 
-Start Codex first so it overlaps with the rest: it runs as a background shell command of this
-session, which no rule about delegating to subagents or workflows reaches. `claude-review` and the
-security review fan out into subagents, each because its own skill asks for them.
+Every reviewer here fans out into subagents, each because its own skill asks for them; run them
+one after another, in the order below, each to its end.
 
 - **codex-review** and **claude-review** — invoke the `hcb-dev:codex-review` and
   `hcb-dev:claude-review` skills through the Skill tool, never by reading their `SKILL.md`: only
   the tool substitutes the plugin root in one. Each is passed the base and the rung §1 fixed for
-  it; where the scope is the working tree alone, Codex gets no base and `claude-review` gets
-  `HEAD`. Codex first, then `claude-review`; a narrowing goes down with both, in the same prose.
+  it — `HEAD` as the base where the scope is the working tree alone — and a narrowing goes down
+  with both, in the same prose. Codex first, then `claude-review`.
 - **security-review** — invoke the skill inline, last, and run it as written: the sub-tasks it
   asks for are launched as subagents of this session — the finder first, then the filtering pass
   as parallel sub-tasks. The skill asking for them is the ask a rule admitting subagents only on
@@ -134,15 +131,16 @@ borrowed number is how a reviewer that read nothing gets recorded as having read
 **Wait for every reviewer you launched.** None of the four statuses in §6 says "still running",
 so a row filled before its reviewer returns asserts something about a run that has not finished —
 and the one status that fits an empty cell, `n/a`, is the one the coverage gate treats as closed.
-**How to wait for Codex is [`../../references/review-runs.md`](../../references/review-runs.md)'s.**
-`claude-review` returns when its conductor does, its round's result in hand. A reviewer that has
-not returned by the ceiling is a row and a reason, never an empty cell and never a stall.
+`codex-review` and `claude-review` return when their conductors do, each round's result in hand.
+A reviewer that has not returned by the ceiling
+[`../../references/review-runs.md`](../../references/review-runs.md) sets is a row and a reason,
+never an empty cell and never a stall.
 
 **A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage gate treats as
 closed, so recording a reviewer that did not run passes a completion with it missing — which is
 what `UNAVAILABLE` exists for; the engine's own notice goes below the table and the cell stays
-short. **A model limit is recoverable now**: rerun on another family before recording
-`UNAVAILABLE`, and record which model was tried.
+short. **A model's limit is recovered inside a round** — its conductor launches that agent
+again on another model, and the row names it — so a row reads what the round recorded.
 
 **Less than the change is not a pass.** A reviewer that ran against the wrong base, or over only
 the committed half while the rest sat in the working tree, covered a nonzero number of the wrong
@@ -166,8 +164,8 @@ first — one row per reviewer, what it covered before its verdict:
 
 | Reviewer | Covered | Effort | Result |
 |---|---|---|---|
-| `codex-review` | `<base>`, 3 files | xhigh | 🟢 2 findings |
-| `claude-review` | `<base>`, 3 files | medium | 🟢 no findings |
+| `codex-review` | `<base>`, 3 files | high | 🟢 2 findings |
+| `claude-review` | `<base>`, 3 files | high | 🟢 no findings |
 | `security-review` | `<base>`, 1 of 3 files | — | 🔴 partial: rest uncommitted |
 
 Keep the cells short: "Covered" is always `<base>, N files`, effort gets its own column so a

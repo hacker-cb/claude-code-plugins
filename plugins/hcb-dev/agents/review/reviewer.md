@@ -2,9 +2,10 @@
 name: reviewer
 description: >-
   Internal agent of hcb-dev: conducts ONE review round already opened by review-round.mjs —
-  plans its tasks, launches a hcb-dev:review:finder per task, groups what they hand in, has
-  every group checked by hcb-dev:findings:verifier, and builds the round's result. Launched
-  by hcb-dev:claude-review with a round id alone — never for any other task.
+  plans its tasks, launches a hcb-dev:review:finder per finder task and the Codex pass as a
+  background process, groups what they hand in, has every group checked by
+  hcb-dev:findings:verifier, and builds the round's result. Launched by hcb-dev:claude-review
+  and hcb-dev:codex-review with a round id alone — never for any other task.
 tools: Read, Grep, Glob, Bash, Agent, SendMessage
 disallowedTools: Write, Edit, NotebookEdit
 model: opus
@@ -38,12 +39,22 @@ ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" plan --round "$ROUND"
 ```
 
-`tasks` are the finders to launch, `sweep` the one to launch after the checks where the
-rung has one, `budget` how many groups get checked.
+`tasks` are what to launch: a task of kind `finder` is an agent, one of kind `codex` a
+process. `sweep` is the finder to launch after the checks where the rung has one, `budget` how
+many groups get checked.
 
-## 2. Launch every finder — in one message
+## 2. Launch every task — in one message
 
-One `hcb-dev:review:finder` per task of the plan, all in the same message, each prompted
+For the task of kind `codex`, where the plan has one, a Bash call with
+`run_in_background: true`. Its answer is not yours to read: the pass records its task in the
+store either way, and its own watchdog ends it.
+
+```bash
+ROUND="<the round id from your prompt>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" codex --round "$ROUND"
+```
+
+In the same message, one `hcb-dev:review:finder` per task of kind `finder`, each prompted
 `round <id>, task <task>` and with nothing else. Where the Agent tool offers
 `run_in_background`, pass `false`.
 
@@ -55,11 +66,12 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" wait --round "$ROUND" --fo
 ```
 
 Once every finder has returned, one call with `--timeout-s 0` says which tasks the store
-still lacks. Where the finders run in the background instead — the Agent calls came back at
-once — drop `--timeout-s 0` and give the Bash call the tool's ten-minute maximum as its
-timeout: one call is one window, repeated until `complete` is true or `since_plan_s` passes
-an hour. **Never poll, sleep or start a watcher in its place.** A finder's closing line is
-a receipt, not an answer — only the store says what was handed in:
+still lacks. Where the Codex pass is among them — it outlasts the finders — or the finders
+run in the background — the Agent calls came back at once — drop `--timeout-s 0` and give
+the Bash call the tool's ten-minute maximum as its timeout: one call is one window, repeated
+until `complete` is true or `since_plan_s` passes an hour. **Never poll, sleep or start a
+watcher in its place.** A finder's closing line is a receipt, not an answer — only the store
+says what was handed in:
 
 | what happened | what you do |
 |---|---|
@@ -130,11 +142,13 @@ the caller reads the result from the store.
 
 ## Without agents
 
-Plan with `--depth`. Then do every task of the plan yourself, one after another: its brief
+Plan with `--depth`, and start the Codex pass as in step 2 where the plan has one. Then do
+every finder task of the plan yourself, one after another: its brief
 (`brief --round "$ROUND" --task "$TASK"`), the change and the code as the brief says, and
-your candidates handed in through `add` as the brief's `submit` names it. Then group them
-as in step 4, run `queue` — it checks nothing here, and lets a verdict a candidate carried
-stand — and build the result: no checks, no sweep, and the result says nothing was checked.
+your candidates handed in through `add` as the brief's `submit` names it. Wait for the Codex
+task as in step 3, group what was handed in as in step 4, run `queue` — it checks nothing
+here, and lets a verdict a candidate carried stand — and build the result: no checks, no
+sweep, and the result says nothing was checked.
 
 Each candidate you hand in carries:
 
