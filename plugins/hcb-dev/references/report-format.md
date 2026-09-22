@@ -71,8 +71,9 @@ stands **beside** the word the occasion's vocabulary gives — a batch state of
 [`wave-ledger.md`](wave-ledger.md), a slice's, a reviewer's status — never instead of it. A source
 that was not read keeps the state its record gives and says `unread` in words: being unread is no
 circle. A column whose header names what else its circle marks — a findings table's `Sev`, by
-`findings-table.md`'s own; a sweep's consequence — marks that, and sets nothing in the first
-line; no other emoji appears, save in content carried verbatim.
+`findings-table.md`'s own; a sweep's consequence — marks that rather than a state, and reaches
+the first line only as the rule above has it; no other emoji appears, save in content carried
+verbatim.
 
 ## Without your word
 

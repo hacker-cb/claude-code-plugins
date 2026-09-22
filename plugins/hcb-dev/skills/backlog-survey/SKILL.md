@@ -107,7 +107,8 @@ found no hygiene is not one that did not look.
    their reason, contradictions between issues.
 
 **`## Where it stands`** — a row per issue: its verdict (`issue-currency.md`) with the coordinate
-that shows it as its state, its tier, its declared priority, and what it blocks or waits on. The
+that shows it as its state — 🟢 `current`, 🟡 `needs rewrite`, the rewrite being the user's, ⚪
+`stale` and `unverifiable`, which stand outside any layout — its tier, its declared priority, and what it blocks or waits on. The
 tier comes of three tests: does it block others; does it fire today (a reproduced defect, a live hole); does it
 catch regressions (a guard, a gate). Carry each issue's declared priority, where it has one,
 beside the tier the tests put it in. The tests

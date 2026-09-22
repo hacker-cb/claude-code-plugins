@@ -142,7 +142,8 @@ routing, never printed. A branch row's `what it is` carries its tip as it stands
   A keep promises the item survives, not that nothing touches it.
 
 Then ask, in one message's `## Needs your word`, over the 🟡 and 🔴 rows and every repair — a
-tracking repair is class 2 like the recoverable deletions. The 🟢 rows are the only ones that
+tracking repair is class 2 like the recoverable deletions. Each of those asks blocks: step 7
+runs over nothing until they are answered, whatever a row's circle says of its consequence. The 🟢 rows are the only ones that
 proceed unasked. Wait for an explicit answer; a subset means only that subset.
 
 ## Step 7 — Execute, in this order

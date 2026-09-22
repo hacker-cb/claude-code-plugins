@@ -23,15 +23,15 @@ catalogue is the order of a report; no report invents a heading outside it.
 
 `What happened` is what this session did; `What moved` is what it found had changed underneath
 it. A block appears at most once, and `## Without your word` stands first in any report that has
-something for it, whatever its occasion — the rows below name the rest. `## Findings` is never left out of a report that carries it:
-with nothing to show, its header line alone says `0 after dedup`.
+something for it, whatever its occasion — the rows below name the rest. `## Findings` is never
+left out of a report carrying it: with nothing, its header alone says `0 after dedup`.
 
 ## What each block holds, where it needs saying
 
-- **`What happened`** — each event with the coordinate it was verified at, and, over a merge,
-  what its checks showed (`base_checks`, whose values
-  [`slice-completion.md`](slice-completion.md) names). A round that closed brings its candidates
-  as `## Findings`, the rows needing the reader in the ask block as well.
+- **`What happened`** — each event with the coordinate it was verified at, and over a merge what
+  its checks showed (`base_checks`, whose values [`slice-completion.md`](slice-completion.md)
+  names). A round that closed brings its candidates as `## Findings`, the rows needing the reader
+  in the ask block as well.
 - **`Where it stands`, while an epic runs** — a row per batch: id, issues, state in the ledger's
   vocabulary ([`wave-ledger.md`](wave-ledger.md)), and what it waits on — nothing, its slot, the
   reader's approval, the reader's click with the chip's age and the pin it stands on, another
@@ -39,24 +39,23 @@ with nothing to show, its header line alone says `0 after dedup`.
   next wave is the last row, ⚪, waiting on the gate it opens on.
 - **`Where it stands`, once a run is done** — a row per slice: what it did, how it completed
   (merged locally into `<parent>`, or the change-request URL and whether it merged), what the
-  checks on that merge showed (`base_checks`), and its state — done, partial or skipped. An
-  epic groups its rows by wave and ends each in what the ledger records for that batch —
-  `released`, `withdrawn(<reason>)` or `failed(<what stands>)`. A set that ended partway says so
-  in its first line; a summary never reads as complete when it is not.
-- **`Where it stands`, in a status** — a row per unit still in flight: a batch as above, a slice
-  at what its branch and its parent's history make it, and in a batch its own build, request and
-  return; each row says when it was read, and one the tree does not confirm reads unknown.
-- **`Review coverage`** — `multi-review`'s own rows, the slice in a column of its own where a run
-  has several, and none of them folded together: a reviewer that could not run, ran over nothing,
-  or ran over the wrong range is a gap, and a structural one — a reviewer's own fixed limitation,
-  which no answer could close — is labelled as such.
-- **`Issues`** — closed, or still open and why: a merged slice does not say what became of the
-  issue behind it.
+  checks on that merge showed (`base_checks`), and its state — done, partial or skipped. An epic
+  groups its rows by wave, each ending in what the ledger records for that batch — `released`,
+  `withdrawn(<reason>)`, `failed(<what stands>)`. A set that ended partway says so in its first
+  line; a summary never reads as complete when it is not.
+- **`Where it stands`, in a status** — a row per unit the epic or the run holds, the ended ones
+  among them where nothing is still going: a batch as above, a slice at what its branch and its
+  parent's history make it, in a batch its own build, request and return; each says when it was
+  read, and one the tree does not confirm reads unknown.
+- **`Review coverage`** — `multi-review`'s own rows, unfolded, the slice in a column of its own
+  where a run has several: a reviewer that could not run, ran over nothing or ran over the wrong
+  range is a gap, a structural one — its own fixed limit — labelled as such.
+- **`Issues`** — closed, or still open and why: a merged slice does not say what became of its issue.
 - **`What it leaves`** — any ref a completion could not retire and why
   ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions this run is done
-  with and which of them cannot be archived, with why — archiving the rest is an ask — an offer
-  the reader turned down (`declined_offer`), and a pointer to `/hcb-dev:git-cleanup`. A
-  follow-up worth filing is an ask; an offer already answered is recorded here, not put again.
+  with and which cannot be archived, with why — archiving the rest is an ask — an offer the
+  reader turned down (`declined_offer`), and a pointer to `/hcb-dev:git-cleanup`. An offer
+  already answered is recorded here, not put again.
 
 ## What each occasion carries
 
@@ -70,13 +69,16 @@ with nothing to show, its header line alone says `0 after dedup`.
 | a plugin this session moved under | What happened · What moved · Needs your word |
 | a branch taken up to a base that moved | What happened · What moved · Needs your word |
 | a pass that ruled a run's findings | Findings · Needs your word |
-| a status asked for | The picture, where a source did not answer · Where it stands · Needs your word |
+| a status asked for | The picture, where a source did not answer or a fault stands · Where it stands · Needs your word |
 | a review of one change | Review coverage · Findings · Needs your word |
 | a coverage gate that stopped a completion | Review coverage · Needs your word |
 | a planning gate | The plan, where the tier makes it a message of its own · Needs your word |
 | a change request merged | What happened · Findings · Issues · What it leaves · Needs your word |
 | a sweep's gate | The plan · Needs your word |
-| a sweep done | Without your word · What happened · What it leaves · Needs your word |
+| a sweep done | What happened · What it leaves · Needs your word |
+
+A slice completed as a change request prints two: the driver's report on that request, and the
+run's final report beside it.
 
 ## A wave report
 
@@ -127,7 +129,6 @@ Answer by number; "go" takes every recommendation.
 | slice | reviewer | covered | effort | result |
 |---|---|---|---|---|
 | `export/csv` | `codex-review` | `<base>`, 4 files | xhigh | 🟢 no findings |
-| … | … | … | … | … |
 
 ## Findings
 **Findings — 0 after dedup · verified by none · confirmed 0 · unproven 0 · not measured 0 · refuted 0, dropped**
