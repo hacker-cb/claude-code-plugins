@@ -91,18 +91,20 @@ merged.
 
 ```bash
 SLICE="<the slice's branch>"
-# The repository this branch pushes to — in a fork checkout the fork, where `gh` on its own
-# answers for the upstream. `remotes.push` is a remote's NAME, so its URL is what names a repo.
-PUSH_REMOTE="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" | jq -r '.remotes.push // ""')"
+# Where THIS slice publishes — the checkout may stand on another branch, and in a fork workflow
+# the two differ. `remotes.push` is a remote's NAME, and a remote may push somewhere else again.
+PUSH_REMOTE="$(git config --get "branch.$SLICE.pushRemote" || git config --get remote.pushDefault \
+  || node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-base.mjs" | jq -r '.remotes.push // ""')"
+PUSH_URL="$(git remote get-url --push "$PUSH_REMOTE")"
 # GitHub — `--head` matches the branch NAME across every head repository, forks included
-gh repo view "$(git remote get-url "$PUSH_REMOTE")" --json id,nameWithOwner
+gh repo view "$PUSH_URL" --json id,nameWithOwner
 gh pr list --head "$SLICE" --state merged --json number,url,mergedAt,headRepository
 # GitLab — `source_project_id` against the project's own, which the same view answers
-glab repo view "$(git remote get-url "$PUSH_REMOTE")" --output json
+glab repo view "$PUSH_URL" --output json
 glab mr list --source-branch "$SLICE" --merged --output json
 ```
 
-An empty `PUSH_REMOTE` leaves the identity unread, and with it the merged state of every slice —
+An empty `PUSH_REMOTE` or `PUSH_URL` leaves the identity unread, and with it the slice's merged state —
 that is a bullet of `## The picture`, never a slice printed unmerged. A request whose head is not
 that repository by identity is another project's
 ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) — a fork keeps the
@@ -135,7 +137,7 @@ for `base_checks`, not a run still going.
 
 - **The first line** — the circle of the worst state read, what the report covers (the epic, the
   batch or the run, and the pin or moment it was read at), and what waits on the user.
-- **`## The picture`**, only where something did not answer — a bullet per source: what it was,
+- **`## The picture`**, where something did not answer or a fault stands — a bullet per source: what it was,
   what it would have settled, and what therefore stands on the record alone.
 - **`## Where it stands`** — the catalogue's rows for a status.
 - **`## Needs your word`** — what the user owes, printed from the record as it stands: the

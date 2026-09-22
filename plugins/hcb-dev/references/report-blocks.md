@@ -73,7 +73,7 @@ with nothing to show, its header line alone says `0 after dedup`.
 | a status asked for | The picture, where a source did not answer · Where it stands · Needs your word |
 | a review of one change | Review coverage · Findings · Needs your word |
 | a coverage gate that stopped a completion | Review coverage · Needs your word |
-| a planning gate | The plan · Needs your word |
+| a planning gate | The plan, where the tier makes it a message of its own · Needs your word |
 | a change request merged | What happened · Findings · Issues · What it leaves · Needs your word |
 | a sweep's gate | The plan · Needs your word |
 | a sweep done | Without your word · What happened · What it leaves · Needs your word |
@@ -136,12 +136,12 @@ Answer by number; "go" takes every recommendation.
 - **#41** — still open: a local merge closes nothing, and the change request below would.
 
 ## What it leaves
-- **Worktrees** — the three slices' worktrees stand; `/hcb-dev:git-cleanup` sweeps them.
+- **Worktrees** — both slices' worktrees stand; `/hcb-dev:git-cleanup` sweeps them.
 
 ## Needs your word
 ### 🟡 Can wait
 1. **Open one change request for the whole of `feat/export` into `<base>`?**
-   - **Recommend** — open it: the three slices merged locally and nothing has reviewed them together.
+   - **Recommend** — open it: both merged locally and nothing has reviewed them together.
    - **If unanswered** — nothing stops; the work stays on `feat/export`.
    - **Where it is acted on** — a word here.
 

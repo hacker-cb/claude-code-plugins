@@ -153,8 +153,9 @@ proof re-taken after the wait, and the tracking repair that comes last.
 
 ## Step 8 — Verify and report
 
-Re-run discovery, then report: `## Without your word` — the class-1 actions taken without
-asking, each with what undoes it, or that nothing was lost and nothing needs undoing; `## What happened` — what else went; `## What it
+Re-run discovery, then report: `## Without your word` — each class-1 action taken without
+asking, with what undoes it, or that nothing was lost and so nothing needs undoing, the block
+standing only where there was such an action; `## What happened` — what else went; `## What it
 leaves` — what was kept and why; and what was surfaced and left for the user to decide, as asks.
 
 ## Never

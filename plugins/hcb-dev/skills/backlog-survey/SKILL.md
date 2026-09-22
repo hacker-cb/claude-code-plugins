@@ -83,9 +83,11 @@ them where no scale resolved at all.
 
 The grammar is
 [`../../references/report-format.md`](../../references/report-format.md)'s and the blocks
-[`../../references/report-blocks.md`](../../references/report-blocks.md)'s.
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s. A reading or a plan
+with nothing in it says so in a bullet of its own rather than going unprinted: a survey that
+found no hygiene is not one that did not look.
 
-**`## The picture`** — three readings, in this order:
+**`## The picture`** — four readings, in this order:
 
 1. The slice by milestone or theme: open counts, what each group is, where the current front
    line runs. A wide line names a milestone and nothing more, so the milestones are listed once,

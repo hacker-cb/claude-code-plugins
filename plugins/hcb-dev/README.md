@@ -258,8 +258,7 @@ the plan stages them.
   Reports as `references/report-format.md` and `references/report-blocks.md` fix
   them: a wave report when a wave moves, an ask that blocks work appears,
   something departs from what you approved, a batch is withdrawn or fails, the
-  session recovers from a restart or you ask where things stand — and the final
-  report at the end — each ending in the block that carries everything waiting on
+  session recovers from a restart — and the final report at the end — each ending in the block that carries everything waiting on
   you, where anything does, while an event that changes nothing for you gets a
   line instead of a report.
   Recovers after a restart from the ledger before the live registry. It does not
@@ -318,10 +317,12 @@ the plan stages them.
   role the session holds: an epic and its batches for a master, one batch of a
   wave, or a run and its slices on its own — and, given an epic number, that
   epic's state from any session at all, since the ledger lives on the epic.
-  Reads the ledger, the live registry, the change requests and the tree; writes
+  Where you ask a master where things stand, this is what answers. Reads the
+  ledger, the live registry, the change requests and the tree; writes
   nothing anywhere, and names a source it could not read as unread instead of
-  printing it empty. The other roles route their "where do we stand" and their
-  first report after a restart here, so the shape exists once.
+  printing it empty. The other roles route their "where do we stand"
+  here, and a run on its own its first report after a restart, so the shape
+  exists once.
 
 ### Staying current with the plugin
 

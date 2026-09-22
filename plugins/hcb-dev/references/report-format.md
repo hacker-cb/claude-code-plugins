@@ -25,8 +25,8 @@ a batch's own user, who reads those lines and is owed the rule for a line below.
 ## The first line
 
 Bold, one line, first — nothing stands above it but the line that led into it. It opens with the
-circle of the worst the report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪, a blocking ask counting as
-🔴 and one that can wait as 🟡 — says what happened, and counts what waits on the reader, or says
+circle of the worst the report holds — worst first: 🔴, 🟡, 🔵, 🟢, ⚪, a blocking ask and an unfixed `Critical` counting
+as 🔴, one that can wait and an unfixed `Important` as 🟡 — says what happened, and counts what waits on the reader, or says
 that nothing does.
 What the report goes on to ask is never announced there as settled.
 

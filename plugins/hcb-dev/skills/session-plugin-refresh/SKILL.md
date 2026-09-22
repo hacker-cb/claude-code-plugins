@@ -138,11 +138,11 @@ is a fork for them, not a rule to apply silently.
 - **Repaired** — <the rule, quoted or named> — <what this session did> — <what it now does>. Undo: <how>.
 
 ## What happened
-- **Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
 - **Re-read** — <skills> + <references>, <n> files, <m> changed, <k> gone
 - **Owed** — <the rule> — <what left under the old text> — <what it now says, and to whom it went>
 
 ## What moved
+- **Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
 - **Standing** — <the rule> — <what this session did> — <what it now does>
 - **New and load-bearing** — <what the remaining plan has to change>
 

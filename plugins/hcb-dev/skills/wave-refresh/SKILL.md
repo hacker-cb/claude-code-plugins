@@ -145,8 +145,9 @@ outside it as its own choice for the user, not as part of this slice's layout.
 
 The grammar is
 [`../../references/report-format.md`](../../references/report-format.md)'s and the blocks
-[`../../references/report-blocks.md`](../../references/report-blocks.md)'s. The capacity — how
-many batches are free, against how many were asked for — is what the first line says happened.
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s, a block with nothing
+in it saying so in a bullet rather than going unprinted. The capacity — how many batches are
+free, against how many were asked for — is what the first line says happened.
 
 - **`## Without your word`** — what this pass settled inside its authority.
 - **`## What moved`** — what landed since the last reading, premises knocked out, blockers
