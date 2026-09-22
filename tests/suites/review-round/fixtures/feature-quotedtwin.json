@@ -1,0 +1,15 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "\"twin.sh\"": "echo the quoted twin\n",
+        "twin.sh": "echo the plain twin\n"
+      }
+    }
+  ]
+}

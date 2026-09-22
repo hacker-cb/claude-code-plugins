@@ -134,11 +134,9 @@ borrowed number is how a reviewer that read nothing gets recorded as having read
 **Wait for every reviewer you launched.** None of the four statuses in §6 says "still running",
 so a row filled before its reviewer returns asserts something about a run that has not finished —
 and the one status that fits an empty cell, `n/a`, is the one the coverage gate treats as closed.
-**How to wait for Codex is [`../../references/review-runs.md`](../../references/review-runs.md)'s**
-— never by ending the turn: this skill runs inside subagents and dispatched sessions, where doing
-so ends the work the review was gating. `claude-review` returns when its conductor does, its
-round's result in hand. A reviewer that has not returned by the ceiling is a row and a reason,
-never an empty cell and never a stall.
+**How to wait for Codex is [`../../references/review-runs.md`](../../references/review-runs.md)'s.**
+`claude-review` returns when its conductor does, its round's result in hand. A reviewer that has
+not returned by the ceiling is a row and a reason, never an empty cell and never a stall.
 
 **A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage gate treats as
 closed, so recording a reviewer that did not run passes a completion with it missing — which is

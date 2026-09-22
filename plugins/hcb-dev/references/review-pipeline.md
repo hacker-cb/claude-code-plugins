@@ -29,6 +29,10 @@ node "<plugin root>/scripts/review-round.mjs" init --mode round --base "<ref>" -
 read a file edited since `init` is flagged in the result as read on a tree the finders did not
 see.
 
+**The agents only read because they are told to.** No sandbox holds them: what a finder or the
+checker may run is what the session's permission mode lets through. Whether a round runs over
+code nobody here wrote is the user's call.
+
 ## The rung
 
 `medium` unless the caller names `high`, and an explicit word from the caller wins. `high` buys
@@ -42,7 +46,9 @@ out as `<base>...HEAD`; never launch it.
 
 1. **The entry** opens the round, hands in what it already holds, launches
    `hcb-dev:review:reviewer` prompted `round <id>` alone — `run_in_background: false` where the
-   Agent tool offers it — and waits for it: a subagent always reports its end.
+   Agent tool offers it — and waits for it: a subagent always reports its end. Where the call
+   comes back at once, the conductor running in the background, wait for its completion notice;
+   the result is never read while the conductor runs.
 2. **The conductor** plans the round, launches one `hcb-dev:review:finder` per task in a single
    message, waits for every task in the store, groups what was handed in, has every group it can
    afford checked by `hcb-dev:findings:verifier`, runs the sweep where the rung has one, and
@@ -51,8 +57,9 @@ out as `<base>...HEAD`; never launch it.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: each task's brief, the change and the
-code as the brief says, the candidates handed in through `add`, then `merge`, `units` and
-`result`. Nothing is checked, and the result says so.
+code as the brief says, the candidates handed in through `add`, then `merge`, `units`, `queue` —
+which checks nothing here, and lets a carried verdict stand — and `result`. Nothing is checked,
+and the result says so.
 
 ```bash
 node "<plugin root>/scripts/review-round.mjs" plan --round "<round>" --depth
@@ -69,6 +76,7 @@ node "<plugin root>/scripts/review-round.mjs" diff --round "<round>"
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
+| a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
 | it was never launched, or never returned | `partial` for its source, the task named |
 | no agents at all | `depth` |
 
@@ -90,8 +98,8 @@ One row per source, as covered as its least covered task:
 | `nothing` | 🔴 `nothing to review` |
 | `n/a` | ⚪ `n/a`, with the caller's reason |
 
-A `coverage-warning:` in the result's `warnings` makes the round partial whatever its rows say;
-a `run-warning:` does not — it says what a task did, not what it read.
+A `coverage-warning:` and a `run-warning:` in the result's `warnings` are read as
+[`review-runs.md`](review-runs.md)'s *Reading it back* reads them.
 
 ## Reading the result
 
@@ -103,7 +111,8 @@ The result is built by the script from the store, and no model writes it:
 
 - `coverage` — the rows above;
 - `findings` — ranked by severity, each `confirmed` or `unproven` at the revision it was read at,
-  or `not measured` with its reason, and `found_by` naming every source that reported it;
+  or `not measured` with its reason — `depth` among them, for a round run without agents — and
+  `found_by` naming every source that reported it;
 - `refuted` — apart, with what showed each does not hold;
 - `warnings` — the coverage the round could not give.
 

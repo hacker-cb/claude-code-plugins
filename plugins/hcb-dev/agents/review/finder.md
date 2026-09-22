@@ -62,7 +62,7 @@ of them, and one you drop is one nobody checks.
 |---|---|
 | `file` | the path, relative to the repository root |
 | `line` | the line the defect is at, counted from 1, in that file on that side |
-| `side` | `head` for the code as it is now; `base` for a line the change removed, read at the merge base |
+| `side` | `head` for the code as it is now; `base` for a line the change removed, read at the merge base — under the path it had there, a renamed file's `from` |
 | `summary` | the defect in one sentence, in the brief's `language` |
 | `failure_scenario` | the input or state and what then goes wrong; for a cleanup, the concrete cost — what is duplicated, wasted or harder to change, or the rule and the line that breaks it |
 | `severity` | `Critical` — security, data loss or corruption, a crash, broken core behaviour; `Important` — a real logic bug, a wrong result in a plausible case, a leak, a missing error path on a likely path, a broken contract; `Minor` — anything lighter, cleanup included |

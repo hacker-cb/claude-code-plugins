@@ -25,14 +25,16 @@ task, a group.
 
 ## 1. Plan
 
+Where the Agent tool is not among your tools, go to *Without agents* now: its plan is made
+differently, and a round is planned once.
+
 ```bash
 ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" plan --round "$ROUND"
 ```
 
 `tasks` are the finders to launch, `sweep` the one to launch after the checks where the
-rung has one, `budget` how many groups get checked. Where the Agent tool is not among your
-tools, plan with `--depth` instead and go to *Without agents*.
+rung has one, `budget` how many groups get checked.
 
 ## 2. Launch every finder — in one message
 
@@ -44,24 +46,27 @@ One `hcb-dev:review:finder` per task of the plan, all in the same message, each 
 
 ```bash
 ROUND="<the round id from your prompt>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" wait --round "$ROUND" --for tasks
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" wait --round "$ROUND" --for tasks --timeout-s 0
 ```
 
-Give the Bash call the tool's ten-minute maximum as its timeout: one call is one window.
-Repeat it until `complete` is true, or until an hour has passed since the launch. **Never
-poll, sleep or start a watcher in its place.** A finder's closing line is a receipt, not an
-answer — only the store says what was handed in:
+Once every finder has returned, one call with `--timeout-s 0` says which tasks the store
+still lacks. Where the finders run in the background instead — the Agent calls came back at
+once — drop `--timeout-s 0` and give the Bash call the tool's ten-minute maximum as its
+timeout: one call is one window, repeated until `complete` is true or `since_plan_s` passes
+an hour. **Never poll, sleep or start a watcher in its place.** A finder's closing line is
+a receipt, not an answer — only the store says what was handed in:
 
 | what happened | what you do |
 |---|---|
-| a finder returned and its task is still `pending` | one SendMessage to it — "hand in your candidates through add, or an empty list" — then one more window; still nothing: `status --state partial` |
-| it stopped on its turn limit | what it handed in stands; `status --state partial --note "ran out of turns"` |
-| it hit a model's limit | launch it again with `model: sonnet`, and name that model in its status note; failing again: `status --state unavailable` |
+| a finder returned and its task is still `pending` | one SendMessage to it — "hand in your candidates through add, or an empty list" — and one more check; still nothing: `status --state partial` |
+| it stopped on its turn limit | what it handed in stands; `status --state partial` |
+| it hit a model's limit | launch it again with `model: sonnet`; once that returns, `status --model sonnet` — never before, since a status the task has not earned closes it; failing again: `status --state unavailable` |
 | the account's limit | `status --state unavailable`, the notice's words in the note |
 
 ```bash
 ROUND="<the round id from your prompt>"
-TASK="<the task>"; STATE="<partial or unavailable>"; NOTE="<what happened, in a sentence>"
+TASK="<the task>"; STATE="<partial or unavailable>"
+NOTE='<what happened, in plain words — no quote marks, no dollar signs, no backticks>'
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" status --round "$ROUND" --task "$TASK" --state "$STATE" --note "$NOTE"
 ```
 
@@ -97,15 +102,16 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" queue --round "$ROUND"
 `queue` is what to check, every `Critical` first. With `stop` true the `Critical` groups
 alone outrun the budget: check none, go to *The result*, and it says so. Otherwise launch
 one `hcb-dev:findings:verifier` per group in `queue`, prompted `round <id>, unit <group>`
-and with nothing else, up to ten in one message, `run_in_background: false` where offered.
-Then wait the same way as in step 3, with `--for verdicts`. A group still without a verdict
-at the end stays unchecked; the result says so.
+and with nothing else, up to ten in one message, `run_in_background: false` where offered;
+one stopped by a model's limit is launched again with `model: sonnet`. Then wait the same way
+as in step 3, with `--for verdicts`: it waits for the groups the latest `queue` queued. A
+group still without a verdict at the end stays unchecked; the result says so.
 
 ## 6. Sweep — only where the plan has one
 
 Launch one `hcb-dev:review:finder` prompted `round <id>, task sweep`, and wait with
-`wait --for tasks --expect sweep`. Then `merge`, group only what the sweep handed in with
-`units --append`, `queue --append`, and check the new groups as in step 5.
+`wait --for tasks --expect sweep`. Then `merge --task sweep`, group only what the sweep handed
+in with `units --append`, `queue --append`, and check the new groups as in step 5.
 
 ## 7. The result
 
@@ -122,8 +128,8 @@ the caller reads the result from the store.
 Plan with `--depth`. Then do every task of the plan yourself, one after another: its brief
 (`brief --round "$ROUND" --task "$TASK"`), the change and the code as the brief says, and
 your candidates handed in through `add` as the brief's `submit` names it. Then group them
-as in step 4 and build the result — no queue, no checks, no sweep: the result says that
-nothing was checked.
+as in step 4, run `queue` — it checks nothing here, and lets a verdict a candidate carried
+stand — and build the result: no checks, no sweep, and the result says nothing was checked.
 
 Each candidate you hand in carries:
 
