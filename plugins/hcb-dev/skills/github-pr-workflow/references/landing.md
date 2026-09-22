@@ -130,21 +130,21 @@ action the user authorises
 ([`../../../references/findings.md`](../../../references/findings.md) owns that protocol, and
 the classification is `hcb-dev:issue-tracking`'s).
 
-Then a short report, scannable — grouped bullets, not an essay:
+Then the report ([`../../../references/report-format.md`](../../../references/report-format.md),
+[`../../../references/report-blocks.md`](../../../references/report-blocks.md)):
 
-1. **The gates the base enforces, and how each was met at the merge**: required checks,
-   approvals, thread resolution, whatever else the base carries; a base with none says so.
-   Copilot's line among them is its review of the head that merged and the state that review
-   carries — or, where that head has none, the commit the last review covered and why
-   ([`copilot.md`](copilot.md)).
-2. **The base's own checks on the merge commit**, in whichever of the four shapes above came
-   out. Under an orchestrator this line is the `base_checks` its completion carries onward
-   (`slice-completion.md`).
-3. **Additional findings from this session** — the lower-severity items the loop deliberately
-   skipped, each through `findings.md` as the late review's are, laid out by
-   [`../../../references/findings-table.md`](../../../references/findings-table.md). Where nothing
-   called this driver, this report ends the session and `hcb-dev:findings-pass` runs over them
-   first — never in a wave's batch, whose return carries them; under an orchestrator it ends a slice.
-4. **Issues this PR was to close**, at the state read above — closed, or still open and what
-   closing one now waits on.
-5. **Suggested next steps** — tech debt to track, tests to add, related work that surfaced.
+- **`## What happened`** — the gates the base enforces and how each was met at the merge:
+  required checks, approvals, thread resolution, whatever else it carries; a base with none says
+  so. Copilot's line among them is its review of the head that merged and the state that review
+  carries — or, where that head has none, the commit the last review covered and why
+  ([`copilot.md`](copilot.md)). Then the base's own checks on the merge commit, in whichever of
+  the four shapes above came out — under an orchestrator, the `base_checks` its completion carries.
+- **`## Findings`** — the lower-severity items the loop skipped, through `findings.md` as the late
+  review's are, laid out by [`../../../references/findings-table.md`](../../../references/findings-table.md).
+  Where nothing called this driver, this report ends the session and `hcb-dev:findings-pass` runs
+  over them first — never in a wave's batch, whose return carries them; under an orchestrator, a slice.
+- **`## Issues`** — the issues this PR was to close, at the state read above: closed, or still
+  open and what closing one now waits on.
+- **`## What it leaves`** — a ref Step 6 could not retire, with its `blockers`.
+- **`## Needs your word`** — what the rows above leave to the reader, plus the tech debt, tests
+  and related work this merge surfaced. Nothing counted twice.

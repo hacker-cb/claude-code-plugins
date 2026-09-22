@@ -132,17 +132,27 @@ is a fork for them, not a rule to apply silently.
 ## The report
 
 ```markdown
-**<what this refresh found, in a phrase> · needs you: <k>, holding work: <m>**
-**Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
-**Re-read** — <skills> + <references>, <n> files, <m> changed, <k> gone
-1..N. <the rule, quoted or named> — <what this session did> — <what it now does> — [outcome]
-**New and load-bearing** — <what the remaining plan has to change>
-**Needs your word** — <the frame's ask block; or "nothing waits on you">
+**<circle> <what this refresh found, in a phrase> · needs you: <k>, blocking: <m>**
+
+## Without your word
+- **Repaired** — <the rule, quoted or named> — <what this session did> — <what it now does>. Undo: <how>.
+
+## What happened
+- **Re-read** — <skills> + <references>, <n> files, <m> changed, <k> gone
+- **Owed** — <the rule> — <what left under the old text> — <what it now says, and to whom it went>
+
+## What moved
+- **Versions** — running <x> · installed <y> · floor <z> (<where it came from>) · upstream <w>
+- **Standing** — <the rule> — <what this session did> — <what it now does>
+- **New and load-bearing** — <what the remaining plan has to change>
+
+## Needs your word
+<each divergence `to the addressee` whose addressee is the user, an ask of its own>
 ```
 
-The first line and that closing block are the frame of
-[`../../references/report-format.md`](../../references/report-format.md).
-Ranked, not enumerated. A session that had done nothing under this plugin reports
+The grammar is [`../../references/report-format.md`](../../references/report-format.md)'s and
+the blocks [`../../references/report-blocks.md`](../../references/report-blocks.md)'s. Ranked,
+not enumerated. A session that had done nothing under this plugin reports
 the four versions and that one line — "nothing was done under it" and "checked,
 nothing diverges" are different answers, and neither is written as the other.
 
@@ -161,5 +171,6 @@ report is the record.
 
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
+- [`../../references/report-blocks.md`](../../references/report-blocks.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)

@@ -170,8 +170,10 @@ the reviewer itself that no answer from the user could lift. Say both out loud e
 neither stops the ship. Everything else is an **actionable** gap.
 
 With no gaps, go straight to completion, no confirmation needed. **With an actionable gap, stop
-before completing**: report it, pass on whatever the review says would close it, and complete
-only once the user says to. This holds in **both modes** — a *local* merge with a reviewer
+before completing**: a report ([`../../references/report-format.md`](../../references/report-format.md),
+[`../../references/report-blocks.md`](../../references/report-blocks.md)) whose
+`## Review coverage` names the gap and whose blocking ask passes on whatever the review says
+would close it; complete only once the user says to. This holds in **both modes** — a *local* merge with a reviewer
 silently missing is as unreviewed as a change request would be, the gate being mode-blind because
 the danger is. Under `implementation-workflow`'s autonomous run this stop is one of its
 legitimate interrupts, not something the autonomy waives.

@@ -40,6 +40,7 @@ backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take 
 master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
                └─▶ wave-refresh ─▶ (occupied ground · delta · free capacity) ─▶ back to wave-dispatch
+status ────────────────────────────────── "where do we stand" — any role, read-only, writes nothing
 session-plugin-refresh ────────────────── when the plugin moves under a running session
 git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
@@ -254,13 +255,12 @@ the plan stages them.
   level with every redraw, and opening each wave as its gate clears. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
   reaches the batch before anything else is sent.
-  Reports in the sizes `references/report-format.md` fixes: a wave report when a
-  wave moves, an ask that holds work appears, something departs from what you
-  approved, a batch is withdrawn or fails, the session recovers from a restart or
-  you ask where things stand — and the final report at the end —
-  each closing with the one block carrying everything waiting on you — while an
-  event that changes nothing for you gets a bare status line instead, with no
-  block and no frame.
+  Reports as `references/report-format.md` and `references/report-blocks.md` fix
+  them: a wave report when a wave moves, an ask that blocks work appears,
+  something departs from what you approved, a batch is withdrawn or fails, the
+  session recovers from a restart — and the final report at the end — each ending in the block that carries everything waiting on
+  you, where anything does, while an event that changes nothing for you gets a
+  line instead of a report.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
@@ -309,6 +309,20 @@ the plan stages them.
   another session took it, and close with the return —
   staying engaged until the master accepts. The building itself runs through
   whatever workflow the order names, usually `implementation-workflow`.
+
+### Asking where things stand
+
+- **`status`** — `/hcb-dev:status`
+  Where the work stands right now, read again rather than recalled, in whichever
+  role the session holds: an epic and its batches for a master, one batch of a
+  wave, or a run and its slices on its own — and, given an epic number, that
+  epic's state from any session at all, since the ledger lives on the epic.
+  Where you ask a master where things stand, this is what answers. Reads the
+  ledger, the live registry, the change requests and the tree; writes
+  nothing anywhere, and names a source it could not read as unread instead of
+  printing it empty. The other roles route their "where do we stand"
+  here, and a run on its own its first report after a restart, so the shape
+  exists once.
 
 ### Staying current with the plugin
 
@@ -483,11 +497,16 @@ saying something else. Each file opens by saying what it owns.
   into batches and waves. Read by whatever partitions work into parallel sessions.
 - [`references/wave-ledger.md`](references/wave-ledger.md) — the master's durable
   state. Read on every event it records, and first after any restart.
-- [`references/report-format.md`](references/report-format.md) — the frame a
-  whole-run report wears, and the two bodies under it: a wave report while an epic
-  runs, the final report once a run is done. Read where work is reported to you —
-  a different altitude from a driver's report on one merged change request, and
-  the two do not replace each other.
+- [`references/report-format.md`](references/report-format.md) — how everything
+  reported to you looks: a line or a report, the bold first line counting what
+  waits on you, one `##` heading per block, five status circles — 🟢 fine,
+  🔵 running by itself, 🟡 your move, 🔴 stopped, ⚪ out of play — and the ask
+  block last, each ask with its recommendation first. Read wherever work is
+  reported to you.
+- [`references/report-blocks.md`](references/report-blocks.md) — the blocks a
+  report is built from, in the order they stand, what each holds, and which ones
+  each occasion carries: a wave report while an epic runs, the final report once a
+  run is done. Read beside `report-format.md`.
 - [`references/issue-currency.md`](references/issue-currency.md) — whether an
   issue is still true of the tree, and the four verdicts that say so. Read
   wherever an issue is surveyed or taken in as the spec of work about to start.
@@ -503,7 +522,8 @@ saying something else. Each file opens by saying what it owns.
   `findings-pass`, and the tracker operations themselves stay with `issue-tracking`.
 - [`references/findings-table.md`](references/findings-table.md) — the one form
   findings take wherever they reach you: a header line saying what was verified,
-  a table ranked by severity with a verification column on every row, a footer
+  a table ranked by severity — 🔴 Critical, 🟠 Important, ⚪ Minor — with a
+  verification column on every row, a footer
   totalling the rows by severity and by outcome, and refuted findings named under
   that rather than listed as rows. Read wherever findings are
   shown — a review's report, a run's report, a wave report, a batch's return.
@@ -570,6 +590,11 @@ Per skill, on top of those:
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).
+- **`status`**: the forge CLI for the ledger, the issues and the repository's
+  own identity (`gh` / `glab`), plus `node`, `jq` and `git`; the live session
+  registry for presence. It
+  writes nothing, and where a forge answers no verdict for a change request it
+  says so rather than working around it.
 - **`sync-base`**: `git` against the resolved base, plus `node` and `jq` for the
   two resolver scripts and their answers. The forge CLI answers the ladder's rungs
   that ask a forge — the open change request's base, and where changes land — and

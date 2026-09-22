@@ -124,18 +124,21 @@ user (*Every stop carries its recommendation first*).
 ## Reporting to the user
 
 The shape is
-[`../../references/report-format.md`](../../references/report-format.md)'s; what
+[`../../references/report-format.md`](../../references/report-format.md)'s and the blocks each
+one carries are
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s; what
 this role settles is which size an event earns.
 
 | What happened | What goes out |
 |---|---|
-| a start report answered, a change request opened, a status read at its coordinate, a question this session settled itself | one line, which is not a report and wears no frame: what happened, the coordinate it was read at, and what still waits on the user and holds work — named rather than counted |
-| a wave launched, or closed with another still to come; an ask that holds work appearing; a departure from what the user approved; a batch withdrawn or failed; this session recovering from a restart; the user asking where things stand | a wave report |
+| a start report answered, a change request opened, a status read at its coordinate, a question this session settled itself | a line: what happened, where it was read, and what still waits on the user and blocks work — named rather than counted, and where that is more than one thing, a wave report instead |
+| a wave launched, or closed with another still to come; an ask that blocks work appearing; a departure from what the user approved; a batch withdrawn or failed; this session recovering from a restart, which has its own `Without your word` and `What happened` to carry | a wave report |
+| the user asks where things stand | the expectations reconciled against what the batches reported and each one a confirmation answers marked at its coordinate first, then `hcb-dev:status` through the Skill tool — the ledger read again rather than recalled |
 | the last wave closed | the final report (`Closing the epic`), and not the row above |
 
-An ask holding nothing waits for the next wave report — or for the final one,
-where the last wave has closed — rather than riding every line — and a tracker write the next wave stands on holds work whatever its
-rating, so it stands in that group until it is answered or the user defers it. The block carrying them is the ledger's expectations addressed to the user
+An ask blocking nothing waits for the next wave report — or for the final one,
+where the last wave has closed — rather than riding every line — and a tracker write the next wave stands on blocks work whatever
+its rating, so it stands in that group until it is answered or the user defers it. `## Needs your word` carries them: the ledger's expectations addressed to the user
 (`wave-ledger.md`), read first against what the batches have reported: a word the
 user gave a batch in that batch's own chat reaches this session only through it,
 and goes up as a confirmation of what was reported — never as the same question
@@ -162,9 +165,8 @@ see are chased by the comms ladder, not assumed dead.
 Verify the epic against the ledger — every batch ended, released, withdrawn or
 failed alike, with whatever any of them left standing accounted for; every issue
 at the end state the ledger now records for it; every mandate met — then report
-to the user per `report-format.md`, the run here being the epic — its rows
-grouped by wave, and the batch sessions this epic is done with among what it
-leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never run — naming its reach honestly: worktrees the host leased to other
+to the user as the final report, the run here being the epic and the batch
+sessions it is done with among what that report leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never run — naming its reach honestly: worktrees the host leased to other
 sessions it reports rather than removes, and each batch session's own residue
 is that session's to sweep. Write the ledger's closing line.
 
@@ -178,5 +180,6 @@ is that session's to sweep. Write the ledger's closing line.
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/order-return.md`](../../references/order-return.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
+- [`../../references/report-blocks.md`](../../references/report-blocks.md)
 - [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
 - [`../../references/findings.md`](../../references/findings.md)

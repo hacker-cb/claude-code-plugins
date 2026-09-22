@@ -143,22 +143,22 @@ outside it as its own choice for the user, not as part of this slice's layout.
 
 ## The report
 
-The frame is
-[`../../references/report-format.md`](../../references/report-format.md)'s: its
-first line, and its ask block last, carrying the tracker edits the candidates
-stand on and the word the layout launches on. Between them, in this order, each
-section explicit even when empty:
+The grammar is
+[`../../references/report-format.md`](../../references/report-format.md)'s and the blocks
+[`../../references/report-blocks.md`](../../references/report-blocks.md)'s, a block with nothing
+in it saying so in a bullet rather than going unprinted. The capacity — how many batches are
+free, against how many were asked for — is what the first line says happened.
 
-1. **The front** — batches running, the ground each holds, what landed since the
-   last reading.
-2. **What moved** — premises knocked out, blockers lifted, tracker changes in
-   the slice, and every disagreement the three ground sources showed.
-3. **The candidates** — the columns of `wave-planning.md`'s closing table, plus
-   what clears each one against the occupied ground, and what holds the ones
-   held.
-4. **The capacity** — how many are free, against how many were asked for.
-5. **What launching needs first** — the tracker edits the candidates stand on,
-   each named as the condition that releases its batch.
+- **`## Without your word`** — what this pass settled inside its authority.
+- **`## What moved`** — what landed since the last reading, premises knocked out, blockers
+  lifted, tracker changes in the slice, and every disagreement the three ground sources showed.
+- **`## Where it stands`** — the batches running, as the catalogue's rows have them, each with
+  the ground it holds.
+- **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
+  what clears each one against the occupied ground, and what holds the ones held.
+- **`## Needs your word`** — the tracker edits the candidates stand on, each named as the
+  condition that releases its batch, the word the layout launches on, and — where the slice ran
+  out rather than the work — the capacity outside it, as a choice of its own.
 
 ## After the report
 
@@ -184,6 +184,7 @@ section explicit even when empty:
 - [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)
 - [`../../references/report-format.md`](../../references/report-format.md)
+- [`../../references/report-blocks.md`](../../references/report-blocks.md)
 - [`../../references/issue-currency.md`](../../references/issue-currency.md)
 - [`../../references/base-resolution.md`](../../references/base-resolution.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)

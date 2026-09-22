@@ -18,8 +18,8 @@ default branch, a branch checked out in a worktree. `keeps` names which.
 
 **`freedBy` is the keep that is about to stop holding.** A branch kept ONLY because a
 worktree has it checked out, where that worktree is itself going: remove the worktree,
-re-run the scan, and it answers `delete` on the proof it already had. It belongs in the
-gate's **deleting** section beside that worktree — the user approves the pair — and never
+re-run the scan, and it answers `delete` on the proof it already had. It belongs among the
+gate's 🟡 **recoverable** rows beside that worktree — the user approves the pair — and never
 among the things that stay.
 
 **`nameSafe: false`** changes no verdict. git accepts `$ ( ) ; & | ' " < >` in a branch
