@@ -84,8 +84,8 @@ return, read in the call above — a return written there and a return accepted 
 
 ### This run
 
-The plan-doc, where one was kept — named per `session-naming.md`, under
-`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, its first line naming this checkout — for the gate's
+The plan-doc, where one was kept — named and placed per `session-naming.md`, its first line
+naming this checkout — for the gate's
 settlements; the task list for the slice in flight; then the tree, which outranks both: each
 slice's branch, whether its parent's history carries it, and in request mode whether its request
 merged.

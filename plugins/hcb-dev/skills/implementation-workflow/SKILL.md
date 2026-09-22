@@ -108,7 +108,7 @@ Settle, in one gate:
 For anything multi-slice, **persist the plan and the captured authorizations** so a long autonomous
 run survives context compaction: slice progress on the native task list, and the plan — mode, merge
 authorization, strategy, Phase 0's read point, each slice's cut point as it is cut — in a durable
-plan-doc under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plans`, named per `session-naming.md`. Where this session titled itself at
+plan-doc named and placed per `session-naming.md`. Where this session titled itself at
 intake, the approved scope is what that title settles on (`session-naming.md`'s second step).
 
 ## Phase 2 — Autonomous execution

@@ -50,8 +50,8 @@ What the report goes on to ask is never announced there as settled.
 - **No bracket tags.** A category is a heading, a group, a column or a label — never `[text]`
   inside a line.
 - **A block or a group with nothing in it is left out**, the ask block included — "nothing waits
-  on you" is the first line's to say — save `## Findings`, which a report whose occasion carries
-  it prints even empty, its header line saying `0 after dedup`.
+  on you" is the first line's to say. Two stand anyway: `## Findings`, whose header line says
+  `0 after dedup`, and a block an occasion keeps to show it looked, which says that in one bullet.
 - **A block keeps its name** from one report to the next, in whatever language the session
   speaks.
 
