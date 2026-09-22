@@ -40,12 +40,13 @@ on, the steps are the ones below.
 - **Candidate text travels as written.** The claim is the finder's own `summary`; nothing is
   reworded on the way in, and a candidate lacking a concrete failure scenario is not one to submit.
 - **Every carrier is in before the grouping.** Once `units` has run, `add` refuses: a carrier
-  that arrives later goes into the next pass.
+  that arrives later goes into the next pass. One accepted while `units` was running belongs to no
+  group, and `result` stops until the round is grouped again.
 
 ## Grouping
 
 `merge` lists every accepted candidate by id. Group them by the key
-[`findings.md`](findings.md) fixes — one defect at one coordinate, or one mechanism anchored at
+`findings.md` fixes — one defect at one coordinate, or one mechanism anchored at
 several — and hand the grouping to `units`: every candidate in exactly one group, the lead being the
 member whose failure scenario is the most concrete. The group is rated by its most severe member
 and checked by its lead's claim, so only the lead's carried verdict can stand for it. Distinct
@@ -63,9 +64,10 @@ second `queue` drops the verdicts — both start the checks over.
   else — the checker takes the claim from the store, where who found it, how sure they were and how
   severe they called it are withheld. Up to ten launches in one message; where the Agent tool offers
   `run_in_background`, pass `false`.
-- **Then wait with `wait --for verdicts`** — one blocking call per window, repeated until it says
-  complete or the ceiling [`review-runs.md`](review-runs.md) sets is reached. Never poll, sleep or
-  start a watcher in its place.
+- **Then wait with `wait --for verdicts`** — one blocking call per window, given the Bash tool's
+  ten-minute maximum as its timeout, since the window outlasts the tool's own default. Repeat it
+  until it says complete or the ceiling [`review-runs.md`](review-runs.md) sets is reached. Never
+  poll, sleep or start a watcher in its place.
 - **Only the store counts.** A checker's closing line is a receipt, not a verdict; a group still
   without one at the ceiling is `not measured — failed`, and the next pass checks it.
 - **The checks run the plugin's script.** In the `default` permission mode its first call asks once,

@@ -12,7 +12,8 @@
 # Helpers this driver handles itself:
 #   @write <path> <word>   a step: "<word>\n" into that file of the scratch repository
 #   @store <path> <word>   a step: "<word>\n" into that file of the round's work
-#                          directory — a file another process is still writing
+#                          directory — a file another process is still writing;
+#                          `@file:<name>` in place of the word copies inputs/<name> there
 #   @file:<name>           a word: a copy of inputs/<name>, every `@blob:<path>` in it
 #                          replaced by the scratch repository's blob of <path>
 #   INSIDE_REPO=1          environment: TMPDIR is put inside the scratch repository
@@ -69,7 +70,10 @@ for ((n = 0; n < count; n++)); do
   if [ "${words[0]}" = "@store" ]; then
     [ -n "$round" ] || { echo "drive: @store before any init" >&2; exit 125; }
     mkdir -p "$(dirname "$TMPDIR/hcb-review/$round/${words[1]}")" || exit 125
-    printf '%s\n' "${words[2]}" > "$TMPDIR/hcb-review/$round/${words[1]}"
+    case "${words[2]}" in
+      @file:*) cp "$here/inputs/${words[2]#@file:}" "$TMPDIR/hcb-review/$round/${words[1]}" || exit 125 ;;
+      *) printf '%s\n' "${words[2]}" > "$TMPDIR/hcb-review/$round/${words[1]}" ;;
+    esac
     continue
   fi
   args=()

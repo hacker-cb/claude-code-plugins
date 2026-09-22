@@ -299,7 +299,7 @@ schema_terms() { # label, agent, schema file, jq filter producing the terms
   fi
   while IFS= read -r term; do
     [ -n "$term" ] || continue
-    grep -Fq -- "$term" "$2" \
+    grep -Fqw -- "$term" "$2" \
       || err "$1: never names '$term', which ${3##*/} holds it to — its body is where it learns the shape"
   done <<< "$terms"
 }

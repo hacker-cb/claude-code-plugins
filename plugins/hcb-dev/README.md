@@ -441,7 +441,7 @@ name stands for.
   directory, outside the repository: candidates, groups and verdicts go in only through it,
   each checked against [`schemas/`](schemas/) and refused with the errors that say what to fix,
   and `result` builds the answer no model writes. Addressed by a short round id, never by a
-  path; the rules it serves are [`references/verification.md`](references/verification.md).
+  path; the rules it serves are `references/verification.md`.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".

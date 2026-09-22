@@ -1,0 +1,19 @@
+{
+  "task": "late",
+  "source": "late",
+  "submitted_at": "2026-09-22T17:00:00.000Z",
+  "candidates": [
+    {
+      "id": "late.1",
+      "source": "late",
+      "file": "limit.sh",
+      "line": 3,
+      "side": "head",
+      "summary": "The two assignments on one line hide the second.",
+      "failure_scenario": "a reader editing the first assignment drops the second",
+      "severity": "Minor",
+      "category": "simplification"
+    }
+  ],
+  "rejected": []
+}

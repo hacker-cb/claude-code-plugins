@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "lib",
+      "line": 1,
+      "side": "base",
+      "summary": "The helpers directory carries a shell library nothing sources.",
+      "failure_scenario": "the library is edited as though it ran, and nothing runs it",
+      "severity": "Minor",
+      "category": "reuse"
+    }
+  ]
+}

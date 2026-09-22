@@ -26,8 +26,8 @@
 // wrong; 3 the round or the repository could not be read.
 
 import {
-  existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync,
-  statSync, writeFileSync,
+  existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync,
+  renameSync, rmSync, statSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -189,9 +189,11 @@ function readAt(repo, req, file, side) {
   if (!relOk(file)) return { missing: `'${file}' is not a path relative to the repository root` };
   const tree = treeOf(req, side);
   if (tree.none) return { missing: tree.none };
+  // `cat-file blob`, never `show`: a path in a tree can name a directory, and `show`
+  // would print its listing as though it were the file's lines.
   if (tree.ref) {
-    const r = repo.git(['show', `${tree.ref}:${file}`]);
-    return r.ok ? { text: r.out } : { missing: `${file} is not in ${tree.ref.slice(0, 7)}` };
+    const r = repo.git(['cat-file', 'blob', `${tree.ref}:${file}`]);
+    return r.ok ? { text: r.out } : { missing: `${file} is not a file in ${tree.ref.slice(0, 7)}` };
   }
   const abs = path.join(repo.top, file);
   const resolved = real(abs);
@@ -210,10 +212,19 @@ function blobAt(repo, req, file, side) {
   if (tree.none) return null;
   if (tree.ref) {
     const r = repo.git(['rev-parse', '--verify', '-q', `${tree.ref}:${file}`]);
+    if (!r.ok) return null;
+    const oid = r.out.trim();
+    return repo.git(['cat-file', '-t', oid]).out.trim() === 'blob' ? oid : null;
+  }
+  const abs = path.join(repo.top, file);
+  const resolved = real(abs);
+  if (!resolved || !inside(resolved, repo.top)) return null;
+  // What git keeps for a symlink is the link's own text; `hash-object` on the path reads
+  // through it instead, and the two hashes would never meet.
+  if (lstatSync(abs).isSymbolicLink()) {
+    const r = repo.git(['hash-object', '--stdin'], readlinkSync(abs));
     return r.ok ? r.out.trim() : null;
   }
-  const resolved = real(path.join(repo.top, file));
-  if (!resolved || !inside(resolved, repo.top)) return null;
   const r = repo.git(['hash-object', '--', file]);
   return r.ok ? r.out.trim() : null;
 }
@@ -594,6 +605,11 @@ function verdict() {
     else evidence.push({ path: e.path, side, lines: e.lines, quote: e.quote, blob });
   });
   if (missing.length) refuse(missing, { unit: u.unit });
+  // The claim's own coordinate is what the verdict answers: one that never read it says
+  // nothing about the claim, and could never stand in a later pass either.
+  if (!evidence.some((e) => e.path === u.file && e.side === u.side)) {
+    refuse([{ at: '/evidence', message: `never reads ${u.file} on the ${u.side} side — the claim's own coordinate goes in the evidence, first` }], { unit: u.unit });
+  }
   // The revision a verdict names is the one it read: the commit the round opened on,
   // marked `+wt` where anything it read on the working tree differs from that commit —
   // untracked, edited before the round opened, or edited since.
@@ -657,10 +673,17 @@ function result() {
   const { req } = round;
   const uf = path.join(round.dir, 'units.json');
   const qf = path.join(round.dir, 'queue.json');
-  const pending = merged(round).candidates.length;
+  const candidates = merged(round).candidates;
   // Candidates nobody grouped would leave an empty result that reads as a clean review.
-  if (!existsSync(uf) && pending) cannot(`round ${round.id} holds ${pending} candidate(s) and no groups — run units first`);
+  if (!existsSync(uf) && candidates.length) cannot(`round ${round.id} holds ${candidates.length} candidate(s) and no groups — run units first`);
   const all = existsSync(uf) ? readJson(uf).units : [];
+  // A submission accepted while `units` ran belongs to no group, and the result reads
+  // groups: it would leave the round with nobody having dropped it.
+  const grouped = new Set(all.flatMap((u) => u.members));
+  const ungrouped = candidates.filter((c) => !grouped.has(c.id)).map((c) => c.id);
+  if (ungrouped.length) {
+    cannot(`round ${round.id} holds candidate(s) no group does (${ungrouped.join(', ')}) — they arrived while units ran; group again`);
+  }
   const q = existsSync(qf) ? readJson(qf) : null;
   const warnings = [...(req.warnings || [])];
 
@@ -756,4 +779,7 @@ function result() {
   answer(out);
 }
 
+// Exit 1 says a submission was refused and invites sending it again; a store file that
+// cannot be read is not that, so whatever escapes leaves as exit 3 with an answer.
+process.on('uncaughtException', (e) => cannot(`${cmd} could not be answered: ${e.message}`));
 ({ init, add, merge, units, queue, task, verdict, wait, result })[cmd]();

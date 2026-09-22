@@ -100,6 +100,6 @@ once, under the last of them.
 A finding leaving the session that found it — in a return, a handoff, an issue body — carries its
 `Verified` cell and the revision it was read at — a mechanism's row, each instance's as well — and,
 where a check ran, the verdict itself with the blobs of what it read, so the next pass can let it
-stand ([`verification.md`](verification.md)). The receiver re-checks what it is about to act on
+stand (`verification.md`). The receiver re-checks what it is about to act on
 rather than everything, and an issue opened from a row says beside its source whether the finding
 was confirmed, and at which revision.

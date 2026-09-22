@@ -14,6 +14,7 @@
 #   {"checkout": "feature"}                                      move HEAD
 #   {"on": "feature", "write": {"<path>": "<text>"}, "remove": ["<path>"]}
 #                                                                one commit on it
+#   {"on": "feature", "link": {"<path>": "<target>"}}            a symlink in that commit
 #   {"on": "feature", "write": {...}, "commit": false}           edits left uncommitted
 #   {"untracked": {"<path>": "<text>"}}                          files nobody added
 set -u
@@ -52,6 +53,10 @@ apply() {
     # The first commit lands on the unborn branch `init` named, which checkout refuses.
     [ "$(g symbolic-ref --short HEAD)" = "$on" ] || g checkout -q "$on" || return 1
     put "$(jq -c '.write // {}' <<<"$step")" || return 1
+    while IFS= read -r p; do
+      mkdir -p "$repo/$(dirname "$p")"
+      ln -sf "$(jq -r --arg p "$p" '.link[$p]' <<<"$step")" "$repo/$p" || return 1
+    done < <(jq -r '.link // {} | keys[]' <<<"$step")
     while IFS= read -r p; do
       g rm -rq -- "$p" || return 1
     done < <(jq -r '.remove // [] | .[]' <<<"$step")
