@@ -37,14 +37,15 @@ a skill names the invariant it is leaning on and goes on.
   that resolves is not a guess that is right. Resolve it, or say the question
   cannot be answered.
 - **The user's login is ours too.** Every session and every batch acts through
-  the user's own forge account — the login `gh api user` answers — so a review, a
-  comment, a push or a resolve under it is as likely a session's as the user's,
-  and the forge records both as a `User`, never as a bot. The login alone never
-  makes anything the user's edit, or another person's: what was said decides. A
-  `COMMENTED` review with an empty body holding one reply in a thread is how the
-  forge records a thread reply ([`forge-behaviour.md`](forge-behaviour.md)); a
-  request, an objection or a verdict addressed to the work is the user speaking,
-  and is taken as theirs.
+  the user's own forge account — the login `gh api user` or `glab api user`
+  answers — so a review, a comment, a push or a resolve under it is as likely a
+  session's as the user's; on GitHub both are recorded as a `User`, never as a
+  bot. The login alone never makes anything the user's edit, or another
+  person's: what was said decides. On GitHub a `COMMENTED` review with an empty
+  body holding one reply in a thread is how a thread reply posts
+  ([`forge-behaviour.md`](forge-behaviour.md), GitLab's counterpart unmeasured);
+  a request, an objection or a verdict addressed to the work is the user
+  speaking, and is taken as theirs.
 - **A file read in part is not read.** A truncated read, or a read of the section
   that looked relevant, settles nothing — the line that decides is the one that
   would have been skipped.
