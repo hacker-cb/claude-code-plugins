@@ -1,0 +1,12 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 4,
+      "side": "head",
+      "failure_scenario": "x",
+      "severity": "Huge",
+      "category": "correctness"
+    }
+  ]
+}

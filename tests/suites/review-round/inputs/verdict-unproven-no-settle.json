@@ -1,0 +1,10 @@
+{
+  "verdict": "unproven",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "lines": "5",
+      "quote": "rm -rf \"$TMPDIR/$3\""
+    }
+  ]
+}

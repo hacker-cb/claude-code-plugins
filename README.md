@@ -39,6 +39,7 @@ More skills and rules will be added over time.
 plugins/hcb-<domain>/             # one themed (first-party) plugin per domain
   .claude-plugin/plugin.json
   skills/<skill>/SKILL.md
+  agents/<group>/<agent>.md       # what a skill launches through the Agent tool
 external_plugins/<name>/          # thin wrapper around an external npm MCP server
   .claude-plugin/plugin.json      #   upstream name, no version
   .mcp.json                       #   npx <pkg>@latest

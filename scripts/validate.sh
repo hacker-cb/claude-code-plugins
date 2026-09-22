@@ -280,13 +280,77 @@ while IFS= read -r skill; do
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
 
 # --- agents -----------------------------------------------------------------
-# The other substitution site the docs name. None exist in this repo today; the
-# loop is here so the first one added is covered rather than discovered later.
-# `commands/` is deliberately NOT scanned: there a positional IS the feature,
-# which is exactly why a shell one must not be written beside it.
+# The other substitution site the docs name, and the whole of what an agent knows: it
+# reads no reference (a path read from inside it resolves against the repository under
+# review), so its frontmatter and body carry everything, and every check below is one
+# a broken agent would otherwise fail only when it runs. `commands/` is deliberately
+# NOT scanned for positionals: there a positional IS the feature, which is exactly why
+# a shell one must not be written beside it.
+agent_ceiling=200
+# An agent that submits through a schema-checked subcommand learns the shape from its
+# own body alone, so every field and value the schema holds it to must be named there.
+schema_terms() { # label, agent, schema file, jq filter producing the terms
+  local terms
+  # A schema that is gone, or reshaped past the filter, yields no terms — which would
+  # read as an agent naming all of them.
+  if [ ! -f "$3" ] || ! terms=$(jq -er "$4" "$3" 2>/dev/null) || [ -z "$terms" ]; then
+    err "$1: submits through a subcommand checked against ${3##*/}, and no terms could be read from it — the agent's body cannot be checked against the schema"
+    return
+  fi
+  while IFS= read -r term; do
+    [ -n "$term" ] || continue
+    grep -Fqw -- "$term" "$2" \
+      || err "$1: never names '$term', which ${3##*/} holds it to — its body is where it learns the shape"
+  done <<< "$terms"
+}
 while IFS= read -r agent; do
   [ -n "$agent" ] || continue
-  positional_check "$agent" "agent '$(basename "$agent" .md)'"
+  name=$(basename "$agent" .md)
+  label="agent '${agent#plugins/}'"
+  positional_check "$agent" "$label"
+  if [ "$(head -n1 "$agent")" != "---" ]; then
+    err "$label: must start with '---' frontmatter — every .md under agents/ loads as an agent"
+    continue
+  fi
+  fm=$(awk 'NR==1 { next } /^---[[:space:]]*$/ { exit } { print }' "$agent")
+  fmname=$(echo "$fm" | grep -E '^name[[:space:]]*:' | head -n1 \
+    | sed -E "s/^name[[:space:]]*:[[:space:]]*//; s/^[\"']//; s/[\"']$//")
+  [ "$fmname" = "$name" ] \
+    || err "$label: frontmatter name '${fmname:-<none>}' must equal the file name '$name' — it is the last segment of the id the agent is launched by"
+  echo "$fm" | grep -Eq '^description[[:space:]]*:' || err "$label: frontmatter missing 'description'"
+  echo "$fm" | grep -Eq '^tools[[:space:]]*:' \
+    || err "$label: frontmatter missing 'tools' — without it the agent inherits every tool the session has"
+  if echo "$fm" | grep -Eq '^background[[:space:]]*:[[:space:]]*true'; then
+    err "$label: 'background: true' lands the agent's answer where its launcher does not wait"
+  fi
+  n=$(awk 'END { print NR }' "$agent")
+  [ "$n" -le "$agent_ceiling" ] || err "$label: $n lines, over the $agent_ceiling-line ceiling for an agent"
+  if grep -Eq '\]\([^)]*\.md([#)])' "$agent"; then
+    err "$label: links a markdown file — an agent resolves no reference from the plugin; carry the rule in its body"
+  fi
+  plugin_dir=${agent%%/agents/*}
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    [ -e "$plugin_dir/$ref" ] || err "$label: names \${CLAUDE_PLUGIN_ROOT}/$ref, which $plugin_dir does not have"
+  done < <(grep -o '\${CLAUDE_PLUGIN_ROOT}/[A-Za-z0-9._/-]*' "$agent" | sed 's|^\${CLAUDE_PLUGIN_ROOT}/||' | sort -u)
+  # The subcommands are read off the command itself, a continued line joined first; an
+  # agent naming the script in any other form is refused, so the checks below cannot go
+  # quiet on a command written differently.
+  if grep -q 'review-round\.mjs' "$agent"; then
+    subs=$(awk '{ if (sub(/\\$/, "")) printf "%s ", $0; else print }' "$agent" \
+      | grep -oE 'review-round\.mjs"[[:space:]]+[a-z]+' | awk '{ print $NF }' | sort -u)
+    [ -n "$subs" ] \
+      || err "$label: names review-round.mjs, but never as 'review-round.mjs\" <subcommand>' — the form the schema check reads"
+    if printf '%s\n' "$subs" | grep -qx verdict; then
+      schema_terms "$label" "$agent" "$plugin_dir/schemas/verdict.json" \
+        '.["$defs"].verdictName.enum[], .["$defs"].submitted.required[], (.["$defs"].submitted.properties | keys[]), (.["$defs"].evidenceSubmitted.properties | keys[]), .["$defs"].evidenceSubmitted.properties.side.enum[]'
+    fi
+    if printf '%s\n' "$subs" | grep -qx add; then
+      schema_terms "$label" "$agent" "$plugin_dir/schemas/candidates.json" \
+        '.["$defs"].candidate.required[], .["$defs"].candidate.properties.side.enum[], .["$defs"].candidate.properties.severity.enum[], .["$defs"].candidate.properties.category.enum[]'
+    fi
+  fi
+  ok "$label"
 done < <(find plugins -type f -path '*/agents/*.md' 2>/dev/null | sort)
 
 # --- link form --------------------------------------------------------------

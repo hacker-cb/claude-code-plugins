@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "notes.txt",
+      "line": 1,
+      "side": "head",
+      "summary": "A scratch note is left beside the code.",
+      "failure_scenario": "the note ships with the change and says nothing true about it",
+      "severity": "Minor",
+      "category": "simplification"
+    }
+  ]
+}

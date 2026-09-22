@@ -1,0 +1,15 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "lines": "4",
+      "quote": "if [ \"$count\" -ge \"$limit\" ]; then echo ok; else echo over; fi"
+    },
+    {
+      "path": "limit-link.sh",
+      "lines": "1",
+      "quote": "limit.sh"
+    }
+  ]
+}

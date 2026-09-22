@@ -95,11 +95,11 @@ a budget a further candidate enters only by naming the one it outranks, and the 
 them sees what the budget pushed out rather than a list already cut.
 **Decided cold.** Where something other than this run rules its candidates — an order's
 addressee, a master session, the user — a candidate is not decided in the response that found
-it: it travels with its proposed outcome and waits for the pass reading the run's candidates
-together, against each other and against what the tracker holds. Absent such an authority, the
-run's own end is that pass. That pass is `hcb-dev:findings-pass`, and it **verifies before it
-rules**: every candidate re-measured by a check that never saw the finder's argument. **Fixing
-never waits for it**: **FIX** and **HAND OVER** are settled where the finding is found.
+it: it waits with its proposed outcome for the pass reading the run's candidates together, against
+each other and against the tracker; absent such an authority, the run's own end is that pass. That
+pass is `hcb-dev:findings-pass`, and it **verifies before it rules**: every candidate re-measured by
+a check that never saw the finder's argument, or carrying a verdict whose every file is unchanged
+([`verification.md`](verification.md)). **Fixing never waits for it**: **FIX** and **HAND OVER** are settled where the finding is found.
 
 **The same finding twice.** A finding is identified by `(file, line)` **and** by mechanism, the key
 `hcb-dev:multi-review` dedupes on, since reviewers routinely anchor one root cause at different

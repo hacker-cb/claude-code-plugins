@@ -1,0 +1,10 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "README.md",
+      "lines": "1",
+      "quote": "# fixture"
+    }
+  ]
+}

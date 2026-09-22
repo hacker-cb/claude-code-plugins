@@ -1,0 +1,11 @@
+{
+  "verdict": "refuted",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "lines": "3",
+      "quote": "count=\"$1\"; limit=\"$2\""
+    }
+  ],
+  "refuted_because": "Two assignments on one line are ordinary shell and change nothing."
+}

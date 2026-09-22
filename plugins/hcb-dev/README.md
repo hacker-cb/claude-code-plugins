@@ -90,8 +90,10 @@ form: you paste every one of them yourself.
 - **`findings-pass`** — `/hcb-dev:findings-pass`
   The pass that rules a run's findings cold and together, once the work is done: every
   candidate collected — this session's own, ones handed over from another session, a master's
-  batches' — deduplicated, **verified** by subagents that are given the claim and its coordinate
-  and never the finder's argument, then **grouped by mechanism** — the confirmed and unproven
+  batches' — deduplicated, **verified** by the plugin's one checker, `hcb-dev:findings:verifier`,
+  which takes the claim and its coordinate from the round's store and never the finder's
+  argument, and only reads — a verdict carried in whole standing while every file it read is
+  unchanged — then **grouped by mechanism** — the confirmed and unproven
   findings sharing a cause, or a gate that could hold them all, become one row with its instances
   listed — searched in the tracker, ranked, and ended in one of the outcomes of
   `references/findings.md`: a number of its own only for what outlives the work in hand, the rest
@@ -352,6 +354,19 @@ the plan stages them.
   tables it classifies by are
   [`skills/git-cleanup/references/verdicts.md`](skills/git-cleanup/references/verdicts.md).
 
+## Agents
+
+Definitions a skill hands work to through the Agent tool — never commands you type. Each
+carries the whole of what it knows in its own file under [`agents/`](agents/), declares the
+tools it may use, and reports through a script rather than in prose, so what it found is
+checked before anything reads it.
+
+- [`agents/findings/verifier.md`](agents/findings/verifier.md) — `hcb-dev:findings:verifier`,
+  the one checker: handed a round and a group id, it takes the claim from the store, reads the
+  code — never runs it — and records `confirmed`, `unproven` or `refuted` with the evidence it
+  read. Launched by `findings-pass`; the rules for handing it work and for letting its verdict
+  stand are [`references/verification.md`](references/verification.md).
+
 ## Shared scripts
 
 A question with one right answer, and a set of wrong ones that look alike, belongs in
@@ -421,6 +436,12 @@ name stands for.
   named in full; `--since` reads the slice again against an earlier reading of it and says
   what entered, left, was edited or moved a link — each edge once, the forge's own count of
   link events beside it as a cross-check.
+
+- [`scripts/review-round.mjs`](scripts/review-round.mjs) — the one writer of a round's work
+  directory, outside the repository: candidates, groups and verdicts go in only through it,
+  each checked against [`schemas/`](schemas/) and refused with the errors that say what to fix,
+  and `result` builds the answer no model writes. Addressed by a short round id, never by a
+  path; the rules it serves are `references/verification.md`.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
@@ -584,9 +605,10 @@ Per skill, on top of those:
   Server 3.17 for hierarchy and types, 3.19 for dependencies. `glab` reads none
   of them and links issues only while creating one, so the rest goes through
   `glab api` (`references/forge-docs.md`).
-- **`findings-pass`**: the host's subagents, which run the checks, and whatever
-  `issue-tracking` needs for the tracker search; with no tracker to reach it still
-  verifies and shows, saying there is nowhere to file.
+- **`findings-pass`**: the host's subagents, which run `hcb-dev:findings:verifier` —
+  Claude Code v2.1.271 or later, whose agents honour `omitClaudeMd` — `node` for
+  `review-round.mjs`, and whatever `issue-tracking` needs for the tracker search; with no
+  tracker to reach it still verifies and shows, saying there is nowhere to file.
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
   Dependabot half is
   [`skills/dependency-versions/references/dependabot.md`](skills/dependency-versions/references/dependabot.md).

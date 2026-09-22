@@ -1,0 +1,10 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "src/extension.ts",
+      "lines": "62",
+      "quote": "spawn('codex')"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "src/extension.ts",
+      "line": 62,
+      "side": "head",
+      "summary": "The command runs a binary named codex from PATH.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Critical",
+      "category": "correctness"
+    }
+  ]
+}
