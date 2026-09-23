@@ -18,7 +18,7 @@
 //   node review-round.mjs diff    --round <id> [--number <n>]
 //   node review-round.mjs show    --round <id> (--number <n> | --unit <unit>)
 //   node review-round.mjs add     --round <id> --source <source> [--task <task>] [--file <json>]
-//   node review-round.mjs codex   --round <id> [--timeout-s <n>]
+//   node review-round.mjs codex   --round <id> [--retry] [--timeout-s <n>]
 //   node review-round.mjs status  --round <id> --task <task> [--state partial|unavailable]
 //                                 [--model <model>] [--note <text>]
 //   node review-round.mjs merge   --round <id> [--task <task>]
@@ -69,7 +69,7 @@ const SPEC = {
   diff: ['--round', '--number'],
   show: ['--round', '--number', '--unit'],
   add: ['--round', '--source', '--task', '--file'],
-  codex: ['--round', '--timeout-s'],
+  codex: ['--round', '--retry', '--timeout-s'],
   status: ['--round', '--task', '--state', '--model', '--note'],
   merge: ['--round', '--task'],
   units: ['--round', '--file', '--append'],
@@ -83,7 +83,7 @@ const USAGE = `usage: node review-round.mjs <${Object.keys(SPEC).join('|')}> [fl
 const [cmd, ...argv] = process.argv.slice(2);
 if (!cmd || !SPEC[cmd]) die(cmd ? `unknown subcommand '${cmd}'` : 'a subcommand is required');
 // A switch is answered by being there, and takes no value.
-const SWITCHES = new Set(['--depth', '--append']);
+const SWITCHES = new Set(['--depth', '--append', '--retry']);
 const opts = {};
 for (let i = 0; i < argv.length; i += 1) {
   if (!SPEC[cmd].includes(argv[i])) die(`${cmd} takes no argument '${argv[i]}'`);
@@ -874,7 +874,7 @@ function add() {
 }
 
 // Whether the round still takes an answer from this task, and the plan's entry for it.
-function admits(round, task, source) {
+function admits(round, task, source, retrying = false) {
   const p = planOf(round);
   const planned = plannedTasks(p).find((x) => x.task === task);
   if (planned && planned.source !== source) {
@@ -892,9 +892,10 @@ function admits(round, task, source) {
     refuse([{ at: '', message: `round ${round.id} is already grouped — this submission came too late to be stored` }], { task });
   }
   // A task whose loss the conductor recorded, and a round whose result is built, are
-  // closed: an answer arriving now would sit where no group and no result reads it.
+  // closed: an answer arriving now would sit where no group and no result reads it. A
+  // retry is the one answer a loss takes back.
   const recorded = statusOf(round.dir, task);
-  if (recorded && !existsSync(path.join(round.dir, 'sources', `${task}.json`))) {
+  if (recorded && !existsSync(path.join(round.dir, 'sources', `${task}.json`)) && !(retrying && recorded.state === 'unavailable')) {
     refuse([{ at: '', message: `task '${task}' was recorded as ${recorded.state} — this submission came too late to be stored` }], { task });
   }
   if (existsSync(path.join(round.dir, 'result.json'))) {
@@ -933,10 +934,10 @@ function store(round, task, source, value, planned, extra = {}, repo = checkoutO
     const at = readAt(repo, round.req, c.file, c.side);
     const reason = at.missing
       || (c.line > lineCount(at.text) ? `${c.file} has ${lineCount(at.text)} line(s) on the ${c.side} side, and the anchor is line ${c.line}` : null);
-    // In a round a coordinate the snapshot does not carry is a claim about some other
-    // tree, and it leaves. In a pass it is only a tree this session cannot read: the
-    // finding stays, marked, and is neither verified nor refuted here.
-    if (reason && round.req.mode === 'round') { rejected.push({ index: i, file: c.file, line: c.line, reason }); return; }
+    // A planned task's coordinate the snapshot does not carry is a claim about some other
+    // tree, and it leaves. A caller's carried finding, and any in a pass, is only one this
+    // round cannot read: it stays, marked, neither verified nor refuted here.
+    if (reason && round.req.mode === 'round' && planned) { rejected.push({ index: i, file: c.file, line: c.line, reason }); return; }
     const stored = { id: `${task}.${kept.length + 1}`, source, ...c };
     if (reason) { stored.unreachable = reason; unreachable.push({ id: stored.id, reason }); }
     kept.push(stored);
@@ -1076,7 +1077,11 @@ async function codex() {
   const planned = plannedTasks(p).find((x) => x.kind === 'codex');
   if (!planned) cannot(`round ${round.id}'s plan holds no codex task — open the round with codex among its --sources`);
   const { task, source } = planned;
-  admits(round, task, source);
+  // A retry runs the pass once more after it was lost, on a model the lost pass was not.
+  const retry = opts['--retry'] === true;
+  const prior = retry ? statusOf(round.dir, task) : null;
+  if (retry && prior?.state !== 'unavailable') cannot(`round ${round.id}'s codex task was not lost — a retry follows a loss`);
+  admits(round, task, source, retry);
   const repo = checkoutOf(round);
   const c = catalog();
   const settings = c.rungs[round.req.rung].codex;
@@ -1103,8 +1108,9 @@ async function codex() {
     if (!claim()) answer(running);
   }
   // Under the lock, the round is asked again: a pass that ended while this waited for it
-  // has answered, and a second would be paid for nothing.
-  admits(round, task, source);
+  // has answered, and a second would be paid for nothing. A retry takes the loss back.
+  admits(round, task, source, retry);
+  if (retry) rmSync(path.join(round.dir, 'sources', `${task}.status.json`), { force: true });
   // Released by its holder alone: a lock another call took over is that call's.
   process.on('exit', () => {
     try { if (readJson(lock).pid === process.pid) rmSync(lock, { force: true }); } catch { /* gone already */ }
@@ -1125,7 +1131,7 @@ async function codex() {
     // A caller who named the model and the level has said what to run; the catalog is
     // read for whatever is left to choose, and for the model's window where it knows it.
     let models = null;
-    if (!(asked.model && asked.effort)) {
+    if (!(asked.model && asked.effort) || retry) {
       const cat = spawnSync('codex', ['debug', 'models'], {
         cwd: repo.top, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: CATALOG_MS, killSignal: 'SIGKILL',
       });
@@ -1136,9 +1142,12 @@ async function codex() {
       if (!models && !asked.model) lose(`the model catalog is unreadable (${why}): ${tail(`${cat.stdout || ''}\n${cat.stderr || ''}`, 3)}`);
     }
     // The round's own model where it was opened with one; otherwise the first listed,
-    // `priority` ascending from the newest frontier model.
-    const model = asked.model ?? [...models].filter((m) => m.visibility === 'list').sort((a, b) => a.priority - b.priority)[0]?.slug;
-    if (!model) lose('the codex catalog lists no model to review with');
+    // `priority` ascending from the newest frontier model. A retry passes over the model
+    // the lost pass ran on.
+    const tried = prior?.model ?? null;
+    const listed = (models || []).filter((m) => m.visibility === 'list' && m.slug !== tried).sort((a, b) => a.priority - b.priority);
+    const model = (asked.model && asked.model !== tried ? asked.model : null) ?? listed[0]?.slug;
+    if (!model) lose(retry ? `the codex catalog lists no model besides ${tried} to run the pass again on` : 'the codex catalog lists no model to review with');
     const entry = models?.find((m) => m.slug === model) ?? null;
     const ladder = entry ? (entry.supported_reasoning_levels || []).map((l) => l.effort) : null;
     if (ladder && !ladder.length) lose(`${model} has no reasoning ladder in the codex catalog`, { model, effort: null });
@@ -1193,6 +1202,7 @@ async function codex() {
     // Each candidate meets the candidates' own schema on its own, and carries no verdict:
     // what Codex says of its own finding is never a check that stands.
     const notes = r.timedOut ? [`run-warning: the watchdog ended codex after ${span}, once its answer was written`] : [];
+    if (retry) notes.push(`run-warning: the pass ran again on ${model}, the one on ${tried ?? 'its first model'} having been lost`);
     const less = [];
     const fits = [];
     const misfits = [];
@@ -1380,7 +1390,10 @@ function queue() {
       reused.push(u.unit);
     } else open.push(u);
   }
-  open.sort((a, b) => RANK[a.severity] - RANK[b.severity]);
+  // Of one weight, the round's own findings are checked before a caller's carried ones:
+  // the budget is the change's first.
+  const carriedOnly = (u) => (round.req.sources ? u.found_by.every((x) => !round.req.sources.includes(x)) : false);
+  open.sort((a, b) => RANK[a.severity] - RANK[b.severity] || carriedOnly(a) - carriedOnly(b));
   const critical = open.filter((u) => u.severity === 'Critical');
   let order = open.map((u) => u.unit);
   let cut = [];
@@ -1539,8 +1552,14 @@ function wait() {
     const left = pending();
     const waited = Math.round((Date.now() - t0) / 1000);
     if (!left.length || Date.now() - t0 >= limit * 1000) {
+      // A task answered with a loss is named with its notes: what ended it is the
+      // conductor's to read, and one model's limit on the Codex pass is a retry away.
+      const lost = what === 'tasks'
+        ? expected.map((x) => statusOf(round.dir, x)).filter((st) => st?.state === 'unavailable')
+          .map((st) => ({ task: st.task, model: st.model ?? null, notes: st.notes }))
+        : undefined;
       answer({
-        read: true, round: round.id, for: what, complete: left.length === 0, pending: left, waited_s: waited,
+        read: true, round: round.id, for: what, complete: left.length === 0, pending: left, lost, waited_s: waited,
         since_plan_s: Number.isNaN(planned) ? null : Math.round((Date.now() - planned) / 1000),
       });
     }

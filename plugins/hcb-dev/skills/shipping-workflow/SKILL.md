@@ -71,8 +71,9 @@ of step 0 — per
    that it writes to no network, and a read leaves that promise intact.
 2. **Commit the change first**, new files included — the review reads tracked
    files only, so a new file never added is outside it, and step 7 lands commits,
-   not the working tree. Where the project forbids committing yet, say so, and put
-   each new file under review with `git add -N <path>` instead.
+   not the working tree. Where the project forbids committing yet, say so: its new
+   files reach the review only as the review offers them, through a `git add -N`
+   that is the user's to run.
 
    **Sweep what the change orphaned.** Take the old name — field 2 of each `D` or `R` row — of every
    path the whole range deletes or renames, from step 1's `diff-base`: `git diff --name-status
@@ -120,7 +121,8 @@ of step 0 — per
    findings this work noticed and left unfixed — a caller's threaded in, and the
    ones this session turned up — each with its verdict where one was made: the
    round checks them beside its own, and what it rules on them takes the exits
-   step 5 gives any finding. Every source `multi-review` opens runs, the round's
+   step 5 gives any finding. A wave's batch hands none: its findings return
+   unverified (`hcb-dev:wave-worker`). Every source `multi-review` opens runs, the round's
    agents included; a source left out on account of a rule about subagents is a
    row in the gate below, never a judgement call made here.
 5. **Apply the fixes, then commit them** — that skill reports, it does not fix.

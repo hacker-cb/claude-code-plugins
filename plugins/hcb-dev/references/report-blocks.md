@@ -48,8 +48,7 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
   parent's history make it, in a batch its own build, request and return; each says when it was
   read, and one the tree does not confirm reads unknown.
 - **`Review coverage`** — `multi-review`'s own rows, unfolded, the slice in a column of its own
-  where a run has several: a source that could not run, ran over nothing or ran over the wrong
-  range is a gap, and one deliberately left out is `n/a`, its reason beside it.
+  where a run has several, each as [`review-pipeline.md`](review-pipeline.md) classifies it.
 - **`Issues`** — closed, or still open and why: a merged slice does not say what became of its issue.
 - **`What it leaves`** — any ref a completion could not retire and why
   ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions this run is done
@@ -77,8 +76,7 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
 | a sweep's gate | The plan · Needs your word |
 | a sweep done | What happened · What it leaves · Needs your word |
 
-A slice completed as a change request prints two: the driver's report on that request, and the
-run's final report beside it.
+A slice completed as a change request prints two reports: the driver's, and the run's final one.
 
 ## A wave report
 
@@ -126,9 +124,11 @@ Answer by number; "go" takes every recommendation.
 | `export/docs` | usage page | merged → `feat/export` · checks none | 🟢 done |
 
 ## Review coverage
-| slice | reviewer | covered | effort | result |
+| slice | source | covered | effort | result |
 |---|---|---|---|---|
-| `export/csv` | `codex-review` | `<base>`, 4 files | high | 🟢 no findings |
+| `export/csv` | `claude` | `<base>`, 4 files | high | 🟢 no findings |
+| `export/csv` | `security` | `<base>`, 4 files | high | 🟢 no findings |
+| `export/csv` | `codex` | `<base>`, 4 files | xhigh | 🟢 no findings |
 
 ## Findings
 **Findings — 0 after dedup · verified by none · confirmed 0 · unproven 0 · not measured 0 · refuted 0, dropped**

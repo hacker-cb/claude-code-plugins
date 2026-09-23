@@ -12,7 +12,8 @@
 #                        CODEX_LATE=1; CODEX_TRAP=1 keeps a .codex-term beside the marker when
 #                        told to stop; CODEX_EMPTY=1 writes nothing and prints a usage-limit
 #                        notice, after 70 KB of other output where CODEX_NOISE=1; CODEX_GROUP=1 groups the round while it runs, as a conductor
-#                        that stopped waiting would.
+#                        that stopped waiting would; CODEX_FAIL_MODEL=<slug> answers nothing
+#                        and prints a model-capacity notice when run on that model.
 set -u
 here=$(cd "$(dirname "$0")/.." && pwd)
 mark="${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}"
@@ -40,10 +41,11 @@ JSON
 fi
 [ "${1:-}" = exec ] || { echo "codex stub: '$*' is not a call this stub answers" >&2; exit 64; }
 printf '%s\n' "$@" > "$mark.codex-argv"
-out="" schema=""
+out="" schema="" model=""
 while [ $# -gt 0 ]; do
   case "$1" in
     -o) out="$2"; shift 2 ;;
+    -m) model="$2"; shift 2 ;;
     --output-schema) schema="$2"; shift 2 ;;
     *) shift ;;
   esac
@@ -55,6 +57,10 @@ cat > "$mark.codex-stdin"
 [ -n "${CODEX_TRAP:-}" ] && trap 'echo term > "$mark.codex-term"; exit 143' TERM
 pause() { [ -n "${CODEX_SLEEP:-}" ] && { sleep "$CODEX_SLEEP" & wait $!; }; return 0; }
 [ -z "${CODEX_LATE:-}" ] && pause
+if [ -n "${CODEX_FAIL_MODEL:-}" ] && [ "$model" = "$CODEX_FAIL_MODEL" ]; then
+  echo "ERROR: $model is at capacity right now. Try another model." >&2
+  exit 1
+fi
 if [ -n "${CODEX_EMPTY:-}" ]; then
   [ -n "${CODEX_NOISE:-}" ] && awk 'BEGIN { for (i = 0; i < 1000; i++) printf "%070d\n", i }'
   echo "ERROR: You've hit your usage limit. Try again later." >&2

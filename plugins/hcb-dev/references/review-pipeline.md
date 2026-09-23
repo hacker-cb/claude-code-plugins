@@ -7,11 +7,10 @@ findings reach a reader in is [`findings-table.md`](findings-table.md)'s.
 
 ## The round
 
-A round reviews one change: base → working tree, every tracked file, as it stood when `init`
-opened it. Commits and uncommitted edits are both in it; an untracked file is not, and is named
-in a `coverage-warning` with `git add -N <path>` as the way in. Everything the round holds lives
-in a store outside the repository that only `review-round.mjs` writes, addressed by the id
-`init` prints — never by a path.
+A round reviews one change: base → working tree, every tracked file, as it stood when `init` opened
+it. Commits and uncommitted edits are both in it; an untracked file is not, and is named in a
+`coverage-warning`. Everything the round holds lives in a store outside the repository that only
+`review-round.mjs` writes, addressed by the id `init` prints — never by a path.
 
 **While a round runs, the tree does not change.** A verdict reads the working tree, and one that
 read a file edited since `init` is flagged in the result as read on a tree the finders did not
@@ -33,8 +32,10 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    CLI at the rung's level for it — a narrowing,
    `--narrow "<a path, or a focus>"`, where the caller gave one, and a Codex model or level the
    caller named, as `--codex-model` and `--codex-effort`. Read the answer's `warnings` before
-   anything else: an untracked file named there is outside the review — say so, and offer
-   `git add -N <path>`, never run it; a round with nothing to review says so, and ends there.
+   anything else: an untracked file named there that belongs to the change is offered
+   `git add -N -- '<path>'`, the path single-quoted and a quote in it written `'\''` — offered,
+   never run — and where the offer is taken the round is opened again, its snapshot fixed at
+   `init`; one left out is said in the report. A round with nothing to review ends there.
 
    ```bash
    node "<plugin root>/scripts/review-round.mjs" init --mode round --base "<base>" --rung "<rung>" --sources "<sources>" --language "<tag>"
@@ -84,18 +85,19 @@ node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 
 ## The rung
 
-`high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger
-budget of checks, and a sweep for what the first pass missed. An entry weighing risk takes `high`
-where the change reaches past itself (public interface, shared helper, config, schema, wire
-format), cannot be walked back (it writes, migrates, publishes, or persists a format someone else
-reads), meets input whose shape you do not control, has nothing else checking it, removes a guard,
-an error path or a test, or touches paths the project marks sensitive; anything else, mechanics
-with no behaviour change among it, stays at `medium`. The rung's angles and numbers are
-data in the plugin's angle catalog, read by `plan`, never chosen by the one running the round;
-Codex's model and its ladder come from Codex's own catalog. For more than `high` buys, or where
-a round reads thin for the ground the change covers, offer the user the built-in `/code-review`
-at `xhigh`, `max` or `ultra`, typed by them, with the range spelled out as `<base>...HEAD`; never
-launch it.
+`high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger budget
+of checks, and a sweep for what the first pass missed. An entry weighing risk takes `high` where
+the change reaches past itself (public interface, shared helper, config, schema, wire format),
+cannot be walked back (it writes, migrates, publishes, or persists a format someone else reads),
+meets input whose shape you do not control, has nothing else checking it, removes a guard, an error
+path or a test, or touches paths the project marks sensitive; anything else, mechanics with no
+behaviour change among it, stays at `medium`. Size is a signal, never a threshold: ask what the
+change could conceal, not how big it is. The rung's angles and numbers are data in the plugin's
+angle catalog, read by `plan`, never chosen by the one running the round; Codex's model and its
+ladder come from Codex's own catalog. For more than `high` buys, or where a round reads thin for
+the ground the change covers, offer the user the built-in `/code-review` at `xhigh`, `max` or
+`ultra`, typed by them, with the range spelled out as `<base>...HEAD` and the narrowing where there
+is one; never launch it.
 
 ## What an agent's outcome becomes
 
@@ -106,7 +108,7 @@ launch it.
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
-| Codex answered nothing, or not in time | `unavailable`, the log's last lines or the watchdog in the status — where they name one model's limit, a round opened again with another `--codex-model` closes it |
+| Codex answered nothing, or not in time | `unavailable`, the log's last lines or the watchdog in the status — where they name one model's limit, the conductor runs the pass once more on the next model (`codex --retry`) |
 | a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
 | it was never launched, or never returned | `partial` for its source, the task named — `unavailable` where no task of that source answered |
 | no agents at all | `depth` for the finders' source |

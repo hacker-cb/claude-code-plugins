@@ -372,7 +372,7 @@ checked before anything reads it.
   ([`data/review-angles.json`](data/review-angles.json)) — the angles of each source the round
   was opened with: Claude's, the security ones, the Codex pass — launches a finder per angle
   and the Codex pass as a process, groups what they hand in, has each group checked, and builds
-  the result. Launched by `claude-review` and `codex-review`.
+  the result. Launched by `claude-review`, `codex-review` and `multi-review`.
 - [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of
   one round: it reads its brief and the change, and hands its candidates in through the store.
   Launched by the conductor.
@@ -644,9 +644,9 @@ Per skill, on top of those:
   it — without it the round's tasks run in that session itself and nothing is
   checked. The finders and the verifier run as subagents, so their reading spends
   their own context rather than the calling session's.
-- **`multi-review`**: what `claude-review` and `codex-review` need — it opens the
-  round with whichever sources can run, and records a missing one as a row in the
-  report rather than stopping.
+- **`multi-review`**: what `claude-review` and `codex-review` need — a source that
+  cannot run records its own loss in the round, a row of the report rather than a
+  stop.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
   skill when one is installed (`github-pr-workflow` here), otherwise the forge CLI
   directly. Nothing in it is GitHub-only.

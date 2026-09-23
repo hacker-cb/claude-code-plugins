@@ -131,7 +131,7 @@ Per slice, **in order** — slices stack and depend on each other:
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the completion signals as
    invocation prose: `mode`, `parent`, `diff-base` (the commit this slice was cut from — only the
    orchestrator knows it), `merge-strategy`, `merge-auth` with its addressee, `issues` — the ones
-   this slice alone settles — and the findings step 2 left unfixed.
+   this slice alone settles — and, outside a wave's batch, the findings step 2 left unfixed.
 
 **Autonomy is "no routine questions", not "never pauses".** The downstream skills' own gates are
 honored, not waived: an **actionable** coverage gap; a local merge into the **default** branch, or
