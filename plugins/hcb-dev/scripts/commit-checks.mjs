@@ -104,7 +104,8 @@ const answer = {
   // One field to route on. Reassembling it from four numbers at every call site is how a
   // combination gets missed — a server rollup of `failure` beside rows that all passed,
   // for one, which the counts alone report as green.
-  // Precedence: unread > retry > failing > covered > running > empty > green.
+  // Precedence: unread > retry > failing > running > empty > green; `covered` refines only
+  // `running` or `empty` on a merge commit, never a stronger answer.
   verdict: 'unread',
   // `null` until a gate source is actually asked — "not asked" is not "asked and whole",
   // the same distinction `gates: null` keeps one field over.
@@ -485,6 +486,9 @@ if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict) && ans
     }
     if (answer.tree.headVerdict === 'green') {
       answer.verdict = 'covered';
+      // The empty-feeds note sends a reader to the commit before this one, which a cover
+      // does not need.
+      answer.notes = answer.notes.filter((n) => !n.startsWith('both feeds are empty'));
       answer.notes.push('the merge commit carries the tree of a head whose own checks are green'
         + ' — what has not finished on it is not waited for');
     } else {
