@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "\"twin.sh\"",
+      "line": 1,
+      "side": "head",
+      "summary": "The quoted twin echoes a line nobody reads.",
+      "failure_scenario": "running it prints a message the caller discards",
+      "severity": "Minor",
+      "category": "simplification"
+    }
+  ]
+}

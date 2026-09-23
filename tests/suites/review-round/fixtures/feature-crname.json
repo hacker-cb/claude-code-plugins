@@ -1,0 +1,14 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "note\r": "a note whose name ends in a carriage return\n"
+      }
+    }
+  ]
+}

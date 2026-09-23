@@ -1,0 +1,67 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 1,
+      "side": "head",
+      "summary": "Candidate 1: the comparison on this line is suspect.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 2,
+      "side": "head",
+      "summary": "Candidate 2: the comparison on this line is suspect.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 3,
+      "side": "head",
+      "summary": "Candidate 3: the comparison on this line is suspect.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 4,
+      "side": "head",
+      "summary": "Candidate 4: the comparison on this line is suspect.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 5,
+      "side": "head",
+      "summary": "Candidate 5: the comparison on this line is suspect.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 1,
+      "side": "head",
+      "summary": "Candidate 6: the comparison on this line is suspect.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 2,
+      "side": "head",
+      "summary": "Candidate 7: the comparison on this line is suspect.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        "it's.sh": "echo before\n"
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "it's.sh": "echo after\n"
+      }
+    }
+  ]
+}

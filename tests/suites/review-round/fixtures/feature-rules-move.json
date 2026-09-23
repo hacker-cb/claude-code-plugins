@@ -1,0 +1,24 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        "old/CLAUDE.md": "# old\nNothing here is removed without a note.\n",
+        "old/api.sh": "api() { :; }\n"
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "new/api.sh": "api() { :; }\n"
+      },
+      "remove": [
+        "old/api.sh"
+      ]
+    }
+  ]
+}

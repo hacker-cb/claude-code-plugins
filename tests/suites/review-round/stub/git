@@ -15,6 +15,8 @@
 #   {"on": "feature", "write": {"<path>": "<text>"}, "remove": ["<path>"]}
 #                                                                one commit on it
 #   {"on": "feature", "link": {"<path>": "<target>"}}            a symlink in that commit
+#   {"on": "feature", "bytes": {"<path>": "<base64>"}}           a file's exact bytes, where no
+#                                                                JSON string holds them
 #   {"on": "feature", "write": {...}, "commit": false}           edits left uncommitted
 #   {"untracked": {"<path>": "<text>"}}                          files nobody added
 set -u
@@ -57,6 +59,11 @@ apply() {
       mkdir -p "$repo/$(dirname "$p")"
       ln -sf "$(jq -r --arg p "$p" '.link[$p]' <<<"$step")" "$repo/$p" || return 1
     done < <(jq -r '.link // {} | keys[]' <<<"$step")
+    while IFS= read -r p; do
+      mkdir -p "$repo/$(dirname "$p")"
+      node -e 'process.stdout.write(Buffer.from(process.argv[1], "base64"))' \
+        "$(jq -r --arg p "$p" '.bytes[$p]' <<<"$step")" > "$repo/$p" || return 1
+    done < <(jq -r '.bytes // {} | keys[]' <<<"$step")
     while IFS= read -r p; do
       g rm -rq -- "$p" || return 1
     done < <(jq -r '.remove // [] | .[]' <<<"$step")

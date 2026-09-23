@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        "docs/my file.md": "one\n"
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "docs/my file.md": "two\n"
+      }
+    }
+  ]
+}

@@ -313,7 +313,7 @@ for suite in "${all_suites[@]}"; do
 
     if [ "$got" != "$want" ]; then
       report_failure "$suite/$fixture" "exit $got, wanted $want" "$note"
-      printf '         %s\n' "$(printf '%s' "$out" | grep -v '^started:' | head -2 | tr '\n' ' ')"
+      printf '         %s\n' "$(printf '%s' "$out" | head -2 | tr '\n' ' ')"
       suite_fail=$((suite_fail + 1)); continue
     fi
     # A case naming a fixture must have been answered by the stub; one naming `-`

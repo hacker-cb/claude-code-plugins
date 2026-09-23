@@ -36,12 +36,12 @@ A finding that is simply **wrong** is neither fixed nor surfaced: say why it doe
 move on. A fork does not go below either — §1 routes it, and where it is genuinely unforeseen the
 route is stopping the run, not filing it. Everything else failing a condition surfaces.
 
-**A fix costing less than the record of it is done rather than written down**, which lifts the
-first and fourth conditions and only those — the two saying the fix does not belong to this work,
-no reason to spend an entry on what a few lines settle. A fork is still a fork, the user's call
-still theirs, and ground that is not yours sends it to **HAND OVER**. The measure is the fix: a few
-lines with one obviously-correct form, **proposed** rather than made where it falls outside the
-range the reviewers read.
+**A fix costing less than the record of it is done rather than written down**, which lifts the first
+and fourth conditions and only those — the two saying the fix does not belong to this work, no
+reason to spend an entry on what a few lines settle. A fork is still a fork, the user's call still
+theirs, and ground that is not yours sends it to **HAND OVER**. The measure is the fix: a few lines
+with one obviously-correct form, **proposed** rather than made where it falls outside the range the
+reviewers read.
 
 ## What record it leaves
 
@@ -49,11 +49,10 @@ Everything below decides where a finding that was **not** fixed is written down;
 reaches back into the fix, which this work owes whatever the record says.
 
 **Count before deciding anything else.** Where several findings share a mechanism — distinct
-defects, each real, one cause — the mechanism is what is recorded, instances listed under it,
-never one entry each; where a gate could hold that mechanism, the gate is recorded and the
-instances are its evidence. They are still fixed on whatever terms they were owed. The count is
-taken over findings already re-measured, never over the claims as their finders worded them. A
-repeat of a finding already ruled on is *The same finding twice*, below.
+defects, each real, one cause — the mechanism is what is recorded, instances listed under it, never
+one entry each; where a gate could hold that mechanism, the gate is recorded and the instances are
+its evidence. They are still fixed on whatever terms they were owed. The count is taken over
+findings already re-measured, never over the claims as their finders worded them.
 **Where it came from decides what it is measured against.** One turned up while working on an
 issue, or reviewing the change that closes it, is measured against that issue **before any search
 by words**: the same mechanism, or a consequence of the fix just made, belongs to it, and where
@@ -84,27 +83,29 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 | **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one — `carried by <the row whose work takes it>` being one such reason |
 
 `Critical` and `Important` on the code this work is writing are **FIX**, blocking completion until
-they are; `Minor` on that code is **FIX** where the fix rides a reading happening anyway and
-**DROP** otherwise. Out of scope, severity decides how loudly a finding travels rather than
-whether — one severe enough stops the run instead of being carried or handed to other work.
+they are, save one a check refuted; `Minor` on that code is **FIX** where the fix rides a reading
+happening anyway and **DROP** otherwise. Out of scope, severity decides how loudly a finding travels
+rather than whether — one severe enough stops the run instead of being carried or handed to other work.
 
 **Ranked, not enumerated.** Candidates out of one run are ranked against each other, never listed
 in the order found, and `Critical` never enters that ranking: it travels whatever else does. Under
 a budget a further candidate enters only by naming the one it outranks, and the displaced one is
 **still named**, carrying **DROP** and the displacement as its reason — so the pass that rules
 them sees what the budget pushed out rather than a list already cut.
-**Decided cold.** Where something other than this run rules its candidates — an order's
-addressee, a master session, the user — a candidate is not decided in the response that found
-it: it waits with its proposed outcome for the pass reading the run's candidates together, against
-each other and against the tracker; absent such an authority, the run's own end is that pass. That
-pass is `hcb-dev:findings-pass`, and it **verifies before it rules**: every candidate re-measured by
-a check that never saw the finder's argument, or carrying a verdict whose every file is unchanged
-([`verification.md`](verification.md)). **Fixing never waits for it**: **FIX** and **HAND OVER** are settled where the finding is found.
+**Decided cold.** Where something other than this run rules its candidates — an order's addressee, a
+master session, the user — a candidate is not decided in the response that found it: it waits with
+its proposed outcome for the pass reading the run's candidates together, against each other and
+against the tracker; absent such an authority, the run's own end is that pass. That pass is
+`hcb-dev:findings-pass`, and it **verifies before it rules**: every candidate re-measured by a check
+that never saw the finder's argument, or carrying a verdict whose every file is unchanged
+([`verification.md`](verification.md)); one noticed before the work's review round goes into it as
+`noticed`, and comes out with its verdict. **Fixing never waits for it**:
+**FIX** and **HAND OVER** are settled where the finding is found.
 
-**The same finding twice.** A finding is identified by `(file, line)` **and** by mechanism, the key
-`hcb-dev:multi-review` dedupes on, since reviewers routinely anchor one root cause at different
-lines. One a run has already ruled on earns no second reading and blocks nothing: the outcome
-stands, and where that was **FIX** and a reviewer reports it again, the fix is what to check.
+**The same finding twice.** A finding is identified by `(file, line)` **and** by mechanism:
+reviewers routinely anchor one root cause at different lines. One a run has already ruled on earns
+no second reading and blocks nothing: the outcome stands, and where that was **FIX** and a reviewer
+reports it again, the fix is what to check.
 
 ## A drive-by fix is its own commit
 
@@ -139,12 +140,11 @@ With no tracker to reach the search is impossible and the classification reaches
 project states, while the re-measure still runs: the finding surfaces as an observation with no
 proposal, saying there is nowhere to file it.
 
-What is proposed is shown in the table [`findings-table.md`](findings-table.md) fixes, at the end
-of the response that did not fix it, each row carrying the outcome *Decided cold* rules. Under an
-orchestrator it does not: the finding rides its slice's `incidental` output to the run's own
-report, and an autonomous run is never interrupted to ask.
+What is proposed is shown in the table [`findings-table.md`](findings-table.md) fixes, at the end of
+the response that did not fix it, each row carrying the outcome *Decided cold* rules. Under an
+orchestrator it does not: the finding rides its slice's `incidental` output to the run's own report,
+and an autonomous run is never interrupted to ask.
 
 **Who authorizes a tracker write, and what answers count as one**, is the skill that does the
-writing: `hcb-dev:issue-tracking`. Where no answer comes the finding stays undecided
-rather than dropped — re-surface it at the natural end of the session, once the primary work is
-done.
+writing: `hcb-dev:issue-tracking`. Where no answer comes the finding stays undecided rather than
+dropped — re-surface it at the natural end of the session, once the primary work is done.

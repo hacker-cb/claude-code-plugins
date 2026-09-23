@@ -66,8 +66,8 @@ second `queue` drops the verdicts — both start the checks over.
   `run_in_background`, pass `false`.
 - **Then wait with `wait --for verdicts`** — one blocking call per window, given the Bash tool's
   ten-minute maximum as its timeout, since the window outlasts the tool's own default. Repeat it
-  until it says complete or the ceiling [`review-runs.md`](review-runs.md) sets is reached. Never
-  poll, sleep or start a watcher in its place.
+  until it says complete or its `since_start_s` reaches the ceiling [`review-runs.md`](review-runs.md)
+  sets. Never poll, sleep or start a watcher in its place.
 - **Only the store counts.** A checker's closing line is a receipt, not a verdict; a group still
   without one at the ceiling is `not measured — failed`, and the next pass checks it.
 - **The checks run the plugin's script.** In the `default` permission mode its first call asks once,
@@ -112,5 +112,5 @@ What the budget cut reaches the result as `not measured — budget`.
 
 `result` builds `result.json` from the store — no model writes it: the findings ranked by severity,
 each `confirmed`, `unproven` or `not measured` with its reason, the refuted apart, and the warnings.
-Its reasons are the ones `findings-table.md` names — `budget`, `unreachable`, `failed`, `none ran` —
+Its reasons are the ones `findings-table.md` names — `budget`, `unreachable`, `failed`, `depth`, `none ran` —
 and a finding whose verdict was reused says so.

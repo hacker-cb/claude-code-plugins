@@ -22,9 +22,9 @@ whole pipeline rather than disconnected commands:
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
                                            │
-              (or finished work) ──────────┴─▶ shipping-workflow ─▶ multi-review ─▶ codex-review
-                                                     │                              claude-review
-                                                     │                              security-review (built-in)
+              (or finished work) ──────────┴─▶ shipping-workflow ─▶ multi-review ─▶ one review round:
+                                                     │                              Claude's angles · security angles
+                                                     │                              · a Codex pass · one verifier
                                                      └─▶ complete by mode:
                                                            local   ─▶ git merge into parent  (then offer a PR/MR)
                                                            request ─▶ github-pr-workflow ─▶ (merge)
@@ -105,8 +105,8 @@ form: you paste every one of them yourself.
   by outcome; a refuted finding leaves the table for one line under it rather than standing as
   noise. Runs at a standalone run's end, and at a master's
   round close on the tree the round landed on, once every return is accepted and its change
-  requests merged — never inside a batch, which returns its candidates unverified. Report-only: it fixes nothing,
-  and every tracker write goes through `issue-tracking` on your word.
+  requests merged — never inside a batch, whose master rules its candidates. Report-only: it fixes
+  nothing, and every tracker write goes through `issue-tracking` on your word.
 
 ### Preparing a change
 
@@ -137,19 +137,20 @@ form: you paste every one of them yourself.
 ### Reviewing it
 
 - **`codex-review`** — `/hcb-dev:codex-review`
-  Run a code review with Codex (`codex exec review`) over the current branch in a
-  read-only sandbox. Review-only: returns Codex's findings verbatim and fixes
-  nothing.
+  One review round over a range and at a rung the caller fixes (`medium` or
+  `high`), its one source a read-only pass of the Codex CLI at the level the rung
+  sets, every candidate then checked by the plugin's verifier — a known range in,
+  verified findings and a coverage record back. Review-only. The round's shape is
+  [`references/review-pipeline.md`](references/review-pipeline.md).
 - **`claude-review`** — `/hcb-dev:claude-review`
-  The same shape with Claude's own reviewer: `claude -p "/code-review …"` in a
-  separate, read-only headless session, over a range and at a rung the caller
-  fixes — which is what a pipeline, a batch worker or a subagent needs from a
-  review: a known range in, a coverage record back. Review-only.
+  The same round with Claude's own finders as its source: one finder agent per
+  angle of the rung. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  Run several independent reviewers over one change at once — `codex-review`,
-  `claude-review`, the built-in security review — then consolidate the findings
-  and report what each reviewer actually covered (the coverage gate most of the
-  skill exists to keep honest). Report-only.
+  One round over one change with every source at once — Claude's angles, the
+  security angles and the Codex pass — at the rung the change's risk sets, the
+  findings a caller noticed on the way checked beside the round's own, then a
+  report of the findings and of what each source actually covered (the coverage
+  gate most of the skill exists to keep honest). Report-only.
 
 ### Completing it
 
@@ -364,8 +365,17 @@ checked before anything reads it.
 - [`agents/findings/verifier.md`](agents/findings/verifier.md) — `hcb-dev:findings:verifier`,
   the one checker: handed a round and a group id, it takes the claim from the store, reads the
   code — never runs it — and records `confirmed`, `unproven` or `refuted` with the evidence it
-  read. Launched by `findings-pass`; the rules for handing it work and for letting its verdict
-  stand are [`references/verification.md`](references/verification.md).
+  read. Launched by `findings-pass` and by the review conductor; the rules for handing it work
+  and for letting its verdict stand are [`references/verification.md`](references/verification.md).
+- [`agents/review/reviewer.md`](agents/review/reviewer.md) — `hcb-dev:review:reviewer`, the
+  review conductor: handed a round id, it plans the round's tasks from the angle catalog
+  ([`data/review-angles.json`](data/review-angles.json)) — the angles of each source the round
+  was opened with: Claude's, the security ones, the Codex pass — launches a finder per angle
+  and the Codex pass as a process, groups what they hand in, has each group checked, and builds
+  the result. Launched by `claude-review`, `codex-review` and `multi-review`.
+- [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of
+  one round: it reads its brief and the change, and hands its candidates in through the store.
+  Launched by the conductor.
 
 ## Shared scripts
 
@@ -441,7 +451,7 @@ name stands for.
   directory, outside the repository: candidates, groups and verdicts go in only through it,
   each checked against [`schemas/`](schemas/) and refused with the errors that say what to fix,
   and `result` builds the answer no model writes. Addressed by a short round id, never by a
-  path; the rules it serves are `references/verification.md`.
+  path; the rules it serves are `references/verification.md` and `references/review-pipeline.md`.
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
@@ -469,10 +479,15 @@ saying something else. Each file opens by saying what it owns.
   consequence it is read for, and who a fork goes to. Read wherever a base is
   taken onto work in flight — a sync, a landing, a slice's cut, an order's facts
   re-verified against a newer tip.
-- [`references/review-runs.md`](references/review-runs.md) — what a review engine
-  launched outside the current session owes whoever launched it, and how any
-  reviewer's answer is waited on. Read wherever a review runs as its own
-  process, and wherever one is waited for.
+- [`references/review-runs.md`](references/review-runs.md) — how a review is
+  waited on — a forge's, or a process started in the background — and how what it
+  hands back is read. Read wherever one is waited for, and wherever its answer is read.
+- [`references/review-pipeline.md`](references/review-pipeline.md) — a review
+  round's shape: the store it keeps, its rungs, who runs what, what each agent's
+  outcome becomes and the coverage it reports. Read by whatever opens a round.
+- [`references/verification.md`](references/verification.md) — the one checker:
+  how a candidate reaches it, and when a verdict it made stands. Read by whatever
+  has findings checked.
 - [`references/branch-naming.md`](references/branch-naming.md) — the shape a
   branch name, a commit subject and a change-request title take. Read wherever a
   branch is named, renamed or landed under its name.
@@ -573,13 +588,16 @@ request-mode completion on GitLab uses the mirrored `glab` fallback in
 **`git` and `jq` are the shared tools** — `git` in every skill but
 `dependency-versions`, which touches the package manager and never the repository;
 `jq` wherever a tool's JSON is parsed by hand — the shared references on their
-`glab` paths, and the review scripts on every envelope they read back.
+`glab` paths.
 
 **An authenticated forge CLI is assumed wherever the work touches a forge**, which
 is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without the
 other. What it buys differs per skill: an issue read, a change request opened, a
 squash-merge that git alone cannot see. Where a skill can go on without it, it says
 what it loses rather than stopping.
+
+**The plugin's agents** — the review round's and the verifier — need Claude Code v2.1.271
+or later, whose agents honour `omitClaudeMd`.
 
 **The `claude` CLI itself** is `session-plugin-refresh`'s alone: it
 resolves the versions from the plugin's own manifest, `claude plugin list`, and
@@ -605,8 +623,7 @@ Per skill, on top of those:
   Server 3.17 for hierarchy and types, 3.19 for dependencies. `glab` reads none
   of them and links issues only while creating one, so the rest goes through
   `glab api` (`references/forge-docs.md`).
-- **`findings-pass`**: the host's subagents, which run `hcb-dev:findings:verifier` —
-  Claude Code v2.1.271 or later, whose agents honour `omitClaudeMd` — `node` for
+- **`findings-pass`**: the host's subagents, which run `hcb-dev:findings:verifier`, `node` for
   `review-round.mjs`, and whatever `issue-tracking` needs for the tracker search; with no
   tracker to reach it still verifies and shows, saying there is nowhere to file.
 - **`dependency-versions`**: the relevant package manager on `PATH`. Its
@@ -621,13 +638,16 @@ Per skill, on top of those:
   two resolver scripts and their answers. The forge CLI answers the ladder's rungs
   that ask a forge — the open change request's base, and where changes land — and
   lists the requests targeting this branch; without it each is skipped and said to be.
-- **`codex-review`**: the `codex` CLI installed and `codex login` live, plus `jq`
-  to read the run's JSON envelope.
-- **`claude-review`**: the `claude` CLI on `PATH` and authenticated, plus `jq` to
-  read the run's JSON envelope. The review runs as its own session, so it spends
-  its own budget rather than the calling session's context.
-- **`multi-review`**: nothing of its own — it picks up whichever reviewers are
-  present and records a missing one as a row in the report rather than stopping.
+- **`codex-review`**: the `codex` CLI installed and `codex login` live, plus what
+  `claude-review` needs below. The change, and whatever Codex reads of the checkout
+  to review it, goes to Codex's model provider.
+- **`claude-review`**: `node` and `git`, and the Agent tool in the session that runs
+  it; without the Agent tool the round's tasks run in that session itself and nothing is
+  checked. The finders and the verifier run as subagents, so their reading spends
+  their own context rather than the calling session's.
+- **`multi-review`**: what `claude-review` and `codex-review` need — a source that
+  cannot run records its own loss in the round, a row of the report rather than a
+  stop.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
   skill when one is installed (`github-pr-workflow` here), otherwise the forge CLI
   directly. Nothing in it is GitHub-only.

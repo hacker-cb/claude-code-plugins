@@ -1,0 +1,15 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "e😀\"q.sh": "echo odd\n",
+        "cr.txt": "x\rdiff --git a/zzz b/zzz\n"
+      }
+    }
+  ]
+}

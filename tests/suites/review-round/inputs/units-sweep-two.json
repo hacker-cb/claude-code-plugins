@@ -1,0 +1,16 @@
+{
+  "units": [
+    {
+      "members": [
+        "sweep.1"
+      ],
+      "lead": "sweep.1"
+    },
+    {
+      "members": [
+        "sweep.2"
+      ],
+      "lead": "sweep.2"
+    }
+  ]
+}

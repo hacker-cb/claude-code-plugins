@@ -94,8 +94,7 @@ Settle, in one gate:
   above named another, and approving the plan *is* that authorization. The default-branch merge
   stays separately gated in Phase 2.
 - **Coverage policy** — an **actionable** coverage gap stops the run, not waivable: a reviewer you
-  did not know would go missing is what the gate exists to catch. A structural gap is noted,
-  never blocking.
+  did not know would go missing is what the gate exists to catch.
 
 **Gate weight scales by tier**, so the normal case stays light.
 
@@ -127,11 +126,12 @@ Per slice, **in order** — slices stack and depend on each other:
 2. **Develop the slice** — the normal coding work; `dependency-versions` and `seeding-gitignore`
    apply as always. What the work turns up goes through
    [`../../references/findings.md`](../../references/findings.md) as it is noticed, here rather
-   than at Phase 3 — what that test turns down still rides the slice's `incidental` output onward.
+   than at Phase 3 — what it leaves unfixed goes to the slice's review round, and what that round
+   leaves unfixed rides the slice's `incidental` output onward.
 3. **Hand the finished slice to `hcb-dev:shipping-workflow`**, threading the completion signals as
    invocation prose: `mode`, `parent`, `diff-base` (the commit this slice was cut from — only the
-   orchestrator knows it), `merge-strategy`, `merge-auth` with its addressee, and `issues`, the
-   ones this slice alone settles.
+   orchestrator knows it), `merge-strategy`, `merge-auth` with its addressee, `issues` — the ones
+   this slice alone settles — and the findings step 2 left unfixed.
 
 **Autonomy is "no routine questions", not "never pauses".** The downstream skills' own gates are
 honored, not waived: an **actionable** coverage gap; a local merge into the **default** branch, or

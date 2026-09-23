@@ -38,7 +38,8 @@ invocation and by the skills this one calls. Steps 0–6 are identical in both *
 modes** — `local` (merge into the parent, no forge) and `request` (a change request) — because
 the mode is read only at step 7. Driven by the orchestrator, the caller threads the completion
 signals as invocation prose: `mode`, `parent`, `diff-base`, `issues`, `merge-strategy` and
-`merge-auth`. Standalone they default, by the ladders in
+`merge-auth`, and beside them the findings its work left unfixed, for step 4. Standalone the
+signals default, by the ladders in
 [`../../references/slice-completion.md`](../../references/slice-completion.md) — mode ending at
 `request`, and `merge-auth` off the same ladder addressed to the user: a phrase asking to ship,
 finish or complete the work settles the mode and authorizes no merge, where one about the merge
@@ -68,11 +69,11 @@ of step 0 — per
    feature branch that exists nowhere else. Fetch **here**, since the sweep below is already a
    consumer of it and every later step is too. **Both modes**: what local completion promises is
    that it writes to no network, and a read leaves that promise intact.
-2. **Commit the change first**, new files included — a reviewer handed a commit
-   range reads only committed work, and only the one reading the working tree
-   directly is exempt, so a review launched over a dirty tree covers less than the
-   change and trips the gate below on every ship. Where the project forbids
-   committing yet, say so and expect the range-fed reviewers to come back short.
+2. **Commit the change first**, new files included — the review reads tracked
+   files only, so a new file never added is outside it, and step 7 lands commits,
+   not the working tree. Where the project forbids committing yet, say so: its new
+   files reach the review only as the review offers them, through a `git add -N`
+   that is the user's to run.
 
    **Sweep what the change orphaned.** Take the old name — field 2 of each `D` or `R` row — of every
    path the whole range deletes or renames, from step 1's `diff-base`: `git diff --name-status
@@ -116,10 +117,13 @@ of step 0 — per
 4. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it — as step 3 left
    it — as the explicit base so the review covers *this* slice's range, not the cumulative feature
-   diff. Standalone, `multi-review` resolves its own base. Every reviewer
-   `multi-review` picks runs, the security review's sub-tasks included; a
-   reviewer left out on account of a rule about subagents is a row in the gate
-   below, never a judgement call made here.
+   diff. Standalone, `multi-review` resolves its own base. Hand it as well the
+   findings this work noticed and left unfixed — a caller's threaded in, and the
+   ones this session turned up — each with its verdict where one was made: the
+   round checks them beside its own, and what it rules on them takes the exits
+   step 5 gives any finding. Every source `multi-review` opens runs, the round's
+   agents included; a source left out on account of a rule about subagents is a
+   row in the gate below, never a judgement call made here.
 5. **Apply the fixes, then commit them** — that skill reports, it does not fix.
    A finding on the code this change wrote is not weighed against scope: it is
    in-scope work. Scope is the question only for one about anything else the
@@ -164,10 +168,9 @@ of step 0 — per
 
 ## The coverage gate
 
-The review reports what each reviewer actually covered, the status already classified. Two reach
-you closed: `n/a`, a deliberate skip with a stated reason, and `partial (structural)`, a limit of
-the reviewer itself that no answer from the user could lift. Say both out loud every time;
-neither stops the ship. Everything else is an **actionable** gap.
+The review reports what each source actually covered, the status already classified. One reaches
+you closed: `n/a`, a deliberate skip with a stated reason — say it out loud every time; it does
+not stop the ship. Everything else is an **actionable** gap.
 
 With no gaps, go straight to completion, no confirmation needed. **With an actionable gap, stop
 before completing**: a report ([`../../references/report-format.md`](../../references/report-format.md),

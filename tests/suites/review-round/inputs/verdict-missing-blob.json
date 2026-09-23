@@ -1,0 +1,17 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "side": "base",
+      "lines": "4",
+      "quote": "if [ \"$count\" -le \"$limit\" ]"
+    },
+    {
+      "path": "no blob",
+      "side": "base",
+      "lines": "1",
+      "quote": "nothing"
+    }
+  ]
+}
