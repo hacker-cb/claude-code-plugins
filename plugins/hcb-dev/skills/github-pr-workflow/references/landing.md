@@ -50,24 +50,24 @@ update-branch <pr>`, let the required checks re-pass, merge again. Poll until th
 ### The base's own checks on the merge commit
 
 ```bash
-# Quoted as one word at every use: the plugin root is a path and may carry spaces.
-CHECKS="<plugin root>/scripts/commit-checks.mjs"
+# Re-run the whole block while AFTER answers `retry`: until then its tree is unread.
+CHECKS="<plugin root>/scripts/commit-checks.mjs"   # quoted at every use: it may carry spaces
 AFTER="$(node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
   || echo "CALLED WRONG: $AFTER"
-if [ "$(printf '%s' "$AFTER" | jq -r '.tree.same')" != true ]; then
+# The base's own tip wherever these rows cannot stand alone: another tree, or a red row.
+if [ "$(printf '%s' "$AFTER" | jq -r '.tree.same == true and .verdict != "failing"')" != true ]; then
   BEFORE="$(node "$CHECKS" --pr <pr> --sha base --require-from-gates)" \
     || echo "CALLED WRONG: $BEFORE"
 fi
 ```
 
-**`.tree.same` true: nothing to wait for** — the head that passed Step 4's exit carries the
-tree that landed; `base_checks` is `covered`, with the rows this one read held. Otherwise poll
-`AFTER` until it settles. A `retry` is re-read either way; [`merge-gates.md`](merge-gates.md) owns each verdict.
+**The head's tree and nothing red: no wait** — Step 4's exit passed that tree; `base_checks` is
+`covered`, the rows still running named as not waited for. Otherwise poll `AFTER` until it
+settles; [`merge-gates.md`](merge-gates.md) owns each verdict.
 
-A red row is attributed before it is owned, as the fix loop attributes one: red on `BEFORE`
-too is not this merge's, nor is a degraded forge ([`platform-status.md`](platform-status.md))
-or a known flake. What survives is **this merge's** — report it and fix it forward on a branch
-cut from the base, through the skill from its Step 1.
+A red row is attributed before it is owned: red on `BEFORE` too is not this merge's, nor is a
+degraded forge ([`platform-status.md`](platform-status.md)) or a known flake. What survives is
+**this merge's** — fix it forward on a branch cut from the base, through the skill's Step 1.
 
 **The report carries what these reads showed, whichever way it came out** — covered; green;
 red, with every failing row and what each was attributed to; unchecked; or the wait stopped,

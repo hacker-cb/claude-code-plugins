@@ -47,7 +47,7 @@ carries whatever structural gaps the gate reported into `uncovered` and re-check
 | `landed_at` | local: the merge commit on `parent`. Request: the change-request URL, plus a merge commit where it was driven to merge |
 | `mode_used` | which backend ran |
 | `retired` | what became of the branch on each side it stood — gone, or standing with the reason [`branch-retirement.md`](branch-retirement.md) names |
-| `base_checks` | what the checks on that landing showed afterwards: covered — the landing carries the tree of the head that passed, so nothing was waited for, with the rows the one read held; red, with the failing rows and what each was attributed to; unchecked, with what that leaves unguaranteed; or the waiting stopped first, with the state it stood at then. `none` where nothing reports over such a landing, or nothing landed |
+| `base_checks` | what the checks on that landing showed afterwards: covered — the landing carries the tree of a head whose own checks passed, so nothing was waited for, with the rows the one read held; green; red, with the failing rows and what each was attributed to; unchecked, with what that leaves unguaranteed; or the waiting stopped first, with the state it stood at then. `none` where nothing reports over such a landing, or nothing landed |
 | `uncovered` | the coverage gaps carried in |
 | `issues` | what became of each issue this slice settles — closed, or open with why |
 | `incidental` | surfaced-not-fixed findings, severity rated, each with its outcome: reached, proposed where the decision sits above the slice, or none yet where a wave's batch leaves it unruled for its master's pass |

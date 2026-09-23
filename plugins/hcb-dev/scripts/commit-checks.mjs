@@ -19,7 +19,7 @@
 //
 // `tree` is `null` except under `--sha merge`, where it says whether the merge commit
 // carries the head's tree: `same: true` means the code that landed is byte for byte the
-// code the head's checks ran on. `same: null` is a tree that could not be read — never
+// head's — whatever the head's own checks said, which this read does not ask. `same: null` is a tree that could not be read — never
 // "different".
 //
 // Exit 0 either way: `"read": true` with what the feeds held, or `"read": false` with a
@@ -455,7 +455,7 @@ if (opts.sha === 'merge') {
     if (r.err) answer.notes.push(`the ${side} commit's tree was not read (${r.err}) — unread, not different`);
   }
   if (answer.tree.same) {
-    answer.notes.push('the merge commit carries the head\'s tree — what landed is what the head\'s checks ran on');
+    answer.notes.push('the merge commit carries the head\'s tree — the head\'s own checks speak for what landed, as far as they passed');
   }
 }
 
