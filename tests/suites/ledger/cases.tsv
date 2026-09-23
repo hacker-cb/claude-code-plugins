@@ -13,7 +13,7 @@ feed-unread	--issue 42 --forge gh	0	"read": false|the comment feed could not be 
 not-json	--issue 42 --forge gh	0	"read": false|the comment feed was not JSON	a body the CLI printed that does not parse says nothing about the issue
 single-object	--issue 42 --forge gh	0	"read": false|something that is not a list	an object where a list was expected is not a feed of one comment
 null-body	--issue 42 --forge gh	0	"read": true|"found": true|"id": "2"	a comment whose body is null — a deleted one — is skipped rather than read as empty text
-marker-in-prose	--issue 42 --forge gh	0	"found": true|"id": "2"|"ambiguous": false|"faults": []|NOT:inside its text	a comment merely TALKING about the marker is prose: the marker is what a comment opens with, so the one ledger stays one
+marker-in-prose	--issue 42 --forge gh	0	"found": true|"id": "2"|"ambiguous": false|"faults": []|"id": "3"|"ledger": true	a comment merely TALKING about the marker is a mention, listed with whose it is: the one ledger stays one
 spaced-marker	--issue 42 --forge gh	0	"n": 7|archive 7 stands on the issue and the ledger does not list it	the marker is matched with the whitespace a hand-written one carries
 host-honoured	--issue 42 --forge gh --host forge.example.com	0	"read": true|"found": true	the host reaches the call: without it a self-hosted epic is read from the SaaS
 repo-path	--issue 42 --forge gh --repo team/app	0	"read": true|"found": true	an explicit repository reaches the path rather than gh's own {owner}/{repo}
@@ -72,8 +72,9 @@ marker-after-text	--issue 42 --forge gh	0	"found": true|"id": "2"|"ambiguous": f
 marker-after-blank	--issue 42 --forge gh	0	"found": true|"id": "2"|"n": 3|"faults": []	blank lines and spaces ahead of a marker are how a hand-written comment opens, and the marker still opens it
 -	--issue 42 --repo-dir /nonexistent-x9y8z7	2	is not a directory	passed on as cwd it comes back as a call that failed with nothing on stderr, which reads as a forge that would not answer
 archive-multibyte	--issue 42 --forge gh	0	"n": 1|"bytes": 36|"chars": 30|"utf16": 30|"faults": []	an archive's size travels in the cap's unit too: a Cyrillic journal of 30 characters is 36 bytes, and bytes are what say how much room it has left
-ledger-heading-first	--issue 42 --forge gh	0	"found": false|a comment carries the ledger marker inside its text rather than opening with it|"2"	a ledger written with a heading ahead of its marker is named, never passed over into a second ledger
-archive-heading-first	--issue 42 --forge gh	0	archive marker 2 stands inside a comment's text, and no comment opens with it|"4"|NOT:"n": 2	an archive written with a heading ahead of its marker is named, so the next archive does not take its number
-mention-in-code	--issue 42 --forge gh	0	"found": false|"faults": []|NOT:inside its text	a marker quoted as code is a mention, whether or not a ledger opens elsewhere
-ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/opens.txt	0	"opens": true|"fits": true	a body opening with the marker is one the next read finds
-ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/heading-first.txt	0	"opens": false|"fits": true	a body with anything ahead of its marker is found by nothing once written, whatever its size
+ledger-heading-first	--issue 42 --forge gh	0	"found": false|no comment opens with the ledger marker, and a comment carries it inside its text|"authors":	a ledger written with a heading ahead of its marker is named before a second ledger is opened over it
+archive-heading-first	--issue 42 --forge gh	0	"id": "4"|"ledger": false|"faults": []|NOT:"n": 2	an archive written with a heading ahead of its marker is a mention: listed, so its number is never taken again, and no archive
+mention-in-code	--issue 42 --forge gh	0	"found": false|no comment opens with the ledger marker, and a comment carries it inside its text	with no ledger open, a comment carrying its marker is read before one is opened, whatever it quotes
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/opens.txt	0	"marker": "ledger"|"fits": true	a body opening with the ledger marker is the one the next read finds
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/heading-first.txt	0	"marker": null|"fits": true	a body with anything ahead of its marker opens with none, whatever its size
+ledger-found	--issue 42 --forge gh --body-file tests/suites/ledger/bodies/archive.txt	0	"marker": "archive"	an archive body is told from a ledger body by the marker it opens with

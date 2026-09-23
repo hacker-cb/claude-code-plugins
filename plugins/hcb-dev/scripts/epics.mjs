@@ -11,7 +11,7 @@
 //
 // It READS and lists; what an epic's ledger says is `ledger.mjs`'s.
 
-import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
+import { dirOk, hostOk, parsePages, refOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const usage = 'usage: node epics.mjs [--forge gh|glab] [--host <host>] [--label <name>]'
   + ' [--owner <owner>]... [--repo-dir <path>]';
@@ -42,8 +42,7 @@ if (opts.label === '' || /[",\u0000-\u001f\u007f]/.test(opts.label) || opts.labe
 // Held to the rule every path segment is; how many segments an owner may have is the forge's,
 // settled once the forge is known.
 for (const o of opts.owners) {
-  const segs = o.split('/');
-  if (segs.length > 20 || !segs.every((s) => readable(s) && s !== '.')) die(`--owner '${o}' is not an owner`);
+  if (!refOk(o) || o.split('/').length > 20) die(`--owner '${o}' is not an owner`);
 }
 
 const answer = {
@@ -98,15 +97,17 @@ const cli = runner(opts.dir, forge);
 // One epic reached twice — two owners that overlap, a page that shifted under a paginated walk —
 // is one epic.
 const seen = new Set();
-const add = (row) => {
-  const key = row.url ?? `${row.repo}#${row.number}`;
-  if (seen.has(key)) return;
-  seen.add(key);
+const add = ({ repo, number, title, url, updated, children }) => {
+  const row = { repo: coord(repo), number: Number.isInteger(number) ? number : null, title: text(title),
+    url: coord(url), updated: text(updated), children };
+  const key = row.url ?? (row.repo && row.number !== null ? `${row.repo}#${row.number}` : null);
+  if (key !== null && seen.has(key)) return;
+  if (key !== null) seen.add(key);
   answer.epics.push(row);
 };
 
 const pagesOf = (r, what) => {
-  if (!r.ok) { answer.reason = text(`${what} could not be read: ${r.line()}`); out(); }
+  if (!r.ok) { answer.reason = text(`${what} could not be read: ${r.timedOut ? 'no answer in time' : r.line()}`); out(); }
   const pages = parsePages(r.out);
   if (pages === null) { answer.reason = `${what} was not JSON`; out(); }
   return pages;
@@ -143,17 +144,18 @@ if (forge === 'gh') {
       answer.reason = 'the search answered with something that is not a result page';
       out();
     }
-    if (typeof p.total_count === 'number') total = p.total_count;
+    // The largest count any page reported: one that shrank between pages is no licence to call
+    // a shorter list whole.
+    if (typeof p.total_count === 'number') total = Math.max(total ?? 0, p.total_count);
     if (p.incomplete_results === true) incomplete = true;
     for (const it of p.items) {
       const sub = it?.sub_issues_summary;
       add({
-        repo: coord(typeof it?.repository_url === 'string'
-          ? it.repository_url.split('/').slice(-2).join('/') : null),
-        number: Number.isInteger(it?.number) ? it.number : null,
-        title: text(it?.title ?? null),
-        url: coord(it?.html_url ?? null),
-        updated: text(it?.updated_at ?? null),
+        repo: typeof it?.repository_url === 'string' ? it.repository_url.split('/').slice(-2).join('/') : null,
+        number: it?.number,
+        title: it?.title,
+        url: it?.html_url,
+        updated: it?.updated_at,
         children: sub && Number.isInteger(sub.total)
           ? { total: sub.total, completed: Number.isInteger(sub.completed) ? sub.completed : null }
           : null,
@@ -172,11 +174,11 @@ if (forge === 'gh') {
   // Archived projects included: an epic open there is still open.
   const q = `labels=${encodeURIComponent(opts.label)}&state=opened&non_archived=false&per_page=100`;
   const lists = opts.owners.length
-    ? opts.owners.map((o) => ({ path: `groups/${encodeURIComponent(o)}/issues?${q}`, what: `group '${o}'` }))
-    : [{ path: `issues?${q}&scope=created_by_me`, what: 'the listing' }];
+    ? opts.owners.map((o) => ({ path: `groups/${encodeURIComponent(o)}/issues?${q}`, what: `group '${o}'`, group: true }))
+    : [{ path: `issues?${q}&scope=created_by_me`, what: 'the listing', group: false }];
   for (const list of lists) {
     const r = cli(['api', '--hostname', host, '--paginate', list.path], 180000);
-    if (!r.ok && /\(HTTP 404\)/.test(r.err)) {
+    if (!r.ok && list.group && /\(HTTP 404\)/.test(r.err)) {
       answer.reason = text(`${list.what} is not a group this account can read: ${r.line()}`);
       out();
     }
@@ -185,11 +187,11 @@ if (forge === 'gh') {
       for (const it of p) {
         const ref = typeof it?.references?.full === 'string' ? it.references.full : null;
         add({
-          repo: coord(ref ? ref.replace(/#\d+$/, '') : null),
-          number: Number.isInteger(it?.iid) ? it.iid : null,
-          title: text(it?.title ?? null),
-          url: coord(it?.web_url ?? null),
-          updated: text(it?.updated_at ?? null),
+          repo: ref ? ref.replace(/#\d+$/, '') : null,
+          number: it?.iid,
+          title: it?.title,
+          url: it?.web_url,
+          updated: it?.updated_at,
           // A related link is listed, not counted: GitLab keeps no child count for an issue.
           children: null,
         });

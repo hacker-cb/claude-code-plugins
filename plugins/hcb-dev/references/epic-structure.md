@@ -29,6 +29,7 @@ creates either label where the repository lacks it and applies `epic` to its own
 one the group passes down counts — is the label, whatever colour it has.
 
 ```bash
+# From a checkout of the epic's own repository, as every command here.
 LABEL="<epic | wave>"; COLOUR="<its colour>"; DESC="<its description>"; N="<the issue>"
 # GitHub — read; a 404 is the label absent, and only then is it created
 HOST="$(gh repo view --json url --jq '.url | split("/")[2]')"   # this checkout's, not gh's default

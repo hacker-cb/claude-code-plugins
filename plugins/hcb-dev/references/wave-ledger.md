@@ -25,10 +25,10 @@ node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--for
 |---|---|
 | `read` | the comment feed answered. `false` is unread, never "no ledger there" |
 | `ledger.found` / `.id` / `.nodeId` / `.bytes` / `.mine` | whether one is open, which comment it is — `id` for a REST edit, `nodeId` for GraphQL — how large it stands, and whose it is: `mine` is three-valued, and `null` is *not attributable* rather than somebody else's |
-| `ledger.ambiguous` | **two comments carry the marker** — a coordinate resolving to two states resolves to neither, whoever wrote them |
-| `archives[]` | one row per `<!-- wave-journal-<n> -->` comment, with its own size |
+| `ledger.ambiguous` | **two comments open with the marker** — a coordinate resolving to two states resolves to neither, whoever wrote them |
+| `archives[]` / `mentions[]` | one row per comment opening with `<!-- wave-journal-<n> -->`, with its own size; and every comment carrying a marker it does not open with, and whose it is. A new archive takes a number above every one either of them or `index.listed` carries |
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
-| `write.fits` / `.headroom` / `.opens` | whether a body handed in `--body-file` fits under the cap, by how many bytes, and opens with the marker — one that does not is found by nothing once written — every size here is judged in `bytes`, and `chars` / `utf16` only travel beside it |
+| `write.fits` / `.headroom` / `.marker` | whether a body handed in `--body-file` fits under the cap, by how many bytes, and which marker it opens with — `ledger` for the ledger, `archive` for an archive; every size here is judged in `bytes`, and `chars` / `utf16` only travel beside it |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
 | `reason` | why nothing could be answered — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), or **both forges answering for this repository**, which a mirror makes ordinary and `--forge` settles |
 
@@ -48,7 +48,7 @@ would drop the older ledger. An archive nothing indexes is the same fault, repai
 
 **The write is measured before it is made**, in UTF-8 bytes against the cap
 [`forge-behaviour.md`](forge-behaviour.md) carries — which also says how the cap's own refusal is
-told from transport — so `write.fits` and `write.opens` are read first and the refusal stays the backstop rather than
+told from transport — so `write.fits` and `write.marker` are read first and the refusal stays the backstop rather than
 the mechanism. **A refusal by the cap that arrives anyway is answered in the same step**, not
 reported: the oldest archivable block moves out and the entry is written again, as many times over
 as it takes to fit, on whichever comment refused. All of it is bookkeeping and not a decision: it
@@ -87,7 +87,7 @@ test on a passage is whether deleting it changes what anyone does next.
    authority as the user settled it ([`slice-completion.md`](slice-completion.md)); the plugin
    version this role last reconciled against, which is what a later **plugin** refresh diffs from
    and not necessarily what the session is running — it starts as the running version and
-   `hcb-dev:session-plugin-refresh` moves it; and when last updated.
+   `hcb-dev:session-plugin-refresh` moves it; the session group ([`epic-structure.md`](epic-structure.md)); and when last updated.
 2. **Batches** — one row each: id, topic, the issues and where each now stands, the order's ask
    and terminal deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the file zone its order drew, the order's base pin,

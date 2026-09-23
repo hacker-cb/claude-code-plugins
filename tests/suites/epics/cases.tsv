@@ -26,3 +26,5 @@ glab-not-group	--forge glab --host lab.example --owner someone	0	"read": false|g
 -	--forge gh --host ghe.example --owner a --owner b --owner c --owner d --owner e --owner f --owner g --owner h --owner i --owner j --owner k --owner l --owner m --owner n --owner o --owner p	2	at most 15 owners on GitHub	past the forge's own limit the query is refused here rather than by it
 -	--forge glab --host lab.example --label None	2	--label takes a label name	GitLab's own word for "no label" lists something else entirely
 -	--label a,b	2	--label takes a label name	a comma is GitLab's list separator
+gh-shrunk	--forge gh	0	"count": 3|"complete": false	a count that shrank between pages is no licence to call the shorter list whole
+glab-listing-404	--label epic	0	the listing could not be read|NOT:is not a group	a failed listing of the account's own is not an owner that is no group
