@@ -105,8 +105,9 @@ form: you paste every one of them yourself.
   by outcome; a refuted finding leaves the table for one line under it rather than standing as
   noise. Runs at a standalone run's end, and at a master's
   round close on the tree the round landed on, once every return is accepted and its change
-  requests merged — never inside a batch, which returns its candidates unverified. Report-only: it fixes nothing,
-  and every tracker write goes through `issue-tracking` on your word.
+  requests merged — never inside a batch, which returns its candidates unverified past
+  its own review round. Report-only: it fixes nothing, and every tracker write goes
+  through `issue-tracking` on your word.
 
 ### Preparing a change
 
@@ -479,10 +480,9 @@ saying something else. Each file opens by saying what it owns.
   consequence it is read for, and who a fork goes to. Read wherever a base is
   taken onto work in flight — a sync, a landing, a slice's cut, an order's facts
   re-verified against a newer tip.
-- [`references/review-runs.md`](references/review-runs.md) — what a review engine
-  launched outside the current session owes whoever launched it, and how any
-  reviewer's answer is waited on. Read wherever a review runs as its own
-  process, and wherever one is waited for.
+- [`references/review-runs.md`](references/review-runs.md) — how a review is
+  waited on — a forge's, a background process, a subagent — and how what it hands
+  back is read. Read wherever one is waited for, and wherever its answer is read.
 - [`references/review-pipeline.md`](references/review-pipeline.md) — a review
   round's shape: the store it keeps, its rungs, who runs what, what each agent's
   outcome becomes and the coverage it reports. Read by whatever opens a round.
@@ -641,7 +641,8 @@ Per skill, on top of those:
   `claude-review` needs below. The change, and whatever Codex reads of the checkout
   to review it, goes to Codex's model provider.
 - **`claude-review`**: `node` and `git`, and the Agent tool in the session that runs
-  it — without it the round's tasks run in that session itself and nothing is
+  it, on Claude Code v2.1.271 or later, whose agents honour `omitClaudeMd`; without
+  the Agent tool the round's tasks run in that session itself and nothing is
   checked. The finders and the verifier run as subagents, so their reading spends
   their own context rather than the calling session's.
 - **`multi-review`**: what `claude-review` and `codex-review` need — a source that

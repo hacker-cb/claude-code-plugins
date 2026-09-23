@@ -92,12 +92,14 @@ holds, and what it stops is named in the return as the gap it is.
   — except an architectural fork the order could not foresee, which is not
   "everything else": it goes to the master first, exactly as the agree-first forks
   do.
-- **A finding does not become an issue here, and is not verified here.** A
-  `Critical` or `Important` on the code this batch wrote is outside this rule:
-  `findings.md` has it fixed here and blocking this batch's own completion. Every
-  other one this batch surfaced and left unfixed rides the return as a candidate — a row
-  of [`../../references/findings-table.md`](../../references/findings-table.md)
-  reading `not measured — batch` at the revision it was read at, every row
+- **A finding does not become an issue here, and nothing but this batch's own
+  review round verifies one here.** A `Critical` or `Important` on the code this
+  batch wrote is outside this rule: `findings.md` has it fixed here and blocking this
+  batch's own completion. Every other one this batch surfaced and left unfixed rides
+  the return as a candidate — a row of
+  [`../../references/findings-table.md`](../../references/findings-table.md) carrying
+  the verdict that round gave it, or reading `not measured — batch` where the round
+  did not check it, at the revision it was read at, every row
   carrying the outcome proposed for it and the classification of one that earns an
   issue — `—` where no issue is in it — never applied, and
   ranked against this batch's others

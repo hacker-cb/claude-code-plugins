@@ -9,7 +9,8 @@ description: >-
   a master session closes a round with its batches' candidates in hand. Report-only: it edits no
   code and writes nothing to the tracker — every write goes through `hcb-dev:issue-tracking` on
   the user's word. Not a review of a change (`hcb-dev:multi-review`), and never run by a batch
-  inside a wave: a batch returns its candidates unverified and its master rules them
+  inside a wave: a batch returns its candidates, unverified past its own review round, and its
+  master rules them
   (`hcb-dev:wave-worker`, `hcb-dev:master-session`).
 ---
 
@@ -32,8 +33,9 @@ empty has refuted nothing.
 | a session handed findings | on the hand-over | the refreshed base — the revision each one names is read only to find a coordinate the base has since moved | the text handed over |
 | a master session | at a round's close — every return of the round accepted, every change request it lands merged | the tree the round landed on: the refreshed base, or the local parent where it landed in `local` mode | the ledger's *Candidates*, which `hcb-dev:master-session` keeps |
 
-A batch inside a wave never runs it: its candidates ride its return as `not measured — batch`, at
-the revision they were read at. The base is resolved by the ladder in
+A batch inside a wave never runs it: its candidates ride its return, each with the verdict its own
+review round gave it or as `not measured — batch`, at the revision they were read at. The base is
+resolved by the ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md) and read only where
 that resolution says the ref is current **and** shares history with what the claims name — a name
 is not a ref, a refresh that answered nothing leaves a stale one standing, and a ref sharing no
