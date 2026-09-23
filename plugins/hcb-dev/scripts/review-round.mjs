@@ -1668,6 +1668,12 @@ function result() {
         row.notes.push(`planned task(s) with no answer: ${row.missing.join(', ')}`);
         state = worse(state, 'partial');
       }
+      // Without a plan nothing says which tasks a source owed, so what it handed in measures
+      // nothing of what it covered.
+      if (!p) {
+        row.notes.push('the round was never planned — which tasks this source owed is unknown');
+        state = worse(state, 'partial');
+      }
       if (p?.depth && finders.has(row.source)) state = worse(state, 'depth');
       const line = { source: row.source, state, tasks: row.tasks, candidates: row.candidates, rejected: row.rejected, notes: row.notes };
       const model = row.model ?? (row.models.length ? row.models.join(', ') : null);

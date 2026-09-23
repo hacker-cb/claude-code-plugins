@@ -74,7 +74,7 @@ A table of `0 after dedup` has no footer.
 |---|---|
 | `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision — `+wt` after the sha where something it read differs from that commit, edited or never committed |
 | `unproven @<sha>` | checked there, and neither shown nor ruled out — its block says what would settle it |
-| `not measured — <why>` | no check ran over it: `batch` (a batch's finding no review of its saw — its master verifies it), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `depth` (the round ran without agents, so nothing checked it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
+| `not measured — <why>` | no check ran over it: `batch` (a batch's finding its own review did not check — its master verifies it), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `depth` (the round ran without agents, so nothing checked it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
 
 A mechanism's cell carries the least verdict among its instances — `unproven` where any instance
 is — and its block carries each instance's own. A verdict let stand rather than made again keeps
