@@ -50,15 +50,15 @@ update-branch <pr>`, let the required checks re-pass, merge again. Poll until th
 ### The base's own checks on the merge commit
 
 ```bash
-# Re-run the whole block while AFTER answers `retry`: the merge commit is not published yet.
 CHECKS="<plugin root>/scripts/commit-checks.mjs"   # quoted at every use: it may carry spaces
 AFTER="$(node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
   || echo "CALLED WRONG: $AFTER"
 case "$(printf '%s' "$AFTER" | jq -r '.verdict')" in
-  covered|green|retry|unread|'') ;;   # retry re-runs; unread and '' take merge-gates.md's path
+  covered|retry|unread|'') ;;   # retry re-runs the block; unread and '' take merge-gates.md's path
   *) BEFORE="$(node "$CHECKS" --pr <pr> --sha base --require-from-gates)" \
        || echo "CALLED WRONG: $BEFORE" ;;
 esac
+printf '%s\n' "$AFTER" "${BEFORE:-}"   # both answers, whole: the verdict and the rows it rests on
 ```
 
 **`covered` ends the wait**: the merge commit carries a green head's tree; `base_checks` is

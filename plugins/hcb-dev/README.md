@@ -399,7 +399,7 @@ name stands for.
   field carries, and the drift against its base, measured rather than read off
   `mergeStateStatus`. `mayMerge` is permission, never readiness.
 - [`scripts/commit-checks.mjs`](scripts/commit-checks.mjs) — what the two check feeds
-  say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
+  say about one commit — for a merge commit, whether its green head's own tree already covers it. Keeps `check-runs` and the older commit statuses apart, since a
   reader of one is blind to the other, and answers with a single `verdict` so a caller
   never assembles one out of counts.
 - [`scripts/copilot-state.mjs`](scripts/copilot-state.mjs) — whether the automated

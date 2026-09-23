@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // commit-checks.mjs — what the two check feeds say about ONE commit. Prints JSON on stdout.
+// Under `--sha merge` it may read the head's feeds too, only to settle `covered` below.
 //
 // This is deliberately ONE question. "Is this pull request mergeable" is a different one:
 // it answers from the request's own rollup, which is not the set on the commit, and
@@ -442,7 +443,11 @@ if (rollupRed && answer.counts.failing === 0) {
 // id over the head, and only the tree says whether what landed is what was checked. Asked
 // only where the answer would change the verdict, and after every refusal, so a tree never
 // reaches a caller beside an unread commit.
-if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict)) {
+if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict) && answer.complete === false) {
+  // A gate list read in part: the head could read green without the check that was missed.
+  answer.notes.push('the gate list is incomplete — no head read on it can cover what landed,'
+    + ' so the trees were not compared');
+} else if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict)) {
   const treeOf = (oid) => {
     if (!readable(oid)) return { tree: null, err: `'${oid}' is not a commit id this can read` };
     const r = gh(['api', `repos/${repo}/git/commits/${oid}`]);
@@ -458,11 +463,7 @@ if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict)) {
   for (const [side, r] of [['merge', m], ['head', h]]) {
     if (r.err) answer.notes.push(`the ${side} commit's tree was not read (${r.err}) — unread, not different`);
   }
-  if (answer.tree.same && answer.complete === false) {
-    // A gate list read in part: the head could read green without the check that was missed.
-    answer.notes.push('the merge commit carries the head\'s tree, but the gate list is incomplete'
-      + ' — no head read on it can cover what landed');
-  } else if (answer.tree.same) {
+  if (answer.tree.same) {
     // The head read by this same script, so its verdict means what this one's does. The
     // names travel as argv to a process, never through a shell; the repository is already
     // resolved, so the request is not read twice.
@@ -476,13 +477,16 @@ if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict)) {
       const why = child.error ? child.error.message
         : String(child.stderr || '').split(/[\r\n]+/).filter(Boolean)[0] || `exit ${child.status}`;
       answer.notes.push(`the head's own read did not answer (${why}) — unread, not failing`);
-    } else if (head.reason) {
-      answer.notes.push(`the head's own read: ${head.reason}`);
+    } else {
+      // Its caveats travel with its verdict: a green read over a page it could not parse is
+      // green only as far as it looked, and so is the cover resting on it.
+      if (head.reason) answer.notes.push(`the head's own read: ${head.reason}`);
+      for (const n of Array.isArray(head.notes) ? head.notes : []) answer.notes.push(`the head's own read: ${n}`);
     }
     if (answer.tree.headVerdict === 'green') {
       answer.verdict = 'covered';
       answer.notes.push('the merge commit carries the tree of a head whose own checks are green'
-        + ` — what is still ${answer.empty ? 'to register' : 'running'} here is not waited for`);
+        + ' — what has not finished on it is not waited for');
     } else {
       answer.notes.push(`the merge commit carries the head's tree, but the head reads`
         + ` '${answer.tree.headVerdict}' — its checks do not speak for what landed`);
