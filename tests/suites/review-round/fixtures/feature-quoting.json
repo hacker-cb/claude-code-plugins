@@ -1,0 +1,27 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "win.txt": "first line\r\nsecond line\r\n",
+        "empty.txt": "",
+        "tabs.txt": "key\tvalue  \nnext\n",
+        "nfd.txt": "café noir\n"
+      },
+      "bytes": {
+        "wide.txt": "//5oAGUAbABsAG8AIAB3AGkAZABlAAoA"
+      }
+    },
+    {
+      "on": "feature",
+      "link": {
+        "link.txt": "win.txt",
+        "outside": "/"
+      }
+    }
+  ]
+}

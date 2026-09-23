@@ -7,9 +7,8 @@
       "quote": "if [ \"$count\" -ge \"$limit\" ]; then echo ok; else echo over; fi"
     },
     {
-      "path": "README.md",
-      "lines": "1",
-      "quote": "# fixture"
+      "path": "readme.md",
+      "absent": true
     }
   ]
 }

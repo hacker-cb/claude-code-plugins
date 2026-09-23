@@ -89,11 +89,11 @@ work, where a fix hangs on the answer.
 ## When a verdict stands
 
 `queue` reuses a carried verdict in place of a new check where it is `confirmed` or `unproven`, its
-evidence read the finding's own file, and **every** file its evidence read still has the blob
+evidence read the finding's own file, **every** file its evidence read still has the blob
 recorded — on the tree this store reads, the working tree through `git hash-object`, a ref through
-`git rev-parse <ref>:<path>` — and every file it found absent is absent still. Any one file
-changed, gone or come into being, and the group is checked again: a verdict depends on everything
-it read, not only the finding's own file. `refuted` never stands: it
+`git rev-parse <ref>:<path>` — with each quote standing at the lines it names, and every file it
+found absent is absent still. Any one file changed, gone or come into being, and the group is
+checked again. `refuted` never stands: it
 released work, and a finding that comes back is checked again. A verdict names the revision it
 read — the commit the store opened on, `+wt` where anything it read on the working tree differs
 from it — and a reused one keeps that revision.

@@ -41,7 +41,7 @@
       "allOf": [ { "$ref": "#/$defs/rules" } ]
     },
     "evidenceSubmitted": {
-      "description": "A place read: its lines and a quote the file holds verbatim — or, with `absent`, a file whose not existing on that side the verdict rests on.",
+      "description": "A place read: the lines a quote stands at, the quote as the file reads there — empty for an empty file — or, with `absent`, a file whose not existing on that side the verdict rests on.",
       "type": "object",
       "additionalProperties": false,
       "required": ["path"],
@@ -49,12 +49,17 @@
         "path": { "type": "string", "minLength": 1, "maxLength": 512 },
         "side": { "type": "string", "enum": ["head", "base"] },
         "lines": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?$" },
-        "quote": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "quote": { "type": "string", "maxLength": 2000 },
         "absent": { "const": true }
       },
       "if": { "required": ["absent"] },
-      "then": { "additionalProperties": false, "properties": { "path": {}, "side": {}, "absent": {} } },
+      "then": { "$ref": "#/$defs/absentEntry" },
       "else": { "required": ["lines", "quote"] }
+    },
+    "absentEntry": {
+      "description": "A file found absent carries its path and side, and nothing a reading would.",
+      "additionalProperties": false,
+      "properties": { "path": {}, "side": {}, "absent": {} }
     },
     "stored": {
       "type": "object",
@@ -82,12 +87,12 @@
         "path": { "type": "string", "minLength": 1, "maxLength": 512 },
         "side": { "type": "string", "enum": ["head", "base"] },
         "lines": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?$" },
-        "quote": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "quote": { "type": "string", "maxLength": 2000 },
         "blob": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
         "absent": { "const": true }
       },
       "if": { "required": ["absent"] },
-      "then": { "additionalProperties": false, "properties": { "path": {}, "side": {}, "absent": {} } },
+      "then": { "$ref": "#/$defs/absentEntry" },
       "else": { "required": ["lines", "quote", "blob"] }
     }
   }
