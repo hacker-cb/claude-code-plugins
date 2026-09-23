@@ -173,7 +173,7 @@ form: you paste every one of them yourself.
   it is pushed, and Copilot is asked for a review only when the PR itself turned —
   then merge on the authority it was handed — `ask` by default, so it
   stops at ready and asks — monitor, watch the base's own checks on the merge
-  commit, and report.
+  commit where it carries a tree the head's checks never ran over, and report.
   Discovers the merge gates the base branch actually enforces — two bases of one
   repo answer differently — instead of assuming them, and parks the
   run on a platform outage — checking the status feed every half hour — instead of

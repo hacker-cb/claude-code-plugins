@@ -46,6 +46,15 @@ case "$1 $2" in
           garbage) printf 'not json at all\n'; exit 0 ;;
           *) printf '%s\n' "$v"; exit 0 ;;
         esac ;;
+      */git/commits/*)
+        # Keyed by the commit id the path names, so one envelope answers the merge commit
+        # and the head differently.
+        v=$(jq -r --arg s "${2##*/}" '.trees[$s] // empty' "$env")
+        case "$v" in
+          ""|fail) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+          notree) printf '{"sha":"%s"}\n' "${2##*/}"; exit 0 ;;
+          *) printf '{"sha":"%s","tree":{"sha":"%s"}}\n' "${2##*/}" "$v"; exit 0 ;;
+        esac ;;
     esac ;;
   "api --paginate")
     # $3 is the path. The feeds differ only by their last segments.

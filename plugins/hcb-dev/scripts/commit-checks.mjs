@@ -17,6 +17,11 @@
 // `false` is green as far as this run knew to look. "Not asked" is not "asked and
 // whole", the same distinction `gates: null` keeps one field over.
 //
+// `tree` is `null` except under `--sha merge`, where it says whether the merge commit
+// carries the head's tree: `same: true` means the code that landed is byte for byte the
+// code the head's checks ran on. `same: null` is a tree that could not be read — never
+// "different".
+//
 // Exit 0 either way: `"read": true` with what the feeds held, or `"read": false` with a
 // `reason`. A read that did not happen is not a commit with nothing on it — unread is not
 // empty, and a caller that cannot tell them apart reports a base as quiet because the
@@ -89,7 +94,7 @@ const gh = runner(opts.repoDir || process.cwd());
 const answer = {
   // `read` is the only field a caller may act on without saying it did not look: BOTH
   // feeds answered. It is set last, after everything that can refuse has refused.
-  read: false, repo: null, sha: null, gates: null, gatesUnknown: [],
+  read: false, repo: null, sha: null, gates: null, gatesUnknown: [], tree: null,
   runs: [], statuses: [], rollup: null, rollupSpeaks: false,
   counts: { runs: 0, statuses: 0, unfinished: 0, failing: 0 },
   // One field to route on. Reassembling it from four numbers at every call site is how a
@@ -119,6 +124,7 @@ const refuse = (reason, retry = false) => {
 let repo = opts.repo;
 let sha = opts.sha;
 let baseRef = null;
+let headOid = null;
 
 if (opts.pr) {
   const view = gh(['pr', 'view', opts.pr, '--json', 'url,headRefOid,baseRefOid,baseRefName,mergeCommit',
@@ -140,6 +146,7 @@ if (opts.pr) {
     if (!m) refuse(`could not read the repository out of the pull request url '${pr.url}'`);
     repo = m[1];
   }
+  headOid = pr.headRefOid || null;
   if (sha === 'head') sha = pr.headRefOid || '';
   // `base` is a commit ON the base branch, which is what answers "does this base run
   // anything on a push" — and it is the only form that answers it under every merge
@@ -426,6 +433,30 @@ else answer.verdict = 'green';
 if (rollupRed && answer.counts.failing === 0) {
   answer.notes.push(`every row read passed, but the feed's own rollup says '${answer.rollup}'`
     + ' — the rollup is over what the server holds, not over what this call captured');
+}
+
+// The tree, not the commit: a squash, a rebase and a merge commit all mint a new commit
+// id over the head, and only the tree says whether what landed is what was checked. Read
+// after every refusal, so a tree never reaches a caller beside an unread commit.
+if (opts.sha === 'merge') {
+  const treeOf = (oid) => {
+    if (!readable(oid)) return { tree: null, err: `'${oid}' is not a commit id this can read` };
+    const r = gh(['api', `repos/${repo}/git/commits/${oid}`]);
+    if (!r.ok) return { tree: null, err: r.line() };
+    let c;
+    try { c = JSON.parse(r.out); } catch { return { tree: null, err: 'the commit object was not JSON' }; }
+    const t = c && typeof c === 'object' && c.tree && c.tree.sha;
+    return readable(t) ? { tree: t, err: null } : { tree: null, err: 'the commit object carried no tree' };
+  };
+  const m = treeOf(sha);
+  const h = headOid ? treeOf(headOid) : { tree: null, err: 'the pull request reports no head commit' };
+  answer.tree = { merge: m.tree, head: h.tree, same: m.tree && h.tree ? m.tree === h.tree : null };
+  for (const [side, r] of [['merge', m], ['head', h]]) {
+    if (r.err) answer.notes.push(`the ${side} commit's tree was not read (${r.err}) — unread, not different`);
+  }
+  if (answer.tree.same) {
+    answer.notes.push('the merge commit carries the head\'s tree — what landed is what the head\'s checks ran on');
+  }
 }
 
 // Set last, and only here. Every refusal above returns with it false, so a caller gating

@@ -76,7 +76,7 @@ here.
 
 ## What `commit-checks.mjs` answers, and what each verdict asks
 
-`github-pr-workflow` Step 4 reads one commit with it and Step 6 reads two. Both route on
+`github-pr-workflow` Step 4 reads one commit with it and Step 6 one or two. Both route on
 `.verdict`, which is the field this answer is designed to be read by: the rollup a server
 computes can say `failure` over rows that all passed, so a caller assembling a verdict out
 of the counts reports green on a red base.
@@ -89,6 +89,9 @@ of the counts reports green on a red base.
 | `failing` | attribute, then report |
 | `empty` | nothing registered yet where the base's own tip has rows; where that is `empty` too, this base runs nothing on a push — say it is unchecked and that the step guaranteed nothing |
 | `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, and `null` that none was ever asked, so a required check may exist that the run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
+
+**On a merge commit `.tree` comes first:** `same: true` makes `running` or `empty` a re-run
+of what the head passed, which Step 6 does not wait for; `null` is unread, never different.
 
 **`--require-from-gates` is why no check name is ever written into a call.** The names
 come out of the base's own gates and travel between forge responses as data, never
