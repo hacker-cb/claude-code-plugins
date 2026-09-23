@@ -16,15 +16,13 @@ blocking wait, wait inside a single command that blocks until the answer is in o
 
 **Ending the turn instead is for one case only**: an interactive session, a person present, nothing
 downstream blocked on the answer, and a background task of this session's own to wait for — the
-harness's notice of its end brings the answer back, where a forge's reviewer sends none. Two more
-things make that case narrow: a process that hangs sends no notice at all, so the ceiling never
-arrives and the wait is silent forever; and a subagent that ends its turn ends the work the review
-was gating. **Anything autonomous — a subagent, a dispatched batch, an orchestrated slice — waits
-on the windows**, and whoever ends a turn while reviewers are out says which ones, and says nothing
-about what they found until their answers are in hand.
+harness's notice of its end brings the answer back, where a forge's reviewer sends none.
+**Anything autonomous — a subagent, a dispatched batch, an orchestrated slice — waits on the
+windows**, and whoever ends a turn while reviewers are out says which ones, and says nothing about
+what they found until their answers are in hand.
 
-**A wait ends, but not soon.** A review takes minutes, and a large one tens of them: half an hour
-of silence is a reviewer reading, and a window that expires is one window, not a verdict. What ends
+**A wait ends, but not soon.** Half an hour of silence is a reviewer reading, and a window that
+expires is one window, not a verdict. What ends
 a wait is an hour of it, on the clock rather than per reviewer. Before that hour waiting is the
 whole of the job; at it, stop and record what happened — a reviewer that never returned is a row
 and a reason in the caller's report, never a reason to stall and never a review to claim. Spend the

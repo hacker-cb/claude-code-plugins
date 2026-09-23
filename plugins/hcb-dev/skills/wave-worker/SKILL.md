@@ -94,12 +94,11 @@ holds, and what it stops is named in the return as the gap it is.
   do.
 - **A finding does not become an issue here, and nothing but this batch's own
   review verifies one here.** A `Critical` or `Important` on the code this
-  batch wrote is outside this rule: `findings.md` has it fixed here and blocking this
-  batch's own completion. Every other one this batch surfaced and left unfixed rides
-  the return as a candidate — a row of
+  batch wrote is outside this rule: `findings.md` rules it here. Every other one
+  this batch surfaced and left unfixed rides the return as a candidate — a row of
   [`../../references/findings-table.md`](../../references/findings-table.md) carrying
-  what that review gave it, or reading `not measured — batch` where no review saw
-  it, at the revision it was read at, every row
+  what that review gave it, or `not measured — batch`, the refuted beneath the
+  table as it sets them out, at the revision it was read at, every row
   carrying the outcome proposed for it and the classification of one that earns an
   issue — `—` where no issue is in it — never applied, and
   ranked against this batch's others
