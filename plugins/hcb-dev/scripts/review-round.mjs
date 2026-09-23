@@ -442,6 +442,27 @@ function blobOf(repo, req, file, side) {
   return r.ok ? r.out.trim() : null;
 }
 
+// Whether a quote stands in the file whose blob `blobOf` answered, read the same way: a
+// link's own text, else the bytes on that side. A reader is shown them as UTF-8 or, where
+// they are not, as Latin-1, and a CRLF file's lines without the CR — so either decoding
+// counts, and line ends are compared as `\n`.
+function quotes(repo, req, file, side, quote) {
+  const tree = treeOf(req, side);
+  let bytes = null;
+  if (tree.ref) {
+    const r = repo.git(['cat-file', 'blob', `${tree.ref}:${file}`], undefined, true);
+    bytes = r.ok ? r.out : null;
+  } else {
+    const abs = path.join(repo.top, file);
+    try {
+      bytes = lstatSync(abs).isSymbolicLink() ? readlinkSync(abs, { encoding: 'buffer' }) : readFileSync(real(abs));
+    } catch { bytes = null; }
+  }
+  if (!bytes) return false;
+  const lf = (s) => s.replace(/\r\n/g, '\n');
+  return [bytes.toString('utf8'), bytes.toString('latin1')].some((t) => lf(t).includes(lf(quote)));
+}
+
 const sourceFiles = (dir) => (existsSync(path.join(dir, 'sources'))
   ? readdirSync(path.join(dir, 'sources')).filter((f) => f.endsWith('.json') && !f.endsWith('.status.json')).sort()
   : []);
@@ -1411,13 +1432,14 @@ function queue() {
   const unreachable = [];
   for (const u of all) {
     if (u.unreachable) { unreachable.push(u.unit); continue; }
-    // A carried verdict stands while every file it read is byte-for-byte what it read —
-    // and only where the finding's own file is among them, since a verdict that never
-    // read it cannot tell that file changed, a fix included. `refuted` never stands: it
-    // released work, and a change to anything it read may have put the defect back.
+    // A carried verdict stands while every file it read is byte-for-byte what it read, and
+    // every file it found absent still is — and only where the finding's own file is among
+    // what it read, since a verdict that never read it cannot tell that file changed, a fix
+    // included. `refuted` never stands: it released work, and a change to anything it read
+    // may have put the defect back.
     const standing = u.carried.find((v) => (v.verdict === 'confirmed' || v.verdict === 'unproven')
       && v.evidence.some((e) => e.path === u.file && e.side === u.side)
-      && v.evidence.every((e) => blobAt(repo, round.req, e.path, e.side) === e.blob));
+      && v.evidence.every((e) => blobAt(repo, round.req, e.path, e.side) === (e.absent ? null : e.blob)));
     if (standing) {
       writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), { ...standing, unit: u.unit, reused: true });
       reused.push(u.unit);
@@ -1514,7 +1536,14 @@ function verdict() {
   value.evidence.forEach((e, i) => {
     const side = e.side || 'head';
     const blob = blobAt(repo, round.req, e.path, side);
-    if (!blob) missing.push({ at: `/evidence/${i}/path`, message: `${e.path} is not on the ${side} side of this ${round.req.mode} — quote what you actually read` });
+    // A file a verdict rests on not existing is read as surely as one that does, and a
+    // later pass lets the verdict stand only while it still does not.
+    if (e.absent) {
+      if (blob) missing.push({ at: `/evidence/${i}/absent`, message: `${e.path} is on the ${side} side of this ${round.req.mode} — quote what it says instead` });
+      else if (!relOk(e.path) || treeOf(round.req, side).none) missing.push({ at: `/evidence/${i}/path`, message: `${e.path} names no place on the ${side} side of this ${round.req.mode}` });
+      else evidence.push({ path: e.path, side, absent: true });
+    } else if (!blob) missing.push({ at: `/evidence/${i}/path`, message: `${e.path} is not on the ${side} side of this ${round.req.mode} — quote what you actually read` });
+    else if (!quotes(repo, round.req, e.path, side, e.quote)) missing.push({ at: `/evidence/${i}/quote`, message: `the quote is not in ${e.path} on the ${side} side — copy it from the file exactly as it reads there` });
     else evidence.push({ path: e.path, side, lines: e.lines, quote: e.quote, blob });
   });
   if (missing.length) refuse(missing, { unit: u.unit });
@@ -1686,7 +1715,9 @@ function result() {
   const findings = [];
   const refuted = [];
   const drifted = new Set();
-  const headBlob = new Map((req.files || []).map((f) => [f.path, f.blob_head]));
+  // A renamed file's old name is gone from the tree the finders read, as a deleted one is.
+  const headBlob = new Map((req.files || []).flatMap((f) => [
+    ...(f.status === 'R' && f.from ? [[f.from, null]] : []), [f.path, f.blob_head]]));
   const verdicts = new Map(all.map((u) => [u.unit, verdictOf(round.dir, u.unit)]));
   // What each verdict read on the working tree, where the round's drift is judged: the
   // files a fresh check read, the ones a reused verdict read having been judged when it stood.
@@ -1717,8 +1748,9 @@ function result() {
       continue;
     }
     for (const e of onHead.get(u.unit)) {
+      // A file the diff lists as deleted opened with no blob, as one found absent is read.
       const was = openedWith(e.path);
-      if (was !== undefined && was !== e.blob) drifted.add(e.path);
+      if (was !== undefined && was !== (e.absent ? null : e.blob)) drifted.add(e.path);
     }
     if (v.verdict === 'refuted') {
       refuted.push({ unit: u.unit, file: u.file, line: u.line, summary: u.summary, refuted_because: v.refuted_because, snapshot: v.snapshot });

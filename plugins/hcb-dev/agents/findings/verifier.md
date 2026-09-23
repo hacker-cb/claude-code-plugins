@@ -97,6 +97,10 @@ JSON
 - `evidence` lists every place you read to reach the verdict, the claim's own coordinate first;
   an entry read at the merge base carries `"side": "base"`, one read on the tree the task
   named `"side": "head"`, which is also what an entry without the field means.
+- A `quote` is copied from the file as it reads on that side: the script refuses one the file
+  does not hold. Where the verdict rests on a file not existing — no config, no handler, no
+  test — that file is an entry of its own, `{"path": "<path>", "absent": true}`, with no
+  `lines` and no `quote`.
 - `settle` goes with `unproven`, `refuted_because` with `refuted`, both in the task's language;
   quotes stay exactly as the code has them, save a secret's value: a quote stops short of it,
   and nothing you write repeats it.

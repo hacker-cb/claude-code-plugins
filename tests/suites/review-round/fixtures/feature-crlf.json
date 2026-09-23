@@ -1,0 +1,14 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "win.txt": "first line\r\nsecond line\r\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "lib/helpers.sh",
+      "line": 2,
+      "side": "head",
+      "summary": "hush swallows everything it is given.",
+      "failure_scenario": "hush error prints nothing",
+      "severity": "Minor",
+      "category": "correctness"
+    }
+  ]
+}

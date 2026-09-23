@@ -1,0 +1,11 @@
+{
+  "verdict": "refuted",
+  "refuted_because": "a guard stops it",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "lines": "4",
+      "quote": "if [ \"$count\" -gt \"$limit\" ]"
+    }
+  ]
+}
