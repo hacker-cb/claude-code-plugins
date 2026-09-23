@@ -1049,19 +1049,17 @@ function codexPrompt(round, text, limit, rules, inline) {
 }
 
 // The pass itself, off the event loop's back: a process that outlives its watchdog is asked
-// to stop first, and killed only where it still stands.
+// to stop first — a CLI's own wrapper passes that on to the engine behind it — and killed
+// only where it still stands.
 function runPass(args, { cwd, input, timeout, fd }) {
   return new Promise((resolve) => {
-    // A group of its own, so a signal reaches the engine behind a CLI's wrapper as well as
-    // the wrapper: one killed alone leaves the engine running, and paid for.
-    const child = spawn('codex', args, { cwd, stdio: ['pipe', fd, fd], detached: true });
-    const signal = (sig) => { try { process.kill(-child.pid, sig); } catch { child.kill(sig); } };
+    const child = spawn('codex', args, { cwd, stdio: ['pipe', fd, fd] });
     let timedOut = false;
     let hard = null;
     const soft = setTimeout(() => {
       timedOut = true;
-      signal('SIGTERM');
-      hard = setTimeout(() => signal('SIGKILL'), TERM_GRACE_MS);
+      child.kill('SIGTERM');
+      hard = setTimeout(() => child.kill('SIGKILL'), TERM_GRACE_MS);
     }, timeout);
     const done = (r) => { clearTimeout(soft); clearTimeout(hard); resolve({ ...r, timedOut }); };
     child.on('error', (error) => done({ error, status: null, signal: null }));
@@ -1394,12 +1392,10 @@ function queue() {
   if (opts['--budget'] !== undefined && !/^[0-9]+$/.test(opts['--budget'])) die('--budget must be a whole number');
   // A round's budget is its rung's, from the plan, where the caller names none — less
   // whatever an earlier queue of the round already spent.
-  // An appended queue is the sweep's, whose groups the first queue ranked without: they are
-  // checked on an allowance of their own, the sweep's limit, beyond what the budget left.
   const p = planOf(round);
   let budget = Infinity;
   if (opts['--budget'] !== undefined) budget = Number(opts['--budget']);
-  else if (p) budget = Math.max(0, p.budget - prior.queue.length) + (append && p.sweep ? p.sweep.limit : 0);
+  else if (p) budget = Math.max(0, p.budget - prior.queue.length);
   // A round run without agents checks nothing: its queue only lets carried verdicts stand.
   if (p?.depth) budget = 0;
   const seen = new Set([...prior.queue, ...prior.reused, ...prior.budget_cut, ...prior.unreachable]);
@@ -1440,12 +1436,13 @@ function queue() {
     cut = order;
     order = [];
   } else if (append) {
-    // What the budget cuts from an appended queue is never a Critical: the budget was
-    // spent on groups the first queue ranked without knowing it existed.
-    // `open` is ranked, so the Critical groups lead it; each is charged to the budget.
-    const room = Math.max(0, budget - critical.length);
-    cut = order.slice(critical.length + room);
-    order = order.slice(0, critical.length + room);
+    // What the budget cuts from an appended queue is never a Critical or an Important: the
+    // budget was spent on groups the first queue ranked without knowing they existed.
+    // `open` is ranked, so those groups lead it; each is charged to the budget.
+    const severe = open.filter((u) => u.severity !== 'Minor').length;
+    const room = Math.max(0, budget - severe);
+    cut = order.slice(severe + room);
+    order = order.slice(0, severe + room);
   } else if (critical.length > budget) {
     // Every Critical is checked before a budget applies at all; where they alone do not
     // fit, none of them is ruled unverified — the caller stops and says so.
@@ -1562,6 +1559,9 @@ function wait() {
   const limit = opts['--timeout-s'] === undefined ? WAIT_CAP_S : Number(opts['--timeout-s']);
   if (!Number.isInteger(limit) || limit < 0 || limit > WAIT_CAP_S) die(`--timeout-s must be a whole number from 0 to ${WAIT_CAP_S}`);
   let expected;
+  // How long since the work began — the plan, or where a round has none the first queue:
+  // the ceiling on waiting counts from there, and a model has no clock of its own.
+  let started = Date.parse(planOf(round)?.planned_at ?? '');
   if (what === 'tasks') {
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     // The plan's tasks where none are named — the sweep aside, launched on its own later.
@@ -1577,6 +1577,7 @@ function wait() {
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     for (const u of expected) if (!UNIT_ID.test(u)) die(`--expect: '${u}' is not a group id`);
     if (!expected.length) expected = q.latest ?? q.queue;
+    if (Number.isNaN(started)) started = Date.parse(q.started_at ?? '');
   }
   // Presence alone answers: a file lands whole (writeJson renames it into place), so
   // nothing here needs to parse what another process is writing.
@@ -1584,11 +1585,6 @@ function wait() {
     ? path.join(round.dir, 'sources', `${x}.status.json`)
     : path.join(round.dir, 'verdicts', `${x}.json`)));
   const t0 = Date.now();
-  // How long since the work began — the plan, or where a round has none the first queue:
-  // the ceiling on waiting counts from there, and a model has no clock of its own.
-  let queued = null;
-  try { queued = readJson(path.join(round.dir, 'queue.json')).started_at; } catch { queued = null; }
-  const started = Date.parse(planOf(round)?.planned_at ?? queued ?? '');
   const tick = () => {
     const left = pending();
     const waited = Math.round((Date.now() - t0) / 1000);

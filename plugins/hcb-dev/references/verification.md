@@ -106,7 +106,6 @@ so the pass that reads it later can let it stand rather than check it again.
 `--budget` is the caller's: a review round's comes with its rung, a pass keeps its own rule. Every
 `Critical` is queued before the budget applies; where the `Critical` groups alone do not fit, `queue`
 says so and queues none of them — the caller stops rather than rule a severe finding unverified.
-A round's sweep is checked on an allowance of its own, its limit, beyond what the budget left.
 What the budget cut reaches the result as `not measured — budget`.
 
 ## Reading the result
