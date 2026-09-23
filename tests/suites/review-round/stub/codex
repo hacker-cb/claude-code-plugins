@@ -13,7 +13,9 @@
 #                        told to stop; CODEX_EMPTY=1 writes nothing and prints a usage-limit
 #                        notice, after 70 KB of other output where CODEX_NOISE=1; CODEX_GROUP=1 groups the round while it runs, as a conductor
 #                        that stopped waiting would; CODEX_FAIL_MODEL=<slug> answers nothing
-#                        and prints a model-capacity notice when run on that model.
+#                        and prints a model-capacity notice when run on that model;
+#                        CODEX_ORPHAN=1 leaves a process of its group behind that keeps a
+#                        .codex-orphan beside the marker two seconds on, unless stopped.
 set -u
 here=$(cd "$(dirname "$0")/.." && pwd)
 mark="${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}"
@@ -56,6 +58,7 @@ cat > "$mark.codex-stdin"
 # trap is heard at once, not once a foreground sleep ends.
 [ -n "${CODEX_TRAP:-}" ] && trap 'echo term > "$mark.codex-term"; exit 143' TERM
 pause() { [ -n "${CODEX_SLEEP:-}" ] && { sleep "$CODEX_SLEEP" & wait $!; }; return 0; }
+[ -n "${CODEX_ORPHAN:-}" ] && { ( sleep 2; echo alive > "$mark.codex-orphan" ) & }
 [ -z "${CODEX_LATE:-}" ] && pause
 if [ -n "${CODEX_FAIL_MODEL:-}" ] && [ "$model" = "$CODEX_FAIL_MODEL" ]; then
   echo "ERROR: $model is at capacity right now. Try another model." >&2

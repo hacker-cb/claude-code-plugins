@@ -11,6 +11,8 @@
 #
 # Helpers this driver handles itself:
 #   @write <path> <word>   a step: "<word>\n" into that file of the scratch repository
+#   @sleep <s>             a step: waits <s> seconds — for what a stopped process would
+#                          still have done by then
 #   @store <path> <word>   a step: "<word>\n" into that file of the round's work
 #                          directory — a file another process is still writing;
 #                          `@file:<name>` in place of the word copies inputs/<name> there
@@ -103,6 +105,10 @@ for ((n = 0; n < count; n++)); do
   if [ "${words[0]}" = "@write" ]; then
     scratch
     printf '%s\n' "${words[2]}" > "$repo/${words[1]}"
+    continue
+  fi
+  if [ "${words[0]}" = "@sleep" ]; then
+    sleep "${words[1]}"
     continue
   fi
   if [ "${words[0]}" = "@show" ]; then

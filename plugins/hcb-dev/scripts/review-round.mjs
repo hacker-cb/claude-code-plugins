@@ -1049,17 +1049,19 @@ function codexPrompt(round, text, limit, rules, inline) {
 }
 
 // The pass itself, off the event loop's back: a process that outlives its watchdog is asked
-// to stop first — a CLI's own wrapper passes that on to the engine behind it — and killed
-// only where it still stands.
+// to stop first, and killed only where it still stands.
 function runPass(args, { cwd, input, timeout, fd }) {
   return new Promise((resolve) => {
-    const child = spawn('codex', args, { cwd, stdio: ['pipe', fd, fd] });
+    // A group of its own, so a signal reaches the engine behind a CLI's wrapper as well as
+    // the wrapper: one killed alone leaves the engine running, and paid for.
+    const child = spawn('codex', args, { cwd, stdio: ['pipe', fd, fd], detached: true });
+    const signal = (sig) => { try { process.kill(-child.pid, sig); } catch { child.kill(sig); } };
     let timedOut = false;
     let hard = null;
     const soft = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGTERM');
-      hard = setTimeout(() => child.kill('SIGKILL'), TERM_GRACE_MS);
+      signal('SIGTERM');
+      hard = setTimeout(() => signal('SIGKILL'), TERM_GRACE_MS);
     }, timeout);
     const done = (r) => { clearTimeout(soft); clearTimeout(hard); resolve({ ...r, timedOut }); };
     child.on('error', (error) => done({ error, status: null, signal: null }));
@@ -1392,10 +1394,12 @@ function queue() {
   if (opts['--budget'] !== undefined && !/^[0-9]+$/.test(opts['--budget'])) die('--budget must be a whole number');
   // A round's budget is its rung's, from the plan, where the caller names none — less
   // whatever an earlier queue of the round already spent.
+  // An appended queue is the sweep's, whose groups the first queue ranked without: they are
+  // checked on an allowance of their own, the sweep's limit, beyond what the budget left.
   const p = planOf(round);
   let budget = Infinity;
   if (opts['--budget'] !== undefined) budget = Number(opts['--budget']);
-  else if (p) budget = Math.max(0, p.budget - prior.queue.length);
+  else if (p) budget = Math.max(0, p.budget - prior.queue.length) + (append && p.sweep ? p.sweep.limit : 0);
   // A round run without agents checks nothing: its queue only lets carried verdicts stand.
   if (p?.depth) budget = 0;
   const seen = new Set([...prior.queue, ...prior.reused, ...prior.budget_cut, ...prior.unreachable]);
@@ -1454,12 +1458,14 @@ function queue() {
     order = order.slice(0, budget);
   }
   // What each call stopped on is its answer's; the file keeps what later calls read.
+  // When checking began, for a round with no plan to count its wait from.
   const q = {
     queue: [...prior.queue, ...order],
     reused: [...prior.reused, ...reused],
     budget_cut: [...prior.budget_cut, ...cut],
     unreachable: [...prior.unreachable, ...unreachable],
     latest: order,
+    started_at: prior.started_at ?? new Date().toISOString(),
   };
   writeJson(qf, q);
   // The answer names what this call queued; the file holds the whole queue.
@@ -1578,16 +1584,18 @@ function wait() {
     ? path.join(round.dir, 'sources', `${x}.status.json`)
     : path.join(round.dir, 'verdicts', `${x}.json`)));
   const t0 = Date.now();
-  // How long since the plan: the ceiling on a round's waiting counts from its launch,
-  // and a model has no clock of its own to count it by.
-  const planned = Date.parse(planOf(round)?.planned_at ?? '');
+  // How long since the work began — the plan, or where a round has none the first queue:
+  // the ceiling on waiting counts from there, and a model has no clock of its own.
+  let queued = null;
+  try { queued = readJson(path.join(round.dir, 'queue.json')).started_at; } catch { queued = null; }
+  const started = Date.parse(planOf(round)?.planned_at ?? queued ?? '');
   const tick = () => {
     const left = pending();
     const waited = Math.round((Date.now() - t0) / 1000);
     if (!left.length || Date.now() - t0 >= limit * 1000) {
       answer({
         read: true, round: round.id, for: what, complete: left.length === 0, pending: left, waited_s: waited,
-        since_plan_s: Number.isNaN(planned) ? null : Math.round((Date.now() - planned) / 1000),
+        since_start_s: Number.isNaN(started) ? null : Math.round((Date.now() - started) / 1000),
       });
     }
     setTimeout(tick, 1000);
