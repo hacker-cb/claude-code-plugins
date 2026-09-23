@@ -1,196 +1,63 @@
 ---
 name: multi-review
 description: >-
-  Review one change with several independent reviewers — the Codex CLI,
-  Claude's own reviewer, the built-in security review — then consolidate their
-  findings and report what each one actually covered. Use when
-  the user asks for a review of the current change ("прогони ревью", "review
-  this", "second opinion on this diff"), and before finished work is completed —
-  merged locally or handed to a change request — unless
-  `hcb-dev:shipping-workflow` is already driving that handoff and calls this
-  itself. Report-only: it never applies fixes; the caller decides what to do with
-  them. Not an auto-trigger on every edit.
+  Review the current change with every source hcb-dev's review round has — Claude, security and
+  Codex — and report the findings and what each source actually covered. Use when the user asks
+  for a review of the change ("прогони ревью", "review this", "second opinion on this diff"), and
+  before finished work is completed — merged locally or handed to a change request — unless
+  `hcb-dev:shipping-workflow` is already driving that handoff and calls this itself. Report-only:
+  it never applies fixes; the caller decides what to do with them. Not an auto-trigger on every
+  edit, and not an audit of code no change touched.
 ---
 
 # Multi-review
 
-Runs several independent reviewers over one change and returns a single write-up: the
-consolidated findings, plus a line per reviewer stating what it covered. The reviewers disagree
-about what "the change" even is, and that disagreement is where coverage silently disappears —
-most of this skill exists to keep it visible. Report-only: never fix what comes back, hand
-findings and coverage to the caller. Read
+One review round over one change, opened with every source — Claude's finders, the security
+angles, the Codex pass — and one write-up: the findings, and a row per source saying what it
+covered. Report-only: never fix what comes back, hand findings and coverage to the caller. Read
 [`../../references/invariants.md`](../../references/invariants.md) first — every count, every
-empty answer and every reviewer that did not report is read by it.
+empty answer and every source that did not report is read by it.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## 1. Scope
 
 **Kind.** Default is the change itself; two variations come on request — narrowed (a path, or a
-focus such as "only error handling") and working-tree-only ("just what I changed since the last
-commit"). A request to audit existing code — "look through the whole directory", "check every
-component" — is *not* a change: each reviewer builds a diff and reviews nothing when that diff
-is empty. Say so and stop, rather than quietly reviewing the last commit instead.
+focus such as "only error handling"), handed to the round as its narrowing, and working-tree-only
+("just what I changed since the last commit"), whose base is `HEAD`. A request to audit existing
+code — "look through the whole directory", "check every component" — is *not* a change: a round
+reviews a diff, and reviews nothing when that diff is empty. Say so and stop, rather than quietly
+reviewing the last commit instead.
 
 **Base.** Resolve it by the ladder in
 [`../../references/base-resolution.md`](../../references/base-resolution.md), which owns all of
-it. Three things that reference cannot enforce from where it sits: **whatever resolves is handed
-to the reviewers explicitly**, and an explicit base wins over any resolution they would do
-themselves, so a lossy answer here is the last word; **a base a caller hands down is a name, and
-a name is not a ref**, so refresh it before passing it on; and **confirm it shares history with
-`HEAD`** (`git merge-base <base> HEAD` non-empty). Empty → don't pass it, and **don't quietly
-fall to `@{upstream}`**: on an already-pushed branch that range is near-empty, so every reviewer
-returns a small nonzero count, the zero-file check passes, and the coverage gate records no gap
-while most of the branch went unread. Say the base could not be resolved, review the working
-tree alone, and record `partial` with the commits left unread. If nothing resolves at all, ask
-before launching anyone.
+it, a base a caller hands down included, and hand what resolves to the round: a lossy answer
+here is the last word. Where `init` refuses it for sharing no history with `HEAD`, **don't fall
+to `@{upstream}`** — on an already-pushed branch that range is near-empty, and the coverage gate
+would record no gap while most of the branch went unread. Review the working tree alone, `HEAD`
+as the base, and every row of the report reads `partial`, the commits left unread named. Where
+nothing resolves at all, ask before opening anything.
 
-**Range.** Base → working tree, so one pass covers the branch's commits together with the
-uncommitted edits sitting on top of them.
+**Rung.** One for the whole round: `medium`, or `high` where the change meets the high-risk test
+in [`../../references/review-pipeline.md`](../../references/review-pipeline.md)'s *The rung*; an
+explicit word wins. Always name it — never "the middle", and never the wording it arrived in: a
+word off the ladder is not a rung at all.
 
-**Risk** decides the rung in the next step. Always name it — never "the middle", and never the
-wording it arrived in: a word off the ladder is not a rung at all. `codex-review` and
-`claude-review` both start at **`medium`**, and high risk takes both to `high`, their one other
-rung.
+## 2. Sources
 
-Treat the change as high-risk when it reaches past itself (public interface, shared helper,
-config, schema, wire format), cannot be walked back (it writes, migrates, publishes, or persists
-a format someone else reads), meets input whose shape you do not control, has nothing else
-checking it, removes a guard, an error path or a test, or touches paths the project marks
-sensitive. Anything else stays at `medium`, mechanics with no behaviour change among it. An
-explicit word wins.
-
-**Uncommitted work.** Where `git status --short` or `git ls-files --others --exclude-standard`
-shows anything belonging to the change, offer a commit before starting — offer, never commit
-anything yourself — and name the price of declining: Codex and `claude-review` see the working
-tree either way, the security review is handed a commit range and leaves those edits out, and
-files that are not tracked at all are invisible to every reviewer. A refusal is a fine answer
-and goes into the report. Where the scope *is* the working tree, the offer drops (it would empty
-the very diff asked for) while the price of what is untracked still gets named.
-
-## 2. Pick
-
-Three questions per reviewer, in order:
-
-- **Available?** If not, record `UNAVAILABLE` with the reason; do not launch it.
-- **Applicable?** Where the scope asks for something a reviewer cannot do, skip it with a
-  recorded reason — `n/a`, as for one the caller asked to leave out, the caller's words being
-  the reason in its row. Nothing else earns a skip: cost is paid in the rung.
-- **At what level?** Pass the level Scope fixed for that reviewer explicitly, never a
-  machine-local default — this skill runs on other people's machines.
-
-| Reviewer | Available when | Reads | Narrowing | Ladder |
-|---|---|---|---|---|
-| `hcb-dev:codex-review` skill | `command -v codex` and `command -v node` — its round lives in a script's store; the pass runs as a process | base → working tree, tracked files | yes, passed as a narrowing beside the range | `medium`, `high` |
-| `hcb-dev:claude-review` skill | `command -v node` — its round lives in a script's store; without the Agent tool it runs, nothing checked | base → working tree, tracked files | yes, passed as a narrowing beside the range | `medium`, `high` |
-| `security-review` skill | the skill is in your skill list | commits only; base pinned to the default branch | no | none |
-
-In practice that turns the security review down on a narrowed or working-tree-only scope, and
-again where the change alters nothing that anything executes — **a judgement about behaviour,
-never a list of extensions.** Ask what now runs differently, not what the files are called: a
-`SKILL.md`, a workflow, a `.sh`, a `dependabot.yml` are all instructions something obeys, and
-prose is not automatically inert — a credential pasted into an example, or a command a reader
-will copy and run, is exactly what that review is for. `n/a` only where the honest answer to
-*what behaves differently now* is "nothing", and say that reason in the row: `n/a` is the one
-status the coverage gate does not treat as a gap. A change that is documentation alone is
-`claude-review`'s, the only reviewer reading `CLAUDE.md` compliance, so applicability never
-turns it down for carrying no code.
-
-**Size is a signal, not a threshold.** Two thousand lines of regenerated fixture hide less than
-twenty inside an auth check. Ask what the change could be concealing, never how much of it there
-is — no line counts, no file counts. A single self-contained edit whose whole surface fits in
-one reading is covered at the bottom rung; breadth is what the upper ones buy.
+The round is opened with every source — `claude`, `security`, `codex` — save one the caller's
+word leaves out, whose row is `n/a` with the caller's words as its reason. Nothing else earns a
+skip: cost is paid in the rung, and a narrowing reaches every source alike. A source that cannot
+run — the Codex CLI missing, a model's limit on every model tried — records its own loss in the
+round, and its row says so.
 
 ## 3. Run
 
-Every reviewer here fans out into subagents, each because its own skill asks for them; run them
-one after another, in the order below, each to its end.
+As `review-pipeline.md`'s *Running one* says, the findings a caller hands down going in as its
+`noticed` candidates — each re-measured at its coordinate on the tree as it stands first: a line
+noticed before the rest of the work moved may have moved with it.
 
-- **codex-review** and **claude-review** — invoke the `hcb-dev:codex-review` and
-  `hcb-dev:claude-review` skills through the Skill tool, never by reading their `SKILL.md`: only
-  the tool substitutes the plugin root in one. Each is passed the base and the rung §1 fixed for
-  it — `HEAD` as the base where the scope is the working tree alone — and a narrowing goes down
-  with both, in the same prose. Codex first, then `claude-review`.
-- **security-review** — invoke the skill inline, last, and run it as written: the sub-tasks it
-  asks for are launched as subagents of this session — the finder first, then the filtering pass
-  as parallel sub-tasks. The skill asking for them is the ask a rule admitting subagents only on
-  the user's or a skill's ask waits for, and so is the caller that invoked this skill: launch
-  them without asking. **Never delegate the skill itself to a subagent to save context**: the
-  filtering pass is what drops every candidate below confidence 8, and where that pass cannot
-  run the skill does not fail — it silently returns the unfiltered candidates as if they had
-  been filtered. Nor is a filtering pass this session does itself the skill's pass: record such
-  a run as `partial`, with what stopped the sub-tasks as the reason, never as a clean result — a
-  gap the caller can close, not a structural one. Its write-up ends *its* run, not yours: carry
-  it into §4 as one reviewer's row, and never let it stand as the answer.
+## 4. Report
 
-## 4. Collect
-
-Take two things from each reviewer: what it covered — base and file count, from that reviewer's
-own output — and its findings. Never carry one reviewer's count across to another's row; a
-borrowed number is how a reviewer that read nothing gets recorded as having read the change.
-
-**Wait for every reviewer you launched.** None of the four statuses in §6 says "still running",
-so a row filled before its reviewer returns asserts something about a run that has not finished —
-and the one status that fits an empty cell, `n/a`, is the one the coverage gate treats as closed.
-`codex-review` and `claude-review` return when their conductors do, each round's result in hand.
-A reviewer that has not returned by the ceiling
-[`../../references/review-runs.md`](../../references/review-runs.md) sets is a row and a reason,
-never an empty cell and never a stall.
-
-**A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage gate treats as
-closed, so recording a reviewer that did not run passes a completion with it missing — which is
-what `UNAVAILABLE` exists for; the engine's own notice goes below the table and the cell stays
-short. **A model's limit is recovered inside a round** for its agents, the row naming the model;
-for a Codex pass it stopped, run `codex-review` again on another model before recording it.
-
-**Less than the change is not a pass.** A reviewer that ran against the wrong base, or over only
-the committed half while the rest sat in the working tree, covered a nonzero number of the wrong
-files. That is `partial`, and it counts as a gap — say what it missed. Where the scope was
-narrowed, the count is the range's and not the narrowing's. **A `coverage-warning:` row is
-`partial`**, whatever the count beside it says — while a **`run-warning:` is not**: it says what
-the run did, not what it read, and a build the boundary refused is this session's to run where a
-finding hangs on it. When a reviewer fails, quote its error instead of guessing a cause.
-
-## 5. Consolidate
-
-Dedup by the key [`../../references/findings.md`](../../references/findings.md) fixes — `(file,
-line)` **and** mechanism — keeping whichever write-up carries the concrete failure scenario, and
-rank by that same file's ladder.
-
-## 6. Report
-
-A report in [`../../references/report-format.md`](../../references/report-format.md)'s grammar,
-[`../../references/report-blocks.md`](../../references/report-blocks.md)'s `## Review coverage`
-first — one row per reviewer, what it covered before its verdict:
-
-| Reviewer | Covered | Effort | Result |
-|---|---|---|---|
-| `codex-review` | `<base>`, 3 files | high | 🟢 2 findings |
-| `claude-review` | `<base>`, 3 files | high | 🟢 no findings |
-| `security-review` | `<base>`, 1 of 3 files | — | 🔴 partial: rest uncommitted |
-
-Keep the cells short: "Covered" is always `<base>, N files`, effort gets its own column so a
-level is never left implied, and "Result" is a verdict — 🟢 covered; 🔴 a gap someone can close,
-`UNAVAILABLE`, `nothing to review` and a plain `partial` among them, which opens the report as
-well, a gap being what stops a completion; ⚪ `n/a` or a `partial (structural)` no one can —
-never a finding's description, which belongs in `## Findings`.
-
-Four statuses, kept apart deliberately: `UNAVAILABLE` — the reviewer could not run; `n/a` — it
-was deliberately not run, and why; `nothing to review` — it ran and covered zero files;
-`partial` — it ran but covered less than the change, or the wrong range. Everything except `n/a`
-is a gap, with one distinction the caller needs: a `partial` forced by a reviewer's **own
-structural limit**, rather than by anything about this change, is not something anyone can act
-on. The security review is the standing example, its base pinned to the default branch and so
-mis-scoped in every repo whose changes target another trunk. Report that as `partial
-(structural)` with the reason, so a shipping flow can tell it apart from a gap still worth
-closing.
-
-Then `## Findings`, laid out by [`../../references/findings-table.md`](../../references/findings-table.md)
-— each row as its reviewer measured it, ruling nothing — and nothing else: no fixes, no patches.
-
-**Where the report reads thin for the breadth it covered** — the engines agreed on little, or
-the change reaches across far more ground than the findings touch — say so, and offer what no
-rung here reaches: `/code-review` at `xhigh`, `max` or `ultra`, typed by the user — its heavier
-rungs, the last a multi-agent review in the cloud. Hand it over as an ask, ready to run — the rung,
-then the base and narrowing §1 resolved, spelled out as `<base>...HEAD`; left off, it falls back
-to its own default range, which on an already-pushed branch is near-empty. Never launch it
-yourself.
+As `review-pipeline.md`'s *Reading the result* says, and nothing else: no fixes, no patches.
+Where the report reads thin for the breadth it covered, `review-pipeline.md`'s *The rung* says
+what to offer.

@@ -4,8 +4,9 @@ description: >-
   Internal agent of hcb-dev: conducts ONE review round already opened by review-round.mjs —
   plans its tasks, launches a hcb-dev:review:finder per finder task and the Codex pass as a
   background process, groups what they hand in, has every group checked by
-  hcb-dev:findings:verifier, and builds the round's result. Launched by hcb-dev:claude-review
-  and hcb-dev:codex-review with a round id alone — never for any other task.
+  hcb-dev:findings:verifier, and builds the round's result. Launched by hcb-dev:claude-review,
+  hcb-dev:codex-review and hcb-dev:multi-review with a round id alone — never for any other
+  task.
 tools: Read, Grep, Glob, Bash, Agent, SendMessage
 disallowedTools: Write, Edit, NotebookEdit
 model: opus
@@ -98,7 +99,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" merge --round "$ROUND"
 It lists every candidate by id. One group per defect: the same line and the same mechanism,
 or one mechanism reported at several lines. Distinct defects sharing a cause stay apart.
 The lead is the member whose failure scenario is the most concrete, and every candidate is
-in exactly one group.
+in exactly one group — save one marked `unreachable`, a caller's finding the round cannot
+place, which stands alone and is left out.
 
 ```bash
 ROUND="<the round id from your prompt>"

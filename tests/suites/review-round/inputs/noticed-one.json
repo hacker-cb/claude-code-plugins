@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 5,
+      "side": "head",
+      "summary": "The cleanup removes a directory named by an optional argument.",
+      "failure_scenario": "an empty third argument removes all of TMPDIR",
+      "severity": "Important",
+      "category": "correctness"
+    }
+  ]
+}

@@ -7,11 +7,10 @@ findings reach a reader in is [`findings-table.md`](findings-table.md)'s.
 
 ## The round
 
-A round reviews one change: base → working tree, every tracked file, as it stood when `init`
-opened it. Commits and uncommitted edits are both in it; an untracked file is not, and is named
-in a `coverage-warning` with `git add -N <path>` as the way in. Everything the round holds lives
-in a store outside the repository that only `review-round.mjs` writes, addressed by the id
-`init` prints — never by a path.
+A round reviews one change: base → working tree, every tracked file, as it stood when `init` opened
+it. Commits and uncommitted edits are both in it; an untracked file is not, and is named in a
+`coverage-warning`. Everything the round holds lives in a store outside the repository that only
+`review-round.mjs` writes, addressed by the id `init` prints — never by a path.
 
 **While a round runs, the tree does not change.** A verdict reads the working tree, and one that
 read a file edited since `init` is flagged in the result as read on a tree the finders did not
@@ -29,12 +28,14 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
 2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
-   the rung; `security`, a finder per security angle of the rung; `codex`, one pass of the Codex
-   CLI at the rung's level for it — a narrowing,
-   `--narrow "<a path, or a focus>"`, where the caller gave one, and a Codex model or level the
-   caller named, as `--codex-model` and `--codex-effort`. Read the answer's `warnings` before
-   anything else: an untracked file named there is outside the review — say so, and offer
-   `git add -N <path>`, never run it; a round with nothing to review says so, and ends there.
+   the rung; `security`, one per security angle; `codex`, one pass of the Codex CLI at the rung's
+   level for it — a narrowing, `--narrow "<a path, or a focus>"`, where the caller gave one, and a
+   Codex model or level the caller named, as `--codex-model` and `--codex-effort`. First, since
+   `init` fixes the snapshot: an untracked file `git ls-files --others --exclude-standard` names
+   that belongs to the change is offered `git add -N -- '<path>'`, the path single-quoted and a
+   quote in it written `'\''` — offered, never run; one left out is a gap every row reports, and
+   untracked files that are no part of the change are none, whatever `init`'s `coverage-warning`
+   counts. A round with nothing to review ends there.
 
    ```bash
    node "<plugin root>/scripts/review-round.mjs" init --mode round --base "<base>" --rung "<rung>" --sources "<sources>" --language "<tag>"
@@ -60,9 +61,7 @@ The conductor plans the round, starts Codex as a background process and one
 `hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups
 what was handed in, has every group it can afford checked by `hcb-dev:findings:verifier`, runs
 the sweep where the rung has one, and builds the result. **A conductor launched on a round
-already under way resumes it**: the tasks `wait --for tasks` still lists are the only ones
-started, a round `merge` calls `grouped` is not grouped again, and one it calls `queued` is not
-queued again.
+already under way resumes it**, starting only what the store still lacks.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, in the
@@ -86,13 +85,19 @@ node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 
 ## The rung
 
-`high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger
-budget of checks, and a sweep for what the first pass missed. The rung's angles and numbers are
-data in the plugin's angle catalog, read by `plan`, never chosen by the one running the round;
-Codex's model and its ladder come from Codex's own catalog. For more than `high` buys, or where
-a round reads thin for the ground the change covers, offer the user the built-in `/code-review`
-at `xhigh`, `max` or `ultra`, typed by them, with the range spelled out as `<base>...HEAD`; never
-launch it.
+`high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger budget
+of checks, and a sweep for what the first pass missed. An entry weighing risk takes `high` where
+the change reaches past itself (public interface, shared helper, config, schema, wire format),
+cannot be walked back (it writes, migrates, publishes, or persists a format someone else reads),
+meets input whose shape you do not control, has nothing else checking it, removes a guard, an error
+path or a test, or touches paths the project marks sensitive; anything else, mechanics with no
+behaviour change among it, stays at `medium`. Size is a signal, never a threshold: ask what the
+change could conceal, not how big it is. The rung's angles and numbers are data in the plugin's
+angle catalog, read by `plan`, never chosen by the one running the round; Codex's model and its
+ladder come from Codex's own catalog. For more than `high` buys, or where a round reads thin for
+the ground the change covers, offer the user the built-in `/code-review` at `xhigh`, `max` or
+`ultra`, typed by them, with the range spelled out as `<base>...HEAD` and the narrowing where there
+is one; never launch it.
 
 ## What an agent's outcome becomes
 
@@ -103,15 +108,15 @@ launch it.
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
-| Codex answered nothing, or not in time | `unavailable`, the log's last lines or the watchdog in the status — where they name one model's limit, a round opened again with another `--codex-model` closes it |
+| Codex answered nothing | where its watchdog has time left, the pass runs once more on the next model the catalog lists, both named in the status; still nothing, or not in time — `unavailable`, the log's last lines or the watchdog in the status |
 | a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
 | it was never launched, or never returned | `partial` for its source, the task named — `unavailable` where no task of that source answered |
 | no agents at all | `depth` for the finders' source |
 
-A candidate anchored where the change has nothing — a file the round does not carry, a line
-past a file's end, an untracked file — is dropped and named, and its task carries a
-`run-warning`. A task every anchor of which missed the change reviewed something else, and reads
-`partial`.
+A source's candidate anchored where the change has nothing — a file the round does not carry,
+a line past a file's end, an untracked file — is dropped and named, and its task carries a
+`run-warning`; a task every anchor of which missed the change reviewed something else, and reads
+`partial`. A `noticed` one is kept, marked `unreachable`, and reaches the result unchecked.
 
 ## The coverage it reports
 
@@ -126,8 +131,8 @@ One row per source, as covered as its least covered task:
 | `nothing` | 🔴 `nothing to review` |
 | `n/a` | ⚪ `n/a`, with the caller's reason |
 
-A `coverage-warning:` and a `run-warning:` in the result's `warnings` are read as
-[`review-runs.md`](review-runs.md)'s *Reading it back* reads them.
+Any other `coverage-warning:`, and a `run-warning:`, in the result's `warnings` is read as
+[`review-runs.md`](review-runs.md)'s *Reading it back* reads it.
 
 ## Reading the result
 

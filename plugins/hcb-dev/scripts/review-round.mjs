@@ -108,6 +108,9 @@ const RANK = { Critical: 0, Important: 1, Minor: 2 };
 const STATE_ORDER = ['unavailable', 'partial', 'depth', 'nothing', 'covered', 'n/a'];
 const worse = (a, b) => (STATE_ORDER.indexOf(a) <= STATE_ORDER.indexOf(b) ? a : b);
 const SOURCES = load('review-angles.json').$defs.task.properties.source.enum;
+// A source the round was opened with reviews the change. Any other carries findings made
+// before the round — a caller's, noticed on the way — and reviewed nothing of it.
+const reviews = (req, source) => (req.sources || []).includes(source);
 const ROUND_DAYS = 7; // a round's store outlives its report by a week, then goes
 const WAIT_CAP_S = 540; // under the Bash tool's 10-minute ceiling, so one window is one call
 // The Codex pass: how long its catalog may take, how long a pass asked to stop has before it
@@ -118,6 +121,9 @@ const TERM_GRACE_MS = 10_000;
 const LOCK_GRACE_MS = 60_000;
 const INLINE_SHARE = 0.25;
 const INLINE_KB = 256;
+// A pass that gave no answer runs once more on another model only where this much of its
+// watchdog is left: less is no time to review a change in.
+const RERUN_MIN_MS = 60_000;
 const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
 
 // A revision git is to read — a branch, a tag, a sha, `HEAD~1` — held only to never
@@ -933,17 +939,17 @@ function store(round, task, source, value, planned, extra = {}, repo = checkoutO
     const at = readAt(repo, round.req, c.file, c.side);
     const reason = at.missing
       || (c.line > lineCount(at.text) ? `${c.file} has ${lineCount(at.text)} line(s) on the ${c.side} side, and the anchor is line ${c.line}` : null);
-    // In a round a coordinate the snapshot does not carry is a claim about some other
-    // tree, and it leaves. In a pass it is only a tree this session cannot read: the
-    // finding stays, marked, and is neither verified nor refuted here.
-    if (reason && round.req.mode === 'round') { rejected.push({ index: i, file: c.file, line: c.line, reason }); return; }
+    // A reviewing source's coordinate the snapshot does not carry is a claim about some
+    // other tree, and it leaves. A carrier's, and any in a pass, is only one this round
+    // cannot read: it stays, marked, neither verified nor refuted here.
+    if (reason && reviews(round.req, source)) { rejected.push({ index: i, file: c.file, line: c.line, reason }); return; }
     const stored = { id: `${task}.${kept.length + 1}`, source, ...c };
     if (reason) { stored.unreachable = reason; unreachable.push({ id: stored.id, reason }); }
     kept.push(stored);
   });
   const notes = [...(extra.notes || [])];
   let state = 'covered';
-  if (round.req.mode === 'round' && rejected.length && !kept.length) {
+  if (rejected.length && !kept.length) {
     state = 'partial';
     notes.push('every anchor this source gave misses the snapshot — it reviewed something other than this change');
   } else if (rejected.length) {
@@ -1123,9 +1129,11 @@ async function codex() {
   // silence the conductor would wait out its hour on.
   try {
     // A caller who named the model and the level has said what to run; the catalog is
-    // read for whatever is left to choose, and for the model's window where it knows it.
+    // read for whatever is left to choose, for the model's window where it knows it, and
+    // for a model to run on once the first gave no answer.
     let models = null;
-    if (!(asked.model && asked.effort)) {
+    let unreadable = null;
+    const readCatalog = () => {
       const cat = spawnSync('codex', ['debug', 'models'], {
         cwd: repo.top, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: CATALOG_MS, killSignal: 'SIGKILL',
       });
@@ -1133,66 +1141,101 @@ async function codex() {
       try { models = JSON.parse(cat.stdout || '').models; } catch { models = null; }
       if (!Array.isArray(models)) models = null;
       const why = cat.error ? cat.error.message : `exit ${cat.status}`;
-      if (!models && !asked.model) lose(`the model catalog is unreadable (${why}): ${tail(`${cat.stdout || ''}\n${cat.stderr || ''}`, 3)}`);
+      if (!models) unreadable = `the model catalog is unreadable (${why}): ${tail(`${cat.stdout || ''}\n${cat.stderr || ''}`, 3)}`;
+    };
+    if (!(asked.model && asked.effort)) {
+      readCatalog();
+      if (unreadable && !asked.model) lose(unreadable);
     }
-    // The round's own model where it was opened with one; otherwise the first listed,
-    // `priority` ascending from the newest frontier model.
-    const model = asked.model ?? [...models].filter((m) => m.visibility === 'list').sort((a, b) => a.priority - b.priority)[0]?.slug;
-    if (!model) lose('the codex catalog lists no model to review with');
-    const entry = models?.find((m) => m.slug === model) ?? null;
-    const ladder = entry ? (entry.supported_reasoning_levels || []).map((l) => l.effort) : null;
-    if (ladder && !ladder.length) lose(`${model} has no reasoning ladder in the codex catalog`, { model, effort: null });
+    // The models to review with, `priority` ascending from the newest frontier model; a
+    // model's ladder; and the level it runs at — the round's, else the rung's, the model's
+    // highest where its ladder stops short.
+    const listed = () => (models || []).filter((m) => m.visibility === 'list').sort((a, b) => a.priority - b.priority);
+    const ladderOf = (entry) => (entry ? (entry.supported_reasoning_levels || []).map((l) => l.effort) : null);
+    const levelOn = (ladder) => asked.effort ?? (!ladder || ladder.includes(settings.effort) ? settings.effort : ladder[ladder.length - 1]);
+    // The round's own model where it was opened with one; otherwise the first listed.
+    const first = asked.model ?? listed()[0]?.slug;
+    if (!first) lose('the codex catalog lists no model to review with');
+    const entry = models?.find((m) => m.slug === first) ?? null;
+    const ladder = ladderOf(entry);
+    if (ladder && !ladder.length) lose(`${first} has no reasoning ladder in the codex catalog`, { model: first, effort: null });
     if (asked.effort && ladder && !ladder.includes(asked.effort)) {
-      lose(`${asked.effort}, the level the round was opened with, is not one ${model} offers — it has: ${ladder.join(' ')}`, { model, effort: asked.effort });
+      lose(`${asked.effort}, the level the round was opened with, is not one ${first} offers — it has: ${ladder.join(' ')}`, { model: first, effort: asked.effort });
     }
-    // The round's level, else the rung's — the model's highest where its ladder stops short.
-    const effort = asked.effort ?? (!ladder || ladder.includes(settings.effort) ? settings.effort : ladder[ladder.length - 1]);
 
     const out = path.join(round.dir, 'codex.answer.json');
     const schema = path.join(round.dir, 'codex.schema.json');
     const log = path.join(round.dir, 'codex.log');
-    rmSync(out, { force: true });
     writeJson(schema, codexSchema(planned.limit));
-    // A share of the model's window where the catalog gives one, at four bytes a token.
-    const inline = Number.isInteger(entry?.context_window) ? entry.context_window * 4 * INLINE_SHARE : INLINE_KB * 1024;
-    const prompt = codexPrompt(round, angleOf(c, task), planned.limit, ruleFiles(repo, round.req.files), inline);
-    // Read-only and sessionless, on the model and level named here; the rest of the user's
-    // own Codex config — its provider, its auth — stands. `-` takes the prompt from stdin,
-    // which is also what stops the CLI waiting on a terminal that is not there. What it
-    // prints goes to the round's log, never through this process's memory.
-    const fd = openSync(log, 'w');
-    let r;
-    try {
-      r = await runPass(['exec', '-s', 'read-only', '--ephemeral', '-C', repo.top, '-m', model,
-        '-c', `model_reasoning_effort=${effort}`, '--output-schema', schema, '-o', out, '-'], { cwd: repo.top, input: prompt, timeout: ms, fd });
-    } finally {
-      closeSync(fd);
-    }
-    // The log's last lines, read from its end: a long run's log is not read whole.
-    const said = () => {
+    const rules = ruleFiles(repo, round.req.files);
+    const deadline = Date.now() + ms;
+    // One run of the pass on one model, under a watchdog of `timeout`. Read-only and
+    // sessionless, on the model and level named here; the rest of the user's own Codex
+    // config — its provider, its auth — stands. `-` takes the prompt from stdin, which is
+    // also what stops the CLI waiting on a terminal that is not there. What it prints goes
+    // to the round's log, never through this process's memory.
+    const attempt = async (model, found, effort, timeout, flag) => {
+      rmSync(out, { force: true });
+      // A share of the model's window where the catalog gives one, at four bytes a token.
+      const inline = Number.isInteger(found?.context_window) ? found.context_window * 4 * INLINE_SHARE : INLINE_KB * 1024;
+      const prompt = codexPrompt(round, angleOf(c, task), planned.limit, rules, inline);
+      const fd = openSync(log, flag);
+      let r;
+      try {
+        r = await runPass(['exec', '-s', 'read-only', '--ephemeral', '-C', repo.top, '-m', model,
+          '-c', `model_reasoning_effort=${effort}`, '--output-schema', schema, '-o', out, '-'], { cwd: repo.top, input: prompt, timeout, fd });
+      } finally {
+        closeSync(fd);
+      }
+      let value = null;
+      try { value = readJson(out); } catch { value = null; }
+      const span = timeout < 120_000 ? `${Math.round(timeout / 1000)} s` : `${Math.round(timeout / 60_000)} min`;
+      const how = [`exit ${r.status}`, r.signal ? `signal ${r.signal}` : null, r.error ? r.error.message : null].filter(Boolean).join(', ');
+      // The log's last lines, read from its end — a long run's log is not read whole — and
+      // before another run writes past them.
       const at = openSync(log, 'r');
+      let said;
       try {
         const size = fstatSync(at).size;
         const buf = Buffer.alloc(Math.min(size, 64 * 1024));
         readSync(at, buf, 0, buf.length, size - buf.length);
-        return tail(buf.toString('utf8'), 5);
+        said = tail(buf.toString('utf8'), 5);
       } finally {
         closeSync(at);
       }
+      return { model, effort, value, timedOut: r.timedOut, span, how, said };
     };
-    const span = ms < 120_000 ? `${Math.round(ms / 1000)} s` : `${Math.round(ms / 60_000)} min`;
-    let value = null;
-    try { value = readJson(out); } catch { value = null; }
+    let run = await attempt(first, entry, levelOn(ladder), ms, 'w');
+    const notes = [];
+    // No answer with time still left on the watchdog: one model's limit is not the pass's.
+    // It runs once more, in what is left, on the next model the catalog lists that offers
+    // the level the round was opened with; an answer from that one is the pass's answer.
+    if (!run.value && deadline - Date.now() >= RERUN_MIN_MS) {
+      if (!models && !unreadable) readCatalog();
+      const next = listed().find((m) => m.slug !== first && ladderOf(m).length && (!asked.effort || ladderOf(m).includes(asked.effort)));
+      const left = deadline - Date.now();
+      if (next && left >= RERUN_MIN_MS) {
+        const again = await attempt(next.slug, next, levelOn(ladderOf(next)), left, 'a');
+        if (!again.value) {
+          const then = again.timedOut ? `: no answer within ${again.span} — the watchdog ended it` : ` (${again.how}): ${again.said}`;
+          lose(`codex gave no answer on ${first} (${run.how}): ${run.said} — nor on ${next.slug}${then}`, { model: again.model, effort: again.effort });
+        }
+        notes.push(`run-warning: ${first} gave no answer (${run.how}): ${run.said} — the pass ran again on ${next.slug}`);
+        run = again;
+      } else if (unreadable) {
+        lose(`codex gave no answer (${run.how}): ${run.said} — and no model to run it again on: ${unreadable}`, { model: first, effort: run.effort });
+      }
+    }
+    const { model, effort, value } = run;
     // An answer written before the watchdog fired is an answer; none, and the watchdog or
     // the log's last lines say why — a spent quota leaves the same empty shape as a crash.
-    if (!value && r.timedOut) lose(`no answer within ${span} — the watchdog ended it`, { model, effort });
-    const how = [`exit ${r.status}`, r.signal ? `signal ${r.signal}` : null, r.error ? r.error.message : null].filter(Boolean).join(', ');
-    if (!value) lose(`codex gave no answer (${how}): ${said()}`, { model, effort });
+    if (!value && run.timedOut) lose(`no answer within ${run.span} — the watchdog ended it`, { model, effort });
+    if (!value) lose(`codex gave no answer (${run.how}): ${run.said}`, { model, effort });
     if (typeof value !== 'object' || !Array.isArray(value.candidates)) lose('codex answered outside the schema: no list of candidates', { model, effort });
 
     // Each candidate meets the candidates' own schema on its own, and carries no verdict:
     // what Codex says of its own finding is never a check that stands.
-    const notes = r.timedOut ? [`run-warning: the watchdog ended codex after ${span}, once its answer was written`] : [];
+    if (run.timedOut) notes.push(`run-warning: the watchdog ended codex after ${run.span}, once its answer was written`);
     const less = [];
     const fits = [];
     const misfits = [];
@@ -1380,7 +1423,10 @@ function queue() {
       reused.push(u.unit);
     } else open.push(u);
   }
-  open.sort((a, b) => RANK[a.severity] - RANK[b.severity]);
+  // Of one weight, the round's own findings are checked before a caller's carried ones:
+  // the budget is the change's first.
+  const carriedOnly = (u) => u.found_by.every((x) => !reviews(round.req, x));
+  open.sort((a, b) => RANK[a.severity] - RANK[b.severity] || carriedOnly(a) - carriedOnly(b));
   const critical = open.filter((u) => u.severity === 'Critical');
   let order = open.map((u) => u.unit);
   let cut = [];
@@ -1590,7 +1636,7 @@ function result() {
     for (const s of answers) {
       // A carrier the caller handed in — its noticed candidates — is no reviewer, and takes
       // no row: its findings are in the result, its coverage is nobody's.
-      if (!(req.sources || []).includes(s.source)) continue;
+      if (!reviews(req, s.source)) continue;
       const row = rowOf(s.source);
       row.state = row.state === null ? s.state : worse(row.state, s.state);
       row.tasks += 1;

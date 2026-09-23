@@ -22,9 +22,9 @@ whole pipeline rather than disconnected commands:
 ```text
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
                                            │
-              (or finished work) ──────────┴─▶ shipping-workflow ─▶ multi-review ─▶ codex-review
-                                                     │                              claude-review
-                                                     │                              security-review (built-in)
+              (or finished work) ──────────┴─▶ shipping-workflow ─▶ multi-review ─▶ one review round:
+                                                     │                              Claude's angles · security angles
+                                                     │                              · a Codex pass · one verifier
                                                      └─▶ complete by mode:
                                                            local   ─▶ git merge into parent  (then offer a PR/MR)
                                                            request ─▶ github-pr-workflow ─▶ (merge)
@@ -146,10 +146,11 @@ form: you paste every one of them yourself.
   The same round with Claude's own finders as its source: one finder agent per
   angle of the rung. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  Run several independent reviewers over one change — `codex-review`,
-  `claude-review`, the built-in security review — then consolidate the findings
-  and report what each reviewer actually covered (the coverage gate most of the
-  skill exists to keep honest). Report-only.
+  One round over one change with every source at once — Claude's angles, the
+  security angles and the Codex pass — at the rung the change's risk sets, the
+  findings a caller noticed on the way checked beside the round's own, then a
+  report of the findings and of what each source actually covered (the coverage
+  gate most of the skill exists to keep honest). Report-only.
 
 ### Completing it
 
@@ -371,7 +372,7 @@ checked before anything reads it.
   ([`data/review-angles.json`](data/review-angles.json)) — the angles of each source the round
   was opened with: Claude's, the security ones, the Codex pass — launches a finder per angle
   and the Codex pass as a process, groups what they hand in, has each group checked, and builds
-  the result. Launched by `claude-review` and `codex-review`.
+  the result. Launched by `claude-review`, `codex-review` and `multi-review`.
 - [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of
   one round: it reads its brief and the change, and hands its candidates in through the store.
   Launched by the conductor.
@@ -643,8 +644,9 @@ Per skill, on top of those:
   it — without it the round's tasks run in that session itself and nothing is
   checked. The finders and the verifier run as subagents, so their reading spends
   their own context rather than the calling session's.
-- **`multi-review`**: nothing of its own — it picks up whichever reviewers are
-  present and records a missing one as a row in the report rather than stopping.
+- **`multi-review`**: what `claude-review` and `codex-review` need — a source that
+  cannot run records its own loss in the round, a row of the report rather than a
+  stop.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
   skill when one is installed (`github-pr-workflow` here), otherwise the forge CLI
   directly. Nothing in it is GitHub-only.
