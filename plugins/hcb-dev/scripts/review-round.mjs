@@ -175,13 +175,14 @@ function checkRoot(root) {
 // Raw output, not trimmed: a line count taken after a trim is short by the blank lines
 // the trim ate, and an anchor on the last line of such a file would read as outside it.
 // `bytes` keeps what git printed as bytes, for a file shown as it is stored.
+// The most one read takes in: past it a file is refused by name, never read whole.
+const READ_CAP = 64 * 1024 * 1024;
 const gitIn = (cwd) => (args, input, bytes = false) => {
   const r = spawnSync('git', args, {
     cwd,
     input,
     encoding: bytes ? 'buffer' : 'utf8',
-    // A file's bytes come whole, whatever their size; a listing is capped.
-    maxBuffer: bytes ? Infinity : 64 * 1024 * 1024,
+    maxBuffer: READ_CAP,
     // A clean filter of the checkout's own — git-lfs, a normalizer — runs inside
     // `hash-object`, and one that hangs would hold the whole round with it.
     timeout: 120_000,
@@ -456,6 +457,7 @@ const lf = (s) => s.replace(/\r\n/g, '\n');
 // a reader sees with replacement characters and Latin-1. A link is its own text: its
 // target is another file, cited under its own path.
 const seenAt = perFile((repo, req, file, side) => {
+  if (sizeAt(repo, req, file, side) > READ_CAP) return null;
   const r = readAt(repo, req, file, side, true, { untracked: true });
   if (r.missing) return [];
   const b = r.text;
@@ -465,6 +467,13 @@ const seenAt = perFile((repo, req, file, side) => {
     return [lf(new TextDecoder('utf-8', { ignoreBOM: true }).decode(b)), lf(b.toString('latin1'))];
   }
 });
+
+// A file's size on one side, read without reading the file; 0 where it cannot be said.
+function sizeAt(repo, req, file, side) {
+  const tree = treeOf(req, side);
+  if (tree.ref) return Number(repo.git(['cat-file', '-s', `${tree.ref}:${file}`]).out.trim()) || 0;
+  try { return lstatSync(path.join(repo.top, file)).size; } catch { return 0; }
+}
 
 // Where a link on the working tree points inside the repository, as a path from its root.
 function linkTarget(repo, req, file, side) {
@@ -481,6 +490,7 @@ function linkTarget(repo, req, file, side) {
 // null where it does, else the field and what to say. An empty quote cites an empty file.
 function misquoted(repo, req, e) {
   const seen = seenAt(repo, req, e.path, e.side);
+  if (!seen) return { field: 'path', message: `${e.path} is over ${READ_CAP / 1024 / 1024} MB — too large to check a quote in; cite the file that holds what you read` };
   const q = lf(e.quote);
   if (q === '') return seen.includes('') ? null : { field: 'quote', message: `an empty quote cites an empty file, and ${e.path} is not one` };
   const [from, to = from] = e.lines.split('-').map(Number);
