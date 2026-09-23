@@ -1,0 +1,24 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        "shared-rules/links.md": "# linked\nA rule reached through a directory link.\n",
+        "lib/util.sh": "say() { :; }\n"
+      },
+      "link": {
+        ".claude/rules": "../shared-rules"
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "lib/util.sh": "say() { printf '%s\\n' \"$1\"; }\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Stands in for the codex CLI, for review-round.mjs's codex subcommand.
+#
+#   codex debug models   prints a catalog: gpt-test (low → xhigh), gpt-small (low, medium,
+#                        a 50-token window) and gpt-bare (no levels) listed, gpt-test first by
+#                        priority, and gpt-hidden unlisted;
+#                        CODEX_NOLIST=1 lists none of them; CODEX_NOCAT=1 fails to answer
+#   codex exec … -o F -  keeps what it was handed beside the marker — stdin as .codex-stdin,
+#                        the --output-schema file as .codex-schema, argv as .codex-argv — then
+#                        writes inputs/$CODEX_ANSWER to F, `@top` in it read as the directory
+#                        it runs in. CODEX_SLEEP=<s> waits first — after the answer where
+#                        CODEX_LATE=1; CODEX_TRAP=1 keeps a .codex-term beside the marker when
+#                        told to stop; CODEX_EMPTY=1 writes nothing and prints a usage-limit
+#                        notice, after 70 KB of other output where CODEX_NOISE=1; CODEX_GROUP=1 groups the round while it runs, as a conductor
+#                        that stopped waiting would.
+set -u
+here=$(cd "$(dirname "$0")/.." && pwd)
+mark="${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}"
+if [ "${1:-}" = debug ] && [ "${2:-}" = models ] && [ -n "${CODEX_NOCAT:-}" ]; then
+  echo "error: the catalog could not be fetched" >&2
+  exit 1
+fi
+if [ "${1:-}" = debug ] && [ "${2:-}" = models ] && [ -n "${CODEX_NOLIST:-}" ]; then
+  echo '{"models": [{"slug": "gpt-hidden", "visibility": "hide", "priority": 0, "supported_reasoning_levels": [{"effort": "high"}]}]}'
+  exit 0
+fi
+if [ "${1:-}" = debug ] && [ "${2:-}" = models ]; then
+  cat <<'JSON'
+{"models": [
+  {"slug": "gpt-small", "visibility": "list", "priority": 2, "context_window": 50,
+   "supported_reasoning_levels": [{"effort": "low"}, {"effort": "medium"}]},
+  {"slug": "gpt-test", "visibility": "list", "priority": 1,
+   "supported_reasoning_levels": [{"effort": "low"}, {"effort": "medium"}, {"effort": "high"}, {"effort": "xhigh"}]},
+  {"slug": "gpt-hidden", "visibility": "hide", "priority": 0,
+   "supported_reasoning_levels": [{"effort": "high"}]},
+  {"slug": "gpt-bare", "visibility": "list", "priority": 3, "supported_reasoning_levels": []}
+]}
+JSON
+  exit 0
+fi
+[ "${1:-}" = exec ] || { echo "codex stub: '$*' is not a call this stub answers" >&2; exit 64; }
+printf '%s\n' "$@" > "$mark.codex-argv"
+out="" schema=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    --output-schema) schema="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+cat > "$mark.codex-stdin"
+[ -n "$schema" ] && cp "$schema" "$mark.codex-schema"
+# Asked to stop, it says so where a case can see it. The wait runs in the background so the
+# trap is heard at once, not once a foreground sleep ends.
+[ -n "${CODEX_TRAP:-}" ] && trap 'echo term > "$mark.codex-term"; exit 143' TERM
+pause() { [ -n "${CODEX_SLEEP:-}" ] && { sleep "$CODEX_SLEEP" & wait $!; }; return 0; }
+[ -z "${CODEX_LATE:-}" ] && pause
+if [ -n "${CODEX_EMPTY:-}" ]; then
+  [ -n "${CODEX_NOISE:-}" ] && awk 'BEGIN { for (i = 0; i < 1000; i++) printf "%070d\n", i }'
+  echo "ERROR: You've hit your usage limit. Try again later." >&2
+  exit 1
+fi
+[ -n "${CODEX_GROUP:-}" ] && echo '{"units": []}' > "$(dirname "$out")/units.json"
+if [ -n "$out" ]; then
+  top=$(pwd -P)
+  TOP="$top" awk '{ out = ""; s = $0; while ((i = index(s, "@top")) > 0) { out = out substr(s, 1, i - 1) ENVIRON["TOP"]; s = substr(s, i + 4) } print out s }' "$here/inputs/${CODEX_ANSWER:?a case names its answer}" > "$out"
+fi
+[ -n "${CODEX_LATE:-}" ] && pause
+echo "codex stub: answered"
+exit 0

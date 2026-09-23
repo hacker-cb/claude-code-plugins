@@ -137,17 +137,16 @@ form: you paste every one of them yourself.
 ### Reviewing it
 
 - **`codex-review`** — `/hcb-dev:codex-review`
-  Run a code review with Codex (`codex exec review`) over the current branch in a
-  read-only sandbox. Review-only: returns Codex's findings verbatim and fixes
-  nothing.
-- **`claude-review`** — `/hcb-dev:claude-review`
-  The same shape with Claude's own finders: one review round over a range and at a
-  rung the caller fixes (`medium` or `high`), one finder agent per angle of the
-  rung, every candidate then checked by the plugin's verifier — a known range in,
+  One review round over a range and at a rung the caller fixes (`medium` or
+  `high`), its one source a read-only pass of the Codex CLI at the level the rung
+  sets, every candidate then checked by the plugin's verifier — a known range in,
   verified findings and a coverage record back. Review-only. The round's shape is
   [`references/review-pipeline.md`](references/review-pipeline.md).
+- **`claude-review`** — `/hcb-dev:claude-review`
+  The same round with Claude's own finders as its source: one finder agent per
+  angle of the rung. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  Run several independent reviewers over one change at once — `codex-review`,
+  Run several independent reviewers over one change — `codex-review`,
   `claude-review`, the built-in security review — then consolidate the findings
   and report what each reviewer actually covered (the coverage gate most of the
   skill exists to keep honest). Report-only.
@@ -369,8 +368,9 @@ checked before anything reads it.
   and for letting its verdict stand are [`references/verification.md`](references/verification.md).
 - [`agents/review/reviewer.md`](agents/review/reviewer.md) — `hcb-dev:review:reviewer`, the
   review conductor: handed a round id, it plans the round's tasks from the angle catalog
-  ([`data/review-angles.json`](data/review-angles.json)), launches a finder per task, groups
-  what they hand in, has each group checked, and builds the result. Launched by `claude-review`.
+  ([`data/review-angles.json`](data/review-angles.json)), launches a finder per task and the
+  Codex pass as a process, groups what they hand in, has each group checked, and builds the
+  result. Launched by `claude-review` and `codex-review`.
 - [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of
   one round: it reads its brief and the change, and hands its candidates in through the store.
   Launched by the conductor.
@@ -587,7 +587,7 @@ request-mode completion on GitLab uses the mirrored `glab` fallback in
 **`git` and `jq` are the shared tools** — `git` in every skill but
 `dependency-versions`, which touches the package manager and never the repository;
 `jq` wherever a tool's JSON is parsed by hand — the shared references on their
-`glab` paths, and the review scripts on every envelope they read back.
+`glab` paths.
 
 **An authenticated forge CLI is assumed wherever the work touches a forge**, which
 is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without the
@@ -635,8 +635,9 @@ Per skill, on top of those:
   two resolver scripts and their answers. The forge CLI answers the ladder's rungs
   that ask a forge — the open change request's base, and where changes land — and
   lists the requests targeting this branch; without it each is skipped and said to be.
-- **`codex-review`**: the `codex` CLI installed and `codex login` live, plus `jq`
-  to read the run's JSON envelope.
+- **`codex-review`**: the `codex` CLI installed and `codex login` live, plus what
+  `claude-review` needs below. The change, and whatever Codex reads of the checkout
+  to review it, goes to Codex's model provider.
 - **`claude-review`**: `node` and `git`, and the Agent tool in the session that runs
   it — without it the round's tasks run in that session itself and nothing is
   checked. The finders and the verifier run as subagents, so their reading spends

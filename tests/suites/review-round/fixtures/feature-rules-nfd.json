@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        ".claude/rules/café.md": "# café\nA rule whose name is decomposed.\n",
+        "lib/util.sh": "say() { :; }\n"
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "lib/util.sh": "say() { printf '%s\\n' \"$1\"; }\n"
+      }
+    }
+  ]
+}

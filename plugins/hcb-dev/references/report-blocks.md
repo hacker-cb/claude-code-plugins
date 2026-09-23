@@ -128,7 +128,7 @@ Answer by number; "go" takes every recommendation.
 ## Review coverage
 | slice | reviewer | covered | effort | result |
 |---|---|---|---|---|
-| `export/csv` | `codex-review` | `<base>`, 4 files | xhigh | 🟢 no findings |
+| `export/csv` | `codex-review` | `<base>`, 4 files | high | 🟢 no findings |
 
 ## Findings
 **Findings — 0 after dedup · verified by none · confirmed 0 · unproven 0 · not measured 0 · refuted 0, dropped**

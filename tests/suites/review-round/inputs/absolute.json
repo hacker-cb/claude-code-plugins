@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "file": "@top/limit.sh",
+      "line": 4,
+      "side": "head",
+      "summary": "The comparison is inverted: counts below the limit print over.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    }
+  ]
+}
