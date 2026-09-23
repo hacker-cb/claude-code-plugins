@@ -114,6 +114,10 @@ const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
 
 // A revision git is to read — a branch, a tag, a sha, `HEAD~1` — held only to never
 // reading as an option; whether it names anything is git's to say where it is resolved.
+const SCRIPT = fileURLToPath(import.meta.url);
+// A path is whatever a filesystem allows: one handed on inside a command is single-quoted,
+// a quote in it closed and escaped, so the shell never reads it as anything but a word.
+const sq = (v) => `'${v.replaceAll("'", `'\\''`)}'`;
 const revOk = (v) => typeof v === 'string' && v !== '' && !v.startsWith('-') && !/[\u0000-\u001f\u007f]/.test(v);
 const real = (p) => { try { return realpathSync(p); } catch { return null; } };
 const inside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
@@ -621,9 +625,7 @@ function plan() {
   const tasks = rung.tasks.filter((id) => wanted.includes(c.tasks[id].source)).map(entry);
   // Without agents there are no checks, and the sweep only exists to follow them.
   const sweep = rung.sweep && !depth && wanted.includes(c.tasks[rung.sweep].source) ? entry(rung.sweep) : null;
-  const notes = wanted.filter((src) => !tasks.some((t) => t.source === src))
-    .map((src) => `the catalog holds no ${round.req.rung} task for source '${src}' — its coverage row reads unavailable`);
-  const p = { rung: round.req.rung, depth, budget: rung.budget, tasks, sweep, notes, planned_at: new Date().toISOString() };
+  const p = { rung: round.req.rung, depth, budget: rung.budget, tasks, sweep, planned_at: new Date().toISOString() };
   writeJson(planFile(round), p);
   answer({ read: true, round: round.id, ...p });
 }
@@ -727,14 +729,17 @@ function brief() {
       merge_base: req.base.merge_base,
       snapshot: req.snapshot,
       narrow: req.narrow,
+      // Each file with the commands that read it, ready to run as they stand.
       files: req.files.map((f) => ({
         path: f.path, from: f.from ?? null, status: f.status, added: f.added ?? null, removed: f.removed ?? null,
+        diff: `node ${sq(SCRIPT)} diff --round ${round.id} --file ${sq(f.path)}`,
+        base: f.status === 'A' ? null : `git show ${sq(`${req.base.merge_base}:${f.from ?? f.path}`)}`,
       })),
     },
     read: {
-      diff: `review-round.mjs diff --round ${round.id}, or with --file <path> for one file of it`,
+      diff: `node ${sq(SCRIPT)} diff --round ${round.id} — the whole change; a file's own diff command reads that file alone`,
       head: 'the working tree as it stands — read the files directly',
-      base: `git show ${req.base.merge_base}:<path> — the code as it was before the change`,
+      base: "a file's own base command — the code as it was before the change",
     },
     submit: `review-round.mjs add --round ${round.id} --source ${t.source} --task ${id}`,
   };
@@ -954,9 +959,7 @@ function codexPrompt(round, text, limit, rules, inline) {
     const size = Buffer.byteLength(k.text);
     if (used + size <= inline) { shown.push(k.text); used += size; } else named.push(k.path);
   }
-  // Quoted for the shell the command runs in: a path is whatever a filesystem allows.
-  const sq = (v) => `'${v.replaceAll("'", `'\\''`)}'`;
-  const reader = `node ${sq(fileURLToPath(import.meta.url))} diff --round ${round.id} --file <path>`;
+  const reader = `node ${sq(SCRIPT)} diff --round ${round.id} --file <path>`;
   return [
     text.replaceAll('<merge base>', mb),
     '',
@@ -1380,7 +1383,7 @@ function task() {
     round: round.id,
     unit: u.unit,
     claim: u.summary,
-    coordinate: { file: u.file, line: u.line, side: u.side },
+    coordinate: { file: u.file, line: u.line, side: u.side, read: tree.ref ? `git show ${sq(`${tree.ref}:${u.file}`)}` : null },
     show: u.failure_scenario,
     category: u.category,
     read_with: readWith,

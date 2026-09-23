@@ -27,8 +27,9 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 ```
 
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
-`scope` is the change: its base, its files with the lines each adds and removes, and any
-narrowing the caller asked for. `read` says how to reach each side of it. A `rules` list,
+`scope` is the change: its base, its files — each with the lines it adds and removes and the
+commands that read it — and any narrowing the caller asked for. `read` says how to reach each
+side of it. A `rules` list,
 where the brief has one, is the rule files to read; a `listed` one is what an earlier pass
 already found.
 
@@ -39,10 +40,11 @@ ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND"
 ```
 
-Add `--file "<path>"` to read one file of it, and do that for a large change rather than
-reading the whole at once. The code as it is now is the working tree: read it with Read,
-Grep and Glob. The code as it was is `git show <merge base>:<path>`, the merge base being
-the brief's `scope.merge_base`.
+For a large change, read it a file at a time instead, with that file's own `diff` command
+from the brief. The code as it is now is the working tree: read it with Read, Grep and Glob.
+The code as it was is the file's `base` command. Run both exactly as the brief gives them: the
+path in them is quoted for the shell already, and one retyped around another path is how a
+file's name gets run as a command.
 
 **Only read.** Never run the code under review, its build, its tests or its scripts, and
 never write a file: the one thing you write is your answer, through `add`. Git only in its

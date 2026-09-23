@@ -29,7 +29,8 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
 2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
-   the rung; `codex`, one pass of the Codex CLI at the rung's level for it — a narrowing,
+   the rung; `security`, a finder per security angle of the rung; `codex`, one pass of the Codex
+   CLI at the rung's level for it — a narrowing,
    `--narrow "<a path, or a focus>"`, where the caller gave one, and a Codex model or level the
    caller named, as `--codex-model` and `--codex-effort`. Read the answer's `warnings` before
    anything else: an untracked file named there is outside the review — say so, and offer

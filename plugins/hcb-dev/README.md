@@ -368,9 +368,10 @@ checked before anything reads it.
   and for letting its verdict stand are [`references/verification.md`](references/verification.md).
 - [`agents/review/reviewer.md`](agents/review/reviewer.md) — `hcb-dev:review:reviewer`, the
   review conductor: handed a round id, it plans the round's tasks from the angle catalog
-  ([`data/review-angles.json`](data/review-angles.json)), launches a finder per task and the
-  Codex pass as a process, groups what they hand in, has each group checked, and builds the
-  result. Launched by `claude-review` and `codex-review`.
+  ([`data/review-angles.json`](data/review-angles.json)) — Claude's angles, the security
+  angles and the Codex pass — launches a finder per angle and the Codex pass as a process,
+  groups what they hand in, has each group checked, and builds the result. Launched by
+  `claude-review` and `codex-review`.
 - [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of
   one round: it reads its brief and the change, and hands its candidates in through the store.
   Launched by the conductor.
