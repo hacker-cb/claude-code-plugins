@@ -1,23 +1,20 @@
 ---
 name: multi-review
 description: >-
-  Review one change with every source the plugin's review round has — Claude's finders, one
-  per angle, the security angles and a pass of the Codex CLI — every candidate the rung's budget
-  reaches checked by one verifier, then report the findings and what each source actually
-  covered. Use when the user asks for a review of the current change ("прогони ревью", "review
-  this", "second opinion on this diff"), and before finished work is completed — merged locally
-  or handed to a change request — unless `hcb-dev:shipping-workflow` is already driving that
-  handoff and calls this itself. Report-only: it never applies fixes; the caller decides what to
-  do with them. Not an auto-trigger on every edit.
+  Review the current change with every source hcb-dev's review round has — Claude, security and
+  Codex — and report the findings and what each source actually covered. Use when the user asks
+  for a review of the change ("прогони ревью", "review this", "second opinion on this diff"), and
+  before finished work is completed — merged locally or handed to a change request — unless
+  `hcb-dev:shipping-workflow` is already driving that handoff and calls this itself. Report-only:
+  it never applies fixes; the caller decides what to do with them. Not an auto-trigger on every
+  edit, and not an audit of code no change touched.
 ---
 
 # Multi-review
 
 One review round over one change, opened with every source — Claude's finders, the security
-angles, the Codex pass — and one write-up: the findings, checked by the round's verifier as far
-as its budget reaches, and a row per source saying what it covered. Coverage is where a review
-loses ground without a word, and most of this skill exists to keep it visible. Report-only:
-never fix what comes back, hand findings and coverage to the caller. Read
+angles, the Codex pass — and one write-up: the findings, and a row per source saying what it
+covered. Report-only: never fix what comes back, hand findings and coverage to the caller. Read
 [`../../references/invariants.md`](../../references/invariants.md) first — every count, every
 empty answer and every source that did not report is read by it.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
@@ -55,16 +52,12 @@ round, and its row says so.
 
 ## 3. Run
 
-As `review-pipeline.md`'s *Running one* says. The findings a caller hands down — ones its work
-noticed and left unfixed, each with its verdict where one was made — are the round's `noticed`
-candidates, each re-measured at its coordinate on the tree as it stands before it goes in: a line
+As `review-pipeline.md`'s *Running one* says, the findings a caller hands down going in as its
+`noticed` candidates — each re-measured at its coordinate on the tree as it stands first: a line
 noticed before the rest of the work moved may have moved with it.
 
 ## 4. Report
 
-As `review-pipeline.md`'s *Reading the result* says, with three rules of this skill's own: a
-source left out is `n/a` with its reason; where §1 fell back to `HEAD`, every row is `partial`,
-the commits left unread named; and a `coverage-warning:` among the result's warnings makes every
-row `partial`, whatever its state says, where a `run-warning:` does not. Then `## Findings`, and
-nothing else: no fixes, no patches. Where the report reads thin for the breadth it covered,
-`review-pipeline.md`'s *The rung* says what to offer.
+As `review-pipeline.md`'s *Reading the result* says, and nothing else: no fixes, no patches.
+Where the report reads thin for the breadth it covered, `review-pipeline.md`'s *The rung* says
+what to offer.

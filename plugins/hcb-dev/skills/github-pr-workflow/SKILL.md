@@ -102,9 +102,9 @@ git rebase --autostash "<.base.ref, on a .base.current of true>"
 
 - Resolve trivial conflicts yourself; one that needs a real decision is a stop. **A resolution
   past a trivial one is code no reviewer has read** — trivial being the line
-  `architecture-decisions.md` §1 draws — so put it through `hcb-dev:multi-review` narrowed to the
-  files the resolution touched, fix Critical and Important, push here; a review that cannot run,
-  or such a finding left open, is a stop.
+  `architecture-decisions.md` §1 draws — so put it through `hcb-dev:multi-review` unnarrowed, fix
+  Critical and Important, push here; a review that cannot run, or such a finding left open, is a
+  stop.
 - After a successful rebase, push with `--force-with-lease`.
 - **Exception:** a branch [`../../references/feature-branch.md`](../../references/feature-branch.md)
   says to merge rather than rebase takes the base by merge, and the report says which case it was.

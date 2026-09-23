@@ -81,7 +81,6 @@ says what was handed in:
 | it stopped on its turn limit | what it handed in stands; `status --state partial` |
 | it hit a model's limit | launch it again on another model the Agent tool's `model` offers; once that returns, `status --model <that model>` — never before, since the task must have answered; failing again: `status --state unavailable` |
 | the account's limit | `status --state unavailable`, the notice's words in the note |
-| `wait` names the Codex task among the `lost`, its notes naming one model's limit | once, step 2's `codex` call with `--retry` added, in the background as there — it runs the pass on the next model — and wait for its task again; lost again, it stands |
 
 ```bash
 ROUND="<the round id from your prompt>"

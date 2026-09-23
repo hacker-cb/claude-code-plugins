@@ -28,14 +28,14 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
 2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
-   the rung; `security`, a finder per security angle of the rung; `codex`, one pass of the Codex
-   CLI at the rung's level for it — a narrowing,
-   `--narrow "<a path, or a focus>"`, where the caller gave one, and a Codex model or level the
-   caller named, as `--codex-model` and `--codex-effort`. Read the answer's `warnings` before
-   anything else: an untracked file named there that belongs to the change is offered
-   `git add -N -- '<path>'`, the path single-quoted and a quote in it written `'\''` — offered,
-   never run — and where the offer is taken the round is opened again, its snapshot fixed at
-   `init`; one left out is said in the report. A round with nothing to review ends there.
+   the rung; `security`, one per security angle; `codex`, one pass of the Codex CLI at the rung's
+   level for it — a narrowing, `--narrow "<a path, or a focus>"`, where the caller gave one, and a
+   Codex model or level the caller named, as `--codex-model` and `--codex-effort`. First, since
+   `init` fixes the snapshot: an untracked file `git ls-files --others --exclude-standard` names
+   that belongs to the change is offered `git add -N -- '<path>'`, the path single-quoted and a
+   quote in it written `'\''` — offered, never run; one left out is a gap every row reports, and
+   untracked files that are no part of the change are none, whatever `init`'s `coverage-warning`
+   counts. A round with nothing to review ends there.
 
    ```bash
    node "<plugin root>/scripts/review-round.mjs" init --mode round --base "<base>" --rung "<rung>" --sources "<sources>" --language "<tag>"
@@ -108,15 +108,15 @@ is one; never launch it.
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
-| Codex answered nothing, or not in time | `unavailable`, the log's last lines or the watchdog in the status — where they name one model's limit, the conductor runs the pass once more on the next model (`codex --retry`) |
+| Codex answered nothing | where its watchdog has time left, the pass runs once more on the next model the catalog lists, both named in the status; still nothing, or not in time — `unavailable`, the log's last lines or the watchdog in the status |
 | a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
 | it was never launched, or never returned | `partial` for its source, the task named — `unavailable` where no task of that source answered |
 | no agents at all | `depth` for the finders' source |
 
-A candidate anchored where the change has nothing — a file the round does not carry, a line
-past a file's end, an untracked file — is dropped and named, and its task carries a
-`run-warning`. A task every anchor of which missed the change reviewed something else, and reads
-`partial`.
+A source's candidate anchored where the change has nothing — a file the round does not carry,
+a line past a file's end, an untracked file — is dropped and named, and its task carries a
+`run-warning`; a task every anchor of which missed the change reviewed something else, and reads
+`partial`. A `noticed` one is kept, marked `unreachable`, and reaches the result unchecked.
 
 ## The coverage it reports
 
@@ -131,8 +131,8 @@ One row per source, as covered as its least covered task:
 | `nothing` | 🔴 `nothing to review` |
 | `n/a` | ⚪ `n/a`, with the caller's reason |
 
-A `coverage-warning:` and a `run-warning:` in the result's `warnings` are read as
-[`review-runs.md`](review-runs.md)'s *Reading it back* reads them.
+Any other `coverage-warning:`, and a `run-warning:`, in the result's `warnings` is read as
+[`review-runs.md`](review-runs.md)'s *Reading it back* reads it.
 
 ## Reading the result
 
