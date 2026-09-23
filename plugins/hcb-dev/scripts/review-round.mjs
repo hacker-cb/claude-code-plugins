@@ -1436,13 +1436,12 @@ function queue() {
     cut = order;
     order = [];
   } else if (append) {
-    // What the budget cuts from an appended queue is never a Critical or an Important: the
-    // budget was spent on groups the first queue ranked without knowing they existed.
-    // `open` is ranked, so those groups lead it; each is charged to the budget.
-    const severe = open.filter((u) => u.severity !== 'Minor').length;
-    const room = Math.max(0, budget - severe);
-    cut = order.slice(severe + room);
-    order = order.slice(0, severe + room);
+    // What the budget cuts from an appended queue is never a Critical: the budget was
+    // spent on groups the first queue ranked without knowing it existed.
+    // `open` is ranked, so the Critical groups lead it; each is charged to the budget.
+    const room = Math.max(0, budget - critical.length);
+    cut = order.slice(critical.length + room);
+    order = order.slice(0, critical.length + room);
   } else if (critical.length > budget) {
     // Every Critical is checked before a budget applies at all; where they alone do not
     // fit, none of them is ruled unverified — the caller stops and says so.
@@ -1455,14 +1454,14 @@ function queue() {
     order = order.slice(0, budget);
   }
   // What each call stopped on is its answer's; the file keeps what later calls read.
-  // When checking began, for a round with no plan to count its wait from.
+  // When this queue's checks began, for a wait on them to count from.
   const q = {
     queue: [...prior.queue, ...order],
     reused: [...prior.reused, ...reused],
     budget_cut: [...prior.budget_cut, ...cut],
     unreachable: [...prior.unreachable, ...unreachable],
     latest: order,
-    started_at: prior.started_at ?? new Date().toISOString(),
+    started_at: new Date().toISOString(),
   };
   writeJson(qf, q);
   // The answer names what this call queued; the file holds the whole queue.
@@ -1559,13 +1558,15 @@ function wait() {
   const limit = opts['--timeout-s'] === undefined ? WAIT_CAP_S : Number(opts['--timeout-s']);
   if (!Number.isInteger(limit) || limit < 0 || limit > WAIT_CAP_S) die(`--timeout-s must be a whole number from 0 to ${WAIT_CAP_S}`);
   let expected;
-  // How long since the work began — the plan, or where a round has none the first queue:
-  // the ceiling on waiting counts from there, and a model has no clock of its own.
-  let started = Date.parse(planOf(round)?.planned_at ?? '');
+  // How long since what is waited on began — the tasks since the plan, the checks since
+  // the queue that asked for them: the ceiling on a wait counts from there, and a model has
+  // no clock of its own. A queue that kept no time counts from the plan, or the round.
+  const plan = planOf(round);
+  let since = plan?.planned_at;
   if (what === 'tasks') {
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     // The plan's tasks where none are named — the sweep aside, launched on its own later.
-    if (!expected.length) expected = (planOf(round)?.tasks || []).map((t) => t.task);
+    if (!expected.length) expected = (plan?.tasks || []).map((t) => t.task);
     if (!expected.length) die('--for tasks needs --expect, the tasks launched, or a plan');
     for (const t of expected) if (!TASK_ID.test(t)) die(`--expect: '${t}' is not a task id`);
   } else {
@@ -1577,8 +1578,9 @@ function wait() {
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     for (const u of expected) if (!UNIT_ID.test(u)) die(`--expect: '${u}' is not a group id`);
     if (!expected.length) expected = q.latest ?? q.queue;
-    if (Number.isNaN(started)) started = Date.parse(q.started_at ?? '');
+    since = q.started_at ?? since ?? round.req.created_at;
   }
+  const started = Date.parse(since ?? '');
   // Presence alone answers: a file lands whole (writeJson renames it into place), so
   // nothing here needs to parse what another process is writing.
   const pending = () => expected.filter((x) => !existsSync(what === 'tasks'
