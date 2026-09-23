@@ -587,7 +587,7 @@ request-mode completion on GitLab uses the mirrored `glab` fallback in
 **`git` and `jq` are the shared tools** — `git` in every skill but
 `dependency-versions`, which touches the package manager and never the repository;
 `jq` wherever a tool's JSON is parsed by hand — the shared references on their
-`glab` paths, and the review scripts on every envelope they read back.
+`glab` paths.
 
 **An authenticated forge CLI is assumed wherever the work touches a forge**, which
 is most of this pipeline — `gh` on GitHub, `glab` on GitLab, never one without the
@@ -636,8 +636,8 @@ Per skill, on top of those:
   that ask a forge — the open change request's base, and where changes land — and
   lists the requests targeting this branch; without it each is skipped and said to be.
 - **`codex-review`**: the `codex` CLI installed and `codex login` live, plus what
-  `claude-review` needs below. The change goes to Codex's model provider; a file
-  nobody added to the index stays out of it.
+  `claude-review` needs below. The change, and whatever Codex reads of the checkout
+  to review it, goes to Codex's model provider.
 - **`claude-review`**: `node` and `git`, and the Agent tool in the session that runs
   it — without it the round's tasks run in that session itself and nothing is
   checked. The finders and the verifier run as subagents, so their reading spends

@@ -1,11 +1,10 @@
 ---
 name: codex-review
 description: >-
-  Review a change with Codex — OpenAI's coding agent — as the one source of a review round: a
-  single read-only pass of the Codex CLI at the level the rung (medium or high) sets, every
-  candidate the rung's budget reaches then checked by an independent verifier. Use when the
-  user or a pipeline asks for a "codex review", or wants a second opinion on a change from an
-  engine other than Claude. Review-only: returns the findings and never fixes anything. For
+  Review a change with Codex — OpenAI's coding agent — over the range and at the rung (medium
+  or high) the caller fixes, its findings and a coverage record handed back. Use when
+  the user or a pipeline asks for a "codex review", or wants a second opinion on a change from
+  an engine other than Claude. Review-only: returns the findings and never fixes anything. For
   one change reviewed by several independent reviewers at once, use `hcb-dev:multi-review`
   instead. Invoke deliberately, when asked — not as an auto-trigger on every change.
 ---

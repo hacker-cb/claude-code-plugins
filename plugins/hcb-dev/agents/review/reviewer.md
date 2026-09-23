@@ -47,7 +47,8 @@ many groups get checked.
 
 For the task of kind `codex`, where the plan has one, a Bash call with
 `run_in_background: true`. Its answer is not yours to read: the pass records its task in the
-store either way, and its own watchdog ends it.
+store either way, and its own watchdog ends it. Where the call itself is refused, record the
+loss as step 3 does, the refusal's words in the note, since no pass will.
 
 ```bash
 ROUND="<the round id from your prompt>"

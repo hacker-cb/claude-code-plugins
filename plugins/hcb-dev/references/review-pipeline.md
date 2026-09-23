@@ -9,29 +9,30 @@ findings reach a reader in is [`findings-table.md`](findings-table.md)'s.
 
 A round reviews one change: base → working tree, every tracked file, as it stood when `init`
 opened it. Commits and uncommitted edits are both in it; an untracked file is not, and is named
-in a `coverage-warning` with `git add -N <path>` as the way in — the change goes to Codex's model
-provider too, where Codex is a source, and what nobody added stays out of it. Everything the
-round holds lives in a store outside the repository that only `review-round.mjs` writes,
-addressed by the id `init` prints — never by a path.
+in a `coverage-warning` with `git add -N <path>` as the way in. Everything the round holds lives
+in a store outside the repository that only `review-round.mjs` writes, addressed by the id
+`init` prints — never by a path.
 
 **While a round runs, the tree does not change.** A verdict reads the working tree, and one that
 read a file edited since `init` is flagged in the result as read on a tree the finders did not
 see.
 
 **The agents only read because they are told to.** No sandbox holds them: what a finder or the
-checker may run is what the session's permission mode lets through. Whether a round runs over
-code nobody here wrote is the user's call.
+checker may run is what the session's permission mode lets through. Where Codex is a source, the
+change and whatever Codex reads of the checkout go to its model provider as well. Whether a
+round runs over code nobody here wrote, or sends a checkout to Codex, is the user's call.
 
 ## Running one
 
-1. **Scope.** The base is the one a caller hands down, refreshed, or what
-   [`base-resolution.md`](base-resolution.md) resolves; it must share history with `HEAD`, and
-   where none resolves the round does not open. The working tree alone takes `HEAD`. The rung is
-   the caller's, `medium` where none is named. The language is the one the report is written in.
+1. **Scope.** The base is the one a caller hands down, or what
+   [`base-resolution.md`](base-resolution.md) resolves, taken as that reference says; where none
+   resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
+   caller's, `medium` where none is named. The language is the one the report is written in.
 2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
-   the rung; `codex`, one pass of the Codex CLI at the rung's level for it — and a narrowing,
-   `--narrow "<a path, or a focus>"`, where the caller gave one. Read the answer's `warnings`
-   before anything else: an untracked file named there is outside the review — say so, and offer
+   the rung; `codex`, one pass of the Codex CLI at the rung's level for it — a narrowing,
+   `--narrow "<a path, or a focus>"`, where the caller gave one, and a Codex model or level the
+   caller named, as `--codex-model` and `--codex-effort`. Read the answer's `warnings` before
+   anything else: an untracked file named there is outside the review — say so, and offer
    `git add -N <path>`, never run it; a round with nothing to review says so, and ends there.
 
    ```bash
@@ -81,9 +82,10 @@ node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 `high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger
 budget of checks, and a sweep for what the first pass missed. The rung's angles and numbers are
 data in the plugin's angle catalog, read by `plan`, never chosen by the one running the round;
-Codex's model and its ladder come from Codex's own catalog. For more than `high` buys, offer the
-user the built-in `/code-review` at `xhigh`, `max` or `ultra`, typed by them, with the range
-spelled out as `<base>...HEAD`; never launch it.
+Codex's model and its ladder come from Codex's own catalog. For more than `high` buys, or where
+a round reads thin for the ground the change covers, offer the user the built-in `/code-review`
+at `xhigh`, `max` or `ultra`, typed by them, with the range spelled out as `<base>...HEAD`; never
+launch it.
 
 ## What an agent's outcome becomes
 
@@ -130,7 +132,8 @@ What `result` holds besides the coverage above — the findings, the refuted, th
 read as `verification.md`'s *Reading the result* reads it; a finding's `found_by` names every
 source that reported it, and Codex's row names the model and level it ran at.
 
-Report it as `## Review coverage` from `coverage` — a row per source, with the round's base, its
-file count and its rung — and `## Findings` laid out by `findings-table.md`, `verified by
-verifier` where any check ran. A finding's text is its finder's, in the round's language: pass
+Report it as `## Review coverage` from `coverage` — a row per source the round was opened with,
+with the round's base, its file count and its rung; the caller's own `noticed` candidates take
+none — and `## Findings` laid out by `findings-table.md`, `verified by verifier` where any check
+ran. A finding's text is its finder's, in the round's language: pass
 it on as written.

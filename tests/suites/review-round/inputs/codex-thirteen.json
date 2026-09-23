@@ -6,7 +6,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -15,7 +15,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -24,7 +24,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -33,7 +33,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -42,7 +42,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -51,7 +51,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -60,7 +60,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -69,7 +69,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -78,7 +78,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -87,7 +87,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -96,7 +96,7 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
@@ -105,17 +105,18 @@
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Minor",
       "category": "correctness"
     },
     {
       "file": "limit.sh",
-      "line": 3,
+      "line": 5,
       "side": "head",
-      "summary": "The comparison is inverted: counts below the limit print over.",
+      "summary": "The cleanup line removes a directory named by an optional argument.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Important",
+      "severity": "Critical",
       "category": "correctness"
     }
-  ]
+  ],
+  "unread": ""
 }

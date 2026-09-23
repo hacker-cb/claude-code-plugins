@@ -1,0 +1,23 @@
+{
+  "candidates": [
+    {
+      "file": "limit.sh",
+      "line": 4,
+      "side": "head",
+      "summary": "The comparison is inverted: counts below the limit print over.",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Important",
+      "category": "correctness"
+    },
+    {
+      "file": "limit.sh",
+      "line": 5,
+      "side": "head",
+      "summary": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "failure_scenario": "count=3, limit=5 prints over instead of ok",
+      "severity": "Minor",
+      "category": "correctness"
+    }
+  ],
+  "unread": ""
+}

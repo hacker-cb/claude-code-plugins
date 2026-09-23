@@ -139,8 +139,8 @@ never an empty cell and never a stall.
 **A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage gate treats as
 closed, so recording a reviewer that did not run passes a completion with it missing — which is
 what `UNAVAILABLE` exists for; the engine's own notice goes below the table and the cell stays
-short. **A model's limit is recovered inside a round** — its conductor launches that agent
-again on another model, and the row names it — so a row reads what the round recorded.
+short. **A model's limit is recovered inside a round** for its agents, the row naming the model; a
+Codex pass it stopped reads `UNAVAILABLE`, and `codex-review` rerun on another model closes it.
 
 **Less than the change is not a pass.** A reviewer that ran against the wrong base, or over only
 the committed half while the rest sat in the working tree, covered a nonzero number of the wrong

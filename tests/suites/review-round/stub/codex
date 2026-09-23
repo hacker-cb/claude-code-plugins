@@ -6,8 +6,10 @@
 #                        CODEX_NOLIST=1 lists none of them
 #   codex exec … -o F -  keeps what it was handed beside the marker — stdin as .codex-stdin,
 #                        the --output-schema file as .codex-schema, argv as .codex-argv — then
-#                        writes inputs/$CODEX_ANSWER to F. CODEX_SLEEP=<s> waits first;
-#                        CODEX_EMPTY=1 writes nothing and prints a usage-limit notice.
+#                        writes inputs/$CODEX_ANSWER to F, `@top` in it read as the directory
+#                        it runs in. CODEX_SLEEP=<s> waits first; CODEX_EMPTY=1 writes nothing
+#                        and prints a usage-limit notice; CODEX_GROUP=1 groups the round while
+#                        it runs, as a conductor that stopped waiting would.
 set -u
 here=$(cd "$(dirname "$0")/.." && pwd)
 mark="${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}"
@@ -45,6 +47,7 @@ if [ -n "${CODEX_EMPTY:-}" ]; then
   echo "ERROR: You've hit your usage limit. Try again later." >&2
   exit 1
 fi
-[ -n "$out" ] && cp "$here/inputs/${CODEX_ANSWER:?a case names its answer}" "$out"
+[ -n "${CODEX_GROUP:-}" ] && echo '{"units": []}' > "$(dirname "$out")/units.json"
+[ -n "$out" ] && sed "s|@top|$(pwd -P)|g" "$here/inputs/${CODEX_ANSWER:?a case names its answer}" > "$out"
 echo "codex stub: answered"
 exit 0
