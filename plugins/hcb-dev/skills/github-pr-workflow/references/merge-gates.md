@@ -76,7 +76,7 @@ here.
 
 ## What `commit-checks.mjs` answers, and what each verdict asks
 
-`github-pr-workflow` Step 4 reads one commit with it and Step 6 reads two. Both route on
+`github-pr-workflow` Step 4 reads one commit with it and Step 6 one or two. Both route on
 `.verdict`, which is the field this answer is designed to be read by: the rollup a server
 computes can say `failure` over rows that all passed, so a caller assembling a verdict out
 of the counts reports green on a red base.
@@ -85,6 +85,7 @@ of the counts reports green on a red base.
 |---|---|
 | `retry` | the answer is not published yet — re-poll the same call; a merge commit appears late behind a queue or a replica |
 | `unread` | the feeds were not read: unread, never unchecked — take the platform path and claim nothing about this base |
+| `covered` | `--sha merge` only: the merge commit is still running or empty, but carries the tree of a head whose own read is `green` — what landed already passed. Never given over a gate list `.complete: false` leaves partial. Wait no further, and read no base tip for it; report the rows it held, the ones still running as not waited for. `.tree` says how it was settled |
 | `running` | poll, on Step 4's budget and its escalation |
 | `failing` | attribute, then report |
 | `empty` | nothing registered yet where the base's own tip has rows; where that is `empty` too, this base runs nothing on a push — say it is unchecked and that the step guaranteed nothing |

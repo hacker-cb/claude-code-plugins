@@ -121,7 +121,7 @@ test on a passage is whether deleting it changes what anyone does next.
    was narrowed for and why, which batch stands ready and waiting for its slot in either mode
    (written the moment the report arrives — a restart must not lose a batch holding on the
    queue); each landing with whoever took it, what its tail left standing, and what the checks on
-   it showed — nothing reporting over it and a base that runs no checks are both answers, and one
+   it showed — `covered`, nothing reporting over it and a base that runs no checks are all answers, and one
    nobody has read yet is recorded as unread rather than as either; and what opens each later
    wave.
 7. **Expectations** — what is awaited from whom: unconfirmed batches, answers owed, mandates
