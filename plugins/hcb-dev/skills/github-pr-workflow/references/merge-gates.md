@@ -85,13 +85,11 @@ of the counts reports green on a red base.
 |---|---|
 | `retry` | the answer is not published yet — re-poll the same call; a merge commit appears late behind a queue or a replica |
 | `unread` | the feeds were not read: unread, never unchecked — take the platform path and claim nothing about this base |
+| `covered` | `--sha merge` only: the merge commit is still running or empty, but carries the tree of a head whose own read is `green` — what landed already passed. Wait no further; report the rows it held, the ones still running as not waited for. `.tree` says how it was settled |
 | `running` | poll, on Step 4's budget and its escalation |
 | `failing` | attribute, then report |
 | `empty` | nothing registered yet where the base's own tip has rows; where that is `empty` too, this base runs nothing on a push — say it is unchecked and that the step guaranteed nothing |
 | `green` | green, as of this read — and **only as far as `.complete` says it looked**: `false` there means a gate source did not answer, and `null` that none was ever asked, so a required check may exist that the run never knew to wait for. Report the weaker guarantee, naming what `.gatesUnknown` holds |
-
-**On a merge commit `.tree` comes first:** `same: true` makes `running` or `empty` a re-run
-of what the head passed, which Step 6 does not wait for; `null` is unread, never different.
 
 **`--require-from-gates` is why no check name is ever written into a call.** The names
 come out of the base's own gates and travel between forge responses as data, never

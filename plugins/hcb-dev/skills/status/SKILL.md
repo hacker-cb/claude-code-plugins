@@ -133,9 +133,8 @@ report says the verdict was not taken here, and the readings no script covers th
 unresolved threads, the base's required checks — stand in `## The picture` as unread. On a merged
 request a gate that runs only on requests never reports over the landing: that is `none` among
 the shapes [`../../references/slice-completion.md`](../../references/slice-completion.md) names
-for `base_checks`, not a run still going. Nor is a merge commit whose `.tree.same` is `true`
-with nothing red, where the head's own read is green: that is `covered`, its rows still running
-printed as not waited for.
+for `base_checks`, not a run still going. Nor is a merge commit whose verdict is `covered`: its
+rows still running are printed as not waited for.
 
 ## What the report prints
 

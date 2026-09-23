@@ -17,16 +17,19 @@
 // `false` is green as far as this run knew to look. "Not asked" is not "asked and
 // whole", the same distinction `gates: null` keeps one field over.
 //
-// `tree` is `null` except under `--sha merge`, where it says whether the merge commit
-// carries the head's tree: `same: true` means the code that landed is byte for byte the
-// head's — whatever the head's own checks said, which this read does not ask. `same: null` is a tree that could not be read — never
-// "different".
+// `verdict: covered` is a merge commit still `running` or `empty` whose tree is the head's
+// own, over a head whose own read is `green`: what landed already passed, and what the
+// merge commit runs on top is a re-run or a push-only check nobody waits for. `tree` says
+// how that was settled — `null` on every other read, `same: null` a tree that could not be
+// read, never "different".
 //
 // Exit 0 either way: `"read": true` with what the feeds held, or `"read": false` with a
 // `reason`. A read that did not happen is not a commit with nothing on it — unread is not
 // empty, and a caller that cannot tell them apart reports a base as quiet because the
 // call 404'd. Exit 2 only for a call this script cannot act on at all.
 
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { dirOk, parsePages, readable, refOk, repoOk, runner, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node commit-checks.mjs (--pr <n> | --repo <owner/name>)'
@@ -100,7 +103,7 @@ const answer = {
   // One field to route on. Reassembling it from four numbers at every call site is how a
   // combination gets missed — a server rollup of `failure` beside rows that all passed,
   // for one, which the counts alone report as green.
-  // Precedence: unread > retry > failing > running > empty > green.
+  // Precedence: unread > retry > failing > covered > running > empty > green.
   verdict: 'unread',
   // `null` until a gate source is actually asked — "not asked" is not "asked and whole",
   // the same distinction `gates: null` keeps one field over.
@@ -436,9 +439,10 @@ if (rollupRed && answer.counts.failing === 0) {
 }
 
 // The tree, not the commit: a squash, a rebase and a merge commit all mint a new commit
-// id over the head, and only the tree says whether what landed is what was checked. Read
-// after every refusal, so a tree never reaches a caller beside an unread commit.
-if (opts.sha === 'merge') {
+// id over the head, and only the tree says whether what landed is what was checked. Asked
+// only where the answer would change the verdict, and after every refusal, so a tree never
+// reaches a caller beside an unread commit.
+if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict)) {
   const treeOf = (oid) => {
     if (!readable(oid)) return { tree: null, err: `'${oid}' is not a commit id this can read` };
     const r = gh(['api', `repos/${repo}/git/commits/${oid}`]);
@@ -450,12 +454,28 @@ if (opts.sha === 'merge') {
   };
   const m = treeOf(sha);
   const h = headOid ? treeOf(headOid) : { tree: null, err: 'the pull request reports no head commit' };
-  answer.tree = { merge: m.tree, head: h.tree, same: m.tree && h.tree ? m.tree === h.tree : null };
+  answer.tree = { merge: m.tree, head: h.tree, same: m.tree && h.tree ? m.tree === h.tree : null, headVerdict: null };
   for (const [side, r] of [['merge', m], ['head', h]]) {
     if (r.err) answer.notes.push(`the ${side} commit's tree was not read (${r.err}) — unread, not different`);
   }
   if (answer.tree.same) {
-    answer.notes.push('the merge commit carries the head\'s tree — the head\'s own checks speak for what landed, as far as they passed');
+    // The head read by this same script, so its verdict means what this one's does. The
+    // names travel as argv to a process, never through a shell.
+    const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url),
+      '--pr', opts.pr, ...(opts.repo ? ['--repo', opts.repo] : []), '--sha', headOid,
+      ...opts.require.flatMap((n) => ['--require', n])],
+    { cwd: opts.repoDir || process.cwd(), encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+    let head = null;
+    try { head = JSON.parse(child.stdout); } catch { /* read below as unread */ }
+    answer.tree.headVerdict = head && typeof head.verdict === 'string' ? head.verdict : 'unread';
+    if (answer.tree.headVerdict === 'green') {
+      answer.verdict = 'covered';
+      answer.notes.push('the merge commit carries the tree of a head whose own checks are green'
+        + ` — what is still ${answer.empty ? 'to register' : 'running'} here is not waited for`);
+    } else {
+      answer.notes.push(`the merge commit carries the head's tree, but the head reads`
+        + ` '${answer.tree.headVerdict}' — its checks do not speak for what landed`);
+    }
   }
 }
 
