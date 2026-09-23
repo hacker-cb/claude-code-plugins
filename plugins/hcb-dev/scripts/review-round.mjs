@@ -414,13 +414,16 @@ function readAt(repo, req, file, side, bytes = false, { untracked = false } = {}
 }
 
 // One process per call answers each (side, path) once: a file several verdicts read is
-// hashed once, not once per verdict.
-const blobMemo = new Map();
-function blobAt(repo, req, file, side) {
-  const key = `${side}\0${file}`;
-  if (!blobMemo.has(key)) blobMemo.set(key, blobOf(repo, req, file, side));
-  return blobMemo.get(key);
-}
+// hashed, read and looked up once, not once per verdict.
+const perFile = (fn) => {
+  const kept = new Map();
+  return (repo, req, file, side) => {
+    const key = `${side}\0${file}`;
+    if (!kept.has(key)) kept.set(key, fn(repo, req, file, side));
+    return kept.get(key);
+  };
+};
+const blobAt = perFile((repo, req, file, side) => blobOf(repo, req, file, side));
 function blobOf(repo, req, file, side) {
   if (!relOk(file)) return null;
   const tree = treeOf(req, side);
@@ -444,79 +447,99 @@ function blobOf(repo, req, file, side) {
   return r.ok ? r.out.trim() : null;
 }
 
-// Text as a reader copies it: line ends as `\n`, one composed form, a run of spaces and
-// tabs as one, none at a line's end — none of which moves a line.
-const plain = (s) => s.replace(/\r\n/g, '\n').normalize('NFC').replace(/[ \t]+/g, ' ').replace(/ \n/g, '\n');
+// Text as a reader has it: line ends as `\n`, since a reader shown a CRLF file sees none of
+// the CRs. Nothing else is folded — a space inside a string literal is the code's own.
+const lf = (s) => s.replace(/\r\n/g, '\n');
 
-// What a reader may have seen of a file on one side, read once per process: its bytes as
-// UTF-16 where a BOM says so, else as UTF-8, else as Latin-1; on the working tree a link's
-// target as well as its own text, since Read, cat and sed follow it.
-const seenMemo = new Map();
-function seenAt(repo, req, file, side) {
-  const key = `${side}\0${file}`;
-  if (seenMemo.has(key)) return seenMemo.get(key);
-  const decode = (b) => {
-    if (b[0] === 0xff && b[1] === 0xfe) return new TextDecoder('utf-16le').decode(b);
-    if (b[0] === 0xfe && b[1] === 0xff) return new TextDecoder('utf-16be').decode(b);
-    try { return new TextDecoder('utf-8', { fatal: true }).decode(b); } catch { return b.toString('latin1'); }
-  };
+// A file's text on one side, as a reader is shown it: UTF-16 where a BOM says so, else UTF-8
+// with any BOM kept — sed prints it — and, for bytes that are not all UTF-8, both the UTF-8
+// a reader sees with replacement characters and Latin-1. A link is its own text: its
+// target is another file, cited under its own path.
+const seenAt = perFile((repo, req, file, side) => {
   const r = readAt(repo, req, file, side, true, { untracked: true });
-  const texts = r.missing ? [] : [r.text];
-  if (!r.missing && treeOf(req, side).worktree) {
-    const abs = path.join(repo.top, file);
-    try {
-      const target = lstatSync(abs).isSymbolicLink() ? real(abs) : null;
-      if (target && inside(target, repo.top) && statSync(target).isFile()) texts.push(readFileSync(target));
-    } catch { /* a link that resolves to nothing readable shows only its own text */ }
+  if (r.missing) return [];
+  const b = r.text;
+  if (b[0] === 0xff && b[1] === 0xfe) return [lf(new TextDecoder('utf-16le').decode(b))];
+  if (b[0] === 0xfe && b[1] === 0xff) return [lf(new TextDecoder('utf-16be').decode(b))];
+  try { return [lf(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(b))]; } catch {
+    return [lf(new TextDecoder('utf-8', { ignoreBOM: true }).decode(b)), lf(b.toString('latin1'))];
   }
-  const seen = texts.map((b) => plain(decode(b)));
-  seenMemo.set(key, seen);
-  return seen;
+});
+
+// Where a link on the working tree points inside the repository, as a path from its root.
+function linkTarget(repo, req, file, side) {
+  if (!treeOf(req, side).worktree) return null;
+  const abs = path.join(repo.top, file);
+  try {
+    if (!lstatSync(abs).isSymbolicLink()) return null;
+    const target = real(abs);
+    return target && inside(target, repo.top) ? path.relative(real(repo.top), target).split(path.sep).join('/') : null;
+  } catch { return null; }
 }
 
-// Whether an entry's quote stands where it says: null where it does, else the field and
-// what to say. An empty quote cites an empty file.
+// Whether an entry's quote stands where it says — whole, within the lines the entry names:
+// null where it does, else the field and what to say. An empty quote cites an empty file.
 function misquoted(repo, req, e) {
   const seen = seenAt(repo, req, e.path, e.side);
-  const q = plain(e.quote);
+  const q = lf(e.quote);
   if (q === '') return seen.includes('') ? null : { field: 'quote', message: `an empty quote cites an empty file, and ${e.path} is not one` };
   const [from, to = from] = e.lines.split('-').map(Number);
-  const at = new Set();
+  const span = q.replace(/\n$/, '').split('\n').length - 1;
+  const at = [];
   for (const t of seen) {
     let line = 1;
     let k = 0;
     for (let i = t.indexOf(q); i !== -1; i = t.indexOf(q, i + 1)) {
       for (; k < i; k += 1) if (t.charCodeAt(k) === 10) line += 1;
-      const last = line + q.split('\n').length - 1;
-      if (line <= to && last >= from) return null;
-      at.add(line === last ? `${line}` : `${line}-${last}`);
+      if (line >= from && line + span <= to) return null;
+      if (at.length < 5) at.push(span ? `${line}-${line + span}` : `${line}`);
     }
   }
-  if (at.size) return { field: 'lines', message: `the quote stands at ${[...at].slice(0, 5).join(', ')} in ${e.path}, not ${e.lines} — name the lines it stands at` };
+  if (at.length) return { field: 'lines', message: `the quote stands at ${at.join(', ')} in ${e.path}, not ${e.lines} — name the lines it stands at` };
+  const target = linkTarget(repo, req, e.path, e.side);
+  if (target) return { field: 'path', message: `${e.path} is a link to ${target} — cite ${target}, whose text the quote is` };
   return { field: 'quote', message: `the quote is not in ${e.path} on the ${e.side} side — copy it as sed -n prints the file, stopping short of a secret rather than masking it; a backslash is written twice in JSON` };
 }
 
-// Whether a side has anything at a path. `absent` only where it plainly has nothing: the
-// path written canonically, every name on the way matched exactly — a disk that ignores
-// case finds `Config.js` as `config.js` — and nowhere outside the repository. A directory
-// or a submodule is something; a side the store cannot read says nothing (`unknown`).
-function presence(repo, req, file, side) {
+// Whether a side has anything at a path, by its exact name: `absent` only where it plainly
+// has nothing — the path written canonically, every name on the way matched byte for byte
+// (a disk that ignores case finds `Config.js` as `config.js`), and nowhere outside the
+// repository; a file on the way is a place with nothing under it. A directory or a
+// submodule is something; a side the store cannot read says nothing (`unknown`).
+const presence = perFile((repo, req, file, side) => {
   if (!relOk(file) || path.posix.normalize(file) !== file || file.endsWith('/')) return 'unknown';
   const tree = treeOf(req, side);
   if (tree.none) return 'unknown';
-  if (tree.ref) return repo.git(['cat-file', '-e', `${tree.ref}:${file}`]).ok ? 'present' : 'absent';
+  if (tree.ref) {
+    if (!repo.git(['cat-file', '-e', tree.ref]).ok) return 'unknown';
+    return repo.git(['cat-file', '-e', `${tree.ref}:${file}`]).ok ? 'present' : 'absent';
+  }
   const names = file.split('/');
   let dir = repo.top;
-  for (const [i, name] of names.entries()) {
+  for (const name of names.slice(0, -1)) {
     let listed;
     try { listed = readdirSync(dir); } catch { return 'unknown'; }
-    if (!listed.some((n) => n.normalize('NFC') === name.normalize('NFC'))) return 'absent';
-    if (i === names.length - 1) return 'present';
+    if (!listed.includes(name)) return 'absent';
     dir = real(path.join(dir, name));
     if (!dir || !inside(dir, repo.top)) return 'unknown';
+    try { if (!statSync(dir).isDirectory()) return 'absent'; } catch { return 'unknown'; }
   }
-  return 'present';
+  try { return readdirSync(dir).includes(names.at(-1)) ? 'present' : 'absent'; } catch { return 'unknown'; }
+});
+
+// What is wrong with one evidence entry on the tree the store reads — null where nothing
+// is: a file found absent absent still, a file read there by its exact name, its quote
+// standing where it says. `verdict` refuses on it and `queue` lets a verdict stand by it.
+function entryFault(repo, req, e) {
+  const there = presence(repo, req, e.path, e.side);
+  const where = `the ${e.side} side of this ${req.mode}`;
+  if (there === 'unknown') return { field: 'path', message: `${e.path} names no place on ${where} — write it as a path from the repository root` };
+  if (e.absent) return there === 'absent' ? null : { field: 'absent', message: `${e.path} is on ${where} — quote what it says instead` };
+  if (there === 'absent' || !blobAt(repo, req, e.path, e.side)) return { field: 'path', message: `${e.path} is not a file on ${where} — quote what you actually read` };
+  return misquoted(repo, req, e);
 }
+// The claim's own coordinate is what a verdict answers, read rather than found absent.
+const readsOwn = (evidence, u) => evidence.some((e) => e.path === u.file && e.side === u.side && !e.absent);
 
 const sourceFiles = (dir) => (existsSync(path.join(dir, 'sources'))
   ? readdirSync(path.join(dir, 'sources')).filter((f) => f.endsWith('.json') && !f.endsWith('.status.json')).sort()
@@ -1492,12 +1515,9 @@ function queue() {
     // finding's own file is among what it read, since a verdict that never read it cannot
     // tell that file changed, a fix included. `refuted` never stands: it released work, and a
     // change to anything it read may have put the defect back.
-    const stands = (e) => (e.absent
-      ? presence(repo, round.req, e.path, e.side) === 'absent'
-      : blobAt(repo, round.req, e.path, e.side) === e.blob && !misquoted(repo, round.req, e));
+    const stands = (e) => !entryFault(repo, round.req, e) && (e.absent || blobAt(repo, round.req, e.path, e.side) === e.blob);
     const standing = u.carried.find((v) => (v.verdict === 'confirmed' || v.verdict === 'unproven')
-      && v.evidence.some((e) => e.path === u.file && e.side === u.side && !e.absent)
-      && v.evidence.every(stands));
+      && readsOwn(v.evidence, u) && v.evidence.every(stands));
     if (standing) {
       writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), { ...standing, unit: u.unit, reused: true });
       reused.push(u.unit);
@@ -1595,23 +1615,15 @@ function verdict() {
     const side = e.side || 'head';
     // A file a verdict rests on not existing is read as surely as one that does, and a
     // later pass lets the verdict stand only while it still does not.
-    if (e.absent) {
-      const there = presence(repo, round.req, e.path, side);
-      if (there === 'absent') evidence.push({ path: e.path, side, absent: true });
-      else if (there === 'present') missing.push({ at: `/evidence/${i}/absent`, message: `${e.path} is on the ${side} side of this ${round.req.mode} — quote what it says instead` });
-      else missing.push({ at: `/evidence/${i}/path`, message: `${e.path} names no place on the ${side} side of this ${round.req.mode} — write it as a path from the repository root` });
-      return;
-    }
-    const blob = blobAt(repo, round.req, e.path, side);
-    const wrong = blob && misquoted(repo, round.req, { ...e, side });
-    if (!blob) missing.push({ at: `/evidence/${i}/path`, message: `${e.path} is not on the ${side} side of this ${round.req.mode} — quote what you actually read` });
-    else if (wrong) missing.push({ at: `/evidence/${i}/${wrong.field}`, message: wrong.message });
-    else evidence.push({ path: e.path, side, lines: e.lines, quote: e.quote, blob });
+    const fault = entryFault(repo, round.req, { ...e, side });
+    if (fault) missing.push({ at: `/evidence/${i}/${fault.field}`, message: fault.message });
+    else if (e.absent) evidence.push({ path: e.path, side, absent: true });
+    else evidence.push({ path: e.path, side, lines: e.lines, quote: e.quote, blob: blobAt(repo, round.req, e.path, side) });
   });
   if (missing.length) refuse(missing, { unit: u.unit });
-  // The claim's own coordinate is what the verdict answers: one that never read it says
-  // nothing about the claim, and could never stand in a later pass either.
-  if (!evidence.some((e) => e.path === u.file && e.side === u.side && !e.absent)) {
+  // One that never read the claim's own coordinate says nothing about the claim, and could
+  // never stand in a later pass either.
+  if (!readsOwn(evidence, u)) {
     refuse([{ at: '/evidence', message: `never reads ${u.file} on the ${u.side} side — the claim's own coordinate goes in the evidence, first` }], { unit: u.unit });
   }
   // The revision a verdict names is the one it read: the commit the round opened on,
@@ -1624,8 +1636,12 @@ function verdict() {
     snapshot = round.req.base.merge_base.slice(0, 7);
   } else if (treeOf(round.req, 'head').worktree) {
     const at = round.req.head.sha;
-    const committed = blobsAt(repo, at, onHead.map((e) => e.path));
-    const moved = onHead.some((e) => (committed.get(e.path) ?? null) !== (e.blob ?? null));
+    const committed = blobsAt(repo, at, onHead.filter((e) => !e.absent).map((e) => e.path));
+    // An absence differs from the commit wherever the commit has anything there, a directory
+    // included.
+    const moved = onHead.some((e) => (e.absent
+      ? repo.git(['cat-file', '-e', `${at}:${e.path}`]).ok
+      : committed.get(e.path) !== e.blob));
     snapshot = `${at.slice(0, 7)}${moved ? '+wt' : ''}`;
   }
   const stored = { unit: u.unit, verdict: value.verdict, snapshot, evidence };
@@ -1785,16 +1801,31 @@ function result() {
   // files a fresh check read, the ones a reused verdict read having been judged when it stood.
   const onHead = new Map([...verdicts].map(([unit, v]) => [unit,
     req.mode === 'round' && v && !v.reused ? v.evidence.filter((e) => e.side === 'head') : []]));
-  // What the finders read of a file: nothing to judge where it was untracked at init, never
-  // theirs to read; its blob at init where the diff lists it; otherwise the merge base's —
-  // a file the diff does not list stood as the merge base has it, or was not there at all.
+  // What the finders read of a file: nothing to judge where it was untracked or ignored at
+  // init, never theirs to read; its blob at init where the diff lists it; otherwise the merge
+  // base's — a file the diff does not list stood as the merge base has it, or was not there.
   const untracked = new Set(req.untracked || []);
-  const elsewhere = [...onHead.values()].flat().map((e) => e.path)
+  const elsewhere = [...onHead.values()].flat().filter((e) => !e.absent).map((e) => e.path)
     .filter((f) => !headBlob.has(f) && !untracked.has(f));
-  const atBase = elsewhere.length ? blobsAt(checkoutOf(round), req.base.merge_base, elsewhere) : new Map();
+  let checkout = null;
+  const repo = () => (checkout ??= checkoutOf(round));
+  const atBase = elsewhere.length ? blobsAt(repo(), req.base.merge_base, elsewhere) : new Map();
   const openedWith = (file) => {
     if (untracked.has(file)) return undefined;
-    return headBlob.has(file) ? headBlob.get(file) : atBase.get(file) ?? null;
+    if (headBlob.has(file)) return headBlob.get(file);
+    if (atBase.has(file)) return atBase.get(file);
+    return repo().git(['check-ignore', '-q', '--', file]).ok ? undefined : null;
+  };
+  // Whether anything stood at a path a verdict found absent: a file the diff kept or brought
+  // there or under it, an untracked one, or what the merge base held there that the diff
+  // left in place — a directory's files included.
+  const heldAtInit = (file) => {
+    if (headBlob.has(file)) return headBlob.get(file) !== null;
+    const under = `${file}/`;
+    if (untracked.has(file) || [...untracked].some((f) => f.startsWith(under))) return true;
+    if ((req.files || []).some((f) => f.path.startsWith(under) && f.blob_head !== null)) return true;
+    const listed = repo().git(['--literal-pathspecs', 'ls-tree', '-r', '-z', '--name-only', req.base.merge_base, '--', file]);
+    return listed.out.split('\0').filter(Boolean).some((f) => !(headBlob.has(f) && headBlob.get(f) === null));
   };
   for (const u of all) {
     const row = {
@@ -1814,9 +1845,12 @@ function result() {
       continue;
     }
     for (const e of onHead.get(u.unit)) {
-      // A file the diff lists as deleted opened with no blob, as one found absent is read.
+      if (e.absent) {
+        if (heldAtInit(e.path)) drifted.add(e.path);
+        continue;
+      }
       const was = openedWith(e.path);
-      if (was !== undefined && was !== (e.blob ?? null)) drifted.add(e.path);
+      if (was !== undefined && was !== e.blob) drifted.add(e.path);
     }
     if (v.verdict === 'refuted') {
       refuted.push({ unit: u.unit, file: u.file, line: u.line, summary: u.summary, refuted_because: v.refuted_because, snapshot: v.snapshot });

@@ -7,9 +7,9 @@
       "quote": "first line"
     },
     {
-      "path": "tabs.txt",
+      "path": "local.env",
       "lines": "1",
-      "quote": "key\tvalue  "
+      "quote": "KEY=local"
     }
   ]
 }

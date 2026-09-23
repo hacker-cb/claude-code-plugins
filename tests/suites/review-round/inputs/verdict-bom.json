@@ -7,9 +7,9 @@
       "quote": "first line"
     },
     {
-      "path": "tabs.txt",
+      "path": "bom.txt",
       "lines": "1",
-      "quote": "key\tvalue  "
+      "quote": "﻿hello bom"
     }
   ]
 }

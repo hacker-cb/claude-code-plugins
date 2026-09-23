@@ -7,9 +7,9 @@
       "quote": "first line"
     },
     {
-      "path": "tabs.txt",
+      "path": "mixed.txt",
       "lines": "1",
-      "quote": "key\tvalue  "
+      "quote": "café"
     }
   ]
 }

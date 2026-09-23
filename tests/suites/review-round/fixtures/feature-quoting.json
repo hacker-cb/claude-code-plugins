@@ -10,10 +10,13 @@
         "win.txt": "first line\r\nsecond line\r\n",
         "empty.txt": "",
         "tabs.txt": "key\tvalue  \nnext\n",
-        "nfd.txt": "café noir\n"
+        "nfd.txt": "café noir\n",
+        ".gitignore": "local.env\n"
       },
       "bytes": {
-        "wide.txt": "//5oAGUAbABsAG8AIAB3AGkAZABlAAoA"
+        "wide.txt": "//5oAGUAbABsAG8AIAB3AGkAZABlAAoA",
+        "bom.txt": "77u/aGVsbG8gYm9tCg==",
+        "mixed.txt": "Y2Fmw6n/Cg=="
       }
     },
     {
@@ -21,6 +24,11 @@
       "link": {
         "link.txt": "win.txt",
         "outside": "/"
+      }
+    },
+    {
+      "untracked": {
+        "local.env": "KEY=local\n"
       }
     }
   ]

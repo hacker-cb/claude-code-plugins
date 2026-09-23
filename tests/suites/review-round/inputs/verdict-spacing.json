@@ -9,7 +9,7 @@
     {
       "path": "tabs.txt",
       "lines": "1",
-      "quote": "key\tvalue  "
+      "quote": "key value"
     }
   ]
 }
