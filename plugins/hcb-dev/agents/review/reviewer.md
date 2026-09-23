@@ -71,7 +71,7 @@ Once every finder has returned, one call with `--timeout-s 0` says which tasks t
 still lacks. Where the Codex pass is among them — it outlasts the finders — or the finders
 run in the background — the Agent calls came back at once — drop `--timeout-s 0` and give
 the Bash call the tool's ten-minute maximum as its timeout: one call is one window, repeated
-until `complete` is true or `since_plan_s` passes an hour. **Never poll, sleep or start a
+until `complete` is true or `since_start_s` passes an hour. **Never poll, sleep or start a
 watcher in its place.** A finder's closing line is a receipt, not an answer — only the store
 says what was handed in:
 

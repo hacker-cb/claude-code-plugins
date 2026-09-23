@@ -1454,12 +1454,14 @@ function queue() {
     order = order.slice(0, budget);
   }
   // What each call stopped on is its answer's; the file keeps what later calls read.
+  // When this queue's checks began, for a wait on them to count from.
   const q = {
     queue: [...prior.queue, ...order],
     reused: [...prior.reused, ...reused],
     budget_cut: [...prior.budget_cut, ...cut],
     unreachable: [...prior.unreachable, ...unreachable],
     latest: order,
+    started_at: new Date().toISOString(),
   };
   writeJson(qf, q);
   // The answer names what this call queued; the file holds the whole queue.
@@ -1556,10 +1558,15 @@ function wait() {
   const limit = opts['--timeout-s'] === undefined ? WAIT_CAP_S : Number(opts['--timeout-s']);
   if (!Number.isInteger(limit) || limit < 0 || limit > WAIT_CAP_S) die(`--timeout-s must be a whole number from 0 to ${WAIT_CAP_S}`);
   let expected;
+  // How long since what is waited on began — the tasks since the plan, the checks since
+  // the queue that asked for them: the ceiling on a wait counts from there, and a model has
+  // no clock of its own. A queue that kept no time counts from the plan, or the round.
+  const plan = planOf(round);
+  let since = plan?.planned_at;
   if (what === 'tasks') {
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     // The plan's tasks where none are named — the sweep aside, launched on its own later.
-    if (!expected.length) expected = (planOf(round)?.tasks || []).map((t) => t.task);
+    if (!expected.length) expected = (plan?.tasks || []).map((t) => t.task);
     if (!expected.length) die('--for tasks needs --expect, the tasks launched, or a plan');
     for (const t of expected) if (!TASK_ID.test(t)) die(`--expect: '${t}' is not a task id`);
   } else {
@@ -1571,23 +1578,22 @@ function wait() {
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     for (const u of expected) if (!UNIT_ID.test(u)) die(`--expect: '${u}' is not a group id`);
     if (!expected.length) expected = q.latest ?? q.queue;
+    since = q.started_at ?? since ?? round.req.created_at;
   }
+  const started = Date.parse(since ?? '');
   // Presence alone answers: a file lands whole (writeJson renames it into place), so
   // nothing here needs to parse what another process is writing.
   const pending = () => expected.filter((x) => !existsSync(what === 'tasks'
     ? path.join(round.dir, 'sources', `${x}.status.json`)
     : path.join(round.dir, 'verdicts', `${x}.json`)));
   const t0 = Date.now();
-  // How long since the plan: the ceiling on a round's waiting counts from its launch,
-  // and a model has no clock of its own to count it by.
-  const planned = Date.parse(planOf(round)?.planned_at ?? '');
   const tick = () => {
     const left = pending();
     const waited = Math.round((Date.now() - t0) / 1000);
     if (!left.length || Date.now() - t0 >= limit * 1000) {
       answer({
         read: true, round: round.id, for: what, complete: left.length === 0, pending: left, waited_s: waited,
-        since_plan_s: Number.isNaN(planned) ? null : Math.round((Date.now() - planned) / 1000),
+        since_start_s: Number.isNaN(started) ? null : Math.round((Date.now() - started) / 1000),
       });
     }
     setTimeout(tick, 1000);
