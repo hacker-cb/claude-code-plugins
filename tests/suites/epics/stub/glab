@@ -26,6 +26,7 @@ case "$path" in
     v=$(ask '.listing')
     case "$v" in
       ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+      notgroup) echo "glab: 404 Group Not Found (HTTP 404)" >&2; exit 1 ;;
       *) printf '%s\n' "$v"; exit 0 ;;
     esac ;;
 esac

@@ -24,10 +24,9 @@ repository classifies it by; a wave issue carries `wave` alone.
 creates either label where the repository lacks it and applies `epic` to its own epic and
 `wave` to its own waves — nothing wider. Renaming or deleting one stays the user's.
 
-**Read the name, create it, then apply it** — never apply a name first: GitLab creates an unread
-name on the spot, without colour or description ([`forge-behaviour.md`](forge-behaviour.md)).
-A label of that name already in the set — on GitLab one the group passes down counts — is the
-label, whatever colour it has.
+**Read the name, create it, then apply it** — never apply a name first
+([`forge-behaviour.md`](forge-behaviour.md)). A label of that name already in the set — on GitLab
+one the group passes down counts — is the label, whatever colour it has.
 
 ```bash
 LABEL="<epic | wave>"; COLOUR="<its colour>"; DESC="<its description>"; N="<the issue>"
@@ -91,8 +90,7 @@ records that name:
 ## An epic in an older shape
 
 A master holding an epic without the `epic` label — on assuming the role, after a restart, or
-once the plugin moved under it — creates and applies the labels there and then: a label moves no
-coordinate a running batch reads.
+once the plugin moved under it — creates and applies the labels there and then.
 
 ## Listing the open epics
 
@@ -109,9 +107,9 @@ node "<plugin root>/scripts/epics.mjs" [--forge gh|glab] [--host <host>] [--labe
 | `read` | the forge answered to the end. `false` is unread, never "no epic open" |
 | `forge` / `host` | which forge and host were asked — the checkout's own unless both were named |
 | `epics[]` | one row per epic: `repo`, `number`, `title`, `url`, `updated`, and `children` where the forge counts sub-issues (`total`, `completed` — direct children only); `null` where it keeps no count |
-| `count` / `complete` | how many the forge said there are, and whether the list holds all of them — a search stops at its own cap |
+| `count` / `complete` | how many the forge said there are, and whether the list holds all of them — a search stops at its own cap; an epic reached twice is listed once |
 | `reason` | why nothing could be listed |
 
 Without `--owner` it lists what the account itself opened: GitHub's `author:@me` over every
-owner, GitLab's `created_by_me`. Named owners widen it to any author there — on GitLab each owner
-is a group.
+owner, GitLab's `created_by_me`. Named owners widen it to any author there — on GitHub an account,
+at most 15 of them; on GitLab a group, subgroups included. Archived projects are listed too.

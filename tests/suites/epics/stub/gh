@@ -21,6 +21,8 @@ done
 
 case "$path" in
   users/*)
+    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+      || { echo "owner lookup went to '${host:-the default host}', not '$want'" >&2; exit 1; }
     t=$(ask ".users[\"${path#users/}\"]")
     [ -n "$t" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
     printf '{"type":"%s"}\n' "$t"; exit 0 ;;
@@ -32,6 +34,8 @@ case "$path" in
     want=$(ask '.want_q'); [ -z "$want" ] || [ "$want" = "$q" ] \
       || { echo "searched for '$q', not '$want'" >&2; exit 1; }
     case " $* " in *" --paginate "*) ;; *) echo "the search was read unpaginated" >&2; exit 1 ;; esac
+    # Advanced search, asked for: the default one reads owners side by side as AND.
+    case " $* " in *" advanced_search=true "*) ;; *) echo "the search did not ask for advanced search" >&2; exit 1 ;; esac
     v=$(ask '.search')
     case "$v" in
       ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;

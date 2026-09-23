@@ -57,7 +57,9 @@ stands on the reading this session can defend. Correcting the ledger is the mast
 ### The open epics — where no epic is named
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/epics.mjs"
+FORGE="<gh | glab — named with HOST where this directory is no checkout of the forge in question>"
+HOST="<that forge's host>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/epics.mjs" ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"}
 ```
 
 Every epic the account opened, across every owner it reaches

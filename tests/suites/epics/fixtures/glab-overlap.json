@@ -1,5 +1,4 @@
 {
   "want_host": "lab.example",
-  "want_path": "groups/group%2Fsub/issues?labels=epic&state=opened&non_archived=false&per_page=100",
   "listing": "[{\"iid\": 4, \"title\": \"Epic: an umbrella\", \"web_url\": \"https://lab.example/group/sub/tool/-/issues/4\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"references\": {\"full\": \"group/sub/tool#4\"}}]"
 }

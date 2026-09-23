@@ -22,11 +22,15 @@ import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './l
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
 const LEDGER = /^\s*<!--\s*wave-ledger\s*-->/;
 // `<n>` is the series; the pattern deliberately does not admit the ledger's own marker, so a
-// search for one never returns the other however the two are spelled.
-const ARCHIVE_OPEN = /^\s*<!--\s*wave-journal-(\d{1,6})\s*-->/;
-// The ledger's own INDEX lists its archives by these same markers, inline wherever its text
-// names them — the one place a marker is read anywhere in a body.
+// search for one never returns the other however the two are spelled. The ledger's own INDEX
+// lists its archives by these same markers, inline wherever its text names them.
 const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
+const ARCHIVE_OPEN = new RegExp(`^\\s*${ARCHIVE.source}`);
+// A marker standing further in is either a mention or a marked comment written with something
+// ahead of its marker, and only the second is written raw: a mention quotes it as code. Code is
+// set aside before the rest of a body is read for one.
+const LEDGER_ANY = /<!--\s*wave-ledger\s*-->/;
+const prose = (b) => b.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' ');
 
 // GitHub's cap in UTF-8 BYTES, measured on both sides of the boundary
 // (`references/forge-behaviour.md`). Its refusal says `maximum is 65536 characters`, which is
@@ -111,7 +115,7 @@ const answer = {
   archives: [],
   index: { listed: null, present: [], missing: [], unlisted: [] },
   write: { asked: false, bytes: null, chars: null, utf16: null, fits: null, headroom: null,
-    limit: opts.limit },
+    opens: null, limit: opts.limit },
   me: null,
   faults: [],
   reason: null,
@@ -263,6 +267,7 @@ const mineness = (author) => (meRaw === null || author === null
   ? null : fold(author) === fold(meRaw));
 
 const marked = [];
+const inner = { ledger: [], archives: [] };
 for (const c of rows) {
   const b = typeof c?.body === 'string' ? c.body : null;
   if (b === null) continue;
@@ -284,9 +289,16 @@ for (const c of rows) {
   // One archive per comment, named by the marker it opens with: an archive quoting the markers
   // of the ones before it is the ordinary case, and those quotes are its text, not more archives.
   const opened = ARCHIVE_OPEN.exec(b);
-  if (opened === null) continue;
-  marked.push({ kind: 'archive', n: Number(opened[1]), id: text(String(id)), url, at, body: b,
-    author, mine });
+  if (opened !== null) {
+    marked.push({ kind: 'archive', n: Number(opened[1]), id: text(String(id)), url, at, body: b,
+      author, mine });
+  }
+  // Raw markers further in: read against what opens a comment once every comment is seen.
+  const rest = prose(opened === null ? b : b.slice(opened[0].length));
+  if (LEDGER_ANY.test(rest)) inner.ledger.push(text(String(id)));
+  ARCHIVE.lastIndex = 0;
+  let m;
+  while ((m = ARCHIVE.exec(rest)) !== null) inner.archives.push({ n: Number(m[1]), id: text(String(id)) });
 }
 
 const ledgers = marked.filter((m) => m.kind === 'ledger');
@@ -344,6 +356,14 @@ if (ledgers.length > 1) {
     chars: m.chars, utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine };
 }
 
+// No comment opens with the ledger marker, and one carries it raw further in: a ledger written
+// with something ahead of its marker, or an interrupted edit. Opening a second ledger over it is
+// the failure this names; with one ledger open, a marker further in is somebody's text.
+if (ledgers.length === 0 && inner.ledger.length > 0) {
+  answer.faults.push({ fault: 'a comment carries the ledger marker inside its text rather than opening with it',
+    ids: [...new Set(inner.ledger)] });
+}
+
 // One archive per number is the shape: what leaves the ledger goes under a marker of its own.
 const byN = new Map();
 for (const a of archives) {
@@ -361,6 +381,15 @@ for (const a of archives) {
     mine: [held.mine, a.mine] });
 }
 answer.archives = [...byN.values()].sort((x, y) => x.n - y.n);
+// A number carried raw inside a comment and opened by none: an archive written with something
+// ahead of its marker, which the next archive would otherwise take the number of.
+const strays = new Map();
+for (const a of inner.archives) {
+  if (!byN.has(a.n)) strays.set(a.n, [...new Set([...(strays.get(a.n) ?? []), a.id])]);
+}
+for (const [n, ids] of [...strays].sort((x, y) => x[0] - y[0])) {
+  answer.faults.push({ fault: `archive marker ${n} stands inside a comment's text, and no comment opens with it`, ids });
+}
 answer.index.present = answer.archives.map((a) => a.n);
 
 // What the ledger SAYS it has archived, against what the issue actually carries. Read out of
@@ -393,6 +422,9 @@ if (answer.write.asked) {
   answer.write.chars = m.chars;
   answer.write.utf16 = m.utf16;
   answer.write.fits = m.bytes <= opts.limit;
+  // Found by the marker it opens with, so a body that does not open with it is found by
+  // nothing once written.
+  answer.write.opens = LEDGER.test(body);
   answer.write.headroom = opts.limit - m.bytes;
 }
 
