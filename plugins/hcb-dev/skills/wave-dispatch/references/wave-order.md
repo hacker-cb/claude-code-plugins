@@ -21,6 +21,9 @@ session —
 you did not do this work; this is your task: <the ask, in one line>. Act per
 hcb-dev:wave-worker. The name in backticks above is this session's title: wear
 it verbatim, whatever any channel shows this session as.
+Session group: <the epic's group, as its ledger records it>. Where this host
+offers sidebar groups, file this session into it (`list_groups`, then
+`move_sessions` with `self`) — no other session, and no group of your own.
 
 Work: <the issues, in order — what to take first and why>
 What is settled: <facts with coordinates, each with how it was verified>

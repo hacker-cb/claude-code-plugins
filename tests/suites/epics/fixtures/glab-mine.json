@@ -1,0 +1,7 @@
+{
+  "probe_gh": "no",
+  "probe_glab": "yes",
+  "want_host": "lab.example",
+  "want_path": "issues?labels=epic&state=opened&scope=created_by_me&per_page=100",
+  "listing": "[{\"iid\": 7, \"title\": \"Epic: an umbrella\", \"web_url\": \"https://lab.example/group/app/-/issues/7\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"references\": {\"full\": \"group/app#7\"}}, {\"iid\": 8, \"title\": \"Epic: an umbrella\", \"web_url\": \"https://lab.example/group/sub/tool/-/issues/8\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"references\": {\"full\": \"group/sub/tool#8\"}}]"
+}

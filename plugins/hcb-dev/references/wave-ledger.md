@@ -9,7 +9,7 @@ this file **is** the "session's own record" that [`order-anatomy.md`](order-anat
 ## Where it lives
 
 One comment on the epic issue, opened when the role is assumed and edited in place from then on,
-carrying the marker `<!-- wave-ledger -->` so it is found by content rather than by position.
+opening with the marker `<!-- wave-ledger -->` — a marker counts only where it opens a comment.
 Every order names its coordinate, so a batch reads the standing constraints itself. The epic's
 *body* stays human — the wave table, the progress — and the ledger comment is the working state;
 the two are not copies.

@@ -35,7 +35,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   tip its predecessor's landing left.
 - **Read this session's own name** as the channels show it, never assumed from
   what this session set, before it goes into the `Master:` slot
-  (`session-comms.md`).
+  (`session-comms.md`); the `Session group:` slot takes the group the ledger
+  header records.
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.

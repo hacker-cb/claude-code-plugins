@@ -56,7 +56,11 @@ it accepts their returns per
    glab api -X POST "projects/<project>/issues/<epic>/links" \
      -f target_project_id=<project id> -f target_issue_iid=<n> -f link_type=relates_to
    ```
-3. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
+3. **Its shape**: title, body, labels and session group per
+   [`../../references/epic-structure.md`](../../references/epic-structure.md) — the labels
+   created where the repository lacks them and `epic` applied, this session filed into the
+   epic's group where the host offers groups.
+4. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
    else is decided; from here on, every event lands in it before the
    conversation moves on. Its header carries the plugin version this role
    reconciled against, which starts as the one it is running, resolved rather
@@ -115,7 +119,7 @@ Every event lands in the ledger before the conversation moves on
 | a landing **freed ground**, its checks outcome recorded as read — an unread one is not that, and the row above holds that ground until it is read —, a **tracker edit** executed — one the pass below reads in its tracker half, whether or not the plan was waiting on it and whether or not the issue was in the slice when it was made — or the user asks what else can run beside what is running, what blocks, or what to take next | recompute, never recall (`hcb-dev:wave-refresh`): it reads the delta from the point it resolves rather than the backlog again, and what it frees goes back to Launching behind the user's word on its layout | what that pass writes |
 | the **plan** is drawn or redrawn, or a **wave** opens or closes | advance the epic's human half too — the wave table in its body, not only the ledger comment; what is done is counted by the forge where the issues hang under the epic, and an issue entering the epic is hung under it | the wave; what a redraw moved |
 | a **lesson** one batch paid for | tell the batches it can still bite, the moment it is learned | journal |
-| the **plugin moved** under this session | it moved under its batches too: refresh here first (`hcb-dev:session-plugin-refresh`), then send every batch still engaged the word that theirs moved as well — each is running under the copy it loaded, and a batch never told goes on building against text this session has already replaced. What that refresh changes for a batch already building travels as an amendment (`session-comms.md`), not as a new order | the header's version |
+| the **plugin moved** under this session | it moved under its batches too: refresh here first (`hcb-dev:session-plugin-refresh`) and bring the epic's labels up (`epic-structure.md`), then send every batch still engaged the word that theirs moved as well — each is running under the copy it loaded, and a batch never told goes on building against text this session has already replaced. What that refresh changes for a batch already building travels as an amendment (`session-comms.md`), not as a new order | the header's version |
 
 Across every row, **the user outranks the loop**: irreversible and outward-facing
 actions, and every fork `architecture-decisions.md` routes to a person, go to the
@@ -150,7 +154,8 @@ that confirmation goes out, so no later report prints it again.
 The ledger first — the title names the epic, and the epic holds the ledger.
 What it records as the master's name is this session's own, in
 `session-naming.md`'s shape: wear that before anything is sent, since the
-batches' orders address it. Then read back what this session actually answers
+batches' orders address it; an epic in an older shape takes its labels now
+(`epic-structure.md`). Then read back what this session actually answers
 to: where the host would not give that name — it handed back a variant, or a new
 session took over the role — what answers wins, the ledger header is corrected
 to it before anything else is sent, and the batches hear it as the change
@@ -168,7 +173,9 @@ at the end state the ledger now records for it; every mandate met — then repor
 to the user as the final report, the run here being the epic and the batch
 sessions it is done with among what that report leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never run — naming its reach honestly: worktrees the host leased to other
 sessions it reports rather than removes, and each batch session's own residue
-is that session's to sweep. Write the ledger's closing line.
+is that session's to sweep. Write the ledger's closing line, then close the epic
+per `epic-structure.md` — its closing comment, the issue closed, and the session group
+offered to the user for deletion.
 
 ## Reference files
 
@@ -176,6 +183,7 @@ is that session's to sweep. Write the ledger's closing line.
   before the first read of anything a tool, a forge or another session answers.
 - [`../../references/wave-planning.md`](../../references/wave-planning.md)
 - [`../../references/wave-ledger.md`](../../references/wave-ledger.md)
+- [`../../references/epic-structure.md`](../../references/epic-structure.md)
 - [`../../references/session-comms.md`](../../references/session-comms.md)
 - [`../../references/session-naming.md`](../../references/session-naming.md)
 - [`../../references/order-return.md`](../../references/order-return.md)

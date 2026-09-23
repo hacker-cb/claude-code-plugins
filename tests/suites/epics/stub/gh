@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+# The checkout's own repository, and with it the host the listing must ask.
+if [ "$1 $2" = "repo view" ]; then
+  case "$(ask '.probe_gh')" in
+    no) echo "none of the git remotes configured for this repository point to a known GitHub host" >&2; exit 1 ;;
+    nohost) echo '{"url":"team/app"}'; exit 0 ;;
+    *) echo '{"url":"https://forge.example/team/app"}'; exit 0 ;;
+  esac
+fi
+[ "$1" = api ] || { echo "unplanned gh call: $*" >&2; exit 1; }
+host="" prev="" path="" q=""
+for a in "$@"; do
+  [ "$prev" = "--hostname" ] && host=$a
+  case "$a" in users/*|search/*) path=$a ;; q=*) q=${a#q=} ;; esac
+  prev=$a
+done
+
+case "$path" in
+  users/*)
+    t=$(ask ".users[\"${path#users/}\"]")
+    [ -n "$t" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
+    printf '{"type":"%s"}\n' "$t"; exit 0 ;;
+  search/issues)
+    # The host and the query are what a case asserts: a search sent to the default host, or
+    # without its scope, reads somebody else's issues and looks correct doing it.
+    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+      || { echo "search went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+    want=$(ask '.want_q'); [ -z "$want" ] || [ "$want" = "$q" ] \
+      || { echo "searched for '$q', not '$want'" >&2; exit 1; }
+    case " $* " in *" --paginate "*) ;; *) echo "the search was read unpaginated" >&2; exit 1 ;; esac
+    v=$(ask '.search')
+    case "$v" in
+      ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+esac
+echo "unplanned gh call: $*" >&2; exit 1

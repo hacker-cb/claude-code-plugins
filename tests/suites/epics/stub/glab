@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+[ "$1" = api ] || { echo "unplanned glab call: $*" >&2; exit 1; }
+host="" prev="" path=""
+for a in "$@"; do
+  [ "$prev" = "--hostname" ] && host=$a
+  case "$a" in projects/*|issues\?*|groups/*) path=$a ;; esac
+  prev=$a
+done
+
+case "$path" in
+  projects/*)
+    case "$(ask '.probe_glab')" in
+      yes) echo '{"path_with_namespace":"group/app","web_url":"https://lab.example/group/app"}'; exit 0 ;;
+      *) echo "404 Project Not Found (HTTP 404)" >&2; exit 1 ;;
+    esac ;;
+  issues\?*|groups/*)
+    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+      || { echo "listing went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+    want=$(ask '.want_path'); [ -z "$want" ] || [ "$want" = "$path" ] \
+      || { echo "listed '$path', not '$want'" >&2; exit 1; }
+    case " $* " in *" --paginate "*) ;; *) echo "the listing was read unpaginated" >&2; exit 1 ;; esac
+    v=$(ask '.listing')
+    case "$v" in
+      ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+esac
+echo "unplanned glab call: $*" >&2; exit 1

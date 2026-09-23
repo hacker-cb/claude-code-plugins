@@ -39,7 +39,8 @@ holds, and what it stops is named in the return as the gap it is.
    composed there already. Set exactly that string, and take the step without first
    establishing what this session wears: re-setting a title already worn changes
    nothing, and what a channel answers is evidence about the address, never about
-   the title (`session-comms.md`).
+   the title (`session-comms.md`). Where the host offers sidebar groups, file this
+   session into the group the order's `Session group:` names — itself, never another.
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip

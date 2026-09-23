@@ -31,6 +31,8 @@ and what answers there, never from the hostname.
 - **Work conceived and finished in the same effort earns none** — the change
   request and `git log` already record it.
 - **Open-ended architectural direction** belongs to the project's roadmap.
+- **An epic's umbrella and its waves** are the coordination's own, filed by
+  `hcb-dev:master-session` ([`../../references/epic-structure.md`](../../references/epic-structure.md)).
 
 ## Searching the tracker
 

@@ -1,0 +1,3 @@
+{
+  "search": "{\"total_count\": 1, \"incomplete_results\": true, \"items\": [{\"number\": 1, \"title\": \"Epic: an umbrella\", \"html_url\": \"https://forge.example/team/app/issues/1\", \"repository_url\": \"https://forge.example/api/v3/repos/team/app\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"sub_issues_summary\": {\"total\": 3, \"completed\": 1, \"percent_completed\": 0}}]}"
+}

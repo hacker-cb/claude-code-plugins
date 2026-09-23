@@ -1,0 +1,23 @@
+# fixture	args	status	expect	note
+gh-mine	--forge gh	0	"read": true|"forge": "gh"|"host": "forge.example"|"count": 2|"complete": true|"repo": "team/app"|"number": 12|"total": 3|"completed": 1|"repo": "other/lib"|"children": null	the account's own epics in one search over every owner, on the host the checkout lives on
+gh-paged	--forge gh	0	"number": 1|"number": 2|"complete": true	a search is read to its last page before it is called the list
+gh-owners	--forge gh --owner acme --owner someone	0	"repo": "acme/app"|"owners": [	named owners replace the author scope, each by the qualifier its type takes
+gh-owner-unknown	--forge gh --owner ghost	0	"read": false|owner 'ghost' could not be resolved	an owner nobody can resolve stops the listing rather than being dropped from the query
+gh-host-named	--forge gh --host ghe.example --label wave	0	"read": true|"host": "ghe.example"|"label": "wave"|"number": 9	forge and host both named: no repository has to answer, and the host named is the one asked
+gh-capped	--forge gh	0	"count": 1500|"complete": false	a search that stopped short of its own count is not the set
+gh-incomplete	--forge gh	0	"complete": false	a search the forge timed out on says so only in its flag
+gh-pr-skipped	--forge gh	0	"number": 1|NOT:"number": 2	a pull request is not an epic
+gh-search-fails	--forge gh	0	"read": false|the search could not be read	a search that failed is unread, never an empty list
+gh-not-json	--forge gh	0	"read": false|the search was not JSON	an answer that does not parse is unread
+gh-no-host	--forge gh	0	"read": false|without a host	a repository answering with no url leaves no host to ask, and the default one is not guessed
+gh-empty	--forge gh	0	"read": true|"count": 0|"epics": []|"complete": true	no epic open is an answer that arrived
+both-answer	--label epic	0	both forges answer for this repository|"read": false	a mirror answering on both forges is refused, not resolved by order
+none-answer	--label epic	0	no forge CLI answered for this repository|"read": false	nothing answering is said as such
+glab-mine	--label epic	0	"forge": "glab"|"host": "lab.example"|"repo": "group/app"|"number": 7|"repo": "group/sub/tool"|"children": null	GitLab lists what the account created, never every issue it can see
+glab-group	--forge glab --host lab.example --owner group/sub	0	"number": 4|"read": true	a named group is read through its own listing, which carries no scope
+glab-fails	--label epic	0	"read": false|could not be read	a listing that failed is unread
+-	--forge svn	2	--forge takes gh or glab	an unknown forge is refused before anything is asked
+-	--label a"b	2	--label takes a label name	a quote would end the phrase it travels in
+-	--owner ../etc	2	is not an owner	an owner is a path, held to the rule every path segment is
+-	--owner a --owner b --owner c --owner d --owner e --owner f --owner g --owner h --owner i --owner j --owner k --owner l --owner m --owner n --owner o --owner p	2	at most 15 owners	past the forge's own limit the query is refused here rather than by it
+-	--host	2	--host takes a value	a flag at the end of the line has no value
