@@ -458,16 +458,27 @@ if (opts.sha === 'merge' && ['running', 'empty'].includes(answer.verdict)) {
   for (const [side, r] of [['merge', m], ['head', h]]) {
     if (r.err) answer.notes.push(`the ${side} commit's tree was not read (${r.err}) — unread, not different`);
   }
-  if (answer.tree.same) {
+  if (answer.tree.same && answer.complete === false) {
+    // A gate list read in part: the head could read green without the check that was missed.
+    answer.notes.push('the merge commit carries the head\'s tree, but the gate list is incomplete'
+      + ' — no head read on it can cover what landed');
+  } else if (answer.tree.same) {
     // The head read by this same script, so its verdict means what this one's does. The
-    // names travel as argv to a process, never through a shell.
+    // names travel as argv to a process, never through a shell; the repository is already
+    // resolved, so the request is not read twice.
     const child = spawnSync(process.execPath, [fileURLToPath(import.meta.url),
-      '--pr', opts.pr, ...(opts.repo ? ['--repo', opts.repo] : []), '--sha', headOid,
-      ...opts.require.flatMap((n) => ['--require', n])],
-    { cwd: opts.repoDir || process.cwd(), encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+      '--repo', repo, '--sha', headOid, ...opts.require.flatMap((n) => ['--require', n])],
+    { cwd: opts.repoDir || process.cwd(), encoding: 'utf8', timeout: 300000, maxBuffer: 32 * 1024 * 1024 });
     let head = null;
     try { head = JSON.parse(child.stdout); } catch { /* read below as unread */ }
     answer.tree.headVerdict = head && typeof head.verdict === 'string' ? head.verdict : 'unread';
+    if (!head) {
+      const why = child.error ? child.error.message
+        : String(child.stderr || '').split(/[\r\n]+/).filter(Boolean)[0] || `exit ${child.status}`;
+      answer.notes.push(`the head's own read did not answer (${why}) — unread, not failing`);
+    } else if (head.reason) {
+      answer.notes.push(`the head's own read: ${head.reason}`);
+    }
     if (answer.tree.headVerdict === 'green') {
       answer.verdict = 'covered';
       answer.notes.push('the merge commit carries the tree of a head whose own checks are green'

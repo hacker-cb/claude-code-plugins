@@ -55,15 +55,15 @@ CHECKS="<plugin root>/scripts/commit-checks.mjs"   # quoted at every use: it may
 AFTER="$(node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
   || echo "CALLED WRONG: $AFTER"
 case "$(printf '%s' "$AFTER" | jq -r '.verdict')" in
-  covered|green|retry) ;;   # retry re-runs the block; the others leave nothing to attribute
+  covered|green|retry|unread|'') ;;   # retry re-runs; unread and '' take merge-gates.md's path
   *) BEFORE="$(node "$CHECKS" --pr <pr> --sha base --require-from-gates)" \
        || echo "CALLED WRONG: $BEFORE" ;;
 esac
 ```
 
 **`covered` ends the wait**: the merge commit carries a green head's tree; `base_checks` is
-`covered`, the rows still running named as not waited for. Otherwise poll the merge commit by
-its id (`.sha`) until it settles; [`merge-gates.md`](merge-gates.md) owns each verdict.
+`covered`, the rows still running named as not waited for. Otherwise poll `AFTER`'s call until
+it settles — it may come to `covered` yet; [`merge-gates.md`](merge-gates.md) owns each verdict.
 
 A red row is attributed before it is owned: red on `BEFORE` too is not this merge's, nor is a
 degraded forge ([`platform-status.md`](platform-status.md)) or a known flake. What survives is
