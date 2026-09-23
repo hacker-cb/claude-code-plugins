@@ -54,7 +54,7 @@ CHECKS="<plugin root>/scripts/commit-checks.mjs"   # quoted at every use: it may
 AFTER="$(node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
   || echo "CALLED WRONG: $AFTER"
 case "$(printf '%s' "$AFTER" | jq -r '.verdict')" in
-  covered|retry|unread|'') ;;   # retry re-runs the block; unread and '' take merge-gates.md's path
+  covered|retry|unread|'') BEFORE= ;;   # retry re-runs; unread and '' take merge-gates.md's path
   *) BEFORE="$(node "$CHECKS" --pr <pr> --sha base --require-from-gates)" \
        || echo "CALLED WRONG: $BEFORE" ;;
 esac
