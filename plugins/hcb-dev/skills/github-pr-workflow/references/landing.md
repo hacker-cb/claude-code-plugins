@@ -49,30 +49,30 @@ update-branch <pr>`, let the required checks re-pass, merge again. Poll until th
 
 ### The base's own checks on the merge commit
 
-Two reads, the base's own tip first: it answers what the merge commit alone cannot — what
-this base runs on a push at all, and which of it to wait for.
-
 ```bash
-# Quoted as one word at every use: the plugin root is a path like any other and may
-# carry spaces, and unquoted, `node` is handed its first segment.
-CHECKS="<plugin root>/scripts/commit-checks.mjs"
-BEFORE="$(node "$CHECKS" --pr <pr> --sha base  --require-from-gates)" \
-  || echo "CALLED WRONG: $BEFORE"
-AFTER="$( node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
+CHECKS="<plugin root>/scripts/commit-checks.mjs"   # quoted at every use: it may carry spaces
+AFTER="$(node "$CHECKS" --pr <pr> --sha merge --require-from-gates)" \
   || echo "CALLED WRONG: $AFTER"
+case "$(printf '%s' "$AFTER" | jq -r '.verdict')" in
+  covered|retry|unread|'') BEFORE= ;;   # retry re-runs; unread and '' take merge-gates.md's path
+  *) BEFORE="$(node "$CHECKS" --pr <pr> --sha base --require-from-gates)" \
+       || echo "CALLED WRONG: $BEFORE" ;;
+esac
+printf '%s\n' "$AFTER" "${BEFORE:-}"   # both answers, whole: the verdict and the rows it rests on
 ```
 
-[`merge-gates.md`](merge-gates.md) owns what those verdicts ask of this step. A red row is
-attributed before it is owned, the way the fix loop attributes one: red on `BEFORE` too is
-not this merge's, and neither is a degraded forge ([`platform-status.md`](platform-status.md))
-or a known flake. What survives that is **this merge's**, not the next author's — report it
-and fix it forward on a branch cut from the base, through the skill from its Step 1.
+**`covered` ends the wait**: the merge commit carries a green head's tree; `base_checks` is
+`covered`, the rows still running named as not waited for. Otherwise poll `AFTER`'s call until
+it settles — it may come to `covered` yet; [`merge-gates.md`](merge-gates.md) owns each verdict.
 
-**The report carries what these reads showed, whichever way it came out** — green; red, with
-every failing row and what each was attributed to; unchecked; or the wait stopped before the
-rows finished, with the state they stood at then. Attribution decides what you fix, never
-what gets reported: rows attributed away are still rows, and dropping them leaves a report
-saying the base passed. None of the four is inferred from the absence of the others.
+A red row is attributed before it is owned: red on `BEFORE` too is not this merge's, nor is a
+degraded forge ([`platform-status.md`](platform-status.md)) or a known flake. What survives is
+**this merge's** — fix it forward on a branch cut from the base, through the skill's Step 1.
+
+**The report carries what these reads showed, whichever way it came out** — covered; green;
+red, with every failing row and what each was attributed to; unchecked; or the wait stopped,
+with the state the rows stood at. Attribution decides what you fix, never what gets reported:
+rows attributed away are still rows. None of the five is inferred from the others' absence.
 
 ### The issues this PR was to close
 
@@ -138,7 +138,7 @@ Then the report ([`../../../references/report-format.md`](../../../references/re
   so. Copilot's line among them is its review of the head that merged and the state that review
   carries — or, where that head has none, the commit the last review covered and why
   ([`copilot.md`](copilot.md)). Then the base's own checks on the merge commit, in whichever of
-  the four shapes above came out — under an orchestrator, the `base_checks` its completion carries.
+  the five shapes above came out — under an orchestrator, the `base_checks` its completion carries.
 - **`## Findings`** — the lower-severity items the loop skipped, through `findings.md` as the late
   review's are, laid out by [`../../../references/findings-table.md`](../../../references/findings-table.md).
   Where nothing called this driver, this report ends the session and `hcb-dev:findings-pass` runs

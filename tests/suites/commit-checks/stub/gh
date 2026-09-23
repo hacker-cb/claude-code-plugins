@@ -22,6 +22,12 @@ emit() {
   esac
 }
 
+per_sha() {
+  local sha=${2#*/commits/}; sha=${sha%%/*}
+  local v; v=$([ -n "$env" ] && jq -r --arg s "$sha" --arg k "$1" '.by_sha[$s][$k] // empty' "$env")
+  if [ -n "$v" ]; then printf '%s\n' "$v"; else ask ".$1"; fi
+}
+
 case "$1 $2" in
   "pr view")
     v=$(ask '.pr_view')
@@ -46,6 +52,15 @@ case "$1 $2" in
           garbage) printf 'not json at all\n'; exit 0 ;;
           *) printf '%s\n' "$v"; exit 0 ;;
         esac ;;
+      */git/commits/*)
+        # Keyed by the commit id the path names, so one envelope answers the merge commit
+        # and the head differently.
+        v=$(jq -r --arg s "${2##*/}" '.trees[$s] // empty' "$env")
+        case "$v" in
+          ""|fail) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+          notree) printf '{"sha":"%s"}\n' "${2##*/}"; exit 0 ;;
+          *) printf '{"sha":"%s","tree":{"sha":"%s"}}\n' "${2##*/}" "$v"; exit 0 ;;
+        esac ;;
     esac ;;
   "api --paginate")
     # $3 is the path. The feeds differ only by their last segments.
@@ -61,11 +76,13 @@ case "$1 $2" in
           fail) echo "gh: Bad credentials (HTTP 401)" >&2; exit 1 ;;
           *) printf '%s\n' "$v"; exit 0 ;;
         esac ;;
+      # A commit named under `.by_sha` answers from there, so one envelope can hold a merge
+      # commit and the head it is compared with; every other commit takes the top level.
       */check-runs)
-        emit "$(ask '.checks')" && exit 0
+        emit "$(per_sha checks "$3")" && exit 0
         echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
       */status)
-        emit "$(ask '.status')" && exit 0
+        emit "$(per_sha status "$3")" && exit 0
         echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
     esac ;;
 esac

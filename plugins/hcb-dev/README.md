@@ -174,7 +174,7 @@ form: you paste every one of them yourself.
   it is pushed, and Copilot is asked for a review only when the PR itself turned —
   then merge on the authority it was handed — `ask` by default, so it
   stops at ready and asks — monitor, watch the base's own checks on the merge
-  commit, and report.
+  commit unless it carries the tree of a head whose own checks are green, and report.
   Discovers the merge gates the base branch actually enforces — two bases of one
   repo answer differently — instead of assuming them, and parks the
   run on a platform outage — checking the status feed every half hour — instead of
@@ -409,7 +409,7 @@ name stands for.
   field carries, and the drift against its base, measured rather than read off
   `mergeStateStatus`. `mayMerge` is permission, never readiness.
 - [`scripts/commit-checks.mjs`](scripts/commit-checks.mjs) — what the two check feeds
-  say about one commit. Keeps `check-runs` and the older commit statuses apart, since a
+  say about one commit, and for a merge commit whether a green head's tree covers it. Keeps `check-runs` and the older commit statuses apart, since a
   reader of one is blind to the other, and answers with a single `verdict` so a caller
   never assembles one out of counts.
 - [`scripts/copilot-state.mjs`](scripts/copilot-state.mjs) — whether the automated
