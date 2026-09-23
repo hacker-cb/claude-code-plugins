@@ -136,8 +136,7 @@ for ((n = 0; n < count; n++)); do
         if grep -q '@top' "$dst"; then
           scratch
           top=$(cd "$repo" && pwd -P) || exit 125
-          content=$(cat "$dst")
-          printf '%s\n' "${content//@top/"$top"}" > "$dst"
+          TOP="$top" awk '{ out = ""; s = $0; while ((i = index(s, "@top")) > 0) { out = out substr(s, 1, i - 1) ENVIRON["TOP"]; s = substr(s, i + 4) } print out s }' "$dst" > "$dst.top" && mv "$dst.top" "$dst"
         fi
         args+=("$dst") ;;
       *) args+=("$w") ;;

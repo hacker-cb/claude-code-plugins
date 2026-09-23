@@ -7,7 +7,7 @@ description: >-
   worker or a subagent needs a review pinned to a range, with verified findings and a coverage
   record handed back; or when the user asks for a Claude review of the current change.
   Review-only: returns the findings and never fixes anything. For one change reviewed by several
-  independent reviewers at once, use `hcb-dev:multi-review` instead; for more than the high rung,
+  independent reviewers, use `hcb-dev:multi-review` instead; for more than the high rung,
   the built-in `/code-review`, typed by the user. Invoke deliberately, when asked — not as an
   auto-trigger on every change.
 ---

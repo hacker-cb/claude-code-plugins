@@ -1,7 +1,7 @@
 ---
 name: multi-review
 description: >-
-  Review one change with several independent reviewers at once — the Codex CLI,
+  Review one change with several independent reviewers — the Codex CLI,
   Claude's own reviewer, the built-in security review — then consolidate their
   findings and report what each one actually covered. Use when
   the user asks for a review of the current change ("прогони ревью", "review
@@ -139,8 +139,8 @@ never an empty cell and never a stall.
 **A spent quota is `UNAVAILABLE`, never `n/a`.** `n/a` is the status the coverage gate treats as
 closed, so recording a reviewer that did not run passes a completion with it missing — which is
 what `UNAVAILABLE` exists for; the engine's own notice goes below the table and the cell stays
-short. **A model's limit is recovered inside a round** for its agents, the row naming the model; a
-Codex pass it stopped reads `UNAVAILABLE`, and `codex-review` rerun on another model closes it.
+short. **A model's limit is recovered inside a round** for its agents, the row naming the model;
+for a Codex pass it stopped, run `codex-review` again on another model before recording it.
 
 **Less than the change is not a pass.** A reviewer that ran against the wrong base, or over only
 the committed half while the rest sat in the working tree, covered a nonzero number of the wrong

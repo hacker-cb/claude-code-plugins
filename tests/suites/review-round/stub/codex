@@ -62,9 +62,8 @@ if [ -n "${CODEX_EMPTY:-}" ]; then
 fi
 [ -n "${CODEX_GROUP:-}" ] && echo '{"units": []}' > "$(dirname "$out")/units.json"
 if [ -n "$out" ]; then
-  answer=$(cat "$here/inputs/${CODEX_ANSWER:?a case names its answer}")
   top=$(pwd -P)
-  printf '%s\n' "${answer//@top/"$top"}" > "$out"
+  TOP="$top" awk '{ out = ""; s = $0; while ((i = index(s, "@top")) > 0) { out = out substr(s, 1, i - 1) ENVIRON["TOP"]; s = substr(s, i + 4) } print out s }' "$here/inputs/${CODEX_ANSWER:?a case names its answer}" > "$out"
 fi
 [ -n "${CODEX_LATE:-}" ] && pause
 echo "codex stub: answered"

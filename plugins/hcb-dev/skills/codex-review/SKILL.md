@@ -3,7 +3,7 @@ name: codex-review
 description: >-
   Review a change with Codex — OpenAI's coding agent. Use when the user or a pipeline asks for
   a "codex review", or wants a second opinion on a change from an engine other than Claude. Review-only: returns the findings and never fixes anything. For
-  one change reviewed by several independent reviewers at once, use `hcb-dev:multi-review`
+  one change reviewed by several independent reviewers, use `hcb-dev:multi-review`
   instead. Invoke deliberately, when asked — not as an auto-trigger on every change.
 ---
 

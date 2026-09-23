@@ -146,7 +146,7 @@ form: you paste every one of them yourself.
   The same round with Claude's own finders as its source: one finder agent per
   angle of the rung. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  Run several independent reviewers over one change at once — `codex-review`,
+  Run several independent reviewers over one change — `codex-review`,
   `claude-review`, the built-in security review — then consolidate the findings
   and report what each reviewer actually covered (the coverage gate most of the
   skill exists to keep honest). Report-only.

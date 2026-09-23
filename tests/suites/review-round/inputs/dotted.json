@@ -1,7 +1,7 @@
 {
   "candidates": [
     {
-      "file": "@top/limit.sh",
+      "file": "./limit.sh",
       "line": 4,
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
@@ -9,7 +9,5 @@
       "severity": "Important",
       "category": "correctness"
     }
-  ],
-  "read_all": true,
-  "unread": ""
+  ]
 }

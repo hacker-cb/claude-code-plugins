@@ -24,7 +24,7 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
 
 ## Running one
 
-1. **Scope.** The base is the one a caller hands down, refreshed — a name is not a ref — or what
+1. **Scope.** The base is the one a caller hands down, refreshed, or what
    [`base-resolution.md`](base-resolution.md) resolves, taken as that reference says; where none
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
@@ -52,8 +52,8 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
 4. **Read the result** and report from it — *Reading the result* below. One that refuses — a
    conductor that stopped with candidates it never grouped — is finished by the entry: `merge`,
    each candidate no group holds grouped alone (`units`, or `units --append` where a grouping
-   exists), and `result` again. What was found reaches the report, checked no further, and the
-   row reads `partial` with that reason.
+   exists), and `result` again. What was found reaches the report, checked no further, and its
+   source's row is reported `partial` with that reason, whatever `coverage` says.
 
 The conductor plans the round, starts Codex as a background process and one
 `hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups
@@ -65,7 +65,7 @@ queued again.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, in the
-background, being a process; then each finder task's brief, the change and the code as the brief
+background, where the plan has one; then each finder task's brief, the change and the code as the brief
 says, the candidates handed in through `add`; then `wait` until the Codex task has answered,
 `merge`, `units`, `queue` — which checks nothing here, and lets a carried verdict stand — and
 `result`. Nothing is checked, and the result says so.
@@ -133,7 +133,6 @@ read as `verification.md`'s *Reading the result* reads it; a finding's `found_by
 source that reported it, and Codex's row names the model and level it ran at.
 
 Report it as `## Review coverage` from `coverage` — a row per source the round was opened with,
-with the round's base, its file count and its rung; the caller's own `noticed` candidates take
-none — and `## Findings` laid out by `findings-table.md`, `verified by verifier` where any check
-ran. A finding's text is its finder's, in the round's language: pass
+with the round's base, its file count and its rung — and `## Findings` laid out by
+`findings-table.md`, `verified by verifier` where any check ran. A finding's text is its finder's, in the round's language: pass
 it on as written.
