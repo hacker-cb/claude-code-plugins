@@ -27,22 +27,11 @@
       }
     },
     "source_notes": {
-      "description": "Words every angle of a source ends with, where the source has some: what is not a candidate for it, and how its findings are written.",
+      "description": "Words every angle of a source ends with, keyed by the source, where it has some: what its angles share, and what is not a candidate for it. review-round.mjs checks each key is a source.",
       "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "claude": {
-          "type": "string",
-          "minLength": 1
-        },
-        "security": {
-          "type": "string",
-          "minLength": 1
-        },
-        "codex": {
-          "type": "string",
-          "minLength": 1
-        }
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
       }
     },
     "tasks": {

@@ -1,0 +1,15 @@
+{
+  "steps": [
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "limit.sh": "#!/usr/bin/env bash\n# Prints ok when the count is within the limit.\ncount=\"$1\"; limit=\"$2\"\nif [ \"$count\" -ge \"$limit\" ]; then echo ok; else echo over; fi\n",
+        "limit2.sh": "#!/usr/bin/env bash\n# Prints ok when the count is within the limit.\ncount=\"$1\"; limit=\"$2\"\nif [ \"$count\" -le \"$limit\" ]; then echo ok; else echo over; fi\n"
+      }
+    }
+  ]
+}

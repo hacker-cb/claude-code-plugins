@@ -144,15 +144,36 @@ the caller reads the result from the store.
 ## Without agents
 
 Plan with `--depth`, and start the Codex pass as in step 2 where the plan has one. Then do
-every finder task of the plan yourself, one after another: its brief
-(`brief --round "$ROUND" --task "$TASK"`), the change and the code as the brief says — a file
-by its `n`, through `diff` and `show`, and a path you type into a command yourself
-single-quoted — and your candidates handed in through `add` as the brief's `submit` names it. Wait for the Codex
-task as in step 3, group what was handed in as in step 4, run `queue` — it checks nothing
-here, and lets a verdict a candidate carried stand — and build the result: no checks, no
-sweep, and the result says nothing was checked.
+every finder task of the plan yourself, one after another: its brief, the change and the code
+as the brief says, and your candidates handed in through `add` as the brief's `submit` names
+it. Wait for the Codex task as in step 3, group what was handed in as in step 4, run `queue`
+— it checks nothing here, and lets a verdict a candidate carried stand — and build the result:
+no checks, no sweep, and the result says nothing was checked.
 
-Each candidate you hand in carries:
+A task's brief, then a file of the change by its `n`, and the code that file had before it:
+
+```bash
+ROUND="<the round id from your prompt>"
+TASK="<the task>"; N="<a file's n from the brief>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --task "$TASK"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND" --number "$N"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --number "$N"
+```
+
+A file's history takes its path from the brief, read in the same block, and after `--`; any
+other path you put into a command yourself goes in single-quoted, a quote inside it written
+`'\''`, and after `--`:
+
+```bash
+ROUND="<the round id from your prompt>"
+TASK="<the task>"; N="<a file's n from the brief>"
+P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --task "$TASK" \
+  | jq -r --argjson n "$N" '.scope.files[] | select(.n == $n) | .path')"
+git log --oneline -- "$P"
+```
+
+Each candidate you hand in carries the fields below; where a secret is the defect, it names
+where the secret sits, never its value:
 
 | field | what it holds |
 |---|---|

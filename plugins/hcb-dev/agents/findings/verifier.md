@@ -39,8 +39,18 @@ UNIT="<the group id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --unit "$UNIT"
 ```
 
-A path you put into a command yourself goes in single-quoted, a quote inside it written
-`'\''`; Read and Grep take a path with no shell at all.
+Read and Grep take a path with no shell at all. The coordinate's own path goes into a command
+only as `task` gave it, read in the same block, and after `--`:
+
+```bash
+ROUND="<the round id from your prompt>"
+UNIT="<the group id from your prompt>"
+P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" task --round "$ROUND" --unit "$UNIT" | jq -r .coordinate.file)"
+git log --oneline -- "$P"
+```
+
+Any other path you put into a command yourself goes in single-quoted, a quote inside it written
+`'\''`, and after `--` where it stands as an argument of its own.
 
 - **Never run the code under review**, its tests, its build, or anything it would execute. Read
   with `cat`, `sed -n`, `rg`, `git show`, `git log`, `git diff`, `git grep` and `git blame`.
@@ -62,9 +72,10 @@ By category:
   the code — a request, a file from elsewhere, the change under review, that repository's own
   configuration — gets to the sink with nothing on the path that stops it; or a check, a
   privilege, a secret or a piece of cryptography the change leaves open to such a person. What
-  an attacker gains is shown. An environment variable, a command-line flag and the user's own
-  configuration are the user's — unless the code acts on them for someone else, across a
-  privilege boundary.
+  an attacker gains is shown. As input, an environment variable, a command-line flag and the
+  user's own configuration are the user's — unless the code acts on them for someone else,
+  across a privilege boundary. Harm only by volume, a race only in theory and hardening no
+  input can exploit are `refuted`.
 - `reuse` — the helper named exists and does the same job. `simplification` — the simpler form
   does exactly what the code does. `efficiency` — the waste sits on a path that runs.
   `altitude` — the special case sits on shared ground a general fix would cover.
@@ -87,7 +98,8 @@ JSON
   an entry read at the merge base carries `"side": "base"`, one read on the tree the task
   named `"side": "head"`, which is also what an entry without the field means.
 - `settle` goes with `unproven`, `refuted_because` with `refuted`, both in the task's language;
-  quotes stay exactly as the code has them.
+  quotes stay exactly as the code has them, save a secret's value: a quote stops short of it,
+  and nothing you write repeats it.
 - A refused submission names the field that is wrong: fix it and submit again. Only an accepted
   submission counts — the round reads its store, not your words.
 
