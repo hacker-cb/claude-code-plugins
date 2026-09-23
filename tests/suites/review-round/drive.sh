@@ -15,7 +15,8 @@
 #                          directory — a file another process is still writing;
 #                          `@file:<name>` in place of the word copies inputs/<name> there
 #   @file:<name>           a word: a copy of inputs/<name>, every `@blob:<path>` in it
-#                          replaced by the scratch repository's blob of <path>
+#                          replaced by the scratch repository's blob of <path>, and `@top`
+#                          by the repository's own directory
 #   @empty                 a word: the empty string, which a manifest cannot write
 #   @lit:<text>            a word: <text> with %20 read as a space and %25 as %, for a
 #                          path a manifest's word splitting would cut
@@ -77,6 +78,19 @@ for word in "$@"; do
 done
 steps+=("$current")
 
+# The last answer, as a case reads it: short shas masked, JSON compacted to one line.
+emit() {
+  local out=$1
+  # Only where the case names a fixture: a case refused before git must not reach the stub.
+  if [ -n "${STUB_ENVELOPE:-}" ]; then
+    scratch
+    head7=$(git rev-parse --short=7 HEAD 2>/dev/null) && out=${out//$head7/@head7}
+    base7=$(git rev-parse --short=7 base 2>/dev/null) && out=${out//$base7/@base7}
+  fi
+  if printf '%s' "$out" | jq -e . >/dev/null 2>&1; then printf '%s' "$out" | jq -c .; else printf '%s\n' "$out"; fi
+  exit "$2"
+}
+
 round=""
 count=${#steps[@]}
 for ((n = 0; n < count; n++)); do
@@ -92,9 +106,7 @@ for ((n = 0; n < count; n++)); do
   if [ "${words[0]}" = "@show" ]; then
     kept="${STUB_MARKER_FILE:?}.${words[1]}"
     [ -f "$kept" ] || { echo "drive: nothing kept as ${words[1]}"; exit 1; }
-    # JSON compacted, as the answers are, so a case can quote a whole array on one line.
-    if jq -e . "$kept" >/dev/null 2>&1; then jq -c . "$kept"; else cat "$kept"; fi
-    [ "$n" = $((count - 1)) ] && exit 0
+    [ "$n" = $((count - 1)) ] && emit "$(cat "$kept")" 0
     continue
   fi
   if [ "${words[0]}" = "@store" ]; then
@@ -121,6 +133,12 @@ for ((n = 0; n < count; n++)); do
           blob=$(git hash-object -- "${token#@blob:}") || exit 125
           sed -i.bak "s|$token\"|$blob\"|g" "$dst" && rm -f "$dst.bak"
         done < <(grep -o '@blob:[^"]*' "$dst" | sort -u)
+        if grep -q '@top' "$dst"; then
+          scratch
+          top=$(cd "$repo" && pwd -P) || exit 125
+          content=$(cat "$dst")
+          printf '%s\n' "${content//@top/"$top"}" > "$dst"
+        fi
         args+=("$dst") ;;
       *) args+=("$w") ;;
     esac
@@ -128,14 +146,5 @@ for ((n = 0; n < count; n++)); do
   out=$(node "$script" "${args[@]}" 2>&1)
   code=$?
   if [ "${words[0]}" = init ] && [ "$code" = 0 ]; then round=$(printf '%s' "$out" | jq -r '.round // empty'); fi
-  if [ "$code" != 0 ] || [ "$n" = $((count - 1)) ]; then
-    # Only where the case names a fixture: a case refused before git must not reach the stub.
-    if [ -n "${STUB_ENVELOPE:-}" ]; then
-      scratch
-      head7=$(git rev-parse --short=7 HEAD 2>/dev/null) && out=${out//$head7/@head7}
-      base7=$(git rev-parse --short=7 base 2>/dev/null) && out=${out//$base7/@base7}
-    fi
-    if printf '%s' "$out" | jq -e . >/dev/null 2>&1; then printf '%s' "$out" | jq -c .; else printf '%s\n' "$out"; fi
-    exit "$code"
-  fi
+  [ "$code" != 0 ] || [ "$n" = $((count - 1)) ] && emit "$out" "$code"
 done

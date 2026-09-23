@@ -14,10 +14,8 @@ description: >-
 
 # Claude review
 
-One review round whose one source is Claude's finders — a `hcb-dev:review:finder` per angle of
-the rung, run by the plugin's conductor — every candidate the rung's budget reaches then checked
-by its verifier. This skill is **review-only**: never fix what it reports, return it and let the
-caller decide.
+One review round whose one source is Claude's finders, one agent per angle of the rung. This
+skill is **review-only**: never fix what it reports, return it and let the caller decide.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 Run it as [`../../references/review-pipeline.md`](../../references/review-pipeline.md)'s

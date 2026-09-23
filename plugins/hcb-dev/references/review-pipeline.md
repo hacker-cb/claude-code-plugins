@@ -24,7 +24,7 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
 
 ## Running one
 
-1. **Scope.** The base is the one a caller hands down, or what
+1. **Scope.** The base is the one a caller hands down, refreshed — a name is not a ref — or what
    [`base-resolution.md`](base-resolution.md) resolves, taken as that reference says; where none
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
@@ -96,7 +96,7 @@ launch it.
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
-| Codex answered nothing, or not in time | `unavailable`, the log's last lines or the watchdog in the status |
+| Codex answered nothing, or not in time | `unavailable`, the log's last lines or the watchdog in the status — where they name one model's limit, a round opened again with another `--codex-model` closes it |
 | a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
 | it was never launched, or never returned | `partial` for its source, the task named — `unavailable` where no task of that source answered |
 | no agents at all | `depth` for the finders' source |

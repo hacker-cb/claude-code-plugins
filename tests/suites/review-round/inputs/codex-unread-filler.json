@@ -10,6 +10,6 @@
       "category": "correctness"
     }
   ],
-  "read_all": false,
-  "unread": "git show of the merge base was refused"
+  "read_all": true,
+  "unread": "None"
 }

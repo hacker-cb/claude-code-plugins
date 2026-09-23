@@ -50,7 +50,7 @@ uncommitted edits sitting on top of them.
 **Risk** decides the rung in the next step. Always name it — never "the middle", and never the
 wording it arrived in: a word off the ladder is not a rung at all. `codex-review` and
 `claude-review` both start at **`medium`**, and high risk takes both to `high`, their one other
-rung — more angles for Claude, a higher level for Codex, a larger budget of checks for both.
+rung.
 
 Treat the change as high-risk when it reaches past itself (public interface, shared helper,
 config, schema, wire format), cannot be walked back (it writes, migrates, publishes, or persists

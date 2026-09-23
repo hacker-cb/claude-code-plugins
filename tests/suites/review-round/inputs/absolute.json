@@ -1,7 +1,7 @@
 {
   "candidates": [
     {
-      "file": "limit.sh",
+      "file": "@top/limit.sh",
       "line": 4,
       "side": "head",
       "summary": "The comparison is inverted: counts below the limit print over.",
@@ -9,7 +9,5 @@
       "severity": "Important",
       "category": "correctness"
     }
-  ],
-  "read_all": false,
-  "unread": "git show of the merge base was refused"
+  ]
 }

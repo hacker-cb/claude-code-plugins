@@ -7,9 +7,14 @@
       "summary": "The comparison is inverted: counts below the limit print over.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
       "severity": "Important",
-      "category": "correctness"
+      "category": "correctness",
+      "verdict": {
+        "verdict": "confirmed",
+        "by": "codex",
+        "note": "a check nobody ran"
+      }
     }
   ],
-  "read_all": false,
-  "unread": "git show of the merge base was refused"
+  "read_all": true,
+  "unread": ""
 }
