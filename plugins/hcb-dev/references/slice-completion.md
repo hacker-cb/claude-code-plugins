@@ -38,7 +38,7 @@ outright: fall back there and a batch's question reaches its own user instead of
 running the epic.
 
 Completion is **not** handed a `coverage` signal — it runs only after the gate has passed, so it
-carries whatever structural gaps the gate reported into `uncovered` and re-checks nothing.
+carries the `n/a` rows the gate reported into `uncovered` and re-checks nothing.
 
 **Outputs every backend returns**, for whatever reports the run:
 
@@ -48,7 +48,7 @@ carries whatever structural gaps the gate reported into `uncovered` and re-check
 | `mode_used` | which backend ran |
 | `retired` | what became of the branch on each side it stood — gone, or standing with the reason [`branch-retirement.md`](branch-retirement.md) names |
 | `base_checks` | what the checks on that landing showed afterwards: green; red, with the failing rows and what each was attributed to; unchecked, with what that leaves unguaranteed; or the waiting stopped first, with the state it stood at then. `none` where nothing reports over such a landing, or nothing landed |
-| `uncovered` | the coverage gaps carried in |
+| `uncovered` | the sources the review deliberately left out, each with its reason |
 | `issues` | what became of each issue this slice settles — closed, or open with why |
 | `incidental` | surfaced-not-fixed findings, severity rated, each with its outcome: reached, proposed where the decision sits above the slice, or none yet where a wave's batch leaves it unruled for its master's pass |
 | `declined_offer` | local only — a change request the run could have opened and the user turned down, recorded so it is not silently dropped |

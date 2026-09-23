@@ -15,7 +15,7 @@ catalogue is the order of a report; no report invents a heading outside it.
 | `## The picture` | bullets | a standing reading of ground nothing changed — counts, milestones, the front line, and what could not be seen |
 | `## Where it stands` | table | one row per unit the report tracks — a batch, a slice, an issue, the next wave — its state and what it waits on |
 | `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices, branches and the settlements a gate shows, what a sweep would remove and what it keeps |
-| `## Review coverage` | table | one row per reviewer — what it covered, at what effort, and the result `multi-review` classified |
+| `## Review coverage` | table | one row per source — what it covered, at what effort, and the result `multi-review` classified |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
 | `## Issues` | bullets | the issues the run settles, at their state now |
 | `## What it leaves` | bullets | what the run leaves standing behind it |
@@ -48,8 +48,8 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
   parent's history make it, in a batch its own build, request and return; each says when it was
   read, and one the tree does not confirm reads unknown.
 - **`Review coverage`** — `multi-review`'s own rows, unfolded, the slice in a column of its own
-  where a run has several: a reviewer that could not run, ran over nothing or ran over the wrong
-  range is a gap, a structural one — its own fixed limit — labelled as such.
+  where a run has several: a source that could not run, ran over nothing or ran over the wrong
+  range is a gap, and one deliberately left out is `n/a`, its reason beside it.
 - **`Issues`** — closed, or still open and why: a merged slice does not say what became of its issue.
 - **`What it leaves`** — any ref a completion could not retire and why
   ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions this run is done

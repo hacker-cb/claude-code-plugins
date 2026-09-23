@@ -60,9 +60,7 @@ The conductor plans the round, starts Codex as a background process and one
 `hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups
 what was handed in, has every group it can afford checked by `hcb-dev:findings:verifier`, runs
 the sweep where the rung has one, and builds the result. **A conductor launched on a round
-already under way resumes it**: the tasks `wait --for tasks` still lists are the only ones
-started, a round `merge` calls `grouped` is not grouped again, and one it calls `queued` is not
-queued again.
+already under way resumes it**, starting only what the store still lacks.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, in the
@@ -87,7 +85,12 @@ node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 ## The rung
 
 `high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger
-budget of checks, and a sweep for what the first pass missed. The rung's angles and numbers are
+budget of checks, and a sweep for what the first pass missed. An entry weighing risk takes `high`
+where the change reaches past itself (public interface, shared helper, config, schema, wire
+format), cannot be walked back (it writes, migrates, publishes, or persists a format someone else
+reads), meets input whose shape you do not control, has nothing else checking it, removes a guard,
+an error path or a test, or touches paths the project marks sensitive; anything else, mechanics
+with no behaviour change among it, stays at `medium`. The rung's angles and numbers are
 data in the plugin's angle catalog, read by `plan`, never chosen by the one running the round;
 Codex's model and its ladder come from Codex's own catalog. For more than `high` buys, or where
 a round reads thin for the ground the change covers, offer the user the built-in `/code-review`
