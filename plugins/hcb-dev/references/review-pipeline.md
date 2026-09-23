@@ -64,13 +64,13 @@ the sweep where the rung has one, and builds the result. **A conductor launched 
 already under way resumes it**, starting only what the store still lacks.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
-round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, in the
-background, where the plan has one; then each finder task's brief, the change and the code as the
-brief says — a file by its `n`, and a file's history by the path the brief gives it, read in the
-same block and passed after `--` — and the candidates handed in through `add`, a secret named
-where it sits and never by its value; then `wait` until the Codex task has answered, `merge`,
-`units`, `queue` — which checks nothing here, and lets a carried verdict stand — and `result`.
-Nothing is checked, and the result says so.
+round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, a Bash
+call with `run_in_background: true`, where the plan has one; then each finder task's brief, the
+change and the code as the brief says — a file by its `n`, and a file's history by the path the
+brief gives it, read in the same block and passed after `--` — and the candidates handed in
+through `add`, a secret named where it sits and never by its value; then `wait` until the Codex
+task has answered, `merge`, `units`, `queue` — which checks nothing here, and lets a carried
+verdict stand — and `result`. Nothing is checked, and the result says so.
 
 ```bash
 node "<plugin root>/scripts/review-round.mjs" plan --round "<round>" --depth

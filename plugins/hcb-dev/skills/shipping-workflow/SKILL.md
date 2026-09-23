@@ -121,8 +121,7 @@ of step 0 — per
    findings this work noticed and left unfixed — a caller's threaded in, and the
    ones this session turned up — each with its verdict where one was made: the
    round checks them beside its own, and what it rules on them takes the exits
-   step 5 gives any finding. A wave's batch hands none: its findings return
-   unverified (`hcb-dev:wave-worker`). Every source `multi-review` opens runs, the round's
+   step 5 gives any finding. Every source `multi-review` opens runs, the round's
    agents included; a source left out on account of a rule about subagents is a
    row in the gate below, never a judgement call made here.
 5. **Apply the fixes, then commit them** — that skill reports, it does not fix.

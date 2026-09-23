@@ -80,14 +80,13 @@ effort level its body states — the level as a fact about that round, never as 
 
 ## Classifying, fixing, replying
 
-The ladder and what each tier costs are
-[`../../../references/findings.md`](../../../references/findings.md)'s. What is this reviewer's
-own: **Copilot does not tag severity consistently** — where it labels a finding, take the label;
-otherwise rate it yourself by that reference. **Critical** and **Important** are fixed in the
-loop unconditionally. A `Minor` goes through that same reference and whatever passes is fixed
-here too, riding the next substantive push where one is still to come; what a `Minor` never does
-is spend the loop's iteration budget, which is for what blocks the exit. Only what the reference
-turns down goes into the end-of-session report, under its category.
+The ladder and what each tier costs are [`../../../references/findings.md`](../../../references/findings.md)'s.
+What is this reviewer's own: **Copilot does not tag severity consistently** — where it labels a
+finding, take the label; otherwise rate it yourself by that reference. **Critical** and
+**Important** are fixed in the loop unconditionally. A `Minor` goes through that same reference
+and whatever passes is fixed here too, riding the next substantive push where one is still to
+come; what a `Minor` never does is spend the loop's iteration budget, which is for what blocks the
+exit. Only what the reference turns down goes into the end-of-session report, under its category.
 
 **A push that would spend a standing approval is a fork, not a cost.** Where the base dismisses
 stale reviews on push and that approval is what closes its approval requirement, the next push

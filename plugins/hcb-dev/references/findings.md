@@ -83,9 +83,9 @@ Every finding then ends in exactly one outcome, named when it is proposed:
 | **DROP** | nothing written to the tracker: named with its reason, in the report where the run writes one — `carried by <the row whose work takes it>` being one such reason |
 
 `Critical` and `Important` on the code this work is writing are **FIX**, blocking completion until
-they are; `Minor` on that code is **FIX** where the fix rides a reading happening anyway and
-**DROP** otherwise. Out of scope, severity decides how loudly a finding travels rather than
-whether — one severe enough stops the run instead of being carried or handed to other work.
+they are, save one a check refuted; `Minor` on that code is **FIX** where the fix rides a reading
+happening anyway and **DROP** otherwise. Out of scope, severity decides how loudly a finding travels
+rather than whether — one severe enough stops the run instead of being carried or handed to other work.
 
 **Ranked, not enumerated.** Candidates out of one run are ranked against each other, never listed
 in the order found, and `Critical` never enters that ranking: it travels whatever else does. Under
@@ -99,7 +99,7 @@ against the tracker; absent such an authority, the run's own end is that pass. T
 `hcb-dev:findings-pass`, and it **verifies before it rules**: every candidate re-measured by a check
 that never saw the finder's argument, or carrying a verdict whose every file is unchanged
 ([`verification.md`](verification.md)); one noticed before the work's review round goes into it as
-`noticed`, a wave's batch aside, and comes out with its verdict. **Fixing never waits for it**:
+`noticed`, and comes out with its verdict. **Fixing never waits for it**:
 **FIX** and **HAND OVER** are settled where the finding is found.
 
 **The same finding twice.** A finding is identified by `(file, line)` **and** by mechanism:
