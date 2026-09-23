@@ -26,6 +26,14 @@
         }
       }
     },
+    "source_notes": {
+      "description": "Words every angle of a source ends with, keyed by the source, where it has some: what its angles share, and what is not a candidate for it. review-round.mjs checks each key is a source.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "tasks": {
       "type": "object",
       "additionalProperties": {

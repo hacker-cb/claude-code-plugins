@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "bytes": {
+        "menu.txt": "Y2Fm6Qo="
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "bytes": {
+        "menu.txt": "Y2Fm6SBhdSBsYWl0Cg=="
+      }
+    }
+  ]
+}

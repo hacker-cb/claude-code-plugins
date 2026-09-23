@@ -7,7 +7,7 @@
     {
       "on": "feature",
       "write": {
-        "lib/helpers.sh": "say() { printf '%s\\n' \"$1\"; }\n",
+        "lib/helpers.sh": "say() { printf '%s\\n' \"$1\"; }\nhush() { :; }\n",
         "quo\"te.sh": "echo quoted\n"
       },
       "remove": ["lib/util.sh"]

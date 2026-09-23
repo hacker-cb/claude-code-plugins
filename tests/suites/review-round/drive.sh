@@ -22,6 +22,8 @@
 #                          path a manifest's word splitting would cut
 #   @show <name>           a step: prints what a stub kept beside its marker as <name> —
 #                          the codex stub's codex-stdin, codex-schema, codex-argv
+#   @stdout <step>         a step: that step with its stderr dropped — what a pipe reading
+#                          its output is handed
 #   INSIDE_REPO=1          environment: TMPDIR is put inside the scratch repository
 #   ROUNDS_ROOT=<kind>     environment: $TMPDIR/hcb-review is there before the case — as a
 #                          `link` to another directory, a directory anyone can write
@@ -118,6 +120,8 @@ for ((n = 0; n < count; n++)); do
     esac
     continue
   fi
+  piped=""
+  if [ "${words[0]}" = "@stdout" ]; then piped=1; words=("${words[@]:1}"); fi
   args=()
   for w in "${words[@]}"; do
     case "$w" in
@@ -142,7 +146,7 @@ for ((n = 0; n < count; n++)); do
       *) args+=("$w") ;;
     esac
   done
-  out=$(node "$script" "${args[@]}" 2>&1)
+  if [ -n "$piped" ]; then out=$(node "$script" "${args[@]}" 2>/dev/null); else out=$(node "$script" "${args[@]}" 2>&1); fi
   code=$?
   if [ "${words[0]}" = init ] && [ "$code" = 0 ]; then round=$(printf '%s' "$out" | jq -r '.round // empty'); fi
   [ "$code" != 0 ] || [ "$n" = $((count - 1)) ] && emit "$out" "$code"

@@ -29,7 +29,8 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
 2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
-   the rung; `codex`, one pass of the Codex CLI at the rung's level for it — a narrowing,
+   the rung; `security`, a finder per security angle of the rung; `codex`, one pass of the Codex
+   CLI at the rung's level for it — a narrowing,
    `--narrow "<a path, or a focus>"`, where the caller gave one, and a Codex model or level the
    caller named, as `--codex-model` and `--codex-effort`. Read the answer's `warnings` before
    anything else: an untracked file named there is outside the review — say so, and offer
@@ -65,15 +66,21 @@ queued again.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, in the
-background, where the plan has one; then each finder task's brief, the change and the code as the brief
-says, the candidates handed in through `add`; then `wait` until the Codex task has answered,
-`merge`, `units`, `queue` — which checks nothing here, and lets a carried verdict stand — and
-`result`. Nothing is checked, and the result says so.
+background, where the plan has one; then each finder task's brief, the change and the code as the
+brief says — a file by its `n`, and a file's history by the path the brief gives it, read in the
+same block and passed after `--` — and the candidates handed in through `add`, a secret named
+where it sits and never by its value; then `wait` until the Codex task has answered, `merge`,
+`units`, `queue` — which checks nothing here, and lets a carried verdict stand — and `result`.
+Nothing is checked, and the result says so.
 
 ```bash
 node "<plugin root>/scripts/review-round.mjs" plan --round "<round>" --depth
 node "<plugin root>/scripts/review-round.mjs" codex --round "<round>"
 node "<plugin root>/scripts/review-round.mjs" brief --round "<round>" --task "<task>"
+node "<plugin root>/scripts/review-round.mjs" diff --round "<round>" --number "<n>"
+node "<plugin root>/scripts/review-round.mjs" show --round "<round>" --number "<n>"
+P="$(node "<plugin root>/scripts/review-round.mjs" brief --round "<round>" --task "<task>" | jq -r --argjson n "<n>" '.scope.files[] | select(.n == $n) | .path')"
+git log --oneline -- "$P"
 node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 ```
 

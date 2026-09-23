@@ -10,6 +10,7 @@
         "reuse",
         "simplification",
         "project-rules",
+        "security",
         "codex"
       ],
       "sweep": null,
@@ -33,6 +34,8 @@
         "efficiency",
         "altitude",
         "project-rules",
+        "security-input",
+        "security-access",
         "codex"
       ],
       "sweep": "sweep",
@@ -42,6 +45,9 @@
         "minutes": 45
       }
     }
+  },
+  "source_notes": {
+    "security": "Input from outside is what someone other than the person running the code controls — a request and its headers, a file from elsewhere, the change under review, a repository's own configuration, another program's output — and where it is used is a command line or a string a shell runs, a query, a file path, a template, a deserializer, an eval or a dynamic import, a page a browser renders, an instruction an agent will follow. None of these is a candidate here: harm only by volume, a race only in theory, hardening no input can exploit, an outdated dependency, memory safety in a language that guarantees it, a request whose path alone is steered, text placed into a model's prompt as content, a secret on disk the system already guards, a missing audit log, code only tests run, prose nothing follows — a skill's or an agent's instructions are followed, and are not that. A secret written into the change is a candidate wherever it sits, a test or a document included."
   },
   "tasks": {
     "line-by-line": {
@@ -105,6 +111,24 @@
       "reads": "rules",
       "text": "Read the rules this repository writes for itself that govern the changed paths — the brief lists the files: its CLAUDE.md files, at the root and in the directories above each changed file, and its .claude/rules files, whose own header says which paths each covers. Flag a line of the change that breaks one of those rules only where you can quote both: the rule, with its file, and the line that breaks it. A preference the rules do not state is not a violation. Where no rule file governs the change, submit an empty list."
     },
+    "security": {
+      "source": "security",
+      "kind": "finder",
+      "category": "security",
+      "text": "Look for a vulnerability the change brings in, and only that: input from outside reaching where it is used with nothing on the way that stops it; a check of who may do something that the change weakens, skips or moves after the act it guards; a secret written into code, a log or an answer; cryptography chosen weak or built by hand. A candidate names the input or the gap, the path it travels and what an attacker gains — code run, data read or changed, a check passed."
+    },
+    "security-input": {
+      "source": "security",
+      "kind": "finder",
+      "category": "security",
+      "text": "Follow every input from outside that the change reads to where it is used, and look for the one that gets there with nothing on the way that stops it. A candidate names the input, the path it travels and what an attacker gains — code run, data read or written, a check passed."
+    },
+    "security-access": {
+      "source": "security",
+      "kind": "finder",
+      "category": "security",
+      "text": "Look at who may do what the change touches, and what leaves it: a check of identity or permission the change weakens, skips, or moves after the act it guards; a privilege granted wider or held longer than the work needs; a token, key or password written into code, a log, an error or an answer, or compared in a way that leaks it; cryptography chosen weak or built by hand — a fixed nonce, a predictable random, a certificate never verified; personal or secret data sent somewhere it did not go before. A candidate names what an attacker, or a reader who should not see it, gets and how."
+    },
     "sweep": {
       "source": "claude",
       "kind": "sweep",
@@ -116,7 +140,7 @@
       "source": "codex",
       "kind": "codex",
       "category": "correctness",
-      "text": "Review the change below for defects it introduces or leaves standing: a condition that is wrong for some input, a value used where it can be absent, a guarantee the old code gave that the new code dropped, a caller the change breaks, input that reaches a command, a query or a path unchecked, work repeated for nothing, code that does again what the repository already does, a rule the repository's own CLAUDE.md or .claude/rules state that a line breaks. Read the code around each hunk and whatever it calls or is called by before you call anything a defect; the code as it was is `git show <merge base>:<path>`. Only read — run nothing the change touches. A candidate is a defect whose failure you can name: the input or state, and the wrong result or the cost. Hand in the half-believed ones too — an independent check decides each — and nothing that is only a taste."
+      "text": "Review the change below for defects it introduces or leaves standing: a condition that is wrong for some input, a value used where it can be absent, a guarantee the old code gave that the new code dropped, a caller the change breaks, input that reaches a command, a query or a path unchecked, work repeated for nothing, code that does again what the repository already does, a rule the repository's own CLAUDE.md or .claude/rules state that a line breaks. Read the code around each hunk and whatever it calls or is called by before you call anything a defect. Only read — run nothing the change touches. A candidate is a defect whose failure you can name: the input or state, and the wrong result or the cost. Hand in the half-believed ones too — an independent check decides each — and nothing that is only a taste."
     }
   }
 }

@@ -27,10 +27,10 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 ```
 
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
-`scope` is the change: its base, its files with the lines each adds and removes, and any
-narrowing the caller asked for. `read` says how to reach each side of it. A `rules` list,
-where the brief has one, is the rule files to read; a `listed` one is what an earlier pass
-already found.
+`scope` is the change: its base, its files — each numbered `n`, with the lines it adds and
+removes — and any narrowing the caller asked for. `read` says how to reach each side of it. A
+`rules` list, where the brief has one, is the rule files to read; a `listed` one is what an
+earlier pass already found.
 
 ## 2. Read the change, then the code around it
 
@@ -39,10 +39,37 @@ ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND"
 ```
 
-Add `--file "<path>"` to read one file of it, and do that for a large change rather than
-reading the whole at once. The code as it is now is the working tree: read it with Read,
-Grep and Glob. The code as it was is `git show <merge base>:<path>`, the merge base being
-the brief's `scope.merge_base`.
+For a large change, read it a file at a time instead, by the file's `n`:
+
+```bash
+ROUND="<the round id from your prompt>"
+N="<the file's n from the brief>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND" --number "$N"
+```
+
+The code as it is now is the working tree: read it with Read, Grep and Glob. The code a file
+had before the change is `show`, for a file whose removed or rewritten lines you need to see
+in place:
+
+```bash
+ROUND="<the round id from your prompt>"
+N="<the file's n from the brief>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --number "$N"
+```
+
+A file's history takes its path from the brief, read in the same block, and after `--`:
+
+```bash
+ROUND="<the round id from your prompt>"
+TASK="<the task id from your prompt>"
+N="<the file's n from the brief>"
+P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --task "$TASK" \
+  | jq -r --argjson n "$N" '.scope.files[] | select(.n == $n) | .path')"
+git log --oneline -- "$P"
+```
+
+Any other path you put into a command yourself goes in single-quoted, a quote inside it
+written `'\''`, and after `--`.
 
 **Only read.** Never run the code under review, its build, its tests or its scripts, and
 never write a file: the one thing you write is your answer, through `add`. Git only in its
@@ -67,6 +94,9 @@ of them, and one you drop is one nobody checks.
 | `failure_scenario` | the input or state and what then goes wrong; for a cleanup, the concrete cost — what is duplicated, wasted or harder to change, or the rule and the line that breaks it |
 | `severity` | `Critical` — security, data loss or corruption, a crash, broken core behaviour; `Important` — a real logic bug, a wrong result in a plausible case, a leak, a missing error path on a likely path, a broken contract; `Minor` — anything lighter, cleanup included |
 | `category` | `correctness`, `security`, `reuse`, `simplification`, `efficiency`, `altitude` or `project-rules` — the brief's `category` unless the defect is plainly of another kind |
+
+Where a secret is the defect, name where it sits, never its value: what you write travels on
+into reports and trackers.
 
 ## 4. Hand them in
 

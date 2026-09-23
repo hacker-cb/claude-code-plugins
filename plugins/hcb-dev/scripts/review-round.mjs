@@ -15,7 +15,8 @@
 //   node review-round.mjs init --mode pass [--tree worktree|<ref>] [--language <tag>]
 //   node review-round.mjs plan    --round <id> [--depth]
 //   node review-round.mjs brief   --round <id> --task <task>
-//   node review-round.mjs diff    --round <id> [--file <path>]
+//   node review-round.mjs diff    --round <id> [--number <n>]
+//   node review-round.mjs show    --round <id> (--number <n> | --unit <unit>)
 //   node review-round.mjs add     --round <id> --source <source> [--task <task>] [--file <json>]
 //   node review-round.mjs codex   --round <id> [--timeout-s <n>]
 //   node review-round.mjs status  --round <id> --task <task> [--state partial|unavailable]
@@ -30,7 +31,8 @@
 //   node review-round.mjs result  --round <id>
 //
 // The JSON `add`, `units` and `verdict` take arrives on stdin, or from `--file`. `diff`
-// prints the change itself, as git wrote it; everything else prints JSON.
+// prints the change as git wrote it and `show` a file as one side holds it, byte for byte,
+// their refusals going to stderr; everything else prints JSON.
 // Exit: 0 answered; 1 a submission refused, the errors saying what to fix; 2 called
 // wrong; 3 the round or the repository could not be read.
 
@@ -46,21 +48,26 @@ import { fileURLToPath } from 'node:url';
 import { text, writeAll } from './lib/forge.mjs';
 import { schemaDir, validate } from './lib/schema.mjs';
 
-const PLUGIN = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SCRIPT = fileURLToPath(import.meta.url);
+const PLUGIN = path.join(path.dirname(SCRIPT), '..');
 const load = schemaDir(path.join(PLUGIN, 'schemas'));
 
-const USAGE = 'usage: node review-round.mjs <init|plan|brief|diff|add|codex|status|merge|units|queue|task|verdict|wait|result> [flags]'
-  + ' — see the header of this file\n';
 const die = (m) => { writeAll(2, `review-round: ${m}\n${USAGE}`); process.exit(2); };
 const answer = (obj, code = 0) => { writeAll(1, `${JSON.stringify(obj, null, 2)}\n`); process.exit(code); };
-const cannot = (reason) => answer({ read: false, reason }, 3);
+// `diff` and `show` print a file: a refusal of theirs goes where a pipe does not pass it on as one.
+const cannot = (reason) => {
+  if (!['diff', 'show'].includes(cmd)) answer({ read: false, reason }, 3);
+  writeAll(2, `${JSON.stringify({ read: false, reason }, null, 2)}\n`);
+  process.exit(3);
+};
 const refuse = (errors, extra = {}) => answer({ accepted: false, errors, ...extra }, 1);
 
 const SPEC = {
   init: ['--mode', '--base', '--tree', '--rung', '--sources', '--language', '--narrow', '--codex-model', '--codex-effort'],
   plan: ['--round', '--depth'],
   brief: ['--round', '--task'],
-  diff: ['--round', '--file'],
+  diff: ['--round', '--number'],
+  show: ['--round', '--number', '--unit'],
   add: ['--round', '--source', '--task', '--file'],
   codex: ['--round', '--timeout-s'],
   status: ['--round', '--task', '--state', '--model', '--note'],
@@ -72,6 +79,7 @@ const SPEC = {
   wait: ['--round', '--for', '--expect', '--timeout-s'],
   result: ['--round'],
 };
+const USAGE = `usage: node review-round.mjs <${Object.keys(SPEC).join('|')}> [flags] — see the header of this file\n`;
 const [cmd, ...argv] = process.argv.slice(2);
 if (!cmd || !SPEC[cmd]) die(cmd ? `unknown subcommand '${cmd}'` : 'a subcommand is required');
 // A switch is answered by being there, and takes no value.
@@ -115,6 +123,9 @@ const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
 // A revision git is to read — a branch, a tag, a sha, `HEAD~1` — held only to never
 // reading as an option; whether it names anything is git's to say where it is resolved.
 const revOk = (v) => typeof v === 'string' && v !== '' && !v.startsWith('-') && !/[\u0000-\u001f\u007f]/.test(v);
+// A path handed on inside a command is single-quoted, a quote in it closed and escaped, so
+// the shell never reads it as anything but one word.
+const sq = (v) => `'${v.replaceAll("'", `'\\''`)}'`;
 const real = (p) => { try { return realpathSync(p); } catch { return null; } };
 const inside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
@@ -157,31 +168,32 @@ function checkRoot(root) {
 
 // Raw output, not trimmed: a line count taken after a trim is short by the blank lines
 // the trim ate, and an anchor on the last line of such a file would read as outside it.
-const gitIn = (cwd) => (args, input) => {
+// `bytes` keeps what git printed as bytes, for a file shown as it is stored.
+const gitIn = (cwd) => (args, input, bytes = false) => {
   const r = spawnSync('git', args, {
     cwd,
     input,
-    encoding: 'utf8',
+    encoding: bytes ? 'buffer' : 'utf8',
     maxBuffer: 64 * 1024 * 1024,
     // A clean filter of the checkout's own — git-lfs, a normalizer — runs inside
     // `hash-object`, and one that hangs would hold the whole round with it.
     timeout: 120_000,
     env: { ...process.env, LC_ALL: 'C', LANG: 'C', LC_MESSAGES: 'C', GIT_OPTIONAL_LOCKS: '0' },
   });
-  return { ok: r.status === 0, code: r.status, out: r.stdout || '', err: (r.stderr || '').trim() };
+  return {
+    ok: r.status === 0,
+    code: r.status,
+    out: r.stdout || (bytes ? Buffer.alloc(0) : ''),
+    err: String(r.stderr || '').trim() || (r.error?.message ?? ''),
+  };
 };
 
-// The checkout under review, and the directories nothing of a round may live in.
+// The checkout under review.
 function repository() {
-  const here = gitIn(process.cwd());
-  const top = here(['rev-parse', '--show-toplevel']);
+  const top = gitIn(process.cwd())(['rev-parse', '--show-toplevel']);
   if (!top.ok) cannot('not inside a git working tree — there is no tree to review');
   const dir = real(top.out.trim());
-  const git = gitIn(dir);
-  const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir']);
-  const own = git(['rev-parse', '--absolute-git-dir']);
-  if (!common.ok || !own.ok) cannot(`the git directories of ${dir} could not be resolved`);
-  return { top: dir, git, guarded: [dir, real(common.out.trim()), real(own.out.trim())].filter(Boolean) };
+  return { top: dir, git: gitIn(dir) };
 }
 
 function openRound() {
@@ -330,8 +342,10 @@ function catalog() {
   try { c = readJson(file); } catch (e) { cannot(`the angle catalog ${file} cannot be read: ${e.message}`); }
   const bad = validate(load, 'review-angles.json', null, c).map((e) => `${e.at || '/'} ${e.message}`);
   if (!bad.length) {
-    // What the schema cannot say: a task's id is a task id, and every task a rung names exists.
+    // What the schema cannot say: a task's id is a task id, every task a rung names exists,
+    // and a note speaks for a source a round can be opened with.
     for (const id of Object.keys(c.tasks)) if (!TASK_ID.test(id)) bad.push(`task id '${id}'`);
+    for (const src of Object.keys(c.source_notes ?? {})) if (!SOURCES.includes(src)) bad.push(`source_notes: no source '${src}'`);
     for (const [name, r] of Object.entries(c.rungs)) {
       for (const id of [...r.tasks, ...(r.sweep ? [r.sweep] : [])]) if (!Object.hasOwn(c.tasks, id)) bad.push(`${name}: no task '${id}'`);
       // A rung runs one Codex pass at most, and says how: its level, its limit, its watchdog.
@@ -339,11 +353,16 @@ function catalog() {
       if (passes.length > 1) bad.push(`${name}: more than one codex task`);
       if (passes.length && !r.codex) bad.push(`${name}: a codex task and no codex settings`);
       if (r.sweep && c.tasks[r.sweep] && c.tasks[r.sweep].kind !== 'sweep') bad.push(`${name}: sweep '${r.sweep}' is not of kind sweep`);
+      // Every source a round can be opened for reviews on every rung.
+      for (const src of SOURCES) if (!r.tasks.some((id) => c.tasks[id]?.source === src)) bad.push(`${name}: no task for source '${src}'`);
     }
   }
   if (bad.length) cannot(`the angle catalog ${file} is malformed: ${bad.join('; ')}`);
   return c;
 }
+// An angle in the catalog's words, ended by its source's own notes — for a finder's brief
+// and for the Codex pass alike.
+const angleOf = (c, id) => [c.tasks[id].text, c.source_notes?.[c.tasks[id].source]].filter(Boolean).join(' ');
 // The sources whose one task is the Codex pass: in a round, only the pass hands in for them.
 const passSources = () => new Set(Object.values(catalog().tasks).filter((t) => t.kind === 'codex').map((t) => t.source));
 
@@ -359,14 +378,15 @@ function treeOf(req, side) {
   return req.tree.kind === 'ref' ? { ref: req.tree.sha } : { worktree: true };
 }
 
-function readAt(repo, req, file, side) {
+// A file as one side holds it — as text, or with `bytes` as the bytes stored.
+function readAt(repo, req, file, side, bytes = false) {
   if (!relOk(file)) return { missing: `'${file}' is not a path relative to the repository root` };
   const tree = treeOf(req, side);
   if (tree.none) return { missing: tree.none };
   // `cat-file blob`, never `show`: a path in a tree can name a directory, and `show`
   // would print its listing as though it were the file's lines.
   if (tree.ref) {
-    const r = repo.git(['cat-file', 'blob', `${tree.ref}:${file}`]);
+    const r = repo.git(['cat-file', 'blob', `${tree.ref}:${file}`], undefined, bytes);
     return r.ok ? { text: r.out } : { missing: `${file} is not a file in ${tree.ref.slice(0, 7)}` };
   }
   const abs = path.join(repo.top, file);
@@ -381,7 +401,8 @@ function readAt(repo, req, file, side) {
   if (req.mode === 'round' && repo.git(['--literal-pathspecs', 'ls-files', '-z', '--', file]).out === '') {
     return { missing: `${file} is not tracked — a round reviews tracked files only` };
   }
-  return { text: link ? readlinkSync(abs) : readFileSync(resolved, 'utf8') };
+  if (link) return { text: readlinkSync(abs, { encoding: bytes ? 'buffer' : 'utf8' }) };
+  return { text: readFileSync(resolved, bytes ? null : 'utf8') };
 }
 
 // One process per call answers each (side, path) once: a file several verdicts read is
@@ -462,9 +483,14 @@ function init() {
   if (treeArg && treeArg !== 'worktree' && !revOk(treeArg)) die(`--tree '${treeArg}' reads as an option, or carries a control character`);
 
   const repo = repository();
+  // The directories nothing of a round may live in: the checkout and its git directories.
+  const common = repo.git(['rev-parse', '--path-format=absolute', '--git-common-dir']);
+  const own = repo.git(['rev-parse', '--absolute-git-dir']);
+  if (!common.ok || !own.ok) cannot(`the git directories of ${repo.top} could not be resolved`);
+  const guarded = [repo.top, real(common.out.trim()), real(own.out.trim())].filter(Boolean);
   const root = roundsRoot();
   if (!root) cannot('the temp directory does not resolve to a directory');
-  for (const g of repo.guarded) {
+  for (const g of guarded) {
     if (inside(root, g)) cannot(`TMPDIR is inside the repository under review (${g}) — a round kept there becomes part of the change it reviews`);
   }
   try {
@@ -523,7 +549,10 @@ function init() {
       const from = tokens[i + 1];
       const to = moved ? tokens[i + 2] : tokens[i + 1];
       i += moved ? 3 : 2;
-      files.push({ path: to, from: moved ? from : undefined, status: status[0], blob_base: status[0] === 'A' ? null : srcBlob });
+      // Numbered once, here: the number is how every reader names a file to this script.
+      files.push({
+        n: files.length + 1, path: to, from: moved ? from : undefined, status: status[0], blob_base: status[0] === 'A' ? null : srcBlob,
+      });
     }
     const heads = new Map();
     const regular = [];
@@ -621,9 +650,7 @@ function plan() {
   const tasks = rung.tasks.filter((id) => wanted.includes(c.tasks[id].source)).map(entry);
   // Without agents there are no checks, and the sweep only exists to follow them.
   const sweep = rung.sweep && !depth && wanted.includes(c.tasks[rung.sweep].source) ? entry(rung.sweep) : null;
-  const notes = wanted.filter((src) => !tasks.some((t) => t.source === src))
-    .map((src) => `the catalog holds no ${round.req.rung} task for source '${src}' — its coverage row reads unavailable`);
-  const p = { rung: round.req.rung, depth, budget: rung.budget, tasks, sweep, notes, planned_at: new Date().toISOString() };
+  const p = { rung: round.req.rung, depth, budget: rung.budget, tasks, sweep, planned_at: new Date().toISOString() };
   writeJson(planFile(round), p);
   answer({ read: true, round: round.id, ...p });
 }
@@ -712,14 +739,15 @@ function brief() {
   const t = plannedTasks(p).find((x) => x.task === id);
   if (!t) cannot(`${id} is not a task of round ${round.id}'s plan`);
   if (t.kind === 'codex') die(`${id} is the Codex pass — the codex subcommand runs it; a brief is a finder's`);
-  const spec = catalog().tasks[id];
+  const c = catalog();
+  const spec = c.tasks[id];
   const { req } = round;
   const out = {
     round: round.id,
     task: id,
     source: t.source,
     language: req.language,
-    angle: spec.text,
+    angle: angleOf(c, id),
     category: t.category,
     limit: t.limit,
     scope: {
@@ -727,14 +755,15 @@ function brief() {
       merge_base: req.base.merge_base,
       snapshot: req.snapshot,
       narrow: req.narrow,
+      // Numbered: a file is named to the script by its n, so no path is ever typed into a command.
       files: req.files.map((f) => ({
-        path: f.path, from: f.from ?? null, status: f.status, added: f.added ?? null, removed: f.removed ?? null,
+        n: f.n, path: f.path, from: f.from ?? null, status: f.status, added: f.added ?? null, removed: f.removed ?? null,
       })),
     },
     read: {
-      diff: `review-round.mjs diff --round ${round.id}, or with --file <path> for one file of it`,
+      diff: 'the subcommand diff — the whole change, or one file of it with --number <n>',
       head: 'the working tree as it stands — read the files directly',
-      base: `git show ${req.base.merge_base}:<path> — the code as it was before the change`,
+      base: 'the subcommand show --number <n> — a file of the change as it was before it',
     },
     submit: `review-round.mjs add --round ${round.id} --source ${t.source} --task ${id}`,
   };
@@ -749,14 +778,48 @@ function brief() {
 function diff() {
   const round = openRound();
   if (round.req.mode !== 'round') die('diff belongs to --mode round — a pass has no change to show');
+  const f = opts['--number'] !== undefined ? nth(round) : null;
   const text = readFileSync(path.join(round.dir, 'change.diff'), 'utf8');
-  const file = opts['--file'];
-  if (file === undefined) { writeAll(1, text); process.exit(0); }
-  // Every chunk of the path: a file turned into a link, or back, is a deletion and a creation.
-  const chunks = diffChunks(text).filter((k) => k.path === file || k.from === file);
-  if (!chunks.length) cannot(`${file} is not a file of round ${round.id}'s change`);
+  if (!f) { writeAll(1, text); process.exit(0); }
+  // Every chunk of the file, and only its own: one turned into a link, or back, is a deletion
+  // and a creation, while a copy made from it is another file.
+  const chunks = diffChunks(text).filter((k) => k.path === f.path);
+  if (!chunks.length) cannot(`file ${f.n}, ${f.path}, has no chunk in round ${round.id}'s diff`);
   writeAll(1, chunks.map((k) => k.text).join(''));
   process.exit(0);
+}
+
+// The file of the round's change the brief numbers n.
+function nth(round) {
+  const n = opts['--number'];
+  if (!/^[1-9][0-9]*$/.test(n ?? '')) die('--number is a file\'s n in the brief: 1 or more');
+  const f = round.req.files.find((x) => x.n === Number(n));
+  if (!f) cannot(`round ${round.id}'s change has ${round.req.files.length} file(s), and no file ${n}`);
+  return f;
+}
+
+// ---------------------------------------------------------------------------------- show
+// A file as one side of the round holds it, printed byte for byte: the n-th file of the change
+// as it was, or a group's coordinate on its own side. Nothing here takes a path, so nothing an
+// agent types into a command carries one.
+function show() {
+  const round = openRound();
+  const byUnit = opts['--unit'] !== undefined;
+  if (byUnit === (opts['--number'] !== undefined)) die('show takes --number or --unit');
+  const print = (at) => {
+    if (at.missing) cannot(at.missing);
+    writeAll(1, at.text);
+    process.exit(0);
+  };
+  if (byUnit) {
+    const u = queued(round, opts['--unit']);
+    print(readAt(checkoutOf(round), round.req, u.file, u.side, true));
+  }
+  if (round.req.mode !== 'round') die('show --number belongs to --mode round — a pass has no change to number');
+  const f = nth(round);
+  if (!f.blob_base) cannot(`${f.path} has no side before the change: it was added by it, or is not a file`);
+  // The merge base is fixed, so its side reads the same from wherever this runs.
+  print(readAt({ top: round.req.top, git: gitIn(round.req.top) }, round.req, f.from ?? f.path, 'base', true));
 }
 
 // -------------------------------------------------------------------------------- status
@@ -948,19 +1011,19 @@ function codexPrompt(round, text, limit, rules, inline) {
   // read from the round itself — the same frozen diff, renames and all — so a change larger
   // than a model's context is still reviewed.
   const shown = [];
-  const named = [];
+  const named = new Set();
   let used = 0;
+  const number = new Map(req.files.map((f) => [f.path, f.n]));
   for (const k of diffChunks(readFileSync(path.join(round.dir, 'change.diff'), 'utf8'))) {
     const size = Buffer.byteLength(k.text);
-    if (used + size <= inline) { shown.push(k.text); used += size; } else named.push(k.path);
+    if (used + size <= inline) { shown.push(k.text); used += size; } else named.add(k.path);
   }
-  // Quoted for the shell the command runs in: a path is whatever a filesystem allows.
-  const sq = (v) => `'${v.replaceAll("'", `'\\''`)}'`;
-  const reader = `node ${sq(fileURLToPath(import.meta.url))} diff --round ${round.id} --file <path>`;
+  const script = `node ${sq(SCRIPT)}`;
   return [
-    text.replaceAll('<merge base>', mb),
+    text,
     '',
-    `The change: from ${req.base.ref} (merge base ${mb}) to the working tree as it stands — ${req.files.length} file(s).`,
+    `The change: from ${req.base.ref} (merge base ${mb}) to the working tree as it stands — ${req.files.length} file(s), each with its n: ${req.files.map((f) => `${f.n} ${f.path}`).join(', ')}.`,
+    `One file of the change is \`${script} diff --round ${round.id} --number <n>\`, and the code it had before the change \`${script} show --round ${round.id} --number <n>\`; the code as it is now is the working tree.`,
     req.narrow ? `The caller narrowed the review: ${req.narrow}` : null,
     rules.length ? `The repository's own rules for these paths: ${rules.join(', ')}.` : null,
     '',
@@ -969,10 +1032,11 @@ function codexPrompt(round, text, limit, rules, inline) {
     `- summary: the defect in one sentence, at most ${cand.summary.maxLength} characters; failure_scenario: the input or state and what then goes wrong, or for a cleanup its concrete cost, at most ${cand.failure_scenario.maxLength} characters — both written in the language tagged ${req.language};`,
     '- severity: Critical for security, data loss or corruption, a crash, broken core behaviour; Important for a real logic bug, a wrong result in a plausible case, a leak, a missing error path on a likely path, a broken contract; Minor for anything lighter, cleanup included;',
     `- category: ${cand.category.enum.join(', ')}.`,
+    'Where a secret is the defect, name where it sits, never its value: what you write travels on into reports and trackers.',
     'With nothing to report, hand in an empty list.',
     'read_all: true when you read all you needed; false where something was out of reach — a command refused, a file you could not open — and then unread says what, in a sentence. unread is an empty string when read_all is true.',
     '',
-    named.length ? `The diff below leaves out ${named.length} file(s) for its size — read each with \`${reader}\`, the path quoted as it is here: ${named.map(sq).join(', ')}.` : null,
+    named.size ? `The diff below leaves out ${named.size} file(s) for its size — read each by its n: ${[...named].map((p) => number.get(p)).join(', ')}.` : null,
     shown.length ? 'The diff:' : null,
     shown.length ? shown.join('') : null,
   ].filter((l) => l !== null).join('\n');
@@ -1091,7 +1155,7 @@ async function codex() {
     writeJson(schema, codexSchema(planned.limit));
     // A share of the model's window where the catalog gives one, at four bytes a token.
     const inline = Number.isInteger(entry?.context_window) ? entry.context_window * 4 * INLINE_SHARE : INLINE_KB * 1024;
-    const prompt = codexPrompt(round, c.tasks[task].text, planned.limit, ruleFiles(repo, round.req.files), inline);
+    const prompt = codexPrompt(round, angleOf(c, task), planned.limit, ruleFiles(repo, round.req.files), inline);
     // Read-only and sessionless, on the model and level named here; the rest of the user's
     // own Codex config — its provider, its auth — stands. `-` takes the prompt from stdin,
     // which is also what stops the CLI waiting on a terminal that is not there. What it
@@ -1374,7 +1438,7 @@ function task() {
   const u = queued(round, opts['--unit']);
   const tree = treeOf(round.req, u.side);
   const readWith = tree.ref
-    ? `git show ${tree.ref}:<path> — this ${round.req.mode === 'round' ? 'base-side code is read at the merge base' : 'pass reads that commit'}, not the working tree`
+    ? `the coordinate through the subcommand show, any other file as git show '${tree.ref}:<path>' — this ${round.req.mode === 'round' ? 'base-side code is read at the merge base' : 'pass reads that commit'}, not the working tree`
     : 'the working tree as it stands — read files directly';
   answer({
     round: round.id,
@@ -1628,4 +1692,4 @@ function result() {
 // Exit 1 says a submission was refused and invites sending it again; a store file that
 // cannot be read is not that, so whatever escapes leaves as exit 3 with an answer.
 process.on('uncaughtException', (e) => cannot(`${cmd} could not be answered: ${e.message}`));
-({ init, plan, brief, diff, add, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();
+({ init, plan, brief, diff, show, add, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();
