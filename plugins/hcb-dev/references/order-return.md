@@ -20,9 +20,9 @@ lives in the tracker or in findings alone, findings naming the revision they
 were read at; every change request the work touched at the state it stopped at,
 and every issue with what became of it — opened, edited, commented, closed,
 gone — a line each, and one that no longer exists still gets its line; and what
-a review left uncovered or surfaced without fixing, each with its verdict where
-a check made one — a receiver given only the outcome reads the work as reviewed
-clean.
+a review left uncovered or surfaced without fixing, each finding a row of
+[`findings-table.md`](findings-table.md) — a receiver given only the outcome
+reads the work as reviewed clean.
 
 A return is itself a crossing prompt, and the envelope of
 [`session-prompts.md`](session-prompts.md) holds for it: the first line states

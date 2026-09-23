@@ -99,7 +99,7 @@ against the tracker; absent such an authority, the run's own end is that pass. T
 `hcb-dev:findings-pass`, and it **verifies before it rules**: every candidate re-measured by a check
 that never saw the finder's argument, or carrying a verdict whose every file is unchanged
 ([`verification.md`](verification.md)); one noticed before the work's review round goes into it as
-`noticed`, a wave's batch aside, and comes out with its verdict. **Fixing never waits for it**:
+`noticed`, and comes out with its verdict. **Fixing never waits for it**:
 **FIX** and **HAND OVER** are settled where the finding is found.
 
 **The same finding twice.** A finding is identified by `(file, line)` **and** by mechanism:
