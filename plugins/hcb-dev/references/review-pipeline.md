@@ -66,15 +66,18 @@ queued again.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, in the
-background, where the plan has one; then each finder task's brief, the change and the code as the brief
-says, the candidates handed in through `add`; then `wait` until the Codex task has answered,
-`merge`, `units`, `queue` — which checks nothing here, and lets a carried verdict stand — and
-`result`. Nothing is checked, and the result says so.
+background, where the plan has one; then each finder task's brief, the change and the code as the
+brief says — a file by its `n`, and a path typed into a command single-quoted — and the
+candidates handed in through `add`; then `wait` until the Codex task has answered, `merge`,
+`units`, `queue` — which checks nothing here, and lets a carried verdict stand — and `result`.
+Nothing is checked, and the result says so.
 
 ```bash
 node "<plugin root>/scripts/review-round.mjs" plan --round "<round>" --depth
 node "<plugin root>/scripts/review-round.mjs" codex --round "<round>"
 node "<plugin root>/scripts/review-round.mjs" brief --round "<round>" --task "<task>"
+node "<plugin root>/scripts/review-round.mjs" diff --round "<round>" --number "<n>"
+node "<plugin root>/scripts/review-round.mjs" show --round "<round>" --number "<n>"
 node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 ```
 

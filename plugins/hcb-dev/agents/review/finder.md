@@ -27,11 +27,10 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 ```
 
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
-`scope` is the change: its base, its files — each with the lines it adds and removes and the
-commands that read it — and any narrowing the caller asked for. `read` says how to reach each
-side of it. A `rules` list,
-where the brief has one, is the rule files to read; a `listed` one is what an earlier pass
-already found.
+`scope` is the change: its base, its files — each numbered `n`, with the lines it adds and
+removes — and any narrowing the caller asked for. `read` says how to reach each side of it. A
+`rules` list, where the brief has one, is the rule files to read; a `listed` one is what an
+earlier pass already found.
 
 ## 2. Read the change, then the code around it
 
@@ -40,11 +39,18 @@ ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND"
 ```
 
-For a large change, read it a file at a time instead, with that file's own `diff` command
-from the brief. The code as it is now is the working tree: read it with Read, Grep and Glob.
-The code as it was is the file's `base` command. Run both exactly as the brief gives them: the
-path in them is quoted for the shell already, and one retyped around another path is how a
-file's name gets run as a command.
+For a large change, read it a file at a time instead, by the file's `n`. The code as it is
+now is the working tree: read it with Read, Grep and Glob. The code as it was is `show`:
+
+```bash
+ROUND="<the round id from your prompt>"
+N="<the file's n from the brief>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND" --number "$N"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --number "$N"
+```
+
+A path you put into a command yourself — `git log`, `git blame` — goes in single-quoted, a
+quote inside it written `'\''`.
 
 **Only read.** Never run the code under review, its build, its tests or its scripts, and
 never write a file: the one thing you write is your answer, through `add`. Git only in its

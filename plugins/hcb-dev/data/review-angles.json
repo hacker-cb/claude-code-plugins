@@ -46,6 +46,9 @@
       }
     }
   },
+  "source_notes": {
+    "security": "None of these is a candidate here: harm only by volume, a race only in theory, hardening no input can exploit, an outdated dependency, memory safety in a language that guarantees it, test-only code, prose nothing follows — a skill's or an agent's instructions are followed, and are not that —, a pattern built from input, a request whose path alone is steered, text placed into a model's prompt as content, a secret on disk the system already guards, a missing audit log. Where a secret is the finding, name where it sits, never its value: what you write travels on into reports and trackers."
+  },
   "tasks": {
     "line-by-line": {
       "source": "claude",
@@ -112,19 +115,19 @@
       "source": "security",
       "kind": "finder",
       "category": "security",
-      "text": "Look for a vulnerability the change brings in, and only that. Input someone other than the person running the code controls — a request, a file from elsewhere, the change under review, another program's output — reaching a command line, a query, a file path, a template, a deserializer or an eval with nothing on the way that stops it; a check of who may do something that the change weakens, skips or moves after the act it guards; a secret written into code, a log or an answer; cryptography chosen weak or built by hand. A candidate names the input, the path it travels and what an attacker gains — code run, data read or changed, a check passed. None of these is a candidate here: harm only by volume, a race only in theory, hardening no input can exploit, an outdated dependency, test-only code, documentation, text placed into a model's prompt."
+      "text": "Look for a vulnerability the change brings in, and only that. Input someone other than the person running the code controls — a request, a file from elsewhere, the change under review, another program's output — reaching a command line, a query, a file path, a template, a deserializer or an eval with nothing on the way that stops it; a check of who may do something that the change weakens, skips or moves after the act it guards; a secret written into code, a log or an answer; cryptography chosen weak or built by hand. A candidate names the input, the path it travels and what an attacker gains — code run, data read or changed, a check passed."
     },
     "security-input": {
       "source": "security",
       "kind": "finder",
       "category": "security",
-      "text": "Follow every input the change reads that someone other than the person running the code controls — a request and its headers, a file from outside, the change under review, a repository's own configuration, another program's output — to where it is used: a command line or a string a shell runs, a query, a file path, a template, a deserializer, an eval or a dynamic import, a page a browser renders. A candidate names the input, the path it travels with nothing on the way that stops it, and what an attacker gains — code run, data read or written, a check passed. None of these is a candidate here: harm only by volume, a race only in theory, hardening no input can exploit, a pattern built from input, a request whose path alone is steered, test-only code, documentation, text placed into a model's prompt."
+      "text": "Follow every input the change reads that someone other than the person running the code controls — a request and its headers, a file from outside, the change under review, a repository's own configuration, another program's output — to where it is used: a command line or a string a shell runs, a query, a file path, a template, a deserializer, an eval or a dynamic import, a page a browser renders, an instruction an agent will follow. A candidate names the input, the path it travels with nothing on the way that stops it, and what an attacker gains — code run, data read or written, a check passed."
     },
     "security-access": {
       "source": "security",
       "kind": "finder",
       "category": "security",
-      "text": "Look at who may do what the change touches, and what leaves it: a check of identity or permission the change weakens, skips, or moves after the act it guards; a privilege granted wider or held longer than the work needs; a token, key or password written into code, a log, an error or an answer, or compared in a way that leaks it; cryptography chosen weak or built by hand — a fixed nonce, a predictable random, a certificate never verified; personal or secret data sent somewhere it did not go before. A candidate names what an attacker, or a reader who should not see it, gets and how. None of these is a candidate here: a secret on disk the system already guards, a missing audit log, hardening nobody can exploit, test-only code, documentation."
+      "text": "Look at who may do what the change touches, and what leaves it: a check of identity or permission the change weakens, skips, or moves after the act it guards; a privilege granted wider or held longer than the work needs; a token, key or password written into code, a log, an error or an answer, or compared in a way that leaks it; cryptography chosen weak or built by hand — a fixed nonce, a predictable random, a certificate never verified; personal or secret data sent somewhere it did not go before. A candidate names what an attacker, or a reader who should not see it, gets and how."
     },
     "sweep": {
       "source": "claude",

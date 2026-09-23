@@ -31,9 +31,16 @@ who found the claim, how sure they were and how severe they called it stay out o
 
 Read the coordinate and whatever the claim depends on: the enclosing function, its callers, the
 guard that would stop it, the configuration it reads. Read the tree `read_with` names — a
-base-side coordinate through the command its `read` gives, never the working tree. A path you
-put into a shell command yourself goes in single-quoted, a quote inside it written `'\''`;
-Read and Grep take a path with no shell at all.
+coordinate on a revision rather than the working tree is printed by `show`:
+
+```bash
+ROUND="<the round id from your prompt>"
+UNIT="<the group id from your prompt>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --unit "$UNIT"
+```
+
+A path you put into a command yourself goes in single-quoted, a quote inside it written
+`'\''`; Read and Grep take a path with no shell at all.
 
 - **Never run the code under review**, its tests, its build, or anything it would execute. Read
   with `cat`, `sed -n`, `rg`, `git show`, `git log`, `git diff`, `git grep` and `git blame`.
@@ -51,15 +58,13 @@ Read and Grep take a path with no shell at all.
 By category:
 
 - `correctness` — the failing input or state is reachable from how the code is actually called.
-- `security` — input someone other than the person running the code controls reaches the sink
-  with nothing on the path that stops it, and what an attacker gains is shown. Where the input
-  comes from decides it: an environment variable, a command-line flag and the user's own
-  configuration are the user's, not an attacker's. `refuted` too: harm only by volume, a race
-  only in theory, hardening no input can exploit, a secret on disk the system already guards,
-  an outdated dependency, memory safety in a language that guarantees it, test-only code,
-  documentation, a pattern built from input, a request whose path alone is steered, text placed
-  into a model's prompt, a missing audit log, and a log line — unless what it writes is a
-  secret or personal data.
+- `security` — the harm reaches someone it should not: input from outside the person running
+  the code — a request, a file from elsewhere, the change under review, that repository's own
+  configuration — gets to the sink with nothing on the path that stops it; or a check, a
+  privilege, a secret or a piece of cryptography the change leaves open to such a person. What
+  an attacker gains is shown. An environment variable, a command-line flag and the user's own
+  configuration are the user's — unless the code acts on them for someone else, across a
+  privilege boundary.
 - `reuse` — the helper named exists and does the same job. `simplification` — the simpler form
   does exactly what the code does. `efficiency` — the waste sits on a path that runs.
   `altitude` — the special case sits on shared ground a general fix would cover.

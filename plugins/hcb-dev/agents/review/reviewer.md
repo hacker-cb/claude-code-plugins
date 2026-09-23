@@ -145,8 +145,9 @@ the caller reads the result from the store.
 
 Plan with `--depth`, and start the Codex pass as in step 2 where the plan has one. Then do
 every finder task of the plan yourself, one after another: its brief
-(`brief --round "$ROUND" --task "$TASK"`), the change and the code as the brief says, and
-your candidates handed in through `add` as the brief's `submit` names it. Wait for the Codex
+(`brief --round "$ROUND" --task "$TASK"`), the change and the code as the brief says — a file
+by its `n`, through `diff` and `show`, and a path you type into a command yourself
+single-quoted — and your candidates handed in through `add` as the brief's `submit` names it. Wait for the Codex
 task as in step 3, group what was handed in as in step 4, run `queue` — it checks nothing
 here, and lets a verdict a candidate carried stand — and build the result: no checks, no
 sweep, and the result says nothing was checked.
