@@ -6,8 +6,14 @@
 // which comment holds it, and writing it back, are `ledger.mjs`'s.
 
 export const FORMAT = 2;
-export const SECTION_NAMES = ['header', 'batches', 'verdicts', 'decisions', 'constraints', 'queue',
-  'expectations', 'journal', 'candidates'];
+// The two ledgers an epic keeps — its own on the umbrella, and one per wave on the wave's issue —
+// and the budget each is kept under unless the caller names another.
+export const SECTIONS = {
+  epic: ['header', 'verdicts', 'decisions', 'constraints', 'expectations', 'journal'],
+  wave: ['header', 'batches', 'queue', 'expectations', 'answers', 'candidates', 'journal'],
+};
+export const BUDGETS = { epic: 65536, wave: 131072 };
+const ALL = [...new Set([...SECTIONS.epic, ...SECTIONS.wave])];
 
 const FORMAT_LINE = /^\s*<!--\s*wave-ledger-format:\s*(\d{1,4})\s*-->\s*$/;
 const SECTION_LINE = /^\s*<!--\s*wave-section:\s*([a-z-]+)\s*-->\s*$/;
@@ -89,11 +95,13 @@ export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => 
   if (size > budget) add('budget', `${size} bytes against a budget of ${budget}`);
   const { lines, sections } = sectionsOf(body);
   const names = sections.map((s) => s.name);
+  const kind = kindOf(body);
   if (format >= FORMAT) {
-    for (const n of SECTION_NAMES) if (!names.includes(n)) add('section-missing', `no ${n} section`, n);
+    if (kind === null) add('kind', 'its sections make it neither the epic\'s ledger nor a wave\'s, or both');
+    else for (const n of SECTIONS[kind]) if (!names.includes(n)) add('section-missing', `no ${n} section in the ${kind}'s ledger`, n);
   }
   for (const n of new Set(names)) {
-    if (!SECTION_NAMES.includes(n)) add('section-unknown', `a section named ${n}`, n);
+    if (!ALL.includes(n)) add('section-unknown', `a section named ${n}`, n);
     if (names.filter((x) => x === n).length > 1) add('section-twice', `${n} opens more than once`, n);
   }
   for (const m of body.matchAll(/<!--\s*(wave-[^>]*?)\s*-->/g)) {
@@ -120,6 +128,17 @@ export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => 
     }
   }
   return found;
+};
+
+// Which of the two ledgers a text is, read off the sections only one of them carries: `null` where
+// it carries none of either's own, or some of both.
+export const kindOf = (body) => {
+  const names = new Set(sectionsOf(body).sections.map((s) => s.name));
+  const own = (k, other) => SECTIONS[k].some((n) => names.has(n) && !SECTIONS[other].includes(n));
+  const epic = own('epic', 'wave');
+  const wave = own('wave', 'epic');
+  if (epic === wave) return null;
+  return epic ? 'epic' : 'wave';
 };
 
 // The journal's lines, oldest first: a line per event, whatever marks it, the index line, headings

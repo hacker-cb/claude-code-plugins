@@ -19,7 +19,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
-import { FORMAT, LEDGER_LINE, MARKER, bytes, formatOf, journalOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
+import { BUDGETS, FORMAT, LEDGER_LINE, MARKER, bytes, formatOf, journalOf, kindOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
@@ -35,7 +35,8 @@ const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
 // a caller that knows its own forge's cap passes it, and one that does not gets GitHub's.
 const DEFAULT_LIMIT = 262144;
 // What a ledger is kept under before its journal starts moving out — well short of the cap, so a
-// write never meets the cap's own refusal, and a ledger stays readable in one go.
+// write never meets the cap's own refusal, and a ledger stays readable in one go. Each kind has its
+// own (`lib/ledger-body.mjs`); this one holds a text of neither kind.
 const DEFAULT_BUDGET = 131072;
 // Written on the second line of every archive this script opens: the one kind it adds to. An
 // archive without it — a closed wave's snapshot, one written by hand — is never written into.
@@ -48,7 +49,7 @@ const usage = 'usage: node ledger.mjs --issue <n> [--repo <owner/name>] [--forge
 
 const opts = { issue: null, repo: null, forge: null, host: null, bodyFile: null,
   limit: DEFAULT_LIMIT, me: null, dir: process.cwd(), check: false, write: false, append: null,
-  dump: null, budget: DEFAULT_BUDGET, was: null };
+  dump: null, budget: null, was: null };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -103,8 +104,10 @@ if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 // it came as, so `limit` is a number in the answer even when the caller passed the default.
 if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a byte count');
 opts.limit = Number(opts.limit);
-if (!/^[1-9][0-9]{0,8}$/.test(String(opts.budget))) die('--budget takes a byte count');
-opts.budget = Number(opts.budget);
+if (opts.budget !== null && !/^[1-9][0-9]{0,8}$/.test(String(opts.budget))) die('--budget takes a byte count');
+if (opts.budget !== null) opts.budget = Number(opts.budget);
+// The budget a text is kept under: the one named, else its kind's.
+const budgetOf = (t) => opts.budget ?? BUDGETS[kindOf(t)] ?? DEFAULT_BUDGET;
 // Acting is asked for, never inferred, and one act a run: what the body to write is, and what
 // the account to add is, would otherwise be one file read two ways.
 if (opts.write && opts.bodyFile === null) die('--write writes the body --body-file names');
@@ -141,7 +144,7 @@ const answer = {
     limit: opts.limit, budget: opts.budget, wrote: acting ? false : null,
     moved: null, ran: [], archived: [], account: null },
   // The stored ledger's format, against the one this plugin writes.
-  format: { found: null, current: FORMAT },
+  format: { found: null, current: FORMAT, kind: null },
   // What `--check` read in the text — the body to be written where one was handed in, else the
   // stored ledger. `null` where nothing was asked.
   lint: null,
@@ -446,7 +449,7 @@ for (const n of answer.index.unlisted) {
 }
 
 const stored = answer.ledger.found ? ledgers[0].body : null;
-if (stored !== null) answer.format.found = formatOf(stored);
+if (stored !== null) Object.assign(answer.format, { found: formatOf(stored), kind: kindOf(stored) });
 if (opts.dump !== null) {
   if (stored === null) { answer.reason = 'no ledger to dump'; out(); }
   try { writeFileSync(opts.dump, stored); }
@@ -460,7 +463,8 @@ const measureWrite = () => {
     fits: m.bytes <= opts.limit, headroom: opts.limit - m.bytes });
 };
 const finish = () => {
-  if (opts.check) answer.lint = lint(body ?? stored ?? '', { budget: opts.budget });
+  answer.write.budget ??= budgetOf(body ?? stored ?? '');
+  if (opts.check) answer.lint = lint(body ?? stored ?? '', { budget: answer.write.budget });
   measureWrite();
   out();
 };
@@ -515,17 +519,35 @@ const place = (entry) => {
 
 let accountIn = null;
 let already = null;
-// Exactly the format written here: a newer one carries what this script cannot keep.
-const shaped = (t) => formatOf(t) === FORMAT && journalOf(t).section !== null;
+// Exactly the format written here — a newer one carries what this script cannot keep — and one of
+// the two kinds, with the journal that moves out.
+const shaped = (t) => formatOf(t) === FORMAT && kindOf(t) !== null && journalOf(t).section !== null;
+// A ledger still in format 1 takes an account all the same — the reasoning a rebuild keeps goes
+// into an archive first — and stays as it stands: the --write of its rebuilt body indexes it.
+const older = stored !== null && formatOf(stored) < FORMAT;
+// Until its rebuild, a format-1 ledger is written in format 1 as it stands: nothing moves out of
+// it, and the shape it never had is not asked of it. A body carrying the new shape's markers is
+// the rebuild, and takes the new shape's checks.
+const asItStands = opts.write && older && formatOf(next) < FORMAT
+  && !/<!--\s*wave-(?:ledger-format|section):/.test(next);
 if (opts.write) {
   if (!LEDGER_LINE.test(next.split('\n', 1)[0])) refuse('the body does not open with the ledger marker');
-  if (!shaped(next)) refuse(`the body is not format ${FORMAT} with a journal section — --check says where`);
+  if (!asItStands && !shaped(next)) refuse(`the body is not format ${FORMAT}, of one kind, with a journal section — --check says where`);
   // A marker of another kind in the ledger's text makes the comment that kind's too.
-  const foreign = lint(next, { budget: opts.budget }).find((f) => f.rule === 'marker-unknown');
+  const foreign = lint(next, { budget: budgetOf(next) }).find((f) => f.rule === 'marker-unknown');
   if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
+  // A format-1 index is whatever its text names, so every archive it lists and the issue carries
+  // stays named: one left out would stand unlisted, a fault holding every later write.
+  const names = new Set([...next.matchAll(ARCHIVE)].map((m) => Number(m[1])));
+  const dropped = asItStands ? [...listed].filter((n) => byN.has(n) && !names.has(n)) : [];
+  if (dropped.length) refuse(`the body leaves out archive ${dropped[0]}, which the ledger lists and the issue carries`);
+  // One issue keeps one kind: an epic's body over a wave's ledger would take the wave's place.
+  const was = stored === null ? null : kindOf(stored);
+  const whose = (k) => (k === 'epic' ? 'the epic\'s' : 'a wave\'s');
+  if (!asItStands && was !== null && kindOf(next) !== was) refuse(`the body is ${whose(kindOf(next))} ledger, and the issue holds ${whose(was)}`);
 } else {
   if (stored === null) refuse('no ledger to index the archive');
-  if (!shaped(stored)) refuse(`the ledger is not format ${FORMAT} with a journal section to index the archive`);
+  if (!older && !shaped(stored)) refuse(`the ledger is not format ${FORMAT}, of one kind, with a journal section to index the archive`);
   if (account.trim() === '') refuse('the account is empty');
   // Already in an archive of ours, whole lines and all — a run that did not settle, sent again:
   // its link, not a copy.
@@ -546,11 +568,12 @@ if (named.length) refuse(`the body names archive ${named[0]}, which no comment c
 
 answer.write.moved = 0;
 let blocked = null;
-if (opts.write) {
+if (opts.write && !asItStands) {
   // The journal's oldest lines out, one at a time, until the body is under its budget — never
   // above the cap — or the next one cannot move; the index rewritten every time, so a body
   // composed before an archive was added still names it.
-  const ceiling = Math.min(opts.budget, opts.limit);
+  answer.write.budget = budgetOf(next);
+  const ceiling = Math.min(answer.write.budget, opts.limit);
   for (;;) {
     next = withIndex(next, numbers);
     if (bytes(next) <= ceiling) break;
@@ -561,7 +584,7 @@ if (opts.write) {
     next = taken.body;
     answer.write.moved += 1;
   }
-} else {
+} else if (!opts.write) {
   // An account is added and indexed, and nothing else moves in the same run; the ledger is
   // rewritten only where its index no longer names every archive.
   if (!already) {
@@ -570,7 +593,7 @@ if (opts.write) {
     accountIn = current;
   }
   const same = numbers.length === listed.size && numbers.every((n) => listed.has(n));
-  if (!same) next = withIndex(next, numbers);
+  if (!same && !older) next = withIndex(next, numbers);
 }
 if (bytes(next) > opts.limit) {
   refuse(blocked ?? (opts.write ? 'over the cap with the journal out — what else may leave is the caller\'s to judge'
@@ -650,9 +673,20 @@ if (next !== stored) {
   const m = measure(r.comment.body);
   Object.assign(answer.ledger, { bytes: m.bytes, chars: m.chars, utf16: m.utf16, digest: digestOf(r.comment.body) });
 }
-// What stands now: the index names every archive, and the faults the write settled are gone.
-answer.faults = answer.faults.filter((f) => !f.missing && !f.unlisted);
-answer.index = { ...answer.index, listed: [...numbers], present: [...numbers], missing: [], unlisted: [] };
+// What stands now: the index names every archive, and the faults the write settled are gone — save
+// under a format-1 ledger, left as it stood, whose new archive waits for the rebuilt body's index.
+if (older && (!opts.write || asItStands)) {
+  const listedNow = new Set([...next.matchAll(ARCHIVE)].map((m) => Number(m[1])));
+  const unlisted = numbers.filter((u) => !listedNow.has(u));
+  answer.faults = answer.faults.filter((f) => !f.unlisted && !f.missing);
+  answer.index = { ...answer.index, listed: [...listedNow].sort((x, y) => x - y), present: [...numbers], missing: [], unlisted };
+  for (const u of unlisted) {
+    answer.faults.push({ fault: `archive ${u} stands on the issue and the ledger does not list it`, n: u, unlisted: true });
+  }
+} else {
+  answer.faults = answer.faults.filter((f) => !f.missing && !f.unlisted);
+  answer.index = { ...answer.index, listed: [...numbers], present: [...numbers], missing: [], unlisted: [] };
+}
 for (const [i, a] of plan.entries()) {
   const m = measure(`${a.text}\n`);
   const row = { n: a.n, id: answer.write.archived[i].id, url: answer.write.archived[i].url, bytes: m.bytes,

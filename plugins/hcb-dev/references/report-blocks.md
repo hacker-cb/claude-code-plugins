@@ -17,7 +17,7 @@ catalogue is the order of a report; no report invents a heading outside it.
 | `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices, branches and the settlements a gate shows, what a sweep would remove and what it keeps |
 | `## Review coverage` | table | one row per source — what it covered, at what effort, and the result `multi-review` classified |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
-| `## Issues` | bullets | the issues the run settles, at their state now |
+| `## Issues` | bullets | the issues the run settles, at their state now — an epic's own issue and its waves', being structure, are not among them |
 | `## What it leaves` | bullets | what the run leaves standing behind it |
 | `## Needs your word` | numbered, under the groups it has | `report-format.md`'s |
 

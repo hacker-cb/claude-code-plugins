@@ -9,16 +9,20 @@
 // issue the account can SEE, public projects of strangers included), and whether the list that
 // came back is the whole set.
 //
+// With `--epic <n>` it lists that epic's waves instead: the issues under it carrying the wave label,
+// open and closed — GitHub's sub-issues, GitLab's related links — in this checkout's repository,
+// or the one `--repo` names.
+//
 // It READS and lists; what an epic's ledger says is `ledger.mjs`'s.
 
-import { dirOk, hostOk, parsePages, refOk, runner, text, writeAll } from './lib/forge.mjs';
+import { dirOk, hostOk, parsePages, refOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const usage = 'usage: node epics.mjs [--forge gh|glab] [--host <host>] [--label <name>]'
-  + ' [--owner <owner>]... [--repo-dir <path>]';
+  + ' [--owner <owner>]... [--epic <n> [--repo <path>]] [--repo-dir <path>]';
 
 const die = (msg) => { writeAll(2, `epics: ${msg}\n${usage}\n`); process.exit(2); };
 
-const opts = { forge: null, host: null, label: 'epic', owners: [], dir: process.cwd() };
+const opts = { forge: null, host: null, label: null, owners: [], epic: null, repo: null, dir: process.cwd() };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -27,6 +31,8 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === '--host') opts.host = val();
   else if (a === '--label') opts.label = val();
   else if (a === '--owner') opts.owners.push(val());
+  else if (a === '--epic') opts.epic = val();
+  else if (a === '--repo') opts.repo = val();
   else if (a === '--repo-dir') opts.dir = val();
   else die(`unknown argument '${a}'`);
 }
@@ -34,6 +40,16 @@ for (let i = 0; i < argv.length; i += 1) {
 if (!dirOk(opts.dir)) die(`--repo-dir '${opts.dir}' is not a directory`);
 if (opts.forge !== null && opts.forge !== 'gh' && opts.forge !== 'glab') die('--forge takes gh or glab');
 if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
+// A GraphQL Int is 32-bit: one past it fails the request rather than naming an issue.
+if (opts.epic !== null && !(/^[1-9][0-9]{0,9}$/.test(opts.epic) && Number(opts.epic) <= 2147483647)) die('--epic takes an issue number');
+if (opts.epic !== null && opts.owners.length) die('--epic lists one epic of this repository, never an owner\'s');
+if (opts.repo !== null && opts.epic === null) die('--repo names the repository an --epic lives in');
+const repoSegments = opts.repo === null ? [] : opts.repo.split('/');
+if (opts.repo !== null && (!refOk(opts.repo) || repoSegments.length < 2 || repoSegments.length > 20)) {
+  die(`--repo '${opts.repo}' is not a repository path`);
+}
+// The label listed by: the epic's, or with --epic the wave's.
+opts.label ??= opts.epic === null ? 'epic' : 'wave';
 // A label name travels inside a quoted search phrase and a URL: a quote or a backslash would end
 // or escape the phrase, a comma is GitLab's list separator, and a control character is no label
 // anyone wrote.
@@ -53,7 +69,13 @@ const answer = {
   host: null,
   label: opts.label,
   owners: opts.owners,
+  epic: opts.epic === null ? null : Number(opts.epic),
   epics: [],
+  waves: opts.epic === null ? null : [],
+  // With --epic: the epic's other children — the work no wave has taken — counted, and whether
+  // the server carries a hierarchy at all.
+  rest: opts.epic === null ? null : { total: 0, closed: 0 },
+  hierarchy: opts.epic === null ? null : true,
   count: null,
   complete: null,
   reason: null,
@@ -64,6 +86,7 @@ const out = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process
 const refuse = (msg) => {
   answer.reason = text(msg);
   answer.epics = [];
+  if (answer.waves !== null) answer.waves = [];
   answer.complete = null;
   out();
 };
@@ -142,7 +165,122 @@ const query = () => {
 };
 answer.complete = true;
 
-if (forge === 'gh') {
+// A child of the epic: a wave where it carries the label and lives in the epic's own repository —
+// listed once however often the pages repeat it — and the work no wave has taken otherwise.
+const want = opts.label.toLowerCase();
+const seenChild = new Set();
+const child = ({ key, own, labelled, number, title, url, state, reason, children }) => {
+  if (key !== null && seenChild.has(key)) return false;
+  if (key !== null) seenChild.add(key);
+  if (own && labelled) {
+    answer.waves.push({ number: Number.isInteger(number) ? number : null, title: text(title),
+      url: coord(url), state: text(state), reason: text(reason), children });
+  } else {
+    // Work no wave has taken, in whichever repository it lives.
+    answer.rest.total += 1;
+    if (state === 'closed') answer.rest.closed += 1;
+  }
+  return true;
+};
+
+if (opts.epic !== null && forge === 'gh') {
+  if (opts.repo !== null && !repoOk(opts.repo)) refuse(`'${opts.repo}' is no GitHub repository: it takes <owner>/<name>`);
+  // A repository named travels raw (`-f`): typed, a value opening with `@` would be read as a file,
+  // and a name of digits would stop being a string. Only this checkout's placeholders go typed.
+  const where = opts.repo === null ? ['-F', 'owner={owner}', '-F', 'name={repo}']
+    : ['-f', `owner=${repoSegments[0]}`, '-f', `name=${repoSegments[1]}`];
+  // The epic's sub-issues, a hundred a page, every one read; GraphQL, which carries them on every
+  // server that has them — the REST form is absent from GHES (`references/forge-docs.md`). The
+  // epic's own summary counts children the token cannot see, which the list leaves out.
+  const Q = 'query($owner: String!, $name: String!, $n: Int!, $after: String) { repository(owner: $owner, name: $name) { nameWithOwner issue(number: $n) { subIssuesSummary { total } subIssues(first: 100, after: $after) { totalCount pageInfo { hasNextPage endCursor } nodes { number title url state stateReason repository { nameWithOwner } labels(first: 100) { totalCount nodes { name } } subIssuesSummary { total completed } } } } } }';
+  let after = null;
+  let reached = 0;
+  let total = null;
+  for (let walked = 0; ; walked += 1) {
+    if (walked >= 100) refuse(`the sub-issues of #${opts.epic} ran past 100 pages`);
+    const r = cli(['api', 'graphql', '--hostname', host, ...where, '-F', `n=${opts.epic}`,
+      '-f', `query=${Q}`, ...(after ? ['-f', `after=${after}`] : [])], 120000);
+    if (!r.ok) {
+      const said = `${r.err}\n${r.out}`;
+      if (/subIssues/.test(said) && /doesn't exist|does not exist/i.test(said)) {
+        answer.hierarchy = false;
+        refuse('this server carries no sub-issues');
+      }
+      if (/Could not resolve to an? (Issue|Repository)/i.test(said)) refuse(`issue #${opts.epic} is not there, or not visible to this token`);
+      refuse(`the sub-issues of #${opts.epic} could not be read: ${why(r)}`);
+    }
+    let page = null;
+    try { page = JSON.parse(r.out); } catch { /* below */ }
+    if (!page || typeof page !== 'object') refuse(`the sub-issues of #${opts.epic} were not JSON`);
+    const repo = page?.data?.repository;
+    const issue = repo?.issue;
+    if (issue === null) refuse(`issue #${opts.epic} is not there, or not visible to this token`);
+    const subs = issue?.subIssues;
+    if (!subs || !Array.isArray(subs.nodes)) refuse(`the sub-issues of #${opts.epic} answered with something that is not a page`);
+    const home = typeof repo?.nameWithOwner === 'string' ? repo.nameWithOwner.toLowerCase() : null;
+    if (Number.isInteger(subs.totalCount)) total = Math.max(total ?? 0, subs.totalCount);
+    const summary = issue?.subIssuesSummary?.total;
+    if (Number.isInteger(summary) && Number.isInteger(subs.totalCount) && summary > subs.totalCount) answer.complete = false;
+    for (const it of subs.nodes) {
+      const labels = it?.labels;
+      // A label list cut short cannot say the label is absent.
+      if (!Array.isArray(labels?.nodes) || (Number.isInteger(labels.totalCount) && labels.totalCount > labels.nodes.length)) {
+        answer.complete = false;
+      }
+      const sub = it?.subIssuesSummary;
+      const there = typeof it?.repository?.nameWithOwner === 'string' ? it.repository.nameWithOwner.toLowerCase() : null;
+      const counted = child({
+        key: typeof it?.url === 'string' ? it.url : null,
+        own: home !== null && there === home,
+        labelled: (labels?.nodes ?? []).some((l) => typeof l?.name === 'string' && l.name.toLowerCase() === want),
+        number: it?.number, title: it?.title, url: it?.url,
+        state: typeof it?.state === 'string' ? it.state.toLowerCase() : null,
+        reason: typeof it?.stateReason === 'string' ? it.stateReason.toLowerCase().replace('_', ' ') : null,
+        children: sub && Number.isInteger(sub.total)
+          ? { total: sub.total, completed: Number.isInteger(sub.completed) ? sub.completed : null } : null,
+      });
+      if (counted) reached += 1;
+    }
+    if (subs.pageInfo?.hasNextPage !== true) break;
+    after = typeof subs.pageInfo?.endCursor === 'string' ? subs.pageInfo.endCursor : null;
+    if (after === null) refuse(`the sub-issues of #${opts.epic} say more follow and name no cursor`);
+  }
+  if (total === null) { if (answer.complete !== false) answer.complete = null; }
+  else if (reached < total) answer.complete = false;
+} else if (opts.epic !== null) {
+  const project = opts.repo === null ? ':fullpath' : encodeURIComponent(opts.repo);
+  // The project's own id, by which each link names the project its far end lives in.
+  const pr = cli(['api', '--hostname', host, `projects/${project}`], 60000);
+  let pid = null;
+  if (pr.ok) { try { pid = JSON.parse(pr.out)?.id; } catch { /* below */ } }
+  if (!Number.isInteger(pid)) {
+    refuse(pr.ok ? 'the project answered without its id' : `the project could not be read: ${why(pr)}`);
+  }
+  // The epic's related links, one list: GitLab pages none of it. A related link is the one kind
+  // every tier carries, and the one the master hangs work by; the others are dependencies.
+  const r = cli(['api', '--hostname', host, `projects/${project}/issues/${opts.epic}/links`], 120000);
+  if (!r.ok) {
+    refuse(/\(HTTP 404\)/.test(r.err) ? `issue #${opts.epic} is not there, or not visible to this token: ${why(r)}`
+      : `the links of #${opts.epic} could not be read: ${why(r)}`);
+  }
+  let rows = null;
+  try { rows = JSON.parse(r.out); } catch { /* below */ }
+  if (!Array.isArray(rows)) refuse(`the links of #${opts.epic} answered with something that is not a list`);
+  for (const it of rows) {
+    if (it?.link_type !== 'relates_to') continue;
+    child({
+      key: typeof it?.web_url === 'string' ? it.web_url : null,
+      own: it?.project_id === pid,
+      labelled: Array.isArray(it?.labels) && it.labels.some((l) => typeof l === 'string' && l.toLowerCase() === want),
+      number: it?.iid, title: it?.title, url: it?.web_url,
+      state: it?.state === 'opened' ? 'open' : (typeof it?.state === 'string' ? it.state : null),
+      // No reason on a GitLab close, and no count of an issue's own links.
+      reason: null, children: null,
+    });
+  }
+  // GitLab counts none of it, and shows only the links this token may see.
+  answer.complete = null;
+} else if (forge === 'gh') {
   // One query per owner, each an organisation or a user by its own qualifier; without owners,
   // `author:@me` — the account's own epics, wherever they stand — is one query over every owner.
   // A single owner reads alike in the default search and the advanced one, where several joined
@@ -246,6 +384,6 @@ if (forge === 'gh') {
   }
 }
 
-answer.count = answer.epics.length;
+answer.count = opts.epic === null ? answer.epics.length : answer.waves.length;
 answer.read = true;
 out();

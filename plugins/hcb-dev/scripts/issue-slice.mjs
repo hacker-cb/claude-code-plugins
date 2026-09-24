@@ -11,6 +11,7 @@
 // Usage: node issue-slice.mjs [--forge gh|glab] [--repo <path>] [--host <host>]
 //                             [--repo-dir <path>] [--state open|closed|all]
 //                             [--label <name>] [--milestone <number|title>]
+//                             [--skip-label <name>]...
 //        node issue-slice.mjs --deep <n>[,<n>…] [--forge …] [--repo …] [--host …]
 //        node issue-slice.mjs --since <moment> [--was <file>] [the wide tier's flags]
 //
@@ -26,6 +27,9 @@
 //   tier                `wide` with its `filter` — whose `types` are the work item types the
 //                       slice asked the forge for, GitLab's alone; GitHub filters by none
 //   total, fetched      the forge's own count, and how many issues came back
+//   skipped             wide only: numbers that came back carrying a `--skip-label` label and
+//                       were left off — the epic a slice runs under and its waves, which are
+//                       its structure rather than its work
 //   pages               the calls the issues took
 //   types, untyped      issues per type — every GitLab work item has one; `untyped` is GitHub's
 //   cut, hidden         numbers of the issues with a list cut short, or an end out of sight
@@ -82,17 +86,24 @@ import { dirOk, hostOk, readable, repoOk, text, writeAll } from './lib/forge.mjs
 
 const USAGE = 'usage: node issue-slice.mjs [--forge gh|glab] [--repo <path>] [--host <host>]'
   + ' [--repo-dir <path>] [--state open|closed|all] [--label <name>]'
-  + ' [--milestone <number|title>] [--deep <n>[,<n>…]] [--since <moment> [--was <file>]]\n';
+  + ' [--milestone <number|title>] [--skip-label <name>]... [--deep <n>[,<n>…]]'
+  + ' [--since <moment> [--was <file>]]\n';
 const die = (m) => { writeAll(2, `issue-slice: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
 const opts = { forge: null, repo: null, host: null, dir: process.cwd(), state: null,
-  label: null, milestone: null, deep: null, since: null, was: null };
+  label: null, milestone: null, deep: null, since: null, was: null, skip: [] };
 const FLAGS = { '--forge': 'forge', '--repo': 'repo', '--host': 'host', '--repo-dir': 'dir',
   '--state': 'state', '--label': 'label', '--milestone': 'milestone', '--deep': 'deep',
   '--since': 'since', '--was': 'was' };
 const seen = new Set();
 for (let i = 0; i < argv.length; i += 1) {
+  // A label to leave out, as many as are named: an issue carrying any of them is not the slice's.
+  if (argv[i] === '--skip-label') {
+    if (argv[i + 1] === undefined) die('--skip-label needs a value');
+    opts.skip.push(argv[i += 1]);
+    continue;
+  }
   const key = FLAGS[argv[i]];
   if (!key) die(`unknown argument '${argv[i]}'`);
   if (argv[i + 1] === undefined) die(`${argv[i]} needs a value`);
@@ -132,6 +143,9 @@ if (opts.state !== null && !['open', 'closed', 'all'].includes(opts.state)) {
 }
 if (opts.label !== null && opts.label.trim() === '') die('--label takes a label name');
 if (opts.milestone !== null && opts.milestone.trim() === '') die('--milestone takes a milestone');
+if (opts.skip.some((l) => l.trim() === '')) die('--skip-label takes a label name');
+// Compared whatever the case — GitHub's own names are — and named once however often given.
+const skip = [...new Set(opts.skip.map((l) => l.toLowerCase()))].sort();
 
 // A GraphQL `Int` is 32-bit, and one number past it fails the whole request it rides in —
 // every other number of its batch with it.
@@ -140,8 +154,8 @@ let asked = null;
 if (opts.deep !== null) {
   // A filter narrows a slice; the deep tier reads the numbers named, and a filter beside them
   // would narrow nothing while looking as though it had.
-  if (opts.state !== null || opts.label !== null || opts.milestone !== null) {
-    die('--deep reads the numbers named, so --state, --label and --milestone do not apply');
+  if (opts.state !== null || opts.label !== null || opts.milestone !== null || skip.length) {
+    die('--deep reads the numbers named, so --state, --label, --milestone and --skip-label do not apply');
   }
   const words = opts.deep.split(/[\s,]+/).filter(Boolean);
   if (!words.length || !words.every(intOk)) die('--deep takes issue numbers, separated by commas');
@@ -198,7 +212,7 @@ if (opts.was !== null) {
 const head = {
   read: false, complete: false, tier: asked ? 'deep' : 'wide',
   forge: null, repo: null, host: null,
-  ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone, types: null } }),
+  ...(asked ? { asked } : { filter: { state, label: opts.label, milestone: opts.milestone, types: null, skip }, skipped: [] }),
   // Keyed by names the forge hands back, so no key can be one an object already inherits:
   // a type called `constructor` would read a function where its count belongs.
   total: null, fetched: 0, pages: 0, types: Object.create(null), untyped: 0,
@@ -722,6 +736,14 @@ const wide = () => {
       if (got.has(k)) continue;
       got.set(k, true);
       const line = w.line(n);
+      // Counted as come back, and left off: the slice's count still holds it. The `+N` a cut list
+      // ends with is no label.
+      if (skip.length) {
+        const all = Array.isArray(line.l) ? line.l : [];
+        const labels = ((line.cut || []).includes('l') ? all.slice(0, -1) : all).map((x) => String(x).toLowerCase());
+        if (labels.some((x) => skip.includes(x))) { head.skipped.push(line.n); continue; }
+        if ((line.cut || []).includes('l')) head.notes.push(`#${line.n}: its labels came back cut, so --skip-label could not leave it out`);
+      }
       const ev = head.delta ? w.ev(n) : null;
       if (ev) line.ev = ev;
       take(line);
@@ -1067,7 +1089,8 @@ if (pinned) {
     || typeof v.host !== 'string' || !same(v.host, head.host)
     || (f.state ?? null) !== state || (f.label ?? null) !== opts.label
     || (f.milestone ?? null) !== opts.milestone
-    || JSON.stringify(f.types ?? null) !== JSON.stringify(head.filter.types)) {
+    || JSON.stringify(f.types ?? null) !== JSON.stringify(head.filter.types)
+    || JSON.stringify(f.skip ?? []) !== JSON.stringify(skip)) {
     die('the reading in --was is of another slice: another forge, repository, host or filter');
   }
 }

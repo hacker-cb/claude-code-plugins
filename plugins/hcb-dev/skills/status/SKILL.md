@@ -71,29 +71,41 @@ Read per [`../../references/epic-structure.md`](../../references/epic-structure.
 ### The epic — for a master, and for any session handed a number
 
 ```bash
-EPIC="<the number the invocation named, or the role's own>"
-DEEP="<the issues of ONE repository: the epic, and the return's issue where it shares that repository>"
+EPIC="<the number the invocation named, or the role's own>"; S="${CLAUDE_PLUGIN_ROOT}/scripts"
 REPO="<owner/name, where the epic lives outside this checkout's>"
-HOST="<the host it lives on, where that is not the one the CLI answers for by default>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
-node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
+FORGE="<gh | glab, and HOST the host it lives on — both, where the epic lives outside this checkout>"
+HOST="<that host>"; AT=(${REPO:+--repo "$REPO"} ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"})
+node "$S/ledger.mjs" --issue "$EPIC" "${AT[@]}"
+WAVES="$(node "$S/epics.mjs" --epic "$EPIC" "${AT[@]}")"
+printf '%s\n' "$WAVES" | jq -c '{read, complete, hierarchy, reason, rest, waves: [.waves[]? | {number, state, reason}]}'
+LISTED=(<the waves the epic's ledger header lists, where WAVES is not complete or has no hierarchy>)
+# The open waves' ledgers — every wave's where none is open — and the header's, once
+for W in $({ printf '%s' "$WAVES" | jq -r '[.waves[]? | select(.state == "open")] as $o
+    | (if ($o | length) > 0 then $o else [.waves[]?] end)[] | .number'; printf '%s\n' "${LISTED[@]}"; } | sort -un); do
+  node "$S/ledger.mjs" --issue "$W" "${AT[@]}"
+done
+DEEP="<the issues of ONE repository: the epic, the waves read above, and a return's issue where it shares it>"
+node "$S/issue-slice.mjs" --deep "$DEEP" "${AT[@]}"
 ```
 
-One repository a call: a tracking epic's batches often return in another, and a number read
-against the wrong one answers with an unrelated issue rather than with nothing. A request and a
-return each resolve against the repository they live in, in a call of their own where that is
-not the epic's. `ledger.mjs` first — whether a ledger stands, and whether its
-coordinate resolves to one comment — then that comment out of `--deep`'s, picked by the author
-and moment `ledger.mjs` gave for it rather than by matching its marker again, read whole, as
-prose: its batch rows, the merge queue and the gates, and the expectations the user owes
-([`../../references/wave-ledger.md`](../../references/wave-ledger.md)). Each change request the
-queue names is read as below. The live registry says which batch sessions answer now — presence,
-never absence.
+One repository a call: a tracking epic's batches often return in another, and a number read against
+the wrong one answers with an unrelated issue rather than with nothing. A request and a return each
+resolve against the repository they live in, in a call of their own where that is not the epic's.
+`ledger.mjs` first — whether a ledger stands, and whether its coordinate resolves to one comment —
+then that comment out of `--deep`'s, picked by the author and moment `ledger.mjs` gave for it rather
+than by matching its marker again, read whole, as prose
+([`../../references/wave-ledger.md`](../../references/wave-ledger.md)): from the epic's, its waves
+and the expectations the user owes; from each wave's read, its batch rows, the merge queue and the
+gates. Which waves an epic has — `LISTED` filled from the header and the block run again where the
+answer is not `complete` or has no hierarchy — and its progress across them and the work no wave took, are
+[`../../references/wave-issue.md`](../../references/wave-issue.md)'s. Each change request the queue
+names is read as below. The live registry says which batch sessions answer now — presence, never
+absence.
 
 ### This batch
 
-The same two reads, the epic being the order's; from its ledger, this batch's row, the standing
-constraints, the decisions, and the expectations naming this batch. Then its own change request,
+The same reads, the epic and the wave being the order's; from the epic's ledger the standing
+constraints and the decisions, from the wave's this batch's row and the expectations naming it. Then its own change request,
 as below; its branch against the order's base pin; and the coordinate the order names for its
 return — the comment there opening with its `wave-return` marker, or, from an order written before
 that marker, the one carrying its tag, either written by this session's own account, a marker being
@@ -102,11 +114,10 @@ states.
 
 ### This run
 
-The plan-doc, where one was kept — named and placed per `session-naming.md`, its first line
-naming this checkout — for the gate's
-settlements; the task list for the slice in flight; then the tree, which outranks both: each
-slice's branch, whether its parent's history carries it, and in request mode whether its request
-merged.
+The plan-doc, where one was kept — named and placed per `session-naming.md`, its first line naming
+this checkout — for the gate's settlements; the task list for the slice in flight; then the tree,
+which outranks both: each slice's branch, whether its parent's history carries it, and in request
+mode whether its request merged.
 
 ```bash
 SLICE="<the slice's branch>"
@@ -130,9 +141,8 @@ that repository by identity is another project's
 ([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) — a fork keeps the
 upstream's name — and the slice stays unmerged until one of that repository's own says otherwise.
 
-A run kept without a plan-doc — the common case for a small one — prints its settlements as
-unread, never as their defaults. What the task list says and the tree does not confirm is
-unknown, not done.
+A run kept without a plan-doc — the common case for a small one — prints its settlements as unread,
+never as their defaults. What the task list says and the tree does not confirm is unknown, not done.
 
 ### A change request, in any role
 

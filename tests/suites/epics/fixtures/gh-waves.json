@@ -1,0 +1,7 @@
+{
+  "want_host": "forge.example",
+  "want_epic": "12",
+  "subpages": [
+    "{\"data\": {\"repository\": {\"nameWithOwner\": \"team/app\", \"issue\": {\"subIssuesSummary\": {\"total\": 3}, \"subIssues\": {\"totalCount\": 3, \"pageInfo\": {\"hasNextPage\": false, \"endCursor\": null}, \"nodes\": [{\"number\": 20, \"title\": \"Wave 20 of epic #12: a topic\", \"url\": \"https://forge.example/team/app/issues/20\", \"state\": \"OPEN\", \"stateReason\": null, \"repository\": {\"nameWithOwner\": \"team/app\"}, \"labels\": {\"totalCount\": 1, \"nodes\": [{\"name\": \"wave\"}]}, \"subIssuesSummary\": {\"total\": 2, \"completed\": 1}}, {\"number\": 21, \"title\": \"Wave 21 of epic #12: a topic\", \"url\": \"https://forge.example/team/app/issues/21\", \"state\": \"CLOSED\", \"stateReason\": \"NOT_PLANNED\", \"repository\": {\"nameWithOwner\": \"team/app\"}, \"labels\": {\"totalCount\": 2, \"nodes\": [{\"name\": \"Wave\"}, {\"name\": \"bug\"}]}, \"subIssuesSummary\": {\"total\": 2, \"completed\": 1}}, {\"number\": 22, \"title\": \"Wave 22 of epic #12: a topic\", \"url\": \"https://forge.example/team/app/issues/22\", \"state\": \"CLOSED\", \"stateReason\": \"COMPLETED\", \"repository\": {\"nameWithOwner\": \"team/app\"}, \"labels\": {\"totalCount\": 1, \"nodes\": [{\"name\": \"bug\"}]}, \"subIssuesSummary\": {\"total\": 2, \"completed\": 1}}]}}}}}"
+  ]
+}

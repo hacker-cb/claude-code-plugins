@@ -1,0 +1,7 @@
+{
+  "want_host": "forge.example",
+  "want_epic": "12",
+  "subpages": [
+    "{\"data\": {\"repository\": {\"nameWithOwner\": \"team/app\", \"issue\": {\"subIssuesSummary\": {\"total\": 2}, \"subIssues\": {\"totalCount\": 2, \"pageInfo\": {\"hasNextPage\": false, \"endCursor\": null}, \"nodes\": [{\"number\": 20, \"title\": \"Wave 20 of epic #12: a topic\", \"url\": \"https://forge.example/team/app/issues/20\", \"state\": \"OPEN\", \"stateReason\": null, \"repository\": {\"nameWithOwner\": \"team/app\"}, \"labels\": {\"totalCount\": 1, \"nodes\": [{\"name\": \"wave\"}]}, \"subIssuesSummary\": {\"total\": 2, \"completed\": 1}}, {\"number\": 24, \"title\": \"Wave 24 of epic #12: a topic\", \"url\": \"https://forge.example/team/app/issues/24\", \"state\": \"OPEN\", \"stateReason\": null, \"repository\": {\"nameWithOwner\": \"team/app\"}, \"labels\": {\"totalCount\": 1, \"nodes\": [{\"name\": \"stage\"}]}, \"subIssuesSummary\": {\"total\": 2, \"completed\": 1}}]}}}}}"
+  ]
+}

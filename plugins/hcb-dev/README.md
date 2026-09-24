@@ -250,9 +250,11 @@ the plan stages them.
   `references/session-naming.md`, file the umbrella where none exists, hang the
   epic's own issues under it so the forge counts what is done, label it `epic`
   and file its sessions into one sidebar group per `references/epic-structure.md`,
-  open the wave ledger on the epic), draw the split per `references/wave-planning.md` and
+  open the epic's ledger on it), draw the split per `references/wave-planning.md` and
   get the user's word on the table — the epic's merge authority settled with
-  it — launch through `wave-dispatch`, then run the
+  it, and each wave's own issue filed on it, labelled `wave`, with a ledger of its own
+  and the wave's issues hung under it per `references/wave-issue.md` — launch
+  through `wave-dispatch`, then run the
   loop — answering batch questions only after re-verifying against the tree,
   accepting returns against the ledger's standing constraints, recomputing what
   an executed tracker edit moved in the slice, keeping the epic's own wave table
@@ -438,7 +440,7 @@ name stands for.
   than its exit status, so a push nobody waited out is reported as unsettled, never as
   refused.
 - [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
-  stands on the epic issue, whether the next write fits under the cap — in bytes, whatever
+  stands on the epic's issue or a wave's, which of the two it is, whether the next write fits under the cap — in bytes, whatever
   unit the forge's own refusal names — and whether the archives beside it and the index
   naming them agree — and, asked, **the other that acts**: writes a ledger the session
   composed, moving the journal's oldest entries into its own archive first where the body is over
@@ -447,7 +449,7 @@ name stands for.
 - [`scripts/epics.mjs`](scripts/epics.mjs) — which epics are open: every issue carrying
   the `epic` label, across every owner the account reaches — its own by default, any
   author's under owners named — on the host the checkout lives on rather than the CLI's
-  default, and whether the list is the whole set.
+  default, and whether the list is the whole set; with `--epic`, one epic's waves.
 - [`scripts/issue-slice.mjs`](scripts/issue-slice.mjs) — every issue of a slice with its
   links — parent, children, blockers, closing change requests — one call per page on either
   forge, and whether what came back is the whole slice: unread, short and whole are told
@@ -455,7 +457,8 @@ name stands for.
   old to carry. Bodies and comments stay out of the wide read; `--deep` reads the numbers
   named in full; `--since` reads the slice again against an earlier reading of it and says
   what entered, left, was edited or moved a link — each edge once, the forge's own count of
-  link events beside it as a cross-check.
+  link events beside it as a cross-check. `--skip-label` leaves an epic's own structure
+  out of the slice it reads.
 
 - [`scripts/review-round.mjs`](scripts/review-round.mjs) — the one writer of a round's work
   directory, outside the repository: candidates, groups and verdicts go in only through it,
@@ -542,7 +545,13 @@ saying something else. Each file opens by saying what it owns.
 - [`references/wave-planning.md`](references/wave-planning.md) — splitting an epic
   into batches and waves. Read by whatever partitions work into parallel sessions.
 - [`references/wave-ledger.md`](references/wave-ledger.md) — the master's durable
-  state. Read on every event it records, and first after any restart.
+  state: the epic's ledger and each wave's. Read on every event they record, and first
+  after any restart.
+- [`references/wave-issue.md`](references/wave-issue.md) — a wave's issue: filed on the
+  word that approves its plan, the work hung under it, counted, closed. Read whenever a wave
+  opens, takes an issue or closes.
+- [`references/epic-migration.md`](references/epic-migration.md) — an epic whose ledger is
+  still in format 1, rebuilt once a wave closes and none runs. Read by a master holding one.
 - [`references/epic-structure.md`](references/epic-structure.md) — an epic's shape:
   the plugin's own `epic` and `wave` labels, the umbrella's title and body, how it
   closes, and the sidebar group its sessions share. Read by whatever files, labels,

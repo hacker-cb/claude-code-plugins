@@ -35,8 +35,13 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   tip its predecessor's landing left.
 - **Read this session's own name** as the channels show it, never assumed from
   what this session set, before it goes into the `Master:` slot
-  (`session-comms.md`); the `Session group:` slot takes the group the ledger
-  header records.
+  (`session-comms.md`); the `Session group:` slot takes the group the epic's
+  ledger header records, and the order names three coordinates — the epic's
+  ledger, this wave's ledger, and the wave's issue its returns go to
+  ([`../../references/epic-structure.md`](../../references/epic-structure.md)),
+  all three standing before anything is hung — save the wave an epic still in
+  format 1 is finishing, which runs on its one ledger
+  ([`../../references/epic-migration.md`](../../references/epic-migration.md)).
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.
@@ -110,7 +115,7 @@ be read whole rather than to point.
 ## While batches run
 
 - **A boundary renegotiated with one batch is re-issued to every batch sharing
-  it** — recorded at the ledger's coordinate, then sent as a one-line amendment
+  it** — recorded in the wave's ledger, then sent as a one-line amendment
   naming the file and its new owner, before the asking batch builds on the
   change. The launch-time order is not the last
   word on a shared file.
