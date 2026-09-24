@@ -160,9 +160,10 @@ holds, and what it stops is named in the return as the gap it is.
 
 The full report — the shape of `order-return.md`, the batch's `<epic>/<id>`
 as its tag —
-goes **to the tracker coordinate the order names** (the epic, the batch's
-issues), so no restart can lose it; the master gets a short notice pointing at
-it. An order naming none is malformed rather than a configuration to work
+goes **to the tracker coordinate the order names** as one comment opening with
+`<!-- wave-return <epic>/<id> -->`, so no restart can lose it — anything added
+later edited into it, never copied onto the batch's issues; the master gets a
+short notice pointing at it. An order naming none is malformed rather than a configuration to work
 around: ask the master for the coordinate instead of returning into the gap —
 and where no master is left to answer, the return ends through the user, below.
 

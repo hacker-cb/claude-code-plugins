@@ -8,12 +8,18 @@
 // paginated feed, measuring a body against a cap whose own refusal names the wrong number and
 // the wrong unit, and checking that the index and the archives standing on the issue agree.
 //
-// It READS. Writing the ledger is the caller's, because what may be archived out of it is a
-// judgement about the content — the journal while it is inline, then a closed wave — and a
-// script that guessed would move what is still open.
+// It READS, and writes only when asked: `--write` puts a ledger the caller composed on the issue,
+// moving the journal's oldest entries into an archive of its own first where the body is over its
+// budget — the journal being the one part of a ledger that may leave without anyone judging it —
+// and `--append-archive` adds an account to that archive. What else may leave stays the caller's
+// judgement. `--check` reads the text against its shape (`lib/ledger-body.mjs`).
 
-import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
+import { FORMAT, LEDGER_LINE, MARKER, bytes, formatOf, journalOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
@@ -28,12 +34,21 @@ const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
 // stores. Unmeasured on GitLab, which is why it is a flag with a default rather than a constant:
 // a caller that knows its own forge's cap passes it, and one that does not gets GitHub's.
 const DEFAULT_LIMIT = 262144;
+// What a ledger is kept under before its journal starts moving out — well short of the cap, so a
+// write never meets the cap's own refusal, and a ledger stays readable in one go.
+const DEFAULT_BUDGET = 131072;
+// Written on the second line of every archive this script opens: the one kind it adds to. An
+// archive without it — a closed wave's snapshot, one written by hand — is never written into.
+const KIND = '<!-- wave-journal-kind: journal -->';
+const KIND_LINE = /^\s*<!--\s*wave-journal-kind:\s*journal\s*-->\s*$/;
 
 const usage = 'usage: node ledger.mjs --issue <n> [--repo <owner/name>] [--forge gh|glab]'
-  + ' [--host <host>] [--body-file <path>] [--limit <bytes>] [--me <login>] [--repo-dir <path>]';
+  + ' [--host <host>] [--body-file <path>] [--limit <bytes>] [--me <login>] [--repo-dir <path>]'
+  + ' [--check] [--budget <bytes>] [--write | --append-archive <file>] [--was <digest>] [--dump <path>]';
 
 const opts = { issue: null, repo: null, forge: null, host: null, bodyFile: null,
-  limit: DEFAULT_LIMIT, me: null, dir: process.cwd() };
+  limit: DEFAULT_LIMIT, me: null, dir: process.cwd(), check: false, write: false, append: null,
+  dump: null, budget: DEFAULT_BUDGET, was: null };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -52,6 +67,12 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === '--limit') opts.limit = val();
   else if (a === '--me') opts.me = val();
   else if (a === '--repo-dir') opts.dir = val();
+  else if (a === '--check') opts.check = true;
+  else if (a === '--write') opts.write = true;
+  else if (a === '--append-archive') opts.append = val();
+  else if (a === '--dump') opts.dump = val();
+  else if (a === '--budget') opts.budget = val();
+  else if (a === '--was') opts.was = val();
   else { writeAll(2, `ledger: unknown argument '${a}'\n${usage}\n`); process.exit(2); }
 }
 
@@ -82,6 +103,16 @@ if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 // it came as, so `limit` is a number in the answer even when the caller passed the default.
 if (!/^[1-9][0-9]{0,8}$/.test(String(opts.limit))) die('--limit takes a byte count');
 opts.limit = Number(opts.limit);
+if (!/^[1-9][0-9]{0,8}$/.test(String(opts.budget))) die('--budget takes a byte count');
+opts.budget = Number(opts.budget);
+// Acting is asked for, never inferred, and one act a run: what the body to write is, and what
+// the account to add is, would otherwise be one file read two ways.
+if (opts.write && opts.bodyFile === null) die('--write writes the body --body-file names');
+if (opts.write && opts.append !== null) die('--write and --append-archive are two runs');
+if (opts.append !== null && opts.bodyFile !== null) die('--append-archive takes no --body-file');
+const acting = opts.write || opts.append !== null;
+if (acting && opts.dump !== null) die('--dump is a read of its own, never beside a write');
+if (opts.was !== null && !/^[0-9a-f]{16}$/.test(opts.was)) die('--was takes the digest a read answered');
 // A login, which is neither a path segment nor a ref. Admitting what BOTH forges allow rather
 // than one of them: GitHub takes letters, digits and hyphens up to 39; GitLab takes dots and
 // underscores too and admits a LEADING underscore, up to 255; an App's own user carries a
@@ -100,12 +131,20 @@ const answer = {
   //
   // `mine` is three-valued on purpose: true, false, and null for a run that could not name its
   // own user. A ledger nobody can confirm as ours is not a ledger proved foreign.
+  // `digest` names this version of the ledger's text: handed back as `--was`, it refuses a write
+  // over a ledger that changed since it was read.
   ledger: { found: false, id: null, nodeId: null, url: null, bytes: null, chars: null, utf16: null,
-    ambiguous: false, at: null, author: null, mine: null },
+    ambiguous: false, at: null, author: null, mine: null, digest: null },
   archives: [],
   index: { listed: null, present: [], missing: [], unlisted: [] },
   write: { asked: false, bytes: null, chars: null, utf16: null, fits: null, headroom: null,
-    limit: opts.limit },
+    limit: opts.limit, budget: opts.budget, wrote: acting ? false : null,
+    moved: null, ran: [], archived: [], account: null },
+  // The stored ledger's format, against the one this plugin writes.
+  format: { found: null, current: FORMAT },
+  // What `--check` read in the text — the body to be written where one was handed in, else the
+  // stored ledger. `null` where nothing was asked.
+  lint: null,
   me: null,
   faults: [],
   reason: null,
@@ -120,6 +159,11 @@ if (opts.bodyFile !== null) {
   try { body = readFileSync(opts.bodyFile, 'utf8'); }
   catch (e) { answer.reason = text(`--body-file could not be read: ${e.code || 'error'}`); out(); }
   answer.write.asked = true;
+}
+let account = null;
+if (opts.append !== null) {
+  try { account = readFileSync(opts.append, 'utf8'); }
+  catch (e) { answer.reason = text(`--append-archive could not be read: ${e.code || 'error'}`); out(); }
 }
 
 // Which CLI answers for THIS REPOSITORY, never which one has an account: `auth status` succeeds
@@ -241,6 +285,10 @@ answer.read = true;
 // travel beside them because they are what a reader has to hand (`jq length` counts one of
 // them), and a character count falls short of the cap's own count by half on Cyrillic and by
 // three quarters on an emoji — wrong by unit, not by margin.
+// A link travels whole: `text()` bounds prose at 200 characters, and a url cut there names
+// another comment.
+const digestOf = (t) => createHash('sha256').update(t).digest('hex').slice(0, 16);
+const coord = (v) => (typeof v === 'string' && v !== '' ? v.replace(/[\u0000-\u001f\u007f]/g, '') : null);
 const measure = (s) => ({ bytes: Buffer.byteLength(String(s), 'utf8'), chars: [...String(s)].length,
   utf16: String(s).length });
 
@@ -289,7 +337,7 @@ for (const c of rows) {
     continue;
   }
   marked.push({ kind: 'archive', n: [...ns][0], id: text(String(id)), url, at, body: b,
-    author, mine });
+    author, mine, link: typeof c?.html_url === 'string' ? c.html_url : null });
 }
 
 const ledgers = marked.filter((m) => m.kind === 'ledger');
@@ -348,18 +396,20 @@ if (ledgers.length > 1) {
       authors: [l.author] });
   }
   answer.ledger = { found: true, id: l.id, nodeId: l.nodeId, url: l.url, bytes: m.bytes,
-    chars: m.chars, utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine };
+    chars: m.chars, utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine,
+    digest: digestOf(l.body) };
 }
 
 // One archive per comment is the shape; a comment carrying two markers is a fault rather than
 // two archives, since what leaves the ledger goes under a marker of its own.
 const byN = new Map();
+const archOf = new Map();
 for (const a of archives) {
   const m = measure(a.body);
   const row = { n: a.n, id: a.id, url: a.url, bytes: m.bytes, chars: m.chars, utf16: m.utf16,
     author: a.author, mine: a.mine };
   const held = byN.get(a.n);
-  if (held === undefined) { byN.set(a.n, row); continue; }
+  if (held === undefined) { byN.set(a.n, row); archOf.set(a.n, a); continue; }
   // The first read stays, and authorship travels beside it rather than reordering anything:
   // new journal entries go INTO the most recent archive, so picking between two comments that
   // claim one number is the same write-to-the-wrong-comment risk the ledger's own tie carries.
@@ -382,7 +432,7 @@ if (answer.ledger.found) {
   answer.index.listed = [...listed].sort((x, y) => x - y);
   answer.index.missing = answer.index.listed.filter((n) => !byN.has(n));
   for (const n of answer.index.missing) {
-    answer.faults.push({ fault: `the ledger lists archive ${n}, and no comment carries it` });
+    answer.faults.push({ fault: `the ledger lists archive ${n}, and no comment carries it`, n, missing: true });
   }
 }
 // Reconciled whether or not a ledger stands: one deleted, or two of them, leaves its archives
@@ -392,16 +442,223 @@ answer.index.unlisted = answer.index.present.filter((n) => !listed.has(n));
 for (const n of answer.index.unlisted) {
   answer.faults.push({ fault: answer.ledger.found
     ? `archive ${n} stands on the issue and the ledger does not list it`
-    : `archive ${n} stands on the issue and no ledger indexes it` });
+    : `archive ${n} stands on the issue and no ledger indexes it`, n, unlisted: true });
 }
 
-if (answer.write.asked) {
+const stored = answer.ledger.found ? ledgers[0].body : null;
+if (stored !== null) answer.format.found = formatOf(stored);
+if (opts.dump !== null) {
+  if (stored === null) { answer.reason = 'no ledger to dump'; out(); }
+  try { writeFileSync(opts.dump, stored); }
+  catch (e) { answer.reason = text(`--dump could not be written: ${e.code || 'error'}`); out(); }
+}
+let next = body;
+const measureWrite = () => {
+  if (!answer.write.asked) return;
   const m = measure(body);
-  answer.write.bytes = m.bytes;
-  answer.write.chars = m.chars;
-  answer.write.utf16 = m.utf16;
-  answer.write.fits = m.bytes <= opts.limit;
-  answer.write.headroom = opts.limit - m.bytes;
+  Object.assign(answer.write, { bytes: m.bytes, chars: m.chars, utf16: m.utf16,
+    fits: m.bytes <= opts.limit, headroom: opts.limit - m.bytes });
+};
+const finish = () => {
+  if (opts.check) answer.lint = lint(body ?? stored ?? '', { budget: opts.budget });
+  measureWrite();
+  out();
+};
+// Refused before anything is written: `wrote` stays false, and nothing stands to be read again.
+const refuse = (msg) => {
+  answer.reason = text(msg);
+  if (answer.write.moved) answer.write.moved = 0;
+  finish();
+};
+if (!acting) finish();
+
+// Every fault holds a write save two the write itself settles: an archive of ours the ledger does
+// not list yet — an interrupted write, a closed wave moved by hand — which it indexes, and an
+// archive the stored ledger names and no comment carries, which the body written is checked for.
+const holding = answer.faults.filter((f) => !f.missing && !(f.unlisted && byN.get(f.n)?.mine === true));
+if (answer.ledger.ambiguous || holding.length) refuse('faults stand on the issue — repaired before anything is written');
+if (answer.ledger.found && answer.ledger.mine !== true) {
+  refuse(answer.ledger.mine === null ? 'whose ledger this is cannot be told — pass the login this run writes as, --me' : 'the ledger is not ours');
+}
+if (opts.write && answer.ledger.found && opts.was === null) refuse('writing over a ledger takes --was, the digest the read of it answered');
+if (opts.was !== null && answer.ledger.digest !== opts.was) refuse('the ledger changed since it was read — read it again');
+
+// Archives of this run's own that carry the kind line. The one added to is the newest archive on
+// the issue where it is one of these — never an older one, which would put events out of order.
+const ownArchives = [...byN.values()]
+  .filter((a) => a.mine === true && KIND_LINE.test(archOf.get(a.n).body.split('\n', 2)[1] ?? ''))
+  .sort((x, y) => y.n - x.n);
+// The index names the archives that stand, and those this run opens; a new one takes a number no
+// archive holds and no index ever listed.
+const numbers = [...answer.index.present];
+let top = Math.max(0, ...listed, ...numbers);
+const last = ownArchives[0] && ownArchives[0].n === numbers[numbers.length - 1] ? ownArchives[0] : null;
+let current = last ? { n: last.n, id: last.id, text: archOf.get(last.n).body.trimEnd() } : null;
+const plan = [];
+// Onto the archive in hand where it still fits under the cap, its closing newline counted, else
+// into a new one under the next number no archive holds. Answers why not, where it cannot go.
+const place = (entry) => {
+  if (MARKER.test(entry)) return 'a text carrying a marker of this plugin cannot move into an archive';
+  const fresh = (n) => `<!-- wave-journal-${n} -->\n${KIND}`;
+  if (bytes(`${fresh(999999)}\n${entry}\n`) > opts.limit) return 'a text larger than an archive can hold — split it into texts of its own';
+  if (current === null || bytes(`${current.text}\n${entry}\n`) > opts.limit) {
+    const n = top + 1;
+    if (n > 999999) return 'no archive number is left';
+    top = n;
+    numbers.push(n);
+    current = { n, id: null, text: fresh(n) };
+  }
+  current.text = `${current.text}\n${entry}`;
+  if (!plan.includes(current)) plan.push(current);
+  return null;
+};
+
+let accountIn = null;
+let already = null;
+// Exactly the format written here: a newer one carries what this script cannot keep.
+const shaped = (t) => formatOf(t) === FORMAT && journalOf(t).section !== null;
+if (opts.write) {
+  if (!LEDGER_LINE.test(next.split('\n', 1)[0])) refuse('the body does not open with the ledger marker');
+  if (!shaped(next)) refuse(`the body is not format ${FORMAT} with a journal section — --check says where`);
+  // A marker of another kind in the ledger's text makes the comment that kind's too.
+  const foreign = lint(next, { budget: opts.budget }).find((f) => f.rule === 'marker-unknown');
+  if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
+} else {
+  if (stored === null) refuse('no ledger to index the archive');
+  if (!shaped(stored)) refuse(`the ledger is not format ${FORMAT} with a journal section to index the archive`);
+  if (account.trim() === '') refuse('the account is empty');
+  // Already in an archive of ours, whole lines and all — a run that did not settle, sent again:
+  // its link, not a copy.
+  const whole = (t) => `\n${t.trimEnd()}\n`.includes(`\n${account.trimEnd()}\n`);
+  already = ownArchives.find((a) => whole(archOf.get(a.n).body)) ?? null;
+  next = stored;
+}
+// An archive the stored ledger lists and no comment carries leaves the index only where the text
+// handed in no longer names it — never in silence.
+const lost = answer.index.missing.filter((n) => [...next.matchAll(ARCHIVE)].some((m) => Number(m[1]) === n));
+if (lost.length) {
+  refuse(`archive ${lost[0]} is listed and no comment carries it — ${opts.write
+    ? 'leave it out of the body to write without it' : 'a --write of a body without it repairs the index first'}`);
+}
+// Every other archive the text names has to stand, or the next read finds it missing and holds writes.
+const named = [...withIndex(next, numbers).matchAll(ARCHIVE)].map((m) => Number(m[1])).filter((n) => !numbers.includes(n));
+if (named.length) refuse(`the body names archive ${named[0]}, which no comment carries`);
+
+answer.write.moved = 0;
+let blocked = null;
+if (opts.write) {
+  // The journal's oldest lines out, one at a time, until the body is under its budget — never
+  // above the cap — or the next one cannot move; the index rewritten every time, so a body
+  // composed before an archive was added still names it.
+  const ceiling = Math.min(opts.budget, opts.limit);
+  for (;;) {
+    next = withIndex(next, numbers);
+    if (bytes(next) <= ceiling) break;
+    const taken = takeOldest(next);
+    if (taken.moved === null) break;
+    blocked = place(taken.moved);
+    if (blocked) break;
+    next = taken.body;
+    answer.write.moved += 1;
+  }
+} else {
+  // An account is added and indexed, and nothing else moves in the same run; the ledger is
+  // rewritten only where its index no longer names every archive.
+  if (!already) {
+    const why = place(account.trimEnd());
+    if (why) refuse(why);
+    accountIn = current;
+  }
+  const same = numbers.length === listed.size && numbers.every((n) => listed.has(n));
+  if (!same) next = withIndex(next, numbers);
+}
+if (bytes(next) > opts.limit) {
+  refuse(blocked ?? (opts.write ? 'over the cap with the journal out — what else may leave is the caller\'s to judge'
+    : 'the ledger would pass the cap — a --write moves its journal out first'));
 }
 
-out();
+// The writes, in order: every archive first, the ledger last, so an interruption leaves an archive
+// nothing points at — which the next write indexes — rather than an index naming what was never
+// written. Each is read back: a write's exit status is not what it stored.
+const base = forge === 'gh'
+  ? (opts.repo ? `repos/${repoPath}` : 'repos/{owner}/{repo}')
+  : `projects/${opts.repo ? encodeURIComponent(opts.repo) : ':fullpath'}`;
+const issuePath = `${base}/issues/${encodeURIComponent(opts.issue)}`;
+const commentPath = (id) => (forge === 'gh' ? `${base}/issues/comments/${id}` : `${issuePath}/notes/${id}`);
+const host = opts.host ? ['--hostname', opts.host] : [];
+const json = (r) => { if (!r.ok) return null; try { return JSON.parse(r.out); } catch { return null; } };
+// A note carries no link of its own on GitLab; it is built from the project's.
+let project = null;
+const linkOf = (c) => {
+  if (forge === 'gh') return c.html_url ?? null;
+  project ??= json(cli(['api', ...host, base], 60000))?.web_url ?? '';
+  return project ? `${project}/-/issues/${opts.issue}#note_${c.id}` : null;
+};
+if (already) answer.write.account = { n: already.n, url: coord(linkOf({ id: already.id, html_url: archOf.get(already.n).link })) };
+if (plan.length === 0 && next === stored) { answer.write.wrote = true; finish(); }
+const scratch = mkdtempSync(join(tmpdir(), 'ledger-'));
+const done = () => rmSync(scratch, { recursive: true, force: true });
+// One body on the issue: a new comment, or an edit of `id` holding `before`. Every write is read
+// back from the comment itself, never from the write's own answer. A create is sent once — one that
+// answered nothing readable may stand under an id this run never saw; an edit is sent again once,
+// and only where the comment still holds `before`: anything else there is somebody's change.
+// A refusal by size is the forge's answer, not transport.
+const holds = (c, t) => c?.body?.trimEnd() === t.trimEnd();
+const put = (id, textBody, what, before) => {
+  const file = join(scratch, `${answer.write.ran.length}.md`);
+  try { writeFileSync(file, textBody); } catch (e) { return { why: `the body could not be staged: ${e.code || 'error'}`, unsent: true }; }
+  for (let attempt = 0; ; attempt += 1) {
+    const r = cli(['api', ...host, '--method', id ? (forge === 'gh' ? 'PATCH' : 'PUT') : 'POST',
+      id ? commentPath(id) : (forge === 'gh' ? `${issuePath}/comments` : `${issuePath}/notes`),
+      '-F', `body=@${file}`], 120000);
+    answer.write.ran.push(`${id ? 'edit' : 'create'} ${what}${attempt ? ' (again)' : ''}`);
+    if (!r.ok && /too long \(maximum is/i.test(`${r.err}\n${r.out}`)) {
+      return { why: `the forge refused ${what} as too long — run again with its cap as --limit`, size: true };
+    }
+    const at = id ?? json(r)?.id;
+    const got = at === null || at === undefined ? null : json(cli(['api', ...host, commentPath(at)], 60000));
+    if (holds(got, textBody)) return { comment: got };
+    if (!id || attempt || !holds(got, before)) break;
+  }
+  return { why: `${what} did not read back as written — read the issue before writing again` };
+};
+// A failure after the first write leaves what stands on the issue unknown: `wrote` is null.
+const failed = (r) => {
+  done();
+  if ((r.size && answer.write.ran.length === 1) || (r.unsent && answer.write.ran.length === 0)) refuse(r.why);
+  answer.write.wrote = null;
+  answer.reason = text(r.why);
+  finish();
+};
+
+for (const a of plan) {
+  const r = put(a.id, `${a.text}\n`, `archive ${a.n}`, a.id ? archOf.get(a.n).body : '');
+  if (r.why) failed(r);
+  const row = { n: a.n, id: text(String(r.comment.id)), url: coord(linkOf(r.comment)) };
+  answer.write.archived.push(row);
+  if (a === accountIn) answer.write.account = { n: a.n, url: row.url };
+}
+if (next !== stored) {
+  const r = put(answer.ledger.found ? answer.ledger.id : null, next, 'ledger', stored ?? '');
+  if (r.why) failed(r);
+  if (!answer.ledger.found) {
+    answer.ledger = { ...answer.ledger, found: true, id: text(String(r.comment.id)),
+      nodeId: typeof r.comment.node_id === 'string' ? text(r.comment.node_id) : null,
+      url: coord(linkOf(r.comment)), at: text(r.comment.created_at ?? null), author: text(meRaw),
+      mine: true };
+  }
+  const m = measure(r.comment.body);
+  Object.assign(answer.ledger, { bytes: m.bytes, chars: m.chars, utf16: m.utf16, digest: digestOf(r.comment.body) });
+}
+// What stands now: the index names every archive, and the faults the write settled are gone.
+answer.faults = answer.faults.filter((f) => !f.missing && !f.unlisted);
+answer.index = { ...answer.index, listed: [...numbers], present: [...numbers], missing: [], unlisted: [] };
+for (const [i, a] of plan.entries()) {
+  const m = measure(`${a.text}\n`);
+  const row = { n: a.n, id: answer.write.archived[i].id, url: answer.write.archived[i].url, bytes: m.bytes,
+    chars: m.chars, utf16: m.utf16, author: text(meRaw), mine: true };
+  answer.archives = [...answer.archives.filter((x) => x.n !== a.n), row].sort((x, y) => x.n - y.n);
+}
+answer.write.wrote = true;
+done();
+finish();

@@ -68,15 +68,19 @@ without `--since` carries no children by name — projected down to the verdict
 line, the numbers and the link keys:
 
 ```bash
-jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> > <graph file>
+# every `<` escaped as JSON's own \u003c: a filter carrying a marker then stays text in the comment
+jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> | sed 's/</\\u003c/g' > <graph file>
 ```
 
-**It lives in the ledger** ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)),
-in a collapsed `<details>` block beside the header's row for the last whole
-reading of the slice, and it belongs to this pass alone: written here, read
-here, **replaced** rather than archived, since it is state and not history. The
-write is measured like any other (`ledger.mjs --body-file`); where it will not
-fit, the graph is not written and the header says so.
+**It lives in a comment of its own** on the epic, opening with `<!-- wave-slice -->` above the
+graph file in a `jsonl` fence, byte for byte; the header's row for the last whole reading of the
+slice ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)) links it beside
+the file's digest (`shasum -a 256 <graph file>`). It belongs to this pass alone: written here, read
+here, **replaced** whole rather than archived — created the first time, edited in place after, the
+body passed as `-F body=@<file>` and read back as any write is (`forge-behaviour.md`). A graph whose
+digest is not the one the header records is no graph: a pass stopped between the two writes left
+it, and the delta is taken as where none stands. Where it will not fit a comment, it is not written
+and the header says so.
 
 **Where no graph stands** — after a survey, after one that did not fit, or the
 first pass of an epic — the call is made without `--was`: the links are then

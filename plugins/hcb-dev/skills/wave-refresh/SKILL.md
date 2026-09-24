@@ -96,7 +96,7 @@ survey's pin and moment, whichever read the slice later; else the pin the ledger
 carries for the wave's live step; else the newest pin among the orders the
 ledger records, ended batches included. Where none of the three answers, this is
 a survey rather than a refresh — say so and stop. A rung carrying no tracker
-moment fixes the base half alone, and one whose graph the ledger does not hold
+moment fixes the base half alone, and one whose graph the ledger does not link
 fixes it without the links: what no delta covers is read over the slice whole
 instead, and the report says which half was a delta and how much of it.
 

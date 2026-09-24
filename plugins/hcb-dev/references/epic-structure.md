@@ -64,10 +64,26 @@ ledger's — and nothing the forge already counts.
 
 ## Markers
 
-A marker — `<!-- wave-ledger -->`, `<!-- wave-close -->` and the rest — is the first line of the
-comment it marks, and the only other place one is written is the ledger's own index of its
-archives (`wave-ledger.md`): no other text quotes one, and a comment is named by
-its link. A comment carrying a marker is read as that marker's, whatever it meant.
+A marker is the first line of the comment it marks, and a comment carrying one anywhere is read
+as that marker's: no other text quotes one, and a comment is named by its link. The one text that
+carries markers inside it is the ledger's own — its format line, its section openers and its
+index of archives (`wave-ledger.md`).
+
+| marker | opens |
+|---|---|
+| `<!-- wave-ledger -->` | the ledger; inside it, `<!-- wave-ledger-format: <n> -->` and each `<!-- wave-section: <name> -->` |
+| `<!-- wave-journal-<n> -->` | an archive of the ledger; `<!-- wave-journal-kind: journal -->` its second line where `ledger.mjs` opened it |
+| `<!-- wave-slice -->` | the graph of the slice's links a refresh leaves, rewritten whole each time |
+| `<!-- wave-return <epic>/<id> -->` | a batch's return, one per batch, a later word to it edited into it |
+| `<!-- wave-close -->` | the closing comment of the epic |
+
+## What the epic learns
+
+A fact about the forge or about this plugin, learned mid-epic, is proposed to the user as an issue
+in the plugin's own tracker — the `repository` its manifest names — written with nothing of the
+project in it, and filed through
+`hcb-dev:issue-tracking` on the user's word. A fact about the project goes to the project's own documentation.
+Either way the ledger keeps the rule in force and the link.
 
 ## Closing the epic
 
