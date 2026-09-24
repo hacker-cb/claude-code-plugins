@@ -11,9 +11,11 @@ export const SECTION_NAMES = ['header', 'batches', 'verdicts', 'decisions', 'con
 
 const FORMAT_LINE = /^\s*<!--\s*wave-ledger-format:\s*(\d{1,4})\s*-->\s*$/;
 const SECTION_LINE = /^\s*<!--\s*wave-section:\s*([a-z-]+)\s*-->\s*$/;
-// The journal's index: the line naming every archive — `archives:` after an item marker, or none,
-// whatever the rest of it says. `withIndex` writes it back in one form.
-const INDEX_LINE = /^\s*(?:[-*+]|\d+\.)?\s*archives:/i;
+// The journal's index: a word and a colon — in whatever language — then archive markers and
+// nothing else; `archives:` alone where there are none yet. `withIndex` writes it back in one form.
+const INDEX_LINE = /^\s*(?:[-*+]|\d+\.)?\s*(?:archives:|[\p{L}\p{N}_-]+:(?=\s*<!--))(?:\s*<!--\s*wave-journal-\d{1,6}\s*-->)*\s*$/iu;
+const LEDGER_LINE = /^\s*<!--\s*wave-ledger\s*-->\s*$/;
+const HEADING = /^\s*#{1,6}\s/;
 // Any of this plugin's markers: text carrying one is never moved into an archive, where it would
 // be read as a second archive or a second ledger.
 export const MARKER = /<!--\s*wave-/;
@@ -66,6 +68,7 @@ const entriesOf = (lines, s) => {
 export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => {
   const found = [];
   const add = (rule, detail, section = null) => found.push({ rule, section, detail });
+  if (!LEDGER_LINE.test(body.split('\n', 1)[0])) add('marker', 'the first line is not <!-- wave-ledger -->');
   const format = formatOf(body);
   if (format < FORMAT) add('format', `format ${format}, the current one being ${FORMAT}`);
   const size = bytes(body);
@@ -85,7 +88,7 @@ export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => 
   for (const s of sections) {
     if (s.name === 'decisions' || s.name === 'constraints') {
       for (let i = s.start + 1; i < s.end; i += 1) {
-        if (/^#{1,6}\s/.test(lines[i])) add('subsection', `a heading inside ${s.name}: ${lines[i].slice(0, 60)}`, s.name);
+        if (HEADING.test(lines[i])) add('subsection', `a heading inside ${s.name}: ${lines[i].slice(0, 60)}`, s.name);
       }
       for (const e of entriesOf(lines, s)) {
         const text = lines.slice(e.from, e.to).join('\n');
@@ -105,8 +108,8 @@ export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => 
   return found;
 };
 
-// The journal's lines, oldest first: a line per event, whatever marks it, the index line and
-// blank lines aside. A journal moves out a line at a time, so nothing is lost to a shape it
+// The journal's lines, oldest first: a line per event, whatever marks it, the index line, headings
+// and blank lines aside. A journal moves out a line at a time, so nothing is lost to a shape it
 // did not have.
 export const journalOf = (body) => {
   const { lines, sections } = sectionsOf(body);
@@ -114,7 +117,7 @@ export const journalOf = (body) => {
   if (!s) return { lines, section: null, entries: [] };
   const entries = [];
   for (let i = s.start + 1; i < s.end; i += 1) {
-    if (lines[i].trim() !== '' && !INDEX_LINE.test(lines[i])) entries.push({ from: i, to: i + 1 });
+    if (lines[i].trim() !== '' && !INDEX_LINE.test(lines[i]) && !HEADING.test(lines[i])) entries.push({ from: i, to: i + 1 });
   }
   return { lines, section: s, entries };
 };

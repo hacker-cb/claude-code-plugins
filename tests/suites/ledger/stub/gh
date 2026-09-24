@@ -43,14 +43,22 @@ if [ "$1" = "api" ]; then
     jq -n --arg id "$id" --rawfile body "$file" '{id: ($id|tonumber), body: $body, html_url: ("https://forge.example/c/" + $id)}'
     exit 0
   fi
-  # One comment read back by its id: what was written, where something was.
+  # One comment read back by its id: what was written, else what the feed carries under it.
+  # `.readback: get` garbles this read alone, the write's own answer staying as sent.
   for a in "$@"; do
     case "$a" in
       */issues/comments/*|*/notes/*)
         id=${a##*/}
-        [ -f "$store/c$id" ] || { echo "$(basename "$0"): Not Found (HTTP 404)" >&2; exit 1; }
-        [ "$(ask '.readback')" = garbled ] && { jq -n --arg id "$id" '{id: ($id|tonumber), body: "something else"}'; exit 0; }
-        jq -n --arg id "$id" --rawfile body "$store/c$id" '{id: ($id|tonumber), body: $body, html_url: ("https://forge.example/c/" + $id)}'
+        case "$(ask '.readback')" in
+          garbled|get) jq -n --arg id "$id" '{id: ($id|tonumber), body: "something else"}'; exit 0 ;;
+        esac
+        if [ -f "$store/c$id" ]; then
+          jq -n --arg id "$id" --rawfile body "$store/c$id" '{id: ($id|tonumber), body: $body, html_url: ("https://forge.example/c/" + $id)}'
+        else
+          c=$(ask '.comments' | jq -c --arg id "$id" '.[]? | select((.id | tostring) == $id)' 2>/dev/null | head -n 1)
+          [ -n "$c" ] || { echo "$(basename "$0"): Not Found (HTTP 404)" >&2; exit 1; }
+          printf '%s\n' "$c"
+        fi
         exit 0 ;;
     esac
   done

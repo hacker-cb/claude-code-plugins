@@ -68,7 +68,8 @@ without `--since` carries no children by name — projected down to the verdict
 line, the numbers and the link keys:
 
 ```bash
-jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> > <graph file>
+# every `<` escaped as JSON's own \u003c: a filter carrying a marker then stays text in the comment
+jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> | sed 's/</\\u003c/g' > <graph file>
 ```
 
 **It lives in a comment of its own** on the epic, opening with `<!-- wave-slice -->` above the

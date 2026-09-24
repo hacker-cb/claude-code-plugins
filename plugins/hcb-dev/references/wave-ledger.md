@@ -35,9 +35,9 @@ node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--for
 | `archives[]` | one row per `<!-- wave-journal-<n> -->` comment, with its own size |
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
 | `format` | the stored ledger's format against the one written now |
-| `lint[]` | with `--check`: what the text says is wrong with its shape — sections, budget, entries too long, struck or broken up by headings. Advisory: nothing in it holds a chip |
+| `lint[]` | with `--check`: what the text says is wrong with its shape — its first line, sections, budget, entries too long, struck or broken up by headings. Advisory: nothing in it holds a chip |
 | `write.fits` / `.headroom` / `.budget` | whether the body handed in fits under the cap and by how many bytes, and the budget it is kept under — sizes in `bytes`, `chars` / `utf16` only beside them |
-| `write.wrote` / `.moved` / `.ran` / `.archived` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again; each act taken; each archive written |
+| `write.wrote` / `.moved` / `.ran` / `.archived` / `.account` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again; each act taken; each archive written; the archive holding the account |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
 | `reason` | why nothing could be answered or written — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), **both forges answering for this repository** (which `--forge` settles), a body not opening with the marker, or a ledger over the cap with its journal out |
 
