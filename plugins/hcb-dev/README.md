@@ -106,7 +106,7 @@ form: you paste every one of them yourself.
   whether it was verified and at which revision, with a footer totalling the rows by severity and
   by outcome; a refuted finding leaves the table for one line under it rather than standing as
   noise. Runs at a standalone run's end, and at a master's
-  round close on the tree the round landed on, once every return is accepted and its change
+  round close on the ref the round landed on, once every return is accepted and its change
   requests merged — never inside a batch, whose master rules its candidates. Report-only: it fixes
   nothing, and every tracker write goes through `issue-tracking` on your word.
 
