@@ -173,8 +173,8 @@ to the user as the final report, the run here being the epic and the batch
 sessions it is done with among what that report leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never run — naming its reach honestly: worktrees the host leased to other
 sessions it reports rather than removes, and each batch session's own residue
 is that session's to sweep. Write the ledger's closing line, then close the epic
-per `epic-structure.md` — its closing comment, the issue closed, and the session group
-offered to the user for deletion.
+per `epic-structure.md` — its closing comment, and the issue's close and the session
+group's deletion both put to the user.
 
 ## Reference files
 

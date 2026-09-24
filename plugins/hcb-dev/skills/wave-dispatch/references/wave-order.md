@@ -76,7 +76,8 @@ are not yours>
 Master: <its name>. The wave ledger — standing constraints included — is
 <its coordinate>, and it carries that name too, should this order's go stale.
 Name it, and any comment of the epic's, by its link: never quote a `<!-- … -->`
-marker in anything you write — a comment carrying one is read as that marker's.
+marker in anything you write to the tracker — a comment carrying one is read as
+that marker's.
 Before you build, read the whole batch through — this order, the ledger, its
 issues on the forge in full, in one call for all of them as hcb-dev:wave-worker
 reads them, the code they name — and send the master your start report: what

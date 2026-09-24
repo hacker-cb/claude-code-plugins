@@ -17,8 +17,8 @@ Two labels belong to the plugin's own process, spelled the same in every reposit
 
 They are **not classification roles** ([`classification.md`](classification.md)): they say where
 an issue stands in the coordination, never its kind of work, component or priority, and a reading
-of a slice's roles, cardinality or tiers reads past them — unless the repository's own set already
-gives the name a role. The epic keeps the labels the
+of a slice's roles, cardinality or tiers reads past them. Where the repository's own set already
+gives `epic` a role, applying it is a classification edit like any other, and goes to the user. The epic keeps the labels the
 repository classifies it by; a wave issue carries `wave` alone.
 
 **The role assignment authorizes them**, as it authorizes filing the umbrella: the master
@@ -66,13 +66,14 @@ ledger's — and nothing the forge already counts.
 
 A marker — `<!-- wave-ledger -->`, `<!-- wave-close -->` and the rest — is the first line of the
 comment it marks, and the only other place one is written is the ledger's own index of its
-archives ([`wave-ledger.md`](wave-ledger.md)): no other text quotes one, and a comment is named by
+archives (`wave-ledger.md`): no other text quotes one, and a comment is named by
 its link. A comment carrying a marker is read as that marker's, whatever it meant.
 
 ## Closing the epic
 
 Once the ledger's closing line is written, the final report goes on the epic as a comment of its
-own, opening with `<!-- wave-close -->`, and then the issue closes:
+own, opening with `<!-- wave-close -->`, and asks the user to close the issue — closed on their
+word:
 
 ```bash
 N="<the epic>"; REASON="<completed | not planned>"
@@ -104,7 +105,7 @@ session group, its name going into the ledger header.
 
 ## Listing the open epics
 
-`scripts/epics.mjs` answers which epics are open — every issue carrying the label, across every
+[`../scripts/epics.mjs`](../scripts/epics.mjs) answers which epics are open — every issue carrying the label, across every
 owner the account reaches rather than the one repository a session stands in:
 
 ```bash

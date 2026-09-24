@@ -30,3 +30,5 @@ glab-listing-404	--label epic	0	the listing could not be read|NOT:is not a group
 glab-short	--label epic	0	"count": 3|"complete": false	a walk that came back shorter than the count the forge gave is not the set
 glab-uncounted	--label epic	0	"count": 1|"complete": null	where GitLab gives no count the list is of unknown completeness, never complete
 gh-shift-hides	--forge gh	0	"count": 3|"complete": false	a page that shifted repeats one epic where it pushed another off: the repeat is not counted as the one missing
+glab-paged	--label epic	0	"number": 1|"number": 3|"count": 3|"complete": true	GitLab is walked a page at a time to the last one, a repeat listed once
+glab-shift-hides	--label epic	0	"count": 3|"complete": false	a page that shifted repeats one epic where it pushed another off: the count the forge gave says the walk came back short

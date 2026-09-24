@@ -56,6 +56,8 @@ const answer = {
   reason: null,
 };
 const out = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
+// Refused once reading has begun: an answer, not a usage error, so it stays JSON.
+const refuse = (msg) => { answer.reason = text(msg); out(); };
 
 // A coordinate travels whole: `text()` bounds prose at 200 characters, and a path or a url cut
 // there names another issue.
@@ -77,10 +79,11 @@ const probe = (cmd) => {
     : ['api', ...(opts.host ? ['--hostname', opts.host] : []), 'projects/:fullpath'];
   const r = runner(opts.dir, cmd)(args, 60000);
   if (!r.ok) return { cmd, ok: false, why: `${cmd}: ${why(r)}` };
-  let url = null;
-  try { const parsed = JSON.parse(r.out); url = cmd === 'gh' ? parsed?.url : parsed?.web_url; } catch { /* no url */ }
   let host = null;
-  try { host = new URL(url).host; } catch { /* no host */ }
+  try {
+    const parsed = JSON.parse(r.out);
+    host = new URL(cmd === 'gh' ? parsed?.url : parsed?.web_url).host;
+  } catch { /* no host to name */ }
   return { cmd, ok: true, host };
 };
 
@@ -88,41 +91,41 @@ const probe = (cmd) => {
 const probed = opts.forge && opts.host ? [{ cmd: opts.forge, ok: true, host: opts.host }]
   : (opts.forge ? [opts.forge] : ['gh', 'glab']).map(probe);
 const answered = probed.filter((p) => p.ok);
-if (answered.length === 0) {
-  answer.reason = text(`no forge CLI answered for this repository — ${probed.map((p) => p.why).join('; ')}`);
-  out();
-}
-if (answered.length > 1) { answer.reason = 'both forges answer for this repository — name one with --forge'; out(); }
+if (answered.length === 0) refuse(`no forge CLI answered for this repository — ${probed.map((p) => p.why).join('; ')}`);
+if (answered.length > 1) refuse('both forges answer for this repository — name one with --forge');
 const forge = answered[0].cmd;
 const host = opts.host ?? answered[0].host;
-if (!hostOk(host)) { answer.reason = 'the repository answered without a host this run can name'; out(); }
+if (!hostOk(host)) refuse('the repository answered without a host this run can name');
 answer.forge = forge;
 answer.host = host;
 const cli = runner(opts.dir, forge);
 
 // One epic reached twice — two owners that overlap, a page that shifted under a paginated walk —
-// is one epic. Answers the row's key, so a query can count what it reached apart from repeats.
+// is listed once. Each query keeps its own tally of what it reached, repeats counted once and a
+// row with no key to know it by counted as it comes, and is whole where that reaches the
+// largest count the forge gave it.
 const seen = new Set();
-const add = ({ repo, number, title, url, updated, children }) => {
-  const row = { repo: coord(repo), number: Number.isInteger(number) ? number : null, title: text(title),
-    url: coord(url), updated: text(updated), children };
-  const key = row.url ?? (row.repo && row.number !== null ? `${row.repo}#${row.number}` : null);
-  if (key === null) { answer.epics.push(row); return {}; }
-  if (!seen.has(key)) { seen.add(key); answer.epics.push(row); }
-  return key;
+const query = () => {
+  const keys = new Set();
+  let keyless = 0;
+  return {
+    add: ({ repo, number, title, url, updated, children }) => {
+      const row = { repo: coord(repo), number: Number.isInteger(number) ? number : null,
+        title: text(title), url: coord(url), updated: text(updated), children };
+      const key = row.url ?? (row.repo && row.number !== null ? `${row.repo}#${row.number}` : null);
+      if (key === null) { keyless += 1; answer.epics.push(row); return; }
+      keys.add(key);
+      if (!seen.has(key)) { seen.add(key); answer.epics.push(row); }
+    },
+    // No count at all leaves nothing to check against, which is unknown rather than whole.
+    settle: (total) => {
+      if (total === null) { if (answer.complete !== false) answer.complete = null; }
+      else if (keys.size + keyless < total) answer.complete = false;
+    },
+  };
 };
-// Refused after the forge is known: read, not a usage error, so the answer stays JSON.
-const refuse = (msg) => { answer.reason = msg; out(); };
+answer.complete = true;
 
-const failed = (r, what) => text(`${what} could not be read: ${why(r)}`);
-const pagesOf = (r, what) => {
-  if (!r.ok) { answer.reason = failed(r, what); out(); }
-  const pages = parsePages(r.out);
-  if (pages === null) { answer.reason = `${what} was not JSON`; out(); }
-  return pages;
-};
-
-let complete = true;
 if (forge === 'gh') {
   // One query per owner, each an organisation or a user by its own qualifier; without owners,
   // `author:@me` — the account's own epics, wherever they stand — is one query over every owner.
@@ -135,36 +138,34 @@ if (forge === 'gh') {
     let type = null;
     if (who.ok) { try { type = JSON.parse(who.out)?.type; } catch { /* no type */ } }
     if (type !== 'Organization' && type !== 'User') {
-      answer.reason = text(`owner '${o}' could not be resolved: ${who.ok ? 'no type in the answer' : why(who)}`);
-      out();
+      refuse(`owner '${o}' could not be resolved: ${who.ok ? 'no type in the answer' : why(who)}`);
     }
     scopes.push(`${type === 'Organization' ? 'org' : 'user'}:${o}`);
   }
   if (scopes.length === 0) scopes.push('author:@me');
   for (const scope of scopes) {
+    const what = `the search over ${scope}`;
     // Each page cut down to what a row takes before it reaches this process: issue bodies would
     // otherwise ride along, a page at a time, into one buffer.
-    const pages = pagesOf(cli(['api', '--hostname', host, '--paginate', '-X', 'GET', 'search/issues',
+    const r = cli(['api', '--hostname', host, '--paginate', '-X', 'GET', 'search/issues',
       '-f', `q=is:issue is:open label:"${opts.label}" ${scope}`, '-f', 'per_page=100', '--jq',
       '{total_count, incomplete_results, items: [.items[]? | {number, title, html_url, repository_url, updated_at, sub_issues_summary}]}'],
-    180000), `the search over ${scope}`);
+    180000);
+    if (!r.ok) refuse(`${what} could not be read: ${why(r)}`);
+    const pages = parsePages(r.out);
+    if (pages === null) refuse(`${what} was not JSON`);
+    const q = query();
     let total = null;
-    const reached = new Set();
     for (const p of pages) {
-      if (!p || typeof p !== 'object' || !Array.isArray(p.items)) {
-        answer.reason = 'the search answered with something that is not a result page';
-        out();
-      }
+      if (!p || typeof p !== 'object' || !Array.isArray(p.items)) refuse(`${what} answered with something that is not a result page`);
       // The largest count any page reported: one that shrank between pages is no licence to
       // call a shorter list whole.
-      if (typeof p.total_count === 'number') total = Math.max(total ?? 0, p.total_count);
+      if (Number.isInteger(p.total_count)) total = Math.max(total ?? 0, p.total_count);
       // A search the forge timed out on says so only in its flag.
-      if (p.incomplete_results === true) complete = false;
+      if (p.incomplete_results === true) answer.complete = false;
       for (const it of p.items) {
         const sub = it?.sub_issues_summary;
-        // Counted by key, never as delivered: a row a shifted page repeats is not the one it
-        // pushed off.
-        reached.add(add({
+        q.add({
           repo: typeof it?.repository_url === 'string' ? it.repository_url.split('/').slice(-2).join('/') : null,
           number: it?.number,
           title: it?.title,
@@ -173,14 +174,11 @@ if (forge === 'gh') {
           children: sub && Number.isInteger(sub.total)
             ? { total: sub.total, completed: Number.isInteger(sub.completed) ? sub.completed : null }
             : null,
-        }));
+        });
       }
     }
-    const got = reached.size;
-    // A search stops at 1 000 hits and says so only in its count; one that gave no count leaves
-    // nothing to check against.
-    if (total === null) complete = complete === false ? false : null;
-    else if (got < total) complete = false;
+    // A search stops at 1 000 hits and says so only in its count.
+    q.settle(total);
   }
 } else {
   // GitLab's own words for "none" and "any" are no label to list by.
@@ -188,29 +186,36 @@ if (forge === 'gh') {
   // Without owners, what the account created — never `all`, which on a public instance is every
   // issue the account can see. An owner is a group, read through the group's own listing.
   // Archived projects included: an epic open there is still open.
-  const q = `labels=${encodeURIComponent(opts.label)}&state=opened&non_archived=false`;
+  const q = `labels=${encodeURIComponent(opts.label)}&state=opened&non_archived=false&per_page=100`;
   const lists = opts.owners.length
-    ? opts.owners.map((o) => ({ path: `groups/${encodeURIComponent(o)}/issues?${q}`, what: `group '${o}'` }))
-    : [{ path: `issues?${q}&scope=created_by_me`, what: 'the listing' }];
+    ? opts.owners.map((o) => ({ path: `groups/${encodeURIComponent(o)}/issues?${q}`, what: `group '${o}'`, group: true }))
+    : [{ path: `issues?${q}&scope=created_by_me`, what: 'the listing', group: false }];
   for (const list of lists) {
-    // The count first, from the header a one-row page carries: a paginated walk says nothing
-    // about how many there were. GitLab leaves the header out past a size it will not count, and
-    // the list is then of unknown completeness rather than complete.
-    const head = cli(['api', '--hostname', host, '-i', `${list.path}&per_page=1`], 60000);
-    if (!head.ok) {
-      answer.reason = /\(HTTP 404\)/.test(head.err) && opts.owners.length
-        ? text(`${list.what} is not a group this account can read: ${head.line()}`)
-        : failed(head, list.what);
-      out();
-    }
-    const header = /^x-total:\s*(\d+)\s*$/im.exec(head.out.split(/\r?\n\r?\n/)[0] ?? '');
-    const total = header ? Number(header[1]) : null;
-    const reached = new Set();
-    for (const p of pagesOf(cli(['api', '--hostname', host, '--paginate', `${list.path}&per_page=100`], 180000), list.what)) {
-      if (!Array.isArray(p)) { answer.reason = `${list.what} answered with something that is not a list`; out(); }
-      for (const it of p) {
+    // Walked a page at a time with its headers: each page carries the count and where the next
+    // one is, and one page's rows are all a buffer ever holds. GitLab leaves the count out past
+    // a size it will not count.
+    const q2 = query();
+    let total = null;
+    let page = '1';
+    for (let walked = 0; page !== ''; walked += 1) {
+      if (walked >= 100) refuse(`${list.what} ran past 100 pages`);
+      const r = cli(['api', '--hostname', host, '-i', `${list.path}&page=${page}`], 120000);
+      if (!r.ok) {
+        refuse(list.group && /\(HTTP 404\)/.test(r.err)
+          ? `${list.what} is not a group this account can read: ${why(r)}`
+          : `${list.what} could not be read: ${why(r)}`);
+      }
+      const split = /\r?\n\r?\n/.exec(r.out);
+      const head = split ? r.out.slice(0, split.index) : '';
+      let rows = null;
+      try { rows = JSON.parse(split ? r.out.slice(split.index + split[0].length) : r.out); } catch { /* below */ }
+      if (!Array.isArray(rows)) refuse(`${list.what} answered with something that is not a list`);
+      const t = /^x-total:\s*(\d+)\s*$/im.exec(head);
+      if (t) total = Math.max(total ?? 0, Number(t[1]));
+      page = (/^x-next-page:[ \t]*(\d*)[ \t]*$/im.exec(head)?.[1]) ?? '';
+      for (const it of rows) {
         const ref = typeof it?.references?.full === 'string' ? it.references.full : null;
-        reached.add(add({
+        q2.add({
           repo: ref ? ref.replace(/#\d+$/, '') : null,
           number: it?.iid,
           title: it?.title,
@@ -218,17 +223,13 @@ if (forge === 'gh') {
           updated: it?.updated_at,
           // A related link is listed, not counted: GitLab keeps no child count for an issue.
           children: null,
-        }));
+        });
       }
     }
-    const got = reached.size;
-    if (total === null) complete = complete === false ? false : null;
-    else if (got < total) complete = false;
+    q2.settle(total);
   }
 }
 
 answer.count = answer.epics.length;
-// Whether every query came back whole: `null` where one of them could not be counted.
-answer.complete = complete;
 answer.read = true;
 out();
