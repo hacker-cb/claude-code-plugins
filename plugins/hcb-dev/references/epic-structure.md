@@ -33,19 +33,18 @@ one the group passes down counts — is the label, whatever colour it has.
 ```bash
 # From a checkout of the epic's own repository, as every command here.
 LABEL="<epic | wave>"; COLOUR="<its colour>"; DESC="<its description>"; N="<the issue>"
-# GitHub — read; a 404 is the label absent, and only then is it created
+# GitHub — created only where the read answers 404; any other failure is unread, never absent
 HOST="$(gh repo view --json url --jq '.url | split("/")[2]')"   # this checkout's, not gh's default
-gh api --hostname "$HOST" "repos/{owner}/{repo}/labels/$LABEL" --jq .name
-gh label create "$LABEL" --color "$COLOUR" --description "$DESC"
-gh issue edit "$N" --add-label "$LABEL"
-# GitLab — the same three steps
-glab api "projects/:fullpath/labels/$LABEL?include_ancestor_groups=true"
-glab label create --name "$LABEL" --color "#$COLOUR" --description "$DESC"
-glab issue update "$N" --label "$LABEL"
+if ! out=$(gh api --hostname "$HOST" "repos/{owner}/{repo}/labels/$LABEL" 2>&1); then
+  case "$out" in *"(HTTP 404)"*) gh label create "$LABEL" --color "$COLOUR" --description "$DESC" ;;
+    *) echo "unread: $out"; false ;; esac
+fi && gh issue edit "$N" --add-label "$LABEL"
+# GitLab — the same
+if ! out=$(glab api "projects/:fullpath/labels/$LABEL?include_ancestor_groups=true" 2>&1); then
+  case "$out" in *"(HTTP 404)"*) glab label create --name "$LABEL" --color "#$COLOUR" --description "$DESC" ;;
+    *) echo "unread: $out"; false ;; esac
+fi && glab issue update "$N" --label "$LABEL"
 ```
-
-A read that failed for any reason but a 404 is unread, not absent — read it again rather than
-create a second label beside the one it could not see.
 
 ## The title and the body
 
