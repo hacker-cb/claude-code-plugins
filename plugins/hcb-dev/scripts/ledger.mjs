@@ -18,7 +18,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
-import { FORMAT, bytes, formatOf, journalOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
+import { FORMAT, MARKER, bytes, formatOf, journalOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
@@ -39,6 +39,7 @@ const DEFAULT_BUDGET = 131072;
 // Written on the second line of every archive this script opens: the one kind it adds to. An
 // archive without it — a closed wave's snapshot, one written by hand — is never written into.
 const KIND = '<!-- wave-journal-kind: journal -->';
+const KIND_LINE = /^\s*<!--\s*wave-journal-kind:\s*journal\s*-->\s*$/;
 
 const usage = 'usage: node ledger.mjs --issue <n> [--repo <owner/name>] [--forge gh|glab]'
   + ' [--host <host>] [--body-file <path>] [--limit <bytes>] [--me <login>] [--repo-dir <path>]'
@@ -106,6 +107,7 @@ opts.budget = Number(opts.budget);
 // the account to add is, would otherwise be one file read two ways.
 if (opts.write && opts.bodyFile === null) die('--write writes the body --body-file names');
 if (opts.write && opts.append !== null) die('--write and --append-archive are two runs');
+if (opts.append !== null && opts.bodyFile !== null) die('--append-archive takes no --body-file');
 // A login, which is neither a path segment nor a ref. Admitting what BOTH forges allow rather
 // than one of them: GitHub takes letters, digits and hyphens up to 39; GitLab takes dots and
 // underscores too and admits a LEADING underscore, up to 255; an App's own user carries a
@@ -275,6 +277,9 @@ answer.read = true;
 // travel beside them because they are what a reader has to hand (`jq length` counts one of
 // them), and a character count falls short of the cap's own count by half on Cyrillic and by
 // three quarters on an emoji — wrong by unit, not by margin.
+// A link travels whole: `text()` bounds prose at 200 characters, and a url cut there names
+// another comment.
+const coord = (v) => (typeof v === 'string' && v !== '' ? v.replace(/[\u0000-\u001f\u007f]/g, '') : null);
 const measure = (s) => ({ bytes: Buffer.byteLength(String(s), 'utf8'), chars: [...String(s)].length,
   utf16: String(s).length });
 
@@ -437,71 +442,84 @@ if (opts.dump !== null) {
   try { writeFileSync(opts.dump, stored); }
   catch (e) { answer.reason = text(`--dump could not be written: ${e.code || 'error'}`); out(); }
 }
+const acting = opts.write || account !== null;
+if (acting) answer.write.wrote = false;
+// Refused before anything is written: `wrote` stays false, and nothing stands to be read again.
+const refuse = (msg) => { answer.reason = text(msg); if (opts.check) answer.lint = lint(next ?? stored ?? '', { budget: opts.budget }); out(); };
+let next = body;
 
-// Every number an archive of this ledger stands under or is named by, so a new one never takes
-// a number already in use.
-const numbers = [...new Set([...(answer.index.listed ?? []), ...answer.index.present])].sort((x, y) => x - y);
-const nextNumber = () => { const n = (numbers.length ? numbers[numbers.length - 1] : 0) + 1; numbers.push(n); return n; };
-// The archive this script adds to: the newest one it opened itself, where one stands.
-const own = [...byN.values()].filter((a) => /^\s*<!--[^>]*-->\s*\n\s*<!--\s*wave-journal-kind:\s*journal\s*-->/.test(bodyOf.get(a.n)))
+// The archive this script adds to: one it opened itself — its kind line second — that the ledger
+// lists and that is this run's own. Anybody can write a marker; only such an archive is taken.
+const own = [...byN.values()]
+  .filter((a) => a.mine === true && listed.has(a.n) && KIND_LINE.test(bodyOf.get(a.n).split('\n', 2)[1] ?? ''))
   .sort((x, y) => y.n - x.n)[0];
-let current = own ? { n: own.n, id: own.id, text: bodyOf.get(own.n), dirty: false } : null;
+const numbers = [...new Set([...listed, ...answer.index.present])].sort((x, y) => x - y);
+let current = own ? { n: own.n, id: own.id, text: bodyOf.get(own.n).trimEnd() } : null;
 const plan = [];
-// Onto the archive in hand where it still fits under the cap, else into a new one.
+// Onto the archive in hand where it still fits under the cap, else into a new one under the next
+// number no archive holds. Answers false where the text cannot go into any archive at all.
 const place = (entry) => {
-  if (bytes(`${KIND}\n${entry}\n`) + 64 > opts.limit) return false;
-  if (current === null || bytes(`${current.text.replace(/\s+$/, '')}\n${entry}\n`) > opts.limit) {
-    const n = nextNumber();
-    current = { n, id: null, text: `<!-- wave-journal-${n} -->\n${KIND}\n`, dirty: true };
+  if (MARKER.test(entry)) return 'an entry carrying a marker of this plugin cannot move into an archive';
+  const fresh = (n) => `<!-- wave-journal-${n} -->\n${KIND}`;
+  if (bytes(`${fresh(999999)}\n${entry}`) > opts.limit) return 'a text larger than an archive can hold — split it';
+  if (current === null || bytes(`${current.text}\n${entry}`) > opts.limit) {
+    const n = (numbers.length ? numbers[numbers.length - 1] : 0) + 1;
+    if (n > 999999) return 'no archive number is left';
+    numbers.push(n);
+    current = { n, id: null, text: fresh(n) };
   }
-  current.text = `${current.text.replace(/\s+$/, '')}\n${entry}\n`;
-  current.dirty = true;
+  current.text = `${current.text}\n${entry}`;
   if (!plan.includes(current)) plan.push(current);
-  return true;
+  return null;
 };
 
-let next = body;
-if (opts.write) {
-  if (!LEDGER.test(next.split('\n', 1)[0])) { answer.reason = 'the body does not open with the ledger marker'; out(); }
-  if (answer.ledger.ambiguous) { answer.reason = 'no single ledger to write to — repair the faults first'; out(); }
-  // The journal's oldest entries out, a few at a time, until the body is under its budget or the
-  // journal is empty. Nothing else leaves here: the rest is the caller's to judge.
-  while (bytes(next) > opts.budget) {
+if (acting) {
+  if (answer.ledger.ambiguous || answer.faults.length) refuse('faults stand on the issue — repaired before anything is written');
+  const shaped = (t) => formatOf(t) >= FORMAT && journalOf(t).section !== null;
+  if (opts.write) {
+    if (!LEDGER.test(next.split('\n', 1)[0])) refuse('the body does not open with the ledger marker');
+    if (!shaped(next)) refuse(`the body is not format ${FORMAT} with a journal section — --check says where`);
+  } else {
+    if (stored === null) refuse('no ledger to index the archive');
+    if (!shaped(stored)) refuse(`the ledger is not format ${FORMAT} with a journal section to index the archive`);
+    for (const block of account.trimEnd().split(/\n\s*\n/)) {
+      const why = place(block);
+      if (why) refuse(why);
+    }
+    next = stored;
+  }
+  // The journal's oldest entries out, one at a time, until the body is under its budget — never
+  // above the cap — or the journal is empty; the index rewritten every time, so a body composed
+  // before an archive was added still names it.
+  const ceiling = Math.min(opts.budget, opts.limit);
+  for (;;) {
+    next = withIndex(next, numbers);
+    if (bytes(next) <= ceiling) break;
     const { entries } = journalOf(next);
     if (entries.length === 0) break;
-    let k = 1;
-    while (k < entries.length && bytes(takeOldest(next, k).body) > opts.budget) k += 1;
-    const taken = takeOldest(next, k);
-    for (const entry of taken.moved) {
-      if (!place(entry)) { answer.reason = 'a journal entry larger than the cap itself — split it by hand'; out(); }
-    }
-    next = withIndex(taken.body, numbers);
+    const taken = takeOldest(next, 1);
+    const why = place(taken.moved[0]);
+    if (why) refuse(why);
+    next = taken.body;
   }
-  if (bytes(next) > opts.limit) {
-    answer.reason = 'over the cap with the journal out — what else may leave is the caller\'s to judge';
-    out();
-  }
-} else if (account !== null) {
-  if (!answer.ledger.found) { answer.reason = 'no ledger to index the archive'; out(); }
-  if (!place(account.replace(/\s+$/, ''))) { answer.reason = 'the account is larger than the cap itself'; out(); }
-  next = withIndex(stored, numbers);
+  if (bytes(next) > opts.limit) refuse('over the cap with the journal out — what else may leave is the caller\'s to judge');
 }
 
 if (opts.check) answer.lint = lint(next ?? stored ?? '', { budget: opts.budget });
 if (answer.write.asked) {
-  const m = measure(next);
+  const m = measure(next ?? body);
   answer.write.bytes = m.bytes;
   answer.write.chars = m.chars;
   answer.write.utf16 = m.utf16;
   answer.write.fits = m.bytes <= opts.limit;
   answer.write.headroom = opts.limit - m.bytes;
 }
-if (!opts.write && account === null) out();
+if (!acting) out();
+if (plan.length === 0 && next === stored) { answer.write.wrote = true; out(); }
 
 // The writes, in order: every archive first, the ledger last, so an interruption leaves an archive
 // nothing points at — which `index.unlisted` catches — rather than an index naming what was never
-// written. Each is read back: a write's exit status is not what it stored, and a refusal that
-// arrives after the forge stored the body is the ordinary case of a transport failure.
+// written. Each is read back: a write's exit status is not what it stored.
 const base = forge === 'gh'
   ? (opts.repo ? `repos/${repoPath}` : 'repos/{owner}/{repo}')
   : `projects/${opts.repo ? encodeURIComponent(opts.repo) : ':fullpath'}`;
@@ -509,49 +527,53 @@ const issuePath = `${base}/issues/${encodeURIComponent(opts.issue)}`;
 const commentPath = (id) => (forge === 'gh' ? `${base}/issues/comments/${id}` : `${issuePath}/notes/${id}`);
 const host = opts.host ? ['--hostname', opts.host] : [];
 const scratch = mkdtempSync(join(tmpdir(), 'ledger-'));
-const same = (a, b) => typeof a === 'string' && a.replace(/\s+$/, '') === b.replace(/\s+$/, '');
-const readBack = (id) => {
-  const r = cli(['api', ...host, commentPath(id)], 60000);
-  if (!r.ok) return null;
-  try { return JSON.parse(r.out); } catch { return null; }
+const done = () => rmSync(scratch, { recursive: true, force: true });
+// After the first write, what stands on the issue is unknown until it is read: `wrote` is null.
+const unsettled = (msg) => { done(); answer.write.wrote = null; answer.reason = text(msg); out(); };
+const json = (r) => { if (!r.ok) return null; try { return JSON.parse(r.out); } catch { return null; } };
+// A note carries no link of its own on GitLab; it is built from the project's.
+let project = null;
+const linkOf = (c) => {
+  if (forge === 'gh') return c.html_url ?? null;
+  project ??= json(cli(['api', ...host, base], 60000))?.web_url ?? '';
+  return project ? `${project}/-/issues/${opts.issue}#note_${c.id}` : null;
 };
-// Put one body on the issue: a new comment, or an edit of `id`. Answers the comment, or null
-// where it did not land after one more attempt.
+// One body on the issue: a new comment, or an edit of `id`. Answers the stored comment, or a
+// reason. A create is sent once — one that answered nothing readable may stand under an id this
+// run never saw; an edit is sent again once where it did not read back as written.
 const put = (id, textBody, what) => {
   const file = join(scratch, `${answer.write.ran.length}.md`);
-  writeFileSync(file, textBody);
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  try { writeFileSync(file, textBody); } catch (e) { return { why: `the body could not be staged: ${e.code || 'error'}` }; }
+  for (let attempt = 0; attempt < (id ? 2 : 1); attempt += 1) {
     const r = cli(['api', ...host, '--method', id ? (forge === 'gh' ? 'PATCH' : 'PUT') : 'POST',
       id ? commentPath(id) : (forge === 'gh' ? `${issuePath}/comments` : `${issuePath}/notes`),
       '-F', `body=@${file}`], 120000);
     answer.write.ran.push(`${id ? 'edit' : 'create'} ${what}${attempt ? ' (again)' : ''}`);
-    let got = null;
-    if (r.ok) { try { got = JSON.parse(r.out); } catch { got = null; } }
+    if (!r.ok && /too long/i.test(r.err)) return { why: `the forge refused ${what} as too long — pass its own cap with --limit` };
+    let got = json(r);
     const gotId = got?.id ?? id;
-    if (gotId !== null && gotId !== undefined) {
-      const back = readBack(gotId);
-      if (back && same(back.body, textBody)) return back;
+    if ((!got || got.body?.trimEnd() !== textBody.trimEnd()) && gotId !== null && gotId !== undefined) {
+      got = json(cli(['api', ...host, commentPath(gotId)], 60000));
     }
-    // An edit that did not read back as written is written once more; a create that answered
-    // nothing readable is not, since it may have landed under an id this run never saw.
-    if (!id && !r.ok) break;
+    if (got && got.body?.trimEnd() === textBody.trimEnd()) return { comment: got };
   }
-  return null;
+  return { why: `${what} did not read back as written — read the issue before writing again` };
 };
 
-// Unsettled rather than refused: what stands on the issue now is unknown until it is read.
-const unsettled = (msg) => { rmSync(scratch, { recursive: true, force: true }); answer.reason = msg; out(); };
 for (const a of plan) {
-  const got = put(a.id, a.text, `archive ${a.n}`);
-  if (got === null) unsettled(`archive ${a.n} did not read back as written — read the issue before writing again`);
-  answer.write.archived.push({ n: a.n, id: text(String(got.id)), url: text(got.html_url ?? got.url ?? null) });
+  const r = put(a.id, `${a.text}\n`, `archive ${a.n}`);
+  if (r.why) {
+    if (answer.write.ran.length === 1 && r.why.includes('too long')) { done(); refuse(r.why); }
+    unsettled(r.why);
+  }
+  answer.write.archived.push({ n: a.n, id: text(String(r.comment.id)), url: coord(linkOf(r.comment)) });
 }
 const landed = put(answer.ledger.found ? answer.ledger.id : null, next, 'ledger');
-if (landed === null) unsettled('the ledger did not read back as written — read the issue before writing again');
+if (landed.why) unsettled(landed.why);
 answer.write.wrote = true;
 if (!answer.ledger.found) {
-  answer.ledger = { ...answer.ledger, found: true, id: text(String(landed.id)),
-    url: text(landed.html_url ?? landed.url ?? null) };
+  answer.ledger = { ...answer.ledger, found: true, id: text(String(landed.comment.id)),
+    url: coord(linkOf(landed.comment)) };
 }
-rmSync(scratch, { recursive: true, force: true });
+done();
 out();

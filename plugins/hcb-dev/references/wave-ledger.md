@@ -37,7 +37,7 @@ node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--for
 | `format` | the stored ledger's format against the one written now |
 | `lint[]` | with `--check`: what the text says is wrong with its shape — sections, budget, entries too long, struck or broken up by headings. Advisory: nothing in it holds a chip |
 | `write.fits` / `.headroom` / `.budget` | whether the body handed in fits under the cap and by how many bytes, and the budget it is kept under — sizes in `bytes`, `chars` / `utf16` only beside them |
-| `write.wrote` / `.ran` / `.archived` | with `--write` or `--append-archive`: `true` once every write read back as meant, `null` where one did not — **unsettled**: read the issue before writing again; each act taken; each archive written |
+| `write.wrote` / `.ran` / `.archived` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again; each act taken; each archive written |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
 | `reason` | why nothing could be answered or written — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), **both forges answering for this repository** (which `--forge` settles), a body not opening with the marker, or a ledger over the cap with its journal out |
 
@@ -68,9 +68,8 @@ bookkeeping, not a decision: it needs no permission, and it is reported in one l
 **What else may leave is judged, not measured**: a closed wave — one whose batches have all ended,
 with anything they left standing accounted for outside it, and whose gates are spent — moves by
 hand, verbatim, under the next archive number, archive first and ledger second. What is still
-open never leaves, and nothing is shortened to fit: a section summarised is a section that will
-be believed in its summarised form. A ledger over the cap with its journal out and no wave closed
-is the one case that stops and goes to the user.
+open never leaves, and nothing is shortened to fit. A ledger over the cap with its journal out and
+no wave closed is the one case that stops and goes to the user.
 
 ## What it holds
 

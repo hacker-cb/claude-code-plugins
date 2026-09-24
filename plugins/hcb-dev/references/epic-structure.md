@@ -81,7 +81,7 @@ index of archives (`wave-ledger.md`).
 
 A fact about the forge or about this plugin, learned mid-epic, is proposed to the user as an issue
 in the plugin's own tracker — the `repository` its manifest names — written with nothing of the
-project in it, since that tracker is public and a project need not be, and filed through
+project in it, and filed through
 `hcb-dev:issue-tracking` on the user's word; where that tracker cannot be reached, it goes to the
 user as a line of the report. A fact about the project goes to the project's own documentation.
 Either way the ledger keeps the rule in force and the link.

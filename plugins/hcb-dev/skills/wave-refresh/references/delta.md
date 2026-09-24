@@ -71,13 +71,15 @@ line, the numbers and the link keys:
 jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> > <graph file>
 ```
 
-**It lives in a comment of its own** on the epic, opening with `<!-- wave-slice -->` above the
-graph in a `jsonl` fence, the header's row for the last whole reading of the slice
-([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)) linking it. It belongs
-to this pass alone: written here, read here, **replaced** whole rather than archived, since it is
-state and not history — created the first time, edited in place after, the body passed as
-`-F body=@<file>` and read back as any write is
-([`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md)).
+**It lives in a comment of its own** on the epic, opening with `<!-- wave-slice -->`, then the
+moment it was read at, then the graph in a `jsonl` fence; the header's row for the last whole
+reading of the slice ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md))
+links it beside that same moment. It belongs to this pass alone: written here, read here,
+**replaced** whole rather than archived — created the first time, edited in place after, the body
+passed as `-F body=@<file>` and read back as any write is (`forge-behaviour.md`). A graph whose
+moment is not the one the header records is no graph: a pass stopped between the two writes left
+it, and the delta is taken as where none stands. Where it will not fit a comment, it is not written
+and the header says so.
 
 **Where no graph stands** — after a survey, after one that did not fit, or the
 first pass of an epic — the call is made without `--was`: the links are then

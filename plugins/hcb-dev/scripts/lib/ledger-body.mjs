@@ -9,9 +9,13 @@ export const FORMAT = 2;
 export const SECTION_NAMES = ['header', 'batches', 'verdicts', 'decisions', 'constraints', 'queue',
   'expectations', 'journal', 'candidates'];
 
-const FORMAT_LINE = /<!--\s*wave-ledger-format:\s*(\d{1,4})\s*-->/;
+const FORMAT_LINE = /^\s*<!--\s*wave-ledger-format:\s*(\d{1,4})\s*-->\s*$/;
 const SECTION_LINE = /^\s*<!--\s*wave-section:\s*([a-z-]+)\s*-->\s*$/;
-const ARCHIVE_MARK = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
+// The journal's index: the one line naming every archive, in the form `withIndex` writes it.
+const INDEX_LINE = /^- archives:(?:\s*<!--\s*wave-journal-\d{1,6}\s*-->)*\s*$/;
+// Any of this plugin's markers: text carrying one is never moved into an archive, where it would
+// be read as a second archive or a second ledger.
+export const MARKER = /<!--\s*wave-/;
 // Every marker a ledger's own text may carry; any other `wave-` marker in it is somebody's slip.
 const KNOWN = /^(wave-ledger|wave-ledger-format:\s*\d+|wave-section:\s*[a-z-]+|wave-journal-\d{1,6})$/;
 // An entry of a list: a bullet or a number at the start of a line.
@@ -19,9 +23,9 @@ const ITEM = /^(?:[-*]|\d+\.)\s/;
 
 const bytes = (s) => Buffer.byteLength(s, 'utf8');
 
-// Format 1 is every ledger written before the format line existed.
+// Read off the second line, where the shape puts it; format 1 is every ledger without it.
 export const formatOf = (body) => {
-  const m = FORMAT_LINE.exec(body);
+  const m = FORMAT_LINE.exec(body.split('\n', 2)[1] ?? '');
   return m ? Number(m[1]) : 1;
 };
 
@@ -41,13 +45,15 @@ export const sectionsOf = (body) => {
 };
 
 // A section's entries: an item line and the lines that continue it, up to the next item or a
-// blank line. Lines before the first item — a heading, a sentence — are no entry.
+// blank line. Lines before the first item — a heading, a sentence — are no entry, and neither is
+// the journal's index line.
 const entriesOf = (lines, s) => {
   const entries = [];
   let cur = null;
   for (let i = s.start + 1; i < s.end; i += 1) {
     const line = lines[i];
-    if (ITEM.test(line)) { cur = { from: i, to: i + 1 }; entries.push(cur); }
+    if (INDEX_LINE.test(line)) cur = null;
+    else if (ITEM.test(line)) { cur = { from: i, to: i + 1 }; entries.push(cur); }
     else if (line.trim() === '') cur = null;
     else if (cur) cur.to = i + 1;
   }
@@ -98,16 +104,12 @@ export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => 
   return found;
 };
 
-// The journal's entries, oldest first, without the index line — the one that names archives.
+// The journal's entries, oldest first — its index line is none of them.
 export const journalOf = (body) => {
   const { lines, sections } = sectionsOf(body);
   const s = sections.find((x) => x.name === 'journal');
   if (!s) return { lines, section: null, entries: [] };
-  const entries = entriesOf(lines, s).filter((e) => {
-    ARCHIVE_MARK.lastIndex = 0;
-    return !ARCHIVE_MARK.test(lines.slice(e.from, e.to).join('\n'));
-  });
-  return { lines, section: s, entries };
+  return { lines, section: s, entries: entriesOf(lines, s) };
 };
 
 // The body with the `count` oldest journal entries taken out, and those entries' text.
@@ -129,8 +131,7 @@ export const withIndex = (body, numbers) => {
   if (!section) return body;
   const index = `- archives: ${numbers.map((n) => `<!-- wave-journal-${n} -->`).join(' ')}`;
   for (let i = section.start + 1; i < section.end; i += 1) {
-    ARCHIVE_MARK.lastIndex = 0;
-    if (ARCHIVE_MARK.test(lines[i])) { lines[i] = index; return lines.join('\n'); }
+    if (INDEX_LINE.test(lines[i])) { lines[i] = index; return lines.join('\n'); }
   }
   lines.splice(section.start + 1, 0, index);
   return lines.join('\n');

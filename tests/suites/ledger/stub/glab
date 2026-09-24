@@ -32,12 +32,14 @@ if [ "$1" = "api" ]; then
     fail=$(ask '.write_fail')
     case "$fail" in
       always) echo "$(basename "$0"): Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+      toolong) echo "$(basename "$0"): Validation Failed: body is too long (maximum is 65536 characters) (HTTP 422)" >&2; exit 1 ;;
       once) [ "$n" = 0 ] && { echo "$(basename "$0"): Bad Gateway (HTTP 502)" >&2; exit 1; } ;;
     esac
     last=""; for a in "$@"; do case "$a" in repos/*|projects/*) last=$a ;; esac; done
     case "$method" in POST) id=$((900 + n)) ;; *) id=${last##*/} ;; esac
     cp "$file" "$store/c$id"
     [ "$fail" = landed ] && [ "$n" = 0 ] && { echo "$(basename "$0"): Bad Gateway (HTTP 502)" >&2; exit 1; }
+    [ "$(ask '.readback')" = garbled ] && { jq -n --arg id "$id" '{id: ($id|tonumber), body: "something else"}'; exit 0; }
     jq -n --arg id "$id" --rawfile body "$file" '{id: ($id|tonumber), body: $body, html_url: ("https://forge.example/c/" + $id)}'
     exit 0
   fi
@@ -82,7 +84,7 @@ if [ "$1" = "api" ]; then
     */issues/*) ;;
     *) v=$(ask '.probe_glab')
        case "$v" in
-         ""|yes) echo '{"full_name":"team/app"}'; exit 0 ;;
+         ""|yes) echo '{"full_name":"team/app","web_url":"https://lab.example/team/app"}'; exit 0 ;;
          *) echo "no such repository here" >&2; exit 1 ;;
        esac ;;
   esac
