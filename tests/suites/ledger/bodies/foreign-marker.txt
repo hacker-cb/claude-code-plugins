@@ -23,7 +23,7 @@
 - user: the go for wave 2
 
 <!-- wave-section: journal -->
-- 2026-01-01 the sections open with <!-- wave-section: journal -->
+- 2026-01-01 the epic closed, see <!-- wave-close -->
 - 2026-01-02 event number 1 happened
 - 2026-01-03 event number 2 happened
 

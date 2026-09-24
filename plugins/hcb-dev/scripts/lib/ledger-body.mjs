@@ -14,7 +14,7 @@ const SECTION_LINE = /^\s*<!--\s*wave-section:\s*([a-z-]+)\s*-->\s*$/;
 // The journal's index: a word and a colon — in whatever language — then archive markers and
 // nothing else; `archives:` alone where there are none yet. `withIndex` writes it back in one form.
 const INDEX_LINE = /^\s*(?:[-*+]|\d+\.)?\s*(?:archives:|[\p{L}\p{N}_-]+:(?=\s*<!--))(?:\s*<!--\s*wave-journal-\d{1,6}\s*-->)*\s*$/iu;
-const LEDGER_LINE = /^\s*<!--\s*wave-ledger\s*-->\s*$/;
+export const LEDGER_LINE = /^\s*<!--\s*wave-ledger\s*-->\s*$/;
 const HEADING = /^\s*#{1,6}\s/;
 // Any of this plugin's markers: text carrying one is never moved into an archive, where it would
 // be read as a second archive or a second ledger.

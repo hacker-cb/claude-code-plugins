@@ -24,7 +24,7 @@ write, and a ledger is written only through it — never by a hand-made edit:
 ```text
 node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--forge gh|glab]
   [--host <host>] [--body-file <path>] [--limit <bytes>] [--me <login>] [--check]
-  [--budget <bytes>] [--write | --append-archive <file>] [--dump <path>]
+  [--budget <bytes>] [--write | --append-archive <file>] [--was <digest>] [--dump <path>]
 ```
 
 | field | what it settles |
@@ -37,23 +37,23 @@ node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--for
 | `format` | the stored ledger's format against the one written now |
 | `lint[]` | with `--check`: what the text says is wrong with its shape — its first line, sections, budget, entries too long, struck or broken up by headings. Advisory: nothing in it holds a chip |
 | `write.fits` / `.headroom` / `.budget` | whether the body handed in fits under the cap and by how many bytes, and the budget it is kept under — sizes in `bytes`, `chars` / `utf16` only beside them |
-| `write.wrote` / `.moved` / `.ran` / `.archived` / `.account` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again; each act taken; each archive written; the archive holding the account |
+| `write.wrote` / `.moved` / `.ran` / `.archived` / `.account` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again, and a journal line standing in an archive and in the ledger both leaves the body; each act taken; each archive written; the archive holding the account |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
 | `reason` | why nothing could be answered or written — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), **both forges answering for this repository** (which `--forge` settles), a body not opening with the marker, or a ledger over the cap with its journal out |
 
-`--dump <path>` puts the stored ledger in a file to edit; `--write --body-file` puts it back, with
-`--was <digest>` — the one that read answered — so a ledger that moved in between is never
-overwritten; after a write that moved journal lines out, dump again before the next edit. Only a
-ledger of ours is written, and only while no fault stands save an archive of ours it does not list
-yet, which the write indexes. `--append-archive <file>` adds an account — the long reasoning behind
-a decision or a constraint — to the archive and answers its link for the entry to cite.
+`--dump <path>` puts the stored ledger in a file to edit; `--write --body-file` puts it back, never
+over a ledger other than the one whose `--was <digest>` the read answered; after a write that moved
+journal lines out, dump again before the next edit. Only a ledger of ours is written, and only while
+no fault stands save two: an archive of ours it does not list yet, which the write indexes, and one
+it lists that no comment carries, which leaves the index once the body handed in no longer names it.
+`--append-archive <file>` adds an account to the archive and answers its link.
 
-The comment is the only form the ledger takes, so a tracker is what the role stands on: whether
-the repository has one is established against the forge ([`forge-docs.md`](forge-docs.md) names
-the field) while the role is being assumed and before the epic is settled, never inferred from
-what the epic looks like. An epic with no umbrella issue is an umbrella not yet filed, not a
-repository without a tracker. Where there is none, the role does not begin, and what was
-established goes to the user in those words.
+The comment is the only form the ledger takes, so a tracker is what the role stands on: whether the
+repository has one is established against the forge ([`forge-docs.md`](forge-docs.md) names the
+field) while the role is being assumed and before the epic is settled, never inferred from what the
+epic looks like. An epic with no umbrella issue is an umbrella not yet filed, not a repository
+without a tracker. Where there is none, the role does not begin, and what was established goes to
+the user in those words.
 
 **One epic, one ledger.** The marker is an HTML comment, free for anyone to write and invisible in
 either UI, so each marked comment travels with whose it is: a lone foreign one says so instead of

@@ -19,12 +19,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
-import { FORMAT, MARKER, bytes, formatOf, journalOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
+import { FORMAT, LEDGER_LINE, MARKER, bytes, formatOf, journalOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
 const LEDGER = /<!--\s*wave-ledger\s*-->/;
-const LEDGER_LINE = /^\s*<!--\s*wave-ledger\s*-->\s*$/;
 // `<n>` is the series; the pattern deliberately does not admit the ledger's own marker, so a
 // search for one never returns the other however the two are spelled.
 const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
@@ -137,7 +136,8 @@ const answer = {
   archives: [],
   index: { listed: null, present: [], missing: [], unlisted: [] },
   write: { asked: false, bytes: null, chars: null, utf16: null, fits: null, headroom: null,
-    limit: opts.limit, budget: opts.budget, wrote: null, moved: null, ran: [], archived: [], account: null },
+    limit: opts.limit, budget: opts.budget, wrote: opts.write || opts.append !== null ? false : null,
+    moved: null, ran: [], archived: [], account: null },
   // The stored ledger's format, against the one this plugin writes.
   format: { found: null, current: FORMAT },
   // What `--check` read in the text — the body to be written where one was handed in, else the
@@ -285,6 +285,7 @@ answer.read = true;
 // three quarters on an emoji — wrong by unit, not by margin.
 // A link travels whole: `text()` bounds prose at 200 characters, and a url cut there names
 // another comment.
+const digestOf = (t) => createHash('sha256').update(t).digest('hex').slice(0, 16);
 const coord = (v) => (typeof v === 'string' && v !== '' ? v.replace(/[\u0000-\u001f\u007f]/g, '') : null);
 const measure = (s) => ({ bytes: Buffer.byteLength(String(s), 'utf8'), chars: [...String(s)].length,
   utf16: String(s).length });
@@ -334,7 +335,7 @@ for (const c of rows) {
     continue;
   }
   marked.push({ kind: 'archive', n: [...ns][0], id: text(String(id)), url, at, body: b,
-    author, mine });
+    author, mine, link: typeof c?.html_url === 'string' ? c.html_url : null });
 }
 
 const ledgers = marked.filter((m) => m.kind === 'ledger');
@@ -394,19 +395,20 @@ if (ledgers.length > 1) {
   }
   answer.ledger = { found: true, id: l.id, nodeId: l.nodeId, url: l.url, bytes: m.bytes,
     chars: m.chars, utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine,
-    digest: createHash('sha256').update(l.body).digest('hex').slice(0, 16) };
+    digest: digestOf(l.body) };
 }
 
 // One archive per comment is the shape; a comment carrying two markers is a fault rather than
 // two archives, since what leaves the ledger goes under a marker of its own.
 const byN = new Map();
 const bodyOf = new Map();
+const linkOfN = new Map();
 for (const a of archives) {
   const m = measure(a.body);
   const row = { n: a.n, id: a.id, url: a.url, bytes: m.bytes, chars: m.chars, utf16: m.utf16,
     author: a.author, mine: a.mine };
   const held = byN.get(a.n);
-  if (held === undefined) { byN.set(a.n, row); bodyOf.set(a.n, a.body); continue; }
+  if (held === undefined) { byN.set(a.n, row); bodyOf.set(a.n, a.body); linkOfN.set(a.n, a.link); continue; }
   // The first read stays, and authorship travels beside it rather than reordering anything:
   // new journal entries go INTO the most recent archive, so picking between two comments that
   // claim one number is the same write-to-the-wrong-comment risk the ledger's own tie carries.
@@ -450,7 +452,6 @@ if (opts.dump !== null) {
   catch (e) { answer.reason = text(`--dump could not be written: ${e.code || 'error'}`); out(); }
 }
 const acting = opts.write || account !== null;
-if (acting) answer.write.wrote = false;
 let next = body;
 const measureWrite = () => {
   if (!answer.write.asked) return;
@@ -511,25 +512,31 @@ const place = (entry) => {
   return null;
 };
 
+let placing = null;
 let accountIn = null;
+let already = null;
 const shaped = (t) => formatOf(t) >= FORMAT && journalOf(t).section !== null;
 if (opts.write) {
   if (!LEDGER_LINE.test(next.split('\n', 1)[0])) refuse('the body does not open with the ledger marker');
   if (!shaped(next)) refuse(`the body is not format ${FORMAT} with a journal section — --check says where`);
+  // A marker of another kind in the ledger's text makes the comment that kind's too.
+  const foreign = lint(next, { budget: opts.budget }).find((f) => f.rule === 'marker-unknown');
+  if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
 } else {
   if (stored === null) refuse('no ledger to index the archive');
   if (!shaped(stored)) refuse(`the ledger is not format ${FORMAT} with a journal section to index the archive`);
   if (account.trim() === '') refuse('the account is empty');
-  // Already in an archive of ours — a run that did not settle, sent again: its link, not a copy.
-  const already = ownArchives.find((a) => bodyOf.get(a.n).includes(account.trimEnd()));
-  if (already) answer.write.account = { n: already.n, url: coord(already.url) };
-  else {
-    const why = place(account.trimEnd());
-    if (why) refuse(why);
-    accountIn = current;
-  }
+  // Already in an archive of ours, whole lines and all — a run that did not settle, sent again:
+  // its link, not a copy.
+  const whole = (t) => `\n${t.trimEnd()}\n`.includes(`\n${account.trimEnd()}\n`);
+  already = ownArchives.find((a) => whole(bodyOf.get(a.n))) ?? null;
+  if (!already) placing = account.trimEnd();
   next = stored;
 }
+// An archive the stored ledger lists and no comment carries leaves the index only where the body
+// handed in no longer names it — never in silence.
+const lost = answer.index.missing.filter((n) => [...next.matchAll(ARCHIVE)].some((m) => Number(m[1]) === n));
+if (lost.length) refuse(`archive ${lost[0]} is listed and no comment carries it — a body naming it is not written; leave it out of the body to write without it`);
 // The journal's oldest lines out, one at a time, until the body is under its budget — never above
 // the cap — or the next one cannot move; the index rewritten every time, so a body composed before
 // an archive was added still names it.
@@ -546,11 +553,17 @@ for (;;) {
   next = taken.body;
   answer.write.moved += 1;
 }
+// The account goes in after the journal lines older than it.
+if (placing !== null && !blocked) {
+  const why = place(placing);
+  if (why) refuse(why);
+  accountIn = current;
+  next = withIndex(next, numbers);
+}
 if (bytes(next) > opts.limit) refuse(blocked ?? 'over the cap with the journal out — what else may leave is the caller\'s to judge');
 // Every archive the body names has to stand, or the next read finds it missing and holds writes.
 const named = [...next.matchAll(ARCHIVE)].map((m) => Number(m[1])).filter((n) => !numbers.includes(n));
 if (named.length) refuse(`the body names archive ${named[0]}, which no comment carries`);
-if (plan.length === 0 && next === stored) { answer.write.wrote = true; finish(); }
 
 // The writes, in order: every archive first, the ledger last, so an interruption leaves an archive
 // nothing points at — which the next write indexes — rather than an index naming what was never
@@ -561,8 +574,6 @@ const base = forge === 'gh'
 const issuePath = `${base}/issues/${encodeURIComponent(opts.issue)}`;
 const commentPath = (id) => (forge === 'gh' ? `${base}/issues/comments/${id}` : `${issuePath}/notes/${id}`);
 const host = opts.host ? ['--hostname', opts.host] : [];
-const scratch = mkdtempSync(join(tmpdir(), 'ledger-'));
-const done = () => rmSync(scratch, { recursive: true, force: true });
 const json = (r) => { if (!r.ok) return null; try { return JSON.parse(r.out); } catch { return null; } };
 // A note carries no link of its own on GitLab; it is built from the project's.
 let project = null;
@@ -571,6 +582,10 @@ const linkOf = (c) => {
   project ??= json(cli(['api', ...host, base], 60000))?.web_url ?? '';
   return project ? `${project}/-/issues/${opts.issue}#note_${c.id}` : null;
 };
+if (already) answer.write.account = { n: already.n, url: coord(linkOf({ id: already.id, html_url: linkOfN.get(already.n) })) };
+if (plan.length === 0 && next === stored) { answer.write.wrote = true; finish(); }
+const scratch = mkdtempSync(join(tmpdir(), 'ledger-'));
+const done = () => rmSync(scratch, { recursive: true, force: true });
 // One body on the issue: a new comment, or an edit of `id` holding `before`. Every write is read
 // back from the comment itself, never from the write's own answer. A create is sent once — one that
 // answered nothing readable may stand under an id this run never saw; an edit is sent again once,
@@ -585,7 +600,7 @@ const put = (id, textBody, what, before) => {
       id ? commentPath(id) : (forge === 'gh' ? `${issuePath}/comments` : `${issuePath}/notes`),
       '-F', `body=@${file}`], 120000);
     answer.write.ran.push(`${id ? 'edit' : 'create'} ${what}${attempt ? ' (again)' : ''}`);
-    if (!r.ok && /too long/i.test(`${r.err}\n${r.out}`)) {
+    if (!r.ok && /too long \(maximum is/i.test(`${r.err}\n${r.out}`)) {
       return { why: `the forge refused ${what} as too long — run again with its cap as --limit`, size: true };
     }
     const at = id ?? json(r)?.id;
@@ -605,7 +620,7 @@ const failed = (r) => {
 };
 
 for (const a of plan) {
-  const r = put(a.id, `${a.text}\n`, `archive ${a.n}`, a.id ? `${bodyOf.get(a.n)}` : '');
+  const r = put(a.id, `${a.text}\n`, `archive ${a.n}`, a.id ? bodyOf.get(a.n) : '');
   if (r.why) failed(r);
   const row = { n: a.n, id: text(String(r.comment.id)), url: coord(linkOf(r.comment)) };
   answer.write.archived.push(row);
@@ -618,7 +633,8 @@ if (next !== stored) {
     answer.ledger = { ...answer.ledger, found: true, id: text(String(r.comment.id)),
       url: coord(linkOf(r.comment)) };
   }
-  answer.ledger.digest = createHash('sha256').update(r.comment.body).digest('hex').slice(0, 16);
+  const m = measure(r.comment.body);
+  Object.assign(answer.ledger, { bytes: m.bytes, chars: m.chars, utf16: m.utf16, digest: digestOf(r.comment.body) });
 }
 answer.write.wrote = true;
 done();
