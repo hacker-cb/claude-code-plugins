@@ -17,8 +17,9 @@ Two labels belong to the plugin's own process, spelled the same in every reposit
 
 They are **not classification roles** ([`classification.md`](classification.md)): they say where
 an issue stands in the coordination, never its kind of work, component or priority, and a reading
-of a slice's roles, cardinality or tiers reads past them. Where the repository's own set already
-gives `epic` a role, applying it is a classification edit like any other, and goes to the user. The epic keeps the labels the
+of a slice's roles, cardinality or tiers reads past them — **unless the repository's own set
+already gives the name a role**. Then that label is read as the set reads it, and applying it is
+a classification edit like any other, which goes to the user. The epic keeps the labels the
 repository classifies it by; a wave issue carries `wave` alone.
 
 **The role assignment authorizes them**, as it authorizes filing the umbrella: the master
@@ -99,9 +100,9 @@ records that name:
 
 ## An epic in an older shape
 
-A master holding an epic without the `epic` label — on assuming the role, after a restart, or
-once the plugin moved under it — creates and applies the labels there and then, and takes the
-session group, its name going into the ledger header.
+A master holding an epic without the `epic` label, or whose ledger header records no session
+group — on assuming the role, after a restart, or once the plugin moved under it — brings it up
+there and then: the labels as above, and the group, its name going into the header.
 
 ## Listing the open epics
 

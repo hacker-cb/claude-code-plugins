@@ -37,12 +37,15 @@ if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 // A label name travels inside a quoted search phrase and a URL: a quote or a backslash would end
 // or escape the phrase, a comma is GitLab's list separator, and a control character is no label
 // anyone wrote.
-if (opts.label === '' || /[",\\\u0000-\u001f\u007f]/.test(opts.label) || opts.label.length > 100) {
+if (opts.label.trim() !== opts.label || opts.label === ''
+  || /[",\\\u0000-\u001f\u007f]/.test(opts.label) || opts.label.length > 100) {
   die('--label takes a label name');
 }
 for (const o of opts.owners) {
   if (!refOk(o) || o.split('/').length > 20) die(`--owner '${o}' is not an owner`);
 }
+// An owner named twice is read once.
+opts.owners = [...new Set(opts.owners)];
 
 const answer = {
   read: false,
@@ -56,8 +59,14 @@ const answer = {
   reason: null,
 };
 const out = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
-// Refused once reading has begun: an answer, not a usage error, so it stays JSON.
-const refuse = (msg) => { answer.reason = text(msg); out(); };
+// Refused once reading has begun: an answer, not a usage error, so it stays JSON — and nothing
+// read before it stands as a list.
+const refuse = (msg) => {
+  answer.reason = text(msg);
+  answer.epics = [];
+  answer.complete = null;
+  out();
+};
 
 // A coordinate travels whole: `text()` bounds prose at 200 characters, and a path or a url cut
 // there names another issue.
@@ -90,6 +99,13 @@ const probe = (cmd) => {
 // Both named: nothing is left for a repository to answer, and the listing runs from anywhere.
 const probed = opts.forge && opts.host ? [{ cmd: opts.forge, ok: true, host: opts.host }]
   : (opts.forge ? [opts.forge] : ['gh', 'glab']).map(probe);
+// A host named beside a forge left open holds the probe to it: a checkout living elsewhere is
+// not the forge that host runs.
+for (const p of probed) {
+  if (p.ok && opts.host && !opts.forge && p.host !== opts.host) {
+    Object.assign(p, { ok: false, why: `${p.cmd}: this checkout lives on ${p.host ?? 'no host it named'}` });
+  }
+}
 const answered = probed.filter((p) => p.ok);
 if (answered.length === 0) refuse(`no forge CLI answered for this repository — ${probed.map((p) => p.why).join('; ')}`);
 if (answered.length > 1) refuse('both forges answer for this repository — name one with --forge');
@@ -186,15 +202,15 @@ if (forge === 'gh') {
   // Without owners, what the account created — never `all`, which on a public instance is every
   // issue the account can see. An owner is a group, read through the group's own listing.
   // Archived projects included: an epic open there is still open.
-  const q = `labels=${encodeURIComponent(opts.label)}&state=opened&non_archived=false&per_page=100`;
+  const params = `labels=${encodeURIComponent(opts.label)}&state=opened&non_archived=false&per_page=100`;
   const lists = opts.owners.length
-    ? opts.owners.map((o) => ({ path: `groups/${encodeURIComponent(o)}/issues?${q}`, what: `group '${o}'`, group: true }))
-    : [{ path: `issues?${q}&scope=created_by_me`, what: 'the listing', group: false }];
+    ? opts.owners.map((o) => ({ path: `groups/${encodeURIComponent(o)}/issues?${params}`, what: `group '${o}'`, group: true }))
+    : [{ path: `issues?${params}&scope=created_by_me`, what: 'the listing', group: false }];
   for (const list of lists) {
     // Walked a page at a time with its headers: each page carries the count and where the next
     // one is, and one page's rows are all a buffer ever holds. GitLab leaves the count out past
     // a size it will not count.
-    const q2 = query();
+    const q = query();
     let total = null;
     let page = '1';
     for (let walked = 0; page !== ''; walked += 1) {
@@ -215,7 +231,7 @@ if (forge === 'gh') {
       page = (/^x-next-page:[ \t]*(\d*)[ \t]*$/im.exec(head)?.[1]) ?? '';
       for (const it of rows) {
         const ref = typeof it?.references?.full === 'string' ? it.references.full : null;
-        q2.add({
+        q.add({
           repo: ref ? ref.replace(/#\d+$/, '') : null,
           number: it?.iid,
           title: it?.title,
@@ -226,7 +242,7 @@ if (forge === 'gh') {
         });
       }
     }
-    q2.settle(total);
+    q.settle(total);
   }
 }
 

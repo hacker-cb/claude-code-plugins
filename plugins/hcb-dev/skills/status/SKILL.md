@@ -60,8 +60,9 @@ stands on the reading this session can defend. Correcting the ledger is the mast
 ```bash
 FORGE="<gh | glab — named with HOST where this directory is no checkout of the forge in question>"
 HOST="<that forge's host>"
-OWNER="<an owner the user named, else empty>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/epics.mjs" ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"} ${OWNER:+--owner "$OWNER"}
+OWNERS=(<each owner the user named, if any>)
+ARGS=(); for o in "${OWNERS[@]}"; do ARGS+=(--owner "$o"); done
+node "${CLAUDE_PLUGIN_ROOT}/scripts/epics.mjs" ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"} "${ARGS[@]}"
 ```
 
 Read per [`../../references/epic-structure.md`](../../references/epic-structure.md); a list not

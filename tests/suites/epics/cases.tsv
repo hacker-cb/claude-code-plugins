@@ -32,3 +32,5 @@ glab-uncounted	--label epic	0	"count": 1|"complete": null	where GitLab gives no 
 gh-shift-hides	--forge gh	0	"count": 3|"complete": false	a page that shifted repeats one epic where it pushed another off: the repeat is not counted as the one missing
 glab-paged	--label epic	0	"number": 1|"number": 3|"count": 3|"complete": true	GitLab is walked a page at a time to the last one, a repeat listed once
 glab-shift-hides	--label epic	0	"count": 3|"complete": false	a page that shifted repeats one epic where it pushed another off: the count the forge gave says the walk came back short
+gh-owner-twice	--forge gh --owner acme --owner acme	0	"count": 1|"complete": true	an owner named twice is read once
+host-elsewhere	--host other.example	0	"read": false|gh: this checkout lives on forge.example	a host named without a forge holds the probe to it: a checkout living elsewhere is not the forge that host runs

@@ -19,18 +19,18 @@ for a in "$@"; do
   prev=$a
 done
 
+# The host every call names is what a case asserts: one sent to the default host reads somebody
+# else's issues and looks correct doing it.
+want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+  || { echo "$path went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+
 case "$path" in
   users/*)
-    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
-      || { echo "owner lookup went to '${host:-the default host}', not '$want'" >&2; exit 1; }
     t=$(ask ".users[\"${path#users/}\"]")
     [ -n "$t" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
     printf '{"type":"%s"}\n' "$t"; exit 0 ;;
   search/issues)
-    # The host and the query are what a case asserts: a search sent to the default host, or
-    # without its scope, reads somebody else's issues and looks correct doing it.
-    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
-      || { echo "search went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+    # A query without its scope reads somebody else's issues too.
     want=$(ask '.want_q'); [ -z "$want" ] || [ "$want" = "$q" ] \
       || { echo "searched for '$q', not '$want'" >&2; exit 1; }
     case " $* " in *" --paginate "*) ;; *) echo "the search was read unpaginated" >&2; exit 1 ;; esac

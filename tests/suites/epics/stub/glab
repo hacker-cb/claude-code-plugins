@@ -28,15 +28,14 @@ case "$path" in
     case "$base" in *"&per_page=100"*) ;; *) echo "the walk did not ask for full pages" >&2; exit 1 ;; esac
     # `.listing` is one page, or `.pages` several; `.total` the count the header carries,
     # `none` for a listing GitLab would not count.
-    v=$(ask '.listing')
-    [ -n "$(ask '.pages')" ] || case "$v" in
-      ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
-      notgroup) echo "glab: 404 Group Not Found (HTTP 404)" >&2; exit 1 ;;
-    esac
     if [ -n "$(ask '.pages')" ]; then
       n=$(jq '.pages | length' "$env"); body=$(jq -c --argjson i "$page" '.pages[$i - 1] | fromjson' "$env")
     else
-      n=1; body=$v
+      body=$(ask '.listing'); n=1
+      case "$body" in
+        ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+        notgroup) echo "glab: 404 Group Not Found (HTTP 404)" >&2; exit 1 ;;
+      esac
     fi
     next=""; [ "$page" -lt "$n" ] && next=$((page + 1))
     printf 'HTTP/2.0 200 OK\nContent-Type: application/json\n'
