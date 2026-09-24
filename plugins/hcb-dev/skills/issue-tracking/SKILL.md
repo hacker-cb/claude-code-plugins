@@ -195,6 +195,6 @@ one unanswered: ask again rather than filling it in.
 - [`../../references/issue-currency.md`](../../references/issue-currency.md) — read it
   before ruling whether an issue is still true.
 - [`../../references/issue-links.md`](../../references/issue-links.md) — read it
-  before filing, splitting or closing an issue that waits on another or holds one.
+  before filing or splitting an issue that waits on another.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

@@ -1125,13 +1125,14 @@ if (cli === 'glab') {
   // `RELATED` alone, and there an empty `bb` says the server cannot carry one, not that none
   // stands. EE lists both whatever its licence, so an unlicensed EE is not told apart here.
   // The slice's query does not depend on the answer, so an enum that would not read costs the
-  // claim alone: nothing is named unavailable on a guess, and the note says the lists prove nothing.
+  // claim alone: nothing is named unavailable on a guess, and what the forge said goes into the
+  // note rather than `errors`, which would call a slice read whole incomplete.
   const { json, reason } = gql({ query: 'query { queryComplexity { score limit } linkTypes: __type(name: "WorkItemRelatedLinkType") { enumValues { name } } }', variables: {} });
   const types = json && json.data ? json.data.linkTypes : null;
-  if (json) { WIDE.glab.spend(json.data); head.errors.push(...messages(json)); }
+  if (json) WIDE.glab.spend(json.data);
   if (types && Array.isArray(types.enumValues)) {
     const names = new Set(types.enumValues.map((e) => e && e.name));
-    for (const [key, value] of [['bb', 'BLOCKED_BY'], ['bl', 'BLOCKS'], ['rel', 'RELATED']]) {
+    for (const [key, value] of [['bb', 'BLOCKED_BY'], ['bl', 'BLOCKS']]) {
       if (!names.has(value)) head.unavailable.push(key);
     }
   } else {

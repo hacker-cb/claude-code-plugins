@@ -17,8 +17,7 @@ An edge says one issue cannot start or land before another closes. It is written
 - **on reading** — a body, a comment or the tree names a blocker the tracker does not record: the
   edge is proposed, never assumed from a title;
 - **off, on a change of plan** — an edge that no longer holds (the blocker split, the order
-  turned, the need gone) is removed rather than left. A blocker closing asks for nothing where
-  the edge is a link; where it is a body line, below.
+  turned, the need gone) is removed rather than left. A blocker closing asks for nothing.
 
 The waiting issue is *blocked by* the other; the forge records both ends from either. Every write
 is `hcb-dev:issue-tracking`'s, on the answer that skill names.
@@ -44,7 +43,6 @@ node "<plugin root>/scripts/issue-slice.mjs" --deep "<n>[,<n>…]"
 The slice's first line lists `bb` and `bl` under `unavailable`, or the server refuses the write of
 a blocking link (`forge-behaviour.md`). There the edge is a line in the waiting issue's body —
 `Blocked by <reference>`, the blocker as the tracker writes it: `#<n>` in the same project, its
-full path in another — and the parked-reason label where the repository has that family. The two
-come off together, on a change of plan and when the blocker closes: whoever closes it finds the
-issues naming it by searching the tracker for its reference. **Never a related link** — on GitLab
-an epic hangs its work by one ([`wave-issue.md`](wave-issue.md)).
+full path in another — and the parked-reason label where the repository has that family. Each
+line is read against its blocker's state: one whose blocker is closed holds nothing. Whoever reads
+the issue proposes the label off once no line names an open blocker. **Never a related link.**
