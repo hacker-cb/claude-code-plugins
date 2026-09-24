@@ -95,7 +95,8 @@ never absence.
 The same two reads, the epic being the order's; from its ledger, this batch's row, the standing
 constraints, the decisions, and the expectations naming this batch. Then its own change request,
 as below; its branch against the order's base pin; and the coordinate the order names for its
-return, read in the call above — a return written there and a return accepted are two states.
+return — the comment there opening with its `wave-return` marker — read in the call above; a
+return written there and a return accepted are two states.
 
 ### This run
 

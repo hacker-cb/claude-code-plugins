@@ -113,8 +113,10 @@ refuses to deliver, and so is one whose
 silence outlasts your turns with nothing left to build around it. Then the
 question goes to your user as a line you keep working past, never as one that
 halts you until a person answers.
-Last: the return per hcb-dev:wave-worker — the full report to <the tracker
-coordinate — the epic, the batch's issues>, a short notice to the master.
+Last: the return per hcb-dev:wave-worker — the full report as one comment on
+<the tracker coordinate — the epic>, opening with `<!-- wave-return <epic>/<id> -->`,
+anything added later edited into that same comment and never copied onto this
+batch's issues; a short notice to the master.
 Filing the follow-up issues your return proposes is authorized once the master
 confirms them. Your session
 is not free until the master accepts.
