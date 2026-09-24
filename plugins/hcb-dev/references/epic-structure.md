@@ -137,7 +137,7 @@ node "<plugin root>/scripts/epics.mjs" [--forge gh|glab] [--host <host>] [--labe
 | `forge` / `host` | which forge and host were asked — the checkout's own unless both were named |
 | `epics[]` | one row per epic: `repo`, `number`, `title`, `url`, `updated`, and `children` where the forge counts sub-issues (`total`, `completed` — direct children only); `null` where it keeps no count |
 | `count` / `complete` | how many epics are listed — one reached twice is listed once — and whether every query came back whole: `false` where a search stopped at its own cap or a walk came back short, `null` where the forge gave no count to check against |
-| `waves[]` | with `--epic <n>`, the waves of that epic instead — in this checkout's repository or the one `--repo` names — its children carrying the label, `wave` unless another is named, open and closed: `number`, `title`, `url`, `state`, `reason` (GitHub's close reason), `children`; `count` and `complete` then answer for them, `rest` counts its other children in its repository — the work no wave took — and `hierarchy: false` says the server carries none |
+| `waves[]` | with `--epic <n>`, the waves of that epic instead — in this checkout's repository or the one `--repo` names — its children carrying the label, `wave` unless another is named, open and closed: `number`, `title`, `url`, `state`, `reason` (GitHub's close reason), `children`; `count` and `complete` then answer for them, `rest` counts its other children, in any repository — the work no wave took — and `hierarchy: false` says the server carries none; on GitLab, which counts no links, `complete` is `null` |
 | `reason` | why nothing could be listed |
 
 Without `--owner` it lists what the account itself opened: GitHub's `author:@me` over every

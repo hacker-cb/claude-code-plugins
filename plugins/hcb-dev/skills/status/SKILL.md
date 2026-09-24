@@ -83,12 +83,8 @@ for W in $(printf '%s' "$WAVES" | jq -r '[.waves[]? | select(.state == "open")] 
     | (if ($o | length) > 0 then $o else [.waves[]?] end)[] | .number'); do
   node "$S/ledger.mjs" --issue "$W" "${AT[@]}"
 done
-```
-
-```bash
-# The same repository, host and ledgers: their comments, read whole.
 DEEP="<the issues of ONE repository: the epic, the waves read above, and a return's issue where it shares it>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP" ${REPO:+--repo "$REPO"} ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"}
+node "$S/issue-slice.mjs" --deep "$DEEP" "${AT[@]}"
 ```
 
 One repository a call: a tracking epic's batches often return in another, and a number read against
@@ -99,7 +95,8 @@ then that comment out of `--deep`'s, picked by the author and moment `ledger.mjs
 than by matching its marker again, read whole, as prose
 ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)): from the epic's, its waves
 and the expectations the user owes; from each wave's read, its batch rows, the merge queue and the
-gates. Which waves an epic has, and its progress across them and the work no wave took, are
+gates. Which waves an epic has — the header's list read the same way where the answer is not
+`complete` or has no hierarchy — and its progress across them and the work no wave took, are
 [`../../references/wave-issue.md`](../../references/wave-issue.md)'s. Each change request the queue
 names is read as below. The live registry says which batch sessions answer now — presence, never
 absence.

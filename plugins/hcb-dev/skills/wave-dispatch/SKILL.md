@@ -39,7 +39,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   ledger header records, and the order names three coordinates — the epic's
   ledger, this wave's ledger, and the wave's issue its returns go to
   ([`../../references/epic-structure.md`](../../references/epic-structure.md)),
-  all three standing before anything is hung.
+  all three standing before anything is hung — save the wave an epic still in
+  format 1 is finishing, which runs on its one ledger
+  ([`../../references/epic-migration.md`](../../references/epic-migration.md)).
 - **Check each batch's environment blockers** — an SDK that must be installed,
   a service that must answer. A batch whose blocker stands is **not hung**: it
   is reported with the blocker and the condition that unhangs it.

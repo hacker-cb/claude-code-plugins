@@ -24,7 +24,8 @@ node "$S" --since "<moment>" --was "$W" <the slice's own flags, as that file giv
 Those flags are the ones the pinned graph was read under — the script refuses a
 graph of any other slice — and `<moment>` is the moment the ledger records
 beside it. The verdict's `delta` is what the pass acts on, the epic's structure left out by those
-flags ([`../../../references/epic-structure.md`](../../../references/epic-structure.md)):
+flags, or by its numbers where the repository gives a label a role of its own
+([`../../../references/epic-structure.md`](../../../references/epic-structure.md)):
 
 | key | what it obliges |
 |---|---|

@@ -175,7 +175,8 @@ const child = ({ key, own, labelled, number, title, url, state, reason, children
   if (own && labelled) {
     answer.waves.push({ number: Number.isInteger(number) ? number : null, title: text(title),
       url: coord(url), state: text(state), reason: text(reason), children });
-  } else if (own) {
+  } else {
+    // Work no wave has taken, in whichever repository it lives.
     answer.rest.total += 1;
     if (state === 'closed') answer.rest.closed += 1;
   }
@@ -277,6 +278,8 @@ if (opts.epic !== null && forge === 'gh') {
       reason: null, children: null,
     });
   }
+  // GitLab counts none of it, and shows only the links this token may see.
+  answer.complete = null;
 } else if (forge === 'gh') {
   // One query per owner, each an organisation or a user by its own qualifier; without owners,
   // `author:@me` — the account's own epics, wherever they stand — is one query over every owner.

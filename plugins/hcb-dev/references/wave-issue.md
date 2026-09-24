@@ -32,14 +32,17 @@ wave's table instead; one no wave has taken yet stays under the epic. Read the e
 they are written.
 
 ```bash
-N="<the issue>"; TO="<the epic or the wave>"; FROM="<the one it hangs under now, read above>"
-# GitHub — a sub-issue; the parent set replaces the one it had
+N="<the issue>"; FROM="<the one it hangs under now, read above>"
+TO="<the epic or the wave — its URL where the issue lives in another repository>"
+# GitHub — a sub-issue; the parent set replaces the one it had. A bare number resolves in N's repository
 gh issue edit "$N" --parent "$TO"
-# GitLab — a related link to the new parent, then the old one's removed by its issue_link_id
-glab api -X POST "projects/:fullpath/issues/$TO/links" -f target_project_id="<project id>" \
+# GitLab — a related link to the new parent, then the old one's, matched by number AND project
+P="<the project id the issue lives in>"
+glab api -X POST "projects/:fullpath/issues/$TO/links" -f target_project_id="$P" \
   -f target_issue_iid="$N" -f link_type=relates_to
-glab api "projects/:fullpath/issues/$FROM/links"   # the row whose iid is $N carries issue_link_id
-glab api -X DELETE "projects/:fullpath/issues/$FROM/links/<issue_link_id>"
+LINK="$(glab api "projects/:fullpath/issues/$FROM/links" | jq -r --argjson n "$N" --argjson p "$P" \
+  '.[] | select(.iid == $n and .project_id == $p) | .issue_link_id')"
+[ -n "$LINK" ] && glab api -X DELETE "projects/:fullpath/issues/$FROM/links/$LINK"
 ```
 
 **Where the forge carries no hierarchy** — a server older than the one
@@ -53,7 +56,8 @@ and the label keeps the wave findable; nothing is hung, and `hcb-dev:status` cou
 as well.
 The forge counts a parent's **direct** children only, and GitLab keeps no count at all, so the
 epic's progress whole is added up: each wave's children, and the work no wave has taken — the
-`rest` that same answer counts.
+`rest` that same answer counts, in whichever repository it lives. What a closed child counts as is
+[`forge-behaviour.md`](forge-behaviour.md)'s.
 
 ## Closing it
 

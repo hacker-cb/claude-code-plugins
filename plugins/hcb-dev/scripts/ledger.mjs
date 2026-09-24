@@ -538,8 +538,13 @@ if (opts.write) {
   if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
   // A format-1 index is whatever its text names, so every archive it lists and the issue carries
   // stays named: one left out would stand unlisted, a fault holding every later write.
-  const dropped = asItStands ? [...listed].filter((n) => byN.has(n) && ![...next.matchAll(ARCHIVE)].some((m) => Number(m[1]) === n)) : [];
+  const names = new Set([...next.matchAll(ARCHIVE)].map((m) => Number(m[1])));
+  const dropped = asItStands ? [...listed].filter((n) => byN.has(n) && !names.has(n)) : [];
   if (dropped.length) refuse(`the body leaves out archive ${dropped[0]}, which the ledger lists and the issue carries`);
+  // One issue keeps one kind: an epic's body over a wave's ledger would take the wave's place.
+  const was = stored === null ? null : kindOf(stored);
+  const whose = (k) => (k === 'epic' ? 'the epic\'s' : 'a wave\'s');
+  if (!asItStands && was !== null && kindOf(next) !== was) refuse(`the body is ${whose(kindOf(next))} ledger, and the issue holds ${whose(was)}`);
 } else {
   if (stored === null) refuse('no ledger to index the archive');
   if (!older && !shaped(stored)) refuse(`the ledger is not format ${FORMAT}, of one kind, with a journal section to index the archive`);

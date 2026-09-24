@@ -11,7 +11,8 @@ The rebuild is an expectation in the ledger, owed by this session and named in t
 report. Until the point comes the ledger stays in format 1 and is written as it stands — a
 format-1 body over a format-1 ledger, through `ledger.mjs --write` like any write
 ([`wave-ledger.md`](wave-ledger.md)): nothing moves out of it and no shape is asked of it. The
-wave running now runs to its end in the old shape.
+wave running now runs to its end in the old shape, its later steps dispatched as before: an order
+names that one ledger for both, and the epic as where the return goes.
 
 ## The transition point
 

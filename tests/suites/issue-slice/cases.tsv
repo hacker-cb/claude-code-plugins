@@ -94,3 +94,4 @@ gh-skip	-	0	"n":1,|"n":3,|"skipped":[]	without --skip-label every issue of the s
 -	--deep 12 --skip-label wave	2	do not apply	a label to skip narrows a slice, and the deep tier reads the numbers named
 gh-delta	--since 2026-09-19T12:00:00Z --was tests/suites/issue-slice/fixtures/gh-delta-was.jsonl --skip-label wave	2	of another slice	a reading taken without the labels skipped now is another slice's, and is not compared
 gh-skip	--skip-label +2	0	"n":4|NOT:"skipped":[4]	the count a cut label list ends with is no label to skip by
+gh-skip	--skip-label example-label-a	0	"skipped":[4]|NOT:"n":4,	a label shown before a list was cut still skips the issue: only the count the cut list ends with is no label

@@ -144,7 +144,7 @@ archive, in their markers, which `--write` keeps.
 - **Write on every event** — a chip hung, a batch confirmed, a fork settled, a return accepted, a
   constraint discovered — before the conversation moves on.
 - **Read them first after any restart or compaction** — the epic's, then each open wave's
-  ([`wave-issue.md`](wave-issue.md) says which) — before the live registry is even listed: the
+  (`wave-issue.md` says which) — before the live registry is even listed: the
   ledgers say who is expected to exist, the registry only who answers right now.
 - A batch's ending is written as such whichever of the three it is; a wave's closing line is its
   ledger's last edit, and the epic's closing line the epic's.

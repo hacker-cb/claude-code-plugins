@@ -41,7 +41,7 @@ gh-waves-labels-cut	--forge gh --epic 12	0	"number": 20|"complete": false	a chil
 gh-waves-missing	--forge gh --epic 12	0	"read": false|is not there, or not visible to this token	an epic the forge does not show is said so, not listed as waveless
 gh-waves-fails	--forge gh --epic 12	0	"read": false|could not be read|"waves": []	a read that failed is unread, never an epic with no waves
 gh-waves-label	--forge gh --epic 12 --label stage	0	"number": 24|NOT:"number": 20	the wave label is the one named where the repository calls it otherwise
-glab-waves	--forge glab --epic 7	0	"number": 30|"number": 33|NOT:"number": 31|NOT:"number": 32|NOT:"number": 34|"state": "open"|"state": "closed"|"children": null|"complete": true	on GitLab an epic's waves are its related links carrying the wave label; a dependency link is no wave
+glab-waves	--forge glab --epic 7	0	"number": 30|"number": 33|NOT:"number": 31|NOT:"number": 32|NOT:"number": 34|"state": "open"|"state": "closed"|"children": null|"complete": null|"closed": 1	on GitLab an epic's waves are its related links carrying the wave label; a dependency link is no wave
 glab-waves-404	--forge glab --epic 7	0	"read": false|is not there, or not visible to this token	an epic GitLab does not show is said so
 -	--epic 0	2	--epic takes an issue number	zero names no issue
 -	--epic 12 --owner acme	2	never an owner	an epic's waves are read in its own repository
@@ -56,3 +56,4 @@ gh-waves-flat	--forge gh --epic 12	0	"read": false|"hierarchy": false|carries no
 gh-waves-digits	--forge gh --epic 12 --repo acme/2048	0	"number": 20|"count": 1	a repository named in digits still travels as a name
 gh-waves	--forge gh --epic 12 --repo @.env/x	0	"read": false|NOT:went typed	a repository named with a leading @ is sent as text, never read as a file
 -	--epic 2147483648	2	--epic takes an issue number	a number past GraphQL's Int names no issue
+gh-waves-foreign	--forge gh --epic 12	0	"rest": {|"total": 1	a child in another repository is work no wave took, and counts with it

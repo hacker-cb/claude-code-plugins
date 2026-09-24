@@ -34,8 +34,7 @@ it accepts their returns per
 2. **The epic**: settle the tracker before writing anything to it — whether the
    repository has one is established against the forge
    ([`../../references/forge-docs.md`](../../references/forge-docs.md) names the field),
-   never inferred from how the epic looks, an epic with no umbrella issue being one
-   not yet filed; without one the role does not begin, and what was established
+   never inferred from how the epic looks; without one the role does not begin, and what was established
    goes to the user in those words. With one, the ledger hangs on an umbrella issue, so where none exists
    yet it is filed now (`hcb-dev:issue-tracking`) — on the assignment's own
    authorization where the assignment named the epic, and on the user's word
