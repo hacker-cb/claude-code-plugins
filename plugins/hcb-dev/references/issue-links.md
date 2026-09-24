@@ -14,10 +14,11 @@ An edge says one issue cannot start or land before another closes. It is written
 - **on filing** — an issue that waits on one already in the tracker is filed with the edge;
 - **on splitting** — children that must land in order carry the edges between them, beside the
   parent they share;
-- **on reading** — a body, a comment or the tree names a blocker the links lack: the edge is
-  proposed, never assumed from a title;
+- **on reading** — a body, a comment or the tree names a blocker the tracker does not record: the
+  edge is proposed, never assumed from a title;
 - **off, on a change of plan** — an edge that no longer holds (the blocker split, the order
-  turned, the need gone) is removed rather than left. A blocker closing asks for nothing.
+  turned, the need gone) is removed rather than left. A blocker closing asks for nothing where
+  the edge is a link; where it is a body line, below.
 
 The waiting issue is *blocked by* the other; the forge records both ends from either. Every write
 is `hcb-dev:issue-tracking`'s, on the answer that skill names.
@@ -40,14 +41,10 @@ node "<plugin root>/scripts/issue-slice.mjs" --deep "<n>[,<n>…]"
 
 ## Where the forge carries none
 
-- **GitHub Enterprise Server** older than `forge-docs.md` names for dependencies: the slice's
-  first line lists `bb` and `bl` under `unavailable`.
-- **GitLab** without the blocking link types: on Community Edition the slice's first line lists
-  `bb` and `bl` under `unavailable`; an Enterprise server without the paid tier lists nothing
-  there and refuses the write — through `glab issue create`, after the issue is already filed
-  (`forge-behaviour.md`).
-
-There the edge is a line in the waiting issue's body — `Blocked by #<n>` — and the parked-reason
-label where the repository has that family, removed with the line. **Never a related link**: it
-carries no direction, and on GitLab an epic hangs its work by one ([`wave-issue.md`](wave-issue.md)),
-so a dependency written as one reads as membership.
+The slice's first line lists `bb` and `bl` under `unavailable`, or the server refuses the write of
+a blocking link (`forge-behaviour.md`). There the edge is a line in the waiting issue's body —
+`Blocked by <reference>`, the blocker as the tracker writes it: `#<n>` in the same project, its
+full path in another — and the parked-reason label where the repository has that family. The two
+come off together, on a change of plan and when the blocker closes: whoever closes it finds the
+issues naming it by searching the tracker for its reference. **Never a related link** — on GitLab
+an epic hangs its work by one ([`wave-issue.md`](wave-issue.md)).

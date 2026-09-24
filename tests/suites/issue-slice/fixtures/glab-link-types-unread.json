@@ -5,6 +5,13 @@
   {
    "has": "WorkItemRelatedLinkType",
    "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 1,
+      "limit": 250
+     },
+     "linkTypes": null
+    },
     "errors": [
      {
       "message": "Field __type is unavailable here",

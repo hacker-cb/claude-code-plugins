@@ -95,7 +95,7 @@ what REST does not.
 |---|---|---|
 | read a slice's links | `gh issue list --limit <above the slice's total> --json parent,subIssues,subIssuesSummary,blockedBy,blocking,issueType` — one request per 100 issues, the limit defaulting to 30; `gh issue view --json` carries the same fields | none — `glab api graphql`, one request per 50–100 issues; REST reads links one issue per call |
 | write hierarchy | `gh issue create --parent`; `gh issue edit --parent`, `--remove-parent`, `--add-sub-issue`, `--remove-sub-issue` | `glab issue create --epic` at creation; afterwards `glab api` |
-| write dependencies | `gh issue create --blocked-by`, `--blocking`; `gh issue edit --add-blocked-by`, `--remove-blocked-by`, `--add-blocking`, `--remove-blocking` | `glab issue create --linked-issues <iids> --link-type <type>` at creation; afterwards `glab api` against issue links |
+| write dependencies | `gh issue create --blocked-by`, `--blocking`; `gh issue edit --add-blocked-by`, `--remove-blocked-by`, `--add-blocking`, `--remove-blocking` | `glab issue create`, then `glab api` against issue links — `--linked-issues <iids> --link-type <type>` at creation files the issue before a link the server refuses fails the command (`forge-behaviour.md`) |
 | write the native type | `gh issue create --type`; `gh issue edit --type`, `--remove-type` | none — `glab api` |
 | write the milestone | `-m` on create and edit, `--remove-milestone` | `-m` on `glab issue create` and `glab issue update` |
 | close as a duplicate | `gh issue close --reason duplicate --duplicate-of <n>` — closing is the only route, the schema has no mutation that marks a duplicate on its own | none — `glab issue close` takes no reason |

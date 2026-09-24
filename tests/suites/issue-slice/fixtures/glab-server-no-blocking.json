@@ -61,7 +61,7 @@
            "type": "LINKED_ITEMS",
            "linkedItems": {
             "pageInfo": {
-             "hasNextPage": false
+             "hasNextPage": true
             },
             "nodes": [
              {

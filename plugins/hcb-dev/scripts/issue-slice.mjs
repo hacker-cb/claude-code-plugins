@@ -576,7 +576,7 @@ const glLine = (w) => {
   // missing — and from which of the three kinds — cannot be said; only that something is.
   if (li && li.pageInfo && li.pageInfo.hasNextPage) {
     line.cut = [...(line.cut || []), 'links'];
-    for (const k of ['bb', 'bl', 'rel']) line[k] = [...(line[k] || []), '+?'];
+    for (const k of ['bb', 'bl', 'rel']) if (!head.unavailable.includes(k)) line[k] = [...(line[k] || []), '+?'];
   }
   if (h.children && h.children.count > kids.length) line.cut = [...(line.cut || []), 'ch'];
   return line;
@@ -1124,18 +1124,23 @@ if (cli === 'glab') {
   // The blocking link types are Enterprise Edition's: a Community Edition server's enum holds
   // `RELATED` alone, and there an empty `bb` says the server cannot carry one, not that none
   // stands. EE lists both whatever its licence, so an unlicensed EE is not told apart here.
+  // The slice's query does not depend on the answer, so an enum that would not read costs the
+  // claim alone: nothing is named unavailable on a guess, and the note says the lists prove nothing.
   const { json, reason } = gql({ query: 'query { queryComplexity { score limit } linkTypes: __type(name: "WorkItemRelatedLinkType") { enumValues { name } } }', variables: {} });
-  if (!json) unread(reason);
-  WIDE.glab.spend(json.data);
-  if (!json.data || !('linkTypes' in json.data)) unread(messages(json)[0] || 'the server did not say which link types it carries');
-  const names = new Set(json.data.linkTypes && Array.isArray(json.data.linkTypes.enumValues)
-    ? json.data.linkTypes.enumValues.map((e) => e && e.name) : []);
-  for (const [key, value] of [['bb', 'BLOCKED_BY'], ['bl', 'BLOCKS'], ['rel', 'RELATED']]) {
-    if (!names.has(value)) head.unavailable.push(key);
+  const types = json && json.data ? json.data.linkTypes : null;
+  if (json) { WIDE.glab.spend(json.data); head.errors.push(...messages(json)); }
+  if (types && Array.isArray(types.enumValues)) {
+    const names = new Set(types.enumValues.map((e) => e && e.name));
+    for (const [key, value] of [['bb', 'BLOCKED_BY'], ['bl', 'BLOCKS'], ['rel', 'RELATED']]) {
+      if (!names.has(value)) head.unavailable.push(key);
+    }
+  } else {
+    head.notes.push(`the link types this server carries were not read (${(json && messages(json)[0]) || reason || 'no enum came back'}),`
+      + ' so an empty bb or bl says nothing about whether a blocker could stand here');
   }
+  // GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.
+  if (head.delta) head.unavailable.push('ev.p', 'ev.ch', 'ev.chl', 'ev.pr');
 }
-// GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.
-if (cli === 'glab' && head.delta) head.unavailable.push('ev.p', 'ev.ch', 'ev.chl', 'ev.pr');
 
 if (asked) deep();
 else {

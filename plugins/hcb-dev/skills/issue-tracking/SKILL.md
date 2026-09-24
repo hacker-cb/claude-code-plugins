@@ -119,8 +119,8 @@ where the forge carries none is [`../../references/issue-links.md`](../../refere
 - **When a discussion lands on a topic** — search that area and bring what you
   find into the conversation; issues carry prior decisions and deferred scope.
 - **When asked what to pick up** — surface the candidates with reasoning instead
-  of choosing one. An issue whose parked reason still holds is waiting, not
-  ready. This is the single-pick question; laying out a whole slice is
+  of choosing one. An issue whose parked reason still holds, or that an open blocker
+  holds, is waiting, not ready. This is the single-pick question; a whole slice is
   `hcb-dev:backlog-survey`.
 
 ## Is it still true?
@@ -195,6 +195,6 @@ one unanswered: ask again rather than filling it in.
 - [`../../references/issue-currency.md`](../../references/issue-currency.md) — read it
   before ruling whether an issue is still true.
 - [`../../references/issue-links.md`](../../references/issue-links.md) — read it
-  before filing or splitting an issue that waits on another.
+  before filing, splitting or closing an issue that waits on another or holds one.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

@@ -105,9 +105,9 @@ found no hygiene is not one that did not look.
    could not see — named here, never read as edges that are not there. On GitHub a parent out of
    this token's sight is in none of them and reads as no parent at all: the search
    `forge-behaviour.md` names is what finds one. An edge the deep read found in a body, a
-   comment or the tree, and the links lack, is drawn too, marked as not in the tracker — where
-   the forge carries no dependency link, the body is where every edge stands
-   ([`../../references/issue-links.md`](../../references/issue-links.md)).
+   comment or the tree, and the tracker does not record as
+   [`../../references/issue-links.md`](../../references/issue-links.md) writes one, is drawn
+   too, marked as not in the tracker.
 3. The tiers of importance the rows below are placed in, each named with its meaning.
 4. What turned up beside the survey: epics closable as already met, change requests stuck with
    their reason, contradictions between issues.
