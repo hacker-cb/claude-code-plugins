@@ -9,7 +9,7 @@ this file **is** the "session's own record" that [`order-anatomy.md`](order-anat
 ## Where it lives
 
 One comment on the epic issue, opened when the role is assumed and edited in place from then on,
-opening with the marker `<!-- wave-ledger -->` — a marker counts only where it opens a comment.
+carrying the marker `<!-- wave-ledger -->`, found by content — no other text quotes it; a link names it.
 Every order names its coordinate, so a batch reads the standing constraints itself. The epic's
 *body* stays human — the wave table, the progress — and the ledger comment is the working state;
 the two are not copies.
@@ -25,10 +25,10 @@ node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--for
 |---|---|
 | `read` | the comment feed answered. `false` is unread, never "no ledger there" |
 | `ledger.found` / `.id` / `.nodeId` / `.bytes` / `.mine` | whether one is open, which comment it is — `id` for a REST edit, `nodeId` for GraphQL — how large it stands, and whose it is: `mine` is three-valued, and `null` is *not attributable* rather than somebody else's |
-| `ledger.ambiguous` | **two comments open with the marker** — a coordinate resolving to two states resolves to neither, whoever wrote them |
-| `archives[]` / `mentions[]` | one row per comment opening with `<!-- wave-journal-<n> -->`, with its own size; and every comment carrying a marker it does not open with, and whose it is. A new archive takes a number above every one either of them or `index.listed` carries |
+| `ledger.ambiguous` | **two comments carry the marker** — a coordinate resolving to two states resolves to neither, whoever wrote them |
+| `archives[]` | one row per `<!-- wave-journal-<n> -->` comment, with its own size |
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
-| `write.fits` / `.headroom` / `.marker` | whether a body handed in `--body-file` fits under the cap, by how many bytes, and which marker it opens with — `ledger` for the ledger, `archive` for an archive; every size here is judged in `bytes`, and `chars` / `utf16` only travel beside it |
+| `write.fits` / `.headroom` | whether a body handed in `--body-file` fits under the cap, and by how many bytes — every size here is judged in `bytes`, and `chars` / `utf16` only travel beside it |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
 | `reason` | why nothing could be answered — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), or **both forges answering for this repository**, which a mirror makes ordinary and `--forge` settles |
 
@@ -48,7 +48,7 @@ would drop the older ledger. An archive nothing indexes is the same fault, repai
 
 **The write is measured before it is made**, in UTF-8 bytes against the cap
 [`forge-behaviour.md`](forge-behaviour.md) carries — which also says how the cap's own refusal is
-told from transport — so `write.fits` and `write.marker` are read first and the refusal stays the backstop rather than
+told from transport — so `write.fits` is read first and the refusal stays the backstop rather than
 the mechanism. **A refusal by the cap that arrives anyway is answered in the same step**, not
 reported: the oldest archivable block moves out and the entry is written again, as many times over
 as it takes to fit, on whichever comment refused. All of it is bookkeeping and not a decision: it

@@ -20,14 +20,22 @@ case "$path" in
   issues\?*|groups/*)
     want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
       || { echo "listing went to '${host:-the default host}', not '$want'" >&2; exit 1; }
-    want=$(ask '.want_path'); [ -z "$want" ] || [ "$want" = "$path" ] \
-      || { echo "listed '$path', not '$want'" >&2; exit 1; }
-    case " $* " in *" --paginate "*) ;; *) echo "the listing was read unpaginated" >&2; exit 1 ;; esac
+    # The count and the walk ask for the same listing, one row and a hundred a page.
+    base=${path%&per_page=*}
+    want=$(ask '.want_path'); [ -z "$want" ] || [ "$want" = "$base" ] \
+      || { echo "listed '$base', not '$want'" >&2; exit 1; }
     v=$(ask '.listing')
     case "$v" in
       ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
       notgroup) echo "glab: 404 Group Not Found (HTTP 404)" >&2; exit 1 ;;
-      *) printf '%s\n' "$v"; exit 0 ;;
-    esac ;;
+    esac
+    case " $* " in
+      *" -i "*)
+        printf 'HTTP/2.0 200 OK\nContent-Type: application/json\n'
+        t=$(ask '.total'); [ "$t" = none ] || printf 'X-Total: %s\n' "${t:-$(jq 'length' <<<"$v")}"
+        printf '\n[]\n'; exit 0 ;;
+    esac
+    case " $* " in *" --paginate "*) ;; *) echo "the listing was read unpaginated" >&2; exit 1 ;; esac
+    printf '%s\n' "$v"; exit 0 ;;
 esac
 echo "unplanned glab call: $*" >&2; exit 1

@@ -59,12 +59,12 @@ stands on the reading this session can defend. Correcting the ledger is the mast
 ```bash
 FORGE="<gh | glab — named with HOST where this directory is no checkout of the forge in question>"
 HOST="<that forge's host>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/epics.mjs" ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"}
+OWNER="<an owner the user named, else empty>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/epics.mjs" ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"} ${OWNER:+--owner "$OWNER"}
 ```
 
-Every epic the account opened, across every owner it reaches
-([`../../references/epic-structure.md`](../../references/epic-structure.md)); `--owner` widens it
-to one the user names. A list that came back not `complete` is printed as the part it is.
+Read per [`../../references/epic-structure.md`](../../references/epic-structure.md); a list not
+`complete` is printed as the part it is.
 
 ### The epic — for a master, and for any session handed a number
 

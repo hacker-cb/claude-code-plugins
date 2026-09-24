@@ -1,13 +1,13 @@
 # fixture	args	status	expect	note
 gh-mine	--forge gh	0	"read": true|"forge": "gh"|"host": "forge.example"|"count": 2|"complete": true|"repo": "team/app"|"number": 12|"total": 3|"completed": 1|"repo": "other/lib"|"children": null	the account's own epics in one search over every owner, on the host the checkout lives on
 gh-paged	--forge gh	0	"number": 1|"number": 2|"complete": true	a search is read to its last page before it is called the list
-gh-owners	--forge gh --owner acme --owner someone	0	"repo": "acme/app"|"owners": [	named owners replace the author scope, each by the qualifier its type takes
+gh-owners	--forge gh --owner acme --owner someone	0	"repo": "acme/app"|"repo": "someone/tool"|"count": 2|"complete": true	named owners replace the author scope, one query each by the qualifier its type takes; an epic both reach is listed once
 gh-owner-unknown	--forge gh --owner ghost	0	"read": false|owner 'ghost' could not be resolved	an owner nobody can resolve stops the listing rather than being dropped from the query
 gh-host-named	--forge gh --host ghe.example --label wave	0	"read": true|"host": "ghe.example"|"label": "wave"|"number": 9	forge and host both named: no repository has to answer, and the host named is the one asked
-gh-capped	--forge gh	0	"count": 1500|"complete": false	a search that stopped short of its own count is not the set
+gh-capped	--forge gh	0	"count": 2|"complete": false	a search that stopped short of its own count is not the set
 gh-incomplete	--forge gh	0	"complete": false	a search the forge timed out on says so only in its flag
-gh-search-fails	--forge gh	0	"read": false|the search could not be read	a search that failed is unread, never an empty list
-gh-not-json	--forge gh	0	"read": false|the search was not JSON	an answer that does not parse is unread
+gh-search-fails	--forge gh	0	"read": false|could not be read	a search that failed is unread, never an empty list
+gh-not-json	--forge gh	0	"read": false|was not JSON	an answer that does not parse is unread
 gh-no-host	--forge gh	0	"read": false|without a host	a repository answering with no url leaves no host to ask, and the default one is not guessed
 gh-empty	--forge gh	0	"read": true|"count": 0|"epics": []|"complete": true	no epic open is an answer that arrived
 both-answer	--label epic	0	both forges answer for this repository|"read": false	a mirror answering on both forges is refused, not resolved by order
@@ -23,8 +23,9 @@ gh-shifted	--forge gh	0	"number": 1|"number": 2|"complete": true	an epic a shift
 glab-overlap	--forge glab --host lab.example --owner group --owner group/sub	0	"count": 1|"number": 4	two groups that overlap list one epic once
 glab-not-group	--forge glab --host lab.example --owner someone	0	"read": false|group 'someone' is not a group this account can read	an owner that is no group is named as such
 -	--forge gh --host ghe.example --owner a/b	2	--owner takes an account on GitHub	a GitHub owner is one account, never a path
--	--forge gh --host ghe.example --owner a --owner b --owner c --owner d --owner e --owner f --owner g --owner h --owner i --owner j --owner k --owner l --owner m --owner n --owner o --owner p	2	at most 15 owners on GitHub	past the forge's own limit the query is refused here rather than by it
 -	--forge glab --host lab.example --label None	2	--label takes a label name	GitLab's own word for "no label" lists something else entirely
 -	--label a,b	2	--label takes a label name	a comma is GitLab's list separator
-gh-shrunk	--forge gh	0	"count": 3|"complete": false	a count that shrank between pages is no licence to call the shorter list whole
+gh-shrunk	--forge gh	0	"count": 2|"complete": false	a count that shrank between pages is no licence to call the shorter list whole
 glab-listing-404	--label epic	0	the listing could not be read|NOT:is not a group	a failed listing of the account's own is not an owner that is no group
+glab-short	--label epic	0	"count": 3|"complete": false	a walk that came back shorter than the count the forge gave is not the set
+glab-uncounted	--label epic	0	"count": 1|"complete": null	where GitLab gives no count the list is of unknown completeness, never complete

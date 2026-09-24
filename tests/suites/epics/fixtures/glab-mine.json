@@ -2,6 +2,6 @@
   "probe_gh": "no",
   "probe_glab": "yes",
   "want_host": "lab.example",
-  "want_path": "issues?labels=epic&state=opened&non_archived=false&per_page=100&scope=created_by_me",
+  "want_path": "issues?labels=epic&state=opened&non_archived=false&scope=created_by_me",
   "listing": "[{\"iid\": 7, \"title\": \"Epic: an umbrella\", \"web_url\": \"https://lab.example/group/app/-/issues/7\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"references\": {\"full\": \"group/app#7\"}}, {\"iid\": 8, \"title\": \"Epic: an umbrella\", \"web_url\": \"https://lab.example/group/sub/tool/-/issues/8\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"references\": {\"full\": \"group/sub/tool#8\"}}, {\"iid\": 9, \"title\": \"Epic: an umbrella\", \"web_url\": \"https://lab.example/group/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/app/-/issues/9\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"references\": {\"full\": \"group/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/nested-subgroup-with-a-long-name/app#9\"}}]"
 }

@@ -34,9 +34,14 @@ case "$path" in
     want=$(ask '.want_q'); [ -z "$want" ] || [ "$want" = "$q" ] \
       || { echo "searched for '$q', not '$want'" >&2; exit 1; }
     case " $* " in *" --paginate "*) ;; *) echo "the search was read unpaginated" >&2; exit 1 ;; esac
-    # Advanced search, asked for: the default one reads owners side by side as AND.
-    case " $* " in *" advanced_search=true "*) ;; *) echo "the search did not ask for advanced search" >&2; exit 1 ;; esac
-    v=$(ask '.search')
+    # Fields passed with -f turn a call into a POST unless the method is named.
+    case " $* " in *" -X GET "*) ;; *) echo "the search was not a GET" >&2; exit 1 ;; esac
+    if [ -n "$(ask '.searches')" ]; then
+      v=$(jq -r --arg q "$q" '.searches[$q] // empty' "$env")
+      [ -n "$v" ] || { echo "unplanned query: $q" >&2; exit 1; }
+    else
+      v=$(ask '.search')
+    fi
     case "$v" in
       ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;
       *) printf '%s\n' "$v"; exit 0 ;;

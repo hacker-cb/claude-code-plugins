@@ -61,6 +61,12 @@ people and kept current by the master at every wave's opening and closing:
 Headings in the tracker's language too. The body carries no working state — that is the
 ledger's — and nothing the forge already counts.
 
+## Markers
+
+A marker — `<!-- wave-ledger -->`, `<!-- wave-close -->` and the rest — is the first line of the
+comment it marks and appears nowhere else: no other text quotes one, and a comment is named by its
+link. A comment carrying a marker is read as that marker's, whatever it meant.
+
 ## Closing the epic
 
 Once the ledger's closing line is written, the final report goes on the epic as a comment of its
@@ -77,7 +83,7 @@ glab issue close "$N"
 ## The session group
 
 Where the host offers sidebar groups — the desktop app's Code tab — an epic's sessions share one,
-named `<repository> #<epic> — <topic>` with the repository's own name, and the ledger header
+named `<owner>/<repository> #<epic> — <topic>`, and the ledger header
 records that name:
 
 - **The master** lists the groups, takes the one of exactly that name where it stands, creates
@@ -108,9 +114,9 @@ node "<plugin root>/scripts/epics.mjs" [--forge gh|glab] [--host <host>] [--labe
 | `read` | the forge answered to the end. `false` is unread, never "no epic open" |
 | `forge` / `host` | which forge and host were asked — the checkout's own unless both were named |
 | `epics[]` | one row per epic: `repo`, `number`, `title`, `url`, `updated`, and `children` where the forge counts sub-issues (`total`, `completed` — direct children only); `null` where it keeps no count |
-| `count` / `complete` | how many the forge said there are, and whether the list holds all of them — a search stops at its own cap; an epic reached twice is listed once |
+| `count` / `complete` | how many epics are listed — one reached twice is listed once — and whether every query came back whole: `false` where a search stopped at its own cap or a walk came back short, `null` where the forge gave no count to check against |
 | `reason` | why nothing could be listed |
 
 Without `--owner` it lists what the account itself opened: GitHub's `author:@me` over every
-owner, GitLab's `created_by_me`. Named owners widen it to any author there — on GitHub an account,
-at most 15 of them; on GitLab a group, subgroups included. Archived projects are listed too.
+owner, GitLab's `created_by_me`. Named owners widen it to any author there, one query each — on
+GitHub an account, on GitLab a group with its subgroups. Archived projects are listed too.

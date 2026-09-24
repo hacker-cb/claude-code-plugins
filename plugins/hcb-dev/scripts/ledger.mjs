@@ -3,11 +3,10 @@
 // what archives stand beside it.
 //
 // The coordinating session keeps its durable state in ONE comment on the epic issue, found
-// by the marker it opens with rather than by position, with what has left it in archive
-// comments the ledger indexes. Three things there are mechanical and were prose: finding the
-// comment across a paginated feed, measuring a body against a cap whose own refusal names the
-// wrong number and the wrong unit, and checking that the index and the archives standing on
-// the issue agree.
+// by a marker rather than by position, with what has left it in archive comments the ledger
+// indexes. Three things there are mechanical and were prose: finding the comment across a
+// paginated feed, measuring a body against a cap whose own refusal names the wrong number and
+// the wrong unit, and checking that the index and the archives standing on the issue agree.
 //
 // It READS. Writing the ledger is the caller's, because what may be archived out of it is a
 // judgement about the content — the journal while it is inline, then a closed wave — and a
@@ -16,18 +15,12 @@
 import { readFileSync } from 'node:fs';
 import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
 
-// A marker is what a comment OPENS with — the ledger and every archive are written that way —
-// never a mention further in: a report quoting `<!-- wave-ledger -->` in its prose read as a
-// marker turns the one ledger into two, and two publish no coordinate. Both are matched with the
-// whitespace a hand-written one carries, inside the marker and ahead of it: `<!--wave-ledger-->`
+// Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
-const LEDGER_MARK = /<!--\s*wave-ledger\s*-->/;
-const LEDGER = new RegExp(`^\\s*${LEDGER_MARK.source}`);
+const LEDGER = /<!--\s*wave-ledger\s*-->/;
 // `<n>` is the series; the pattern deliberately does not admit the ledger's own marker, so a
-// search for one never returns the other however the two are spelled. The ledger's own INDEX
-// lists its archives by these same markers, inline wherever its text names them.
+// search for one never returns the other however the two are spelled.
 const ARCHIVE = /<!--\s*wave-journal-(\d{1,6})\s*-->/g;
-const ARCHIVE_OPEN = new RegExp(`^\\s*${ARCHIVE.source}`);
 
 // GitHub's cap in UTF-8 BYTES, measured on both sides of the boundary
 // (`references/forge-behaviour.md`). Its refusal says `maximum is 65536 characters`, which is
@@ -110,13 +103,9 @@ const answer = {
   ledger: { found: false, id: null, nodeId: null, url: null, bytes: null, chars: null, utf16: null,
     ambiguous: false, at: null, author: null, mine: null },
   archives: [],
-  // Every comment carrying a marker it does not open with — a mention, or a comment written with
-  // something ahead of its marker. Nothing here is a ledger or an archive; it is what the caller
-  // reads before opening a ledger or numbering an archive.
-  mentions: [],
   index: { listed: null, present: [], missing: [], unlisted: [] },
   write: { asked: false, bytes: null, chars: null, utf16: null, fits: null, headroom: null,
-    marker: null, limit: opts.limit },
+    limit: opts.limit },
   me: null,
   faults: [],
   reason: null,
@@ -280,34 +269,35 @@ for (const c of rows) {
   const author = text(rawAuthor);
   const mine = mineness(rawAuthor);
   if (LEDGER.test(b)) {
-    // The ledger's own INDEX is written in the archive markers — a pointer standing where the
-    // text used to be. A comment opening with the ledger marker is the ledger, and the archive
+    // The ledger's own INDEX is written in these same markers — a pointer standing where the
+    // text used to be. A comment carrying the ledger marker is the ledger, and the archive
     // markers in it are what it lists, never archives of its own.
     marked.push({ kind: 'ledger', id: text(String(id)), nodeId, url, at, body: b, author, mine });
     continue;
   }
-  // One archive per comment, named by the marker it opens with: an archive quoting the markers
-  // of the ones before it is the ordinary case, and those quotes are its text, not more archives.
-  const opened = ARCHIVE_OPEN.exec(b);
-  if (opened !== null) {
-    marked.push({ kind: 'archive', n: Number(opened[1]), id: text(String(id)), url, at, body: b,
-      author, mine });
-  }
-  // Markers further in: the ledger's own are its index, read below; anyone else's are listed.
-  const rest = opened === null ? b : b.slice(opened[0].length);
-  const ns = new Set();
   ARCHIVE.lastIndex = 0;
+  const ns = new Set();
   let m;
-  while ((m = ARCHIVE.exec(rest)) !== null) ns.add(Number(m[1]));
-  const ledgerMention = LEDGER_MARK.test(rest);
-  if (ledgerMention || ns.size > 0) {
-    answer.mentions.push({ id: text(String(id)), ledger: ledgerMention,
-      archives: [...ns].sort((x, y) => x - y), author, mine });
+  while ((m = ARCHIVE.exec(b)) !== null) ns.add(Number(m[1]));
+  if (ns.size === 0) continue;
+  // One archive per comment is the shape. A body carrying two of them — an archive quoting the
+  // markers of the ones before it is the ordinary way that happens — is malformed rather than
+  // two archives, and counted as two it invents a duplicate of a number nobody wrote twice.
+  if (ns.size > 1) {
+    marked.push({ kind: 'malformed', ns: [...ns].sort((x, y) => x - y), id: text(String(id)),
+      author, mine });
+    continue;
   }
+  marked.push({ kind: 'archive', n: [...ns][0], id: text(String(id)), url, at, body: b,
+    author, mine });
 }
 
 const ledgers = marked.filter((m) => m.kind === 'ledger');
 const archives = marked.filter((m) => m.kind === 'archive');
+for (const bad of marked.filter((m) => m.kind === 'malformed')) {
+  answer.faults.push({ fault: `one comment carries the archive markers ${bad.ns.join(', ')}`,
+    ids: [bad.id], authors: [bad.author], mine: [bad.mine] });
+}
 
 // Authorship is read to SAY whose a comment is, and never to pick between two of them. Breaking
 // the tie in favour of ours looks safe and is not: the ledger opened under ANOTHER token — a
@@ -361,16 +351,8 @@ if (ledgers.length > 1) {
     chars: m.chars, utf16: m.utf16, ambiguous: false, at: l.at, author: l.author, mine: l.mine };
 }
 
-// No comment opens with the ledger marker, and one carries it further in: a ledger written with
-// something ahead of its marker, or somebody's text. Which it is has to be read before a ledger
-// is opened over it; with one ledger open, the rest are mentions.
-const carriers = answer.mentions.filter((x) => x.ledger);
-if (ledgers.length === 0 && carriers.length > 0) {
-  answer.faults.push({ fault: 'no comment opens with the ledger marker, and a comment carries it inside its text',
-    ids: carriers.map((x) => x.id), authors: carriers.map((x) => x.author), mine: carriers.map((x) => x.mine) });
-}
-
-// One archive per number is the shape: what leaves the ledger goes under a marker of its own.
+// One archive per comment is the shape; a comment carrying two markers is a fault rather than
+// two archives, since what leaves the ledger goes under a marker of its own.
 const byN = new Map();
 for (const a of archives) {
   const m = measure(a.body);
@@ -419,8 +401,6 @@ if (answer.write.asked) {
   answer.write.chars = m.chars;
   answer.write.utf16 = m.utf16;
   answer.write.fits = m.bytes <= opts.limit;
-  // Which marker the body opens with — the one a later read finds it by.
-  answer.write.marker = LEDGER.test(body) ? 'ledger' : (ARCHIVE_OPEN.test(body) ? 'archive' : null);
   answer.write.headroom = opts.limit - m.bytes;
 }
 

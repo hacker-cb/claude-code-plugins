@@ -438,9 +438,9 @@ name stands for.
   than its exit status, so a push nobody waited out is reported as unsettled, never as
   refused.
 - [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
-  stands on the epic issue (the comment its marker opens, never one that mentions it),
-  whether the next write fits under the cap — in bytes, whatever unit the forge's own
-  refusal names — and whether the archives beside it and the index naming them agree. It reads: what may be archived out of a ledger is a judgement about
+  stands on the epic issue, whether the next write fits under the cap — in bytes, whatever
+  unit the forge's own refusal names — and whether the archives beside it and the index
+  naming them agree. It reads: what may be archived out of a ledger is a judgement about
   content.
 - [`scripts/epics.mjs`](scripts/epics.mjs) — which epics are open: every issue carrying
   the `epic` label, across every owner the account reaches — its own by default, any

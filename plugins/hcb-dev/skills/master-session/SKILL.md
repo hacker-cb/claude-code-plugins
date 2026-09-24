@@ -56,15 +56,14 @@ it accepts their returns per
    glab api -X POST "projects/<project>/issues/<epic>/links" \
      -f target_project_id=<project id> -f target_issue_iid=<n> -f link_type=relates_to
    ```
-3. **Its shape**: title, body, labels and session group per
-   [`../../references/epic-structure.md`](../../references/epic-structure.md) — the labels
-   created where the repository lacks them and `epic` applied, this session filed into the
-   epic's group where the host offers groups.
-4. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
+3. **The ledger**: open it per `wave-ledger.md`, on the epic, before anything
    else is decided; from here on, every event lands in it before the
    conversation moves on. Its header carries the plugin version this role
    reconciled against, which starts as the one it is running, resolved rather
    than recalled (`hcb-dev:session-plugin-refresh`).
+4. **Its shape**: per
+   [`../../references/epic-structure.md`](../../references/epic-structure.md), the group's
+   name going into the ledger header.
 
 ## Planning
 
