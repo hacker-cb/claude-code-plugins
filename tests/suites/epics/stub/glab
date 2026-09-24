@@ -31,11 +31,13 @@ case "$path" in
     esac
     case " $* " in
       *" -i "*)
+        case "$path" in *"&per_page=1") ;; *) echo "the count was not asked for one row" >&2; exit 1 ;; esac
         printf 'HTTP/2.0 200 OK\nContent-Type: application/json\n'
         t=$(ask '.total'); [ "$t" = none ] || printf 'X-Total: %s\n' "${t:-$(jq 'length' <<<"$v")}"
         printf '\n[]\n'; exit 0 ;;
     esac
     case " $* " in *" --paginate "*) ;; *) echo "the listing was read unpaginated" >&2; exit 1 ;; esac
+    case "$path" in *"&per_page=100") ;; *) echo "the walk did not ask for full pages" >&2; exit 1 ;; esac
     printf '%s\n' "$v"; exit 0 ;;
 esac
 echo "unplanned glab call: $*" >&2; exit 1

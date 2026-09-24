@@ -15,7 +15,7 @@ exists. The roles travel between repositories; every literal is read from the re
 | security | optional flag | on top of whatever component applies |
 
 A deliberately deferred defect keeps its kind of work — the deferral lives in the parked reason.
-The plugin's own `epic` and `wave` are no role and are read past ([`epic-structure.md`](epic-structure.md)).
+The plugin's `epic` and `wave` carry no role the repository's own set does not give them ([`epic-structure.md`](epic-structure.md)).
 
 ## Read the set before proposing or applying anything
 

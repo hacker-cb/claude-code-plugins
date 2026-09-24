@@ -45,7 +45,8 @@ readings stand, and the report says which is this session's own.
    branch of its own: a standalone run.
 4. **Nothing answers** — the role is unread, never standalone by default: say which of the three
    came back empty and what that leaves unopened, and ask for the epic number rather than taking
-   one out of a path, the open epics listed (below) so the ask names them.
+   one out of a path, the open epics listed (below) so the ask names them — the labelled ones
+   the account opened; an epic without its label is not among them.
 
 A master or a batch is confirmed against the epic's ledger: the header's master name, a batch row
 naming this session. Where the ledger contradicts the candidate — a variant the host handed back,

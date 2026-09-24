@@ -58,9 +58,9 @@ summary is input, not a verdict.
 
 ## Read against the code, not against the tracker
 
-Every issue in the slice carries a verdict — an epic's umbrella and waves, labelled `epic` and
-`wave` ([`../../references/epic-structure.md`](../../references/epic-structure.md)), being
-structure, not work, carry none — reached per `issue-currency.md` on
+Every issue in the slice carries a verdict — save the epic the slice runs under and its `wave`
+issues, structure rather than work
+([`../../references/epic-structure.md`](../../references/epic-structure.md)) — reached per `issue-currency.md` on
 its deep read, and carrying the coordinate it stands on together with the base pin
 (`<remote>/<branch>@<sha>`) and the tracker moment the slice was read at — the
 survey's whole reading dates to those two, and a session that adopts this layout

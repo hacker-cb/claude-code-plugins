@@ -64,6 +64,10 @@ const coord = (v) => {
   return c === '' ? null : c;
 };
 
+// What a call that did not answer says about it — a timeout names itself, since a killed process
+// leaves no line of its own.
+const why = (r) => (r.timedOut ? 'no answer in time' : r.line());
+
 // Which forge, and which HOST, this checkout lives on — read off what answers for it. `gh repo
 // view` resolves the repository and its host from the remote, where `gh api` would ask the
 // default host; `glab api` resolves both from the checkout itself. Every later call names the
@@ -72,7 +76,7 @@ const probe = (cmd) => {
   const args = cmd === 'gh' ? ['repo', 'view', '--json', 'url']
     : ['api', ...(opts.host ? ['--hostname', opts.host] : []), 'projects/:fullpath'];
   const r = runner(opts.dir, cmd)(args, 60000);
-  if (!r.ok) return { cmd, ok: false, why: `${cmd}: ${r.timedOut ? 'no answer in time' : r.line()}` };
+  if (!r.ok) return { cmd, ok: false, why: `${cmd}: ${why(r)}` };
   let url = null;
   try { const parsed = JSON.parse(r.out); url = cmd === 'gh' ? parsed?.url : parsed?.web_url; } catch { /* no url */ }
   let host = null;
@@ -97,20 +101,20 @@ answer.host = host;
 const cli = runner(opts.dir, forge);
 
 // One epic reached twice — two owners that overlap, a page that shifted under a paginated walk —
-// is one epic.
+// is one epic. Answers the row's key, so a query can count what it reached apart from repeats.
 const seen = new Set();
 const add = ({ repo, number, title, url, updated, children }) => {
   const row = { repo: coord(repo), number: Number.isInteger(number) ? number : null, title: text(title),
     url: coord(url), updated: text(updated), children };
   const key = row.url ?? (row.repo && row.number !== null ? `${row.repo}#${row.number}` : null);
-  if (key !== null) {
-    if (seen.has(key)) return;
-    seen.add(key);
-  }
-  answer.epics.push(row);
+  if (key === null) { answer.epics.push(row); return {}; }
+  if (!seen.has(key)) { seen.add(key); answer.epics.push(row); }
+  return key;
 };
+// Refused after the forge is known: read, not a usage error, so the answer stays JSON.
+const refuse = (msg) => { answer.reason = msg; out(); };
 
-const failed = (r, what) => text(`${what} could not be read: ${r.timedOut ? 'no answer in time' : r.line()}`);
+const failed = (r, what) => text(`${what} could not be read: ${why(r)}`);
 const pagesOf = (r, what) => {
   if (!r.ok) { answer.reason = failed(r, what); out(); }
   const pages = parsePages(r.out);
@@ -126,23 +130,26 @@ if (forge === 'gh') {
   // in one query do not (`references/forge-behaviour.md`).
   const scopes = [];
   for (const o of opts.owners) {
-    if (o.includes('/')) die('--owner takes an account on GitHub');
+    if (o.includes('/')) refuse(`owner '${o}' is a path, and a GitHub owner is one account`);
     const who = cli(['api', '--hostname', host, `users/${encodeURIComponent(o)}`], 60000);
     let type = null;
     if (who.ok) { try { type = JSON.parse(who.out)?.type; } catch { /* no type */ } }
     if (type !== 'Organization' && type !== 'User') {
-      answer.reason = text(`owner '${o}' could not be resolved: ${who.ok ? 'no type in the answer' : who.line()}`);
+      answer.reason = text(`owner '${o}' could not be resolved: ${who.ok ? 'no type in the answer' : why(who)}`);
       out();
     }
     scopes.push(`${type === 'Organization' ? 'org' : 'user'}:${o}`);
   }
   if (scopes.length === 0) scopes.push('author:@me');
   for (const scope of scopes) {
+    // Each page cut down to what a row takes before it reaches this process: issue bodies would
+    // otherwise ride along, a page at a time, into one buffer.
     const pages = pagesOf(cli(['api', '--hostname', host, '--paginate', '-X', 'GET', 'search/issues',
-      '-f', `q=is:issue is:open label:"${opts.label}" ${scope}`, '-f', 'per_page=100'], 180000),
-    `the search over ${scope}`);
+      '-f', `q=is:issue is:open label:"${opts.label}" ${scope}`, '-f', 'per_page=100', '--jq',
+      '{total_count, incomplete_results, items: [.items[]? | {number, title, html_url, repository_url, updated_at, sub_issues_summary}]}'],
+    180000), `the search over ${scope}`);
     let total = null;
-    let got = 0;
+    const reached = new Set();
     for (const p of pages) {
       if (!p || typeof p !== 'object' || !Array.isArray(p.items)) {
         answer.reason = 'the search answered with something that is not a result page';
@@ -153,10 +160,11 @@ if (forge === 'gh') {
       if (typeof p.total_count === 'number') total = Math.max(total ?? 0, p.total_count);
       // A search the forge timed out on says so only in its flag.
       if (p.incomplete_results === true) complete = false;
-      got += p.items.length;
       for (const it of p.items) {
         const sub = it?.sub_issues_summary;
-        add({
+        // Counted by key, never as delivered: a row a shifted page repeats is not the one it
+        // pushed off.
+        reached.add(add({
           repo: typeof it?.repository_url === 'string' ? it.repository_url.split('/').slice(-2).join('/') : null,
           number: it?.number,
           title: it?.title,
@@ -165,15 +173,18 @@ if (forge === 'gh') {
           children: sub && Number.isInteger(sub.total)
             ? { total: sub.total, completed: Number.isInteger(sub.completed) ? sub.completed : null }
             : null,
-        });
+        }));
       }
     }
-    // A search stops at 1 000 hits and says so only in its count.
-    if (total === null || got < total) complete = false;
+    const got = reached.size;
+    // A search stops at 1 000 hits and says so only in its count; one that gave no count leaves
+    // nothing to check against.
+    if (total === null) complete = complete === false ? false : null;
+    else if (got < total) complete = false;
   }
 } else {
   // GitLab's own words for "none" and "any" are no label to list by.
-  if (/^(none|any|no label)$/i.test(opts.label)) die('--label takes a label name');
+  if (/^(none|any|no label)$/i.test(opts.label)) refuse(`'${opts.label}' is GitLab's own word, not a label to list by`);
   // Without owners, what the account created — never `all`, which on a public instance is every
   // issue the account can see. An owner is a group, read through the group's own listing.
   // Archived projects included: an epic open there is still open.
@@ -194,13 +205,12 @@ if (forge === 'gh') {
     }
     const header = /^x-total:\s*(\d+)\s*$/im.exec(head.out.split(/\r?\n\r?\n/)[0] ?? '');
     const total = header ? Number(header[1]) : null;
-    let got = 0;
+    const reached = new Set();
     for (const p of pagesOf(cli(['api', '--hostname', host, '--paginate', `${list.path}&per_page=100`], 180000), list.what)) {
       if (!Array.isArray(p)) { answer.reason = `${list.what} answered with something that is not a list`; out(); }
-      got += p.length;
       for (const it of p) {
         const ref = typeof it?.references?.full === 'string' ? it.references.full : null;
-        add({
+        reached.add(add({
           repo: ref ? ref.replace(/#\d+$/, '') : null,
           number: it?.iid,
           title: it?.title,
@@ -208,11 +218,12 @@ if (forge === 'gh') {
           updated: it?.updated_at,
           // A related link is listed, not counted: GitLab keeps no child count for an issue.
           children: null,
-        });
+        }));
       }
     }
-    if (total === null) complete = null;
-    else if (complete !== null && got < total) complete = false;
+    const got = reached.size;
+    if (total === null) complete = complete === false ? false : null;
+    else if (got < total) complete = false;
   }
 }
 

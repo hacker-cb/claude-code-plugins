@@ -22,10 +22,11 @@ glab-fails	--label epic	0	"read": false|could not be read	a listing that failed 
 gh-shifted	--forge gh	0	"number": 1|"number": 2|"complete": true	an epic a shifted page repeats is one epic, and the list still reaches the count
 glab-overlap	--forge glab --host lab.example --owner group --owner group/sub	0	"count": 1|"number": 4	two groups that overlap list one epic once
 glab-not-group	--forge glab --host lab.example --owner someone	0	"read": false|group 'someone' is not a group this account can read	an owner that is no group is named as such
--	--forge gh --host ghe.example --owner a/b	2	--owner takes an account on GitHub	a GitHub owner is one account, never a path
--	--forge glab --host lab.example --label None	2	--label takes a label name	GitLab's own word for "no label" lists something else entirely
+-	--forge gh --host ghe.example --owner a/b	0	"read": false|a GitHub owner is one account	a GitHub owner is one account, never a path — refused as an answer once the forge is known, before anything is asked
+-	--forge glab --host lab.example --label None	0	"read": false|GitLab's own word	GitLab's own word for "no label" lists something else entirely, and nothing is asked
 -	--label a,b	2	--label takes a label name	a comma is GitLab's list separator
 gh-shrunk	--forge gh	0	"count": 2|"complete": false	a count that shrank between pages is no licence to call the shorter list whole
 glab-listing-404	--label epic	0	the listing could not be read|NOT:is not a group	a failed listing of the account's own is not an owner that is no group
 glab-short	--label epic	0	"count": 3|"complete": false	a walk that came back shorter than the count the forge gave is not the set
 glab-uncounted	--label epic	0	"count": 1|"complete": null	where GitLab gives no count the list is of unknown completeness, never complete
+gh-shift-hides	--forge gh	0	"count": 3|"complete": false	a page that shifted repeats one epic where it pushed another off: the repeat is not counted as the one missing

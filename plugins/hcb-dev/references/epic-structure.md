@@ -16,8 +16,9 @@ Two labels belong to the plugin's own process, spelled the same in every reposit
 | `wave` | `c5def5` | One wave of an epic: its plan, its ledger and its batches' returns | each wave issue |
 
 They are **not classification roles** ([`classification.md`](classification.md)): they say where
-an issue stands in the coordination, never its kind of work, component or priority, and every
-reading of a slice's roles, cardinality or tiers reads past them. The epic keeps the labels the
+an issue stands in the coordination, never its kind of work, component or priority, and a reading
+of a slice's roles, cardinality or tiers reads past them — unless the repository's own set already
+gives the name a role. The epic keeps the labels the
 repository classifies it by; a wave issue carries `wave` alone.
 
 **The role assignment authorizes them**, as it authorizes filing the umbrella: the master
@@ -64,8 +65,9 @@ ledger's — and nothing the forge already counts.
 ## Markers
 
 A marker — `<!-- wave-ledger -->`, `<!-- wave-close -->` and the rest — is the first line of the
-comment it marks and appears nowhere else: no other text quotes one, and a comment is named by its
-link. A comment carrying a marker is read as that marker's, whatever it meant.
+comment it marks, and the only other place one is written is the ledger's own index of its
+archives ([`wave-ledger.md`](wave-ledger.md)): no other text quotes one, and a comment is named by
+its link. A comment carrying a marker is read as that marker's, whatever it meant.
 
 ## Closing the epic
 
@@ -97,7 +99,8 @@ records that name:
 ## An epic in an older shape
 
 A master holding an epic without the `epic` label — on assuming the role, after a restart, or
-once the plugin moved under it — creates and applies the labels there and then.
+once the plugin moved under it — creates and applies the labels there and then, and takes the
+session group, its name going into the ledger header.
 
 ## Listing the open epics
 
