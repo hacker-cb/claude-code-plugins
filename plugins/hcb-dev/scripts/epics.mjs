@@ -217,6 +217,8 @@ if (opts.epic !== null && forge === 'gh') {
     if (issue === null) refuse(`issue #${opts.epic} is not there, or not visible to this token`);
     const subs = issue?.subIssues;
     if (!subs || !Array.isArray(subs.nodes)) refuse(`the sub-issues of #${opts.epic} answered with something that is not a page`);
+    // Errors beside the data mean the data may be partial: what came back stands, never as whole.
+    if (Array.isArray(page.errors) && page.errors.length) answer.complete = false;
     const home = typeof repo?.nameWithOwner === 'string' ? repo.nameWithOwner.toLowerCase() : null;
     if (Number.isInteger(subs.totalCount)) total = Math.max(total ?? 0, subs.totalCount);
     const summary = issue?.subIssuesSummary?.total;
