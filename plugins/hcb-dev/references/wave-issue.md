@@ -32,16 +32,19 @@ wave's table instead; one no wave has taken yet stays under the epic. Read the e
 they are written.
 
 ```bash
-N="<the issue>"; FROM="<the one it hangs under now, read above>"
-TO="<the epic or the wave — its URL where the issue lives in another repository>"
-# GitHub — a sub-issue; the parent set replaces the one it had. A bare number resolves in N's repository
-gh issue edit "$N" --parent "$TO"
-# GitLab — a related link to the new parent, then the old one's, matched by number AND project
-P="<the project id the issue lives in>"
+# From the epic's own checkout: the epic and its waves live there, the issue maybe elsewhere.
+TO="<the epic or the wave, by number>"; FROM="<the one it hangs under now, read above, by number>"
+N="<the issue — its URL where it lives in another repository>"
+TO_URL="<TO's URL, where N is one: a bare number resolves in N's repository>"
+# GitHub — a sub-issue; the parent set replaces the one it had
+gh issue edit "$N" --parent "${TO_URL:-$TO}"
+# GitLab — the issue named by its project's id and its number there: a related link from the new
+# parent, then the old parent's link to it, matched by that number AND that project
+P="<the id of the project the issue lives in>"; I="<its number in that project>"
 glab api -X POST "projects/:fullpath/issues/$TO/links" -f target_project_id="$P" \
-  -f target_issue_iid="$N" -f link_type=relates_to
-LINK="$(glab api "projects/:fullpath/issues/$FROM/links" | jq -r --argjson n "$N" --argjson p "$P" \
-  '.[] | select(.iid == $n and .project_id == $p) | .issue_link_id')"
+  -f target_issue_iid="$I" -f link_type=relates_to
+LINK="$(glab api "projects/:fullpath/issues/$FROM/links" | jq -r --argjson i "$I" --argjson p "$P" \
+  '.[] | select(.iid == $i and .project_id == $p) | .issue_link_id')"
 [ -n "$LINK" ] && glab api -X DELETE "projects/:fullpath/issues/$FROM/links/$LINK"
 ```
 

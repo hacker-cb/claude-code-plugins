@@ -78,9 +78,10 @@ HOST="<that host>"; AT=(${REPO:+--repo "$REPO"} ${FORGE:+--forge "$FORGE"} ${HOS
 node "$S/ledger.mjs" --issue "$EPIC" "${AT[@]}"
 WAVES="$(node "$S/epics.mjs" --epic "$EPIC" "${AT[@]}")"
 printf '%s\n' "$WAVES" | jq -c '{read, complete, hierarchy, reason, rest, waves: [.waves[]? | {number, state, reason}]}'
-# The open waves' ledgers — every wave's where none is open, the ended ones being all there is
-for W in $(printf '%s' "$WAVES" | jq -r '[.waves[]? | select(.state == "open")] as $o
-    | (if ($o | length) > 0 then $o else [.waves[]?] end)[] | .number'); do
+LISTED=(<the waves the epic's ledger header lists, where WAVES is not complete or has no hierarchy>)
+# The open waves' ledgers — every wave's where none is open — and the header's, once
+for W in $({ printf '%s' "$WAVES" | jq -r '[.waves[]? | select(.state == "open")] as $o
+    | (if ($o | length) > 0 then $o else [.waves[]?] end)[] | .number'; printf '%s\n' "${LISTED[@]}"; } | sort -un); do
   node "$S/ledger.mjs" --issue "$W" "${AT[@]}"
 done
 DEEP="<the issues of ONE repository: the epic, the waves read above, and a return's issue where it shares it>"
@@ -95,8 +96,8 @@ then that comment out of `--deep`'s, picked by the author and moment `ledger.mjs
 than by matching its marker again, read whole, as prose
 ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)): from the epic's, its waves
 and the expectations the user owes; from each wave's read, its batch rows, the merge queue and the
-gates. Which waves an epic has — the header's list read the same way where the answer is not
-`complete` or has no hierarchy — and its progress across them and the work no wave took, are
+gates. Which waves an epic has — `LISTED` filled from the header and the block run again where the
+answer is not `complete` or has no hierarchy — and its progress across them and the work no wave took, are
 [`../../references/wave-issue.md`](../../references/wave-issue.md)'s. Each change request the queue
 names is read as below. The live registry says which batch sessions answer now — presence, never
 absence.
