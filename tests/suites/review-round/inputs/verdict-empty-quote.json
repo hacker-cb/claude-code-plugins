@@ -1,0 +1,10 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "win.txt",
+      "lines": "1",
+      "quote": ""
+    }
+  ]
+}

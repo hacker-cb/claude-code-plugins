@@ -1,0 +1,15 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "lib/helpers.sh",
+      "lines": "2",
+      "quote": "hush() { :; }"
+    },
+    {
+      "path": "lib/util.sh",
+      "lines": "1",
+      "quote": "restored"
+    }
+  ]
+}

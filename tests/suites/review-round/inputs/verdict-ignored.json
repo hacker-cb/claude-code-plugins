@@ -1,0 +1,15 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "win.txt",
+      "lines": "1",
+      "quote": "first line"
+    },
+    {
+      "path": "local.env",
+      "lines": "1",
+      "quote": "KEY=local"
+    }
+  ]
+}
