@@ -1,0 +1,11 @@
+{
+  "users": {
+    "acme": "Organization",
+    "someone": "User"
+  },
+  "want_host": "forge.example",
+  "searches": {
+    "is:issue is:open label:\"epic\" org:acme": "{\"total_count\": 1, \"incomplete_results\": false, \"items\": [{\"number\": 3, \"title\": \"Epic: an umbrella\", \"html_url\": \"https://forge.example/acme/app/issues/3\", \"repository_url\": \"https://forge.example/api/v3/repos/acme/app\", \"updated_at\": \"2026-01-02T03:04:05Z\"}]}",
+    "is:issue is:open label:\"epic\" user:someone": "{\"total_count\": 2, \"incomplete_results\": false, \"items\": [{\"number\": 4, \"title\": \"Epic: an umbrella\", \"html_url\": \"https://forge.example/someone/tool/issues/4\", \"repository_url\": \"https://forge.example/api/v3/repos/someone/tool\", \"updated_at\": \"2026-01-02T03:04:05Z\"}, {\"number\": 3, \"title\": \"Epic: an umbrella\", \"html_url\": \"https://forge.example/acme/app/issues/3\", \"repository_url\": \"https://forge.example/api/v3/repos/acme/app\", \"updated_at\": \"2026-01-02T03:04:05Z\"}]}"
+  }
+}

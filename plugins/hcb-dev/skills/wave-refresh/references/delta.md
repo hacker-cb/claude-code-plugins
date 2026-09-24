@@ -23,13 +23,15 @@ node "$S" --since "<moment>" --was "$W" <the slice's own flags, as that file giv
 
 Those flags are the ones the pinned graph was read under — the script refuses a
 graph of any other slice — and `<moment>` is the moment the ledger records
-beside it. The verdict's `delta` is what the pass acts on:
+beside it. The verdict's `delta` is what the pass acts on, the epic's structure left out by those
+flags, or by its numbers where the repository gives a label a role of its own
+([`../../../references/epic-structure.md`](../../../references/epic-structure.md)):
 
 | key | what it obliges |
 |---|---|
 | `entered`, `left` | in the slice now and not then, and the other way: an entered issue is ruled from scratch, a left one takes its verdict line out of the ledger |
 | `edited` | `updatedAt` moved — the issue's own content or state |
-| `linked` | a link key differs from the pinned graph: added, removed, reparented, or an end that changed state — `hid` among them, since an end out of sight moves nothing else |
+| `linked` | a link key differs from the pinned graph: added, removed, reparented, or an end that changed state — `hid` among them, since an end out of sight moves nothing else. A parent passing between the epic and one of its waves, or between two of them — `was` on the line shows the one it had — is structure: a line whose only change it is keeps its verdict |
 | `cut` | a link list one reading or the other only saw a window of — no edge is taken from it, and what fell outside the window shows nowhere else |
 | `events` | the forge's own count of link events since the moment |
 | `added`, `removed`, `moved` | the edges themselves, each written once whichever end it was read from, and the ends whose state changed — what the report's *what moved* prints |
@@ -37,8 +39,8 @@ beside it. The verdict's `delta` is what the pass acts on:
 | `complete`, `reason` | whether this is a delta at all |
 
 **The re-verification list is the union** of `entered`, `edited`, `linked`,
-`cut` and `events` — every verdict it names is re-derived, every other one
-carried from the ledger. A `cut` issue's links are past what the forge shows at
+`cut` and `events` — every verdict it names is re-derived, save a `linked` line
+whose only change is structure (above), every other one carried from the ledger. A `cut` issue's links are past what the forge shows at
 all, so its verdict is re-derived against the tree and the report names it as
 the one this pass could not compare.
 
@@ -67,15 +69,19 @@ without `--since` carries no children by name — projected down to the verdict
 line, the numbers and the link keys:
 
 ```bash
-jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> > <graph file>
+# every `<` escaped as JSON's own \u003c: a filter carrying a marker then stays text in the comment
+jq -c 'if .slice then {slice: (.slice | {tier, forge, repo, host, filter, read, complete, reason, delta: {since: .delta.since, moment: .delta.moment}})} else {n} + with_entries(select(.key | IN("p","ch","chl","bb","bl","rel","pr","hid"))) end' <reading> | sed 's/</\\u003c/g' > <graph file>
 ```
 
-**It lives in the ledger** ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)),
-in a collapsed `<details>` block beside the header's row for the last whole
-reading of the slice, and it belongs to this pass alone: written here, read
-here, **replaced** rather than archived, since it is state and not history. The
-write is measured like any other (`ledger.mjs --body-file`); where it will not
-fit, the graph is not written and the header says so.
+**It lives in a comment of its own** on the epic, opening with `<!-- wave-slice -->` above the
+graph file in a `jsonl` fence, byte for byte; the header's row for the last whole reading of the
+slice ([`../../../references/wave-ledger.md`](../../../references/wave-ledger.md)) links it beside
+the file's digest (`shasum -a 256 <graph file>`). It belongs to this pass alone: written here, read
+here, **replaced** whole rather than archived — created the first time, edited in place after, the
+body passed as `-F body=@<file>` and read back as any write is (`forge-behaviour.md`). A graph whose
+digest is not the one the header records is no graph: a pass stopped between the two writes left
+it, and the delta is taken as where none stands. Where it will not fit a comment, it is not written
+and the header says so.
 
 **Where no graph stands** — after a survey, after one that did not fit, or the
 first pass of an epic — the call is made without `--was`: the links are then

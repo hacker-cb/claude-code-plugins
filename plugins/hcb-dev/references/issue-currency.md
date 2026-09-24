@@ -52,6 +52,7 @@ names as not read — a key `unavailable` here, a list `cut`, an end `hidden`, a
 S="<plugin root>/scripts/issue-slice.mjs"; L='<one>'; M='<number|title>'
 node "$S" --deep "<n>[,<n>…]"                                       # these issues, whole
 node "$S" [--state open|closed|all] [--label "$L"] [--milestone "$M"]          # a slice
+#   [--skip-label <name>]... leaves an epic's own structure out (epic-structure.md)
 # A milestone is GitHub's number, GitLab's title. Either tier: --repo <path> [--host <host>]
 # for another repository; --forge gh|glab where both CLIs answer for the same path.
 ```

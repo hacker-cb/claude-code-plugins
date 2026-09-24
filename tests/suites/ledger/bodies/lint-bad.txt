@@ -1,0 +1,18 @@
+<!-- wave-ledger -->
+<!-- wave-ledger-format: 2 -->
+<!-- wave-section: header -->
+- x
+
+<!-- wave-section: decisions -->
+### A story of how it went
+- long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text long decision text 
+- ~~an old decision~~ lifted
+
+<!-- wave-section: journal -->
+- first line of an entry
+  and its second line
+
+<!-- wave-section: extras -->
+- ?
+
+<!-- wave-something -->

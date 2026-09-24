@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+[ "$1" = api ] || { echo "unplanned glab call: $*" >&2; exit 1; }
+host="" prev="" path=""
+for a in "$@"; do
+  [ "$prev" = "--hostname" ] && host=$a
+  case "$a" in projects/*|issues\?*|groups/*) path=$a ;; esac
+  prev=$a
+done
+
+case "$path" in
+  projects/*/issues/*/links)
+    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+      || { echo "links went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+    want=$(ask '.want_path'); [ -z "$want" ] || [ "$want" = "$path" ] || { echo "read '$path', not '$want'" >&2; exit 1; }
+    case "$(ask '.links')" in
+      ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+      notfound) echo "glab: 404 Not found (HTTP 404)" >&2; exit 1 ;;
+      *) ask '.links'; exit 0 ;;
+    esac ;;
+  projects/*)
+    case "$(ask '.probe_glab')" in
+      yes) echo '{"id":9,"path_with_namespace":"group/app","web_url":"https://lab.example/group/app"}'; exit 0 ;;
+      *) echo "404 Project Not Found (HTTP 404)" >&2; exit 1 ;;
+    esac ;;
+  issues\?*|groups/*)
+    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+      || { echo "listing went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+    # Walked a page at a time: the page is the one thing that changes between calls.
+    page=${path##*&page=}; base=${path%&page=*}
+    want=$(ask '.want_path'); [ -z "$want" ] || [ "$want" = "$base" ] \
+      || { echo "listed '$base', not '$want'" >&2; exit 1; }
+    case " $* " in *" -i "*) ;; *) echo "the listing was read without its headers" >&2; exit 1 ;; esac
+    case "$base" in *"&per_page=100"*) ;; *) echo "the walk did not ask for full pages" >&2; exit 1 ;; esac
+    # `.listing` is one page, or `.pages` several; `.total` the count the header carries,
+    # `none` for a listing GitLab would not count.
+    if [ -n "$(ask '.pages')" ]; then
+      n=$(jq '.pages | length' "$env"); body=$(jq -c --argjson i "$page" '.pages[$i - 1] | fromjson' "$env")
+    else
+      body=$(ask '.listing'); n=1
+      case "$body" in
+        ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+        notgroup) echo "glab: 404 Group Not Found (HTTP 404)" >&2; exit 1 ;;
+      esac
+    fi
+    next=""; [ "$page" -lt "$n" ] && next=$((page + 1))
+    printf 'HTTP/2.0 200 OK\nContent-Type: application/json\n'
+    t=$(ask '.total'); [ "$t" = none ] || printf 'X-Total: %s\n' "${t:-$(jq length <<<"$body")}"
+    printf 'X-Next-Page: %s\nX-Page: %s\n\n%s\n' "$next" "$page" "$body"; exit 0 ;;
+esac
+echo "unplanned glab call: $*" >&2; exit 1

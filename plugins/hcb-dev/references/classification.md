@@ -15,6 +15,7 @@ exists. The roles travel between repositories; every literal is read from the re
 | security | optional flag | on top of whatever component applies |
 
 A deliberately deferred defect keeps its kind of work — the deferral lives in the parked reason.
+The plugin's own `epic` and `wave` labels: [`epic-structure.md`](epic-structure.md).
 
 ## Read the set before proposing or applying anything
 
@@ -141,8 +142,7 @@ Which is in force: whatever the existing milestones are named for; where there a
 repository that publishes versioned releases takes **release** and one that publishes none takes
 **phase**. Whichever dimension is left over goes to a label family, and a version already shipped
 needs no grouping. Either pattern may hold one milestone meaning *in no release*. Never run a phase
-ladder beside releases: an issue would be in a phase and slated for a version at once, and there is
-one slot.
+ladder beside releases: an issue would be in a phase and slated for a version at once, in one slot.
 
 An issue joins a milestone only where the release or phase cannot close without it; no milestone
 is the default. Never renumber or rename one — the title is the handle every CLI and saved filter

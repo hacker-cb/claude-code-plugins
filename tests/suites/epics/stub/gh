@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+
+# The checkout's own repository, and with it the host the listing must ask.
+if [ "$1 $2" = "repo view" ]; then
+  case "$(ask '.probe_gh')" in
+    no) echo "none of the git remotes configured for this repository point to a known GitHub host" >&2; exit 1 ;;
+    nohost) echo '{"url":"team/app"}'; exit 0 ;;
+    *) echo '{"url":"https://forge.example/team/app"}'; exit 0 ;;
+  esac
+fi
+[ "$1" = api ] || { echo "unplanned gh call: $*" >&2; exit 1; }
+
+# An epic's sub-issues: GraphQL, on the host named, for this checkout's repository and the issue
+# asked for; `.subpages` holds the pages, `after=c<k>` asking for page k.
+if [ "$2" = graphql ]; then
+  host="" prev="" n="" after="" owner="" name=""
+  for a in "$@"; do
+    [ "$prev" = "--hostname" ] && host=$a
+    case "$a" in n=*) n=${a#n=} ;; after=*) after=${a#after=} ;; owner=*) owner=${a#owner=} ;; name=*) name=${a#name=} ;; esac
+    # A repository named goes raw: typed, `@` reads a file and digits stop being a string.
+    case "$prev $a" in "-F owner="*|"-F name="*)
+      case "$a" in "owner={owner}"|"name={repo}") ;; *) echo "a named repository went typed: $a" >&2; exit 1 ;; esac ;;
+    esac
+    prev=$a
+  done
+  want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+    || { echo "graphql went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+  want=$(ask '.want_repo'); want=${want:-{owner\}/{repo\}}
+  [ "$owner/$name" = "$want" ] || { echo "asked about '$owner/$name', not '$want'" >&2; exit 1; }
+  want=$(ask '.want_epic'); [ -z "$want" ] || [ "$want" = "$n" ] || { echo "asked for #$n, not #$want" >&2; exit 1; }
+  case "$(ask '.subpages')" in
+    ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;
+    missing) echo "gh: Could not resolve to an Issue with the number of $n." >&2; exit 1 ;;
+    flat) echo "gh: Field 'subIssues' doesn't exist on type 'Issue'" >&2; exit 1 ;;
+  esac
+  k=0; [ -z "$after" ] || k=${after#c}
+  jq -c --argjson k "$k" '.subpages[$k] | fromjson' "$env"; exit 0
+fi
+host="" prev="" path="" q=""
+for a in "$@"; do
+  [ "$prev" = "--hostname" ] && host=$a
+  case "$a" in users/*|search/*) path=$a ;; q=*) q=${a#q=} ;; esac
+  prev=$a
+done
+
+# The host every call names is what a case asserts: one sent to the default host reads somebody
+# else's issues and looks correct doing it.
+want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+  || { echo "$path went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+
+case "$path" in
+  users/*)
+    t=$(ask ".users[\"${path#users/}\"]")
+    [ -n "$t" ] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
+    printf '{"type":"%s"}\n' "$t"; exit 0 ;;
+  search/issues)
+    # A query without its scope reads somebody else's issues too.
+    want=$(ask '.want_q'); [ -z "$want" ] || [ "$want" = "$q" ] \
+      || { echo "searched for '$q', not '$want'" >&2; exit 1; }
+    case " $* " in *" --paginate "*) ;; *) echo "the search was read unpaginated" >&2; exit 1 ;; esac
+    # Fields passed with -f turn a call into a POST unless the method is named.
+    case " $* " in *" -X GET "*) ;; *) echo "the search was not a GET" >&2; exit 1 ;; esac
+    if [ -n "$(ask '.searches')" ]; then
+      v=$(jq -r --arg q "$q" '.searches[$q] // empty' "$env")
+      [ -n "$v" ] || { echo "unplanned query: $q" >&2; exit 1; }
+    else
+      v=$(ask '.search')
+    fi
+    case "$v" in
+      ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;
+      *) printf '%s\n' "$v"; exit 0 ;;
+    esac ;;
+esac
+echo "unplanned gh call: $*" >&2; exit 1

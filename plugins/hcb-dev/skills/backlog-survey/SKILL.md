@@ -58,7 +58,10 @@ summary is input, not a verdict.
 
 ## Read against the code, not against the tracker
 
-Every issue in the slice carries a verdict, reached per `issue-currency.md` on
+Every issue in the slice carries a verdict — the slice read with the epic's structure left out:
+`--skip-label` for each of `epic` and `wave` the repository's own set gives no role, and the issues
+under a name it does give one left out by their numbers
+([`../../references/epic-structure.md`](../../references/epic-structure.md)) — reached per `issue-currency.md` on
 its deep read, and carrying the coordinate it stands on together with the base pin
 (`<remote>/<branch>@<sha>`) and the tracker moment the slice was read at — the
 survey's whole reading dates to those two, and a session that adopts this layout

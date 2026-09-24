@@ -1,0 +1,8 @@
+{
+  "want_host": "forge.example",
+  "want_epic": "12",
+  "want_repo": "acme/tool",
+  "subpages": [
+    "{\"data\": {\"repository\": {\"nameWithOwner\": \"acme/tool\", \"issue\": {\"subIssuesSummary\": {\"total\": 2}, \"subIssues\": {\"totalCount\": 2, \"pageInfo\": {\"hasNextPage\": false, \"endCursor\": null}, \"nodes\": [{\"number\": 20, \"title\": \"Wave 20 of epic #12: a topic\", \"url\": \"https://forge.example/acme/tool/issues/20\", \"state\": \"OPEN\", \"stateReason\": null, \"repository\": {\"nameWithOwner\": \"acme/tool\"}, \"labels\": {\"totalCount\": 1, \"nodes\": [{\"name\": \"wave\"}]}, \"subIssuesSummary\": {\"total\": 2, \"completed\": 1}}, {\"number\": 21, \"title\": \"Wave 21 of epic #12: a topic\", \"url\": \"https://forge.example/acme/tool/issues/21\", \"state\": \"OPEN\", \"stateReason\": null, \"repository\": {\"nameWithOwner\": \"acme/tool\"}, \"labels\": {\"totalCount\": 1, \"nodes\": [{\"name\": \"wave\"}]}, \"subIssuesSummary\": {\"total\": 2, \"completed\": 1}}]}}}}}"
+  ]
+}

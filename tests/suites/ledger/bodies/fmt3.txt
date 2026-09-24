@@ -1,0 +1,29 @@
+<!-- wave-ledger -->
+<!-- wave-ledger-format: 3 -->
+# Ledger of epic 42
+<!-- wave-section: header -->
+- master: [master] 42 — topic
+
+<!-- wave-section: batches -->
+- 42/A — building
+
+<!-- wave-section: answers -->
+- #7 current
+
+- Q: squash? A: yes — user, 2026-01-02, [link](https://forge.example/c/5)
+
+- #9 must not merge — lifts when #8 lands
+
+<!-- wave-section: queue -->
+- A then B
+
+<!-- wave-section: expectations -->
+- user: the go for wave 2
+
+<!-- wave-section: journal -->
+- 2026-01-01 event number 0 happened
+- 2026-01-02 event number 1 happened
+- 2026-01-03 event number 2 happened
+
+<!-- wave-section: candidates -->
+- none

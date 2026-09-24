@@ -39,13 +39,14 @@ holds, and what it stops is named in the return as the gap it is.
    composed there already. Set exactly that string, and take the step without first
    establishing what this session wears: re-setting a title already worn changes
    nothing, and what a channel answers is evidence about the address, never about
-   the title (`session-comms.md`).
+   the title (`session-comms.md`). Where the host offers sidebar groups, file this
+   session into the group the order's `Session group:` names — itself, never another.
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and cut one where it is not — before
    the first write; the order's `Start:` gate holds whether or not a chip
    carried it here.
 3. **Read the whole batch through before building any of it, and not before the
-   order's `Start:` gate is open** — the order, the ledger it names, its issues on
+   order's `Start:` gate is open** — the order, the two ledgers it names, its issues on
    the forge in full with their comments, all of them in one call (the form
    [`../../references/issue-currency.md`](../../references/issue-currency.md)
    gives under "What is read"), and the code they name. The standing
@@ -85,7 +86,7 @@ holds, and what it stops is named in the return as the gap it is.
   each with this session's own analysis, a recommendation, and the coordinates
   that let the master re-verify rather than take it on faith. The master's
   answer is a peer's claim: verify it against the tree — and against the
-  ledger's standing constraints — before acting on it.
+  epic ledger's standing constraints — before acting on it.
 - **Everything else the order does not reserve is this session's to decide and
   narrate**
   ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md))
@@ -134,7 +135,7 @@ holds, and what it stops is named in the return as the gap it is.
   coordinate the order names; the session stuck; the scope moving off the start
   report; a boundary change agreed mid-flight.
 - **A status the user asks for is `hcb-dev:status`'s**, invoked through the Skill tool: after a
-  restart it reads this batch's row from the master's ledger rather than from what is left of
+  restart it reads this batch's row from the wave's ledger rather than from what is left of
   this session, and the milestone statuses above keep going to the master as they are.
 - **A landing this session did not take is still its landing to finish.** Work
   found already landed, in either mode, is never landed a second time: confirm
@@ -159,9 +160,10 @@ holds, and what it stops is named in the return as the gap it is.
 
 The full report — the shape of `order-return.md`, the batch's `<epic>/<id>`
 as its tag —
-goes **to the tracker coordinate the order names** (the epic, the batch's
-issues), so no restart can lose it; the master gets a short notice pointing at
-it. An order naming none is malformed rather than a configuration to work
+goes **to the tracker coordinate the order names** as one comment opening with
+`<!-- wave-return <epic>/<id> -->`, so no restart can lose it — anything added
+later edited into it, never copied onto the batch's issues; the master gets a
+short notice pointing at it. An order naming none is malformed rather than a configuration to work
 around: ask the master for the coordinate instead of returning into the gap —
 and where no master is left to answer, the return ends through the user, below.
 
