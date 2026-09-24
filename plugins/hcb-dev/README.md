@@ -277,6 +277,10 @@ the plan stages them.
   reads through a pinned revision, and runs anything — tests, a build, a probe — in
   an isolated subagent:
   [`skills/master-session/references/master-tree.md`](skills/master-session/references/master-tree.md).
+  Whether the tree may move, and the switch itself, is
+  [`skills/master-session/scripts/master-tree.mjs`](skills/master-session/scripts/master-tree.mjs):
+  the main checkout is never moved, and an uncommitted change, a commit no remote holds or
+  an operation left half done stops the move rather than being stashed, reset or stranded.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
   What can start right now, recomputed rather than recalled: pin and refresh the
   base and read every fact through that ref rather than through a working tree,
@@ -409,10 +413,6 @@ name stands for.
   rather than whatever the last fetch left. Refuses where several remotes exist and none
   is preferred: for a read that costs a wrong review, for a push it can publish a branch
   in somebody else's repository.
-- [`scripts/master-tree.mjs`](scripts/master-tree.mjs) — whether a master session's own
-  tree may move onto its base, and with `--move` the switch itself: the main checkout is
-  never moved, and an uncommitted change or a commit no remote holds stops the move rather
-  than being stashed, reset or stranded.
 - [`scripts/worktree-owners.mjs`](scripts/worktree-owners.mjs) — whose is each worktree
   of this repository right now, read from Claude Code's live-session registry. Presence
   only: a live session proves a worktree is in use, and its absence proves nothing,

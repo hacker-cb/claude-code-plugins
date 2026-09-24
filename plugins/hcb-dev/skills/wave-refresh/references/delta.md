@@ -11,19 +11,18 @@ this file is the form.
 
 ## The base's delta
 
-Taken per [`../../../references/base-delta.md`](../../../references/base-delta.md) — its
-commands and the kinds it reads for — with the pin the point to diff from names standing where
-that file has `M`, and the pin taken now as its ref. What this pass does with each:
+Taken per [`../../../references/base-delta.md`](../../../references/base-delta.md), with the pin
+the point to diff from names standing where that file has `M`, and the pin taken now as its
+ref; the work it is read against is the ledger's verdicts and the orders of the batches
+holding ground. So:
 
-- **A path the range touched**, under either name of a rename, that a verdict's coordinate
-  stands on: that verdict is re-derived rather than carried.
-- **A change to how the repository is built or judged** — its checks, a gate, a linter's
-  rules, the instructions its agents read — reaches every candidate and every running batch
-  whose work it judges, whatever paths they stand on.
-- **A running batch whose zone, checks or order premise the range reached** is named in the
-  report, for the master to tell it.
-- **An older pin that is not an ancestor of the newer** is that file's rewritten base: the base
-  half is unread, and what it would have covered is read over the slice whole.
+- a verdict whose coordinate a path the range touched stands on is re-derived, not carried;
+- what that file says the work now answers to reaches every candidate and every batch
+  holding ground whose work it judges, whatever paths they stand on;
+- a batch holding ground that the range reached is named in the report, for the master to
+  tell it;
+- where that file finds the start is no start, the base half is unread, and what it would
+  have covered is read over the slice whole.
 
 ## The tracker's delta
 

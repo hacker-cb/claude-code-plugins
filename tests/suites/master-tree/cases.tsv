@@ -1,26 +1,34 @@
 # fixture	args	want	expect	note
 behind	--ref refs/remotes/origin/dev	0	"movable": true|"move": null|"behind": 3	asked without --move it measures and moves nothing — the verdict is a reading, and the switch is a separate word
-behind	--ref refs/remotes/origin/dev --move	0	"move": "done"|"head": "f1x7222222222222222222222222222222222222"|"behind": 0	a clean linked worktree behind its base is switched onto the commit measured, and HEAD is read again rather than assumed
-host-branch-elsewhere	--ref refs/remotes/origin/epic --move	0	"ownWorkCount": 0|"move": "done"|"branch": null	a host branch cut from the default while the base is an epic branch carries commits the base lacks, all published: nothing a switch strands, so it moves — and leaves the branch where it was
+behind	--ref refs/remotes/origin/dev --move	0	"move": "done"|"head": "f1x7222222222222222222222222222222222222"|"behind": 0	a clean linked worktree behind its base is switched onto the commit measured — hooks off, ignored files not overwritten, or the stub refuses — and HEAD is read again rather than assumed
+host-branch-elsewhere	--ref refs/remotes/origin/epic --move	0	"ownWorkCount": 0|"move": "done"|"branch": null	a host branch cut from the default while the base is an epic branch carries commits the base lacks, all published: nothing a switch strands, so it moves
+ref-with-hash	--ref refs/remotes/origin/epic/#42-auth --move	0	"move": "done"	a base git accepts is taken by git's rules, not a URL segment's — a '#' in a branch name is ordinary
 already	--ref refs/remotes/origin/dev --move	0	"move": "already"|"atRef": true	detached on the base already is nothing to switch
-on-ref-branch	--ref refs/remotes/origin/dev --move	0	"move": "done"|"detached": true	on the base's commit through a branch is still switched: the tree stands detached, holding no branch a local landing could reach
-main-checkout	--ref refs/remotes/origin/dev --move	0	"linked": false|this is the main checkout|"move": null|NOT:"move": "done"	the main checkout is the user's and every session's: named, and never moved
-dirty	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 3|" M src/a.c"|(from src/b.c)|"?? notes.txt"|"move": null	an untracked file rides a switch silently, so it stops the move like any change; a first entry clean in the index keeps its leading space, and a rename is one entry
+on-ref-branch	--ref refs/remotes/origin/dev --move	0	"move": "done"|"detached": true	on the base's commit through a branch is still switched: the tree stands detached, holding no branch
+main-checkout	--ref refs/remotes/origin/dev --move	0	"linked": false|this is the main checkout|"move": null|NOT:"move": "done"	the main checkout is named, and never moved
+old-git	--ref refs/remotes/origin/dev --move	0	"read": false|could not read this tree's git-dir|NOT:"move": "done"	a git that prints the flag back answers no path at all — unread, never a second tree that may be moved
+in-merge	--ref refs/remotes/origin/dev --move	0	"inProgress": [|MERGE_HEAD|half done|"move": null	a merge, rebase or cherry-pick git left half done is the user's to finish, and stops the move
+dirty	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 4|".M src/a.c"|"R. src/b2.c (from src/b.c)"|".M docs/read me.md"|"?? notes.txt"|"move": null	an untracked file rides a switch silently, so it stops the move like any change; a rename is one entry, and a path keeps its spaces
+submodule-drift	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 0|"move": "done"	a submodule whose checkout only lags the commit the index records is what every move leaves — not dirt
+staged-gitlink	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 1|M. lib/sub|"move": null	a submodule commit staged in the index is a change of the tree's own, and stops the move
 own-work	--ref refs/remotes/origin/dev --move	0	"ownWorkCount": 1|probe left behind|a switch would strand them|"move": null	a commit neither the base nor any remote holds is work a switch would strand — or a base rewritten under the tree; either way the user's
 local-lags	--ref refs/heads/epic --contains refs/remotes/origin/epic --move	0	"held": false|lacks commits|"move": null	a local parent behind or apart from its remote copy is not the base yet
 local-holds	--ref refs/heads/epic --contains refs/remotes/origin/epic --move	0	"held": true|"move": "done"	a local parent holding its remote copy — what a local completion leaves — is the base, and the tree stands on it
 contains-unread	--ref refs/heads/epic --contains refs/remotes/origin/epic --move	0	"read": false|could not read whether	a containment git did not answer is unknown, never a no
 ref-unknown	--ref refs/remotes/origin/dev --move	0	"read": false|is not a commit this checkout knows	a ref this checkout does not carry is unread, and nothing moves on it
-switch-refused	--ref refs/remotes/origin/dev --move	0	"move": "refused"|would be overwritten	git refusing the switch is reported with its own words, not retried another way
+switch-refused	--ref refs/remotes/origin/dev --move	0	"move": "refused"|would be overwritten by checkout|cfg.local	git refusing the switch is reported with its whole message — its last line alone, 'Aborting', says nothing of why
 switch-elsewhere	--ref refs/remotes/origin/dev --move	0	"move": "refused"|yet HEAD stands on	an exit 0 is not where HEAD went: it is read again, and a HEAD off the base is no move
+switch-dirty-after	--ref refs/remotes/origin/dev --move	0	"move": "dirty"|?? generated.txt|left changes	the tree is read again after the switch, and one that carries changes is not reported clean
 status-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not read the working tree	a status git did not answer is not a clean tree
-symref-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not read whether HEAD is on a branch	only exit 1 means detached; any other failure did not answer
-dirs-unread	--ref refs/remotes/origin/dev --move	0	"read": false|git directory	which tree this is could not be read, so nothing is measured against it
-count-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not count	a count git did not give is not zero commits of its own
+symref-unread	--ref refs/remotes/origin/dev --move	0	"read": false|whether HEAD is on a branch	only exit 1 means detached; any other failure did not answer
+dirs-unread	--ref refs/remotes/origin/dev --move	0	"read": false|git-dir	which tree this is could not be read, so nothing is measured against it
+log-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not list the commits	a list git did not give is not zero commits of its own
+count-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not count	a count git did not give is not zero
 not-a-checkout	--ref refs/remotes/origin/dev	2	not inside a git checkout	outside a checkout there is nothing to measure, and the call is the caller's to fix
+git-dir-unread	--ref refs/remotes/origin/dev	0	"read": false|dubious ownership	a checkout git would not answer about is unread — not a call made wrong
 -	-	2	--ref is required	no base named is a call this cannot act on
 -	--ref --move	2	is not a ref this can read	a flag in the place of the ref is refused, not read as the ref
--	--ref ../elsewhere	2	is not a ref this can read	a value that would steer outside a ref name is refused before git sees it
+-	--ref refs/remotes/../x	2	is not a ref this can read	a value git would not take as a ref name is refused before git sees it
 -	--ref refs/remotes/origin/dev --contains -x	2	--contains '-x' is not a ref	the containment ref is held to the same rule
 -	--ref refs/remotes/origin/dev --repo-dir tests/suites/master-tree/no-such-dir	2	is not a directory	a directory that is not there is the caller's to fix, not a checkout that would not answer
 -	--ref refs/remotes/origin/dev --stash	2	unknown argument '--stash'	an argument it does not know is refused rather than ignored

@@ -5,17 +5,28 @@
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 moved() { [ -n "${STUB_MARKER_FILE:-}" ] && cat "$STUB_MARKER_FILE" 2>/dev/null; }
+# `-c NAME=VALUE` before the command: kept, so the switch can insist on the one it needs.
+cfg=""
+while [ "$1" = "-c" ]; do cfg="$cfg $2"; shift 2; done
 case "$1" in
   rev-parse)
     if [ "$*" = "rev-parse --git-dir" ]; then
-      [ "$(ask '.no_repo')" = yes ] && { echo "fatal: not a git repository" >&2; exit 128; }
+      case "$(ask '.no_repo')" in
+        yes) echo "fatal: not a git repository (or any of the parent directories): .git" >&2; exit 128 ;;
+        other) echo "fatal: detected dubious ownership in repository" >&2; exit 128 ;;
+      esac
       echo ".git"; exit 0
     fi
-    # Answered in the absolute form only: a script asking without it is asking the
-    # question whose two spellings of one directory compare as two trees.
-    if [ "$*" = "rev-parse --path-format=absolute --git-dir --git-common-dir" ]; then
+    # Answered one directory at a time, and in the absolute form only. The envelope's paths
+    # are relative to the repository root the runner works from; `old_git` plays a git that
+    # prints the unknown flag back.
+    if [ "$2" = "--path-format=absolute" ]; then
       [ "$(ask '.dirs')" = fail ] && { echo "fatal: could not read the git directory" >&2; exit 128; }
-      printf '%s\n%s\n' "$(ask '.git_dir')" "$(ask '.common_dir')"; exit 0
+      [ "$(ask '.old_git')" = yes ] && { echo "--path-format=absolute"; exit 0; }
+      case "$3" in
+        --git-dir) echo "$PWD/$(ask '.git_dir')"; exit 0 ;;
+        --git-common-dir) echo "$PWD/$(ask '.common_dir')"; exit 0 ;;
+      esac
     fi
     if [ "$2 $3" = "--verify -q" ]; then
       want=${4%"^{commit}"}
@@ -43,28 +54,38 @@ case "$1" in
       *) echo "fatal: not a valid commit" >&2; exit 128 ;;
     esac ;;
   status)
-    [ "$(ask '.status')" = fail ] && { echo "fatal: index file corrupt" >&2; exit 128; }
+    # Porcelain v2 and untracked files named outright, or no answer: a script asking in any
+    # other form is asking the question a config can silence.
+    [ "$*" = "status --porcelain=v2 -z --untracked-files=normal" ] || {
+      echo "stub git: status asked as: $*" >&2; exit 3; }
+    v=$(ask '.status')
+    [ -n "$(moved)" ] && [ -n "$(ask '.status_after')" ] && v=$(ask '.status_after')
+    [ "$v" = fail ] && { echo "fatal: index file corrupt" >&2; exit 128; }
     # The envelope holds the line form; `-z` is that shape with NUL where the newlines are.
-    printf '%s' "$(ask '.status')" | tr '\n' '\0'; exit 0 ;;
+    [ -n "$v" ] && printf '%s\n' "$v" | tr '\n' '\0'
+    exit 0 ;;
+  log)
+    v=$(ask '.own_log')
+    [ "$v" = fail ] && { echo "fatal: bad revision" >&2; exit 128; }
+    [ -n "$v" ] && printf '%s\n' "$v"
+    exit 0 ;;
   rev-list)
-    # `--count HEAD --not <sha> --remotes` is work of its own; `--count HEAD..<sha>` what
-    # the base has that HEAD lacks.
-    case "$3" in
-      HEAD) v=$(ask '.own_count') ;;
-      HEAD..*) v=$(ask '.behind') ;;
-      *) v="" ;;
-    esac
+    v=$(ask '.behind')
     case "$v" in
       fail) echo "fatal: bad revision" >&2; exit 128 ;;
       "") echo 0 ;;
       *) echo "$v" ;;
     esac
     exit 0 ;;
-  log) printf '%s\n' "$(ask '.own_log')"; exit 0 ;;
   switch)
-    [ "$(ask '.switch')" = fail ] && {
-      echo "error: Your local changes to the following files would be overwritten by checkout" >&2
-      exit 1; }
+    # The switch must keep the project's hooks out and refuse to overwrite an ignored file.
+    case "$cfg" in *core.hooksPath=/dev/null*) ;; *) echo "stub git: switch with hooks on" >&2; exit 3 ;; esac
+    case " $* " in *" --no-overwrite-ignore "*) ;; *) echo "stub git: switch may overwrite ignored files" >&2; exit 3 ;; esac
+    if [ "$(ask '.switch')" = fail ]; then
+      printf '%s\n' "error: The following untracked working tree files would be overwritten by checkout:" \
+        "	cfg.local" "Please move or remove them before you switch branches." "Aborting" >&2
+      exit 1
+    fi
     for a in "$@"; do target=$a; done
     [ "$(ask '.switch')" = elsewhere ] && target=$(ask '.head')
     printf '%s' "$target" > "$STUB_MARKER_FILE"; exit 0 ;;

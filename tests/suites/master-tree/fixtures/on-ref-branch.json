@@ -1,12 +1,12 @@
 {
-  "git_dir": "/tmp/example-checkout/.git/worktrees/master-a1b2c3",
-  "common_dir": "/tmp/example-checkout/.git",
+  "git_dir": "tests/suites/master-tree/trees/linked/gitdir",
+  "common_dir": "tests/suites/master-tree/trees/linked/common",
   "head": "f1x7222222222222222222222222222222222222",
   "branch": "claude/master-a1b2c3",
   "refs": {
     "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
   },
   "status": "",
-  "own_count": "0",
+  "own_log": "",
   "behind": "0"
 }

@@ -11,17 +11,19 @@ this puts in front of it.
 parent where the epic completes in `local` mode
 ([`../../../references/slice-completion.md`](../../../references/slice-completion.md)). No
 edit, no commit, no branch checked out — the switch to a newer tip is the only write it takes.
+The branch the first switch leaves behind is residue for the epic's close to offer
+`/hcb-dev:git-cleanup` for.
 
-Only this session's own linked worktree moves. The main checkout is the user's and every
-session's, and another session's worktree is that session's: nothing here writes to either —
-no `cd` into one, no `git -C` at one. A master standing in the main checkout moves nothing at
-all: it reads through refs only, and says so in its first report.
+Only this session's own linked worktree moves: nothing here writes to the main checkout or to
+another session's worktree — no `cd` into one, no `git -C` at one. A master standing in the main
+checkout moves nothing at all: it reads through refs only, and says so in its first report.
 
 ## Moving it
 
 - on assuming the role, and first after a restart or a compaction;
 - at every landing on the base — its batch's, another session's, the user's;
-- before any read of its working tree.
+- before a read of its working tree where HEAD is no longer the `head` the last move left, or
+  `git status` lists anything.
 
 ```bash
 BASE="$(cat <<'NAME'
@@ -29,12 +31,12 @@ BASE="$(cat <<'NAME'
 NAME
 )"
 LOCAL='<yes where the epic completes in local mode, no otherwise>'
+S="<plugin root>/skills/master-session/scripts/master-tree.mjs"
 R="$(node "<plugin root>/scripts/resolve-base.mjs" --base "$BASE")"; printf '%s' "$R" | jq '{base, reason}'
 REF="$(printf '%s' "$R" | jq -r 'if .base.current and .base.sharesHistory then .base.ref else "" end')"
 if [ -z "$REF" ]; then echo "no current base: nothing moves"
-elif [ "$LOCAL" = yes ]; then node "<plugin root>/scripts/master-tree.mjs" --move \
-  --ref "refs/heads/$(printf '%s' "$R" | jq -r .base.name)" --contains "$REF"
-else node "<plugin root>/scripts/master-tree.mjs" --ref "$REF" --move; fi
+elif [ "$LOCAL" = yes ]; then node "$S" --ref "refs/heads/$(printf '%s' "$R" | jq -r .base.name)" --contains "$REF" --move
+else node "$S" --ref "$REF" --move; fi; echo "exit $?"
 ```
 
 The resolver's outcomes are
@@ -47,11 +49,12 @@ answer means here:
 | `silent`, with `base.remote` null and several remotes named in `base.reason` | which remote carries the base is the user's to name: ask |
 | `gone` | nobody carries the base's name: stop, and settle the base with the user before the ledger records another |
 | `base.sharesHistory` false, or null | refused, or unknown: stop, saying which |
+| `exit 2` | the call itself was wrong — its stderr names the argument; nothing was read or moved |
 | `read: false` | nothing was measured: `reason` goes to the user, and nothing moves |
 | `linked: false` | the main checkout: move nothing, read through refs only |
-| `movable: false` | what stands — the `dirty` entries, the `ownWork` commits, a local parent that lags — goes to the user, recommendation first; clearing it is theirs |
+| `movable: false` | what stands — the `dirty` entries, the `ownWork` commits, an operation `inProgress`, a local parent that lags — goes to the user, recommendation first; clearing it is theirs |
 | `move: "done"`, or `"already"` | `head` is the base, and the sha every fact is read at |
-| `move: "refused"` | git's words in `moveError` go to the user; nothing else is tried |
+| `move: "refused"`, `"dirty"` or `"unread"` | `moveError` goes to the user, with where `head` stands; nothing else is tried |
 
 ## Reading
 
@@ -75,7 +78,9 @@ base as on any other ref. One subagent per question, handed the sha: it switches
 worktree there (`git switch --detach <sha>`) and confirms `git rev-parse HEAD`, prepares what
 the run needs, runs, removes what the run left that `git status` lists, switches back to its
 own branch (`git switch -`), and returns what it ran, the exit and what it printed. Git's own
-reads — `show`, `grep`, `log`, `diff`, `merge-tree` — are not runs.
+reads — `show`, `grep`, `log`, `diff` — are not runs, nor is `merge-tree` where
+`git config --get-regexp '^merge\..*\.driver$'` names no driver; where it names one, a
+`merge-tree` goes to such a subagent too.
 
 A workflow's steps read through the sha and run nothing; a run goes to such a subagent. No
 review round runs in this session: a review a return says was skipped is the reopened batch's
@@ -83,8 +88,7 @@ review round runs in this session: a review a return says was skipped is the reo
 
 ## In this tree
 
-The move is the only write to HEAD, the index, the working tree or the stash. Two commands look
-like reads and are not: `git checkout <ref> -- <paths>`, like `git restore --source=<ref>`, lays
-another revision's files over a HEAD that stays where it was; `git checkout -- <path>`, like
-`git restore <path>`, discards what was there. Nothing here stashes, resets, cleans, pulls, adds
-a worktree or commits — what goes wrong goes to the user, with what stands.
+The move is the only write to HEAD, the index, the working tree or the stash: nothing here
+checks files out of another revision or back out of the index (`git checkout <ref> -- <paths>`,
+`git checkout -- <path>`, `git restore`), stashes, resets, cleans, pulls, adds a worktree or
+commits — what goes wrong goes to the user, with what stands.

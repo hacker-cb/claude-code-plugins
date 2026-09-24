@@ -4,11 +4,9 @@
   "head": "f1x7111111111111111111111111111111111111",
   "branch": "",
   "refs": {
-    "refs/heads/epic": "f1x7222222222222222222222222222222222222",
-    "refs/remotes/origin/epic": "f1x7333333333333333333333333333333333333"
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
   },
-  "held": "yes",
-  "status": "",
+  "status": "1 .M SC.. 160000 160000 160000 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa lib/sub",
   "own_log": "",
-  "behind": "2"
+  "behind": "3"
 }

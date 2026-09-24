@@ -36,8 +36,8 @@ there.
   sequential inside. Between two batches that both have a head, a seam is
   measured rather than assumed: `git merge-tree --write-tree --name-only
   --no-messages <a> <b>` on the two heads, each resolved to its commit first —
-  exit 1 is a conflict in the paths it lists, 0 clears a shared file and
-  nothing wider, anything else leaves the seam unread.
+  exit 1 is a conflict in the paths listed below the tree id on its first line,
+  0 clears a shared file and nothing wider, anything else leaves the seam unread.
 - **Dependency edges.** What blocks what, read from the issues and the tree —
   not assumed from titles. An edge the plan stands on that the tracker does not
   record is proposed as [`issue-links.md`](issue-links.md) writes one. A chain with one unblocked vertex is one batch in

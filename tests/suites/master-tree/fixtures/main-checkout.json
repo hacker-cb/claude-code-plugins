@@ -1,12 +1,12 @@
 {
-  "git_dir": "/tmp/example-checkout/.git",
-  "common_dir": "/tmp/example-checkout/.git",
+  "git_dir": "tests/suites/master-tree/trees/linked/common",
+  "common_dir": "tests/suites/master-tree/trees/linked/common",
   "head": "f1x7111111111111111111111111111111111111",
   "branch": "dev",
   "refs": {
     "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
   },
   "status": "",
-  "own_count": "0",
+  "own_log": "",
   "behind": "3"
 }
