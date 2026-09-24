@@ -96,8 +96,9 @@ The same two reads, the epic being the order's; from its ledger, this batch's ro
 constraints, the decisions, and the expectations naming this batch. Then its own change request,
 as below; its branch against the order's base pin; and the coordinate the order names for its
 return — the comment there opening with its `wave-return` marker, or, from an order written before
-that marker, the one carrying its tag — read in the call above; a return written there and a return
-accepted are two states.
+that marker, the one carrying its tag, either written by this session's own account, a marker being
+anyone's to write — read in the call above; a return written there and a return accepted are two
+states.
 
 ### This run
 

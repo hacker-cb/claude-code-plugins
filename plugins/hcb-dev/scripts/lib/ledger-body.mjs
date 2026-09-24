@@ -11,9 +11,12 @@ export const SECTION_NAMES = ['header', 'batches', 'verdicts', 'decisions', 'con
 
 const FORMAT_LINE = /^\s*<!--\s*wave-ledger-format:\s*(\d{1,4})\s*-->\s*$/;
 const SECTION_LINE = /^\s*<!--\s*wave-section:\s*([a-z-]+)\s*-->\s*$/;
-// The journal's index: a word and a colon — in whatever language — then archive markers and
-// nothing else; `archives:` alone where there are none yet. `withIndex` writes it back in one form.
-const INDEX_LINE = /^\s*(?:[-*+]|\d+\.)?\s*(?:archives:|[\p{L}\p{N}_-]+:(?=\s*<!--))(?:\s*<!--\s*wave-journal-\d{1,6}\s*-->)*\s*$/iu;
+// The journal's index. Its first line: a label in any language and a colon, then archive markers,
+// whatever follows them — or a single word and a colon where there are none yet. Anywhere else:
+// `archives:` and the markers alone. `withIndex` writes it back in one form.
+const MARKS = '(?:\\s*<!--\\s*wave-journal-\\d{1,6}\\s*-->)';
+const INDEX_FIRST = new RegExp(`^\\s*(?:[-*+]|\\d+\\.)?\\s*(?:[^<\\n]*:${MARKS}+.*|[\\p{L}\\p{N}_-]+\\s*:\\s*)$`, 'u');
+const INDEX_ANY = new RegExp(`^\\s*(?:[-*+]|\\d+\\.)?\\s*archives\\s*:${MARKS}*\\s*$`, 'i');
 export const LEDGER_LINE = /^\s*<!--\s*wave-ledger\s*-->\s*$/;
 const HEADING = /^\s*#{1,6}\s/;
 // Any of this plugin's markers: text carrying one is never moved into an archive, where it would
@@ -47,15 +50,25 @@ export const sectionsOf = (body) => {
   return { lines, sections: out };
 };
 
+// Where a journal section's index stands: the lines of it, by the rule above.
+const indexOf = (lines, s) => {
+  const at = new Set();
+  const first = lines.findIndex((l, i) => i > s.start && i < s.end && l.trim() !== '');
+  if (first !== -1 && INDEX_FIRST.test(lines[first])) at.add(first);
+  for (let i = s.start + 1; i < s.end; i += 1) if (INDEX_ANY.test(lines[i])) at.add(i);
+  return at;
+};
+
 // A section's entries: an item line and the lines that continue it, up to the next item or a
 // blank line. Lines before the first item — a heading, a sentence — are no entry, and neither is
 // the journal's index line.
 const entriesOf = (lines, s) => {
   const entries = [];
+  const index = s.name === 'journal' ? indexOf(lines, s) : new Set();
   let cur = null;
   for (let i = s.start + 1; i < s.end; i += 1) {
     const line = lines[i];
-    if (INDEX_LINE.test(line)) cur = null;
+    if (index.has(i)) cur = null;
     else if (ITEM.test(line)) { cur = { from: i, to: i + 1 }; entries.push(cur); }
     else if (line.trim() === '') cur = null;
     else if (cur) cur.to = i + 1;
@@ -116,8 +129,9 @@ export const journalOf = (body) => {
   const s = sections.find((x) => x.name === 'journal');
   if (!s) return { lines, section: null, entries: [] };
   const entries = [];
+  const index = indexOf(lines, s);
   for (let i = s.start + 1; i < s.end; i += 1) {
-    if (lines[i].trim() !== '' && !INDEX_LINE.test(lines[i]) && !HEADING.test(lines[i])) entries.push({ from: i, to: i + 1 });
+    if (lines[i].trim() !== '' && !index.has(i) && !HEADING.test(lines[i])) entries.push({ from: i, to: i + 1 });
   }
   return { lines, section: s, entries };
 };
@@ -136,9 +150,8 @@ export const withIndex = (body, numbers) => {
   const { lines, section } = journalOf(body);
   if (!section) return body;
   const index = `- archives: ${numbers.map((n) => `<!-- wave-journal-${n} -->`).join(' ')}`;
-  for (let i = section.start + 1; i < section.end; i += 1) {
-    if (INDEX_LINE.test(lines[i])) { lines[i] = index; return lines.join('\n'); }
-  }
+  const at = [...indexOf(lines, section)].sort((x, y) => x - y)[0];
+  if (at !== undefined) { lines[at] = index; return lines.join('\n'); }
   lines.splice(section.start + 1, 0, index);
   return lines.join('\n');
 };

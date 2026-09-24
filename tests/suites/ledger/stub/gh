@@ -28,6 +28,7 @@ if [ "$1" = "api" ]; then
   # `slow` too, in words saying "too long" about time, `always` refuses every one.
   if [ -n "$method" ]; then
     [ -n "$file" ] || { echo "a write without -F body=@<file>" >&2; exit 1; }
+    case "$method" in POST|PATCH) ;; *) echo "an edit here is a PATCH, not a $method" >&2; exit 1 ;; esac
     n=$(ls "$store" | grep -c '^w' || true); echo "$method $*" > "$store/w$n"
     fail=$(ask '.write_fail')
     case "$fail" in

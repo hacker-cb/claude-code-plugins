@@ -46,7 +46,7 @@ over a ledger other than the one whose `--was <digest>` the read answered; after
 journal lines out, dump again before the next edit. Only a ledger of ours is written, and only while
 no fault stands save two: an archive of ours it does not list yet, which the write indexes, and one
 it lists that no comment carries, which leaves the index once the body handed in no longer names it.
-`--append-archive <file>` adds an account to the archive and answers its link.
+`--append-archive <file>` adds an account to the archive, moving nothing else, and answers its link.
 
 The comment is the only form the ledger takes, so a tracker is what the role stands on: whether the
 repository has one is established against the forge ([`forge-docs.md`](forge-docs.md) names the
