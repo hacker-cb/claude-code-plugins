@@ -515,7 +515,8 @@ const place = (entry) => {
 
 let accountIn = null;
 let already = null;
-const shaped = (t) => formatOf(t) >= FORMAT && journalOf(t).section !== null;
+// Exactly the format written here: a newer one carries what this script cannot keep.
+const shaped = (t) => formatOf(t) === FORMAT && journalOf(t).section !== null;
 if (opts.write) {
   if (!LEDGER_LINE.test(next.split('\n', 1)[0])) refuse('the body does not open with the ledger marker');
   if (!shaped(next)) refuse(`the body is not format ${FORMAT} with a journal section — --check says where`);

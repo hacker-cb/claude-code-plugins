@@ -12,10 +12,10 @@ export const SECTION_NAMES = ['header', 'batches', 'verdicts', 'decisions', 'con
 const FORMAT_LINE = /^\s*<!--\s*wave-ledger-format:\s*(\d{1,4})\s*-->\s*$/;
 const SECTION_LINE = /^\s*<!--\s*wave-section:\s*([a-z-]+)\s*-->\s*$/;
 // The journal's index. Its first line: a label in any language and a colon, then archive markers,
-// whatever follows them — or a single word and a colon where there are none yet. Anywhere else:
+// whatever follows them — or a word of letters and a colon where there are none yet. Anywhere else:
 // `archives:` and the markers alone. `withIndex` writes it back in one form.
 const MARKS = '(?:\\s*<!--\\s*wave-journal-\\d{1,6}\\s*-->)';
-const INDEX_FIRST = new RegExp(`^\\s*(?:[-*+]|\\d+\\.)?\\s*(?:[^<\\n]*:${MARKS}+.*|[\\p{L}\\p{N}_-]+\\s*:\\s*)$`, 'u');
+const INDEX_FIRST = new RegExp(`^\\s*(?:[-*+]|\\d+\\.)?\\s*(?:[^<\\n]*:${MARKS}+.*|\\p{L}+\\s*:\\s*)$`, 'u');
 const INDEX_ANY = new RegExp(`^\\s*(?:[-*+]|\\d+\\.)?\\s*archives\\s*:${MARKS}*\\s*$`, 'i');
 export const LEDGER_LINE = /^\s*<!--\s*wave-ledger\s*-->\s*$/;
 const HEADING = /^\s*#{1,6}\s/;
@@ -84,6 +84,7 @@ export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => 
   if (!LEDGER_LINE.test(body.split('\n', 1)[0])) add('marker', 'the first line is not <!-- wave-ledger -->');
   const format = formatOf(body);
   if (format < FORMAT) add('format', `format ${format}, the current one being ${FORMAT}`);
+  if (format > FORMAT) add('format', `format ${format}, newer than the ${FORMAT} this plugin writes — update the plugin`);
   const size = bytes(body);
   if (size > budget) add('budget', `${size} bytes against a budget of ${budget}`);
   const { lines, sections } = sectionsOf(body);
