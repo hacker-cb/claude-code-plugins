@@ -1,5 +1,5 @@
 {
-  "comments": "[{\"id\": 2, \"body\": \"<!-- wave-ledger -->\\n<!-- wave-ledger-format: 2 -->\\n<!-- wave-section: journal -->\\n- archives: <!-- wave-journal-3 -->\\n\", \"created_at\": \"2026-01-02T03:04:05Z\", \"author\": {\"username\": \"example-user-00000001\"}}, {\"id\": 3, \"body\": \"<!-- wave-journal-3 -->\\n<!-- wave-journal-kind: journal -->\\n- an older entry\\n\", \"created_at\": \"2026-01-02T03:04:05Z\", \"author\": {\"username\": \"example-user-00000001\"}}]",
+  "comments": "[{\"id\": 2, \"body\": \"<!-- wave-ledger -->\\n<!-- wave-ledger-format: 2 -->\\n<!-- wave-section: batches -->\\n- none\\n<!-- wave-section: journal -->\\n- archives: <!-- wave-journal-3 -->\\n\", \"created_at\": \"2026-01-02T03:04:05Z\", \"author\": {\"username\": \"example-user-00000001\"}}, {\"id\": 3, \"body\": \"<!-- wave-journal-3 -->\\n<!-- wave-journal-kind: journal -->\\n- an older entry\\n\", \"created_at\": \"2026-01-02T03:04:05Z\", \"author\": {\"username\": \"example-user-00000001\"}}]",
   "auth": "glab",
   "want_path": "projects/team%2Fsub%2Fapp/issues/42/notes?per_page=100"
 }

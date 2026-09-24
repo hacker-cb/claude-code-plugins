@@ -1,0 +1,7 @@
+{
+  "want_host": "forge.example",
+  "want_epic": "12",
+  "subpages": [
+    "{\"data\": {\"repository\": {\"issue\": null}}}"
+  ]
+}

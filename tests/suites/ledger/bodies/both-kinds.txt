@@ -7,11 +7,13 @@
 <!-- wave-section: batches -->
 - 42/A — building
 
-<!-- wave-section: answers -->
+<!-- wave-section: verdicts -->
 - #7 current
 
+<!-- wave-section: decisions -->
 - Q: squash? A: yes — user, 2026-01-02, [link](https://forge.example/c/5)
 
+<!-- wave-section: constraints -->
 - #9 must not merge — lifts when #8 lands
 
 <!-- wave-section: queue -->
@@ -21,7 +23,7 @@
 - user: the go for wave 2
 
 <!-- wave-section: journal -->
-- 2026-01-01 the epic closed, see <!-- wave-close -->
+- 2026-01-01 event number 0 happened
 - 2026-01-02 event number 1 happened
 - 2026-01-03 event number 2 happened
 

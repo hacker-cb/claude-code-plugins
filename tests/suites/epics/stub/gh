@@ -12,6 +12,26 @@ if [ "$1 $2" = "repo view" ]; then
   esac
 fi
 [ "$1" = api ] || { echo "unplanned gh call: $*" >&2; exit 1; }
+
+# An epic's sub-issues: GraphQL, on the host named, for this checkout's repository and the issue
+# asked for; `.subpages` holds the pages, `after=c<k>` asking for page k.
+if [ "$2" = graphql ]; then
+  host="" prev="" n="" after="" owner="" name=""
+  for a in "$@"; do
+    [ "$prev" = "--hostname" ] && host=$a
+    case "$a" in n=*) n=${a#n=} ;; after=*) after=${a#after=} ;; owner=*) owner=${a#owner=} ;; name=*) name=${a#name=} ;; esac
+    prev=$a
+  done
+  want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+    || { echo "graphql went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+  [ "$owner/$name" = "{owner}/{repo}" ] || { echo "asked about '$owner/$name', not this checkout's repository" >&2; exit 1; }
+  want=$(ask '.want_epic'); [ -z "$want" ] || [ "$want" = "$n" ] || { echo "asked for #$n, not #$want" >&2; exit 1; }
+  case "$(ask '.subpages')" in
+    ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;
+  esac
+  k=0; [ -z "$after" ] || k=${after#c}
+  jq -c --argjson k "$k" '.subpages[$k] | fromjson' "$env"; exit 0
+fi
 host="" prev="" path="" q=""
 for a in "$@"; do
   [ "$prev" = "--hostname" ] && host=$a

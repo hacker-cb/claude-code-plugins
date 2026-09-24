@@ -1,0 +1,7 @@
+{
+  "probe_gh": "no",
+  "probe_glab": "yes",
+  "want_host": "lab.example",
+  "want_path": "projects/:fullpath/issues/7/links",
+  "links": "notfound"
+}

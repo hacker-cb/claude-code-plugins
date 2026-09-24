@@ -12,6 +12,15 @@ for a in "$@"; do
 done
 
 case "$path" in
+  projects/*/issues/*/links)
+    want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
+      || { echo "links went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+    want=$(ask '.want_path'); [ -z "$want" ] || [ "$want" = "$path" ] || { echo "read '$path', not '$want'" >&2; exit 1; }
+    case "$(ask '.links')" in
+      ""|silent) echo "glab: 502 Bad Gateway (HTTP 502)" >&2; exit 1 ;;
+      notfound) echo "glab: 404 Not found (HTTP 404)" >&2; exit 1 ;;
+      *) ask '.links'; exit 0 ;;
+    esac ;;
   projects/*)
     case "$(ask '.probe_glab')" in
       yes) echo '{"path_with_namespace":"group/app","web_url":"https://lab.example/group/app"}'; exit 0 ;;
