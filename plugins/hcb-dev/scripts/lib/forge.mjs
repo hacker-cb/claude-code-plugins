@@ -79,6 +79,10 @@ export const repoOk = (v) => {
   const p = v.split('/');
   return p.length === 2 && p.every(readable);
 };
+// A project's PATH, on either forge: GitHub's is always two segments, GitLab's nests a project
+// under up to twenty levels of groups, and `glab --repo` takes it whole. Each segment held as a
+// branch's are — never `..` or `.`, which a server normalises into a request about somewhere else.
+export const projectPathOk = (v) => refOk(v) && v.split('/').length >= 2 && v.split('/').length <= 21;
 
 // `gh` by default because most callers ask a forge; `git` where the question is the
 // checkout's. Same three-part answer either way — a caller that cannot tell a failed
@@ -185,6 +189,12 @@ export const otherBot = (who) => Boolean(who) && typeof who === 'object'
 // of any length or shape would otherwise travel into a reader's context whole.
 export const text = (v) => (typeof v === 'string'
   ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 200) : null);
+// A coordinate — a path, a url — travels whole: bounded like prose at 200 characters, it would name
+// another issue. Only the control characters leave; an empty one is none.
+export const coord = (v) => {
+  const c = typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '') : '';
+  return c === '' ? null : c;
+};
 
 // What `git worktree list` says about each worktree, and nothing about who is in it.
 // `-z` because `--porcelain` alone does not escape a path: a worktree whose directory

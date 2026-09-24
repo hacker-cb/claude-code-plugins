@@ -156,20 +156,15 @@ export const journalOf = (body) => {
   return { lines, section: s, entries };
 };
 
-// The body with its oldest journal line taken out, and that line.
-export const takeOldest = (body) => {
-  const { lines, entries } = journalOf(body);
-  if (entries.length === 0) return { body, moved: null };
-  const at = entries[0].from;
-  return { body: lines.filter((_, i) => i !== at).join('\n'), moved: lines[at] };
-};
+// The journal's index line naming exactly `numbers`, in the one form it is written in.
+export const indexLine = (numbers) => `- archives: ${numbers.map((n) => `<!-- wave-journal-${n} -->`).join(' ')}`;
 
 // The body with its archive index naming exactly `numbers`: the journal's index line rewritten
 // where it stands, or put first in the journal where there was none.
 export const withIndex = (body, numbers) => {
   const { lines, section } = journalOf(body);
   if (!section) return body;
-  const index = `- archives: ${numbers.map((n) => `<!-- wave-journal-${n} -->`).join(' ')}`;
+  const index = indexLine(numbers);
   const at = [...indexOf(lines, section)].sort((x, y) => x - y)[0];
   if (at !== undefined) { lines[at] = index; return lines.join('\n'); }
   lines.splice(section.start + 1, 0, index);

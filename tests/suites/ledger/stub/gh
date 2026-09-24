@@ -8,9 +8,19 @@ fi
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 
+# One stub plays both CLIs — `glab` is a link to this file — and these are all that differ.
+me=$(basename "$0")
+if [ "$me" = gh ]; then
+  other=glab edit=PATCH who='{"login":"example-user-00000001"}' probe_key=.probe_gh
+  probe='{"full_name":"team/app"}'
+else
+  other=gh edit=PUT who='{"username":"example-user-00000001"}' probe_key=.probe_glab
+  probe='{"full_name":"team/app","web_url":"https://lab.example/team/app"}'
+fi
+
 if [ "$1 $2" = "auth status" ]; then
   case "$(ask '.auth')" in
-    glab|none) echo "not logged in" >&2; exit 1 ;;
+    "$other"|none) echo "not logged in" >&2; exit 1 ;;
     *) echo "logged in"; exit 0 ;;
   esac
 fi
@@ -28,7 +38,7 @@ if [ "$1" = "api" ]; then
   # `slow` too, in words saying "too long" about time, `always` refuses every one.
   if [ -n "$method" ]; then
     [ -n "$file" ] || { echo "a write without -F body=@<file>" >&2; exit 1; }
-    case "$method" in POST|PATCH) ;; *) echo "an edit here is a PATCH, not a $method" >&2; exit 1 ;; esac
+    case "$method" in POST|"$edit") ;; *) echo "an edit here is a $edit, not a $method" >&2; exit 1 ;; esac
     n=$(ls "$store" | grep -c '^w' || true); echo "$method $*" > "$store/w$n"
     fail=$(ask '.write_fail')
     case "$fail" in
@@ -72,14 +82,14 @@ if [ "$1" = "api" ]; then
   [ "$want" = "$host" ] || { echo "that call went to '${host:-the default host}', not '$want'" >&2; exit 1; }
 
   # The run's own identity, which is a different question from whether a repository answers.
-  # Each forge names the field itself — `login` here, `username` on the other — and the stub
+  # Each forge names the field itself — `login` on GitHub, `username` on GitLab — and the stub
   # answers with ONE of them, so a script reading the wrong field reads nothing.
   is_user=0
   for a in "$@"; do [ "$a" = user ] && is_user=1; done
   if [ "$is_user" = 1 ]; then
     v=$(ask '.me')
     case "$v" in
-      ""|yes) echo '{"login":"example-user-00000001"}'; exit 0 ;;
+      ""|yes) echo "$who"; exit 0 ;;
       # A repository's own token and an App installation token both get 403 from this call.
       silent) echo "$(basename "$0"): Resource not accessible (HTTP 403)" >&2; exit 1 ;;
       notjson) echo 'not json at all'; exit 0 ;;
@@ -92,9 +102,9 @@ if [ "$1" = "api" ]; then
   for a in "$@"; do case "$a" in repos/*|projects/*) path=$a ;; esac; done
   case "$path" in
     */issues/*) ;;
-    *) v=$(ask '.probe_gh')
+    *) v=$(ask "$probe_key")
        case "$v" in
-         ""|yes) echo '{"full_name":"team/app"}'; exit 0 ;;
+         ""|yes) echo "$probe"; exit 0 ;;
          *) echo "no such repository here" >&2; exit 1 ;;
        esac ;;
   esac
@@ -121,4 +131,4 @@ if [ "$1" = "api" ]; then
     *) printf '%s\n' "$v"; exit 0 ;;
   esac
 fi
-echo "unplanned gh call: $*" >&2; exit 1
+echo "unplanned $me call: $*" >&2; exit 1

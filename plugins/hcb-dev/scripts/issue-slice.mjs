@@ -82,7 +82,7 @@
 
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirOk, hostOk, readable, repoOk, text, writeAll } from './lib/forge.mjs';
+import { dirOk, hostOk, projectPathOk, repoOk, text, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node issue-slice.mjs [--forge gh|glab] [--repo <path>] [--host <host>]'
   + ' [--repo-dir <path>] [--state open|closed|all] [--label <name>]'
@@ -120,13 +120,7 @@ for (let i = 0; i < argv.length; i += 1) {
   opts[key] = argv[i += 1];
 }
 if (opts.forge !== null && !['gh', 'glab'].includes(opts.forge)) die('--forge takes gh or glab');
-// Two to eleven segments — GitLab nests projects under subgroups — each one path segment,
-// and never `..`, which a server normalises into a request about somewhere else.
-const repoSegments = opts.repo === null ? [] : opts.repo.split('/');
-if (opts.repo !== null && (repoSegments.length < 2 || repoSegments.length > 11
-  || !repoSegments.every((seg) => readable(seg) && seg !== '.'))) {
-  die('--repo takes <owner>/<name>, or a GitLab group path');
-}
+if (opts.repo !== null && !projectPathOk(opts.repo)) die('--repo takes <owner>/<name>, or a GitLab group path');
 if (opts.forge === 'gh' && opts.repo !== null && !repoOk(opts.repo)) {
   die('--repo on GitHub is <owner>/<name>');
 }
@@ -324,10 +318,7 @@ const PROBES = {
       const full = v.namespace && typeof v.namespace.full_path === 'string' ? v.namespace.full_path : null;
       if (!full || typeof v.path !== 'string') return { reason: 'glab: an unreadable project' };
       const path = `${full}/${v.path}`;
-      const segs = path.split('/');
-      if (segs.length < 2 || !segs.every((s) => readable(s) && s !== '.') || !hostOk(host)) {
-        return { reason: 'glab: an unreadable project' };
-      }
+      if (!projectPathOk(path) || !hostOk(host)) return { reason: 'glab: an unreadable project' };
       return { repo: path, host };
     } catch { return { reason: 'glab: the project answer was not JSON' }; }
   },
