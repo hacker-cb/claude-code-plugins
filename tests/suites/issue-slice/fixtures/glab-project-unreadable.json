@@ -3,6 +3,30 @@
  "glab_project": "{\"web_url\":\"https://gitlab.example/example-group/example-project\"}",
  "graphql": [
   {
+   "has": "WorkItemRelatedLinkType",
+   "out": {
+    "data": {
+     "queryComplexity": {
+      "score": 1,
+      "limit": 250
+     },
+     "linkTypes": {
+      "enumValues": [
+       {
+        "name": "BLOCKED_BY"
+       },
+       {
+        "name": "BLOCKS"
+       },
+       {
+        "name": "RELATED"
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
    "match": {
     "endCursor": null
    },

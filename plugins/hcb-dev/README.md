@@ -455,8 +455,8 @@ name stands for.
 - [`scripts/issue-slice.mjs`](scripts/issue-slice.mjs) — every issue of a slice with its
   links — parent, children, blockers, closing change requests — one call per page on either
   forge, and whether what came back is the whole slice: unread, short and whole are told
-  apart, as are link ends the token cannot see and the fields a self-hosted instance is too
-  old to carry. Bodies and comments stay out of the wide read; `--deep` reads the numbers
+  apart, as are link ends the token cannot see, the fields a self-hosted instance is too
+  old to carry, and the blocking links a GitLab Community Edition server has none of. Bodies and comments stay out of the wide read; `--deep` reads the numbers
   named in full; `--since` reads the slice again against an earlier reading of it and says
   what entered, left, was edited or moved a link — each edge once, the forge's own count of
   link events beside it as a cross-check. `--skip-label` leaves an epic's own structure

@@ -1,5 +1,5 @@
 {
- "gh_repo": "{\"nameWithOwner\":\"example-org/example-repo\",\"url\":\"https://github.example/example-org/example-repo\"}",
+ "gh_repo": "fail",
  "glab_project": "{\"path\":\"example-project\",\"namespace\":{\"full_path\":\"example-group/example-sub\"},\"web_url\":\"https://gitlab.example/example-group/example-sub/example-project\"}",
  "graphql": [
   {
@@ -13,12 +13,6 @@
      "linkTypes": {
       "enumValues": [
        {
-        "name": "BLOCKED_BY"
-       },
-       {
-        "name": "BLOCKS"
-       },
-       {
         "name": "RELATED"
        }
       ]
@@ -28,8 +22,7 @@
   },
   {
    "match": {
-    "endCursor": null,
-    "fullPath": "example-group/example-sub/example-project"
+    "endCursor": null
    },
    "out": {
     "data": {
@@ -70,7 +63,15 @@
             "pageInfo": {
              "hasNextPage": false
             },
-            "nodes": []
+            "nodes": [
+             {
+              "linkType": "relates_to",
+              "workItemState": "OPEN",
+              "workItem": {
+               "reference": "example-group/example-sub/example-project#2"
+              }
+             }
+            ]
            }
           },
           {

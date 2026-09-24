@@ -42,13 +42,10 @@ node "<plugin root>/scripts/issue-slice.mjs" --deep "<n>[,<n>…]"
 
 - **GitHub Enterprise Server** older than `forge-docs.md` names for dependencies: the slice's
   first line lists `bb` and `bl` under `unavailable`.
-- **GitLab** without the blocking link types: the link-type enum answers `RELATED` alone. A write
-  of one there fails — and through `glab issue create`, after the issue is already filed
+- **GitLab** without the blocking link types: on Community Edition the slice's first line lists
+  `bb` and `bl` under `unavailable`; an Enterprise server without the paid tier lists nothing
+  there and refuses the write — through `glab issue create`, after the issue is already filed
   (`forge-behaviour.md`).
-
-```bash
-glab api graphql -f query='{ __type(name: "WorkItemRelatedLinkType") { enumValues { name } } }'
-```
 
 There the edge is a line in the waiting issue's body — `Blocked by #<n>` — and the parked-reason
 label where the repository has that family, removed with the line. **Never a related link**: it

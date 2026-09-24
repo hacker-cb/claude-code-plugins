@@ -1120,6 +1120,20 @@ if (cli === 'gh') {
     if (!head.unavailable.includes('pr')) head.unavailable.push('ev.pr');
   }
 }
+if (cli === 'glab') {
+  // The blocking link types are Enterprise Edition's: a Community Edition server's enum holds
+  // `RELATED` alone, and there an empty `bb` says the server cannot carry one, not that none
+  // stands. EE lists both whatever its licence, so an unlicensed EE is not told apart here.
+  const { json, reason } = gql({ query: 'query { queryComplexity { score limit } linkTypes: __type(name: "WorkItemRelatedLinkType") { enumValues { name } } }', variables: {} });
+  if (!json) unread(reason);
+  WIDE.glab.spend(json.data);
+  if (!json.data || !('linkTypes' in json.data)) unread(messages(json)[0] || 'the server did not say which link types it carries');
+  const names = new Set(json.data.linkTypes && Array.isArray(json.data.linkTypes.enumValues)
+    ? json.data.linkTypes.enumValues.map((e) => e && e.name) : []);
+  for (const [key, value] of [['bb', 'BLOCKED_BY'], ['bl', 'BLOCKS'], ['rel', 'RELATED']]) {
+    if (!names.has(value)) head.unavailable.push(key);
+  }
+}
 // GitLab's hierarchy carries no moment at all, so nothing counts a parent set or removed there.
 if (cli === 'glab' && head.delta) head.unavailable.push('ev.p', 'ev.ch', 'ev.chl', 'ev.pr');
 
