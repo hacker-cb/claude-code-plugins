@@ -5,23 +5,25 @@
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 moved() { [ -n "${STUB_MARKER_FILE:-}" ] && cat "$STUB_MARKER_FILE" 2>/dev/null; }
-# `-c NAME=VALUE` before the command: kept, so the switch can insist on the one it needs.
-cfg=""
-while [ "$1" = "-c" ]; do cfg="$cfg $2"; shift 2; done
+refuse() { echo "stub git: $*" >&2; exit 3; }
+# `-c NAME=VALUE` before the command: kept, so a call can insist on the ones it needs.
+cfg=" "
+while [ "$1" = "-c" ]; do cfg="$cfg$2 "; shift 2; done
+# Every configured filter passed through, or the call is one that would run project code.
+filters_off() {
+  for n in $(ask '.filters // [] | .[]'); do
+    for want in "filter.$n.smudge=cat" "filter.$n.clean=cat" "filter.$n.process=" "filter.$n.required=false"; do
+      case "$cfg" in *" $want "*) ;; *) refuse "$1 without $want" ;; esac
+    done
+  done
+}
 case "$1" in
   rev-parse)
-    if [ "$*" = "rev-parse --git-dir" ]; then
-      case "$(ask '.no_repo')" in
-        yes) echo "fatal: not a git repository (or any of the parent directories): .git" >&2; exit 128 ;;
-        other) echo "fatal: detected dubious ownership in repository" >&2; exit 128 ;;
-      esac
-      echo ".git"; exit 0
-    fi
     # Answered one directory at a time, and in the absolute form only. The envelope's paths
     # are relative to the repository root the runner works from; `old_git` plays a git that
     # prints the unknown flag back.
     if [ "$2" = "--path-format=absolute" ]; then
-      [ "$(ask '.dirs')" = fail ] && { echo "fatal: could not read the git directory" >&2; exit 128; }
+      [ "$(ask '.dirs')" = fail ] && { echo "fatal: not a git repository (or any of the parent directories): .git" >&2; exit 128; }
       [ "$(ask '.old_git')" = yes ] && { echo "--path-format=absolute"; exit 0; }
       case "$3" in
         --git-dir) echo "$PWD/$(ask '.git_dir')"; exit 0 ;;
@@ -47,17 +49,30 @@ case "$1" in
       "") exit 1 ;;
       *) echo "$v"; exit 0 ;;
     esac ;;
+  config)
+    if [ "$2 $3" = "--bool core.sparseCheckout" ]; then
+      case "$(ask '.sparse')" in "") exit 1 ;; fail) exit 128 ;; *) ask '.sparse'; exit 0 ;; esac
+    fi
+    if [ "$2" = "--get-regexp" ]; then
+      l=$(ask '.filters // [] | .[] | "filter.\(.).process git-filter-process"')
+      [ -n "$l" ] && { printf '%s\n' "$l"; exit 0; }
+      exit 1
+    fi ;;
   merge-base)
+    # Ancestor first: the remote copy the local parent must hold, then the parent.
+    [ "$3" = "$(ask '.refs["refs/remotes/origin/epic"]')" ] && [ "$4" = "$(ask '.refs["refs/heads/epic"]')" ] \
+      || refuse "merge-base asked the other way round: $*"
     case "$(ask '.held')" in
       yes) exit 0 ;;
       no) exit 1 ;;
       *) echo "fatal: not a valid commit" >&2; exit 128 ;;
     esac ;;
   status)
-    # Porcelain v2 and untracked files named outright, or no answer: a script asking in any
-    # other form is asking the question a config can silence.
-    [ "$*" = "status --porcelain=v2 -z --untracked-files=normal" ] || {
-      echo "stub git: status asked as: $*" >&2; exit 3; }
+    # Porcelain v2, untracked files and submodules named outright, filters passed through — or
+    # no answer: any other form is a question a config or the project can bend.
+    [ "$*" = "status --porcelain=v2 -z --untracked-files=normal --ignore-submodules=none" ] \
+      || refuse "status asked as: $*"
+    filters_off status
     v=$(ask '.status')
     [ -n "$(moved)" ] && [ -n "$(ask '.status_after')" ] && v=$(ask '.status_after')
     [ "$v" = fail ] && { echo "fatal: index file corrupt" >&2; exit 128; }
@@ -65,6 +80,10 @@ case "$1" in
     [ -n "$v" ] && printf '%s\n' "$v" | tr '\n' '\0'
     exit 0 ;;
   log)
+    # Held against the base, every remote and every other branch — or no answer.
+    case " $* " in *" HEAD --not $(ask '.refs | to_entries[0].value') --remotes"*" --branches -- ") ;;
+      *) refuse "log asked as: $*" ;; esac
+    b=$(ask '.branch'); [ -n "$b" ] && { case " $* " in *" --exclude=$b --branches "*) ;; *) refuse "log holds HEAD's own branch as other: $*" ;; esac; }
     v=$(ask '.own_log')
     [ "$v" = fail ] && { echo "fatal: bad revision" >&2; exit 128; }
     [ -n "$v" ] && printf '%s\n' "$v"
@@ -78,9 +97,12 @@ case "$1" in
     esac
     exit 0 ;;
   switch)
-    # The switch must keep the project's hooks out and refuse to overwrite an ignored file.
-    case "$cfg" in *core.hooksPath=/dev/null*) ;; *) echo "stub git: switch with hooks on" >&2; exit 3 ;; esac
-    case " $* " in *" --no-overwrite-ignore "*) ;; *) echo "stub git: switch may overwrite ignored files" >&2; exit 3 ;; esac
+    # Detached, no hook, no ignored file overwritten, no submodule moved, every filter off.
+    case "$cfg" in *" core.hooksPath=/dev/null "*) ;; *) refuse "switch with hooks on" ;; esac
+    for f in --detach --no-overwrite-ignore --no-recurse-submodules; do
+      case " $* " in *" $f "*) ;; *) refuse "switch without $f" ;; esac
+    done
+    filters_off switch
     if [ "$(ask '.switch')" = fail ]; then
       printf '%s\n' "error: The following untracked working tree files would be overwritten by checkout:" \
         "	cfg.local" "Please move or remove them before you switch branches." "Aborting" >&2
@@ -90,4 +112,4 @@ case "$1" in
     [ "$(ask '.switch')" = elsewhere ] && target=$(ask '.head')
     printf '%s' "$target" > "$STUB_MARKER_FILE"; exit 0 ;;
 esac
-echo "stub git: no envelope answer for: $*" >&2; exit 3
+refuse "no envelope answer for: $*"

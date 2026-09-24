@@ -30,7 +30,7 @@ empty has refuted nothing.
 |---|---|---|---|
 | a session working alone | once its work is done — past the last completion, before the report that closes it | the base where the work landed, the branch carrying it where it has not | its own, from this session's context |
 | a session handed findings | on the hand-over | the refreshed base — the revision each one names is read only to find a coordinate the base has since moved | the text handed over |
-| a master session | at a round's close — every return of the round accepted, every change request it lands merged | the ref the round landed on, as the master's tree last moved to it: the refreshed base, or the local parent where it landed in `local` mode — never its working tree | the *candidates* of the wave's ledger, which `hcb-dev:master-session` keeps |
+| a master session | at a round's close — every return of the round accepted, every change request it lands merged | the ref the round landed on, refreshed just before `init`: the base, or the local parent where it landed in `local` mode — never the master's working tree | the *candidates* of the wave's ledger, which `hcb-dev:master-session` keeps |
 
 A batch inside a wave never runs it: its candidates ride its return (`hcb-dev:wave-worker`). The
 base is resolved by the ladder in

@@ -35,7 +35,8 @@ there.
   pass of the same mechanism, are not two batches: that is one batch,
   sequential inside. Between two batches that both have a head, a seam is
   measured rather than assumed: `git merge-tree --write-tree --name-only
-  --no-messages <a> <b>` on the two heads, each resolved to its commit first —
+  --no-messages <a> <b>` on the two heads, each resolved to its commit first, where
+  `git config --get-regexp '^merge\..*\.driver$'` names no merge driver —
   exit 1 is a conflict in the paths listed below the tree id on its first line,
   0 clears a shared file and nothing wider, anything else leaves the seam unread.
 - **Dependency edges.** What blocks what, read from the issues and the tree —

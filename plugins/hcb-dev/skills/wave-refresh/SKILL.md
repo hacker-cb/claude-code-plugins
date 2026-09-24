@@ -42,8 +42,9 @@ concludes rather than a number handed in.
 ## The base
 
 Resolve and refresh it per
-[`../../references/base-resolution.md`](../../references/base-resolution.md),
-and pin it as `<remote>/<branch>@<sha>` beside the moment the tracker is read at:
+[`../../references/base-resolution.md`](../../references/base-resolution.md) —
+where the epic completes in `local` mode, the local parent holding its remote
+copy — and pin it as `<remote>/<branch>@<sha>` beside the moment the tracker is read at:
 together they are what this pass verified on, and what the next one diffs from.
 
 **Every read of this pass goes through that ref, never through a working tree** —
@@ -60,8 +61,8 @@ disagreement is itself a finding:
 
 - **the batch rows of each open wave's ledger**
   ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — the
-  file zone of each batch from `chipped` until its landing, or until its end
-  where it lands nothing;
+  file zone of each batch from `chipped` until its landing is cleared against
+  its checks, as the queue records, or until its end where it lands nothing;
 - **the live registry**
   ([`../../references/session-comms.md`](../../references/session-comms.md)) — who
   is running now, since a row outlives the session it describes;
@@ -72,8 +73,8 @@ disagreement is itself a finding:
 
 Every disagreement goes to the user — a request reaching past its zone, a row
 past `chipped` and short of `accepted` with no session, `blocked` included, a
-session with no row; a `chipped` row has none until the user's click, which the
-ledger holds as an expectation. Until one is settled the ground is read
+session with no row. A `chipped` row with no session goes to the user as the
+click the ledger's expectations say they owe, with the chip's age. Until one is settled the ground is read
 the **safer** way rather than the wider or the narrower: a zone read two ways is
 occupied to the union of both, and a session whose zone no source gives holds
 **everything a candidate would touch**, since an unknown zone is unbounded and
