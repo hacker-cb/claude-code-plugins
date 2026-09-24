@@ -1,12 +1,29 @@
 # What moved, and what the open change requests are writing
 
-Read by `hcb-dev:wave-refresh` for the two reads whose obvious form answers
-wrongly and says nothing: the tracker's delta, which a filter by update time
-takes without the link changes a wave is planned on, and the files an open
-change request touches, whose list is cut at a hundred with no count beside it.
-What each forge actually does here is
+Read by `hcb-dev:wave-refresh` for the three reads whose obvious form answers
+wrongly and says nothing: the base's delta, which a search by path misses
+wherever a landing changed what the work is judged by; the tracker's delta,
+which a filter by update time takes without the link changes a wave is planned
+on; and the files an open change request touches, whose list is cut at a
+hundred with no count beside it. What each forge actually does here is
 [`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md);
 this file is the form.
+
+## The base's delta
+
+Taken per [`../../../references/base-delta.md`](../../../references/base-delta.md) — its
+commands and the kinds it reads for — with the pin the point to diff from names standing where
+that file has `M`, and the pin taken now as its ref. What this pass does with each:
+
+- **A path the range touched**, under either name of a rename, that a verdict's coordinate
+  stands on: that verdict is re-derived rather than carried.
+- **A change to how the repository is built or judged** — its checks, a gate, a linter's
+  rules, the instructions its agents read — reaches every candidate and every running batch
+  whose work it judges, whatever paths they stand on.
+- **A running batch whose zone, checks or order premise the range reached** is named in the
+  report, for the master to tell it.
+- **An older pin that is not an ancestor of the newer** is that file's rewritten base: the base
+  half is unread, and what it would have covered is read over the slice whole.
 
 ## The tracker's delta
 

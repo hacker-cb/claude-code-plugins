@@ -26,11 +26,18 @@ there.
   write through, of which a shared file is the commonest shape and not the
   only one — one dispatcher they both register in, one generated artefact they
   both re-emit, one format they both encode to, each a seam with no file in
-  common. Two batches may share a *component* only with an explicit per-file
+  common. So is a check one batch changes — a linter's rules, a guard, a
+  coverage threshold — with every batch whose code it judges (*Gating* below
+  says which goes first), and a file restating what another batch changes — a
+  count, a table, a snapshot. Two batches may share a *component* only with an explicit per-file
   split, spelled out in both orders — and the seam named as the one place a
   rebase is expected. Two batches writing the same file, or rewriting the same
   pass of the same mechanism, are not two batches: that is one batch,
-  sequential inside.
+  sequential inside. Between two batches that both have a head, a seam is
+  measured rather than assumed: `git merge-tree --write-tree --name-only
+  --no-messages <a> <b>` on the two heads, each resolved to its commit first —
+  exit 1 is a conflict in the paths it lists, 0 clears a shared file and
+  nothing wider, anything else leaves the seam unread.
 - **Dependency edges.** What blocks what, read from the issues and the tree —
   not assumed from titles. An edge the plan stands on that the tracker does not
   record is proposed as [`issue-links.md`](issue-links.md) writes one. A chain with one unblocked vertex is one batch in
