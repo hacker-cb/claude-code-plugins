@@ -248,8 +248,9 @@ the plan stages them.
 - **`master-session`** — `/hcb-dev:master-session`
   The coordinating role itself: assume it on assignment (title the session per
   `references/session-naming.md`, file the umbrella where none exists, hang the
-  epic's own issues under it so the forge counts what is done, open the
-  wave ledger on the epic), draw the split per `references/wave-planning.md` and
+  epic's own issues under it so the forge counts what is done, label it `epic`
+  and file its sessions into one sidebar group per `references/epic-structure.md`,
+  open the wave ledger on the epic), draw the split per `references/wave-planning.md` and
   get the user's word on the table — the epic's merge authority settled with
   it — launch through `wave-dispatch`, then run the
   loop — answering batch questions only after re-verifying against the tree,
@@ -257,7 +258,9 @@ the plan stages them.
   an executed tracker edit moved in the slice, keeping the epic's own wave table
   level with every redraw, and opening each wave as its gate clears. Never takes
   a merge itself — that is the batch's, and a landing that arrived some other way
-  reaches the batch before anything else is sent.
+  reaches the batch before anything else is sent. Closes the epic with a final
+  comment and offers its session group for deletion; an epic it finds without its
+  label gets it on the spot.
   Reports as `references/report-format.md` and `references/report-blocks.md` fix
   them: a wave report when a wave moves, an ask that blocks work appears,
   something departs from what you approved, a batch is withdrawn or fails, the
@@ -319,7 +322,8 @@ the plan stages them.
   Where the work stands right now, read again rather than recalled, in whichever
   role the session holds: an epic and its batches for a master, one batch of a
   wave, or a run and its slices on its own — and, given an epic number, that
-  epic's state from any session at all, since the ledger lives on the epic.
+  epic's state from any session at all, since the ledger lives on the epic; given
+  none, the epics open across every owner you reach.
   Where you ask a master where things stand, this is what answers. Reads the
   ledger, the live registry, the change requests and the tree; writes
   nothing anywhere, and names a source it could not read as unread instead of
@@ -438,6 +442,10 @@ name stands for.
   unit the forge's own refusal names — and whether the archives beside it and the index
   naming them agree. It reads: what may be archived out of a ledger is a judgement about
   content.
+- [`scripts/epics.mjs`](scripts/epics.mjs) — which epics are open: every issue carrying
+  the `epic` label, across every owner the account reaches — its own by default, any
+  author's under owners named — on the host the checkout lives on rather than the CLI's
+  default, and whether the list is the whole set.
 - [`scripts/issue-slice.mjs`](scripts/issue-slice.mjs) — every issue of a slice with its
   links — parent, children, blockers, closing change requests — one call per page on either
   forge, and whether what came back is the whole slice: unread, short and whole are told
@@ -533,6 +541,10 @@ saying something else. Each file opens by saying what it owns.
   into batches and waves. Read by whatever partitions work into parallel sessions.
 - [`references/wave-ledger.md`](references/wave-ledger.md) — the master's durable
   state. Read on every event it records, and first after any restart.
+- [`references/epic-structure.md`](references/epic-structure.md) — an epic's shape:
+  the plugin's own `epic` and `wave` labels, the umbrella's title and body, how it
+  closes, and the sidebar group its sessions share. Read by whatever files, labels,
+  closes or lists an epic.
 - [`references/report-format.md`](references/report-format.md) — how everything
   reported to you looks: a line or a report, the bold first line counting what
   waits on you, one `##` heading per block, five status circles — 🟢 fine,

@@ -23,7 +23,8 @@ node "$S" --since "<moment>" --was "$W" <the slice's own flags, as that file giv
 
 Those flags are the ones the pinned graph was read under — the script refuses a
 graph of any other slice — and `<moment>` is the moment the ledger records
-beside it. The verdict's `delta` is what the pass acts on:
+beside it. The verdict's `delta` is what the pass acts on — save for the epic the slice runs under
+and its `wave` issues, structure taking no verdict ([`../../../references/epic-structure.md`](../../../references/epic-structure.md)):
 
 | key | what it obliges |
 |---|---|

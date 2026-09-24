@@ -1,0 +1,6 @@
+{
+  "probe_gh": "no",
+  "probe_glab": "yes",
+  "total": "none",
+  "listing": "[{\"iid\": 1, \"title\": \"Epic\", \"web_url\": \"https://lab.example/group/app/-/issues/1\", \"updated_at\": \"2026-01-02T03:04:05Z\", \"references\": {\"full\": \"group/app#1\"}}]"
+}

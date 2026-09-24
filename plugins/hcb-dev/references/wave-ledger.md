@@ -9,7 +9,7 @@ this file **is** the "session's own record" that [`order-anatomy.md`](order-anat
 ## Where it lives
 
 One comment on the epic issue, opened when the role is assumed and edited in place from then on,
-carrying the marker `<!-- wave-ledger -->` so it is found by content rather than by position.
+carrying the marker `<!-- wave-ledger -->`, found by content ([`epic-structure.md`](epic-structure.md)).
 Every order names its coordinate, so a batch reads the standing constraints itself. The epic's
 *body* stays human — the wave table, the progress — and the ledger comment is the working state;
 the two are not copies.
@@ -87,7 +87,7 @@ test on a passage is whether deleting it changes what anyone does next.
    authority as the user settled it ([`slice-completion.md`](slice-completion.md)); the plugin
    version this role last reconciled against, which is what a later **plugin** refresh diffs from
    and not necessarily what the session is running — it starts as the running version and
-   `hcb-dev:session-plugin-refresh` moves it; and when last updated.
+   `hcb-dev:session-plugin-refresh` moves it; the session group (`epic-structure.md`); and when last updated.
 2. **Batches** — one row each: id, topic, the issues and where each now stands, the order's ask
    and terminal deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the file zone its order drew, the order's base pin,

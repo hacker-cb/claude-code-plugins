@@ -21,6 +21,9 @@ session —
 you did not do this work; this is your task: <the ask, in one line>. Act per
 hcb-dev:wave-worker. The name in backticks above is this session's title: wear
 it verbatim, whatever any channel shows this session as.
+Session group: <the epic's group, as its ledger records it>. Where this host
+offers sidebar groups, file this session into it (`list_groups`, then
+`move_sessions` with `self`) — no other session, and no group of your own.
 
 Work: <the issues, in order — what to take first and why>
 What is settled: <facts with coordinates, each with how it was verified>
@@ -72,6 +75,9 @@ are not yours>
 
 Master: <its name>. The wave ledger — standing constraints included — is
 <its coordinate>, and it carries that name too, should this order's go stale.
+Name it, and any comment of the epic's, by its link: never quote a `<!-- … -->`
+marker in anything you write to the tracker — a comment carrying one is read as
+that marker's.
 Before you build, read the whole batch through — this order, the ledger, its
 issues on the forge in full, in one call for all of them as hcb-dev:wave-worker
 reads them, the code they name — and send the master your start report: what

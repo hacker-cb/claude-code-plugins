@@ -4,9 +4,10 @@ description: >-
   Say where the work stands right now, re-read rather than recalled, in
   whichever role this session holds — an epic and its batches, one batch of a
   wave, or a standalone run and its slices — and, for any session handed an
-  epic number, that epic's state read from its ledger. Use when the user asks
-  where things stand ("где мы", "что сейчас происходит", "на чём стоим",
-  "какой статус", "статус эпика #N", "where do we stand", "what's the status"),
+  epic number, that epic's state read from its ledger; with none named, which
+  epics are open. Use when the user asks where things stand ("где мы", "что
+  сейчас происходит", "на чём стоим", "какой статус", "статус эпика #N", "какие
+  эпики открыты", "where do we stand", "what's the status"),
   and for what a run prints once it has recovered from a restart, where its
   own role routes that here. Read-only: it writes no ledger, no tracker and no message to
   another session, and a source it could not read it names as unread rather
@@ -44,7 +45,8 @@ readings stand, and the report says which is this session's own.
    branch of its own: a standalone run.
 4. **Nothing answers** — the role is unread, never standalone by default: say which of the three
    came back empty and what that leaves unopened, and ask for the epic number rather than taking
-   one out of a path.
+   one out of a path, the open epics listed (below) so the ask names them — the labelled ones
+   the account opened; an epic without its label is not among them.
 
 A master or a batch is confirmed against the epic's ledger: the header's master name, a batch row
 naming this session. Where the ledger contradicts the candidate — a variant the host handed back,
@@ -52,6 +54,19 @@ a row naming another session — the contradiction is printed first, as what it 
 stands on the reading this session can defend. Correcting the ledger is the master's write.
 
 ## What is read
+
+### The open epics — where no epic is named
+
+```bash
+FORGE="<gh | glab — named with HOST where this directory is no checkout of the forge in question>"
+HOST="<that forge's host>"
+OWNERS=(<each owner the user named, if any>)
+ARGS=(); for o in "${OWNERS[@]}"; do ARGS+=(--owner "$o"); done
+node "${CLAUDE_PLUGIN_ROOT}/scripts/epics.mjs" ${FORGE:+--forge "$FORGE"} ${HOST:+--host "$HOST"} "${ARGS[@]}"
+```
+
+Read per [`../../references/epic-structure.md`](../../references/epic-structure.md); a list not
+`complete` is printed as the part it is.
 
 ### The epic — for a master, and for any session handed a number
 
