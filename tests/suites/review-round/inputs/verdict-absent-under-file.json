@@ -1,0 +1,14 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "lines": "4",
+      "quote": "if [ \"$count\" -ge \"$limit\" ]; then echo ok; else echo over; fi"
+    },
+    {
+      "path": "README.md/x",
+      "absent": true
+    }
+  ]
+}

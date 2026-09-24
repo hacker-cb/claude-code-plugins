@@ -1,0 +1,10 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "menu.txt",
+      "lines": "1",
+      "quote": "café au lait"
+    }
+  ]
+}

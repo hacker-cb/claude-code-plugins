@@ -1,0 +1,9 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "absent": true
+    }
+  ]
+}

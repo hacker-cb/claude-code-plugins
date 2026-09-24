@@ -1,0 +1,14 @@
+{
+  "verdict": "confirmed",
+  "evidence": [
+    {
+      "path": "win.txt",
+      "lines": "1",
+      "quote": "first line"
+    },
+    {
+      "path": "outside/no-such-file-anywhere",
+      "absent": true
+    }
+  ]
+}

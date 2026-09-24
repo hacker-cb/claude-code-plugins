@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "hcb-dev/verdict.json",
   "title": "A verifier's verdict on one group of a round or a pass",
-  "description": "`submitted` is what the verifier hands to `review-round.mjs verdict`; `stored` is what the store keeps and what travels with a finding afterwards, the store having added the unit, the snapshot and a blob for every path read.",
+  "description": "`submitted` is what the verifier hands to `review-round.mjs verdict`; `stored` is what the store keeps and what travels with a finding afterwards, the store having added the unit, the snapshot and a blob for every file read.",
   "$ref": "#/$defs/submitted",
   "$defs": {
     "verdictName": { "type": "string", "enum": ["confirmed", "unproven", "refuted"] },
@@ -41,15 +41,25 @@
       "allOf": [ { "$ref": "#/$defs/rules" } ]
     },
     "evidenceSubmitted": {
+      "description": "A place read: the lines a quote stands at, the quote as the file reads there — empty for an empty file — or, with `absent`, a file whose not existing on that side the verdict rests on.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "lines", "quote"],
+      "required": ["path"],
       "properties": {
         "path": { "type": "string", "minLength": 1, "maxLength": 512 },
         "side": { "type": "string", "enum": ["head", "base"] },
         "lines": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?$" },
-        "quote": { "type": "string", "minLength": 1, "maxLength": 2000 }
-      }
+        "quote": { "type": "string", "maxLength": 2000 },
+        "absent": { "const": true }
+      },
+      "if": { "required": ["absent"] },
+      "then": { "$ref": "#/$defs/absentEntry" },
+      "else": { "required": ["lines", "quote"] }
+    },
+    "absentEntry": {
+      "description": "A file found absent carries its path and side, and nothing a reading would.",
+      "additionalProperties": false,
+      "properties": { "path": {}, "side": {}, "absent": {} }
     },
     "stored": {
       "type": "object",
@@ -72,14 +82,18 @@
     "evidenceStored": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "side", "lines", "quote", "blob"],
+      "required": ["path", "side"],
       "properties": {
         "path": { "type": "string", "minLength": 1, "maxLength": 512 },
         "side": { "type": "string", "enum": ["head", "base"] },
         "lines": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?$" },
-        "quote": { "type": "string", "minLength": 1, "maxLength": 2000 },
-        "blob": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" }
-      }
+        "quote": { "type": "string", "maxLength": 2000 },
+        "blob": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+        "absent": { "const": true }
+      },
+      "if": { "required": ["absent"] },
+      "then": { "$ref": "#/$defs/absentEntry" },
+      "else": { "required": ["lines", "quote", "blob"] }
     }
   }
 }
