@@ -87,7 +87,7 @@ finding came out of:
 Body: **what is deferred**, identifiers and paths verbatim · **the trigger** that
 should reopen attention · **what it costs to never do it**, in one sentence ·
 **the source** (`<file>:<line>`, a change request, an audit date) — for a finding, with the
-`Verified` cell it carried and the revision it was read at.
+`Verified` cell it carried and the revision it was read at. What it waits on is an edge (below).
 
 Where nothing triggers a return, the priority is what says when to pick it up —
 one carrying neither is not deferred work, and is not opened.
@@ -105,10 +105,11 @@ them and before proposing one the repository lacks.
 ## Hierarchy and dependencies are separate questions
 
 **Hierarchy** — one child per independently completable piece, and the parent
-carries its own kind of work. **Dependencies** — what blocks what.
-
-Both are resolved per
+carries its own kind of work; written per
 [`../../references/forge-docs.md`](../../references/forge-docs.md).
+
+**Dependencies** — what blocks what: when an edge is written, in what, and what stands in
+where the forge carries none is [`../../references/issue-links.md`](../../references/issue-links.md).
 
 ## Consult the backlog at three moments
 
@@ -193,5 +194,7 @@ one unanswered: ask again rather than filling it in.
   and the outcome each one ends in.
 - [`../../references/issue-currency.md`](../../references/issue-currency.md) — read it
   before ruling whether an issue is still true.
+- [`../../references/issue-links.md`](../../references/issue-links.md) — read it
+  before filing or splitting an issue that waits on another.
 - [`../../references/forge-docs.md`](../../references/forge-docs.md) — read it
   before writing an invocation this skill does not spell out.

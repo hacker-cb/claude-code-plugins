@@ -104,7 +104,10 @@ found no hygiene is not one that did not look.
    issues it lists under `cut` and `hidden`, are drawn as the part of the graph this reading
    could not see — named here, never read as edges that are not there. On GitHub a parent out of
    this token's sight is in none of them and reads as no parent at all: the search
-   `forge-behaviour.md` names is what finds one.
+   `forge-behaviour.md` names is what finds one. An edge the deep read found in a body, a
+   comment or the tree, and the links lack, is drawn too, marked as not in the tracker — where
+   the forge carries no dependency link, the body is where every edge stands
+   ([`../../references/issue-links.md`](../../references/issue-links.md)).
 3. The tiers of importance the rows below are placed in, each named with its meaning.
 4. What turned up beside the survey: epics closable as already met, change requests stuck with
    their reason, contradictions between issues.
@@ -132,8 +135,8 @@ body, never this report.
 **`## Needs your word`** — one recommendation for what to take next, with its rationale and the
 cut to start with, the declared priorities of what it names among its reasons where they weigh;
 alternatives only where the choice genuinely turns on what the user wants next. Then the hygiene
-plan, an ask each: bodies to rewrite, issues to close or re-milestone, links to fix, and the
-issues read here that `classification.md` leaves out of line. Where it leaves any, the rest of
+plan, an ask each: bodies to rewrite, issues to close or re-milestone, links to fix, the edges
+drawn as not in the tracker to write, and the issues read here that `classification.md` leaves out of line. Where it leaves any, the rest of
 the repository's carrying that same value ride the ask with them — closed ones included, found
 by filtering on the value itself in every mechanism that can carry it, the stray one as much as
 the ones the resolution names, and over every state rather than the open ones a listing answers

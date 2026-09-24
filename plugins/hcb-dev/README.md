@@ -85,7 +85,9 @@ form: you paste every one of them yourself.
   issues at. Classification against the
   mechanism you adopted, else against what the repository itself defines and
   uses, is `references/classification.md`. Asked whether one issue still holds, it rules it by
-  `references/issue-currency.md`'s four verdicts; a whole slice is `backlog-survey`'s. Called by
+  `references/issue-currency.md`'s four verdicts; a whole slice is `backlog-survey`'s. An issue
+  that waits on another carries the forge's own dependency link — or, where the forge has none, a
+  `Blocked by` line — per `references/issue-links.md`. Called by
   `implementation-workflow` at intake and in its report, and by `github-pr-workflow` after a merge.
 - **`findings-pass`** — `/hcb-dev:findings-pass`
   The pass that rules a run's findings cold and together, once the work is done: every
@@ -569,6 +571,10 @@ saying something else. Each file opens by saying what it owns.
 - [`references/issue-currency.md`](references/issue-currency.md) — whether an
   issue is still true of the tree, and the four verdicts that say so. Read
   wherever an issue is surveyed or taken in as the spec of work about to start.
+- [`references/issue-links.md`](references/issue-links.md) — when a dependency
+  between two issues is written, in the forge's own link and nothing beside it, and
+  what stands in where the forge carries none. Read wherever an issue is filed, split
+  or found waiting on another.
 - [`references/classification.md`](references/classification.md) — how an issue
   gets classified — against the mechanism the user adopted, else against what the
   repository itself defines and actually uses — and what to do with one
