@@ -152,3 +152,4 @@ own-archive	--issue 42 --forge gh --write --body-file tests/suites/ledger/bodies
 own-archive	--issue 42 --forge gh --write --budget 100 --body-file tests/suites/ledger/bodies/index-late.txt --was 75da4a8693d2e300	0	"moved": 3|"wrote": true	an event that comes first once older ones moved is an event still, never taken for the index while an archives line stands below it
 -	--issue 42 --forge glab --repo g0/g1/g2/g3/g4/g5/g6/g7/g8/g9/g10/g11/g12/g13/g14/g15/g16/g17/g18/g19/g20/g21/app	2	--repo takes	a GitLab path past twenty ancestors and the project names no project
 glab-notes	--issue 42 --forge glab --repo g0/g1/g2/g3/g4/g5/g6/g7/g8/g9/g10/g11/g12/g13/g14/g15/g16/g17/g18/g19/g20/app	0	NOT:--repo takes	a project under a namespace of twenty ancestors is a path GitLab has
+-	--issue 42 --forge gh --repo group/sub/app	2	--repo on GitHub is <owner>/<name>	a GitHub repository is an owner and a name, never a GitLab path

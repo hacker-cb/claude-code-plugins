@@ -81,8 +81,8 @@ export const repoOk = (v) => {
 };
 // A project's PATH, on either forge: GitHub's is always two segments; GitLab's is the project
 // under a namespace of up to twenty ancestors, twenty-two segments at most, and `glab --repo` takes
-// it whole. Each segment held as a branch's are — never `..` or `.`, which a server normalises into
-// a request about somewhere else.
+// it whole. Every segment follows the rules for a branch's segments, and none is `..` or `.`, which
+// a server normalises into a request about somewhere else.
 export const projectPathOk = (v) => {
   const n = typeof v === 'string' ? v.split('/').length : 0;
   return n >= 2 && n <= 22 && refOk(v);

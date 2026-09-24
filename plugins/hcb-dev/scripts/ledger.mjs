@@ -18,7 +18,7 @@ import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { coord, dirOk, hostOk, parsePages, projectPathOk, runner, text, writeAll } from './lib/forge.mjs';
+import { coord, dirOk, hostOk, parsePages, projectPathOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 import { BUDGETS, FORMAT, LEDGER_LINE, MARKER, bytes, formatOf, indexLine, journalOf, kindOf, lint, withIndex } from './lib/ledger-body.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
@@ -88,6 +88,7 @@ if (!dirOk(opts.dir)) die(`--repo-dir '${opts.dir}' is not a directory`);
 if (!/^[1-9][0-9]{0,11}$/.test(String(opts.issue ?? ''))) die('--issue takes an issue number');
 const repoSegments = opts.repo === null ? [] : opts.repo.split('/');
 if (opts.repo !== null && !projectPathOk(opts.repo)) die('--repo takes <owner>/<name>, or a GitLab group path');
+if (opts.forge === 'gh' && opts.repo !== null && !repoOk(opts.repo)) die('--repo on GitHub is <owner>/<name>');
 // Encoded segment by segment, never whole: a `/` between segments is the path, and encoding it
 // would ask for one repository named with slashes in it.
 const repoPath = repoSegments.map(encodeURIComponent).join('/');
