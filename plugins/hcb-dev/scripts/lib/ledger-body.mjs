@@ -59,9 +59,11 @@ export const sectionsOf = (body) => {
 // Where a journal section's index stands: the lines of it, by the rule above.
 const indexOf = (lines, s) => {
   const at = new Set();
-  const first = lines.findIndex((l, i) => i > s.start && i < s.end && l.trim() !== '');
-  if (first !== -1 && INDEX_FIRST.test(lines[first])) at.add(first);
   for (let i = s.start + 1; i < s.end; i += 1) if (INDEX_ANY.test(lines[i])) at.add(i);
+  // The first line's looser form only where no `archives:` line stands: otherwise an event that
+  // comes first once older ones have moved out would be taken for the index and overwritten.
+  const first = lines.findIndex((l, i) => i > s.start && i < s.end && l.trim() !== '');
+  if (at.size === 0 && first !== -1 && INDEX_FIRST.test(lines[first])) at.add(first);
   return at;
 };
 

@@ -86,8 +86,6 @@ if (!dirOk(opts.dir)) die(`--repo-dir '${opts.dir}' is not a directory`);
 // An issue number, not a ref: a value that is not digits would reach the url as a path of
 // its own, and `0` names no issue on either forge.
 if (!/^[1-9][0-9]{0,11}$/.test(String(opts.issue ?? ''))) die('--issue takes an issue number');
-// `..` above all is refused: `repos/team/../issues/42` is normalised by the server into a request
-// to somewhere else entirely.
 const repoSegments = opts.repo === null ? [] : opts.repo.split('/');
 if (opts.repo !== null && !projectPathOk(opts.repo)) die('--repo takes <owner>/<name>, or a GitLab group path');
 // Encoded segment by segment, never whole: a `/` between segments is the path, and encoding it
@@ -307,7 +305,7 @@ for (const c of rows) {
   const id = c?.id ?? null;
   const nodeId = typeof c?.node_id === 'string' ? text(c.node_id) : null;
   const at = text(c?.created_at ?? null);
-  const url = text(c?.html_url ?? c?.url ?? null);
+  const url = coord(c?.html_url ?? c?.url ?? null);
   const wrote = forge === 'gh' ? c?.user?.login : c?.author?.username;
   const rawAuthor = typeof wrote === 'string' ? wrote : null;
   const author = text(rawAuthor);
@@ -490,19 +488,21 @@ const ownArchives = [...byN.values()]
 const numbers = [...answer.index.present];
 let top = Math.max(0, ...listed, ...numbers);
 const last = ownArchives[0] && ownArchives[0].n === numbers[numbers.length - 1] ? ownArchives[0] : null;
-let current = last ? { n: last.n, id: last.id, text: archOf.get(last.n).body.trimEnd() } : null;
-if (current) current.size = bytes(current.text);
+const lastText = last ? archOf.get(last.n).body.trimEnd() : null;
+let current = last ? { n: last.n, id: last.id, text: lastText, size: bytes(lastText) } : null;
 const plan = [];
 // Onto the archive in hand where it still fits under the cap, its closing newline counted, else
 // into a new one under the next number no archive holds. Answers why not, where it cannot go.
 // Each archive carries its size along, so a line placed costs its own bytes, never the archive's.
 const fresh = (n) => `<!-- wave-journal-${n} -->\n${KIND}`;
 const roomiest = bytes(fresh(999999));
+// An archive of `have` bytes takes an entry of `size` behind a newline, and closes on one.
+const fits = (have, size) => have + 1 + size + 1 <= opts.limit;
 const place = (entry) => {
   if (MARKER.test(entry)) return 'a text carrying a marker of this plugin cannot move into an archive';
   const size = bytes(entry);
-  if (roomiest + 1 + size + 1 > opts.limit) return 'a text larger than an archive can hold — split it into texts of its own';
-  if (current === null || current.size + 1 + size + 1 > opts.limit) {
+  if (!fits(roomiest, size)) return 'a text larger than an archive can hold — split it into texts of its own';
+  if (current === null || !fits(current.size, size)) {
     const n = top + 1;
     if (n > 999999) return 'no archive number is left';
     top = n;
@@ -577,10 +577,14 @@ if (opts.write && !asItStands) {
   const indexed = withIndex(next, numbers);
   const { lines, entries } = journalOf(indexed);
   const base = bytes(indexed) - bytes(indexLine(numbers));
+  // The index's size, measured again only when an archive was opened.
+  let indexedAt = numbers.length;
+  let index = bytes(indexLine(numbers));
   const out = new Set();
   let removed = 0;
   for (const e of entries) {
-    if (base + bytes(indexLine(numbers)) - removed <= ceiling) break;
+    if (numbers.length !== indexedAt) { indexedAt = numbers.length; index = bytes(indexLine(numbers)); }
+    if (base + index - removed <= ceiling) break;
     blocked = place(lines[e.from]);
     if (blocked) break;
     out.add(e.from);

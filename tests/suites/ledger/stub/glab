@@ -1,1 +1,3 @@
-gh
+#!/usr/bin/env bash
+# The same stub as gh, run as glab.
+STUB_AS=glab exec "$(dirname "$0")/gh" "$@"

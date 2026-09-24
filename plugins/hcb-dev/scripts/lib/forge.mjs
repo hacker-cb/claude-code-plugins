@@ -79,10 +79,14 @@ export const repoOk = (v) => {
   const p = v.split('/');
   return p.length === 2 && p.every(readable);
 };
-// A project's PATH, on either forge: GitHub's is always two segments, GitLab's nests a project
-// under up to twenty levels of groups, and `glab --repo` takes it whole. Each segment held as a
-// branch's are — never `..` or `.`, which a server normalises into a request about somewhere else.
-export const projectPathOk = (v) => refOk(v) && v.split('/').length >= 2 && v.split('/').length <= 21;
+// A project's PATH, on either forge: GitHub's is always two segments; GitLab's is the project
+// under a namespace of up to twenty ancestors, twenty-two segments at most, and `glab --repo` takes
+// it whole. Each segment held as a branch's are — never `..` or `.`, which a server normalises into
+// a request about somewhere else.
+export const projectPathOk = (v) => {
+  const n = typeof v === 'string' ? v.split('/').length : 0;
+  return n >= 2 && n <= 22 && refOk(v);
+};
 
 // `gh` by default because most callers ask a forge; `git` where the question is the
 // checkout's. Same three-part answer either way — a caller that cannot tell a failed
