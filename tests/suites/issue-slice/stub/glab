@@ -57,6 +57,13 @@ if [ -z "$ctype" ]; then
   printf '%s\n' '{"errors":[{"message":"Unexpected end of document","locations":[]}]}'
   echo "glab: Unexpected end of document" >&2; exit 1
 fi
+# The link-type probe is answered as an Enterprise server answers it, unless the envelope carries
+# an answer of its own for it — only the cases about that probe do.
+if jq -e '.query | contains("WorkItemRelatedLinkType")' <<<"$body" >/dev/null \
+  && [ -z "$(ask '[.graphql[]? | select(.has == "WorkItemRelatedLinkType")][0].has')" ]; then
+  printf '%s\n' '{"data":{"queryComplexity":{"score":1,"limit":250},"linkTypes":{"enumValues":[{"name":"BLOCKED_BY"},{"name":"BLOCKS"},{"name":"RELATED"}]}}}'
+  exit 0
+fi
 over=$(jq -r '[.query | scan("refs: \\[[^]]*\\]") | [scan("\"#[0-9]+\"")] | length | select(. > 10)] | length' <<<"$body")
 if [ "$over" != 0 ]; then
   printf '%s\n' '{"errors":[{"message":"Number of references exceeds the limit. Please provide no more than 10 references at the same time."}]}'

@@ -32,7 +32,8 @@ there.
   pass of the same mechanism, are not two batches: that is one batch,
   sequential inside.
 - **Dependency edges.** What blocks what, read from the issues and the tree —
-  not assumed from titles. A chain with one unblocked vertex is one batch in
+  not assumed from titles. An edge the plan stands on that the tracker does not
+  record is proposed as [`issue-links.md`](issue-links.md) writes one. A chain with one unblocked vertex is one batch in
   that order, not a wave of three; the blocked remainder waits behind the gate
   its vertex clears. An artefact and its first consumer are an edge no issue
   needs to draw: the artefact is built by the batch that consumes it, or by the

@@ -10,7 +10,7 @@ exists. The roles travel between repositories; every literal is read from the re
 |---|---|---|
 | kind of work | exactly one | a capability that does not exist yet · shipped behaviour deviating from spec or intent, latent defects included · internal quality with no new capability. A parent takes its children's dominant kind |
 | component | at least one | where the work lands — the ones whose directories the diff actually touches; docs follow their subject. Three or more is a signal to decompose, not to label harder |
-| parked reason | at most one | the pending trigger that should reopen attention — a decision, an upstream release, a dependency of the project's own. **Absence means ready to pick up** |
+| parked reason | at most one | the pending trigger that should reopen attention — a decision, an upstream release, a dependency the tracker cannot link ([`issue-links.md`](issue-links.md)). **Absence means ready to pick up**, unless an open blocker holds it |
 | priority | at most one | how far up the queue the work is wanted, ordinal within the family. **Absence means normal** |
 | security | optional flag | on top of whatever component applies |
 
