@@ -1,0 +1,13 @@
+{
+  "git_dir": "/tmp/example-checkout/.git/worktrees/master-a1b2c3",
+  "common_dir": "/tmp/example-checkout/.git",
+  "head": "f1x7444444444444444444444444444444444444",
+  "branch": "",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
+  },
+  "status": "",
+  "own_count": "1",
+  "own_log": "f1x7444444444444444444444444444444444444 probe left behind",
+  "behind": "3"
+}

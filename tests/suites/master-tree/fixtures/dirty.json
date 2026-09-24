@@ -1,0 +1,12 @@
+{
+  "git_dir": "/tmp/example-checkout/.git/worktrees/master-a1b2c3",
+  "common_dir": "/tmp/example-checkout/.git",
+  "head": "f1x7111111111111111111111111111111111111",
+  "branch": "",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
+  },
+  "status": " M src/a.c\nR  src/b2.c\nsrc/b.c\n?? notes.txt",
+  "own_count": "0",
+  "behind": "3"
+}

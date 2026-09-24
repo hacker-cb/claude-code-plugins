@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Stubbed outright, not proxied: see suite.conf. `touch`, not a truncation — a switch
+# writes the commit it moved to into the marker, and later calls of the same case read it.
+[ -n "${STUB_MARKER_FILE:-}" ] && touch "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+moved() { [ -n "${STUB_MARKER_FILE:-}" ] && cat "$STUB_MARKER_FILE" 2>/dev/null; }
+case "$1" in
+  rev-parse)
+    if [ "$*" = "rev-parse --git-dir" ]; then
+      [ "$(ask '.no_repo')" = yes ] && { echo "fatal: not a git repository" >&2; exit 128; }
+      echo ".git"; exit 0
+    fi
+    # Answered in the absolute form only: a script asking without it is asking the
+    # question whose two spellings of one directory compare as two trees.
+    if [ "$*" = "rev-parse --path-format=absolute --git-dir --git-common-dir" ]; then
+      [ "$(ask '.dirs')" = fail ] && { echo "fatal: could not read the git directory" >&2; exit 128; }
+      printf '%s\n%s\n' "$(ask '.git_dir')" "$(ask '.common_dir')"; exit 0
+    fi
+    if [ "$2 $3" = "--verify -q" ]; then
+      want=${4%"^{commit}"}
+      if [ "$want" = HEAD ]; then
+        m=$(moved); [ -n "$m" ] && { echo "$m"; exit 0; }
+        v=$(ask '.head')
+      else
+        v=$(ask ".refs[\"$want\"]")
+      fi
+      [ -n "$v" ] && { echo "$v"; exit 0; }
+      exit 1
+    fi ;;
+  symbolic-ref)
+    [ -n "$(moved)" ] && exit 1
+    v=$(ask '.branch')
+    case "$v" in
+      fail) echo "fatal: could not read HEAD" >&2; exit 128 ;;
+      "") exit 1 ;;
+      *) echo "$v"; exit 0 ;;
+    esac ;;
+  merge-base)
+    case "$(ask '.held')" in
+      yes) exit 0 ;;
+      no) exit 1 ;;
+      *) echo "fatal: not a valid commit" >&2; exit 128 ;;
+    esac ;;
+  status)
+    [ "$(ask '.status')" = fail ] && { echo "fatal: index file corrupt" >&2; exit 128; }
+    # The envelope holds the line form; `-z` is that shape with NUL where the newlines are.
+    printf '%s' "$(ask '.status')" | tr '\n' '\0'; exit 0 ;;
+  rev-list)
+    # `--count HEAD --not <sha> --remotes` is work of its own; `--count HEAD..<sha>` what
+    # the base has that HEAD lacks.
+    case "$3" in
+      HEAD) v=$(ask '.own_count') ;;
+      HEAD..*) v=$(ask '.behind') ;;
+      *) v="" ;;
+    esac
+    case "$v" in
+      fail) echo "fatal: bad revision" >&2; exit 128 ;;
+      "") echo 0 ;;
+      *) echo "$v" ;;
+    esac
+    exit 0 ;;
+  log) printf '%s\n' "$(ask '.own_log')"; exit 0 ;;
+  switch)
+    [ "$(ask '.switch')" = fail ] && {
+      echo "error: Your local changes to the following files would be overwritten by checkout" >&2
+      exit 1; }
+    for a in "$@"; do target=$a; done
+    [ "$(ask '.switch')" = elsewhere ] && target=$(ask '.head')
+    printf '%s' "$target" > "$STUB_MARKER_FILE"; exit 0 ;;
+esac
+echo "stub git: no envelope answer for: $*" >&2; exit 3

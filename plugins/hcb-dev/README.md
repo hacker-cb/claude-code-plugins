@@ -133,8 +133,8 @@ form: you paste every one of them yourself.
   branch that is itself a base only catches up with its own remote copy. Then it
   reads what arrived against the work in flight, per `references/base-delta.md` —
   the code, the environment, the issues the work carries, the plan — without
-  running the project's checks, and hands every fork to whoever the work answers to. In a
-  master session it moves the checkout and leaves the reading to `wave-refresh`.
+  running the project's checks, and hands every fork to whoever the work answers to. Not
+  for a master session, whose tree moves per `master-session`.
 
 ### Reviewing it
 
@@ -257,7 +257,7 @@ the plan stages them.
   it, and each wave's own issue filed on it, labelled `wave`, with a ledger of its own
   and the wave's issues hung under it per `references/wave-issue.md` — launch
   through `wave-dispatch`, then run the
-  loop — answering batch questions only after re-verifying against the tree,
+  loop — answering batch questions only after re-verifying against the base,
   accepting returns against the ledger's standing constraints, recomputing what
   an executed tracker edit moved in the slice, keeping the epic's own wave table
   level with every redraw, and opening each wave as its gate clears. Never takes
@@ -272,7 +272,11 @@ the plan stages them.
   you, where anything does, while an event that changes nothing for you gets a
   line instead of a report.
   Recovers after a restart from the ledger before the live registry. It does not
-  build batches itself.
+  build batches itself, and hands a change you ask of it to a session that does.
+  Its own tree stands detached on the base and moves only onto a newer tip; it
+  reads through a pinned revision, and runs anything — tests, a build, a probe — in
+  an isolated subagent:
+  [`skills/master-session/references/master-tree.md`](skills/master-session/references/master-tree.md).
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
   What can start right now, recomputed rather than recalled: pin and refresh the
   base and read every fact through that ref rather than through a working tree,
@@ -405,6 +409,10 @@ name stands for.
   rather than whatever the last fetch left. Refuses where several remotes exist and none
   is preferred: for a read that costs a wrong review, for a push it can publish a branch
   in somebody else's repository.
+- [`scripts/master-tree.mjs`](scripts/master-tree.mjs) — whether a master session's own
+  tree may move onto its base, and with `--move` the switch itself: the main checkout is
+  never moved, and an uncommitted change or a commit no remote holds stops the move rather
+  than being stashed, reset or stranded.
 - [`scripts/worktree-owners.mjs`](scripts/worktree-owners.mjs) — whose is each worktree
   of this repository right now, read from Claude Code's live-session registry. Presence
   only: a live session proves a worktree is in use, and its absence proves nothing,
@@ -530,7 +538,8 @@ saying something else. Each file opens by saying what it owns.
   Code's own worktrees and sessions. It describes the host rather than this
   plugin, so it changes on the host's schedule. Read wherever a worktree's
   occupancy decides what may be touched; it answers *whose is this right now*,
-  never what another session is doing.
+  never what another session is doing — and what the host does with the worktree
+  an isolated subagent is given.
 - [`references/session-prompts.md`](references/session-prompts.md) — the envelope
   shared by every prompt that crosses between sessions. Read by whatever produces
   one; what fills the slots stays with the skill.

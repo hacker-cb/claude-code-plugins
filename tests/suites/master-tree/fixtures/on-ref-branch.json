@@ -1,0 +1,12 @@
+{
+  "git_dir": "/tmp/example-checkout/.git/worktrees/master-a1b2c3",
+  "common_dir": "/tmp/example-checkout/.git",
+  "head": "f1x7222222222222222222222222222222222222",
+  "branch": "claude/master-a1b2c3",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
+  },
+  "status": "",
+  "own_count": "0",
+  "behind": "0"
+}

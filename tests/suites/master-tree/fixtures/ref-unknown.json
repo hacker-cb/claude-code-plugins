@@ -1,0 +1,10 @@
+{
+  "git_dir": "/tmp/example-checkout/.git/worktrees/master-a1b2c3",
+  "common_dir": "/tmp/example-checkout/.git",
+  "head": "f1x7111111111111111111111111111111111111",
+  "branch": "",
+  "refs": {},
+  "status": "",
+  "own_count": "0",
+  "behind": "0"
+}

@@ -22,6 +22,16 @@ worktrees of `-p` runs and anything the sweep skipped for holding work all sit t
 indefinitely — still the host's, just not yet collected. **Branches** are the exception
 it never touches at all.
 
+## A subagent's own worktree
+
+A subagent launched with worktree isolation gets a worktree and a branch the host cuts from the
+default branch's remote tip — from the launching session's HEAD where the user's
+`worktree.baseRef` is `head` — so one that must stand on another commit switches there itself.
+The host removes both when the subagent finishes back on that branch, holding no change and no
+untracked file; finished detached, the branch stays behind, and one holding a change or an
+untracked file stays whole until someone removes it, the sweep above skipping it for holding
+work.
+
 ## A worktree is leased, not occupied
 
 The host does not hand a worktree to a *process*. It **leases** it to a session, returns
