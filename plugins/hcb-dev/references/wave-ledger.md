@@ -30,20 +30,23 @@ node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--for
 | field | what it settles |
 |---|---|
 | `read` | the comment feed answered. `false` is unread, never "no ledger there" |
-| `ledger.found` / `.id` / `.nodeId` / `.bytes` / `.mine` | whether one is open, which comment it is — `id` for a REST edit, `nodeId` for GraphQL — how large it stands, and whose it is: `mine` is three-valued, and `null` is *not attributable* rather than somebody else's |
+| `ledger.found` / `.id` / `.nodeId` / `.bytes` / `.mine` / `.digest` | whether one is open, which comment it is — `id` for a REST edit, `nodeId` for GraphQL — how large it stands, whose it is — `mine` is three-valued, `null` being *not attributable* rather than somebody else's — and which version of its text was read |
 | `ledger.ambiguous` | **two comments carry the marker** — a coordinate resolving to two states resolves to neither, whoever wrote them |
 | `archives[]` | one row per `<!-- wave-journal-<n> -->` comment, with its own size |
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
 | `format` | the stored ledger's format against the one written now |
 | `lint[]` | with `--check`: what the text says is wrong with its shape — sections, budget, entries too long, struck or broken up by headings. Advisory: nothing in it holds a chip |
 | `write.fits` / `.headroom` / `.budget` | whether the body handed in fits under the cap and by how many bytes, and the budget it is kept under — sizes in `bytes`, `chars` / `utf16` only beside them |
-| `write.wrote` / `.ran` / `.archived` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again; each act taken; each archive written |
+| `write.wrote` / `.moved` / `.ran` / `.archived` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again; each act taken; each archive written |
 | `faults[]` | every one of the above that has to be repaired before the next chip goes up |
 | `reason` | why nothing could be answered or written — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), **both forges answering for this repository** (which `--forge` settles), a body not opening with the marker, or a ledger over the cap with its journal out |
 
-`--dump <path>` puts the stored ledger in a file to edit; `--write --body-file` puts it back.
-`--append-archive <file>` adds an account — the long reasoning behind a decision or a constraint —
-to the archive and answers its link for the entry to cite.
+`--dump <path>` puts the stored ledger in a file to edit; `--write --body-file` puts it back, with
+`--was <digest>` — the one that read answered — so a ledger that moved in between is never
+overwritten; after a write that moved journal lines out, dump again before the next edit. Only a
+ledger of ours is written, and only while no fault stands save an archive of ours it does not list
+yet, which the write indexes. `--append-archive <file>` adds an account — the long reasoning behind
+a decision or a constraint — to the archive and answers its link for the entry to cite.
 
 The comment is the only form the ledger takes, so a tracker is what the role stands on: whether
 the repository has one is established against the forge ([`forge-docs.md`](forge-docs.md) names
@@ -79,29 +82,29 @@ test on a passage is whether deleting it changes what anyone does next.
 1. **header** — the epic; the master's name, rewritten whenever it changes; the base pin the
    wave's live step was hung on (`<remote>/<branch>@<sha>`); the pin of the last whole reading of
    the slice — a capacity refresh's or a survey's — with the moment it read the tracker at, the
-   link to the graph a refresh leaves in a comment of its own (`hcb-dev:wave-refresh` owns its form) and the ground
-   it covered: what the next refresh takes its delta from, since an issue closes without a commit
-   and a link moves without either; a lesser reading does not take the slot; the epic's merge
-   authority as the user settled it ([`slice-completion.md`](slice-completion.md)); the plugin
-   version this role last reconciled against, which is what a later **plugin** refresh diffs from
-   and not necessarily what the session is running — it starts as the running version and
-   `hcb-dev:session-plugin-refresh` moves it; the session group (`epic-structure.md`); and when last updated.
+   link to the graph a refresh leaves in a comment of its own and that graph's digest
+   (`hcb-dev:wave-refresh` owns both) and the ground it covered: what the next refresh takes its
+   delta from, since an issue closes without a commit and a link moves without either; a lesser
+   reading does not take the slot; the epic's merge authority as the user settled it
+   ([`slice-completion.md`](slice-completion.md)); the plugin version this role last reconciled
+   against, which is what a later **plugin** refresh diffs from and not necessarily what the
+   session is running — it starts as the running version and `hcb-dev:session-plugin-refresh`
+   moves it; the session group (`epic-structure.md`); and when last updated.
 2. **batches** — one row each: id, topic, the issues and where each now stands, the order's ask
    and terminal deliverable in its own words (the acceptance contract — a return is judged
    against this row, not against recall), the file zone its order drew, the order's base pin,
    chip, the session's name, state, result coordinates. A batch runs `planned → chipped →
    started → confirmed → building → completed(<mode> — request merged, merged locally, tracker
-   state delivered, verdict delivered) → accepted`, standing at
-   `blocked(<condition>)` for as long as something holds it; a state is advanced, never skipped
-   silently. It **ends** in one of three, and the three carry equal weight:
+   state delivered, verdict delivered) → accepted`, standing at `blocked(<condition>)` for as
+   long as something holds it; a state is advanced, never skipped silently. It **ends** in one of
+   three, and the three carry equal weight:
    - `released` — acceptance passed, the work landed, the batch was let go;
    - `withdrawn(<reason>)` — called off, from wherever it stood;
-   - `failed(<what stands>)` — it did not come off, from wherever it stood, and
-     what is still standing is named.
+   - `failed(<what stands>)` — it did not come off, from wherever it stood; what still stands is named.
 
-   A rule asking whether a batch is finished says which of the three it counts,
-   and answers the question it actually needs: what landed is one question, what
-   has nothing outstanding is another, and `released` alone is neither.
+   A rule asking whether a batch is finished says which of the three it counts, and answers the
+   question it actually needs: what landed is one question, what has nothing outstanding is
+   another, and `released` alone is neither.
 3. **verdicts** — one line per open issue of the epic's slice that no batch has ended: the issue,
    the verdict [`issue-currency.md`](issue-currency.md) gave it, the coordinate that verdict stood
    on, and the pin and tracker moment it was read at. A survey's reading opens it; every capacity

@@ -11,15 +11,16 @@ export const SECTION_NAMES = ['header', 'batches', 'verdicts', 'decisions', 'con
 
 const FORMAT_LINE = /^\s*<!--\s*wave-ledger-format:\s*(\d{1,4})\s*-->\s*$/;
 const SECTION_LINE = /^\s*<!--\s*wave-section:\s*([a-z-]+)\s*-->\s*$/;
-// The journal's index: the one line naming every archive, in the form `withIndex` writes it.
-const INDEX_LINE = /^- archives:(?:\s*<!--\s*wave-journal-\d{1,6}\s*-->)*\s*$/;
+// The journal's index: the line naming every archive — `archives:` after an item marker, or none,
+// whatever the rest of it says. `withIndex` writes it back in one form.
+const INDEX_LINE = /^\s*(?:[-*+]|\d+\.)?\s*archives:/i;
 // Any of this plugin's markers: text carrying one is never moved into an archive, where it would
 // be read as a second archive or a second ledger.
 export const MARKER = /<!--\s*wave-/;
 // Every marker a ledger's own text may carry; any other `wave-` marker in it is somebody's slip.
 const KNOWN = /^(wave-ledger|wave-ledger-format:\s*\d+|wave-section:\s*[a-z-]+|wave-journal-\d{1,6})$/;
 // An entry of a list: a bullet or a number at the start of a line.
-const ITEM = /^(?:[-*]|\d+\.)\s/;
+const ITEM = /^(?:[-*+]|\d+\.)\s/;
 
 const bytes = (s) => Buffer.byteLength(s, 'utf8');
 
@@ -104,24 +105,26 @@ export const lint = (body, { budget, entryBytes = 700, journalBytes = 300 }) => 
   return found;
 };
 
-// The journal's entries, oldest first — its index line is none of them.
+// The journal's lines, oldest first: a line per event, whatever marks it, the index line and
+// blank lines aside. A journal moves out a line at a time, so nothing is lost to a shape it
+// did not have.
 export const journalOf = (body) => {
   const { lines, sections } = sectionsOf(body);
   const s = sections.find((x) => x.name === 'journal');
   if (!s) return { lines, section: null, entries: [] };
-  return { lines, section: s, entries: entriesOf(lines, s) };
+  const entries = [];
+  for (let i = s.start + 1; i < s.end; i += 1) {
+    if (lines[i].trim() !== '' && !INDEX_LINE.test(lines[i])) entries.push({ from: i, to: i + 1 });
+  }
+  return { lines, section: s, entries };
 };
 
-// The body with the `count` oldest journal entries taken out, and those entries' text.
-export const takeOldest = (body, count) => {
+// The body with its oldest journal line taken out, and that line.
+export const takeOldest = (body) => {
   const { lines, entries } = journalOf(body);
-  const taken = entries.slice(0, count);
-  const drop = new Set();
-  for (const e of taken) for (let i = e.from; i < e.to; i += 1) drop.add(i);
-  return {
-    body: lines.filter((_, i) => !drop.has(i)).join('\n'),
-    moved: taken.map((e) => lines.slice(e.from, e.to).join('\n')),
-  };
+  if (entries.length === 0) return { body, moved: null };
+  const at = entries[0].from;
+  return { body: lines.filter((_, i) => i !== at).join('\n'), moved: lines[at] };
 };
 
 // The body with its archive index naming exactly `numbers`: the journal's index line rewritten
