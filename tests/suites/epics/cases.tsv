@@ -34,14 +34,14 @@ glab-paged	--label epic	0	"number": 1|"number": 3|"count": 3|"complete": true	Gi
 glab-shift-hides	--label epic	0	"count": 3|"complete": false	a page that shifted repeats one epic where it pushed another off: the count the forge gave says the walk came back short
 gh-owner-twice	--forge gh --owner acme --owner acme	0	"count": 1|"complete": true	an owner named twice is read once
 host-elsewhere	--host other.example	0	"read": false|gh: this checkout lives on forge.example	a host named without a forge holds the probe to it: a checkout living elsewhere is not the forge that host runs
-gh-waves	--forge gh --epic 12	0	"epic": 12|"number": 20|"number": 21|NOT:"number": 22|"state": "closed"|"reason": "not planned"|"total": 2|"count": 2|"complete": true	an epic's waves are its sub-issues carrying the wave label, whatever the label's case and whatever their state
+gh-waves	--forge gh --epic 12	0	"epic": 12|"number": 20|"number": 21|NOT:"number": 22|"state": "closed"|"reason": "not planned"|"total": 2|"count": 2|"complete": true|"rest": {|"closed": 1	an epic's waves are its sub-issues carrying the wave label, whatever the label's case and whatever their state
 gh-waves-paged	--forge gh --epic 12	0	"number": 20|"number": 23|"reason": "completed"|"complete": true	the sub-issues are read to their last page before the waves are called the list
 gh-waves-short	--forge gh --epic 12	0	"number": 20|"complete": false	sub-issues the forge counts and the pages did not carry leave the list short
 gh-waves-labels-cut	--forge gh --epic 12	0	"number": 20|"complete": false	a child whose labels came back cut cannot be said to carry no wave label
 gh-waves-missing	--forge gh --epic 12	0	"read": false|is not there, or not visible to this token	an epic the forge does not show is said so, not listed as waveless
 gh-waves-fails	--forge gh --epic 12	0	"read": false|could not be read|"waves": []	a read that failed is unread, never an epic with no waves
 gh-waves-label	--forge gh --epic 12 --label stage	0	"number": 24|NOT:"number": 20	the wave label is the one named where the repository calls it otherwise
-glab-waves	--forge glab --epic 7	0	"number": 30|"number": 33|NOT:"number": 31|NOT:"number": 32|"state": "open"|"state": "closed"|"children": null|"complete": true	on GitLab an epic's waves are its related links carrying the wave label; a dependency link is no wave
+glab-waves	--forge glab --epic 7	0	"number": 30|"number": 33|NOT:"number": 31|NOT:"number": 32|NOT:"number": 34|"state": "open"|"state": "closed"|"children": null|"complete": true	on GitLab an epic's waves are its related links carrying the wave label; a dependency link is no wave
 glab-waves-404	--forge glab --epic 7	0	"read": false|is not there, or not visible to this token	an epic GitLab does not show is said so
 -	--epic 0	2	--epic takes an issue number	zero names no issue
 -	--epic 12 --owner acme	2	never an owner	an epic's waves are read in its own repository
@@ -50,3 +50,9 @@ gh-waves	--forge gh --epic 12 --repo acme/tool	0	"read": false|asked about 'acme
 glab-waves-repo	--forge glab --epic 7 --repo group/sub/app	0	"number": 30|"count": 2	a GitLab project outside this checkout is read by its path, a subgroup's included
 gh-waves	--forge gh --epic 12 --repo group/sub/app	0	"read": false|is no GitHub repository	a GitHub repository is an owner and a name
 -	--repo acme/tool	2	names the repository an --epic lives in	a repository names where an epic's waves are read, and nothing else
+gh-waves-foreign	--forge gh --epic 12	0	"number": 20|NOT:"number": 25|"count": 1	a child in another repository is never this epic's wave, whatever its label: its number would name another issue here
+gh-waves-hidden	--forge gh --epic 12	0	"number": 20|"complete": false	children the epic's own summary counts and the token cannot see leave the list short
+gh-waves-flat	--forge gh --epic 12	0	"read": false|"hierarchy": false|carries no sub-issues	a server without sub-issues says so, rather than reading as an epic with no waves
+gh-waves-digits	--forge gh --epic 12 --repo acme/2048	0	"number": 20|"count": 1	a repository named in digits still travels as a name
+gh-waves	--forge gh --epic 12 --repo @.env/x	0	"read": false|NOT:went typed	a repository named with a leading @ is sent as text, never read as a file
+-	--epic 2147483648	2	--epic takes an issue number	a number past GraphQL's Int names no issue

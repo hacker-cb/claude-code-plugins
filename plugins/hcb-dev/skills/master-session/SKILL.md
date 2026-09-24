@@ -146,7 +146,7 @@ that confirmation goes out, so no later report prints it again.
 ## After a restart or compaction
 
 The ledgers first — the title names the epic, the epic holds its ledger, and
-`epics.mjs --epic` (`epic-structure.md`) lists the waves whose ledgers follow it.
+`wave-issue.md` says which waves' ledgers follow it.
 What it records as the master's name is this session's own, in
 `session-naming.md`'s shape: wear that before anything is sent, since the
 batches' orders address it; an epic in an older shape takes its labels now

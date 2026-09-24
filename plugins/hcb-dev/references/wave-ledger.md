@@ -13,10 +13,10 @@ whole epic — and **a wave's** on that wave's issue ([`wave-issue.md`](wave-iss
 it. Every order names both, so a batch reads the standing constraints and its own row itself. The
 issues' *bodies* stay human; the ledgers are the working state, never copies of them.
 
-**Their shape.** The marker is the first line, `<!-- wave-ledger-format: 2 -->` the second, and
-every section below opens with `<!-- wave-section: <name> -->`, the name the one in bold there,
-spelled in English whatever language the rest is written in. The epic's is kept under 64 KiB, a
-wave's under 128 KiB. A ledger with no format line is format 1 ([`epic-migration.md`](epic-migration.md)).
+**Their shape.** The marker first, `<!-- wave-ledger-format: 2 -->` second, and every section below
+opened with `<!-- wave-section: <name> -->`, the name the one in bold there, in English whatever the
+rest is written in; each kind is kept under its own budget (`write.budget`). A ledger with no format
+line is format 1 ([`epic-migration.md`](epic-migration.md)).
 
 **`scripts/ledger.mjs` answers where it stands, and makes every write.** It is read before a
 write, and a ledger is written only through it — never by a hand-made edit:
@@ -144,7 +144,7 @@ archive, in their markers, which `--write` keeps.
 - **Write on every event** — a chip hung, a batch confirmed, a fork settled, a return accepted, a
   constraint discovered — before the conversation moves on.
 - **Read them first after any restart or compaction** — the epic's, then each open wave's
-  (`epics.mjs --epic`, `epic-structure.md`) — before the live registry is even listed: the
+  ([`wave-issue.md`](wave-issue.md) says which) — before the live registry is even listed: the
   ledgers say who is expected to exist, the registry only who answers right now.
 - A batch's ending is written as such whichever of the three it is; a wave's closing line is its
   ledger's last edit, and the epic's closing line the epic's.

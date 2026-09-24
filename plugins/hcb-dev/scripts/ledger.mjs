@@ -526,16 +526,20 @@ const shaped = (t) => formatOf(t) === FORMAT && kindOf(t) !== null && journalOf(
 // into an archive first — and stays as it stands: the --write of its rebuilt body indexes it.
 const older = stored !== null && formatOf(stored) < FORMAT;
 // Until its rebuild, a format-1 ledger is written in format 1 as it stands: nothing moves out of
-// it, and the shape it never had is not asked of it.
-const asItStands = opts.write && older && formatOf(next) < FORMAT;
+// it, and the shape it never had is not asked of it. A body carrying the new shape's markers is
+// the rebuild, and takes the new shape's checks.
+const asItStands = opts.write && older && formatOf(next) < FORMAT
+  && !/<!--\s*wave-(?:ledger-format|section):/.test(next);
 if (opts.write) {
   if (!LEDGER_LINE.test(next.split('\n', 1)[0])) refuse('the body does not open with the ledger marker');
-  if (!asItStands) {
-    if (!shaped(next)) refuse(`the body is not format ${FORMAT}, of one kind, with a journal section — --check says where`);
-    // A marker of another kind in the ledger's text makes the comment that kind's too.
-    const foreign = lint(next, { budget: budgetOf(next) }).find((f) => f.rule === 'marker-unknown');
-    if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
-  }
+  if (!asItStands && !shaped(next)) refuse(`the body is not format ${FORMAT}, of one kind, with a journal section — --check says where`);
+  // A marker of another kind in the ledger's text makes the comment that kind's too.
+  const foreign = lint(next, { budget: budgetOf(next) }).find((f) => f.rule === 'marker-unknown');
+  if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
+  // A format-1 index is whatever its text names, so every archive it lists and the issue carries
+  // stays named: one left out would stand unlisted, a fault holding every later write.
+  const dropped = asItStands ? [...listed].filter((n) => byN.has(n) && ![...next.matchAll(ARCHIVE)].some((m) => Number(m[1]) === n)) : [];
+  if (dropped.length) refuse(`the body leaves out archive ${dropped[0]}, which the ledger lists and the issue carries`);
 } else {
   if (stored === null) refuse('no ledger to index the archive');
   if (!older && !shaped(stored)) refuse(`the ledger is not format ${FORMAT}, of one kind, with a journal section to index the archive`);
@@ -669,8 +673,8 @@ if (next !== stored) {
 if (older && (!opts.write || asItStands)) {
   const listedNow = new Set([...next.matchAll(ARCHIVE)].map((m) => Number(m[1])));
   const unlisted = numbers.filter((u) => !listedNow.has(u));
-  answer.faults = answer.faults.filter((f) => !f.unlisted);
-  answer.index = { ...answer.index, listed: [...listedNow].sort((x, y) => x - y), present: [...numbers], unlisted };
+  answer.faults = answer.faults.filter((f) => !f.unlisted && !f.missing);
+  answer.index = { ...answer.index, listed: [...listedNow].sort((x, y) => x - y), present: [...numbers], missing: [], unlisted };
   for (const u of unlisted) {
     answer.faults.push({ fault: `archive ${u} stands on the issue and the ledger does not list it`, n: u, unlisted: true });
   }

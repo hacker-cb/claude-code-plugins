@@ -23,7 +23,7 @@ case "$path" in
     esac ;;
   projects/*)
     case "$(ask '.probe_glab')" in
-      yes) echo '{"path_with_namespace":"group/app","web_url":"https://lab.example/group/app"}'; exit 0 ;;
+      yes) echo '{"id":9,"path_with_namespace":"group/app","web_url":"https://lab.example/group/app"}'; exit 0 ;;
       *) echo "404 Project Not Found (HTTP 404)" >&2; exit 1 ;;
     esac ;;
   issues\?*|groups/*)

@@ -24,14 +24,15 @@ covers its own structure as it covers the umbrella — the master files one issu
 
 Every issue the epic runs on hangs under the epic until a wave takes it, then under that wave, so
 the forge counts it where the work is. **Read its parent first** — `p` on its line, per
-[`issue-currency.md`](issue-currency.md), and a parent the token cannot see by the search
+[`issue-currency.md`](issue-currency.md), on GitLab the epic or wave among its `rel`, since a
+related link is what it hangs by there — and a parent the token cannot see by the search
 [`forge-behaviour.md`](forge-behaviour.md) names for it — since setting a parent moves an issue off
 the one it has without a word. An issue under a parent outside the epic stays there and rides the
 wave's table instead; one no wave has taken yet stays under the epic. Read the edges back once
 they are written.
 
 ```bash
-N="<the issue>"; TO="<the epic or the wave>"; FROM="<its parent now: the epic, a wave, or none>"
+N="<the issue>"; TO="<the epic or the wave>"; FROM="<the one it hangs under now, read above>"
 # GitHub — a sub-issue; the parent set replaces the one it had
 gh issue edit "$N" --parent "$TO"
 # GitLab — a related link to the new parent, then the old one's removed by its issue_link_id
@@ -45,13 +46,14 @@ glab api -X DELETE "projects/:fullpath/issues/$FROM/links/<issue_link_id>"
 [`forge-docs.md`](forge-docs.md) names for parents — the wave's body keeps the table of its issues
 and the label keeps the wave findable; nothing is hung, and `hcb-dev:status` counts from the table.
 
-## Counting
+## Finding and counting them
 
-The forge counts a parent's **direct** children only: the epic's counter holds its waves and the
-issues no wave has taken, a wave's holds its own issues, and GitLab keeps no count at all. The
-epic's progress whole is `hcb-dev:status`'s, reading the waves `epics.mjs --epic` lists
-(`epic-structure.md`) and each wave's children in turn. A child closed as `not planned` counts
-among the done on GitHub, so what is done is read per child where it matters.
+`epics.mjs --epic` lists an epic's waves (`epic-structure.md`); where it answers
+`hierarchy: false`, or a list not `complete`, the waves are the ones the epic's ledger header lists
+as well.
+The forge counts a parent's **direct** children only, and GitLab keeps no count at all, so the
+epic's progress whole is added up: each wave's children, and the work no wave has taken — the
+`rest` that same answer counts.
 
 ## Closing it
 

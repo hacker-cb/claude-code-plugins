@@ -736,11 +736,12 @@ const wide = () => {
       if (got.has(k)) continue;
       got.set(k, true);
       const line = w.line(n);
-      // Counted as come back, and left off: the slice's count still holds it.
-      const labels = Array.isArray(line.l) ? line.l.map((x) => String(x).toLowerCase()) : [];
-      if (skip.length && labels.some((x) => skip.includes(x))) { head.skipped.push(line.n); continue; }
-      if (skip.length && (line.cut || []).includes('l')) {
-        head.notes.push(`#${line.n}: its labels came back cut, so --skip-label could not leave it out`);
+      // Counted as come back, and left off: the slice's count still holds it. The `+N` a cut list
+      // ends with is no label.
+      if (skip.length) {
+        const labels = (Array.isArray(line.l) ? line.l : []).filter((x) => !/^\+\d+$/.test(x)).map((x) => String(x).toLowerCase());
+        if (labels.some((x) => skip.includes(x))) { head.skipped.push(line.n); continue; }
+        if ((line.cut || []).includes('l')) head.notes.push(`#${line.n}: its labels came back cut, so --skip-label could not leave it out`);
       }
       const ev = head.delta ? w.ev(n) : null;
       if (ev) line.ev = ev;

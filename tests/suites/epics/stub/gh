@@ -20,6 +20,10 @@ if [ "$2" = graphql ]; then
   for a in "$@"; do
     [ "$prev" = "--hostname" ] && host=$a
     case "$a" in n=*) n=${a#n=} ;; after=*) after=${a#after=} ;; owner=*) owner=${a#owner=} ;; name=*) name=${a#name=} ;; esac
+    # A repository named goes raw: typed, `@` reads a file and digits stop being a string.
+    case "$prev $a" in "-F owner="*|"-F name="*)
+      case "$a" in "owner={owner}"|"name={repo}") ;; *) echo "a named repository went typed: $a" >&2; exit 1 ;; esac ;;
+    esac
     prev=$a
   done
   want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
@@ -29,6 +33,8 @@ if [ "$2" = graphql ]; then
   want=$(ask '.want_epic'); [ -z "$want" ] || [ "$want" = "$n" ] || { echo "asked for #$n, not #$want" >&2; exit 1; }
   case "$(ask '.subpages')" in
     ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;
+    missing) echo "gh: Could not resolve to an Issue with the number of $n." >&2; exit 1 ;;
+    flat) echo "gh: Field 'subIssues' doesn't exist on type 'Issue'" >&2; exit 1 ;;
   esac
   k=0; [ -z "$after" ] || k=${after#c}
   jq -c --argjson k "$k" '.subpages[$k] | fromjson' "$env"; exit 0

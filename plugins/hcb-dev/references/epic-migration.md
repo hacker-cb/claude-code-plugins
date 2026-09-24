@@ -15,8 +15,7 @@ wave running now runs to its end in the old shape.
 
 ## The transition point
 
-A wave closed, no batch of the epic running, and the next wave not launched yet — the one moment
-nothing reads the ledger but this session. There, in order:
+A wave closed, no batch of the epic running, and the next wave not launched yet. There, in order:
 
 1. **Dump it** (`--dump`), and read it through against what the new shape keeps.
 2. **The reasoning goes out first, verbatim.** Each case the rebuilt ledger will only link — why a
@@ -34,5 +33,4 @@ nothing reads the ledger but this session. There, in order:
    and the issues it takes move under it. The issues no wave takes stay under the epic.
 
 What the old archives hold stays where it is: a closed wave's record is not rewritten into the new
-shape, only pointed at. The journal line recording the rebuild names the dump's digest, so the
-version it came from can be told.
+shape, only pointed at. The journal line recording the rebuild names the dump's digest.

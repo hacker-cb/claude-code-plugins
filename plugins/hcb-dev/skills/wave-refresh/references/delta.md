@@ -38,8 +38,8 @@ flags ([`../../../references/epic-structure.md`](../../../references/epic-struct
 | `complete`, `reason` | whether this is a delta at all |
 
 **The re-verification list is the union** of `entered`, `edited`, `linked`,
-`cut` and `events` — every verdict it names is re-derived, every other one
-carried from the ledger. A `cut` issue's links are past what the forge shows at
+`cut` and `events` — every verdict it names is re-derived, save a `linked` line
+whose only change is structure (above), every other one carried from the ledger. A `cut` issue's links are past what the forge shows at
 all, so its verdict is re-derived against the tree and the report names it as
 the one this pass could not compare.
 
