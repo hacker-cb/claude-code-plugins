@@ -18,8 +18,8 @@ import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { dirOk, hostOk, parsePages, readable, runner, text, writeAll } from './lib/forge.mjs';
-import { BUDGETS, FORMAT, LEDGER_LINE, MARKER, bytes, formatOf, journalOf, kindOf, lint, takeOldest, withIndex } from './lib/ledger-body.mjs';
+import { coord, dirOk, hostOk, parsePages, projectPathOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
+import { BUDGETS, FORMAT, LEDGER_LINE, MARKER, bytes, formatOf, indexLine, journalOf, kindOf, lint, withIndex } from './lib/ledger-body.mjs';
 
 // Both markers are matched with the whitespace a hand-written one carries: `<!--wave-ledger-->`
 // is the same marker, and a ledger this misses is a second ledger the caller then opens.
@@ -86,14 +86,9 @@ if (!dirOk(opts.dir)) die(`--repo-dir '${opts.dir}' is not a directory`);
 // An issue number, not a ref: a value that is not digits would reach the url as a path of
 // its own, and `0` names no issue on either forge.
 if (!/^[1-9][0-9]{0,11}$/.test(String(opts.issue ?? ''))) die('--issue takes an issue number');
-// Two to eleven segments — GitLab nests projects under subgroups — each held to the rule the
-// rest of the plugin holds a path segment to. `..` above all: `repos/team/../issues/42` is
-// normalised by the server into a request to somewhere else entirely.
 const repoSegments = opts.repo === null ? [] : opts.repo.split('/');
-if (opts.repo !== null && (repoSegments.length < 2 || repoSegments.length > 11
-  || !repoSegments.every((seg) => readable(seg) && seg !== '.'))) {
-  die('--repo takes <owner>/<name>, or a GitLab group path');
-}
+if (opts.repo !== null && !projectPathOk(opts.repo)) die('--repo takes <owner>/<name>, or a GitLab group path');
+if (opts.forge === 'gh' && opts.repo !== null && !repoOk(opts.repo)) die('--repo on GitHub is <owner>/<name>');
 // Encoded segment by segment, never whole: a `/` between segments is the path, and encoding it
 // would ask for one repository named with slashes in it.
 const repoPath = repoSegments.map(encodeURIComponent).join('/');
@@ -288,10 +283,7 @@ answer.read = true;
 // travel beside them because they are what a reader has to hand (`jq length` counts one of
 // them), and a character count falls short of the cap's own count by half on Cyrillic and by
 // three quarters on an emoji — wrong by unit, not by margin.
-// A link travels whole: `text()` bounds prose at 200 characters, and a url cut there names
-// another comment.
 const digestOf = (t) => createHash('sha256').update(t).digest('hex').slice(0, 16);
-const coord = (v) => (typeof v === 'string' && v !== '' ? v.replace(/[\u0000-\u001f\u007f]/g, '') : null);
 const measure = (s) => ({ bytes: Buffer.byteLength(String(s), 'utf8'), chars: [...String(s)].length,
   utf16: String(s).length });
 
@@ -314,7 +306,7 @@ for (const c of rows) {
   const id = c?.id ?? null;
   const nodeId = typeof c?.node_id === 'string' ? text(c.node_id) : null;
   const at = text(c?.created_at ?? null);
-  const url = text(c?.html_url ?? c?.url ?? null);
+  const url = coord(c?.html_url ?? c?.url ?? null);
   const wrote = forge === 'gh' ? c?.user?.login : c?.author?.username;
   const rawAuthor = typeof wrote === 'string' ? wrote : null;
   const author = text(rawAuthor);
@@ -497,22 +489,29 @@ const ownArchives = [...byN.values()]
 const numbers = [...answer.index.present];
 let top = Math.max(0, ...listed, ...numbers);
 const last = ownArchives[0] && ownArchives[0].n === numbers[numbers.length - 1] ? ownArchives[0] : null;
-let current = last ? { n: last.n, id: last.id, text: archOf.get(last.n).body.trimEnd() } : null;
+const lastText = last ? archOf.get(last.n).body.trimEnd() : null;
+let current = last ? { n: last.n, id: last.id, text: lastText, size: bytes(lastText) } : null;
 const plan = [];
 // Onto the archive in hand where it still fits under the cap, its closing newline counted, else
 // into a new one under the next number no archive holds. Answers why not, where it cannot go.
+// Each archive carries its size along, so a line placed costs its own bytes, never the archive's.
+const fresh = (n) => `<!-- wave-journal-${n} -->\n${KIND}`;
+const roomiest = bytes(fresh(999999));
+// An archive of `have` bytes takes an entry of `size` behind a newline, and closes on one.
+const fits = (have, size) => have + 1 + size + 1 <= opts.limit;
 const place = (entry) => {
   if (MARKER.test(entry)) return 'a text carrying a marker of this plugin cannot move into an archive';
-  const fresh = (n) => `<!-- wave-journal-${n} -->\n${KIND}`;
-  if (bytes(`${fresh(999999)}\n${entry}\n`) > opts.limit) return 'a text larger than an archive can hold — split it into texts of its own';
-  if (current === null || bytes(`${current.text}\n${entry}\n`) > opts.limit) {
+  const size = bytes(entry);
+  if (!fits(roomiest, size)) return 'a text larger than an archive can hold — split it into texts of its own';
+  if (current === null || !fits(current.size, size)) {
     const n = top + 1;
     if (n > 999999) return 'no archive number is left';
     top = n;
     numbers.push(n);
-    current = { n, id: null, text: fresh(n) };
+    current = { n, id: null, text: fresh(n), size: bytes(fresh(n)) };
   }
   current.text = `${current.text}\n${entry}`;
+  current.size += 1 + size;
   if (!plan.includes(current)) plan.push(current);
   return null;
 };
@@ -574,16 +573,26 @@ if (opts.write && !asItStands) {
   // composed before an archive was added still names it.
   answer.write.budget = budgetOf(next);
   const ceiling = Math.min(answer.write.budget, opts.limit);
-  for (;;) {
-    next = withIndex(next, numbers);
-    if (bytes(next) <= ceiling) break;
-    const taken = takeOldest(next);
-    if (taken.moved === null) break;
-    blocked = place(taken.moved);
+  // Measured once and then counted: each line out takes its bytes and its newline, and each
+  // archive opened lengthens the index by what its marker adds. The body is built once, at the end.
+  const indexed = withIndex(next, numbers);
+  const { lines, entries } = journalOf(indexed);
+  const base = bytes(indexed) - bytes(indexLine(numbers));
+  // The index's size, measured again only when an archive was opened.
+  let indexedAt = numbers.length;
+  let index = bytes(indexLine(numbers));
+  const out = new Set();
+  let removed = 0;
+  for (const e of entries) {
+    if (numbers.length !== indexedAt) { indexedAt = numbers.length; index = bytes(indexLine(numbers)); }
+    if (base + index - removed <= ceiling) break;
+    blocked = place(lines[e.from]);
     if (blocked) break;
-    next = taken.body;
+    out.add(e.from);
+    removed += bytes(lines[e.from]) + 1;
     answer.write.moved += 1;
   }
+  next = withIndex(lines.filter((_, i) => !out.has(i)).join('\n'), numbers);
 } else if (!opts.write) {
   // An account is added and indexed, and nothing else moves in the same run; the ledger is
   // rewritten only where its index no longer names every archive.

@@ -17,7 +17,7 @@
 //
 // Exit 0 either way. Exit 2 only for a call this script cannot act on at all.
 
-import { dirOk, readable, refNameOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
+import { dirOk, projectPathOk, refNameOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node resolve-base.mjs [--base <name>] [--forge gh|glab]'
   + ' [--repo <owner/name>] [--no-network] [--repo-dir <path>]\n';
@@ -36,12 +36,7 @@ for (let i = 0; i < argv.length; i += 1) {
 }
 if (opts.base !== null && !refNameOk(opts.base)) die(`--base '${opts.base}' is not a branch name`);
 if (opts.forge !== null && !['gh', 'glab'].includes(opts.forge)) die(`--forge '${opts.forge}' is not gh or glab`);
-// GitLab nests: `group/subgroup/project` is an ordinary project there and `glab --repo`
-// takes it, while GitHub is always exactly two. Holding both to two makes `--repo`
-// unusable on most self-managed installations.
-const pathOk = (v) => typeof v === 'string' && v.split('/').length >= 2
-  && v.split('/').every((seg) => readable(seg));
-if (opts.repo && !(opts.forge === 'glab' ? pathOk(opts.repo) : repoOk(opts.repo))) {
+if (opts.repo && !(opts.forge === 'glab' ? projectPathOk(opts.repo) : repoOk(opts.repo))) {
   die(`--repo '${opts.repo}' is not ${opts.forge === 'glab' ? 'a project path' : 'owner/name'}`);
 }
 

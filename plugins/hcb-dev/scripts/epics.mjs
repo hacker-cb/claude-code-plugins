@@ -15,7 +15,7 @@
 //
 // It READS and lists; what an epic's ledger says is `ledger.mjs`'s.
 
-import { dirOk, hostOk, parsePages, refOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
+import { coord, dirOk, hostOk, parsePages, projectPathOk, refOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const usage = 'usage: node epics.mjs [--forge gh|glab] [--host <host>] [--label <name>]'
   + ' [--owner <owner>]... [--epic <n> [--repo <path>]] [--repo-dir <path>]';
@@ -45,9 +45,7 @@ if (opts.epic !== null && !(/^[1-9][0-9]{0,9}$/.test(opts.epic) && Number(opts.e
 if (opts.epic !== null && opts.owners.length) die('--epic lists one epic of this repository, never an owner\'s');
 if (opts.repo !== null && opts.epic === null) die('--repo names the repository an --epic lives in');
 const repoSegments = opts.repo === null ? [] : opts.repo.split('/');
-if (opts.repo !== null && (!refOk(opts.repo) || repoSegments.length < 2 || repoSegments.length > 20)) {
-  die(`--repo '${opts.repo}' is not a repository path`);
-}
+if (opts.repo !== null && !projectPathOk(opts.repo)) die(`--repo '${opts.repo}' is not a repository path`);
 // The label listed by: the epic's, or with --epic the wave's.
 opts.label ??= opts.epic === null ? 'epic' : 'wave';
 // A label name travels inside a quoted search phrase and a URL: a quote or a backslash would end
@@ -89,13 +87,6 @@ const refuse = (msg) => {
   if (answer.waves !== null) answer.waves = [];
   answer.complete = null;
   out();
-};
-
-// A coordinate travels whole: `text()` bounds prose at 200 characters, and a path or a url cut
-// there names another issue.
-const coord = (v) => {
-  const c = typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '') : '';
-  return c === '' ? null : c;
 };
 
 // What a call that did not answer says about it — a timeout names itself, since a killed process
