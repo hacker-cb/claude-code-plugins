@@ -72,10 +72,20 @@ Read per [`../../references/epic-structure.md`](../../references/epic-structure.
 
 ```bash
 EPIC="<the number the invocation named, or the role's own>"
-DEEP="<the issues of ONE repository: the epic, and the return's issue where it shares that repository>"
 REPO="<owner/name, where the epic lives outside this checkout's>"
 HOST="<the host it lives on, where that is not the one the CLI answers for by default>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" --issue "$EPIC" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
+S="${CLAUDE_PLUGIN_ROOT}/scripts"
+node "$S/ledger.mjs" --issue "$EPIC" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
+WAVES="$(node "$S/epics.mjs" --epic "$EPIC" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"})"
+printf '%s\n' "$WAVES" | jq -c '{read, complete, reason, waves: [.waves[]? | {number, state, reason}]}'
+for W in $(printf '%s' "$WAVES" | jq -r '.waves[]? | select(.state == "open") | .number'); do
+  node "$S/ledger.mjs" --issue "$W" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
+done
+```
+
+```bash
+# The same repository, host and ledgers: their comments, read whole.
+DEEP="<the issues of ONE repository: the epic, its open waves, and a return's issue where it shares that repository>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/issue-slice.mjs" --deep "$DEEP" ${REPO:+--repo "$REPO"} ${HOST:+--host "$HOST"}
 ```
 
@@ -85,15 +95,18 @@ return each resolve against the repository they live in, in a call of their own 
 not the epic's. `ledger.mjs` first — whether a ledger stands, and whether its
 coordinate resolves to one comment — then that comment out of `--deep`'s, picked by the author
 and moment `ledger.mjs` gave for it rather than by matching its marker again, read whole, as
-prose: its batch rows, the merge queue and the gates, and the expectations the user owes
-([`../../references/wave-ledger.md`](../../references/wave-ledger.md)). Each change request the
+prose ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)): from the epic's,
+its waves and the expectations the user owes; from each open wave's, its batch rows, the merge
+queue and the gates. A wave list not `complete`, or not read — a server without hierarchy among
+them — is filled from the waves the epic's header lists. The epic's progress is counted across its waves
+([`../../references/wave-issue.md`](../../references/wave-issue.md), *Counting*). Each change request the
 queue names is read as below. The live registry says which batch sessions answer now — presence,
 never absence.
 
 ### This batch
 
-The same two reads, the epic being the order's; from its ledger, this batch's row, the standing
-constraints, the decisions, and the expectations naming this batch. Then its own change request,
+The same reads, the epic and the wave being the order's; from the epic's ledger the standing
+constraints and the decisions, from the wave's this batch's row and the expectations naming it. Then its own change request,
 as below; its branch against the order's base pin; and the coordinate the order names for its
 return — the comment there opening with its `wave-return` marker, or, from an order written before
 that marker, the one carrying its tag, either written by this session's own account, a marker being

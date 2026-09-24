@@ -525,12 +525,17 @@ const shaped = (t) => formatOf(t) === FORMAT && kindOf(t) !== null && journalOf(
 // A ledger still in format 1 takes an account all the same — the reasoning a rebuild keeps goes
 // into an archive first — and stays as it stands: the --write of its rebuilt body indexes it.
 const older = stored !== null && formatOf(stored) < FORMAT;
+// Until its rebuild, a format-1 ledger is written in format 1 as it stands: nothing moves out of
+// it, and the shape it never had is not asked of it.
+const asItStands = opts.write && older && formatOf(next) < FORMAT;
 if (opts.write) {
   if (!LEDGER_LINE.test(next.split('\n', 1)[0])) refuse('the body does not open with the ledger marker');
-  if (!shaped(next)) refuse(`the body is not format ${FORMAT}, of one kind, with a journal section — --check says where`);
-  // A marker of another kind in the ledger's text makes the comment that kind's too.
-  const foreign = lint(next, { budget: budgetOf(next) }).find((f) => f.rule === 'marker-unknown');
-  if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
+  if (!asItStands) {
+    if (!shaped(next)) refuse(`the body is not format ${FORMAT}, of one kind, with a journal section — --check says where`);
+    // A marker of another kind in the ledger's text makes the comment that kind's too.
+    const foreign = lint(next, { budget: budgetOf(next) }).find((f) => f.rule === 'marker-unknown');
+    if (foreign) refuse(`${foreign.detail} — a ledger carries its own markers alone`);
+  }
 } else {
   if (stored === null) refuse('no ledger to index the archive');
   if (!older && !shaped(stored)) refuse(`the ledger is not format ${FORMAT}, of one kind, with a journal section to index the archive`);
@@ -554,7 +559,7 @@ if (named.length) refuse(`the body names archive ${named[0]}, which no comment c
 
 answer.write.moved = 0;
 let blocked = null;
-if (opts.write) {
+if (opts.write && !asItStands) {
   // The journal's oldest lines out, one at a time, until the body is under its budget — never
   // above the cap — or the next one cannot move; the index rewritten every time, so a body
   // composed before an archive was added still names it.
@@ -570,7 +575,7 @@ if (opts.write) {
     next = taken.body;
     answer.write.moved += 1;
   }
-} else {
+} else if (!opts.write) {
   // An account is added and indexed, and nothing else moves in the same run; the ledger is
   // rewritten only where its index no longer names every archive.
   if (!already) {
@@ -661,11 +666,13 @@ if (next !== stored) {
 }
 // What stands now: the index names every archive, and the faults the write settled are gone — save
 // under a format-1 ledger, left as it stood, whose new archive waits for the rebuilt body's index.
-if (older) {
-  const unlisted = numbers.filter((n) => !listed.has(n));
-  answer.index = { ...answer.index, present: [...numbers], unlisted };
-  for (const n of unlisted.filter((u) => !answer.faults.some((f) => f.unlisted && f.n === u))) {
-    answer.faults.push({ fault: `archive ${n} stands on the issue and the ledger does not list it`, n, unlisted: true });
+if (older && (!opts.write || asItStands)) {
+  const listedNow = new Set([...next.matchAll(ARCHIVE)].map((m) => Number(m[1])));
+  const unlisted = numbers.filter((u) => !listedNow.has(u));
+  answer.faults = answer.faults.filter((f) => !f.unlisted);
+  answer.index = { ...answer.index, listed: [...listedNow].sort((x, y) => x - y), present: [...numbers], unlisted };
+  for (const u of unlisted) {
+    answer.faults.push({ fault: `archive ${u} stands on the issue and the ledger does not list it`, n: u, unlisted: true });
   }
 } else {
   answer.faults = answer.faults.filter((f) => !f.missing && !f.unlisted);

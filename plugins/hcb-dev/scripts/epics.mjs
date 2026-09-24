@@ -10,18 +10,19 @@
 // came back is the whole set.
 //
 // With `--epic <n>` it lists that epic's waves instead: the issues under it carrying the wave label,
-// open and closed — GitHub's sub-issues, GitLab's related links — in this checkout's repository.
+// open and closed — GitHub's sub-issues, GitLab's related links — in this checkout's repository,
+// or the one `--repo` names.
 //
 // It READS and lists; what an epic's ledger says is `ledger.mjs`'s.
 
 import { dirOk, hostOk, parsePages, refOk, runner, text, writeAll } from './lib/forge.mjs';
 
 const usage = 'usage: node epics.mjs [--forge gh|glab] [--host <host>] [--label <name>]'
-  + ' [--owner <owner>]... [--epic <n>] [--repo-dir <path>]';
+  + ' [--owner <owner>]... [--epic <n> [--repo <path>]] [--repo-dir <path>]';
 
 const die = (msg) => { writeAll(2, `epics: ${msg}\n${usage}\n`); process.exit(2); };
 
-const opts = { forge: null, host: null, label: null, owners: [], epic: null, dir: process.cwd() };
+const opts = { forge: null, host: null, label: null, owners: [], epic: null, repo: null, dir: process.cwd() };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const a = argv[i];
@@ -31,6 +32,7 @@ for (let i = 0; i < argv.length; i += 1) {
   else if (a === '--label') opts.label = val();
   else if (a === '--owner') opts.owners.push(val());
   else if (a === '--epic') opts.epic = val();
+  else if (a === '--repo') opts.repo = val();
   else if (a === '--repo-dir') opts.dir = val();
   else die(`unknown argument '${a}'`);
 }
@@ -40,6 +42,10 @@ if (opts.forge !== null && opts.forge !== 'gh' && opts.forge !== 'glab') die('--
 if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 if (opts.epic !== null && !/^[1-9][0-9]{0,9}$/.test(opts.epic)) die('--epic takes an issue number');
 if (opts.epic !== null && opts.owners.length) die('--epic lists one epic of this repository, never an owner\'s');
+if (opts.repo !== null && opts.epic === null) die('--repo names the repository an --epic lives in');
+if (opts.repo !== null && (!refOk(opts.repo) || opts.repo.split('/').length < 2 || opts.repo.split('/').length > 20)) {
+  die(`--repo '${opts.repo}' is not a repository path`);
+}
 // The label listed by: the epic's, or with --epic the wave's.
 opts.label ??= opts.epic === null ? 'epic' : 'wave';
 // A label name travels inside a quoted search phrase and a URL: a quote or a backslash would end
@@ -170,7 +176,9 @@ if (opts.epic !== null && forge === 'gh') {
   let total = null;
   for (let walked = 0; ; walked += 1) {
     if (walked >= 100) refuse(`the sub-issues of #${opts.epic} ran past 100 pages`);
-    const r = cli(['api', 'graphql', '--hostname', host, '-F', 'owner={owner}', '-F', 'name={repo}',
+    if (opts.repo !== null && opts.repo.split('/').length !== 2) refuse(`'${opts.repo}' is no GitHub repository: it takes <owner>/<name>`);
+    const [owner, name] = opts.repo === null ? ['{owner}', '{repo}'] : opts.repo.split('/');
+    const r = cli(['api', 'graphql', '--hostname', host, '-F', `owner=${owner}`, '-F', `name=${name}`,
       '-F', `n=${opts.epic}`, '-f', `query=${Q}`, ...(after ? ['-f', `after=${after}`] : [])], 120000);
     if (!r.ok) refuse(`the sub-issues of #${opts.epic} could not be read: ${why(r)}`);
     let page = null;
@@ -204,7 +212,8 @@ if (opts.epic !== null && forge === 'gh') {
 } else if (opts.epic !== null) {
   // The epic's related links, one list: GitLab pages none of it. A related link is the one kind
   // every tier carries; the others are dependencies, not waves.
-  const r = cli(['api', '--hostname', host, `projects/:fullpath/issues/${opts.epic}/links`], 120000);
+  const project = opts.repo === null ? ':fullpath' : encodeURIComponent(opts.repo);
+  const r = cli(['api', '--hostname', host, `projects/${project}/issues/${opts.epic}/links`], 120000);
   if (!r.ok) {
     refuse(/\(HTTP 404\)/.test(r.err) ? `issue #${opts.epic} is not there, or not visible to this token: ${why(r)}`
       : `the links of #${opts.epic} could not be read: ${why(r)}`);

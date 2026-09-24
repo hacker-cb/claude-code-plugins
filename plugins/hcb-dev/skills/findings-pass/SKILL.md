@@ -30,7 +30,7 @@ empty has refuted nothing.
 |---|---|---|---|
 | a session working alone | once its work is done — past the last completion, before the report that closes it | the base where the work landed, the branch carrying it where it has not | its own, from this session's context |
 | a session handed findings | on the hand-over | the refreshed base — the revision each one names is read only to find a coordinate the base has since moved | the text handed over |
-| a master session | at a round's close — every return of the round accepted, every change request it lands merged | the tree the round landed on: the refreshed base, or the local parent where it landed in `local` mode | the ledger's *Candidates*, which `hcb-dev:master-session` keeps |
+| a master session | at a round's close — every return of the round accepted, every change request it lands merged | the tree the round landed on: the refreshed base, or the local parent where it landed in `local` mode | the *candidates* of the wave's ledger, which `hcb-dev:master-session` keeps |
 
 A batch inside a wave never runs it: its candidates ride its return (`hcb-dev:wave-worker`). The
 base is resolved by the ladder in
@@ -106,8 +106,8 @@ stands as one of its own. A `not measured` candidate is never grouped; it stays 
 ## 5. Search the tracker, read the classification, and read the work already going
 
 The work in flight is read first, since it is what decides which rows need a number at all
-(`findings.md`, *An issue is work put off*): the ledger's batches where a master session holds
-one, the wave or the change a caller named, and what the forge carries open against this base.
+(`findings.md`, *An issue is work put off*): the batches its open waves' ledgers hold where a master
+session holds one, the wave or the change a caller named, and what the forge carries open against this base.
 Work nobody here can read is work that is not going: those rows take their own record.
 
 For every row the checks confirmed or left unproven — a mechanism searched for as the mechanism,

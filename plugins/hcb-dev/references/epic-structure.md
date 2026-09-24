@@ -3,8 +3,9 @@
 Read by whatever files, labels, titles, closes or lists the epic a coordinating session runs.
 It owns the shape that epic takes on the tracker and on the host — the two labels the plugin
 brings, how the umbrella issue is titled and written, how it closes, and the group its
-sessions share — so every epic is found the same way whichever session ran it. What the
-ledger on it holds is [`wave-ledger.md`](wave-ledger.md)'s.
+sessions share — so every epic is found the same way whichever session ran it. What its ledgers
+hold is [`wave-ledger.md`](wave-ledger.md)'s, and each wave's issue — filed, hung, closed —
+[`wave-issue.md`](wave-issue.md)'s.
 
 ## The labels
 
@@ -71,11 +72,11 @@ index of archives (`wave-ledger.md`).
 
 | marker | opens |
 |---|---|
-| `<!-- wave-ledger -->` | the ledger; inside it, `<!-- wave-ledger-format: <n> -->` and each `<!-- wave-section: <name> -->` |
+| `<!-- wave-ledger -->` | a ledger, the epic's or a wave's; inside it, `<!-- wave-ledger-format: <n> -->` and each `<!-- wave-section: <name> -->` |
 | `<!-- wave-journal-<n> -->` | an archive of the ledger; `<!-- wave-journal-kind: journal -->` its second line where `ledger.mjs` opened it |
 | `<!-- wave-slice -->` | the graph of the slice's links a refresh leaves, rewritten whole each time |
-| `<!-- wave-return <epic>/<id> -->` | a batch's return, one per batch, a later word to it edited into it |
-| `<!-- wave-close -->` | the closing comment of the epic |
+| `<!-- wave-return <epic>/<id> -->` | a batch's return on its wave's issue, one per batch, a later word to it edited into it |
+| `<!-- wave-close -->` | the closing comment of a wave or of the epic |
 
 ## What the epic learns
 
@@ -117,7 +118,8 @@ records that name:
 
 A master holding an epic without the `epic` label, or whose ledger header records no session
 group — on assuming the role, after a restart, or once the plugin moved under it — brings it up
-there and then: the labels as above, and the group, its name going into the header.
+there and then: the labels as above, and the group, its name going into the header. A ledger in
+format 1 is rebuilt later, at the point [`epic-migration.md`](epic-migration.md) names.
 
 ## Listing the open epics
 
@@ -126,7 +128,7 @@ owner the account reaches rather than the one repository a session stands in:
 
 ```bash
 node "<plugin root>/scripts/epics.mjs" [--forge gh|glab] [--host <host>] [--label <name>] \
-  [--owner <owner>]... [--repo-dir <path>]
+  [--owner <owner>]... [--epic <n> [--repo <path>]] [--repo-dir <path>]
 ```
 
 | field | what it settles |
@@ -135,6 +137,7 @@ node "<plugin root>/scripts/epics.mjs" [--forge gh|glab] [--host <host>] [--labe
 | `forge` / `host` | which forge and host were asked — the checkout's own unless both were named |
 | `epics[]` | one row per epic: `repo`, `number`, `title`, `url`, `updated`, and `children` where the forge counts sub-issues (`total`, `completed` — direct children only); `null` where it keeps no count |
 | `count` / `complete` | how many epics are listed — one reached twice is listed once — and whether every query came back whole: `false` where a search stopped at its own cap or a walk came back short, `null` where the forge gave no count to check against |
+| `waves[]` | with `--epic <n>`, the waves of that epic instead — in this checkout's repository or the one `--repo` names — its children carrying the label, `wave` unless another is named, open and closed: `number`, `title`, `url`, `state`, `reason` (GitHub's close reason), `children`; `count` and `complete` then answer for them |
 | `reason` | why nothing could be listed |
 
 Without `--owner` it lists what the account itself opened: GitHub's `author:@me` over every

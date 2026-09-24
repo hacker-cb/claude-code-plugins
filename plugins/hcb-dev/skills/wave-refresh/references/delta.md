@@ -23,14 +23,14 @@ node "$S" --since "<moment>" --was "$W" <the slice's own flags, as that file giv
 
 Those flags are the ones the pinned graph was read under — the script refuses a
 graph of any other slice — and `<moment>` is the moment the ledger records
-beside it. The verdict's `delta` is what the pass acts on — save for the epic the slice runs under
-and its `wave` issues, structure taking no verdict ([`../../../references/epic-structure.md`](../../../references/epic-structure.md)):
+beside it. The verdict's `delta` is what the pass acts on, the epic's structure left out by those
+flags ([`../../../references/epic-structure.md`](../../../references/epic-structure.md)):
 
 | key | what it obliges |
 |---|---|
 | `entered`, `left` | in the slice now and not then, and the other way: an entered issue is ruled from scratch, a left one takes its verdict line out of the ledger |
 | `edited` | `updatedAt` moved — the issue's own content or state |
-| `linked` | a link key differs from the pinned graph: added, removed, reparented, or an end that changed state — `hid` among them, since an end out of sight moves nothing else |
+| `linked` | a link key differs from the pinned graph: added, removed, reparented, or an end that changed state — `hid` among them, since an end out of sight moves nothing else. A parent passing between the epic and one of its waves, or between two of them — `was` on the line shows the one it had — is structure: a line whose only change it is keeps its verdict |
 | `cut` | a link list one reading or the other only saw a window of — no edge is taken from it, and what fell outside the window shows nowhere else |
 | `events` | the forge's own count of link events since the moment |
 | `added`, `removed`, `moved` | the edges themselves, each written once whichever end it was read from, and the ends whose state changed — what the report's *what moved* prints |

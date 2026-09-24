@@ -45,3 +45,8 @@ glab-waves	--forge glab --epic 7	0	"number": 30|"number": 33|NOT:"number": 31|NO
 glab-waves-404	--forge glab --epic 7	0	"read": false|is not there, or not visible to this token	an epic GitLab does not show is said so
 -	--epic 0	2	--epic takes an issue number	zero names no issue
 -	--epic 12 --owner acme	2	never an owner	an epic's waves are read in its own repository
+gh-waves-repo	--forge gh --epic 12 --repo acme/tool	0	"number": 20|"count": 2	an epic outside this checkout is read in the repository named
+gh-waves	--forge gh --epic 12 --repo acme/tool	0	"read": false|asked about 'acme/tool'|NOT:"number": 20	the repository named is the one asked, never this checkout's
+glab-waves-repo	--forge glab --epic 7 --repo group/sub/app	0	"number": 30|"count": 2	a GitLab project outside this checkout is read by its path, a subgroup's included
+gh-waves	--forge gh --epic 12 --repo group/sub/app	0	"read": false|is no GitHub repository	a GitHub repository is an owner and a name
+-	--repo acme/tool	2	names the repository an --epic lives in	a repository names where an epic's waves are read, and nothing else

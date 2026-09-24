@@ -24,7 +24,8 @@ if [ "$2" = graphql ]; then
   done
   want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] \
     || { echo "graphql went to '${host:-the default host}', not '$want'" >&2; exit 1; }
-  [ "$owner/$name" = "{owner}/{repo}" ] || { echo "asked about '$owner/$name', not this checkout's repository" >&2; exit 1; }
+  want=$(ask '.want_repo'); want=${want:-{owner\}/{repo\}}
+  [ "$owner/$name" = "$want" ] || { echo "asked about '$owner/$name', not '$want'" >&2; exit 1; }
   want=$(ask '.want_epic'); [ -z "$want" ] || [ "$want" = "$n" ] || { echo "asked for #$n, not #$want" >&2; exit 1; }
   case "$(ask '.subpages')" in
     ""|silent) echo "gh: Service Unavailable (HTTP 503)" >&2; exit 1 ;;

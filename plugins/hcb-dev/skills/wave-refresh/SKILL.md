@@ -58,7 +58,7 @@ this one so the delta between them is re-verified rather than assumed.
 Three sources, read together — each is partial, and where they disagree the
 disagreement is itself a finding:
 
-- **the batch rows of the ledger**
+- **the batch rows of each open wave's ledger**
   ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — the
   file zone each running batch was given;
 - **the live registry**
