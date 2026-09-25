@@ -868,7 +868,8 @@ function brief() {
   const t = plannedTasks(p).find((x) => x.task === id);
   if (!t) cannot(`${id} is not a task of round ${round.id}'s plan`);
   if (t.kind === 'codex') die(`${id} is the Codex pass — the codex subcommand runs it; a brief is a finder's`);
-  stampStart(round, id);
+  // A brief read once the task handed in starts nothing: its time is already whole.
+  if (!existsSync(path.join(round.dir, 'sources', `${id}.json`))) stampStart(round, id);
   const c = catalog();
   const spec = c.tasks[id];
   const { req } = round;
@@ -978,8 +979,9 @@ function status() {
     ...base,
     state: state === undefined ? base.state : (prior ? worse(prior.state, state) : state),
     notes: [...(base.notes || []), ...(note ? [note] : [])],
-    // A model alone says what an answer ran on, not when it came: the time stays the answer's.
-    at: state === undefined ? base.at : new Date().toISOString(),
+    // The task ended when it first answered or its loss was first recorded: a later model or
+    // note says more about that end, and never moves it.
+    at: base.at ?? new Date().toISOString(),
   };
   if (model !== undefined) next.model = model;
   writeJson(path.join(round.dir, 'sources', `${id}.status.json`), next);
@@ -1582,15 +1584,16 @@ function queue() {
     order = order.slice(0, budget);
   }
   // What each call stopped on is its answer's; the file keeps what later calls read.
-  // When each call began, with what it queued: a wait counts from the latest, and the result
-  // times each call's checks by it.
+  // When each call began, with what it queued: a wait takes the latest's groups and counts
+  // from it, and the result times each call's checks by it. A queue written before calls were
+  // kept is one call, begun at its own start or at a time unknown.
+  const earlier = prior.calls ?? (prior.queue.length ? [{ at: prior.started_at ?? null, units: prior.queue }] : []);
   const q = {
     queue: [...prior.queue, ...order],
     reused: [...prior.reused, ...reused],
     budget_cut: [...prior.budget_cut, ...cut],
     unreachable: [...prior.unreachable, ...unreachable],
-    latest: order,
-    calls: [...(prior.calls ?? []), { at: new Date().toISOString(), units: order }],
+    calls: [...earlier, { at: new Date().toISOString(), units: order }],
   };
   writeJson(qf, q);
   // The answer names what this call queued; the file holds the whole queue.
@@ -1714,7 +1717,8 @@ function wait() {
     const q = readJson(qf);
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     for (const u of expected) if (!UNIT_ID.test(u)) die(`--expect: '${u}' is not a group id`);
-    if (!expected.length) expected = q.latest ?? q.queue;
+    // `latest` and `started_at` are what a queue written before calls were kept holds.
+    if (!expected.length) expected = q.calls?.at(-1)?.units ?? q.latest ?? q.queue;
     since = q.calls?.at(-1)?.at ?? q.started_at ?? since ?? round.req.created_at;
   }
   const started = Date.parse(since ?? '');
@@ -1765,32 +1769,31 @@ function result() {
   // How long it ran, read from the store alone, so a result built twice answers the same. A
   // time the store does not hold, or holds unreadably, is null — never a refusal.
   const when = (t) => (typeof t === 'string' && Number.isFinite(Date.parse(t)) ? t : null);
-  const secs = (from, to) => {
-    const d = Date.parse(when(to) ?? '') - Date.parse(when(from) ?? '');
-    return Number.isFinite(d) && d >= 0 ? Math.round(d / 1000) : null;
-  };
+  const toSecs = (ms) => (Number.isFinite(ms) && ms >= 0 ? Math.round(ms / 1000) : null);
+  const secs = (from, to) => toSecs(Date.parse(when(to) ?? '') - Date.parse(when(from) ?? ''));
   const byTime = (times) => times.map(when).filter(Boolean).sort((a, b) => Date.parse(a) - Date.parse(b));
   const earliest = (times) => byTime(times)[0] ?? null;
   const latest = (times) => byTime(times).at(-1) ?? null;
   // A task began at its stamp, or with the plan where it handed in and left none; one that did
   // neither never ran. It ended when it handed in — a loss recorded after that rewrites its
   // status, not when it answered — or, where it never did, when its loss was recorded.
-  const startOf = (task) => when(startedOf(round.dir, task)) ?? (handed.has(task) ? when(p?.planned_at) : null);
   const endOf = (s) => (s ? when(handed.get(s.task)?.submitted_at) ?? when(s.at) : null);
+  const sweepTask = p?.sweep?.task ?? null;
+  // Every task the plan launched or the store heard from, each read once.
+  const ran = [...new Set([...plannedTasks(p).map((t) => t.task), ...answers.map((s) => s.task)])].map((task) => {
+    const s = answers.find((x) => x.task === task);
+    const start = when(startedOf(round.dir, task)) ?? (handed.has(task) ? when(p?.planned_at) : null);
+    return { task, source: s?.source ?? plannedTasks(p).find((t) => t.task === task).source, start, end: endOf(s) };
+  }).filter((t) => t.start !== null);
   // From the first start to the last end of the tasks that ran: they run side by side. One
   // that began and never answered leaves the span unknown, not shorter.
-  const spanOf = (tasks) => {
-    const ran = tasks.filter((t) => startOf(t) !== null);
-    const ends = ran.map((t) => endOf(answers.find((s) => s.task === t)));
-    if (!ran.length || ends.includes(null)) return null;
-    return secs(earliest(ran.map(startOf)), latest(ends));
-  };
-  const sweepTask = p?.sweep?.task ?? null;
+  const spanOf = (tasks) => (!tasks.length || tasks.some((t) => t.end === null)
+    ? null : secs(earliest(tasks.map((t) => t.start)), latest(tasks.map((t) => t.end))));
   const coverage = [];
   if (req.mode === 'round') {
     const bySource = new Map();
     const rowOf = (source) => {
-      if (!bySource.has(source)) bySource.set(source, { source, state: null, tasks: 0, candidates: 0, rejected: 0, notes: [], missing: [], models: [], timed: new Set() });
+      if (!bySource.has(source)) bySource.set(source, { source, state: null, tasks: 0, candidates: 0, rejected: 0, notes: [], missing: [], models: [] });
       return bySource.get(source);
     };
     // The Codex pass states one model and level for its row; a finder names its task where
@@ -1801,8 +1804,6 @@ function result() {
       // no row: its findings are in the result, its coverage is nobody's.
       if (!reviews(req, s.source)) continue;
       const row = rowOf(s.source);
-      // The sweep runs after the checks, and is timed as a phase of its own.
-      if (s.task !== sweepTask) row.timed.add(s.task);
       row.state = row.state === null ? s.state : worse(row.state, s.state);
       row.tasks += 1;
       row.candidates += handed.get(s.task)?.candidates.length ?? 0;
@@ -1814,11 +1815,7 @@ function result() {
     // for that nothing answered for, are reviewers missing — never rows left out, since
     // silence would read as nothing to report.
     const answered = new Set(answers.map((s) => s.task));
-    for (const t of plannedTasks(p)) {
-      if (answered.has(t.task)) continue;
-      rowOf(t.source).missing.push(t.task);
-      if (t.task !== sweepTask) rowOf(t.source).timed.add(t.task);
-    }
+    for (const t of plannedTasks(p)) if (!answered.has(t.task)) rowOf(t.source).missing.push(t.task);
     for (const source of req.sources || []) rowOf(source);
     // A source is as covered as its least covered task; one whose finders the conductor
     // ran itself, with no agents to hand them to, is no better than depth. A codex task is
@@ -1842,7 +1839,8 @@ function result() {
       const model = row.model ?? (row.models.length ? row.models.join(', ') : null);
       if (model) line.model = model;
       if (row.effort) line.effort = row.effort;
-      line.time_s = spanOf([...row.timed]);
+      // The sweep runs after the checks, and is timed as a phase of its own.
+      line.time_s = spanOf(ran.filter((t) => t.source === row.source && t.task !== sweepTask));
       coverage.push(line);
     }
   }
@@ -1940,11 +1938,15 @@ function result() {
       if (a > to) { ms += to - from; [from, to] = [a, b]; } else to = Math.max(to, b);
     }
     ms += to - from;
-    checking = Number.isFinite(ms) && ms >= 0 ? Math.round(ms / 1000) : null;
+    checking = toSecs(ms);
   }
   const sweep = sweepTask ? answers.find((s) => s.task === sweepTask) : null;
-  // The round ends at the last thing its store records, not when a result is asked for.
-  const ended = latest([...answers.map(endOf), ...all.map((u) => checkedAt(u.unit)), ...(q?.calls ?? []).map((c) => c.at)]);
+  // The round ends at the last thing its store records, not when a result is asked for —
+  // unknown where a task it started or a group it queued never answered, since the wait on
+  // them left no record.
+  const unanswered = ran.some((t) => t.end === null) || calls.some((c) => !c.units.every(checkedAt));
+  const ended = unanswered ? null
+    : latest([...answers.map(endOf), ...all.map((u) => checkedAt(u.unit)), ...(q?.calls ?? []).map((c) => c.at)]);
   const timing = {
     opened_at: when(req.created_at),
     ended_at: ended,
