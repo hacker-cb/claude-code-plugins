@@ -10,6 +10,8 @@ case "$1" in
     [ "$2 $3" = "--verify -q" ] || refuse "rev-parse asked as: $*"
     want=${4%"^{commit}"}
     v=$(ask ".refs[\"$want\"]")
+    # A full id this checkout carries resolves to itself; `missing` names the ones it lacks.
+    if [ -z "$v" ] && [ ${#want} -eq 40 ] && ! ask '.missing[]?' | grep -qx -- "$want"; then v=$want; fi
     [ "$v" = fail ] && { echo "fatal: bad object" >&2; exit 128; }
     [ -n "$v" ] && { echo "$v"; exit 0; }
     exit 1 ;;

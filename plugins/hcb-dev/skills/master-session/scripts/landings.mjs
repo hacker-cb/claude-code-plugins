@@ -101,7 +101,14 @@ answer.read = true;
 const keyed = l.out.split('\n').filter(Boolean).map((line) => ({ sha: line.split(' ')[0], line, kind: 'commit' }));
 // A request counts here only where its merge commit is in the range's history: one that took a
 // commit of the range and merged after `--to` has not landed as far as this range goes.
-const inRange = (q) => !q.mergeCommit || git(['merge-base', '--is-ancestor', q.mergeCommit, answer.to]).ok;
+// `rev-parse` resolves a NAME as readily as an id, so a forge answering `main` where a merge
+// commit belongs would pass as one: an id is a prefix of what it resolves to, a name is not.
+const commitIn = (oid) => {
+  const at = git(['rev-parse', '--verify', '-q', `${oid}^{commit}`]);
+  if (!at.ok || !at.out.toLowerCase().startsWith(oid.toLowerCase())) return null;
+  return git(['merge-base', '--is-ancestor', at.out, answer.to]).ok ? at.out : null;
+};
+const inRange = (q) => !q.mergeCommit || commitIn(q.mergeCommit) !== null;
 if (opts.forge) {
   const found = forgeFor(cwd, opts.cli, null);
   answer.forge.cli = found.cli;
