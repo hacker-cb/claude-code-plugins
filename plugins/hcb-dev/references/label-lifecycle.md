@@ -23,6 +23,8 @@ written out of the set's answer — never on a command line or through a CLI's l
 ```bash
 node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request> --forge <gh|glab> \
   [--add <file>] [--remove <file>] [--repo <path of another repository>]
+node "<plugin root>/scripts/label-write.mjs" --url <the URL a CLI printed for a request it opened> \
+  [--add <file>] [--remove <file>]
 ```
 
 Where it answers that no remote of the checkout names the forge's host, pass `--host` with the host

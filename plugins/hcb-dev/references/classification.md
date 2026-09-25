@@ -87,10 +87,10 @@ Reading one issue, the role is what that issue carries it in, whatever the repos
 field and label disagree the role is unresolved there — say so rather than pick one.
 
 **Hold the cardinality yourself wherever the platform will not** — what either forge enforces is
-`forge-behaviour.md`'s, and neither is enough. Before adding from a single-value family: read the
-carrier's current labels, drop the sibling, then add; a family holding several drops nothing.
-Where the repository has a triage-state family, apply the value meaning untriaged, never the one
-meaning a human accepted it.
+`forge-behaviour.md`'s, and neither is enough. Adding from a single-value family, the sibling the
+carrier holds goes in the same write's removals (`label-lifecycle.md`); a family holding several
+drops nothing. Where the repository has a triage-state family, apply the value meaning untriaged,
+never the one meaning a human accepted it.
 
 ## A carrier out of line
 

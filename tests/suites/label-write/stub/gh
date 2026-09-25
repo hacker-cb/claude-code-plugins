@@ -32,6 +32,10 @@ for a in "$@"; do
 done
 if [ "$me" = glab ] && [ "$method" = GET ] && [ -z "$(printf %s "$path" | grep -E '/(issues|merge_requests|labels)')" ]; then
   [ "$(ask '.probe_glab')" = yes ] || { echo "404 Project Not Found" >&2; exit 1; }
+  # A project named by path answers only under its own path, as a real instance does.
+  pp=$(ask '.project_path'); if [ -n "$pp" ] && [ "$path" != "projects/:fullpath" ]; then
+    [ "$(urldecode "${path#projects/}")" = "$pp" ] || { echo "glab: 404 Project Not Found (HTTP 404)" >&2; exit 1; }
+  fi
   echo "{\"web_url\":\"https://lab.example$(ask '.relative_root')/team/app\",\"path_with_namespace\":\"team/app\"}"; exit 0
 fi
 want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] || { echo "went to '${host:-the default host}', not '$want'" >&2; exit 1; }

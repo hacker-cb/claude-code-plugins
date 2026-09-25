@@ -9,6 +9,10 @@
 //
 // usage: node label-write.mjs --number <n> --kind issue|request [--add <file>] [--remove <file>]
 //          [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]
+//        node label-write.mjs --url <a change request's URL> [--add <file>] [--remove <file>]
+//
+// `--url` takes the request a CLI just opened by the URL it printed: forge, host, repository and
+// number all come from it, the repository confirmed by the forge's own answer for it.
 //
 // `--add` / `--remove` each name a file holding a JSON array of label names; at least one is
 // given. `--repo` names another repository than this checkout's, and takes `--forge` with it: a
@@ -26,15 +30,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { dirOk, hostOk, parsePages, projectPathOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
 
-const usage = 'usage: node label-write.mjs --number <n> --kind issue|request [--add <file>]'
-  + ' [--remove <file>] [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]';
+const usage = 'usage: node label-write.mjs (--number <n> --kind issue|request | --url <request URL>)'
+  + ' [--add <file>] [--remove <file>] [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]';
 const die = (msg) => { writeAll(2, `label-write: ${msg}\n${usage}\n`); process.exit(2); };
 
 const FLAGS = {
   '--number': 'number', '--kind': 'kind', '--add': 'add', '--remove': 'remove', '--forge': 'forge',
-  '--host': 'host', '--repo': 'repo', '--repo-dir': 'dir',
+  '--host': 'host', '--repo': 'repo', '--repo-dir': 'dir', '--url': 'url',
 };
-const opts = { number: null, kind: null, add: null, remove: null, forge: null, host: null, repo: null, dir: null };
+const opts = {
+  number: null, kind: null, add: null, remove: null, forge: null, host: null, repo: null, dir: null, url: null,
+};
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
   const key = FLAGS[argv[i]];
@@ -45,6 +51,18 @@ for (let i = 0; i < argv.length; i += 1) {
 }
 opts.dir ??= process.cwd();
 
+let requestUrl = null;
+if (opts.url !== null) {
+  if (opts.number !== null || opts.kind !== null || opts.repo !== null || opts.host !== null || opts.forge !== null) {
+    die('--url stands alone: the forge, host, repository and number all come from it');
+  }
+  try { requestUrl = new URL(opts.url); } catch { die('--url takes a change request\'s URL'); }
+  const m = requestUrl.pathname.match(/\/(pull|-\/merge_requests)\/([1-9][0-9]{0,9})\/?$/);
+  if (!/^https?:$/.test(requestUrl.protocol) || !m || !hostOk(requestUrl.host)) die('--url takes a change request\'s URL');
+  opts.forge = m[1] === 'pull' ? 'gh' : 'glab';
+  opts.number = m[2];
+  opts.kind = 'request';
+}
 if (opts.number === null || !(/^[1-9][0-9]{0,9}$/.test(opts.number) && Number(opts.number) <= 2147483647)) {
   die('--number takes an issue or change-request number');
 }
@@ -58,7 +76,9 @@ if (opts.repo !== null && opts.forge === null) die('--repo takes --forge with it
 if (opts.forge === 'gh' && opts.host !== null && opts.repo === null) die('--host on GitHub takes --repo with it');
 // gh opens a request wherever GH_REPO points while `gh repo view` answers for the checkout: the
 // number alone would then name another repository's request.
-if (process.env.GH_REPO && opts.repo === null) die('GH_REPO is set: name the repository with --repo');
+if (process.env.GH_REPO && opts.forge === 'gh' && opts.repo === null && opts.url === null) {
+  die('GH_REPO is set: name the repository with --repo, or the request with --url');
+}
 // `gh repo view` reads a three-part argument as HOST/OWNER/REPO: a group path handed on would send
 // the request, and the token for that host, to whatever its first segment names.
 if (opts.repo !== null && opts.forge === 'gh' && !repoOk(opts.repo)) die('--repo on GitHub takes owner/name');
@@ -141,7 +161,7 @@ const remoteHosts = () => {
   for (const line of r.ok ? r.out.split('\n') : []) {
     const url = line.split(/\s+/)[1] ?? '';
     const scheme = url.match(/^([a-z][a-z0-9+.-]*):\/\/(?:[^@/]*@)?([^/]+)/i);
-    const scp = scheme ? null : url.match(/^(?:[^@/]*@)?([^/:]+):/);
+    const scp = scheme || url.includes('://') || /^[A-Za-z]:[\\/]/.test(url) ? null : url.match(/^(?:[^@/]*@)?([^/:]+):/);
     if (scheme && !/ssh/i.test(scheme[1])) { web.add(norm(scheme[2])); continue; }
     const h = scheme ? scheme[2].replace(/:\d+$/, '') : scp?.[1];
     // A host that does not read as one — `-F…` among them — never reaches ssh as an option.
@@ -157,26 +177,61 @@ const remoteHosts = () => {
   remoteHostsRead = { has: (h) => web.has(norm(h)) || (norm(h) === bare(h) && ssh.has(bare(h))) };
   return remoteHostsRead;
 };
-// A repository named without a host is looked for on the host this checkout lives on, never on
-// whichever host the CLI would otherwise default to.
-if (opts.repo !== null && opts.host === null) {
-  const here = probe(opts.forge, true);
-  if (!here.ok) refuse(`--repo without --host takes this checkout's host, and it did not answer — ${here.why}`);
-  if (!remoteHosts().has(here.host)) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
-  opts.host = here.host;
-}
-const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map((c) => probe(c));
-for (const p of probed) {
-  if (p.ok && opts.host && norm(p.host) !== norm(opts.host)) {
-    Object.assign(p, { ok: false, why: `${p.cmd}: this repository lives on ${p.host}` });
-  } else if (p.ok && !opts.host && !remoteHosts().has(p.host)) {
-    Object.assign(p, { ok: false, why: `${p.cmd}: answered with ${p.host}, which no remote of this checkout names — pass --host` });
+// The request the URL names: its host must be one a remote of this checkout names, and its
+// repository the one the forge answers for at that host — on GitLab the path may sit under the
+// instance's relative root, so the path is tried from its longest and taken where the project's own
+// URL is the request's.
+const fromUrl = () => {
+  const h = requestUrl.host;
+  if (!remoteHosts().has(h)) refuse(`the request's URL names ${h}, which no remote of this checkout names`);
+  const segs = requestUrl.pathname.split('/').filter(Boolean);
+  const target = `${requestUrl.origin}${requestUrl.pathname}`.replace(/\/+$/, '');
+  if (opts.forge === 'gh') {
+    const repo = segs.slice(0, 2).join('/');
+    if (segs.length !== 4 || !repoOk(repo)) refuse('the request\'s URL names no owner/name');
+    return { forge: 'gh', host: h, path: repo };
   }
+  const project = segs.slice(0, segs.lastIndexOf('-'));
+  for (let k = 0; k < project.length - 1; k += 1) {
+    const r = runner(opts.dir, 'glab')(['api', '--hostname', h, `projects/${encodeURIComponent(project.slice(k).join('/'))}`], 60000);
+    if (!r.ok) continue;
+    try {
+      const v = JSON.parse(r.out);
+      if (`${String(v?.web_url).replace(/\/+$/, '')}/-/merge_requests/${opts.number}` === target
+        && typeof v.path_with_namespace === 'string') return { forge: 'glab', host: h, path: v.path_with_namespace };
+    } catch { /* not this one */ }
+  }
+  return refuse('no project on that host answers for the request\'s URL');
+};
+
+let forge; let host; let path;
+if (requestUrl) {
+  ({ forge, host, path } = fromUrl());
+} else {
+  // A repository named without a host is looked for on the host this checkout lives on, never on
+  // whichever host the CLI would otherwise default to.
+  if (opts.repo !== null && opts.host === null) {
+    const here = probe(opts.forge, true);
+    if (!here.ok) refuse(`--repo without --host takes this checkout's host, and it did not answer — ${here.why}`);
+    if (!remoteHosts().has(here.host)) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
+    opts.host = here.host;
+  }
+  const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map((c) => probe(c));
+  for (const p of probed) {
+    if (p.ok && opts.host && norm(p.host) !== norm(opts.host)) {
+      Object.assign(p, { ok: false, why: `${p.cmd}: this repository lives on ${p.host}` });
+    } else if (p.ok && !opts.host && !remoteHosts().has(p.host)) {
+      Object.assign(p, { ok: false, why: `${p.cmd}: answered with ${p.host}, which no remote of this checkout names — pass --host` });
+    }
+  }
+  const answered = probed.filter((p) => p.ok);
+  if (answered.length === 0) refuse(`no forge CLI answered for this repository — ${probed.map((p) => p.why).join('; ')}`);
+  if (answered.length > 1) refuse('both forges answer for this repository — name one with --forge');
+  ({ cmd: forge, host, path } = answered[0]);
 }
-const answered = probed.filter((p) => p.ok);
-if (answered.length === 0) refuse(`no forge CLI answered for this repository — ${probed.map((p) => p.why).join('; ')}`);
-if (answered.length > 1) refuse('both forges answer for this repository — name one with --forge');
-const { cmd: forge, host, path } = answered[0];
+if (forge === 'gh' && process.env.GH_REPO && opts.repo === null && !requestUrl) {
+  refuse('GH_REPO is set: name the repository with --repo, or the request with --url');
+}
 if (!hostOk(host) || !projectPathOk(path)) refuse('the repository answered without a host and path this run can name');
 answer.forge = forge;
 answer.host = host;
@@ -262,6 +317,8 @@ const send = (args, label) => {
   const r = cli(args, 60000);
   answer.ran.push(label);
   if (r.ok) return;
+  // A label already off answers 404 to its DELETE: nothing was refused.
+  if (label === 'take one off' && /\bHTTP 404\b/.test(r.err)) return;
   failures.push(`${label}: ${why(r)}`);
   // Only the forge's own refusal of the request — a 4xx — says it will not land. A timeout, a
   // killed process, a closed connection or a 5xx from a proxy leaves it free to land yet.
