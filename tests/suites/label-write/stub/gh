@@ -79,6 +79,12 @@ else
   [ -n "$input" ] || { echo "a PUT without --input" >&2; exit 1; }
   add=$(jq -r '.add_labels // ""' "$input"); rm=$(jq -r '.remove_labels // ""' "$input")
   cur=$(jq -c --arg a "$add" --arg r "$rm" '(. + ($a | split(",") | map(select(. != "")))) - ($r | split(",")) | unique' <<<"$cur")
+  # A scoped label displaces its sibling of the same key, as a paid tier does.
+  if [ "$(ask '.scoped')" = yes ]; then
+    cur=$(jq -c --arg a "$add" '($a | split(",") | map(select(contains("::")) | sub("::[^:]*$"; ""))) as $k
+      | map(. as $l | select(($l | contains("::") | not) or ((($l | sub("::[^:]*$"; "")) as $s | $k | any(. == $s)) | not)
+          or ($a | split(",") | any(. == $l))))' <<<"$cur")
+  fi
 fi
 echo "$cur" > "$store/labels"
 [ "$fail" = landed ] && { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }

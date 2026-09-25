@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # `ssh -G <alias>`: the hostname the user's ssh configuration gives the alias, from the envelope.
 env=${STUB_ENVELOPE:-}
-if [ "$1" = -G ]; then
+if [ "$1" = -G ]; then [ "$2" = -- ] && shift;
   h=$(jq -r --arg a "$2" '.ssh_hostnames[$a] // $a' "$env"); echo "user git"; echo "hostname $h"; exit 0
 fi
 echo "unplanned ssh call: $*" >&2; exit 1

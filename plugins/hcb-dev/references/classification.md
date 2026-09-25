@@ -99,13 +99,13 @@ the repository has moved off — one carrying it in a mechanism that resolution 
 another it names as well, one carrying two contradicting values, and one carrying a role its column
 in the table above gives none: a parent with an outcome label, a closed issue still parked, a change
 request with a queue label. One carrying a role nowhere is not out of line but unclassified. Align
-it to a single value, carried in every mechanism resolution names and in none it does not: added
-where missing, cleared where it stands outside them, and put in place of a value that contradicts it
-— or, for a role its column gives none, cleared. Which value that is, is the user's wherever the two
-disagree; the last case is the carrier's own, the same value elsewhere not out of line with it. It
-is a tracker edit — proposed, and made only on the answer that authorizes one
-(`hcb-dev:issue-tracking`), never as a side effect of classifying something else, save the writes
-`label-lifecycle.md` names.
+it to the values its role allows — one, for a single-value role — carried in every mechanism
+resolution names and in none it does not: added where missing, cleared where it stands outside them,
+and put in place of a value that contradicts it — or, for a role its column gives none, cleared.
+Which value that is, is the user's wherever the two disagree; the last case is the carrier's own,
+the same value elsewhere not out of line with it. It is a tracker edit — proposed, and made only on
+the answer that authorizes one (`hcb-dev:issue-tracking`), never as a side effect of classifying
+something else, save the writes `label-lifecycle.md` names.
 
 ## Milestones — optional
 

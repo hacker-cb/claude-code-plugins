@@ -25,11 +25,11 @@ node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request>
   [--add <file>] [--remove <file>] [--repo <path of another repository>]
 ```
 
-Where it answers that no remote of the checkout names the forge's host, pass `--host`: the host the
-checkout's forge lives on, checked, never the one that answer named. `wrote` true is done; false
-wrote nothing, `reason` saying why — among them a name `unknown` to the set, and a refusal, as an
-account that may not label is refused; null is a write that did not read back as meant, `missing`,
-`standing` and `lost` naming what differs, and is a stop.
+Where it answers that no remote of the checkout names the forge's host, pass `--host` with the host
+the checkout's forge lives on, checked against the forge's own settings, and `--repo` with it on
+GitHub. `wrote` true is done; false wrote nothing, `reason` saying why — among them a name `unknown`
+to the set, and a refusal, as an account that may not label is refused; null is a write that did not
+read back as meant, `missing`, `standing` and `lost` naming what differs, and is a stop.
 
 ## Filing and splitting
 

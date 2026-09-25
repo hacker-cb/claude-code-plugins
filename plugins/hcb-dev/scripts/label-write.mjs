@@ -55,6 +55,10 @@ if (opts.forge !== null && opts.forge !== 'gh' && opts.forge !== 'glab') die('--
 if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 if (opts.repo !== null && !projectPathOk(opts.repo)) die(`--repo '${opts.repo}' is not a repository path`);
 if (opts.repo !== null && opts.forge === null) die('--repo takes --forge with it');
+if (opts.forge === 'gh' && opts.host !== null && opts.repo === null) die('--host on GitHub takes --repo with it');
+// gh opens a request wherever GH_REPO points while `gh repo view` answers for the checkout: the
+// number alone would then name another repository's request.
+if (process.env.GH_REPO && opts.repo === null) die('GH_REPO is set: name the repository with --repo');
 // `gh repo view` reads a three-part argument as HOST/OWNER/REPO: a group path handed on would send
 // the request, and the token for that host, to whatever its first segment names.
 if (opts.repo !== null && opts.forge === 'gh' && !repoOk(opts.repo)) die('--repo on GitHub takes owner/name');
@@ -123,45 +127,49 @@ const probe = (cmd, checkout = false) => {
 // The hosts this checkout's remotes name. A host no remote names and nobody passed is a server
 // telling this run where to write — with the user's token for that host — and is refused.
 // An SSH alias of the user's own ssh configuration stands for the host it names; `ssh.<host>` is
-// the port-443 SSH front a forge keeps beside itself.
+// the port-443 SSH front a forge keeps beside itself. A web remote keeps a port it names; an SSH
+// remote's port is SSH's, and says nothing of the web endpoint.
+// Only a default port is dropped: a port named on purpose picks an endpoint of its own.
+const norm = (h) => h.toLowerCase().replace(/:(443|80)$/, '');
+const bare = (h) => norm(h).replace(/:\d+$/, '');
 let remoteHostsRead = null;
 const remoteHosts = () => {
   if (remoteHostsRead) return remoteHostsRead;
   const r = runner(opts.dir, 'git')(['remote', '-v'], 30000);
-  const hosts = new Set();
+  const web = new Set();
+  const ssh = new Set();
   for (const line of r.ok ? r.out.split('\n') : []) {
     const url = line.split(/\s+/)[1] ?? '';
-    const scheme = url.match(/^([a-z][a-z0-9+.-]*):\/\/(?:[^@/]*@)?([^/:]+)/i);
+    const scheme = url.match(/^([a-z][a-z0-9+.-]*):\/\/(?:[^@/]*@)?([^/]+)/i);
     const scp = scheme ? null : url.match(/^(?:[^@/]*@)?([^/:]+):/);
-    const h = scheme ? scheme[2] : scp?.[1];
-    if (!h) continue;
-    hosts.add(h.toLowerCase());
-    if (scp || /^ssh/i.test(scheme?.[1] ?? '')) {
-      const g = runner(opts.dir, 'ssh')(['-G', h], 10000);
-      const name = g.ok ? g.out.split('\n').find((l) => l.startsWith('hostname '))?.slice(9).trim() : null;
-      if (name) hosts.add(name.toLowerCase());
-    }
+    if (scheme && !/ssh/i.test(scheme[1])) { web.add(norm(scheme[2])); continue; }
+    const h = scheme ? scheme[2].replace(/:\d+$/, '') : scp?.[1];
+    // A host that does not read as one — `-F…` among them — never reaches ssh as an option.
+    if (!h || !hostOk(h)) continue;
+    ssh.add(h.toLowerCase());
   }
-  for (const h of [...hosts]) if (h.startsWith('ssh.')) hosts.add(h.slice(4));
-  remoteHostsRead = hosts;
-  return hosts;
+  for (const h of [...ssh]) {
+    const g = runner(opts.dir, 'ssh')(['-G', '--', h], 10000);
+    const name = g.ok ? g.out.split('\n').find((l) => l.startsWith('hostname '))?.slice(9).trim() : null;
+    if (name && hostOk(name)) ssh.add(name.toLowerCase());
+  }
+  for (const h of [...ssh]) if (h.startsWith('ssh.')) ssh.add(h.slice(4));
+  remoteHostsRead = { has: (h) => web.has(norm(h)) || (norm(h) === bare(h) && ssh.has(bare(h))) };
+  return remoteHostsRead;
 };
-// Only a default port is dropped: a port named on purpose picks an endpoint of its own.
-const norm = (h) => h.toLowerCase().replace(/:(443|80)$/, '');
-const bare = (h) => norm(h).replace(/:\d+$/, '');
 // A repository named without a host is looked for on the host this checkout lives on, never on
 // whichever host the CLI would otherwise default to.
 if (opts.repo !== null && opts.host === null) {
   const here = probe(opts.forge, true);
   if (!here.ok) refuse(`--repo without --host takes this checkout's host, and it did not answer — ${here.why}`);
-  if (!remoteHosts().has(bare(here.host))) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
+  if (!remoteHosts().has(here.host)) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
   opts.host = here.host;
 }
 const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map((c) => probe(c));
 for (const p of probed) {
   if (p.ok && opts.host && norm(p.host) !== norm(opts.host)) {
     Object.assign(p, { ok: false, why: `${p.cmd}: this repository lives on ${p.host}` });
-  } else if (p.ok && !opts.host && !remoteHosts().has(bare(p.host))) {
+  } else if (p.ok && !opts.host && !remoteHosts().has(p.host)) {
     Object.assign(p, { ok: false, why: `${p.cmd}: answered with ${p.host}, which no remote of this checkout names — pass --host` });
   }
 }
@@ -295,7 +303,11 @@ answer.after = after.labels;
 answer.missing = add.filter((n) => !holds(after.labels, n));
 answer.standing = remove.filter((n) => holds(after.labels, n));
 // What nobody asked to take off and is gone: a write that reached further than it was sent.
-answer.lost = before.labels.filter((l) => !toRemove.includes(l) && !holds(after.labels, l));
+// On GitLab a scoped label (`key::value`) displaces its sibling of the same key: that one leaving
+// is what the platform does with the addition, not a write that reached too far.
+const scope = (n) => (n.includes('::') ? n.slice(0, n.lastIndexOf('::')) : null);
+const displaced = (l) => forge === 'glab' && scope(l) !== null && toAdd.some((n) => scope(n) === scope(l));
+answer.lost = before.labels.filter((l) => !toRemove.includes(l) && !holds(after.labels, l) && !displaced(l));
 const changed = after.labels.length !== before.labels.length
   || after.labels.some((n) => !before.labels.includes(n));
 if (answer.missing.length === 0 && answer.standing.length === 0 && answer.lost.length === 0) {
