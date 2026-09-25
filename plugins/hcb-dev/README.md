@@ -92,7 +92,7 @@ form: you paste every one of them yourself.
   `Blocked by` line — per `references/issue-links.md`. Called by
   `implementation-workflow` at intake and in its report, and by `github-pr-workflow` after a merge.
 - **`label-taxonomy`** — `/hcb-dev:label-taxonomy`
-  A repository's whole label set set up or reworked in one run: every label and every carrier
+  Sets up or reworks a repository's whole label set in one run: every label and every carrier
   read by
   [`skills/label-taxonomy/scripts/labels.mjs`](skills/label-taxonomy/scripts/labels.mjs), a set
   proposed from `references/label-model.md` and approved as a file, every carrier classified in

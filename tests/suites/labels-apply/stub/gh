@@ -118,6 +118,7 @@ case "$me $method $endpoint" in
   "glab GET projects/team%2Fapp/issues/"*|"glab GET projects/team%2Fapp/merge_requests/"*)
     kind=$([[ $endpoint == */issues/* ]] && echo issue || echo request); n=${endpoint##*/}
     # `rest_hidden` names carriers REST does not reach — a work item type outside issues and tasks.
+    jq -e --arg k "$kind $n" '(.rest_error // []) | index($k)' "$st" >/dev/null && { echo "glab: Bad Gateway (HTTP 502)" >&2; exit 1; }
     jq -c --arg k "$kind $n" 'if .carriers[$k] and ((.rest_hidden // []) | index($k) | not) then {labels: .carriers[$k]} else error("none") end' "$st" 2>/dev/null \
       || { echo "glab: 404 Not Found (HTTP 404)" >&2; exit 1; } ;;
   "glab PUT projects/team%2Fapp/issues/"*|"glab PUT projects/team%2Fapp/merge_requests/"*)

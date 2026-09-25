@@ -718,7 +718,8 @@ function apply() {
     const r = cli(['api', '--hostname', host, carrierPath(kind, n)], 60000);
     const v = parseOut(r);
     if (r.ok && Array.isArray(v?.labels)) return v.labels.map((l) => (typeof l === 'string' ? l : l?.name)).filter((l) => typeof l === 'string');
-    const g = gone(step, kind, n);
+    // Only the forge's own not-found goes to the listing; any other failure is a failure.
+    const g = !r.ok && /\bHTTP (404|410)\b/.test(r.err) ? gone(step, kind, n) : false;
     if (g !== false) return g;
     return stop(step, `could not read it: ${r.ok ? 'no labels in the answer' : why(r)}`);
   };

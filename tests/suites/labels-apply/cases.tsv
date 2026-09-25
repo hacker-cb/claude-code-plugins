@@ -21,3 +21,4 @@ gl-gone	--repo-dir .	0	"applied": true|it is gone since the snapshot	a GitLab re
 gh-race	--repo-dir .	0	"stopped": "relabel issue 1: label-write: the carrier does not hold the labels --expect names|NOT:POST repos/team/app/issues/1/labels	a carrier another hand moved between the check and the write is refused by the writer, never written over
 gh-race-resume	--repo-dir .	0	BEFORE:== run 2<<its labels moved since the snapshot|NOT:POST repos/team/app/issues/1/labels	a row the writer refused before sending anything is not resumed as half-written: the next run finds it moved
 gh-lost-noadd	--repo-dir .	0	"stopped": "relabel issue 1: a stopped write left it without scope:ui|NOT:"applied": true	a label a stopped write lost stops the row again, before or after what was asked landed
+gl-rest-502	--repo-dir .	0	"stopped": "relabel issue 1: could not read it|NOT:the REST API does not reach	a REST failure that is not a not-found is a stop, never a carrier skipped
