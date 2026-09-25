@@ -30,7 +30,8 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
 
 - **Pin the base**: resolve it per
   [`../../references/base-resolution.md`](../../references/base-resolution.md),
-  refresh it, and write the pin as `<remote>/<branch>@<sha>` — one pin, shared
+  refresh it, and write the pin as `<remote>/<branch>@<sha>` — in `local` mode the
+  local parent holding its remote copy, as `<branch>@<sha>` — one pin, shared
   by every batch hung together. A staged wave pins again at each step, on the
   tip its predecessor's landing left.
 - **Read this session's own name** as the channels show it, never assumed from

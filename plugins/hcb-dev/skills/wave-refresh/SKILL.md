@@ -42,8 +42,9 @@ concludes rather than a number handed in.
 ## The base
 
 Resolve and refresh it per
-[`../../references/base-resolution.md`](../../references/base-resolution.md),
-and pin it as `<remote>/<branch>@<sha>` beside the moment the tracker is read at:
+[`../../references/base-resolution.md`](../../references/base-resolution.md) —
+where the epic completes in `local` mode, the local parent holding its remote
+copy — and pin it as `<remote>/<branch>@<sha>` — `<branch>@<sha>` for a local parent — beside the moment the tracker is read at:
 together they are what this pass verified on, and what the next one diffs from.
 
 **Every read of this pass goes through that ref, never through a working tree** —
@@ -60,7 +61,8 @@ disagreement is itself a finding:
 
 - **the batch rows of each open wave's ledger**
   ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — the
-  file zone each running batch was given;
+  file zone of each batch from `chipped` until its landing is cleared against
+  its checks, as the queue records, or until its end where it lands nothing;
 - **the live registry**
   ([`../../references/session-comms.md`](../../references/session-comms.md)) — who
   is running now, since a row outlives the session it describes;
@@ -70,7 +72,9 @@ disagreement is itself a finding:
   claims holds just as much.
 
 Every disagreement goes to the user — a request reaching past its zone, a row
-with no session, a session with no row. Until one is settled the ground is read
+past `chipped` and short of `accepted` with no session, `blocked` after it included, a
+session with no row. A `chipped` row with no session goes to the user as the
+click the ledger's expectations say they owe, with the chip's age. Until one is settled the ground is read
 the **safer** way rather than the wider or the narrower: a zone read two ways is
 occupied to the union of both, and a session whose zone no source gives holds
 **everything a candidate would touch**, since an unknown zone is unbounded and
@@ -80,8 +84,9 @@ not empty.
 
 Two halves, because an issue closes without a commit:
 
-- **the base**, from the pin the point below names to the pin taken now:
-  what landed, and which premises those landings moved;
+- **the base**, from the pin the point below names to the pin taken now, per
+  `references/delta.md`: what landed, which verdicts and which ground-holding batches'
+  orders it reached, and which premises it moved;
 - **the tracker**, from the moment that point read it: every change a verdict
   reads (`issue-currency.md`), what entered or left the slice, and every link
   that moved — which no filter by update time reports, so this half is taken
@@ -110,7 +115,7 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
 1. **Verdict.** `issue-currency.md` — it is what establishes the coordinates
    the work actually stands on, and a body naming a path the tree moved past is
    exactly what it catches. It is re-derived where the delta reaches: a candidate
-   the tracker half changed, and one whose coordinates the base half moved past.
+   the tracker half changed, and one whose coordinates or checks the base half moved.
    Every other candidate carries the verdict the ledger's verdicts section
    records for it, with the coordinate it stood on; one the section does not
    carry is read now, and what is re-read is written back there. The report says
@@ -120,8 +125,10 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
    whatever holds that ground, and the report names the batch it waits on.
-3. **The three axes.** `wave-planning.md`, each survivor against the occupied
-   ground and against every other survivor.
+3. **The three axes.** `wave-planning.md`, each survivor against every batch
+   holding ground, `chipped` ones included — the seams, edges and blind form its
+   order and issues name, read from its ledger row, not its file zone alone —,
+   against every open request no row claims, and against every other survivor.
 4. **The placed candidates, on this pass's own reading.** Nothing is launched on
    a verdict older than this pin: every candidate the layout holds whose verdict
    was carried rather than read here is read now, and one whose coordinate moves
@@ -150,8 +157,9 @@ in it saying so in a bullet rather than going unprinted. The capacity — how ma
 free, against how many were asked for — is what the first line says happened.
 
 - **`## Without your word`** — what this pass settled inside its authority.
-- **`## What moved`** — what landed since the last reading, premises knocked out, blockers
-  lifted, tracker changes in the slice, and every disagreement the three ground sources showed.
+- **`## What moved`** — what landed since the last reading, premises knocked out — each batch
+  holding ground whose order it reached named, for the master to tell —, blockers lifted, tracker changes
+  in the slice, and every disagreement the three ground sources showed.
 - **`## Where it stands`** — the batches running, as the catalogue's rows have them, each with
   the ground it holds.
 - **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus

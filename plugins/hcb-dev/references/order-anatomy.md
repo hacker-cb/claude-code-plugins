@@ -23,8 +23,9 @@ a receiver told only what is known treats the rest as known.
   ([`base-resolution.md`](base-resolution.md)). An order that touches no
   checkout says so here.
 - **The base pin** — the base as `<remote>/<branch>@<sha>`, the remote-tracking
-  form `base-resolution.md` carries forward (the local branch where no remote
-  exists): the commit the order's facts were verified on. It dates the payload —
+  form `base-resolution.md` carries forward — `<branch>@<sha>` for the local branch
+  where no remote exists, or for the local parent an epic completing in `local` mode
+  stands on: the commit the order's facts were verified on. It dates the payload —
   the receiver reads what the base brought from the pin to the tip
   ([`base-delta.md`](base-delta.md)) as the list of facts to re-verify before
   relying on them, refreshing the base itself where the named process does not.

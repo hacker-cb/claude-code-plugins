@@ -1,0 +1,12 @@
+{
+  "git_dir": "tests/suites/master-tree/trees/linked/gitdir",
+  "common_dir": "tests/suites/master-tree/trees/linked/common",
+  "head": "f1x7444444444444444444444444444444444444",
+  "branch": "claude/master-a1b2c3",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
+  },
+  "status": "",
+  "own_log": "f1x7444444444444444444444444444444444444 committed on the host branch",
+  "behind": "3"
+}

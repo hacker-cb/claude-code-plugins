@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Stubbed outright, not proxied: see suite.conf. `touch`, not a truncation — a switch
+# writes the commit it moved to into the marker, and later calls of the same case read it.
+[ -n "${STUB_MARKER_FILE:-}" ] && touch "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+moved() { [ -n "${STUB_MARKER_FILE:-}" ] && cat "$STUB_MARKER_FILE" 2>/dev/null; }
+refuse() { echo "stub git: $*" >&2; exit 3; }
+# `-c NAME=VALUE` before the command: kept, so a call can insist on the ones it needs.
+cfg=" "
+while [ "$1" = "-c" ]; do cfg="$cfg$2 "; shift 2; done
+case "$1" in
+  rev-parse)
+    # What `worktree-owners.mjs` asks, from the caller's directory: a checkout, and where it stands.
+    [ "$*" = "rev-parse --git-dir" ] && { echo ".git"; exit 0; }
+    if [ "$*" = "rev-parse --show-toplevel" ]; then
+      v=$(ask '.here'); echo "${v:-/tmp/example-checkout/.claude/worktrees/master-a1b2c3}"; exit 0
+    fi
+    # Answered one directory at a time, and in the absolute form only. The envelope's paths
+    # are relative to the repository root the runner works from; `old_git` plays a git that
+    # prints the unknown flag back.
+    if [ "$2" = "--path-format=absolute" ]; then
+      [ "$(ask '.dirs')" = fail ] && { echo "fatal: not a git repository (or any of the parent directories): .git" >&2; exit 128; }
+      [ "$(ask '.old_git')" = yes ] && { echo "--path-format=absolute"; exit 0; }
+      case "$3" in
+        --git-dir) echo "$PWD/$(ask '.git_dir')"; exit 0 ;;
+        --git-common-dir) echo "$PWD/$(ask '.common_dir')"; exit 0 ;;
+        --show-toplevel)
+          # `stranded` plays a tree holding the checkout of a submodule the base removed: a
+          # directory with its own `.git`, which no repository can carry as a fixture, so it
+          # is made at run time beside the marker the runner clears.
+          if [ -n "$(ask '.stranded')" ]; then
+            t="$(dirname "$STUB_MARKER_FILE")/stranded-top"; mkdir -p "$t/$(ask '.stranded')"
+            : > "$t/$(ask '.stranded')/.git"; echo "$t"; exit 0
+          fi
+          v=$(ask '.top'); echo "$PWD/${v:-tests/suites/master-tree/trees/linked/common}"; exit 0 ;;
+      esac
+    fi
+    if [ "$2 $3" = "--verify -q" ]; then
+      want=${4%"^{commit}"}
+      if [ "$want" = HEAD ]; then
+        m=$(moved); [ -n "$m" ] && [ "$m" != partial ] && { echo "$m"; exit 0; }
+        v=$(ask '.head')
+      else
+        v=$(ask ".refs[\"$want\"]")
+      fi
+      [ -n "$v" ] && { echo "$v"; exit 0; }
+      exit 1
+    fi ;;
+  symbolic-ref)
+    [ -n "$(moved)" ] && exit 1
+    v=$(ask '.branch')
+    case "$v" in
+      fail) echo "fatal: could not read HEAD" >&2; exit 128 ;;
+      "") exit 1 ;;
+      *) echo "refs/heads/$v"; exit 0 ;;
+    esac ;;
+  config)
+    if [ "$2 $3" = "--bool core.sparseCheckout" ]; then
+      case "$(ask '.sparse')" in "") exit 1 ;; fail) exit 128 ;; *) ask '.sparse'; exit 0 ;; esac
+    fi ;;
+  worktree)
+    # The listing `worktree-owners.mjs` reads: the main checkout and this linked one, in the
+    # `-z` shape — the line form with NUL where the newlines are.
+    v=$(ask '.worktrees')
+    [ -n "$v" ] || v=$(printf '%s\n' "worktree /tmp/example-checkout" "HEAD f1x7eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" \
+      "branch refs/heads/dev" "" "worktree /tmp/example-checkout/.claude/worktrees/master-a1b2c3" \
+      "HEAD f1x7eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" "detached")
+    printf '%s\n\n' "$v" | tr '\n' '\0'; exit 0 ;;
+  ls-files)
+    [ "$*" = "ls-files -s -v -z" ] || refuse "ls-files asked as: $*"
+    v=$(ask '.ls'); [ -n "$v" ] && printf '%s\n' "$v" | tr '\n' '\0'
+    exit 0 ;;
+  merge-base)
+    # Ancestor first: the remote copy the local parent must hold, then the parent.
+    [ "$3" = "$(ask '.refs["refs/remotes/origin/epic"]')" ] && [ "$4" = "$(ask '.refs["refs/heads/epic"]')" ] \
+      || refuse "merge-base asked the other way round: $*"
+    case "$(ask '.held')" in
+      yes) exit 0 ;;
+      no) exit 1 ;;
+      *) echo "fatal: not a valid commit" >&2; exit 128 ;;
+    esac ;;
+  status)
+    # Porcelain v2, untracked files and submodules named outright — or no answer: any other
+    # form is a question a config can bend.
+    [ "$*" = "status --porcelain=v2 -z --untracked-files=normal --ignore-submodules=none" ] \
+      || refuse "status asked as: $*"
+    v=$(ask '.status')
+    [ -n "$(moved)" ] && [ -n "$(ask '.status_after')" ] && v=$(ask '.status_after')
+    [ "$v" = fail ] && { echo "fatal: index file corrupt" >&2; exit 128; }
+    # The envelope holds the line form; `-z` is that shape with NUL where the newlines are.
+    [ -n "$v" ] && printf '%s\n' "$v" | tr '\n' '\0'
+    exit 0 ;;
+  log)
+    # Held against the base, every remote and every other branch — or no answer.
+    case " $* " in *" HEAD --not $(ask '.refs | to_entries[0].value') --remotes"*" --branches -- ") ;;
+      *) refuse "log asked as: $*" ;; esac
+    b=$(ask '.branch'); [ -n "$b" ] && { case " $* " in *" --exclude=$b --branches "*) ;; *) refuse "log holds HEAD's own branch as other: $*" ;; esac; }
+    v=$(ask '.own_log')
+    [ "$v" = fail ] && { echo "fatal: bad revision" >&2; exit 128; }
+    [ -n "$v" ] && printf '%s\n' "$v"
+    exit 0 ;;
+  rev-list)
+    v=$(ask '.behind')
+    case "$v" in
+      fail) echo "fatal: bad revision" >&2; exit 128 ;;
+      "") echo 0 ;;
+      *) echo "$v" ;;
+    esac
+    exit 0 ;;
+  switch)
+    # Detached, no hook, no ignored file overwritten, no submodule moved.
+    case "$cfg" in *" core.hooksPath=/dev/null "*) ;; *) refuse "switch with hooks on" ;; esac
+    for f in --detach --no-overwrite-ignore --no-recurse-submodules; do
+      case " $* " in *" $f "*) ;; *) refuse "switch without $f" ;; esac
+    done
+    # `partial`: git died with part of the tree written and HEAD where it was.
+    [ "$(ask '.switch')" = partial ] && { printf partial > "$STUB_MARKER_FILE"; echo "fatal: killed" >&2; exit 1; }
+    if [ "$(ask '.switch')" = fail ]; then
+      printf '%s\n' "error: The following untracked working tree files would be overwritten by checkout:" \
+        "	cfg.local" "Please move or remove them before you switch branches." "Aborting" >&2
+      exit 1
+    fi
+    for a in "$@"; do target=$a; done
+    [ "$(ask '.switch')" = elsewhere ] && target=$(ask '.head')
+    printf '%s' "$target" > "$STUB_MARKER_FILE"; exit 0 ;;
+esac
+refuse "no envelope answer for: $*"

@@ -1,0 +1,13 @@
+{
+  "git_dir": "tests/suites/master-tree/trees/linked/gitdir",
+  "common_dir": "tests/suites/master-tree/trees/linked/common",
+  "head": "f1x7111111111111111111111111111111111111",
+  "branch": "",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
+  },
+  "status": "1 .M SC.. 160000 160000 160000 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa lib/sub",
+  "own_log": "",
+  "behind": "3",
+  "ls": "H 160000 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 0\tlib/sub"
+}

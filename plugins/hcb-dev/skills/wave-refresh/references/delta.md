@@ -1,12 +1,29 @@
 # What moved, and what the open change requests are writing
 
-Read by `hcb-dev:wave-refresh` for the two reads whose obvious form answers
-wrongly and says nothing: the tracker's delta, which a filter by update time
-takes without the link changes a wave is planned on, and the files an open
-change request touches, whose list is cut at a hundred with no count beside it.
-What each forge actually does here is
+Read by `hcb-dev:wave-refresh` for the three reads whose obvious form answers
+wrongly and says nothing: the base's delta, which a search by path misses
+wherever a landing changed what the work is judged by; the tracker's delta,
+which a filter by update time takes without the link changes a wave is planned
+on; and the files an open change request touches, whose list is cut at a
+hundred with no count beside it. What each forge actually does here is
 [`../../../references/forge-behaviour.md`](../../../references/forge-behaviour.md);
 this file is the form.
+
+## The base's delta
+
+Taken per [`../../../references/base-delta.md`](../../../references/base-delta.md), with the sha
+of the pin the point to diff from names standing where that file has `M` — never a merge base
+computed from HEAD, which a master's tree on the base makes the new pin itself — and the pin
+taken now as its ref; the work it is read against is the ledger's verdicts and the orders of the batches
+holding ground. So:
+
+- a verdict whose coordinate a path the range touched stands on is re-derived, not carried;
+- what that file says the work now answers to reaches every candidate and every batch
+  holding ground whose work it judges, whatever paths they stand on;
+- a batch holding ground that the range reached is named in the report, for the master to
+  tell it;
+- where that file finds the start is no start, the base half is unread, and what it would
+  have covered is read over the slice whole.
 
 ## The tracker's delta
 

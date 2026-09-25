@@ -24,9 +24,11 @@ F="$(git merge-base --fork-point "$REF" HEAD)"   # the base's reflog, rememberin
 ```
 
 - **The delta** — `$M..$REF`: `git log --first-parent --oneline "$M..$REF"` for what landed,
-  `git diff --name-only "$M" "$REF"` for what it touched. It is read through the ref, never
-  through the working tree ([`base-resolution.md`](base-resolution.md)).
-- **The work's own files** — `git diff --name-only "$M" "$H"`, plus whatever is uncommitted.
+  `git diff --name-only --no-renames "$M" "$REF"` for what it touched, a renamed file under
+  both its names. It is read through the ref, never through the working tree
+  ([`base-resolution.md`](base-resolution.md)).
+- **The work's own files** — `git diff --name-only --no-renames "$M" "$H"`, plus whatever is
+  uncommitted.
 - **The facts the work rests on** — its issues, its plan — start earlier where they were read
   before `M`: a batch's order pin, until the batch has re-verified the order at its start; the
   point a build's analysis read the tree at, until its first cut. Read the facts from that point,
@@ -76,8 +78,8 @@ premise gone — is a fork, not something to build around.
 
 ## Who a fork goes to
 
-The addressee `issue-currency.md` names — its rule, whole. A master session reads no delta here:
-what landed is `hcb-dev:wave-refresh`'s to read, from the point its ledger records.
+The addressee `issue-currency.md` names — its rule, whole. A master session reads this delta
+through `hcb-dev:wave-refresh`, from the pin its ledger records rather than from `M`.
 
 ## What it hands back
 

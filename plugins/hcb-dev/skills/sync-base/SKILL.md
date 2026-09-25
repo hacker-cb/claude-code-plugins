@@ -10,8 +10,8 @@ description: >-
   never pushes: a branch a rebase leaves diverged from its published copy is reported, and a
   conflict needing a real decision stops the run. Not a step inside `hcb-dev:shipping-workflow`
   or `hcb-dev:github-pr-workflow`, which take the base themselves, nor the merge of the base into
-  a set's feature branch between slices of `hcb-dev:implementation-workflow`. In a master session
-  it moves the checkout and leaves reading what landed to `hcb-dev:wave-refresh`.
+  a set's feature branch between slices of `hcb-dev:implementation-workflow`. Not in a master
+  session, whose tree moves per `hcb-dev:master-session`.
 ---
 
 # Sync with the base
@@ -35,8 +35,8 @@ ls -d "$G/rebase-merge" "$G/rebase-apply" "$G/MERGE_HEAD" "$G/CHERRY_PICK_HEAD" 
 git status --porcelain
 ```
 
-- **Detached HEAD**, or **a path listed** — no branch to bring up to date, or a rebase, merge or
-  cherry-pick already in progress that is the user's to finish: stop.
+- **Detached HEAD**, **a path listed**, or **a master session** — no branch to bring up to date, a
+  rebase, merge or cherry-pick in progress that is the user's, or a tree `hcb-dev:master-session` moves: stop.
 - **Uncommitted work** — `--autostash` carries it, and step 6 says whether it came back.
 
 **Then this branch's own published copy**, before any base: commits someone else pushed to this
@@ -183,7 +183,7 @@ Read each take per `base-delta.md` — step 1's from the `H` it printed, step 5'
 and `H`, or from the earlier point the facts were read at where this session holds one. This
 skill's depth is the mechanics and the forks: restore the environment the delta changed, put a
 break the delta caused first in the report, recommendation first, rather than repair it, and never
-run the project's checks — tests, builds, linters. A master session only recommends `hcb-dev:wave-refresh` here.
+run the project's checks — tests, builds, linters.
 
 ## Report
 

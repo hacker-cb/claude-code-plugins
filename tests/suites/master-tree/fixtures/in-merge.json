@@ -1,0 +1,12 @@
+{
+  "git_dir": "tests/suites/master-tree/trees/in-merge/gitdir",
+  "common_dir": "tests/suites/master-tree/trees/in-merge/common",
+  "head": "f1x7111111111111111111111111111111111111",
+  "branch": "",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
+  },
+  "status": "",
+  "own_log": "",
+  "behind": "3"
+}

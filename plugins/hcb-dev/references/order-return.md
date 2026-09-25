@@ -44,7 +44,8 @@ the sources they cite at the revision the return names — never in the prose
 alone. For those, a landing since that revision is not a gap in the return; the
 verdict is re-checked against it before anything rests on it. A reviewer the
 return says did not run on work it should have covered is not a note to file:
-reopen, naming it, and run the review before acceptance; where the work already
-merged, run it over the landed range, with the commit before the landing handed
-to the reviewers as the explicit base. Then close that order, or reopen it
-naming what is still missing.
+reopen, naming it, and the returning session runs the review before acceptance —
+where the work already merged, over the landed range, with the commit before the
+landing handed to the reviewers as the explicit base; where that session has
+ended, the review goes out as an order of its own, and this one stays open until
+it returns. Then close that order, or reopen it naming what is still missing.
