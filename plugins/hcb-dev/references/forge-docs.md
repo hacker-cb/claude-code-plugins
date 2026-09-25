@@ -98,6 +98,9 @@ what REST does not.
 | write dependencies | `gh issue create --blocked-by`, `--blocking`; `gh issue edit --add-blocked-by`, `--remove-blocked-by`, `--add-blocking`, `--remove-blocking` | `glab issue create`, then `glab api` against issue links — not `--linked-issues --link-type` at creation (`forge-behaviour.md`) |
 | write the native type | `gh issue create --type`; `gh issue edit --type`, `--remove-type` | none — `glab api` |
 | write the milestone | `-m` on create and edit, `--remove-milestone` | `-m` on `glab issue create` and `glab issue update` |
+| write an issue's labels | `gh issue edit --add-label`, `--remove-label` | `glab issue update --label`, `--unlabel` |
+| a change request's labels | `gh pr create --label`; `gh pr edit --add-label`, `--remove-label` | `glab mr create --label`; `glab mr update --label`, `--unlabel` |
+| the label set | `gh label create`; `gh label edit <name> --name` (a rename), `--color`, `--description`; `gh label delete <name> --yes` | `glab label create`; `glab label edit --label-id <id> --new-name`, `--color`, `--description`; `glab label delete <name>` |
 | close as a duplicate | `gh issue close --reason duplicate --duplicate-of <n>` — closing is the only route, the schema has no mutation that marks a duplicate on its own | none — `glab issue close` takes no reason |
 | the CLI build it needs | `gh` 2.94.0 for every hierarchy, dependency and type field and flag; 2.88.0 for `--duplicate-of`; 2.73.0 for `closedByPullRequestsReferences`; 2.48.0 for `gh api --slurp` | `glab` 1.64.0 for a working `glab api graphql`; 1.77.0 for `glab milestone list --include-ancestors` |
 | the server it needs | GHES 3.17 for types, `parent` and `subIssues`; 3.19 for `blockedBy`, `blocking`, `issueDependenciesSummary` and the dependencies REST; the sub-issues REST is absent on GHES through 3.22 | the tier: `relates_to` on Free; `blocks` / `is_blocked_by`, epics, iterations and weight on Premium and up |
@@ -111,6 +114,7 @@ reads, are `forge-behaviour.md`'s.
 | classification beyond labels | [issue types on the org](https://docs.github.com/en/rest/orgs/issue-types.md), [on the repository](https://docs.github.com/en/rest/repos/issue-types.md) — organisation-owned repositories only, one per issue | [configurable work item types](https://docs.gitlab.com/user/work_items/configurable_work_item_types/index.md) — paid tier, configured on the top-level group, no REST surface |
 | hierarchy | [sub-issues REST](https://docs.github.com/en/rest/issues/sub-issues.md) | [epics](https://docs.gitlab.com/user/group/epics/index.md), [work items](https://docs.gitlab.com/user/work_items/index.md), [epics REST](https://docs.gitlab.com/api/epics/index.md) |
 | dependencies | [issue dependencies REST](https://docs.github.com/en/rest/issues/issue-dependencies.md) | [linked issues](https://docs.gitlab.com/user/project/issues/related_issues/index.md), [issue links REST](https://docs.gitlab.com/api/issue_links/index.md) |
+| labels | [labels REST](https://docs.github.com/en/rest/issues/labels.md) — a description of 100 characters or fewer; [managing labels](https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels.md) — one set for issues and pull requests, a deleted label gone from both | [labels REST](https://docs.gitlab.com/api/labels/index.md) — no limit named for the description, nothing said of a deleted label's carriers; [scoped labels](https://docs.gitlab.com/user/project/labels/index.md) |
 | time-boxing | [milestones REST](https://docs.github.com/en/rest/issues/milestones.md) | [milestones REST](https://docs.gitlab.com/api/milestones/index.md) |
 | the schema, where REST falls short | [issues](https://docs.github.com/en/graphql/reference/issues.md) | [GraphQL](https://docs.gitlab.com/api/graphql/index.md) |
 
@@ -123,3 +127,4 @@ is fixed, while
 [GitLab's](https://docs.gitlab.com/user/project/issues/managing_issues/index.md)
 matches more words and is
 [redefinable on a self-managed instance](https://docs.gitlab.com/administration/issue_closing_pattern/index.md).
+Either acts only on a request into the default branch: one into any other base closes nothing.

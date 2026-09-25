@@ -13,19 +13,21 @@ Two labels belong to the plugin's own process, spelled the same in every reposit
 
 | label | colour | description | on |
 |---|---|---|---|
-| `epic` | `5319e7` | An epic run by a coordinating session: the issue its wave ledger hangs on | the umbrella issue — only one a ledger hangs on |
-| `wave` | `c5def5` | One wave of an epic: its plan, its ledger and its batches' returns | each wave issue |
+| `epic` | `d93f0b` | An epic run by a coordinating session: the issue its wave ledger hangs on | the umbrella issue — only one a ledger hangs on |
+| `wave` | `f9d0c4` | One wave of an epic: its plan, its ledger and its batches' returns | each wave issue |
 
 They are **not classification roles** ([`classification.md`](classification.md)): they say where
 an issue stands in the coordination, never its kind of work, component or priority, and a reading
 of a slice's roles, cardinality or tiers reads past them — **unless the repository's own set
 already gives the name a role**. Then that label is read as the set reads it, and applying it is
-a classification edit like any other, which goes to the user. The epic keeps the labels the
-repository classifies it by; a wave issue carries `wave` alone.
+a classification edit like any other, which goes to the user. The epic is classified as the
+parent it is — its kind of work and queue labels, as the user gives them; a wave issue carries
+`wave` alone.
 
 **The role assignment authorizes them**, as it authorizes filing the umbrella: the master
 creates either label where the repository lacks it and applies `epic` to its own epic and
-`wave` to its own waves — nothing wider. Renaming or deleting one stays the user's.
+`wave` to its own waves — nothing wider. Renaming or deleting one is done only on the user's
+explicit word ([`label-model.md`](label-model.md)).
 
 **Read the name, create it, then apply it** — never apply a name first
 ([`forge-behaviour.md`](forge-behaviour.md)). A label of that name already in the set — on GitLab

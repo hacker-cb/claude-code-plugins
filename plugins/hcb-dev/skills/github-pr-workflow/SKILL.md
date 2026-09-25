@@ -29,8 +29,8 @@ routes to is [`../../references/slice-completion.md`](../../references/slice-com
 ## Autonomy model
 
 Autonomous, without asking: renaming the branch, rebasing onto base, pushing (with
-`--force-with-lease`, never plain `--force`), opening the PR, committing and pushing fixes,
-replying to Copilot and the one request of its own
+`--force-with-lease`, never plain `--force`), opening the PR and setting its labels, committing
+and pushing fixes, replying to Copilot and the one request of its own
 [`references/copilot-request.md`](references/copilot-request.md) allows, reading state, and
 parking the run on a platform outage — each narrated in a line as you go.
 
@@ -116,19 +116,15 @@ git rebase --autostash "<.base.ref, on a .base.current of true>"
 ## Step 3 — Open the PR (if not already open)
 
 An open PR for this branch is not recreated — skip to the loop. Otherwise create one **ready
-for review**, never draft ([`references/copilot.md`](references/copilot.md) says what a draft costs):
+for review**, never draft ([`references/copilot.md`](references/copilot.md) says what a draft
+costs), titled in `branch-naming.md`'s shape, its body per
+[`../../references/merge-message.md`](../../references/merge-message.md), and carrying the labels
+[`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) gives it — one
+`--label` each, none on a PR into anything but the default branch:
 
 ```bash
-gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>"
+gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>" --label "<label>"
 ```
-
-Title: the shape in `branch-naming.md`. Body: what changed and why, in the user's own framing
-if known — a short summary, a bullet list of notable changes, and `Closes #N`, that English
-keyword verbatim whatever language the body is in, for every issue this PR settles (the
-`issues` a flow upstream threaded in, or on a direct entry the ones the user names). Where the
-base is not the default branch that keyword does nothing
-([`../../references/forge-behaviour.md`](../../references/forge-behaviour.md)) and those issues
-are closed explicitly after the merge lands.
 
 ## Step 4 — The fix loop (until GitHub says mergeable)
 
@@ -137,10 +133,9 @@ iterations, then escalate. Gates decide *permission* to merge, your bar decides 
 where they diverge the stricter wins. Severity decides what you *fix*, never when you are
 *done*. The bar, whatever the repo enforces: every required check green and CI genuinely
 green; the base's own review and thread requirements met (`references/merge-gates.md`); the PR
-body describing the head about to land
-([`../../references/merge-message.md`](../../references/merge-message.md), rewritten with `gh
-pr edit <pr> --body`); and every Copilot review **this driver waits for** settled with its
-Critical and Important findings fixed, its comments answered and its threads resolved — or,
+body and labels describing the head about to land (`merge-message.md`, `label-lifecycle.md`,
+rewritten with `gh pr edit <pr>`); and every Copilot review **this driver waits for** settled
+with its Critical and Important findings fixed, its comments answered and its threads resolved — or,
 where a wait ran out, the addressee's word to merge with the head unreviewed, said in the report.
 
 **Two exit items no round of this loop closes** — the drift, where the base does not require the
@@ -178,7 +173,7 @@ either becomes a stop.
    waits for before the exit above is evaluated, and what a review that did not approve asks for;
    `copilot-findings.md` owns the readings, the ladder, the pushes and the reply protocol.
 4. **Re-read from this loop's step 1**, not the top-level Step 1 — and after any push, bring the
-   body back to what is landing first (`merge-message.md`).
+   body and labels back to what is landing first (`merge-message.md`).
 
 ## Steps 5 to 7 — merge, watch it land, report
 

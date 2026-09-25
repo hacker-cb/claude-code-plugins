@@ -69,6 +69,7 @@ where there is no request standing, the count does have a moment of truth.
 | a label name the caller did not just read | **created, on GitLab**, so a typo joins the set permanently; on GitHub labels passed while creating or updating an issue are dropped in silence where the caller has no push access. Confirm the labels that came back, not the exit status |
 | a `404` on an issue's comment feed | **an answer, not a silence.** Measured on both: `gh: Not Found (HTTP 404)` and `glab: 404 Not found (HTTP 404)` — the issue is not there, which a caller fixes by correcting the coordinate rather than retrying. It is also what either forge answers where the token cannot see the issue, and the two are indistinguishable from outside |
 | a GitLab label listing | carries the group's **inherited** labels, which apply, and **archived** ones, which do not |
+| a label renamed | **every carrier moves with it**, in the one call — measured on GitHub, where a rename carried 23 issues across. GitLab's is unmeasured |
 
 ## Reading a slice of issues
 

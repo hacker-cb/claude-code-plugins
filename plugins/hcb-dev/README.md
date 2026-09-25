@@ -84,7 +84,8 @@ form: you paste every one of them yourself.
   takes, the shape of the issue body, and the three moments worth consulting open
   issues at. Classification against the
   mechanism you adopted, else against what the repository itself defines and
-  uses, is `references/classification.md`. Asked whether one issue still holds, it rules it by
+  uses, is `references/classification.md`; when each label is written, `references/label-lifecycle.md`.
+  Asked whether one issue still holds, it rules it by
   `references/issue-currency.md`'s four verdicts; a whole slice is `backlog-survey`'s. An issue
   that waits on another carries the forge's own dependency link — or, where the forge has none, a
   `Blocked by` line — per `references/issue-links.md`. Called by
@@ -586,10 +587,19 @@ saying something else. Each file opens by saying what it owns.
   what stands in where the forge carries none. Read wherever an issue is filed, split
   or found waiting on another.
 - [`references/classification.md`](references/classification.md) — how an issue
-  gets classified — against the mechanism the user adopted, else against what the
-  repository itself defines and actually uses — and what to do with one
-  classified outside it. Read wherever an issue is
-  classified or a backlog is read by what its tracker declares.
+  or a change request gets classified — the roles in three layers (goal, outcome,
+  queue) and how many of each a leaf, a parent and a request carry, against the
+  mechanism the user adopted, else against what the repository itself defines and
+  actually uses — and what to do with one classified outside it. Read wherever an
+  issue is classified or a backlog is read by what its tracker declares.
+- [`references/label-model.md`](references/label-model.md) — the families this
+  plugin proposes, their colours and description form, where their values come
+  from, and how a label is renamed or deleted. Read wherever a label set is
+  proposed or a label leaves one.
+- [`references/label-lifecycle.md`](references/label-lifecycle.md) — when each label
+  on an issue or a change request is written, from what, and on which authority:
+  filing, taking up, opening a request, re-deriving it before the merge, and
+  aligning an issue at its close. Read by whatever does any of those.
 - [`references/findings.md`](references/findings.md) — how a finding is rated,
   whether it is fixed in the work that found it, whether it is work put off and so
   worth a tracker entry at all, and the closed list of outcomes one can end in. Read wherever a

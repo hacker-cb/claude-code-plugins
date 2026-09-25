@@ -100,13 +100,15 @@ it; never the lowest numbers and never a relevance-ranked search hit. Identifier
 and paths stay verbatim whatever the language.
 
 Labels, native types and milestones — that same reference, before applying any of
-them and before proposing one the repository lacks.
+them; proposing one the repository lacks is
+[`../../references/label-model.md`](../../references/label-model.md)'s.
 
 ## Hierarchy and dependencies are separate questions
 
-**Hierarchy** — one child per independently completable piece, and the parent
-carries its own kind of work; written per
-[`../../references/forge-docs.md`](../../references/forge-docs.md).
+**Hierarchy** — one child per independently completable piece; the parent keeps its
+kind of work and its queue labels, its outcome labels moving onto the children in the
+same edit ([`../../references/label-lifecycle.md`](../../references/label-lifecycle.md));
+written per [`../../references/forge-docs.md`](../../references/forge-docs.md).
 
 **Dependencies** — what blocks what: when an edge is written, in what, and what stands in
 where the forge carries none is [`../../references/issue-links.md`](../../references/issue-links.md).
@@ -137,18 +139,13 @@ all. A whole slice is `hcb-dev:backlog-survey`'s.
 Where a bare `#N` would not autolink — documentation, code comments, anything read
 outside its own issue or change request — write `[#N](<url>)`.
 
-The closing keyword is the forge's own — the word its pattern matches, verbatim,
-never translated to match the prose around it. That word is English on both forges
-by default. Which words a forge matches, and whether its pattern can be
-reconfigured at all, is `../../references/forge-docs.md`.
-
-A closing keyword in the change request body closes the issue **only where the
-forge acts on it** — which it does for a request targeting the default branch, and
-not for one targeting a feature branch or any other trunk the repository merges
-into. Write the keyword anyway; where the forge will not act on it, and wherever
-the work completes with no change request at all, close or link the issue
-explicitly once the work lands, with the user's go-ahead — the close carrying
-what settled it, which the table above reads back:
+The closing keyword goes into the change request body per
+[`../../references/merge-message.md`](../../references/merge-message.md), and closes
+the issue **only where the forge acts on it**: a request into the default branch.
+Where it will not, and wherever the work completes with no change request at all,
+close or link the issue explicitly once the work lands, with the user's go-ahead —
+the close carrying what settled it, which the table above reads back, and the labels
+an issue takes at close (`label-lifecycle.md`):
 
 ```bash
 # The comment goes from a file: inline in quotes, the shell runs the backquotes it holds.
@@ -172,7 +169,9 @@ session, whatever carried it here — whoever that order names **for writing to 
 addressee named for its forks is not that, and an order naming none leaves the user. Opening or
 updating anything waits for it, every time. **A standing instruction to work autonomously is not
 that answer** — it authorizes the work, not the tracker — and an approval covers the batch it
-was given for, never what turns up afterwards.
+was given for, never what turns up afterwards. Three label writes ride on another answer
+instead, each named by `label-lifecycle.md`: a change request's own, an issue's at its close,
+and a parked reason the answer taking the work named.
 
 **The answer takes the form the person gives it**, and three forms answer: agreement with what
 was recommended; a bar — "file the important ones" — settling every candidate of that pass which
