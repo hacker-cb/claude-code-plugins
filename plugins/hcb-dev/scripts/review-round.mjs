@@ -973,13 +973,13 @@ function status() {
   if (!prior && !planned) cannot(`${id} is neither planned nor submitted in round ${round.id}`);
   // A model alone is a fact about an answer: before one, it would record a loss nobody meant.
   if (!prior && state === undefined) cannot(`${id} has not answered yet — record its model once it has`);
-  const at = new Date().toISOString();
   const base = prior || { task: id, source: planned.source, state: 'unavailable', candidates: 0, rejected: 0, notes: [] };
   const next = {
     ...base,
     state: state === undefined ? base.state : (prior ? worse(prior.state, state) : state),
     notes: [...(base.notes || []), ...(note ? [note] : [])],
-    at,
+    // A model alone says what an answer ran on, not when it came: the time stays the answer's.
+    at: state === undefined ? base.at : new Date().toISOString(),
   };
   if (model !== undefined) next.model = model;
   writeJson(path.join(round.dir, 'sources', `${id}.status.json`), next);
@@ -1397,12 +1397,14 @@ async function codex() {
 function merged(round) {
   const candidates = [];
   const rejected = [];
+  const handed = new Map();
   for (const f of sourceFiles(round.dir)) {
     const s = readJson(path.join(round.dir, 'sources', f));
     candidates.push(...s.candidates);
     rejected.push(...s.rejected.map((r) => ({ task: s.task, ...r })));
+    handed.set(s.task, s);
   }
-  return { candidates, rejected };
+  return { candidates, rejected, handed };
 }
 
 function merge() {
@@ -1545,10 +1547,7 @@ function queue() {
     const standing = u.carried.find((v) => (v.verdict === 'confirmed' || v.verdict === 'unproven')
       && readsOwn(v.evidence, u) && v.evidence.every(stands));
     if (standing) {
-      // When a carried verdict was made is some earlier check's time, never this round's.
-      const kept = { ...standing, unit: u.unit, reused: true };
-      delete kept.at;
-      writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), kept);
+      writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), { ...standing, unit: u.unit, reused: true });
       reused.push(u.unit);
     } else open.push(u);
   }
@@ -1583,17 +1582,15 @@ function queue() {
     order = order.slice(0, budget);
   }
   // What each call stopped on is its answer's; the file keeps what later calls read.
-  // When this queue's checks began, for a wait on them to count from; and every call's
-  // start with what it queued, for the result to time each call's checks by.
-  const at = new Date().toISOString();
+  // When each call began, with what it queued: a wait counts from the latest, and the result
+  // times each call's checks by it.
   const q = {
     queue: [...prior.queue, ...order],
     reused: [...prior.reused, ...reused],
     budget_cut: [...prior.budget_cut, ...cut],
     unreachable: [...prior.unreachable, ...unreachable],
     latest: order,
-    started_at: at,
-    calls: [...(Array.isArray(prior.calls) ? prior.calls : []), { at, units: order }],
+    calls: [...(prior.calls ?? []), { at: new Date().toISOString(), units: order }],
   };
   writeJson(qf, q);
   // The answer names what this call queued; the file holds the whole queue.
@@ -1718,7 +1715,7 @@ function wait() {
     expected = (opts['--expect'] || '').split(',').filter(Boolean);
     for (const u of expected) if (!UNIT_ID.test(u)) die(`--expect: '${u}' is not a group id`);
     if (!expected.length) expected = q.latest ?? q.queue;
-    since = q.started_at ?? since ?? round.req.created_at;
+    since = q.calls?.at(-1)?.at ?? q.started_at ?? since ?? round.req.created_at;
   }
   const started = Date.parse(since ?? '');
   // Presence alone answers: a file lands whole (writeJson renames it into place), so
@@ -1747,7 +1744,7 @@ function result() {
   const { req } = round;
   const uf = path.join(round.dir, 'units.json');
   const qf = path.join(round.dir, 'queue.json');
-  const candidates = merged(round).candidates;
+  const { candidates, handed } = merged(round);
   // Candidates nobody grouped would leave an empty result that reads as a clean review.
   if (!existsSync(uf) && candidates.length) cannot(`round ${round.id} holds ${candidates.length} candidate(s) and no groups — run units first`);
   const all = existsSync(uf) ? readJson(uf).units : [];
@@ -1764,10 +1761,6 @@ function result() {
   const p = planOf(round);
   // Counts come from what each task handed in, states from its status: a loss recorded
   // beside a submission changes how covered the task is, not what it found.
-  const handed = new Map(sourceFiles(round.dir).map((f) => {
-    const sub = readJson(path.join(round.dir, 'sources', f));
-    return [sub.task, sub];
-  }));
   const answers = statuses(round.dir);
   // How long it ran, read from the store alone, so a result built twice answers the same. A
   // time the store does not hold, or holds unreadably, is null — never a refusal.
@@ -1779,17 +1772,25 @@ function result() {
   const byTime = (times) => times.map(when).filter(Boolean).sort((a, b) => Date.parse(a) - Date.parse(b));
   const earliest = (times) => byTime(times)[0] ?? null;
   const latest = (times) => byTime(times).at(-1) ?? null;
-  // A task began at its stamp, or with the plan where it left none. It ended when it handed
-  // in — a loss recorded after that rewrites its status, not when it answered — or, where it
-  // never did, when its loss was recorded.
-  const startOf = (s) => when(startedOf(round.dir, s.task)) ?? when(p?.planned_at);
-  const endOf = (s) => when(handed.get(s.task)?.submitted_at) ?? when(s.at);
+  // A task began at its stamp, or with the plan where it handed in and left none; one that did
+  // neither never ran. It ended when it handed in — a loss recorded after that rewrites its
+  // status, not when it answered — or, where it never did, when its loss was recorded.
+  const startOf = (task) => when(startedOf(round.dir, task)) ?? (handed.has(task) ? when(p?.planned_at) : null);
+  const endOf = (s) => (s ? when(handed.get(s.task)?.submitted_at) ?? when(s.at) : null);
+  // From the first start to the last end of the tasks that ran: they run side by side. One
+  // that began and never answered leaves the span unknown, not shorter.
+  const spanOf = (tasks) => {
+    const ran = tasks.filter((t) => startOf(t) !== null);
+    const ends = ran.map((t) => endOf(answers.find((s) => s.task === t)));
+    if (!ran.length || ends.includes(null)) return null;
+    return secs(earliest(ran.map(startOf)), latest(ends));
+  };
   const sweepTask = p?.sweep?.task ?? null;
   const coverage = [];
   if (req.mode === 'round') {
     const bySource = new Map();
     const rowOf = (source) => {
-      if (!bySource.has(source)) bySource.set(source, { source, state: null, tasks: 0, candidates: 0, rejected: 0, notes: [], missing: [], models: [], timed: [] });
+      if (!bySource.has(source)) bySource.set(source, { source, state: null, tasks: 0, candidates: 0, rejected: 0, notes: [], missing: [], models: [], timed: new Set() });
       return bySource.get(source);
     };
     // The Codex pass states one model and level for its row; a finder names its task where
@@ -1801,7 +1802,7 @@ function result() {
       if (!reviews(req, s.source)) continue;
       const row = rowOf(s.source);
       // The sweep runs after the checks, and is timed as a phase of its own.
-      if (s.task !== sweepTask) row.timed.push(s);
+      if (s.task !== sweepTask) row.timed.add(s.task);
       row.state = row.state === null ? s.state : worse(row.state, s.state);
       row.tasks += 1;
       row.candidates += handed.get(s.task)?.candidates.length ?? 0;
@@ -1813,7 +1814,11 @@ function result() {
     // for that nothing answered for, are reviewers missing — never rows left out, since
     // silence would read as nothing to report.
     const answered = new Set(answers.map((s) => s.task));
-    for (const t of plannedTasks(p)) if (!answered.has(t.task)) rowOf(t.source).missing.push(t.task);
+    for (const t of plannedTasks(p)) {
+      if (answered.has(t.task)) continue;
+      rowOf(t.source).missing.push(t.task);
+      if (t.task !== sweepTask) rowOf(t.source).timed.add(t.task);
+    }
     for (const source of req.sources || []) rowOf(source);
     // A source is as covered as its least covered task; one whose finders the conductor
     // ran itself, with no agents to hand them to, is no better than depth. A codex task is
@@ -1837,8 +1842,7 @@ function result() {
       const model = row.model ?? (row.models.length ? row.models.join(', ') : null);
       if (model) line.model = model;
       if (row.effort) line.effort = row.effort;
-      // From its first task's start to its last task's end: its tasks run side by side.
-      line.time_s = secs(earliest(row.timed.map(startOf)), latest(row.timed.map(endOf)));
+      line.time_s = spanOf([...row.timed]);
       coverage.push(line);
     }
   }
@@ -1918,21 +1922,29 @@ function result() {
     warnings.push(`coverage-warning: the working tree changed while the round ran (${[...drifted].join(', ')}) — verdicts read a tree the finders did not`);
   }
   findings.sort((a, b) => RANK[a.severity] - RANK[b.severity]);
-  // Each queue call's checks ran from the call to the last verdict it asked for. A verdict let
-  // stand from before the round was no check of this one, and a call nothing answered is left
-  // out rather than guessed at.
+  // Each queue call's checks ran from the call to the last verdict it asked for, and calls
+  // that overlap count once. A verdict let stand from before the round was no check of this
+  // one; a group queued and never answered leaves the checks' time unknown, not shorter.
   const checkedAt = (unit) => {
     const v = verdicts.get(unit);
-    return v && !v.reused ? v.at : null;
+    return v && !v.reused ? when(v.at) : null;
   };
+  const calls = (q?.calls ?? []).filter((c) => c.units.length);
   let checking = null;
-  for (const c of Array.isArray(q?.calls) ? q.calls : []) {
-    const s = secs(c?.at, latest((Array.isArray(c?.units) ? c.units : []).map(checkedAt)));
-    if (s !== null) checking = (checking ?? 0) + s;
+  if (calls.length && calls.every((c) => c.units.every(checkedAt))) {
+    const spans = calls.map((c) => [Date.parse(c.at), Date.parse(latest(c.units.map(checkedAt)))])
+      .sort((a, b) => a[0] - b[0]);
+    let [from, to] = spans[0];
+    let ms = 0;
+    for (const [a, b] of spans.slice(1)) {
+      if (a > to) { ms += to - from; [from, to] = [a, b]; } else to = Math.max(to, b);
+    }
+    ms += to - from;
+    checking = Number.isFinite(ms) && ms >= 0 ? Math.round(ms / 1000) : null;
   }
   const sweep = sweepTask ? answers.find((s) => s.task === sweepTask) : null;
   // The round ends at the last thing its store records, not when a result is asked for.
-  const ended = latest([...answers.map(endOf), ...all.map((u) => checkedAt(u.unit))]);
+  const ended = latest([...answers.map(endOf), ...all.map((u) => checkedAt(u.unit)), ...(q?.calls ?? []).map((c) => c.at)]);
   const timing = {
     opened_at: when(req.created_at),
     ended_at: ended,
