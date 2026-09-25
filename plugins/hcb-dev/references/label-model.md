@@ -21,13 +21,13 @@ the repository's own set answered with (`classification.md`).
 | `awaits:` | parked reason | `d4c5f9` | `design`, `upstream`; `internal` only where the forge carries no dependency link ([`issue-links.md`](issue-links.md)); others the project's |
 | `priority:` | priority | `high` `e11d21` · `low` `c2e0c6` | these two; no label means normal |
 
-- **The separator is `:`**, or the one the set already uses, uniform across it — automation and
-  permission wildcards key off the prefix. On GitLab a family holding one value per carrier —
+- **The separator is `:`**, or the one the set already uses, uniform across it. On GitLab a family holding one value per carrier —
   `type`, `awaits`, `priority` — may take `::` where the tier makes the platform keep it so
   ([`forge-behaviour.md`](forge-behaviour.md)); a family holding several never does.
 - **Colour is a scanning aid on top of the name**, never the only thing carrying a distinction: a
   family whose values are peers shares one hue, `type` and `priority` colour each value by what it
-  signals, and a hue another family in the set already wears is not proposed.
+  signals, and a hue a label in the set already wears for another meaning — the plugin's `epic` and
+  `wave` included — is not proposed.
 - **The description reads `<Family>: <when to apply> — <examples>`** and fits the forge's limit
   ([`forge-docs.md`](forge-docs.md)). A rule that will not fit its description is a label too
   fine to be applied alike: split it, or drop it.

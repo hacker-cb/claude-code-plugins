@@ -9,26 +9,27 @@ authority. The roles are [`classification.md`](classification.md)'s, the invocat
 ([`forge-behaviour.md`](forge-behaviour.md)). A value the work needs and the set lacks is named in
 the report, never created ([`label-model.md`](label-model.md)).
 
-**A name something keys on is the user's to write.** Before the first write of a run, read what
-in the repository reacts to a label — a workflow triggered on `labeled` or `unlabeled`, a merge,
+**A name something keys on is the user's to write.** Before the first write to each repository in a
+run, read what in it reacts to a label — a workflow triggered on `labeled` or `unlabeled`, a merge,
 release or deploy rule matching a name; a name it matches, added or taken off, goes to the user
 rather than onto the carrier.
 
 ## Writing them
 
-Every label write this file names goes through one script: the names arrive as a JSON array in a file written out
-of the set's answer, and leave in a JSON body — never on a command line, never through a CLI's
-label flag, which splits a name on its commas. It refuses a name the set does not hold, and reads
-the carrier back.
+Every label write this file names goes through one script, the names in a file as a JSON array
+written out of the set's answer — never on a command line or through a CLI's label flag
+(`forge-docs.md`). It refuses a name the set does not hold, and reads the carrier back.
 
 ```bash
 node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request> --forge <gh|glab> \
   [--add <file>] [--remove <file>] [--repo <path of another repository>]
 ```
 
-`wrote` true is done; false wrote nothing, `reason` saying why — among them a name `unknown` to the
-set, and a refusal, as an account that may not label is refused; null is a write that did not read
-back as meant, `missing`, `standing` and `lost` naming what differs, and is a stop.
+Where it answers that no remote of the checkout names the forge's host, pass `--host`: the host the
+checkout's forge lives on, checked, never the one that answer named. `wrote` true is done; false
+wrote nothing, `reason` saying why — among them a name `unknown` to the set, and a refusal, as an
+account that may not label is refused; null is a write that did not read back as meant, `missing`,
+`standing` and `lost` naming what differs, and is a stop.
 
 ## Filing and splitting
 
@@ -72,13 +73,13 @@ the report names the labels for someone who can.
 **An issue a change settled** — one threaded in or named by the user, never one the body's keywords
 alone name — takes that change's reading in place of its forecast: a leaf its kind of work and
 outcome; a parent no outcome, and its children's dominant kind, read again. A leaf's reading is the
-request's labels where it settled that issue alone and the account could set them, a role the
-request cannot carry (a kind of work run as a native type) read from its diff; otherwise the part of
-the diff that settled it, read as a request's are above, split by the session that did the work. The
-kind of work goes into the mechanism the repository runs it in, a native type included. An issue in
-another repository is aligned against that repository's own set, a role it has no vocabulary for
-left and named. Where the session cannot tell, the issue keeps what it carried and the report says
-so.
+request's labels where it is a request into the default branch that settled that issue alone and
+carries the labels the account set, a role the request cannot carry (a kind of work run as a native
+type) read from its diff; otherwise the part of the diff that settled it, read as a request's are
+above, split by the session that did the work. The kind of work goes into the mechanism the
+repository runs it in, a native type included. An issue in another repository is aligned against
+that repository's own set, a role it has no vocabulary for left and named. Where the session cannot
+tell, the issue keeps what it carried and the report says so.
 
 **Any close** takes the parked reason off and keeps the priority; an issue closed with no change
 behind it — not planned, a duplicate — keeps everything else.

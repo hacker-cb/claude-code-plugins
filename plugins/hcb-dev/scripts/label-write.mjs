@@ -122,30 +122,46 @@ const probe = (cmd, checkout = false) => {
 };
 // The hosts this checkout's remotes name. A host no remote names and nobody passed is a server
 // telling this run where to write — with the user's token for that host — and is refused.
-const remoteHosts = (() => {
+// An SSH alias of the user's own ssh configuration stands for the host it names; `ssh.<host>` is
+// the port-443 SSH front a forge keeps beside itself.
+let remoteHostsRead = null;
+const remoteHosts = () => {
+  if (remoteHostsRead) return remoteHostsRead;
   const r = runner(opts.dir, 'git')(['remote', '-v'], 30000);
   const hosts = new Set();
   for (const line of r.ok ? r.out.split('\n') : []) {
     const url = line.split(/\s+/)[1] ?? '';
-    const m = url.match(/^[a-z+]+:\/\/(?:[^@/]*@)?([^/:]+)/i) ?? url.match(/^(?:[^@/]*@)?([^/:]+):/);
-    if (m) hosts.add(m[1].toLowerCase());
+    const scheme = url.match(/^([a-z][a-z0-9+.-]*):\/\/(?:[^@/]*@)?([^/:]+)/i);
+    const scp = scheme ? null : url.match(/^(?:[^@/]*@)?([^/:]+):/);
+    const h = scheme ? scheme[2] : scp?.[1];
+    if (!h) continue;
+    hosts.add(h.toLowerCase());
+    if (scp || /^ssh/i.test(scheme?.[1] ?? '')) {
+      const g = runner(opts.dir, 'ssh')(['-G', h], 10000);
+      const name = g.ok ? g.out.split('\n').find((l) => l.startsWith('hostname '))?.slice(9).trim() : null;
+      if (name) hosts.add(name.toLowerCase());
+    }
   }
+  for (const h of [...hosts]) if (h.startsWith('ssh.')) hosts.add(h.slice(4));
+  remoteHostsRead = hosts;
   return hosts;
-})();
-const bare = (h) => h.toLowerCase().replace(/:\d+$/, '');
+};
+// Only a default port is dropped: a port named on purpose picks an endpoint of its own.
+const norm = (h) => h.toLowerCase().replace(/:(443|80)$/, '');
+const bare = (h) => norm(h).replace(/:\d+$/, '');
 // A repository named without a host is looked for on the host this checkout lives on, never on
 // whichever host the CLI would otherwise default to.
 if (opts.repo !== null && opts.host === null) {
   const here = probe(opts.forge, true);
   if (!here.ok) refuse(`--repo without --host takes this checkout's host, and it did not answer — ${here.why}`);
-  if (!remoteHosts.has(bare(here.host))) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
+  if (!remoteHosts().has(bare(here.host))) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
   opts.host = here.host;
 }
 const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map((c) => probe(c));
 for (const p of probed) {
-  if (p.ok && opts.host && bare(p.host) !== bare(opts.host)) {
+  if (p.ok && opts.host && norm(p.host) !== norm(opts.host)) {
     Object.assign(p, { ok: false, why: `${p.cmd}: this repository lives on ${p.host}` });
-  } else if (p.ok && !opts.host && !remoteHosts.has(bare(p.host))) {
+  } else if (p.ok && !opts.host && !remoteHosts().has(bare(p.host))) {
     Object.assign(p, { ok: false, why: `${p.cmd}: answered with ${p.host}, which no remote of this checkout names — pass --host` });
   }
 }
@@ -246,6 +262,7 @@ const send = (args, label) => {
 try {
   if (forge === 'gh') {
     // Off before on: a sibling swapped out of a one-value family never stands beside its successor.
+    const addBody = toAdd.length ? body({ labels: toAdd }) : null;
     // A name of dots stays a name: unencoded, `.` and `..` are path steps a server resolves away.
     const seg = (n) => encodeURIComponent(n).replace(/\./g, '%2E');
     for (const n of toRemove) {
@@ -254,7 +271,7 @@ try {
     // A removal that failed holds the addition back, so a swapped-out value never stands beside
     // its successor.
     if (toAdd.length && failures.length === 0) {
-      send(['api', '--hostname', host, '--method', 'POST', `${carrierPath}/labels`, '--input', body({ labels: toAdd })],
+      send(['api', '--hostname', host, '--method', 'POST', `${carrierPath}/labels`, '--input', addBody],
         `add ${toAdd.length}`);
     }
   } else {
@@ -289,7 +306,9 @@ if (answer.missing.length === 0 && answer.standing.length === 0 && answer.lost.l
   answer.reason = text(`refused: ${failures.join('; ')}`);
 } else {
   answer.wrote = null;
-  answer.reason = text(`${unanswered && !changed ? 'a write went unanswered and may land yet'
-    : (!changed ? 'the forge accepted the write and the carrier did not change' : 'did not read back as written')}${failures.length ? ` — ${failures.join('; ')}` : ''}`);
+  let why0 = 'did not read back as written';
+  if (unanswered) why0 = 'a write went unanswered and may land yet';
+  else if (!changed) why0 = 'the forge accepted the write and the carrier did not change';
+  answer.reason = text(`${why0}${failures.length ? ` — ${failures.join('; ')}` : ''}`);
 }
 out();

@@ -72,7 +72,6 @@ where there is no request standing, the count does have a moment of truth.
 | a label renamed | **every carrier moves with it**, in the one call — measured on GitHub, where a rename carried 23 issues across, and on GitLab CE 18.7 |
 | a label deleted on GitLab | **gone from every issue and merge request carrying it** — measured on CE 18.7; the docs say nothing of it |
 | a comma in a GitLab label's name | **refused**: `title is invalid`, measured on CE 18.7 — so a GitLab set holds no name its comma-separated lists would split |
-| a name `add_labels` carries that the set lacks | **created** on GitLab, measured on CE 18.7 again: the write answers success and the set has a new label |
 
 ## Reading a slice of issues
 

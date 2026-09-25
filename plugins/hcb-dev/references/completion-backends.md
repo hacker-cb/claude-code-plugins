@@ -75,8 +75,7 @@ forge call. Publishing is the escalation offer below, and only by consent.
     --description "$(cat "$B")" --yes)"; F=glab
   # Either: the request's URL out of what it printed, then its labels.
   printf '%s\n' "$OUT"; URL="$(printf '%s' "$OUT" | grep -oE 'https?://[^ ]+/(pull|merge_requests)/[0-9]+' | tail -n 1)"
-  H="${URL#*://}"; H="${H%%/*}"; R="${URL#*://*/}"; R="${R%/pull/*}"; R="${R%/-/merge_requests/*}"
-  [ -n "$URL" ] && node "$W" --number "${URL##*/}" --kind request --forge "$F" --host "$H" --repo "$R" --add "$A"
+  [ -n "$URL" ] && node "$W" --number "${URL##*/}" --kind request --forge "$F" --add "$A"
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md), the installed CLI's
   `--help` first. A ref published under `old-name` stays here too — nothing on this path proves
