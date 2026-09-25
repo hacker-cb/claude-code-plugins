@@ -252,9 +252,8 @@ export function worktrees(git) {
 export const COMMIT_REQUESTS = {
   gh: {
     // Positionally, because this command has no `--repo`: passing one fails with
-    // `unknown flag`, the probe then answers nothing, and the host goes unresolved. A host
-    // rides in front of the repository, the form this command takes for another instance.
-    probe: (repo, host) => ['repo', 'view', ...(repo ? [host ? `${host}/${repo}` : repo] : []), '--json', 'url'],
+    // `unknown flag`, the probe then answers nothing, and the host goes unresolved.
+    probe: (repo) => ['repo', 'view', ...(repo ? [repo] : []), '--json', 'url'],
     // The host this repository actually lives on, read from its own url: a self-hosted
     // instance asked of the SaaS answers about somebody else, or about nothing.
     host: (out) => { try { return new URL(JSON.parse(out).url).host; } catch { return null; } },
@@ -273,16 +272,14 @@ export const COMMIT_REQUESTS = {
     }),
   },
   glab: {
-    // No url to read: this CLI takes the host from the checkout itself, or from the caller.
-    probe: (repo, host) => ['api', ...(host ? ['--hostname', host] : []), `projects/${repo ? encodeURIComponent(repo) : ':id'}`],
+    // No url to read: this CLI takes the host from the checkout itself.
+    probe: (repo) => ['api', `projects/${repo ? encodeURIComponent(repo) : ':id'}`],
     host: () => null,
     path: (repo, oid) => `projects/${repo ? encodeURIComponent(repo) : ':id'}`
       + `/repository/commits/${oid}/merge_requests`,
-    // `--paginate` here merges every page into ONE array — measured against the CLI's
-    // own help, and the opposite of the other one.
-    read: (out) => {
-      try { const v = JSON.parse(out); return Array.isArray(v) ? v : null; } catch { return null; }
-    },
+    // `--paginate` here is read either way: one array holding every page, or one array per
+    // page as the other CLI prints them — a version may print either.
+    read: (out) => { const p = parsePages(out); return p === null || !p.every(Array.isArray) ? null : p.flat(); },
     // `state` carries `merged` outright, and either commit field can hold the landing.
     row: (q) => ({
       number: Number.isInteger(q.iid) ? q.iid : null,
@@ -294,17 +291,19 @@ export const COMMIT_REQUESTS = {
   },
 };
 
+// What a call that did not answer says: its last line, or that it ran out of time.
+export const why = (r) => (r.timedOut ? 'timed out' : r.line());
+
 // Which CLI answers for THIS REPOSITORY — whichever RESPONDS here, since a hostname cannot
 // say it: a self-hosted instance answers on an arbitrary domain. BOTH answering is an
 // ambiguity rather than a race the first one wins: a GitLab project mirrored to GitHub under
 // the same path answers on both, and a first-success order asks the mirror. `cli` is how a
-// caller settles it, and `host` with `repo` — a remote's own — how it names the one to ask.
-// `reader` null with `reason` where none can be asked.
-export function forgeFor(cwd, cli, repo, host = null) {
+// caller settles it. `reader` null with `reason` where none can be asked.
+export function forgeFor(cwd, cli, repo) {
   const answers = [];
   let reason = null;
   for (const c of cli ? [cli] : ['gh', 'glab']) {
-    const p = runner(cwd, c)(COMMIT_REQUESTS[c].probe(repo, host));
+    const p = runner(cwd, c)(COMMIT_REQUESTS[c].probe(repo));
     if (!p.ok) { if (!reason) reason = `${c}: ${p.line()}`; continue; }
     answers.push({ cli: c, out: p.out });
   }
@@ -313,30 +312,16 @@ export function forgeFor(cwd, cli, repo, host = null) {
       + ' answer for this repository — name one with --forge, since the wrong one answers about a mirror' : reason };
   }
   const { cli: c, out } = answers[0];
-  const at = host || COMMIT_REQUESTS[c].host(out);
-  return { cli: c, reader: COMMIT_REQUESTS[c], hostArgs: hostOk(at) ? ['--hostname', at] : [], reason: null };
+  const host = COMMIT_REQUESTS[c].host(out);
+  return { cli: c, reader: COMMIT_REQUESTS[c], hostArgs: hostOk(host) ? ['--hostname', host] : [], reason: null };
 }
 
 // The requests that carry one commit, read as `COMMIT_REQUESTS` rows: `rows`, or `error` where
 // the forge did not answer. `--paginate`, or a request on page two is one nobody saw.
 export function requestsOf(found, cwd, repo, oid) {
   const r = runner(cwd, found.cli)(['api', ...found.hostArgs, '--paginate', found.reader.path(repo, oid)]);
-  if (!r.ok) return { error: r.timedOut ? 'timed out' : r.line() };
+  if (!r.ok) return { error: why(r) };
   const rows = found.reader.read(r.out);
   if (rows === null) return { error: 'the answer was not JSON' };
   return { rows: rows.filter((q) => q && typeof q === 'object').map(found.reader.row) };
 }
-
-// The forge host and repository path a remote's url names — https, ssh or scp-like — or null
-// for one that names none, a local path among them. A port is the host's only over http(s):
-// over ssh it is the ssh server's, which is not where the API answers.
-export const remoteOfUrl = (url) => {
-  if (/^file:/i.test(String(url).trim())) return null;
-  const m = /^(?:([a-zA-Z][a-zA-Z0-9+.-]*):\/\/)?(?:[^/@]*@)?([^/@:]+)(?::([0-9]+))?[/:](.+)$/
-    .exec(String(url).trim());
-  if (!m) return null;
-  const path = m[4].replace(/\.git\/*$/, '').replace(/^\/+|\/+$/g, '');
-  if (!path.includes('/')) return null;
-  const web = /^https?$/i.test(m[1] || '');
-  return { host: web && m[3] ? `${m[2]}:${m[3]}` : m[2], path };
-};

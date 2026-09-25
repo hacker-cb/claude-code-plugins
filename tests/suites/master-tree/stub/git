@@ -49,10 +49,6 @@ case "$1" in
       [ -n "$v" ] && { echo "$v"; exit 0; }
       exit 1
     fi ;;
-  remote)
-    [ "$*" = "remote get-url $(ask '.remote_name')" ] || refuse "remote asked as: $*"
-    v=$(ask '.remote_url'); [ -n "$v" ] && { echo "$v"; exit 0; }
-    echo "error: No such remote" >&2; exit 2 ;;
   symbolic-ref)
     [ -n "$(moved)" ] && exit 1
     v=$(ask '.branch')
@@ -88,6 +84,8 @@ case "$1" in
         *) exit 0 ;;
       esac
     fi
+    # A request's merge commit, asked of by `landings.mjs`: inside the range.
+    [ -n "$(ask '.pulls')" ] && [ "$2" = --is-ancestor ] && exit 0
     # Ancestor first: the remote copy the local parent must hold, then the parent.
     [ "$3" = "$(ask '.refs["refs/remotes/origin/epic"]')" ] && [ "$4" = "$(ask '.refs["refs/heads/epic"]')" ] \
       || refuse "merge-base asked the other way round: $*"

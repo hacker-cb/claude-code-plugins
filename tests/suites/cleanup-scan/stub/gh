@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+[ -n "${STUB_MARKER_FILE:-}" ] && touch "$STUB_MARKER_FILE"
 env=${STUB_ENVELOPE:-}
 ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
 case "$1" in

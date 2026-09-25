@@ -14,16 +14,14 @@ case "$1" in
     [ -n "$v" ] && { echo "$v"; exit 0; }
     exit 1 ;;
   merge-base)
-    [ "$*" = "merge-base --is-ancestor $since $to" ] || refuse "merge-base asked as: $*"
-    case "$(ask '.held')" in no) exit 1 ;; fail) echo "fatal: not a valid commit" >&2; exit 128 ;; *) exit 0 ;; esac ;;
+    [ "$2 $4" = "--is-ancestor $to" ] || refuse "merge-base asked as: $*"
+    # The range itself; then whether a request's merge commit is inside it.
+    if [ "$3" = "$since" ]; then h=$(ask '.held'); else h=$(ask ".merge_held[\"$3\"]"); fi
+    case "$h" in no) exit 1 ;; fail) echo "fatal: not a valid commit" >&2; exit 128 ;; *) exit 0 ;; esac ;;
   rev-list)
     [ "$*" = "rev-list --first-parent --count $since..$to --" ] || refuse "rev-list asked as: $*"
     n=$(ask '.count'); [ -n "$n" ] || n=$(ask '.log' | grep -c .)
     echo "$n"; exit 0 ;;
-  remote)
-    [ "$*" = "remote get-url $(ask '.remote_name')" ] || refuse "remote asked as: $*"
-    v=$(ask '.remote_url'); [ -n "$v" ] && { echo "$v"; exit 0; }
-    echo "error: No such remote" >&2; exit 2 ;;
   log)
     # Oldest first, one landing's worth of first-parent commits — or no answer.
     [ "$*" = "log --no-show-signature --first-parent --reverse --format=%H %s $since..$to --" ] || refuse "log asked as: $*"

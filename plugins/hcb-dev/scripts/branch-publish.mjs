@@ -25,7 +25,7 @@
 // `"ships"` the name it carries it under. Exit 2 only for a call this cannot act on.
 
 import { realpathSync } from 'node:fs';
-import { dirOk, refNameOk, remoteOfUrl, repoOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
+import { dirOk, refNameOk, repoOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node branch-publish.mjs --new <name> [--old-name <name>]'
   + ' [--publish --push-remote <name>] [--base <name> --base-remote <name>]'
@@ -211,7 +211,13 @@ const mayAsk = opts.publish;
 // Only a url with a host answers this. A filesystem path is a remote too, and reading its
 // trailing directories as `owner/name` would silently drop every hit — which is the
 // reading that deletes. `null` means unknown, and unknown keeps every hit.
-const repoOfUrl = (url) => remoteOfUrl(url)?.path ?? null;
+const repoOfUrl = (url) => {
+  const m = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:\/\/)?(?:[^/@]*@)?[^/@:]+(?::[0-9]+)?[/:](.+)$/
+    .exec(String(url).trim());
+  if (!m) return null;
+  const path = m[1].replace(/\.git\/*$/, '').replace(/^\/+|\/+$/g, '');
+  return path.includes('/') ? path : null;
+};
 let here = null;
 // Where every read and fetch below goes. `git ls-remote <name>` and `git fetch <name>` both
 // go to the FETCH url — measured — so under a `pushurl` they answer about a repository this
