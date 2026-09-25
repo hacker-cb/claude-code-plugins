@@ -80,6 +80,8 @@ if [ "$me" = gh ]; then
   esac
 else
   [ "$method" = PUT ] || { echo "a label write here is a PUT, not $method" >&2; exit 1; }
+  # An account that may not label: GitLab answers success and applies nothing.
+  [ "$(ask '.ignore_writes')" = yes ] && { echo '{}'; exit 0; }
   [ -n "$input" ] || { echo "a PUT without --input" >&2; exit 1; }
   add=$(jq -r '.add_labels // ""' "$input"); rm=$(jq -r '.remove_labels // ""' "$input")
   cur=$(jq -c --arg a "$add" --arg r "$rm" '(. + ($a | split(",") | map(select(. != "")))) - ($r | split(",")) | unique' <<<"$cur")

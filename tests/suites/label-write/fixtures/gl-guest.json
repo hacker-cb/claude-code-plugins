@@ -1,0 +1,6 @@
+{
+  "probe_glab": "yes",
+  "ignore_writes": "yes",
+  "set": "[{\"name\":\"scope:api\"}]",
+  "labels": []
+}

@@ -91,14 +91,14 @@ ISSUES="$(gh api graphql --hostname "$HOST" -F o='{owner}' -F r='{repo}' -F n=<p
 printf '%s\n' "$ISSUES"
 ```
 
-That list is what the forge parsed out of the body, not what the work settles — read it
-against the `issues` threaded in, which are what this PR set out to close. On a direct entry
-with none threaded, the body's own keywords are the list — and where this PR's base is not
-the default branch, a claim to put to the user before anything is closed, never a list to
-close on: a slice's request onto a feature branch is where a set's issue gets closed early.
-Close what is still open explicitly (`hcb-dev:issue-tracking`); carry what stays open into
-the report. Each issue closed that was threaded in or named by the user takes its labels at close
-per [`../../../references/label-lifecycle.md`](../../../references/label-lifecycle.md).
+That list is what the forge parsed out of the body, not what the work settles — read it against the
+`issues` threaded in, which are what this PR set out to close. On a direct entry with none threaded,
+the body's own keywords are the list — and where this PR's base is not the default branch, a claim
+to put to the user before anything is closed, never a list to close on: a slice's request onto a
+feature branch is where a set's issue gets closed early. Close what is still open explicitly
+(`hcb-dev:issue-tracking`); carry what stays open into the report. Each issue closed loses its
+parked reason, and one threaded in or named by the user takes its labels at close, per
+[`../../../references/label-lifecycle.md`](../../../references/label-lifecycle.md).
 
 ### Retiring both refs
 

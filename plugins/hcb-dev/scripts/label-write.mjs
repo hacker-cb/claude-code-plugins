@@ -53,8 +53,8 @@ opts.dir ??= process.cwd();
 
 let requestUrl = null;
 if (opts.url !== null) {
-  if (opts.number !== null || opts.kind !== null || opts.repo !== null || opts.host !== null || opts.forge !== null) {
-    die('--url stands alone: the forge, host, repository and number all come from it');
+  if (opts.number !== null || opts.kind !== null || opts.repo !== null || opts.forge !== null) {
+    die('--url stands alone: the forge, repository and number all come from it');
   }
   try { requestUrl = new URL(opts.url); } catch { die('--url takes a change request\'s URL'); }
   const m = requestUrl.pathname.match(/\/(pull|-\/merge_requests)\/([1-9][0-9]{0,9})\/?$/);
@@ -73,7 +73,7 @@ if (opts.forge !== null && opts.forge !== 'gh' && opts.forge !== 'glab') die('--
 if (opts.host !== null && !hostOk(opts.host)) die('--host takes a forge host');
 if (opts.repo !== null && !projectPathOk(opts.repo)) die(`--repo '${opts.repo}' is not a repository path`);
 if (opts.repo !== null && opts.forge === null) die('--repo takes --forge with it');
-if (opts.forge === 'gh' && opts.host !== null && opts.repo === null) die('--host on GitHub takes --repo with it');
+if (opts.forge === 'gh' && opts.host !== null && opts.repo === null && opts.url === null) die('--host on GitHub takes --repo with it');
 // gh opens a request wherever GH_REPO points while `gh repo view` answers for the checkout: the
 // number alone would then name another repository's request.
 if (process.env.GH_REPO && opts.forge === 'gh' && opts.repo === null && opts.url === null) {
@@ -149,9 +149,12 @@ const probe = (cmd, checkout = false) => {
 // An SSH alias of the user's own ssh configuration stands for the host it names; `ssh.<host>` is
 // the port-443 SSH front a forge keeps beside itself. A web remote keeps a port it names; an SSH
 // remote's port is SSH's, and says nothing of the web endpoint.
-// Only a default port is dropped: a port named on purpose picks an endpoint of its own.
-const norm = (h) => h.toLowerCase().replace(/:(443|80)$/, '');
+// A host as a URL reads it: only the scheme's own default port is dropped, and a port named on
+// purpose stays, picking an endpoint of its own.
+const norm = (h) => { try { return new URL(`https://${h}`).host.toLowerCase(); } catch { return h.toLowerCase(); } };
 const bare = (h) => norm(h).replace(/:\d+$/, '');
+// An ssh alias is a word of the user's own configuration; a leading `-` would reach ssh as an option.
+const aliasOk = (h) => /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(h);
 let remoteHostsRead = null;
 const remoteHosts = () => {
   if (remoteHostsRead) return remoteHostsRead;
@@ -162,10 +165,12 @@ const remoteHosts = () => {
     const url = line.split(/\s+/)[1] ?? '';
     const scheme = url.match(/^([a-z][a-z0-9+.-]*):\/\/(?:[^@/]*@)?([^/]+)/i);
     const scp = scheme || url.includes('://') || /^[A-Za-z]:[\\/]/.test(url) ? null : url.match(/^(?:[^@/]*@)?([^/:]+):/);
-    if (scheme && !/ssh/i.test(scheme[1])) { web.add(norm(scheme[2])); continue; }
+    if (scheme && !/ssh/i.test(scheme[1])) {
+      try { web.add(new URL(url).host.toLowerCase()); } catch { /* not a URL a web host reads from */ }
+      continue;
+    }
     const h = scheme ? scheme[2].replace(/:\d+$/, '') : scp?.[1];
-    // A host that does not read as one — `-F…` among them — never reaches ssh as an option.
-    if (!h || !hostOk(h)) continue;
+    if (!h || !aliasOk(h)) continue;
     ssh.add(h.toLowerCase());
   }
   for (const h of [...ssh]) {
@@ -183,7 +188,10 @@ const remoteHosts = () => {
 // URL is the request's.
 const fromUrl = () => {
   const h = requestUrl.host;
-  if (!remoteHosts().has(h)) refuse(`the request's URL names ${h}, which no remote of this checkout names`);
+  // A host the user named and checked stands for the remotes; otherwise a remote must name it.
+  if (opts.host !== null ? norm(opts.host) !== norm(h) : !remoteHosts().has(h)) {
+    refuse(`the request's URL names ${h}, which ${opts.host !== null ? 'is not the --host named' : 'no remote of this checkout names'}`);
+  }
   const segs = requestUrl.pathname.split('/').filter(Boolean);
   const target = `${requestUrl.origin}${requestUrl.pathname}`.replace(/\/+$/, '');
   if (opts.forge === 'gh') {
@@ -192,16 +200,17 @@ const fromUrl = () => {
     return { forge: 'gh', host: h, path: repo };
   }
   const project = segs.slice(0, segs.lastIndexOf('-'));
+  let last = 'nothing asked';
   for (let k = 0; k < project.length - 1; k += 1) {
     const r = runner(opts.dir, 'glab')(['api', '--hostname', h, `projects/${encodeURIComponent(project.slice(k).join('/'))}`], 60000);
-    if (!r.ok) continue;
+    if (!r.ok) { last = why(r); continue; }
     try {
       const v = JSON.parse(r.out);
       if (`${String(v?.web_url).replace(/\/+$/, '')}/-/merge_requests/${opts.number}` === target
         && typeof v.path_with_namespace === 'string') return { forge: 'glab', host: h, path: v.path_with_namespace };
     } catch { /* not this one */ }
   }
-  return refuse('no project on that host answers for the request\'s URL');
+  return refuse(`no project on that host answers for the request's URL — the last answer: ${last}`);
 };
 
 let forge; let host; let path;
@@ -279,6 +288,8 @@ if (before.isRequest !== (opts.kind === 'request')) {
 const same = (a, b) => (forge === 'gh' ? a.toLowerCase() === b.toLowerCase() : a === b);
 const holds = (list, n) => list.some((l) => same(l, n));
 const toAdd = add.filter((n) => !holds(before.labels, n));
+const keys = toAdd.filter((n) => n.includes('::')).map((n) => n.slice(0, n.lastIndexOf('::')));
+if (forge === 'glab' && new Set(keys).size !== keys.length) refuse('two names to add share one scoped key: GitLab keeps one of them');
 // Taken off under the spelling the carrier holds it by: that is the name the forge knows.
 const toRemove = before.labels.filter((l) => remove.some((n) => same(l, n)));
 
@@ -313,12 +324,12 @@ const body = (value) => {
 };
 const failures = [];
 let unanswered = false;
-const send = (args, label) => {
+const send = (args, label, absentOk = false) => {
   const r = cli(args, 60000);
   answer.ran.push(label);
   if (r.ok) return;
   // A label already off answers 404 to its DELETE: nothing was refused.
-  if (label === 'take one off' && /\bHTTP 404\b/.test(r.err)) return;
+  if (absentOk && /\bHTTP 404\b/.test(r.err)) return;
   failures.push(`${label}: ${why(r)}`);
   // Only the forge's own refusal of the request — a 4xx — says it will not land. A timeout, a
   // killed process, a closed connection or a 5xx from a proxy leaves it free to land yet.
@@ -331,7 +342,7 @@ try {
     // A name of dots stays a name: unencoded, `.` and `..` are path steps a server resolves away.
     const seg = (n) => encodeURIComponent(n).replace(/\./g, '%2E');
     for (const n of toRemove) {
-      send(['api', '--hostname', host, '--method', 'DELETE', `${carrierPath}/labels/${seg(n)}`], 'take one off');
+      send(['api', '--hostname', host, '--method', 'DELETE', `${carrierPath}/labels/${seg(n)}`], 'take one off', true);
     }
     // A removal that failed holds the addition back, so a swapped-out value never stands beside
     // its successor.
@@ -373,6 +384,10 @@ if (answer.missing.length === 0 && answer.standing.length === 0 && answer.lost.l
 } else if (!changed && !unanswered && failures.length) {
   answer.wrote = false;
   answer.reason = text(`refused: ${failures.join('; ')}`);
+} else if (!changed && !unanswered && forge === 'glab') {
+  // GitLab answers an account that may not label with success and leaves the labels as they were.
+  answer.wrote = false;
+  answer.reason = 'refused: GitLab accepted the write and applied none of it, as it does for an account that may not label';
 } else {
   answer.wrote = null;
   let why0 = 'did not read back as written';

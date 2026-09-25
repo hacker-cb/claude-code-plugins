@@ -35,17 +35,18 @@ one the group passes down counts — is the label, whatever colour it has.
 ```bash
 # From a checkout of the epic's own repository, as every command here.
 LABEL="<epic | wave>"; COLOUR="<its colour>"; DESC="<its description>"; N="<the issue>"
+F="$(mktemp)"; printf '["%s"]' "$LABEL" > "$F"; W="<plugin root>/scripts/label-write.mjs"
 # GitHub — created only where the read answers 404; any other failure is unread, never absent
 HOST="$(gh repo view --json url --jq '.url | split("/")[2]')"   # this checkout's, not gh's default
 if ! out=$(gh api --hostname "$HOST" "repos/{owner}/{repo}/labels/$LABEL" 2>&1); then
   case "$out" in *"(HTTP 404)"*) gh label create "$LABEL" --color "$COLOUR" --description "$DESC" ;;
     *) echo "unread: $out"; false ;; esac
-fi && gh issue edit "$N" --add-label "$LABEL"
+fi && node "$W" --number "$N" --kind issue --forge gh --add "$F"
 # GitLab — the same
 if ! out=$(glab api "projects/:fullpath/labels/$LABEL?include_ancestor_groups=true" 2>&1); then
   case "$out" in *"(HTTP 404)"*) glab label create --name "$LABEL" --color "#$COLOUR" --description "$DESC" ;;
     *) echo "unread: $out"; false ;; esac
-fi && glab issue update "$N" --label "$LABEL"
+fi && node "$W" --number "$N" --kind issue --forge glab --add "$F"
 ```
 
 ## The title and the body

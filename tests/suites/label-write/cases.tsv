@@ -48,3 +48,8 @@ gl-url	--url https://lab.example/gitlab/team/app/-/merge_requests/7 --add tests/
 -	--url https://elsewhere.example/team/app/pull/9 --add tests/suites/label-write/names/api.json	0	"wrote": false|which no remote of this checkout names|NOT:"add 	a request URL on a host no remote names is refused, whatever printed it
 -	--url https://forge.example/team/app/pull/9 --number 9 --add tests/suites/label-write/names/api.json	2	--url stands alone	a URL beside a number would let the two disagree
 -	--url https://forge.example/team/app/issues/9 --add tests/suites/label-write/names/api.json	2	a change request's URL	only a request's URL names a request
+gh-underscore	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": true	an ssh alias with an underscore is still a word of the user's configuration, resolved through ssh -G
+gh-https80	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|which no remote of this checkout names|NOT:"add 	an https remote on port 80 is its own endpoint, not the host on 443
+gh-url-host	--url https://forge.example/team/app/pull/9 --host forge.example --add tests/suites/label-write/names/api.json	0	"wrote": true|"add 1"	a host the user named and checked stands for the remotes beside a request's URL
+gl-guest	--number 5 --kind issue --add tests/suites/label-write/names/api.json --forge glab	0	"wrote": false|may not label	GitLab answering success and applying nothing is how it refuses an account that may not label
+gl-twokeys	--number 5 --kind issue --add tests/suites/label-write/names/two-priorities.json --forge glab	0	"wrote": false|share one scoped key|NOT:"add 	two values of one scoped key are refused before the write, since GitLab keeps only one
