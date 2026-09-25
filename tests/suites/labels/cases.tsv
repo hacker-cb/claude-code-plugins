@@ -52,3 +52,4 @@ gl-noclose	snapshot --out /dev/null --forge glab	0	"read": true|the change reque
 -	check-set --snapshot tests/suites/labels/snaps/gl.json --plan tests/suites/labels/plans/gl-twin.json	0	"ok": false|a value of the same scope	two values of one scope added in one row
 -	verify --snapshot tests/suites/labels/snaps/gh-renamed.json --plan tests/suites/labels/plans/rename-only.json	0	"ok": false|still in the set beside its new name	an old name standing in another case is still standing on GitHub
 -	check-set --snapshot tests/suites/labels/snaps/bare.json --plan tests/suites/labels/plans/empty.json	2	is not a file `snapshot` wrote	a snapshot that never said whether it read everything is not one
+-	snapshot --out /dev/null --forge gh --host ghe.example	2	--host on GitHub takes --repo with it	a GitHub host is asked about a named repository, never about whatever the CLI's default host holds

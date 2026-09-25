@@ -70,6 +70,8 @@ function snapshot() {
   if (opts['--host'] && !hostOk(opts['--host'])) die('--host takes a forge host');
   if (opts['--repo'] && !projectPathOk(opts['--repo'])) die(`--repo '${opts['--repo']}' is not a repository path`);
   if (opts['--repo'] && forgeArg === null) die('--repo takes --forge with it');
+  // `gh repo view` without a repository asks the CLI's own default host, never the one named.
+  if (forgeArg === 'gh' && opts['--host'] && !opts['--repo']) die('--host on GitHub takes --repo with it');
   if (opts['--repo'] && forgeArg === 'gh' && !repoOk(opts['--repo'])) die('--repo on GitHub takes owner/name');
 
   const answer = { read: false, complete: null, forge: null, host: null, path: null, file: opts['--out'], counts: null, unavailable: [], reason: null };

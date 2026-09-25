@@ -342,6 +342,7 @@ function remoteHosts(dir) {
   const r = runner(dir, 'git')(['remote', '-v'], 30000);
   const web = new Set();
   const ssh = new Set();
+  const remotes = [];
   for (const line of r.ok ? r.out.split('\n') : []) {
     const url = line.split(/\s+/)[1] ?? '';
     const scheme = url.match(/^([a-z][a-z0-9+.-]*):\/\/(?:[^@/]*@)?([^/]+)/i);
@@ -352,14 +353,18 @@ function remoteHosts(dir) {
     }
     const h = scheme ? scheme[2].replace(/:\d+$/, '') : scp?.[1];
     if (!h || !aliasOk(h)) continue;
-    ssh.add(h.toLowerCase());
+    remotes.push({ host: h.toLowerCase(), port: scheme?.[2].match(/:(\d+)$/)?.[1] ?? null });
   }
-  for (const h of [...ssh]) {
-    const g = runner(dir, 'ssh')(['-G', '--', h], 10000);
-    const name = g.ok ? g.out.split('\n').find((l) => l.startsWith('hostname '))?.slice(9).trim() : null;
-    if (name && hostOk(name)) ssh.add(name.toLowerCase());
+  for (const { host, port } of remotes) {
+    ssh.add(host);
+    const g = runner(dir, 'ssh')(['-G', '--', host], 10000);
+    const conf = (key) => (g.ok ? g.out.split('\n').find((l) => l.startsWith(`${key} `))?.slice(key.length + 1).trim() : null);
+    const name = conf('hostname')?.toLowerCase();
+    if (name && hostOk(name)) ssh.add(name);
+    // Only the port-443 front stands for the web host it sits beside; another port is another service.
+    const front = [host, name].find((x) => x?.startsWith('ssh.'));
+    if (front && (port ?? conf('port')) === '443') ssh.add(front.slice(4));
   }
-  for (const h of [...ssh]) if (h.startsWith('ssh.')) ssh.add(h.slice(4));
   return { has: (h) => web.has(hostNorm(h)) || (hostNorm(h) === hostBare(h) && ssh.has(hostBare(h))) };
 }
 
