@@ -16,13 +16,13 @@ rather than onto the carrier.
 
 ## Writing them
 
-Every label write goes through one script: the names arrive as a JSON array in a file written out
+Every label write this file names goes through one script: the names arrive as a JSON array in a file written out
 of the set's answer, and leave in a JSON body — never on a command line, never through a CLI's
 label flag, which splits a name on its commas. It refuses a name the set does not hold, and reads
 the carrier back.
 
 ```bash
-node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request> \
+node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request> --forge <gh|glab> \
   [--add <file>] [--remove <file>] [--repo <path of another repository>]
 ```
 

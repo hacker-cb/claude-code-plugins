@@ -1,0 +1,7 @@
+{
+  "probe_glab": "yes",
+  "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"scope:old\",\"archived\":true}]",
+  "labels": [
+    "scope:old"
+  ]
+}

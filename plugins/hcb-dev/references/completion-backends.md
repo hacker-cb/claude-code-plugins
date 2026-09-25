@@ -69,12 +69,13 @@ forge call. Publishing is the escalation offer below, and only by consent.
   T="<title file>"; B="<body file>"; A="<label names, a JSON array, per label-lifecycle.md>"
   W="<plugin root>/scripts/label-write.mjs"
   # GitHub
-  URL="$(gh pr create --base <parent> --head <branch> --title "$(cat "$T")" --body-file "$B")" \
-    && [ -n "$URL" ] && node "$W" --number "${URL##*/}" --kind request --add "$A"
+  OUT="$(gh pr create --base <parent> --head <branch> --title "$(cat "$T")" --body-file "$B")"; F=gh
   # GitLab
-  URL="$(glab mr create --target-branch <parent> --source-branch <branch> --title "$(cat "$T")" \
-    --description "$(cat "$B")" --yes | grep -oE 'https://[^ ]+/merge_requests/[0-9]+' | tail -n 1)" \
-    && [ -n "$URL" ] && node "$W" --number "${URL##*/}" --kind request --add "$A"
+  OUT="$(glab mr create --target-branch <parent> --source-branch <branch> --title "$(cat "$T")" \
+    --description "$(cat "$B")" --yes)"; F=glab
+  # Either: the request's URL out of what it printed, then its labels.
+  printf '%s\n' "$OUT"; URL="$(printf '%s' "$OUT" | grep -oE 'https?://[^ ]+/(pull|merge_requests)/[0-9]+' | tail -n 1)"
+  [ -n "$URL" ] && node "$W" --number "${URL##*/}" --kind request --forge "$F" --add "$A"
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md), the installed CLI's
   `--help` first. A ref published under `old-name` stays here too — nothing on this path proves

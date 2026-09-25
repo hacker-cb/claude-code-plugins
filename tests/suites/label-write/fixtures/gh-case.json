@@ -1,0 +1,8 @@
+{
+  "probe_gh": "yes",
+  "set": "unread",
+  "labels": [
+    "Type:Bug",
+    "scope:api"
+  ]
+}

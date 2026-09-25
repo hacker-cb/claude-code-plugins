@@ -14,7 +14,7 @@ urldecode() { local s=${1//+/ }; printf '%b' "${s//%/\\x}"; }
 # The probe: which forge answers for this repository, and on which host.
 if [ "$me" = gh ] && [ "$1 $2" = "repo view" ]; then
   [ "$(ask '.probe_gh')" = yes ] || { echo "no GitHub repository here" >&2; exit 1; }
-  echo '{"url":"https://forge.example/team/app"}'; exit 0
+  echo '{"url":"https://forge.example/team/app","nameWithOwner":"team/app"}'; exit 0
 fi
 [ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
 host="" method=GET input="" path="" paginate=0 prev=""
@@ -25,7 +25,7 @@ for a in "$@"; do
 done
 if [ "$me" = glab ] && [ "$method" = GET ] && [ -z "$(printf %s "$path" | grep -E '/(issues|merge_requests|labels)')" ]; then
   [ "$(ask '.probe_glab')" = yes ] || { echo "404 Project Not Found" >&2; exit 1; }
-  echo '{"web_url":"https://lab.example/team/app"}'; exit 0
+  echo "{\"web_url\":\"https://lab.example$(ask '.relative_root')/team/app\",\"path_with_namespace\":\"team/app\"}"; exit 0
 fi
 want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] || { echo "went to '${host:-the default host}', not '$want'" >&2; exit 1; }
 
@@ -42,7 +42,8 @@ want=$(ask '.want_carrier'); [ -z "$want" ] || [ "$want" = "$carrier" ] || { ech
 if [ "$method" = GET ]; then
   n=$(cat "$store/reads"); echo $((n + 1)) > "$store/reads"
   [ "$(ask '.readback')" = fail ] && [ "$n" -ge 1 ] && { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }
-  if [ "$me" = gh ]; then jq -c '{labels: map({name: .})}' "$store/labels"; else jq -c '{labels: .}' "$store/labels"; fi
+  if [ "$me" = gh ]; then jq -c --arg pr "$(ask '.pull_request')" '{labels: map({name: .})} + (if $pr == "yes" then {pull_request: {url: "x"}} else {} end)' "$store/labels"
+  else jq -c '{labels: .}' "$store/labels"; fi
   exit 0
 fi
 

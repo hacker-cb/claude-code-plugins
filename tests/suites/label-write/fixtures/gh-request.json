@@ -1,0 +1,7 @@
+{
+  "probe_gh": "yes",
+  "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"type:feature\"}]",
+  "labels": [],
+  "pull_request": "yes",
+  "want_carrier": "repos/team/app/issues/9"
+}

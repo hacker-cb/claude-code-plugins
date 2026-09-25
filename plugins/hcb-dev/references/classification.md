@@ -24,7 +24,7 @@ and which change requests carry any, is [`label-lifecycle.md`](label-lifecycle.m
 
 Outside the roles, and read past: labels a tool applies to its own requests, the plugin's own
 `epic` and `wave` ([`epic-structure.md`](epic-structure.md)), and a single label no role claims.
-An issue carrying `wave` is outside them altogether.
+An issue carrying `wave`, where the set gives that name no role, is outside them altogether.
 
 ## Read the set before proposing or applying anything
 
