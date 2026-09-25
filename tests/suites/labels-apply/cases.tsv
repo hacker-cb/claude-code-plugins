@@ -5,5 +5,11 @@ gh-landed	--repo-dir .	0	"applied": true|"step": "create type:chore"	a create th
 gh-refused	--repo-dir .	0	"applied": false|"stopped": "rename scope:web: not renamed|NOT:POST repos/team/app/labels	a write that did not land stops the run before anything that stands on it
 gh-moved	--repo-dir .	0	"applied": true|its labels moved since the snapshot|NOT:issues/1/labels	a carrier whose labels moved since the snapshot is skipped, never written over
 gh-journal	--repo-dir .	0	"applied": true|NOT:DELETE repos/team/app/labels/old-scope	a step the journal holds done is not run again
-gh-resume	--repo-dir .	0	BEFORE:"stopped": "relabel issue 1<<== run 2|BEFORE:== run 2<<"applied": true	a run stopped part way resumes over its journal and finishes
+gh-resume	--repo-dir .	0	BEFORE:"stopped": "relabel issue 1<<== run 2|BEFORE:== run 2<<"applied": true|"issue 1":["scope:ui","type:chore"]	a run stopped part way through a row resumes over its journal and finishes it, the half its own write left not read as moved
 gh-held	--repo-dir .	0	"applied": true|"outcome": "skipped"|still held by 1|NOT:DELETE repos/team/app/labels/old-scope	a label something still holds, read live, is not deleted
+gh-foreign	--repo-dir .	0	holds another plan's run|NOT:PATCH repos	a journal of another plan's run is refused, never read as this one's
+gh-discussion	--repo-dir .	0	"outcome": "skipped"|still held by 1|NOT:DELETE repos/team/app/labels/old-scope	a discussion still holding a label keeps it from deletion
+gl-none	--repo-dir .	0	GitLab reads this name as a filter|NOT:DELETE projects/team%2Fapp/labels/9	a GitLab label named None is not deleted on a count its filter cannot give
+gh-gqlerr	--repo-dir .	0	"stopped": "delete old-scope: could not read who holds it|NOT:DELETE repos/team/app/labels/old-scope	an answer with errors is not a count of none
+gh-lost	--repo-dir .	0	"stopped": "relabel issue 1: label-write|lost scope:ui	a write that took off a label nobody asked to is a stop, though what was asked landed
+gh-gone	--repo-dir .	0	"applied": true|it is gone since the snapshot	a carrier gone since the snapshot is skipped, never a stop the next run meets again

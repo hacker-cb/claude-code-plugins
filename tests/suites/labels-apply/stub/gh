@@ -12,9 +12,9 @@ if [ "$me" = gh ] && [ "$1 $2" = "repo view" ]; then
 fi
 [ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
 shift
-method=GET endpoint="" input="" label="" prev=""
+method=GET endpoint="" input="" label="" query="" prev=""
 for a in "$@"; do
-  case "$prev" in --method) method=$a ;; --input) input=$a ;; -f) case "$a" in label=*) label=${a#label=} ;; esac ;; esac
+  case "$prev" in --method) method=$a ;; --input) input=$a ;; -f) case "$a" in label=*) label=${a#label=} ;; query=*) query=${a#query=} ;; esac ;; esac
   case "$a" in repos/*|projects/*|graphql) endpoint=$a ;; esac
   prev=$a
 done
@@ -40,7 +40,15 @@ fi
 finish() { if [ -n "${landed_fail:-}" ]; then echo "$me: Unprocessable Entity (HTTP 422)" >&2; exit 1; fi; exit 0; }
 
 case "$me $method $endpoint" in
+  "gh GET repos/team/app")
+    jq -c '{default_branch: "main", has_discussions: (.discussions != null)}' "$st" ;;
   "gh GET graphql")
+    [ "$(jq -r '.graphql_error // false' "$st")" = true ] && { echo '{"errors":[{"message":"Something went wrong"}],"data":{"repository":{"label":null}}}'; exit 0; }
+    if [[ $query == *"discussions(first"* ]]; then
+      jq -c '{data: {repository: {discussions: {totalCount: (.discussions | length), pageInfo: {hasNextPage: false, endCursor: null},
+        nodes: [.discussions | to_entries[] | {number: (.key + 1), labels: {totalCount: (.value | length), nodes: [.value[] | {name: .}]}}]}}}}' "$st"
+      exit 0
+    fi
     jq -c --arg l "$label" --argjson ci "$ci" "$M"'
       if any(.set[]; same(.name; $l)) then
         [.carriers | to_entries[] | select(any(.value[]; same(.; $l))) | .key | split(" ")[0]] as $k
@@ -85,7 +93,7 @@ case "$me $method $endpoint" in
   "gh POST repos/team/app/issues/"*"/labels")
     rest=${endpoint#repos/team/app/issues/}; n=${rest%%/*}
     k=$(jq -r --arg n "$n" 'if .carriers["issue " + $n] then "issue " + $n else "request " + $n end' "$st")
-    put --arg k "$k" --argjson b "$(body)" '.carriers[$k] += [$b.labels[] | . as $l | select(true)] | .carriers[$k] |= unique'
+    put --arg k "$k" --argjson b "$(body)" '(.drop_on_add // null) as $d | .carriers[$k] += $b.labels | .carriers[$k] |= (unique - [$d | values])'
     finish ;;
   "glab GET projects/team%2Fapp/issues/"*|"glab GET projects/team%2Fapp/merge_requests/"*)
     kind=$([[ $endpoint == */issues/* ]] && echo issue || echo request); n=${endpoint##*/}

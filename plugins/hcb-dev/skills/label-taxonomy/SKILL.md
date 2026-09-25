@@ -26,9 +26,8 @@ Nothing is written to the forge before approval 2, and nothing the approvals did
 
 ## The run's files
 
-One directory per repository, under `$HOME/.claude/plans` — literally, so a session resumed under
-another configuration finds it — named `<repository>-labels`, its first line of `README` naming the
-checkout ([`../../references/session-naming.md`](../../references/session-naming.md)). It holds
+One directory per repository, under `$HOME/.claude/plans` written out literally, named
+`<repository>-labels`, the first line of its `README` naming the checkout ([`../../references/session-naming.md`](../../references/session-naming.md)). It holds
 `snapshot.json`, `set.md` (approval 1), `roles.json`, `rows/<batch>.jsonl`, `plan.json` and
 `journal.jsonl`; nothing of it goes into the repository.
 
@@ -49,9 +48,9 @@ node "$L" snapshot --out "$D/snapshot.json"
 `read` false is a stop; `complete` false is named in every report after it, and no deletion stands
 on it. `unavailable` names what this forge or server does not carry — a parent without hierarchy, a
 kind of work without native types. Then, on the default branch's tree, find every file that names a
-label — workflow conditions, labeler and release configuration, permission wildcards
-(`git grep -F -f <file of names> <remote>/<default>`) — and the project's own section on labels, if
-it has one, with its history.
+label or a family's prefix — workflow conditions, labeler and release configuration, triage
+policies, permission wildcards (`git grep -F -f <file of names and prefixes> <remote>/<default>`)
+— and the project's own section on labels, if it has one, with its history.
 
 ## 3. Approval 1 — the set
 
@@ -59,7 +58,8 @@ Write `set.md`: per family its prefix, role and colour; per label its name, colo
 and a line each for **when to apply** and **when not**; the renames, the deletions, and every
 label kept as is. The families and values come from `label-model.md`, the values from this
 project's issues and tree. Name the files that key on a name the set changes. Check the set's part
-of the plan before showing it, a plan holding only `create`, `edit` and `delete`:
+of the plan before showing it — `create` and `edit` alone, the deletions waiting for the rows that
+take each label off (step 6):
 
 ```bash
 D="$HOME/.claude/plans/<repository>-labels"
@@ -73,11 +73,13 @@ summary — and the approval covers that file as it stands.
 ## 4. Classify
 
 Write `roles.json` from the approved set — per family the count a leaf, a parent and a change
-request take (`classification.md`), `skip` the names outside the roles, `nativeKind` and
+request take (`classification.md`), `skip` the labels whose carriers stand outside the roles
+altogether (`wave`), `nativeKind` and
 `nativeTypes` where the repository runs the kind of work as a native type, `parentLabel` where
 the server carries no hierarchy — the format is in the script's header.
 
-Split the carriers into batches of about 40 and give each to a subagent, several at once, with:
+Split the carriers in scope into batches small enough that each is read whole, and give each to a
+subagent, several at once, with:
 `set.md`, `roles.json`, its own list of numbers, and the one file it writes, `rows/<batch>.jsonl`
 — never another. Each carrier gets one row, `{"kind", "number", "add", "remove", "why", "sure"}`,
 `add` and `remove` its change from what it carries now, empty where it stays. What it reads:
@@ -88,12 +90,14 @@ Split the carriers into batches of about 40 and give each to a subagent, several
 - a merged change request that settled issues — the union of their labels, checked against its
   files.
 
-Once every batch is back, the rows are checked for coverage, each carrier exactly once:
+Once every batch is back, the rows are checked for coverage of the scope step 1 settled — each
+carrier in it exactly once, `--population` a list of `open-issues`, `closed-issues`,
+`open-requests`, `merged-requests`:
 
 ```bash
 D="$HOME/.claude/plans/<repository>-labels"
 L="${CLAUDE_PLUGIN_ROOT}/skills/label-taxonomy/scripts/labels.mjs"
-node "$L" check-roles --snapshot "$D/snapshot.json" --roles "$D/roles.json" --rows "$D/rows" --population all
+node "$L" check-roles --snapshot "$D/snapshot.json" --roles "$D/roles.json" --rows "$D/rows" --population "<scope>"
 ```
 
 `missing` goes back to a batch; `twice` and `unreadable` are fixed in the file that holds them.
@@ -121,9 +125,18 @@ for a native type and a label that disagree. The ask, per
 [`../../references/report-format.md`](../../references/report-format.md): the counts per operation,
 the order they run in (renames, creates, edits, relabels, deletions), the files that key on a
 changed name and the change to each, the carriers the user settled — and the whole table as a page
-or a file. A workflow run on `labeled` or `unlabeled` fires on each relabel: say how many runs.
+or a file. An automation run on a label put on or taken off — a workflow, a webhook, a triage
+policy — fires on each relabel: say which, and how many times.
 
-## 7. Apply, then verify
+## 7. The project's files
+
+Every file step 2 found keying on a changed name or prefix changes to the new ones, and a section on
+labels in the project's documents shrinks to the concept (`label-model.md`) — one change, handed to
+`hcb-dev:shipping-workflow` through the Skill tool. It lands before step 8 writes anything: an
+automation still keyed on an old name misses what the run does. Where it waits on a merge, so does
+the run.
+
+## 8. Apply, then verify
 
 ```bash
 D="$HOME/.claude/plans/<repository>-labels"
@@ -137,12 +150,6 @@ node "$L" verify --snapshot "$D/after.json" --plan "$D/plan.json"
 it skips what is done. A step `skipped` — a carrier whose labels moved since the snapshot, a label
 something still holds — is named in the report with what it would take; it is not retried on its
 own. `verify` answering `ok` true over a `complete` snapshot is the end of the write.
-
-## 8. The project's files
-
-Every file step 2 found naming a changed label changes with it, and a section on labels in the
-project's documents shrinks to the concept (`label-model.md`) — one change, handed to
-`hcb-dev:shipping-workflow` through the Skill tool.
 
 ## 9. Tell the epic
 

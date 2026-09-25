@@ -6,7 +6,7 @@
 // usage:
 //   node labels.mjs snapshot --out <file> [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]
 //   node labels.mjs check-set --snapshot <file> --plan <file>
-//   node labels.mjs check-roles --snapshot <file> --roles <file> [--plan <file>] [--rows <dir> --population issues|requests|all]
+//   node labels.mjs check-roles --snapshot <file> --roles <file> [--plan <file>] [--rows <dir> --population <scope>]
 //   node labels.mjs verify --snapshot <file> --plan <file>
 //   node labels.mjs apply --snapshot <file> --plan <file> --journal <file> [--repo-dir <path>]
 //
@@ -39,6 +39,7 @@
 // Exit: 0 whenever an answer is printed; 2 called wrong.
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -481,8 +482,11 @@ function checkRoles() {
 
   let coverage = null;
   if (opts['--rows'] !== undefined) {
-    const population = opts['--population'];
-    if (!['issues', 'requests', 'all'].includes(population)) die('--rows takes --population issues|requests|all');
+    // The run's scope: open and closed issues, open and merged requests into the default branch.
+    const PARTS = ['open-issues', 'closed-issues', 'open-requests', 'merged-requests'];
+    const words = { issues: PARTS.slice(0, 2), requests: PARTS.slice(2), all: PARTS };
+    const population = new Set(String(opts['--population'] ?? '').split(',').flatMap((w) => words[w] ?? [w]));
+    if (!population.size || ![...population].every((p) => PARTS.includes(p))) die(`--rows takes --population issues|requests|all, or a list of ${PARTS.join(', ')}`);
     if (!dirOk(opts['--rows'])) die(`--rows '${opts['--rows']}' is not a directory`);
     const seen = new Map();
     const bad = [];
@@ -499,8 +503,8 @@ function checkRoles() {
       }
     }
     const want = new Set([
-      ...(population !== 'requests' ? after.issues.filter((c) => !skipped(c)).map((c) => `issue ${c.number}`) : []),
-      ...(population !== 'issues' ? after.requests.filter(inScope).map((c) => `request ${c.number}`) : []),
+      ...after.issues.filter((c) => !skipped(c) && population.has(`${c.state === 'open' ? 'open' : 'closed'}-issues`)).map((c) => `issue ${c.number}`),
+      ...after.requests.filter((c) => inScope(c) && population.has(`${c.state === 'open' ? 'open' : 'merged'}-requests`)).map((c) => `request ${c.number}`),
     ]);
     coverage = {
       missing: [...want].filter((k) => !seen.has(k)),
@@ -578,17 +582,25 @@ function apply() {
   const same = sameLabel(forge);
   const rename = renamer(plan, same);
 
-  // What earlier runs over this journal finished: the last word on each step.
+  // What earlier runs over this journal finished: the last word on each step. A journal holds one
+  // plan over one snapshot; a step of another is not this one's, whatever its name.
+  const run = createHash('sha256').update(readFileSync(opts['--plan'])).update(readFileSync(opts['--snapshot'])).digest('hex').slice(0, 16);
   const done = new Set();
+  const failed = new Set();
   if (existsSync(journal)) {
     for (const line of readFileSync(journal, 'utf8').split('\n')) {
       let e = null;
       try { e = JSON.parse(line); } catch { continue; }
-      if (typeof e?.step === 'string') { if (e.outcome === 'done') done.add(e.step); else done.delete(e.step); }
+      if (typeof e?.step !== 'string') continue;
+      if (e.run !== run) out({ ...answer, stopped: `the journal ${journal} holds another plan's run: start a journal of its own` });
+      done.delete(e.step);
+      failed.delete(e.step);
+      if (e.outcome === 'done') done.add(e.step);
+      if (e.outcome === 'failed') failed.add(e.step);
     }
   }
   const log = (step, outcome, detail = null) => {
-    try { appendFileSync(journal, `${JSON.stringify({ step, outcome, detail, at: new Date().toISOString() })}\n`); } catch {
+    try { appendFileSync(journal, `${JSON.stringify({ run, step, outcome, detail, at: new Date().toISOString() })}\n`); } catch {
       out({ ...answer, stopped: `${step}: could not write the journal ${journal}` });
     }
     answer.steps.push({ step, outcome, detail });
@@ -623,7 +635,7 @@ function apply() {
   const idOf = (n) => snap.set.find((l) => same(l.name, n))?.id;
 
   // 1. Renames, before anything takes the new names.
-  for (const e of plan.edit.filter((x) => x.newName !== undefined)) {
+  for (const e of plan.edit.filter((x) => x.newName !== undefined && x.newName !== x.name)) {
     const step = `rename ${e.name}`;
     if (done.has(step)) continue;
     const gone = (set) => (same(e.name, e.newName) ? !exact(set, e.name) : !set.some((l) => same(l.name, e.name)));
@@ -678,35 +690,76 @@ function apply() {
     const r = cli(['api', '--hostname', host, carrierPath(kind, n)], 60000);
     let v = null;
     try { v = JSON.parse(r.out); } catch { /* read below */ }
+    // Gone since the snapshot — deleted, or moved to another project — is the forge's 404 or 410.
+    if (!r.ok && /\bHTTP (404|410)\b/.test(r.err)) return null;
     if (!r.ok || !Array.isArray(v?.labels)) return stop(step, `could not read it: ${r.ok ? 'no labels in the answer' : why(r)}`);
     return v.labels.map((l) => (typeof l === 'string' ? l : l?.name)).filter((l) => typeof l === 'string');
   };
-  const sameSet = (a, b) => a.length === b.length && a.every((x) => b.some((y) => same(x, y)));
+  const holds = (list, n) => list.some((l) => same(l, n));
   for (const r of plan.relabel) {
     const step = `relabel ${r.kind} ${r.number}`;
     if (done.has(step)) continue;
     const add = (r.add ?? []).map(rename);
     const remove = (r.remove ?? []).map(rename);
     const now = labelsNow(step, r.kind, r.number);
-    const meant = (list) => add.every((n) => list.some((l) => same(l, n))) && !remove.some((n) => list.some((l) => same(l, n)));
+    if (now === null) { log(step, 'skipped', 'it is gone since the snapshot'); continue; }
+    const meant = (list) => add.every((n) => holds(list, n)) && !remove.some((n) => holds(list, n));
     if (meant(now)) { log(step, 'done', 'already as planned'); continue; }
-    const read = (r.kind === 'issue' ? snap.issues : snap.requests).find((c) => c.number === r.number);
-    if (!read || !sameSet(now, read.labels.map(rename))) { log(step, 'skipped', `its labels moved since the snapshot: ${now.join(', ')}`); continue; }
+    // Unmoved is the snapshot's labels — or, after a run of this plan stopped on this row, those
+    // labels part of the way along it: some taken off, some put on, nothing else.
+    const was = ((r.kind === 'issue' ? snap.issues : snap.requests).find((c) => c.number === r.number)?.labels ?? null)?.map(rename);
+    const along = was && now.every((l) => holds(was, l) || holds(add, l)) && was.every((l) => holds(now, l) || holds(remove, l));
+    const unmoved = was && (failed.has(step) ? along : now.length === was.length && now.every((l) => holds(was, l)));
+    if (!unmoved) { log(step, 'skipped', `its labels moved since the snapshot: ${now.join(', ')}`); continue; }
     const w = spawnSync(process.execPath, [writer, '--number', String(r.number), '--kind', r.kind, '--forge', forge,
       '--host', host, '--repo', path, '--repo-dir', dir, ...(add.length ? ['--add', file(add)] : []),
       ...(remove.length ? ['--remove', file(remove)] : [])], { encoding: 'utf8', timeout: 300000 });
     let v = null;
     try { v = JSON.parse(w.stdout); } catch { /* read below */ }
-    if (v?.wrote !== true && !meant(labelsNow(step, r.kind, r.number))) {
+    // A write that reached further than it was sent — a label lost — is a stop, whatever landed.
+    if (v?.wrote === null) stop(step, `label-write: ${v.reason ?? 'the carrier read back otherwise'}${v.lost?.length ? ` — lost ${v.lost.join(', ')}` : ''}`);
+    if (v?.wrote !== true && !meant(labelsNow(step, r.kind, r.number) ?? [])) {
       stop(step, v ? `label-write: ${v.reason ?? `wrote ${v.wrote}`}` : `label-write answered nothing: ${(w.stderr || '').trim().split('\n').pop()}`);
     }
     log(step, 'done');
   }
-  // 5. Deletions last, and only of a label nothing holds now.
+  // 5. Deletions last, and only of a label nothing holds now — discussions included, read whole
+  // once, since a label counts none of them.
+  let discussions = null;
+  const discussionsHolding = (step, d) => {
+    if (discussions === null) {
+      const repo = cli(['api', '--hostname', host, `repos/${path}`], 60000);
+      let v = null;
+      try { v = JSON.parse(repo.out); } catch { /* read below */ }
+      if (!repo.ok || typeof v?.has_discussions !== 'boolean') stop(step, `could not read whether discussions are kept: ${repo.ok ? 'no answer to it' : why(repo)}`);
+      discussions = [];
+      if (v.has_discussions) {
+        const [owner, name] = path.split('/');
+        const q = 'query($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){discussions(first:100,after:$after){'
+          + 'totalCount pageInfo{hasNextPage endCursor} nodes{number labels(first:100){totalCount nodes{name}}}}}}';
+        let after = null;
+        for (;;) {
+          const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`, '-f', `owner=${owner}`, '-f', `name=${name}`, ...(after ? ['-f', `after=${after}`] : [])], 120000);
+          let p = null;
+          try { p = JSON.parse(g.out); } catch { /* read below */ }
+          const c = p?.data?.repository?.discussions;
+          if (!g.ok || p?.errors || !Array.isArray(c?.nodes) || c.nodes.some((n) => !Array.isArray(n?.labels?.nodes) || n.labels.totalCount > n.labels.nodes.length)) {
+            stop(step, `could not read the discussions whole: ${g.ok ? 'a short answer' : why(g)}`);
+          }
+          discussions.push(...c.nodes.map((n) => n.labels.nodes.map((l) => l.name)));
+          if (!c.pageInfo?.hasNextPage || !c.pageInfo.endCursor || c.pageInfo.endCursor === after) break;
+          after = c.pageInfo.endCursor;
+        }
+      }
+    }
+    return discussions.filter((ls) => holds(ls, d)).length;
+  };
   for (const d of plan.delete) {
     const step = `delete ${d}`;
     if (done.has(step)) continue;
     let held;
+    // GitLab's label filter reads these two as "no label" and "any label", never as a name.
+    if (forge === 'glab' && /^(none|any)$/i.test(d)) { log(step, 'skipped', 'GitLab reads this name as a filter, so who holds it cannot be counted'); continue; }
     if (forge === 'gh') {
       const [owner, name] = path.split('/');
       const q = 'query($owner:String!,$name:String!,$label:String!){repository(owner:$owner,name:$name){label(name:$label){'
@@ -715,8 +768,9 @@ function apply() {
       let v = null;
       try { v = JSON.parse(g.out); } catch { /* read below */ }
       const label = v?.data?.repository?.label;
-      if (label === null && v?.data?.repository) held = 0;
-      else if (Number.isInteger(label?.issues?.totalCount) && Number.isInteger(label?.pullRequests?.totalCount)) held = label.issues.totalCount + label.pullRequests.totalCount;
+      if (!g.ok || v?.errors) stop(step, `could not read who holds it: ${g.ok ? v.errors.map((e) => e?.message).join('; ') : why(g)}`);
+      if (label === null && v?.data?.repository) held = discussionsHolding(step, d);
+      else if (Number.isInteger(label?.issues?.totalCount) && Number.isInteger(label?.pullRequests?.totalCount)) held = label.issues.totalCount + label.pullRequests.totalCount + discussionsHolding(step, d);
       else stop(step, `could not read who holds it: ${g.ok ? 'no count in the answer' : why(g)}`);
     } else {
       // GitLab refuses a comma in a label name, so the name is the whole of this filter.

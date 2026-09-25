@@ -1,8 +1,8 @@
 ---
 name: issue-tracking
 description: >-
-  Keep deferred work in the forge's issue tracker — open one, update one, classify
-  it, decompose it, close it. Use it when the user asks to file, update or triage
+  Keep deferred work in the forge's issue tracker, GitHub or GitLab — open one,
+  update one, classify it, decompose it, close it. Use it when the user asks to file, update or triage
   an issue, ticket, bug or piece of tech debt; when something surfaces outside the
   current task that will not be fixed now — a defect, a missing test, a
   duplication, a TODO left behind; before substantive work, to find the issue that
