@@ -282,7 +282,11 @@ the plan stages them.
   [`skills/master-session/scripts/master-tree.mjs`](skills/master-session/scripts/master-tree.mjs):
   the main checkout is never moved, and another session in the tree, an uncommitted change,
   a commit no remote holds or an operation left half done stops the move rather than being
-  stashed, reset or stranded.
+  stashed, reset or stranded. What landed since the mark its ledger keeps is sorted into
+  landings by
+  [`skills/master-session/scripts/landings.mjs`](skills/master-session/scripts/landings.mjs):
+  the forge names the change request each commit belongs to, so a rebase-merge's commits are
+  one landing and a push's commits another.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
   What can start right now, recomputed rather than recalled: pin and refresh the
   base and read every fact through that ref rather than through a working tree,

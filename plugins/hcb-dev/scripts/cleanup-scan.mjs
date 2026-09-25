@@ -19,7 +19,7 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { dirOk, hostOk, nameSafe, parsePages, refNameOk, refOk, repoOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
+import { dirOk, forgeFor, nameSafe, refNameOk, refOk, repoOk, requestsOf, runner, text, worktrees, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node cleanup-scan.mjs [--default <name>] [--default-ref <ref>]'
   + ' [--repo-dir <path>] [--repo <owner/name>] [--no-forge]\n';
@@ -52,51 +52,6 @@ if (opts.baseRef && !opts.base) {
 if (opts.repoDir && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 const cwd = opts.repoDir || process.cwd();
 const git = runner(cwd, 'git');
-
-// Two CLIs, mirrored, because the same question has two answers and neither forge is
-// assumed. Which one this repository speaks is whichever RESPONDS here — a hostname
-// cannot say it, since a self-hosted instance answers on an arbitrary domain.
-const READERS = {
-  gh: {
-    // Positionally, because this command has no `--repo`: passing one fails with
-    // `unknown flag`, the probe then answers nothing, and the host goes unresolved.
-    probe: (repo) => ['repo', 'view', ...(repo ? [repo] : []), '--json', 'url'],
-    // The host this repository actually lives on, read from its own url: a self-hosted
-    // instance asked of the SaaS answers about somebody else, or about nothing.
-    host: (out) => { try { return new URL(JSON.parse(out).url).host; } catch { return null; } },
-    path: (repo, oid) => `repos/${repo || '{owner}/{repo}'}/commits/${oid}/pulls`,
-    // `--paginate` here prints ONE DOCUMENT PER PAGE, concatenated; `parsePages` splits
-    // them. Parsed as one document it is a syntax error, and as the first page it is the
-    // first page — the failure this whole reader exists to avoid.
-    read: (out) => { const p = parsePages(out); return p === null ? null : p.flat(); },
-    // `state` is open or closed, and `merged_at` is what tells a merged request from a
-    // dropped one.
-    row: (q) => ({
-      number: Number.isInteger(q.number) ? q.number : null,
-      state: q.state === 'open' ? 'open' : q.merged_at ? 'merged' : 'closed',
-      mergeCommit: refOk(q.merge_commit_sha || '') ? q.merge_commit_sha : null,
-    }),
-  },
-  glab: {
-    // No url to read: this CLI takes the host from the checkout itself.
-    probe: (repo) => ['api', `projects/${repo ? encodeURIComponent(repo) : ':id'}`],
-    host: () => null,
-    path: (repo, oid) => `projects/${repo ? encodeURIComponent(repo) : ':id'}`
-      + `/repository/commits/${oid}/merge_requests`,
-    // `--paginate` here merges every page into ONE array — measured against the CLI's
-    // own help, and the opposite of the other one.
-    read: (out) => {
-      try { const v = JSON.parse(out); return Array.isArray(v) ? v : null; } catch { return null; }
-    },
-    // `state` carries `merged` outright, and either commit field can hold the landing.
-    row: (q) => ({
-      number: Number.isInteger(q.iid) ? q.iid : null,
-      state: q.state === 'opened' ? 'open' : q.state === 'merged' ? 'merged' : 'closed',
-      mergeCommit: refOk(q.merge_commit_sha || '') ? q.merge_commit_sha
-        : refOk(q.squash_commit_sha || '') ? q.squash_commit_sha : null,
-    }),
-  },
-};
 
 // `%(upstream)` is always fully qualified and `--default-ref` is however the caller spelled
 // it, so `origin/master` and `refs/remotes/origin/master` are the same ref written two ways.
@@ -270,52 +225,21 @@ for (let at = 0; at + WIDE <= fields.length; at += WIDE) {
 // --- what the forge says about each tip, which is the only place a squash merge shows
 if (opts.forge && answer.branches.length) {
   answer.forge.asked = true;
-  let reader = null;
-  let probe = null;
-  // Which CLI answers for THIS REPOSITORY, and BOTH answering is an ambiguity rather than a
-  // race the first one wins. A GitLab project mirrored to GitHub under the same path answers
-  // on both, and a first-success order then asks the mirror about every tip here: a branch
-  // whose merge request is open on one forge has no open request on the other, so it loses
-  // its keep and is handed to the caller as deletable. `--forge` is how a caller settles it.
-  const answers = [];
-  for (const cli of opts.cli ? [opts.cli] : ['gh', 'glab']) {
-    const p = runner(cwd, cli)(READERS[cli].probe(opts.repo));
-    if (!p.ok) { if (!answer.forge.reason) answer.forge.reason = `${cli}: ${p.line()}`; continue; }
-    answers.push({ cli, out: p.out });
-  }
-  if (answers.length > 1) {
-    answer.forge.reason = `both ${answers.map((a) => a.cli).join(' and ')} answer for this`
-      + ' repository — name one with --forge, since the wrong one answers about a mirror';
-  } else if (answers.length === 1) {
-    answer.forge.cli = answers[0].cli;
-    reader = READERS[answers[0].cli];
-    probe = answers[0].out;
-  }
-  if (reader) {
-    answer.forge.reason = null;
-    const forge = runner(cwd, answer.forge.cli);
-    const host = reader.host(probe);
-    const hostArgs = hostOk(host) ? ['--hostname', host] : [];
+  const found = forgeFor(cwd, opts.cli, opts.repo);
+  answer.forge.cli = found.cli;
+  answer.forge.reason = found.reason;
+  if (found.reader) {
     for (const b of answer.branches) {
       if (!b.oid || !refOk(b.oid)) continue;
       // By TIP, never by name: a merged `fix/login` may have come from a fork, and the
-      // local branch of that name may have been recreated since. `--paginate`, or an open
-      // request on page two is one the sweep deletes over. The repository goes in the
-      // PATH, because neither CLI's `api` takes a `--repo` — it would read the one the
-      // working directory names and answer about somebody else's requests.
-      const r = forge(['api', ...hostArgs, '--paginate', reader.path(opts.repo, b.oid)]);
-      if (!r.ok) {
-        if (!answer.forge.reason) answer.forge.reason = r.line();
-        continue;
-      }
-      const rows = reader.read(r.out);
-      if (rows === null) {
-        if (!answer.forge.reason) answer.forge.reason = 'the answer was not JSON';
+      // local branch of that name may have been recreated since.
+      const got = requestsOf(found, cwd, opts.repo, b.oid);
+      if (got.error) {
+        if (!answer.forge.reason) answer.forge.reason = got.error;
         continue;
       }
       answer.forge.answered = true;
-      b.requests = rows.filter((q) => q && typeof q === 'object').map((q) => (
-        { ...reader.row(q), mergeInBase: null }));
+      b.requests = got.rows.map((q) => ({ ...q, mergeInBase: null }));
       b.openRequest = b.requests.some((q) => q.state === 'open');
       for (const q of b.requests) {
         if (q.state !== 'merged' || !q.mergeCommit || !answer.base.usable) continue;

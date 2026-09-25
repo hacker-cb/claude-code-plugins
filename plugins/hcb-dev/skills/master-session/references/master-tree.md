@@ -31,13 +31,13 @@ NAME
 )"
 LOCAL='<yes where the epic completes in local mode, no otherwise>'
 SINCE='<the commit the epic ledger's header says landings are taken up to — else its pin's sha; empty before either>'
-S="<plugin root>/skills/master-session/scripts/master-tree.mjs"
+S="<plugin root>/skills/master-session/scripts/master-tree.mjs"; A=(); [ -n "$SINCE" ] && A=(--since "$SINCE")
 R="$(node "<plugin root>/scripts/resolve-base.mjs" --base "$BASE")"; printf '%s' "$R" | jq '{base, reason}'
 REF="$(printf '%s' "$R" | jq -r 'if .base.current and .base.sharesHistory then .base.ref else "" end')"
-A=(); [ -n "$SINCE" ] && A=(--since "$SINCE")
+NAME="$(printf '%s' "$R" | jq -r .base.name)"
 if [ -z "$REF" ]; then echo "no current base: the resolver's answer above says why"
-elif [ "$LOCAL" = yes ]; then node "$S" --ref "refs/heads/$(printf '%s' "$R" | jq -r .base.name)" --contains "$REF" "${A[@]}" --move
-else node "$S" --ref "$REF" "${A[@]}" --move; fi
+elif [ "$LOCAL" = yes ]; then node "$S" --ref "refs/heads/$NAME" --contains "$REF" "${A[@]}" --move
+else node "$S" --ref "$REF" --landings-base "$NAME" "${A[@]}" --move; fi
 ```
 
 The resolver's outcomes are
@@ -56,7 +56,8 @@ answer means here:
 | `move: "done"`, or `"already"` | `head` is the base, and the sha every fact of this event is read at; a `done` carrying `moveError` reached the base, and git's words go to the user all the same |
 | `move: "dirty"`, `"refused"` or `"unread"` | `moveError` goes to the user, with where `head` stands and what `dirty` lists; nothing else is tried |
 | the tree did not move | what this event reads, it reads through `ref.sha` — the tip just refreshed — never through `head`; through `contains.sha` where `contains.held` is false |
-| `since.to` | `landed` is what the base took after `since.sha` up to `since.to`, newest first; where `landedCount` is more than it lists, the rest through `git log --first-parent <since.sha>..<since.to>`. Sort them into landings — the commits of one change request are one landing, the forge naming the request a commit belongs to; the commits none carries, together, are one push, its checks read at the newest of them. One the ledger already records is taken; every other is a landing as the master's loop takes one, reported or not. Once they are in the ledger, its header's mark moves to `since.to`. A reported landing neither the ledger records nor `landed` names is answered as not on the base yet, and looked for again at the next event |
+| `since.to`, with `landedCount` 0 | nothing landed since the mark |
+| `since.to`, with landings | `landings` sorts them, oldest first — by the change request this checkout's forge names for each commit, a commit to a landing in `local` mode. Each landing the ledger does not record is one the master's loop takes, reported or not — a `request` by its `number`, a `push` or a `commit` read at its `tip`. What it could not settle — an `unsure` landing and its `requests`, an `unread` one with `forge.reason`, a range read no further than its count (`commits`, with `reason`), the whole range where `landings.read` is false — goes to the user as an expectation, recommendation first. Once every landing is in the ledger or in that expectation, the header's mark moves to `since.to`. A reported landing neither the ledger records nor this answer names is answered as not on the base yet where `complete` is true — and joins that expectation where it is not |
 | `since` null | run with no mark: the header's mark is set to the tip this event reads |
 | `since.held` false | the base no longer holds the mark — rewritten past it: to the user, and the mark moves only on their word |
 | `since.reason`, `held` not false | this event's landings are untold: said so; the mark stays, and the next event asks from it |

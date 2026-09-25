@@ -9,14 +9,16 @@
 // and clearing that is the user's. With --since it also names what the base took after
 // that commit, which is how a master learns of a landing nobody reported.
 //
-// Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>] [--move]
-//          [--repo-dir <path>]
+// Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>]
+//          [--landings-base <branch>] [--move] [--repo-dir <path>]
 //
 //   --ref       the commit to stand on: the base's remote-tracking ref, or the local
 //               parent where the epic completes locally
 //   --contains  a ref --ref must already hold — the remote copy, where --ref is a local
 //               parent that must not lag it
 //   --since     the base's commit the master has taken landings up to
+//   --landings-base  the base's branch as the forge names it: what landed is sorted into
+//               change requests by asking the forge — without it, every commit alone
 //
 // Exit 0 either way: `"read": true` with the verdict, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
@@ -25,16 +27,18 @@ import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { dirOk, refNameOk, runner, writeAll } from '../../../scripts/lib/forge.mjs';
+import { dirOk, refNameOk, runner, why, writeAll } from '../../../scripts/lib/forge.mjs';
 
 const OWNERS = fileURLToPath(new URL('../../../scripts/worktree-owners.mjs', import.meta.url));
-const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>] [--move]'
-  + ' [--repo-dir <path>]\n';
+const LANDINGS = fileURLToPath(new URL('./landings.mjs', import.meta.url));
+const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>]'
+  + ' [--landings-base <branch>] [--move] [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `master-tree: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { ref: null, contains: null, since: null, move: false, repoDir: null };
-const FLAGS = { '--ref': 'ref', '--contains': 'contains', '--since': 'since', '--repo-dir': 'repoDir' };
+const opts = { ref: null, contains: null, since: null, landingsBase: null, move: false, repoDir: null };
+const FLAGS = { '--ref': 'ref', '--contains': 'contains', '--since': 'since', '--landings-base': 'landingsBase',
+  '--repo-dir': 'repoDir' };
 for (let i = 0; i < argv.length; i += 1) {
   if (argv[i] === '--move') { opts.move = true; continue; }
   // Own keys only: `constructor` or `__proto__` would otherwise read as a flag.
@@ -49,8 +53,8 @@ for (let i = 0; i < argv.length; i += 1) {
 // goes near a URL or a shell — every value is one argv word.
 if (!opts.ref) die('--ref is required — the commit the tree is to stand on');
 if (!refNameOk(opts.ref)) die(`--ref '${opts.ref}' is not a ref this can read`);
-for (const f of ['contains', 'since']) {
-  if (opts[f] !== null && !refNameOk(opts[f])) die(`--${f} '${opts[f]}' is not a ref this can read`);
+for (const [flag, key] of [['--contains', 'contains'], ['--since', 'since'], ['--landings-base', 'landingsBase']]) {
+  if (opts[key] !== null && !refNameOk(opts[key])) die(`${flag} '${opts[key]}' is not a ref this can read`);
 }
 // A directory, proved here: passed on as `cwd` it would come back as a call that failed
 // with nothing on stderr, which reads as a checkout that would not answer.
@@ -96,6 +100,8 @@ const answer = {
   // What the base took after `since`: its first-parent commits, newest first. null where
   // --since was not given, or `since` says why it could not be told.
   landed: null, landedCount: null,
+  // Those commits as landings — `landings.mjs`'s answer whole, asked only where some landed.
+  landings: null,
   atRef: null,
   blockers: [],
   movable: false,
@@ -109,7 +115,14 @@ const answer = {
 };
 const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const refuse = (reason) => { answer.reason = reason; finish(); };
-const why = (r) => (r.timedOut ? 'timed out' : r.line());
+// A script of this plugin run beside this one, its JSON answer read — or `null`, with what it
+// said instead as `said`.
+const child = (script, args, timeout) => {
+  const r = spawnSync(process.execPath, [script, ...args], { cwd, encoding: 'utf8', timeout, maxBuffer: 32 * 1024 * 1024 });
+  let got = null;
+  try { got = JSON.parse(r.stdout); } catch { /* no answer: `said` carries why */ }
+  return got && typeof got === 'object' ? { got } : { got: null, said: (r.stderr || '').trim() || (r.error ? r.error.code : 'no answer') };
+};
 const listed = (field, lines, count = lines.length) => {
   answer[`${field}Count`] = count;
   answer[field] = lines.slice(0, LIST);
@@ -231,6 +244,12 @@ if (answer.since) {
     else sn.to = tip;
   }
 }
+// Which change request each landed commit belongs to is the forge's to say.
+if (answer.since?.to && answer.landedCount > 0) {
+  const l = child(LANDINGS, ['--since', answer.since.sha, '--to', answer.since.to,
+    '--base', opts.landingsBase || opts.ref, ...(opts.landingsBase ? [] : ['--no-forge'])], 600000);
+  answer.landings = l.got || { read: false, reason: l.said };
+}
 
 if (!answer.linked) {
   answer.blockers.push('this is the main checkout — a master moves no tree but a linked worktree'
@@ -244,12 +263,11 @@ const top = dir('--show-toplevel');
 // --- who else stands in this tree: the live-session registry, read by the script that owns
 // it. A registry that could not be read leaves the question open, which stops a move as a
 // second session does.
-const o = spawnSync(process.execPath, [OWNERS, ...(opts.repoDir ? ['--repo-dir', opts.repoDir] : [])],
-  { cwd, encoding: 'utf8', timeout: 120000, maxBuffer: 32 * 1024 * 1024 });
-let owners = null;
-try { owners = JSON.parse(o.stdout); } catch { owners = null; }
+// Run in the resolved directory, as `landings.mjs` is: no --repo-dir to be resolved twice.
+const o = child(OWNERS, [], 120000);
+const owners = o.got;
 if (!owners || owners.read !== true || !Array.isArray(owners.worktrees)) {
-  refuse(`could not read who stands in this worktree (${owners?.reason || (o.stderr || '').trim() || 'no answer'})`);
+  refuse(`could not read who stands in this worktree (${owners?.reason || o.said || 'no answer'})`);
 }
 const mine = owners.worktrees.find((w) => w && w.isHere);
 answer.others = (mine?.sessions || []).filter((s) => !s.isThisRun).map((s) => s.pid);

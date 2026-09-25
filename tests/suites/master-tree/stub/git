@@ -43,6 +43,8 @@ case "$1" in
         v=$(ask '.head')
       else
         v=$(ask ".refs[\"$want\"]")
+        # A commit named by its own id — what `landings.mjs` is handed — is one the refs carry.
+        [ -z "$v" ] && ask '.refs[]' | grep -qx -- "$want" && v=$want
       fi
       [ -n "$v" ] && { echo "$v"; exit 0; }
       exit 1
@@ -82,6 +84,8 @@ case "$1" in
         *) exit 0 ;;
       esac
     fi
+    # A request's merge commit, asked of by `landings.mjs`: inside the range.
+    [ -n "$(ask '.pulls')" ] && [ "$2" = --is-ancestor ] && exit 0
     # Ancestor first: the remote copy the local parent must hold, then the parent.
     [ "$3" = "$(ask '.refs["refs/remotes/origin/epic"]')" ] && [ "$4" = "$(ask '.refs["refs/heads/epic"]')" ] \
       || refuse "merge-base asked the other way round: $*"
@@ -108,6 +112,8 @@ case "$1" in
     base=$(ask '.refs | to_entries[0].value')
     case " $* " in *" --first-parent "*) fp=" --first-parent" ;; *) fp="" ;; esac
     if [ "$1" = rev-list ]; then want=" rev-list$fp --count"; else want=" log --no-show-signature$fp --max-count=21 --format=%H %s"; fi
+    # `landings.mjs` asks the same range oldest first, whole.
+    case " $* " in *" --reverse "*) want=" log --no-show-signature --first-parent --reverse --format=%H %s"; rev=1 ;; *) rev="" ;; esac
     if [ -n "$fp" ]; then
       # Read to the remote copy where the local parent lags it, to the base otherwise.
       to=$(ask '.landed_to'); [ -n "$to" ] || to=$base
@@ -122,6 +128,8 @@ case "$1" in
     if [ "$1" = rev-list ]; then
       [ -n "$n" ] || n=$([ -n "$v" ] && printf '%s\n' "$v" | wc -l | tr -d ' ' || echo 0)
       echo "$n"
+    elif [ -n "$rev" ]; then
+      [ -n "$v" ] && printf '%s\n' "$v" | awk '{ l[NR] = $0 } END { for (i = NR; i > 0; i--) print l[i] }'
     else
       [ -n "$v" ] && printf '%s\n' "$v"
     fi
