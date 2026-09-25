@@ -62,6 +62,7 @@ node "<plugin root>/scripts/worktree-owners.mjs" [--repo-dir <path>]
 | `read` | `false` says which reading could not be taken, in `reason`. It answers nothing about any worktree — not "none of them are yours", which is what an empty list beside it would read as |
 | `sessions` | the live ones in it: `pid`, `cwd`, `startedAt` — where and since when, never what. `isThisRun` marks the one this run IS |
 | `probeFailed` | no registry, or **any** record that would not read — one unreadable record beside a live one still leaves the worktree that record is in looking free. **Not** a registry that read cleanly and found nobody, which is an answer |
+| `registry.placeless` | the unreadable records whose directory would not read either — the only ones that could stand in any worktree. One read with its directory but not its liveness is among that directory's `sessions`, so a caller asking about one worktree reads it there |
 
 **The registry proves presence, never absence.** A live pid means occupied; no live pid
 means nothing at all ([`invariants.md`](invariants.md), *Empty is not negative*). So a

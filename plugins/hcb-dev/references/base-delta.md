@@ -78,8 +78,7 @@ premise gone — is a fork, not something to build around.
 
 ## Who a fork goes to
 
-The addressee `issue-currency.md` names — its rule, whole. A master session reads this delta
-through `hcb-dev:wave-refresh`, from the pin its ledger records rather than from `M`.
+The addressee `issue-currency.md` names — its rule, whole.
 
 ## What it hands back
 

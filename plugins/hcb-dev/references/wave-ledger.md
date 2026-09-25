@@ -106,7 +106,7 @@ whether deleting it changes what anyone does next.
    name, state, result coordinates. A batch runs `planned → chipped → started → confirmed → building
    → completed(<mode> — request merged, merged locally, tracker state delivered, verdict delivered)
    → accepted`, standing at `blocked(<condition>)` for as long as something holds it; a state is
-   advanced, never skipped silently. It **ends** in one of three, and the three carry equal weight:
+   advanced, never skipped silently; a `chipped` row with no session is a click the user owes, never a session lost or a batch failed. It **ends** in one of three, and the three carry equal weight:
    - `released` — acceptance passed, the work landed, the batch was let go;
    - `withdrawn(<reason>)` — called off, from wherever it stood;
    - `failed(<what stands>)` — it did not come off, from wherever it stood; what stands is named.

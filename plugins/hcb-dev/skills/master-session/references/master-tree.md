@@ -21,9 +21,9 @@ its first report.
 
 ## Moving it
 
-- on assuming the role, and first after a restart or a compaction;
-- at every landing on the base — its batch's, another session's, the user's;
-- before a read of its working tree where the check under *Reading* finds HEAD off the base.
+First in every event of the master's loop, before anything in it is read — a report of a landing
+among them, which is a reason to look rather than the landing itself — and on assuming the role,
+and first after a restart or a compaction. Where the base has not moved, the answer is `already`.
 
 ```bash
 BASE="$(cat <<'NAME'
@@ -52,16 +52,18 @@ answer means here:
 | `read: false` | nothing was measured: `reason` goes to the user, and nothing moves |
 | `linked: false` | the main checkout: move nothing, read through refs only |
 | `movable: false` | what stands — another session in the tree (`others`), the `dirty` entries, the `ownWork` commits, an operation `inProgress`, a local parent that lags — goes to the user, recommendation first; clearing it is theirs, and until then the tree is read through refs only |
-| `move: "done"`, or `"already"` | `head` is the base, and the sha every fact is read at |
+| `move: "done"`, or `"already"` | `head` is the base, and the sha every fact of this event is read at; a `done` carrying `moveError` reached the base, and git's words go to the user all the same |
 | `move: "dirty"`, `"refused"` or `"unread"` | `moveError` goes to the user, with where `head` stands and what `dirty` lists; nothing else is tried |
+| the tree did not move | what this event reads, it reads through `ref.sha` — the tip just refreshed — never through `head` |
+| `landed` | each commit on it the ledger records no landing for is a landing, reported or not, taken as the master's loop takes one; past the twenty listed (`landedCount`), the rest are read through `git log --first-parent <from>..<ref.sha>`. `null` where the tree had not yet stood on a base |
 
 ## Reading
 
 Per `base-resolution.md`: the base's own objects, and every claim naming the revision it was
-read at — the `head` the last move left, or the sha a ref resolved to. The working tree is read
-only on an answer `master-tree.mjs` gave just before that read — `--ref <that sha>`, without
-`--move` — saying `head` is that sha, with nothing `dirty`, `hidden` or `sparse`; and
-never under a path `submodules` names, which is read through that submodule's own objects.
+read at — the `head` this event's move left, or the sha a ref resolved to. The working tree is
+read only in an event whose move answered `done` or `already` with nothing `dirty`, `hidden` or
+`sparse`; and never under a path `submodules` names, which is read through that submodule's own
+objects.
 
 Another ref — a batch's branch, a change request's head, an older pin — is resolved to its sha
 once and read through it: never checked out, and never resolved again between two reads of one
@@ -77,9 +79,12 @@ Anything that runs the project's code or tools — tests, linters, a build, a ge
 a mutation — runs in a subagent launched with worktree isolation (`claude-worktrees.md`), on the
 base as on any other ref. One subagent per question, handed the sha: it switches its own
 worktree there (`git switch --detach <sha>`) and confirms `git rev-parse HEAD`, prepares what
-the run needs, runs, removes what the run left that `git status` lists, switches back to its
-own branch (`git switch -`), and returns what it ran, the exit and what it printed. The reads
-above are not runs, and neither is `git merge-tree`.
+the run needs, runs, puts the worktree back to the sha (`git reset --hard -q && git clean -fdq`,
+then `git status --porcelain` empty — what does not clear is part of its answer), switches back
+to its own branch (`git switch -`), and returns what it ran, the exit and what it printed. The
+reads above are not runs, and neither is `git merge-tree`. A ref carrying commits from outside
+this repository — a change request from a fork — runs only on the user's word, asked with what
+would run.
 
 A workflow's steps read through the sha and run nothing; a run goes to such a subagent. No
 review round runs in this session: a review a return says was skipped is the reopened batch's

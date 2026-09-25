@@ -7,6 +7,5 @@
     "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
   },
   "status": "1 M. S... 160000 160000 160000 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb lib/sub",
-  "own_log": "",
-  "behind": "3"
+  "own_log": ""
 }

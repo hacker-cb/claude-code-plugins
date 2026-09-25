@@ -7,6 +7,5 @@
     "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
   },
   "status": "",
-  "own_log": "f1x7444444444444444444444444444444444444 committed on the host branch",
-  "behind": "3"
+  "own_log": "f1x7444444444444444444444444444444444444 committed on the host branch"
 }

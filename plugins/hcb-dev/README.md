@@ -273,7 +273,8 @@ the plan stages them.
   line instead of a report.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself, and hands a change you ask of it to a session that does.
-  Its own tree stands detached on the base and moves only onto a newer tip; it
+  Its own tree stands detached on the base and moves onto the newest tip first in
+  every event, which is how it learns of a landing nobody reported; it
   reads through a pinned revision, and runs anything — tests, a build, a probe — in
   an isolated subagent:
   [`skills/master-session/references/master-tree.md`](skills/master-session/references/master-tree.md).

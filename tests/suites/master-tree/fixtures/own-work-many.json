@@ -1,12 +1,12 @@
 {
   "git_dir": "tests/suites/master-tree/trees/linked/gitdir",
   "common_dir": "tests/suites/master-tree/trees/linked/common",
-  "head": "f1x7111111111111111111111111111111111111",
+  "head": "f1x7444444444444444444444444444444444444",
   "branch": "",
   "refs": {
     "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
   },
   "status": "",
-  "own_log": "",
-  "behind": "fail"
+  "own_log": "f1x7444444444444444444444444444444444444 probe left behind\nf1x7555555555555555555555555555555555555 another probe",
+  "own_count": "25"
 }
