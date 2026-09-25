@@ -10,19 +10,22 @@ fi
 [ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
 path="" query="" after="" prev=""
 for a in "$@"; do
+  [ "$2" = graphql ] && [ "$prev" = -F ] && { echo "a typed field reached graphql: $a" >&2; exit 1; }
   case "$prev" in -f) case "$a" in query=*) query=${a#query=} ;; after=*) after=${a#after=} ;; esac ;; esac
   case "$a" in repos/*|projects/*) path=$a ;; esac
   prev=$a
 done
 if [ "$2" = graphql ]; then
   case "$query" in
-    *"issues(first"*) key=issues_pages ;;
-    *"pullRequests(first"*) key=requests_pages ;;
+    *"__type(name"*)
+      # The fields of an issue this server carries: the fixture's, or every one the script asks.
+      v=$(ask '.schema'); [ -n "$v" ] || v='["subIssuesSummary","issueType","stateReason",{"name":"closedByPullRequestsReferences","args":["includeClosedPrs"]}]'
+      jq -c '{data: {issue: {fields: map(if type == "string" then {name: ., args: []} else {name, args: (.args | map({name: .}))} end)}}}' <<<"$v"; exit 0 ;;
+    *"issues(first"*|*"workItems(first"*) key=issues_pages ;;
+    *"pullRequests(first"*|*"mergeRequests(first"*) key=requests_pages ;;
+    *"discussions(first"*) key=discussions_pages ;;
     *) echo "unplanned query" >&2; exit 1 ;;
   esac
-  if [ "$key" = issues_pages ] && [ "$(ask '.no_subissues')" = yes ]; then
-    case "$query" in *subIssuesSummary*) echo '{"errors":[{"message":"Field '"'"'subIssuesSummary'"'"' doesn'"'"'t exist on type '"'"'Issue'"'"'"}]}'; exit 1 ;; esac
-  fi
   i=0; [ -n "$after" ] && i=${after#c}
   jq -r --arg k "$key" --argjson i "$i" '.[$k][$i] // empty' "$env"; exit 0
 fi
@@ -32,8 +35,6 @@ if [ "$me" = glab ] && [ "$path" = "projects/:fullpath" ]; then
 fi
 case "$path" in
   */labels\?*) v=$(ask '.set'); [ -n "$v" ] && [ "$v" != unread ] || { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }; printf '%s\n' "$v" ;;
-  */issues\?*) printf '%s\n' "$(ask '.issues')" ;;
-  */merge_requests\?*) printf '%s\n' "$(ask '.requests')" ;;
-  repos/team/app|projects/team%2Fapp) echo '{"default_branch":"main"}' ;;
+  repos/team/app|projects/team%2Fapp) d=$(ask '.has_discussions'); echo "{\"default_branch\":\"main\",\"has_discussions\":${d:-false}}" ;;
   *) echo "unplanned $me api call: $*" >&2; exit 1 ;;
 esac

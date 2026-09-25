@@ -9,9 +9,12 @@
 //   node labels.mjs check-roles --snapshot <file> --roles <file> [--plan <file>] [--rows <dir> --population issues|requests|all]
 //   node labels.mjs verify --snapshot <file> --plan <file>
 //
-// `snapshot` writes the set, the default branch, every issue and every change request with its
-// labels to --out, and prints what it read: `read`, `complete` (false where a listing came back
-// short or cut), `unavailable` (what this forge or server does not carry), `reason`.
+// `snapshot` writes the set, the default branch, and every carrier with its labels to --out —
+// issues (GitLab: every work item), change requests, and discussions where GitHub keeps them; an
+// issue with `parent` (it has children) and `closedBy`, the full references of the requests that
+// close it. It prints what it read: `read`, `complete` (false where a listing came back short or
+// cut), `unavailable` (what this forge or server does not carry), `reason`. `check-roles` and
+// `verify` answer `complete` too: nothing a snapshot read short says is the whole.
 //
 // The plan (`--plan`) is JSON: { "create": [{ "name", "color", "description" }],
 // "edit": [{ "name", "newName"?, "color"?, "description"? }], "delete": [name],
@@ -25,7 +28,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  dirOk, failureOf, hostOk, parsePages, projectPathOk, repoOk, resolveRepository, runner, text, writeAll,
+  dirOk, hostOk, labelNameOk, parsePages, projectPathOk, repoOk, resolveRepository, runner, sameLabel, text, why, writeAll,
 } from '../../../scripts/lib/forge.mjs';
 
 const usage = 'usage: node labels.mjs <snapshot|check-set|check-roles|verify> [flags] — see the header of this file';
@@ -51,7 +54,6 @@ const out = (answer) => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); p
 const readJson = (file, flag) => {
   try { return JSON.parse(readFileSync(file, 'utf8').replace(/^﻿/, '')); } catch { return die(`${flag} '${file}' is not a JSON file`); }
 };
-const nameOk = (n) => typeof n === 'string' && n !== '' && n.trim() === n && [...n].length <= 255;
 
 // ---------------------------------------------------------------- snapshot
 function snapshot() {
@@ -72,104 +74,159 @@ function snapshot() {
   Object.assign(answer, { forge, host, path });
   const cli = runner(dir, forge);
   const shortfalls = [];
-  const unread = (what, r) => out({ ...answer, reason: text(`could not read ${what}: ${failureOf(r)}`) });
+  const unread = (what, r) => out({ ...answer, reason: text(`could not read ${what}: ${why(r)}`) });
 
-  // A REST listing to its last page.
-  const rest = (what, endpoint) => {
+  const parse = (r) => { try { return JSON.parse(r.out); } catch { return null; } };
+  const one = (what, endpoint) => {
+    const r = cli(['api', '--hostname', host, endpoint], 60000);
+    if (!r.ok) unread(what, r);
+    return parse(r) ?? out({ ...answer, reason: `${what} answered with something that is not JSON` });
+  };
+  // A GraphQL listing to its last page, one call a page: a whole listing in one answer outgrows
+  // what a child process may hand back. Variables go as -f, a string each: -F would read a
+  // number, a boolean or an `@file` out of an owner's name.
+  const walk = (what, query, vars, pick) => {
+    const items = [];
+    let after = null;
+    let total = null;
+    for (let page = 0; ; page += 1) {
+      if (page === 10000) { shortfalls.push(`${what}: stopped after ${page} pages`); break; }
+      const args = ['api', 'graphql', '--hostname', host, '-f', `query=${query}`];
+      for (const [k, v] of Object.entries({ ...vars, ...(after ? { after } : {}) })) args.push('-f', `${k}=${v}`);
+      const r = cli(args, 120000);
+      const v = parse(r);
+      const errors = (Array.isArray(v?.errors) ? v.errors : []).map((e) => String(e?.message ?? ''));
+      const conn = pick(v?.data);
+      if (!conn || !Array.isArray(conn.nodes)) {
+        if (!r.ok) unread(what, r);
+        out({ ...answer, reason: text(`${what} answered without its list${errors.length ? ` — ${errors.join('; ')}` : ''}`) });
+      }
+      if (errors.length) shortfalls.push(`${what}: ${errors.join('; ')}`);
+      total ??= Number.isInteger(conn.totalCount) ? conn.totalCount : (Number.isInteger(conn.count) ? conn.count : null);
+      // A node the server could not resolve comes back null beside an error: it is not read.
+      items.push(...conn.nodes.filter((n) => n && typeof n === 'object'));
+      if (!conn.pageInfo?.hasNextPage) break;
+      if (!conn.pageInfo.endCursor || conn.pageInfo.endCursor === after) { shortfalls.push(`${what}: the cursor did not advance`); break; }
+      after = conn.pageInfo.endCursor;
+    }
+    if (total === null || items.length !== total) shortfalls.push(`${what}: ${items.length} of ${total ?? 'an unknown number'} read`);
+    return items;
+  };
+  // A carrier's labels, or none and a shortfall where they came back cut or not at all.
+  const labelsOf = (conn, what, key, total) => {
+    const nodes = Array.isArray(conn?.nodes) ? conn.nodes.filter((l) => typeof l?.[key] === 'string') : null;
+    if (!nodes) { shortfalls.push(`${what}: its labels are unread`); return []; }
+    if (!Number.isInteger(conn[total]) || conn[total] > nodes.length) shortfalls.push(`${what}: its labels are cut`);
+    return nodes.map((l) => l[key]);
+  };
+
+  const snap = { forge, host, path, readAt: new Date().toISOString(), defaultBranch: null, set: [], issues: [], requests: [], discussions: [], unavailable: [] };
+  const enc = encodeURIComponent(path);
+  const setOf = (what, endpoint) => {
     const r = cli(['api', '--hostname', host, '--paginate', endpoint], 300000);
     if (!r.ok) unread(what, r);
     const pages = parsePages(r.out);
     if (!pages || pages.some((p) => !Array.isArray(p))) out({ ...answer, reason: `${what} answered with something that is not a list` });
     return pages.flat();
   };
-  const one = (what, endpoint) => {
-    const r = cli(['api', '--hostname', host, endpoint], 60000);
-    if (!r.ok) unread(what, r);
-    try { return JSON.parse(r.out); } catch { return out({ ...answer, reason: `${what} answered with something that is not JSON` }); }
-  };
-
-  const snap = { forge, host, path, readAt: new Date().toISOString(), defaultBranch: null, set: [], issues: [], requests: [], unavailable: [] };
-  const enc = encodeURIComponent(path);
 
   if (forge === 'gh') {
-    snap.defaultBranch = one('the repository', `repos/${path}`)?.default_branch ?? null;
-    snap.set = rest('the label set', `repos/${path}/labels?per_page=100`).map((l) => ({
+    const repo = one('the repository', `repos/${path}`);
+    snap.defaultBranch = repo?.default_branch ?? null;
+    snap.set = setOf('the label set', `repos/${path}/labels?per_page=100`).map((l) => ({
       name: l.name, id: l.id ?? null, color: l.color ?? null, description: l.description ?? null,
       archived: Boolean(l.archived_at), inherited: false,
     }));
+    // What this server's schema carries, asked once: a field it lacks fails the whole query.
+    const schema = cli(['api', 'graphql', '--hostname', host, '-f', 'query={issue:__type(name:"Issue"){fields{name args{name}}}}'], 60000);
+    const fields = parse(schema)?.data?.issue?.fields;
+    if (!Array.isArray(fields)) {
+      if (!schema.ok) unread('the schema', schema);
+      out({ ...answer, reason: 'the schema answered without the fields of an issue' });
+    }
+    const has = (field, arg) => fields.some((x) => x?.name === field && (!arg || x.args?.some((a) => a?.name === arg)));
+    const f = {
+      children: has('subIssuesSummary'), type: has('issueType'), reason: has('stateReason'),
+      closedBy: has('closedByPullRequestsReferences', 'includeClosedPrs'),
+    };
+    if (!f.children) snap.unavailable.push('sub-issue counts');
+    if (!f.type) snap.unavailable.push('native issue types');
+    if (!f.reason) snap.unavailable.push('the reason an issue closed');
+    if (!f.closedBy) snap.unavailable.push('the change request that closed an issue');
     const [owner, name] = path.split('/');
-    // GraphQL to its last page; a field the server lacks is dropped once, and named.
-    const walk = (what, build, pick) => {
-      const items = [];
-      let fields = { children: true, type: true };
-      let after = null;
-      let total = null;
-      for (let page = 0; page < 10000; page += 1) {
-        const q = build(fields);
-        const args = ['api', 'graphql', '--hostname', host, '-F', `owner=${owner}`, '-F', `name=${name}`, '-f', `query=${q}`];
-        if (after) args.push('-f', `after=${after}`);
-        const r = cli(args, 120000);
-        let v = null;
-        try { v = JSON.parse(r.out); } catch { /* read below */ }
-        const errors = (v?.errors ?? []).map((e) => String(e?.message ?? ''));
-        const missing = errors.find((m) => /subIssuesSummary|issueType/.test(m) && /doesn't exist|undefined field|not exist/i.test(m));
-        if (missing && page === 0 && (fields.children || fields.type)) {
-          if (/subIssuesSummary/.test(missing)) { fields = { ...fields, children: false }; snap.unavailable.push('sub-issue counts'); }
-          if (/issueType/.test(missing)) { fields = { ...fields, type: false }; snap.unavailable.push('native issue types'); }
-          page -= 1;
-          continue;
-        }
-        const conn = pick(v?.data?.repository);
-        if (!r.ok && !conn) unread(what, r);
-        if (!conn) out({ ...answer, reason: text(`${what} answered without its list${errors.length ? ` — ${errors.join('; ')}` : ''}`) });
-        if (errors.length) shortfalls.push(`${what}: ${errors.join('; ')}`);
-        total ??= conn.totalCount;
-        items.push(...conn.nodes);
-        if (!conn.pageInfo?.hasNextPage) break;
-        if (!conn.pageInfo.endCursor || conn.pageInfo.endCursor === after) { shortfalls.push(`${what}: the cursor did not advance`); break; }
-        after = conn.pageInfo.endCursor;
-      }
-      if (total !== null && items.length !== total) shortfalls.push(`${what}: ${items.length} of ${total} read`);
-      return items;
-    };
-    const labelsOf = (n, what) => {
-      if (n.labels.totalCount > n.labels.nodes.length) shortfalls.push(`${what} ${n.number}: its labels are cut`);
-      return n.labels.nodes.map((l) => l.name);
-    };
-    snap.issues = walk('issues', (f) => `query($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){
+    const vars = { owner, name };
+    const head = 'query($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){';
+    const labels = 'labels(first:100){totalCount nodes{name}}';
+    snap.issues = walk('issues', `${head}
       issues(first:100,after:$after,states:[OPEN,CLOSED],orderBy:{field:CREATED_AT,direction:ASC}){totalCount pageInfo{hasNextPage endCursor}
-      nodes{number id state stateReason author{__typename login} labels(first:100){totalCount nodes{name}}
+      nodes{number id state author{__typename} ${labels} ${f.reason ? 'stateReason' : ''}
       ${f.children ? 'subIssuesSummary{total}' : ''} ${f.type ? 'issueType{name}' : ''}
-      closedByPullRequestsReferences(first:25,includeClosedPrs:true){totalCount nodes{number}}}}}}`,
-    (repo) => repo?.issues).map((n) => ({
-      number: n.number, id: n.id, state: n.state === 'OPEN' ? 'open' : 'closed', reason: n.stateReason ?? null,
-      bot: n.author?.__typename === 'Bot', labels: labelsOf(n, 'issue'),
-      children: n.subIssuesSummary ? n.subIssuesSummary.total : null, type: n.issueType?.name ?? null,
-      closedBy: n.closedByPullRequestsReferences.totalCount > n.closedByPullRequestsReferences.nodes.length
-        ? null : n.closedByPullRequestsReferences.nodes.map((p) => p.number),
-    }));
-    snap.requests = walk('pull requests', () => `query($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){
+      ${f.closedBy ? 'closedByPullRequestsReferences(first:25,includeClosedPrs:true){totalCount nodes{number repository{nameWithOwner}}}' : ''}}}}}`,
+    vars, (d) => d?.repository?.issues).map((n) => {
+      const refs = n.closedByPullRequestsReferences;
+      const children = Number.isInteger(n.subIssuesSummary?.total) ? n.subIssuesSummary.total : null;
+      return {
+        number: n.number, id: n.id, state: n.state === 'OPEN' ? 'open' : 'closed', reason: n.stateReason ?? null,
+        bot: n.author?.__typename === 'Bot', labels: labelsOf(n.labels, `issue ${n.number}`, 'name', 'totalCount'),
+        children, parent: children === null ? null : children > 0, type: n.issueType?.name ?? null,
+        closedBy: !Array.isArray(refs?.nodes) || refs.totalCount > refs.nodes.length ? null
+          : refs.nodes.map((p) => `${p?.repository?.nameWithOwner}#${p?.number}`),
+      };
+    });
+    snap.requests = walk('pull requests', `${head}
       pullRequests(first:100,after:$after,states:[OPEN,MERGED,CLOSED],orderBy:{field:CREATED_AT,direction:ASC}){totalCount pageInfo{hasNextPage endCursor}
-      nodes{number id state baseRefName author{__typename login} labels(first:100){totalCount nodes{name}}}}}}`,
-    (repo) => repo?.pullRequests).map((n) => ({
-      number: n.number, id: n.id, state: n.state.toLowerCase(), base: n.baseRefName,
-      bot: n.author?.__typename === 'Bot', labels: labelsOf(n, 'pull request'),
+      nodes{number id state baseRefName author{__typename} ${labels}}}}}`,
+    vars, (d) => d?.repository?.pullRequests).map((n) => ({
+      number: n.number, id: n.id, state: String(n.state).toLowerCase(), base: n.baseRefName,
+      bot: n.author?.__typename === 'Bot', labels: labelsOf(n.labels, `pull request ${n.number}`, 'name', 'totalCount'),
     }));
+    // Discussions carry labels too, where the repository keeps them.
+    if (repo?.has_discussions === true) {
+      snap.discussions = walk('discussions', `${head}
+        discussions(first:100,after:$after){totalCount pageInfo{hasNextPage endCursor} nodes{number id ${labels}}}}}`,
+      vars, (d) => d?.repository?.discussions).map((n) => ({
+        number: n.number, id: n.id, labels: labelsOf(n.labels, `discussion ${n.number}`, 'name', 'totalCount'),
+      }));
+    }
   } else {
     snap.defaultBranch = one('the project', `projects/${enc}`)?.default_branch ?? null;
-    snap.set = rest('the label set', `projects/${enc}/labels?per_page=100&include_ancestor_groups=true&with_counts=true`).map((l) => ({
+    snap.set = setOf('the label set', `projects/${enc}/labels?per_page=100&include_ancestor_groups=true`).map((l) => ({
       name: l.name, id: l.id ?? null, color: typeof l.color === 'string' ? l.color.replace(/^#/, '') : null,
       description: l.description ?? null, archived: l.archived === true, inherited: l.is_project_label === false,
     }));
-    snap.issues = rest('issues', `projects/${enc}/issues?state=all&per_page=100&scope=all`).map((i) => ({
-      number: i.iid, id: i.id, state: i.state === 'opened' ? 'open' : 'closed', reason: null,
-      bot: null, labels: Array.isArray(i.labels) ? i.labels : [], children: null, type: i.issue_type ?? i.type ?? null, closedBy: null,
+    const vars = { fullPath: path };
+    const head = 'query($fullPath:ID!,$after:String){project(fullPath:$fullPath){';
+    const labels = 'labels(first:100){count nodes{title}}';
+    // Every work item type the project holds — issues, incidents, tasks — carries labels.
+    snap.issues = walk('work items', `${head}
+      workItems(first:100,after:$after,sort:CREATED_ASC){count pageInfo{hasNextPage endCursor}
+      nodes{iid id state author{bot} widgets{type ... on WorkItemWidgetLabels{${labels}}
+      ... on WorkItemWidgetHierarchy{hasChildren children(first:1){count}}
+      ... on WorkItemWidgetDevelopment{closingMergeRequests(first:25){count nodes{mergeRequest{reference(full:true)}}}}}}}}}`,
+    vars, (d) => d?.project?.workItems).map((w) => {
+      const by = {};
+      for (const x of Array.isArray(w.widgets) ? w.widgets : []) if (x?.type) by[x.type] = x;
+      const h = by.HIERARCHY;
+      const c = by.DEVELOPMENT?.closingMergeRequests;
+      return {
+        number: Number(w.iid), id: w.id, state: w.state === 'OPEN' ? 'open' : 'closed', reason: null,
+        bot: typeof w.author?.bot === 'boolean' ? w.author.bot : null,
+        labels: by.LABELS ? labelsOf(by.LABELS.labels, `work item ${w.iid}`, 'title', 'count') : [],
+        // `hasChildren` holds where the children themselves are hidden from this token.
+        children: h ? (h.children?.count ?? null) : 0, parent: h ? h.hasChildren === true : false, type: null,
+        closedBy: !Array.isArray(c?.nodes) || c.count > c.nodes.length ? null : c.nodes.map((m) => m?.mergeRequest?.reference ?? null),
+      };
+    });
+    snap.requests = walk('merge requests', `${head}
+      mergeRequests(first:100,after:$after,sort:CREATED_ASC){count pageInfo{hasNextPage endCursor}
+      nodes{iid id state targetBranch author{bot} ${labels}}}}}`,
+    vars, (d) => d?.project?.mergeRequests).map((m) => ({
+      number: Number(m.iid), id: m.id,
+      // `locked` is a request mid-merge: still open.
+      state: m.state === 'opened' || m.state === 'locked' ? 'open' : m.state, base: m.targetBranch,
+      bot: typeof m.author?.bot === 'boolean' ? m.author.bot : null,
+      labels: labelsOf(m.labels, `merge request ${m.iid}`, 'title', 'count'),
     }));
-    snap.requests = rest('merge requests', `projects/${enc}/merge_requests?state=all&per_page=100&scope=all`).map((m) => ({
-      number: m.iid, id: m.id, state: m.state === 'opened' ? 'open' : m.state, base: m.target_branch,
-      bot: null, labels: Array.isArray(m.labels) ? m.labels : [],
-    }));
-    snap.unavailable.push('sub-issue counts', 'bot authors', 'the change request that closed an issue');
   }
 
   snap.complete = shortfalls.length === 0;
@@ -177,8 +234,8 @@ function snapshot() {
     out({ ...answer, reason: `could not write ${opts['--out']}` });
   }
   out({
-    ...answer, read: true, complete: shortfalls.length === 0, unavailable: snap.unavailable,
-    counts: { labels: snap.set.length, issues: snap.issues.length, requests: snap.requests.length },
+    ...answer, read: true, complete: snap.complete, unavailable: snap.unavailable,
+    counts: { labels: snap.set.length, issues: snap.issues.length, requests: snap.requests.length, discussions: snap.discussions.length },
     reason: shortfalls.length ? text(shortfalls.join('; ')) : null,
   });
 }
@@ -190,70 +247,87 @@ const loadSnapshot = () => {
   if (!s || !Array.isArray(s.set) || !Array.isArray(s.issues) || !Array.isArray(s.requests) || (s.forge !== 'gh' && s.forge !== 'glab')) {
     die('--snapshot is not a file `snapshot` wrote');
   }
+  s.discussions ??= [];
   return s;
 };
-const loadPlan = (required) => {
+const descOk = (d) => d === undefined || d === null || typeof d === 'string';
+const loadPlan = (required, forge) => {
   if (!opts['--plan']) { if (required) die(`${cmd} takes --plan <file>`); return { create: [], edit: [], delete: [], relabel: [] }; }
   const p = readJson(opts['--plan'], '--plan');
   const plan = { create: p?.create ?? [], edit: p?.edit ?? [], delete: p?.delete ?? [], relabel: p?.relabel ?? [] };
   if (![plan.create, plan.edit, plan.delete, plan.relabel].every(Array.isArray)) die('--plan: create, edit, delete and relabel are lists');
-  for (const c of plan.create) if (!nameOk(c?.name)) die('--plan: a create without a label name');
-  for (const e of plan.edit) if (!nameOk(e?.name) || (e.newName !== undefined && !nameOk(e.newName))) die('--plan: an edit without label names');
-  for (const d of plan.delete) if (!nameOk(d)) die('--plan: a delete that is not a label name');
+  for (const c of plan.create) {
+    if (!labelNameOk(c?.name) || typeof c.color !== 'string' || !descOk(c.description)) die('--plan: a create is { name, color, description }');
+  }
+  for (const e of plan.edit) {
+    if (!labelNameOk(e?.name) || (e.newName !== undefined && !labelNameOk(e.newName))
+      || (e.color !== undefined && typeof e.color !== 'string') || !descOk(e.description)) die('--plan: an edit is { name, newName?, color?, description? }');
+  }
+  for (const d of plan.delete) if (!labelNameOk(d)) die('--plan: a delete that is not a label name');
+  const same = sameLabel(forge);
+  const rows = new Set();
   for (const r of plan.relabel) {
     if ((r?.kind !== 'issue' && r?.kind !== 'request') || !Number.isInteger(r.number) || r.number < 1
-      || ![r.add ?? [], r.remove ?? []].every((l) => Array.isArray(l) && l.every(nameOk))) die('--plan: a relabel row is { kind, number, add, remove }');
+      || ![r.add ?? [], r.remove ?? []].every((l) => Array.isArray(l) && l.every(labelNameOk))) die('--plan: a relabel row is { kind, number, add, remove }');
+    // One row a carrier, and no name both added and taken off: the writer refuses either.
+    if (rows.has(`${r.kind} ${r.number}`)) die(`--plan: two relabel rows for ${r.kind} ${r.number}`);
+    rows.add(`${r.kind} ${r.number}`);
+    const both = (r.add ?? []).find((n) => (r.remove ?? []).some((m) => same(m, n)));
+    if (both !== undefined) die(`--plan: ${r.kind} ${r.number} both adds and takes off ${both}`);
   }
   return plan;
 };
-const sameAs = (forge) => (forge === 'gh' ? (a, b) => a.toLowerCase() === b.toLowerCase() : (a, b) => a === b);
 
+// The plan's renames, as a function from a name to the one it will carry.
+const renamer = (plan, same) => {
+  const renames = plan.edit.filter((e) => e.newName !== undefined);
+  return (n) => renames.find((e) => same(e.name, n))?.newName ?? n;
+};
 // The labels a carrier holds once the plan's renames and its own row are applied.
 const afterPlan = (snap, plan) => {
-  const same = sameAs(snap.forge);
-  const renames = plan.edit.filter((e) => e.newName !== undefined);
-  const rename = (n) => renames.find((e) => same(e.name, n))?.newName ?? n;
+  const same = sameLabel(snap.forge);
+  const rename = renamer(plan, same);
   const rows = new Map(plan.relabel.map((r) => [`${r.kind}:${r.number}`, r]));
   const apply = (kind) => (c) => {
     const row = rows.get(`${kind}:${c.number}`);
     let labels = c.labels.map(rename);
     if (row) {
-      labels = labels.filter((l) => !(row.remove ?? []).some((n) => same(rename(n), l)));
-      for (const n of row.add ?? []) if (!labels.some((l) => same(l, rename(n)))) labels.push(rename(n));
+      const remove = (row.remove ?? []).map(rename);
+      labels = labels.filter((l) => !remove.some((n) => same(n, l)));
+      for (const n of (row.add ?? []).map(rename)) if (!labels.some((l) => same(l, n))) labels.push(n);
     }
     return { ...c, labels };
   };
-  return { issues: snap.issues.map(apply('issue')), requests: snap.requests.map(apply('request')) };
+  return { issues: snap.issues.map(apply('issue')), requests: snap.requests.map(apply('request')), discussions: snap.discussions.map(apply('discussion')) };
 };
 
 // ---------------------------------------------------------------- check-set
 function checkSet() {
   const snap = loadSnapshot();
-  const plan = loadPlan(true);
-  const same = sameAs(snap.forge);
+  const plan = loadPlan(true, snap.forge);
+  const same = sameLabel(snap.forge);
   const problems = [];
   const flag = (op, name, problem) => problems.push({ op, name, problem });
   const held = (n) => snap.set.find((l) => same(l.name, n));
   const colourOk = (c) => typeof c === 'string' && /^[0-9a-fA-F]{6}$/.test(c);
-  const descOk = (d) => d === undefined || d === null || (typeof d === 'string' && (snap.forge !== 'gh' || [...d].length <= 100));
+  const descFits = (d) => typeof d !== 'string' || snap.forge !== 'gh' || [...d].length <= 100;
 
-  for (const c of plan.create) {
+  for (const [i, c] of plan.create.entries()) {
     if (held(c.name)) flag('create', c.name, 'already in the set');
+    if (plan.create.findIndex((o) => same(o.name, c.name)) !== i) flag('create', c.name, 'created twice by the plan');
     if (!colourOk(c.color)) flag('create', c.name, 'the colour is not six hex digits without #');
-    if (!descOk(c.description)) flag('create', c.name, 'the description is over 100 characters, GitHub\'s limit');
+    if (!descFits(c.description)) flag('create', c.name, 'the description is over 100 characters, GitHub\'s limit');
     if (snap.forge === 'glab' && c.name.includes(',')) flag('create', c.name, 'GitLab refuses a comma in a label name');
   }
-  const renamed = new Set();
-  for (const e of plan.edit) {
+  for (const [i, e] of plan.edit.entries()) {
     const l = held(e.name);
     if (!l) { flag('edit', e.name, 'not in the set'); continue; }
+    if (plan.edit.findIndex((o) => same(o.name, e.name)) !== i) flag('edit', e.name, 'edited twice by the plan: one row a label');
+    if (plan.delete.some((d) => same(d, e.name))) flag('edit', e.name, 'edited and deleted by the same plan');
     if (l.inherited) flag('edit', e.name, 'a label its group passes down: the project cannot change it');
     if (e.color !== undefined && !colourOk(e.color)) flag('edit', e.name, 'the colour is not six hex digits without #');
-    if (!descOk(e.description)) flag('edit', e.name, 'the description is over 100 characters, GitHub\'s limit');
-    if (e.newName !== undefined) {
-      if (snap.forge === 'glab' && e.newName.includes(',')) flag('edit', e.name, 'GitLab refuses a comma in a label name');
-      renamed.add(e.name);
-    }
+    if (!descFits(e.description)) flag('edit', e.name, 'the description is over 100 characters, GitHub\'s limit');
+    if (e.newName !== undefined && snap.forge === 'glab' && e.newName.includes(',')) flag('edit', e.name, 'GitLab refuses a comma in a label name');
   }
   // A rename lands on a free name: not one the set keeps, not one another rename or a create takes.
   // A rename chain or cycle — one label taking a name another is leaving — is refused whole: the
@@ -269,20 +343,22 @@ function checkSet() {
   }
   // A deletion stands only on carriers read whole, and only where the plan takes the label off each.
   const after = afterPlan(snap, plan);
+  const carriers = [...after.issues.map((c) => ({ kind: 'issue', c })), ...after.requests.map((c) => ({ kind: 'request', c })),
+    ...after.discussions.map((c) => ({ kind: 'discussion', c }))];
   for (const d of plan.delete) {
     const l = held(d);
     if (!l) { flag('delete', d, 'not in the set'); continue; }
     if (l.inherited) flag('delete', d, 'a label its group passes down: the project cannot delete it');
     if (snap.complete === false) flag('delete', d, 'the snapshot read the carriers short, so who holds it is unread');
-    const holders = [...after.issues.map((c) => ({ kind: 'issue', c })), ...after.requests.map((c) => ({ kind: 'request', c }))]
-      .filter(({ c }) => c.labels.some((n) => same(n, d)));
+    const holders = carriers.filter(({ c }) => c.labels.some((n) => same(n, d)));
     if (holders.length) flag('delete', d, `still on ${holders.slice(0, 10).map(({ kind, c }) => `${kind} ${c.number}`).join(', ')}${holders.length > 10 ? ` and ${holders.length - 10} more` : ''}`);
   }
   for (const r of plan.relabel) {
     for (const n of r.add ?? []) {
-      const known = held(n) && !held(n).archived;
-      const coming = plan.create.some((c) => same(c.name, n)) || renames.some((e) => same(e.newName, n));
-      if (!known && !coming) flag('relabel', n, `added to ${r.kind} ${r.number}, and neither in the set nor created by the plan`);
+      const l = held(n);
+      // A renamed label keeps what it was: an archived one renamed is still archived.
+      const coming = plan.create.some((c) => same(c.name, n)) || renames.some((e) => same(e.newName, n) && !held(e.name)?.archived);
+      if (!(l && !l.archived) && !coming) flag('relabel', n, `added to ${r.kind} ${r.number}, and neither a live label of the set nor created by the plan`);
       if (plan.delete.some((d) => same(d, n))) flag('relabel', n, `added to ${r.kind} ${r.number} and deleted by the same plan`);
     }
     const where = r.kind === 'issue' ? snap.issues : snap.requests;
@@ -294,7 +370,7 @@ function checkSet() {
 // ---------------------------------------------------------------- check-roles
 function checkRoles() {
   const snap = loadSnapshot();
-  const plan = loadPlan(false);
+  const plan = loadPlan(false, snap.forge);
   if (!opts['--roles']) die('check-roles takes --roles <file>');
   const roles = readJson(opts['--roles'], '--roles');
   const range = (v) => Array.isArray(v) && v.length === 2 && Number.isInteger(v[0]) && v[0] >= 0 && (v[1] === null || (Number.isInteger(v[1]) && v[1] >= v[0]));
@@ -302,30 +378,26 @@ function checkRoles() {
     && range(f.leaf) && range(f.parent) && range(f.request))) {
     die('--roles: families are { prefix, leaf: [min, max|null], parent: [...], request: [...] }');
   }
-  const skip = Array.isArray(roles.skip) ? roles.skip : [];
-  const same = sameAs(snap.forge);
+  if (roles.skip !== undefined && !(Array.isArray(roles.skip) && roles.skip.every((s) => typeof s === 'string'))) die('--roles: skip is a list of label names');
+  const skip = roles.skip ?? [];
+  const same = sameLabel(snap.forge);
+  const fold = snap.forge === 'gh' ? (s) => s.toLowerCase() : (s) => s;
   const after = afterPlan(snap, plan);
   const violations = [];
   const skipped = (c) => c.bot === true || c.labels.some((l) => skip.some((s) => same(s, l)));
+  const inScope = (c) => !skipped(c) && snap.defaultBranch !== null && c.base === snap.defaultBranch && c.state !== 'closed';
 
   const check = (kind, c, place) => {
     for (const f of roles.families) {
-      let n = c.labels.filter((l) => l.startsWith(f.prefix)).length;
+      let n = c.labels.filter((l) => fold(l).startsWith(fold(f.prefix))).length;
       if (roles.nativeKind === f.prefix && c.type) n += 1;
       let [min, max] = f[place];
       if (f.whileOpen && c.state !== 'open') { min = 0; max = 0; }
       if (n < min || (max !== null && n > max)) violations.push({ kind, number: c.number, place, family: f.prefix, count: n, want: [min, max] });
     }
   };
-  for (const c of after.issues) {
-    if (skipped(c)) continue;
-    check('issue', c, c.children ? 'parent' : 'leaf');
-  }
-  const intoDefault = (c) => snap.defaultBranch !== null && c.base === snap.defaultBranch;
-  for (const c of after.requests) {
-    if (skipped(c) || !intoDefault(c) || c.state === 'closed') continue;
-    check('request', c, 'request');
-  }
+  for (const c of after.issues) if (!skipped(c)) check('issue', c, c.parent === true ? 'parent' : 'leaf');
+  for (const c of after.requests) if (inScope(c)) check('request', c, 'request');
 
   let coverage = null;
   if (opts['--rows'] !== undefined) {
@@ -336,7 +408,7 @@ function checkRoles() {
     const bad = [];
     for (const f of readdirSync(opts['--rows'])) {
       if (!f.endsWith('.jsonl')) continue;
-      for (const [i, line] of readFileSync(join(opts['--rows'], f), 'utf8').split('\n').entries()) {
+      for (const [i, line] of readFileSync(join(opts['--rows'], f), 'utf8').replace(/^﻿/, '').split('\n').entries()) {
         if (!line.trim()) continue;
         let row;
         try { row = JSON.parse(line); } catch { bad.push(`${f}:${i + 1}`); continue; }
@@ -345,52 +417,59 @@ function checkRoles() {
         seen.set(key, (seen.get(key) ?? 0) + 1);
       }
     }
-    const want = [
-      ...(population !== 'requests' ? snap.issues.filter((c) => !skipped(c)).map((c) => `issue ${c.number}`) : []),
-      ...(population !== 'issues' ? snap.requests.filter((c) => !skipped(c) && intoDefault(c) && c.state !== 'closed').map((c) => `request ${c.number}`) : []),
-    ];
+    const want = new Set([
+      ...(population !== 'requests' ? after.issues.filter((c) => !skipped(c)).map((c) => `issue ${c.number}`) : []),
+      ...(population !== 'issues' ? after.requests.filter(inScope).map((c) => `request ${c.number}`) : []),
+    ]);
     coverage = {
-      missing: want.filter((k) => !seen.has(k)),
+      missing: [...want].filter((k) => !seen.has(k)),
       twice: [...seen].filter(([, n]) => n > 1).map(([k]) => k),
-      extra: [...seen.keys()].filter((k) => !want.includes(k)),
+      extra: [...seen.keys()].filter((k) => !want.has(k)),
       unreadable: bad,
     };
   }
+  // A snapshot read short counts only what it read: nothing it says is the whole.
+  const complete = snap.complete !== false;
   out({
-    ok: violations.length === 0 && (!coverage || Object.values(coverage).every((l) => l.length === 0)),
-    forge: snap.forge, violations, coverage,
+    ok: complete && violations.length === 0 && (!coverage || Object.values(coverage).every((l) => l.length === 0)),
+    forge: snap.forge, complete, violations, coverage,
   });
 }
 
 // ---------------------------------------------------------------- verify
 function verify() {
   const snap = loadSnapshot();
-  const plan = loadPlan(true);
-  const same = sameAs(snap.forge);
+  const plan = loadPlan(true, snap.forge);
+  const same = sameLabel(snap.forge);
+  const rename = renamer(plan, same);
   const mismatches = [];
   const want = (what, problem) => mismatches.push({ what, problem });
   const held = (n) => snap.set.find((l) => same(l.name, n));
+  // A label created or edited without a description reads back as either empty or null.
+  const desc = (d) => d ?? '';
   for (const c of plan.create) {
     const l = held(c.name);
     if (!l) want(c.name, 'not created');
-    else if (l.color?.toLowerCase() !== c.color.toLowerCase() || (c.description ?? null) !== (l.description ?? null)) want(c.name, 'created, but not as planned');
+    else if (String(l.color).toLowerCase() !== c.color.toLowerCase() || desc(c.description) !== desc(l.description)) want(c.name, 'created, but not as planned');
   }
   for (const e of plan.edit) {
     const name = e.newName ?? e.name;
-    const l = held(name);
+    // A rename is read by its exact spelling: on GitHub a change of case alone matches either way.
+    const l = e.newName !== undefined ? snap.set.find((x) => x.name === e.newName) : held(e.name);
     if (!l) { want(name, e.newName !== undefined ? 'not renamed' : 'not in the set'); continue; }
-    if (e.newName !== undefined && held(e.name) && !same(e.name, e.newName)) want(e.name, 'still in the set beside its new name');
-    if (e.color !== undefined && l.color?.toLowerCase() !== e.color.toLowerCase()) want(name, 'the colour is not the planned one');
-    if (e.description !== undefined && (l.description ?? null) !== (e.description ?? null)) want(name, 'the description is not the planned one');
+    if (e.newName !== undefined && e.name !== e.newName && snap.set.some((x) => x.name === e.name)) want(e.name, 'still in the set beside its new name');
+    if (e.color !== undefined && String(l.color).toLowerCase() !== e.color.toLowerCase()) want(name, 'the colour is not the planned one');
+    if (e.description !== undefined && desc(l.description) !== desc(e.description)) want(name, 'the description is not the planned one');
   }
   for (const d of plan.delete) if (held(d)) want(d, 'not deleted');
   for (const r of plan.relabel) {
     const c = (r.kind === 'issue' ? snap.issues : snap.requests).find((x) => x.number === r.number);
     if (!c) { want(`${r.kind} ${r.number}`, 'not in the snapshot'); continue; }
-    for (const n of r.add ?? []) if (!c.labels.some((l) => same(l, n))) want(`${r.kind} ${r.number}`, `does not hold ${n}`);
-    for (const n of r.remove ?? []) if (c.labels.some((l) => same(l, n))) want(`${r.kind} ${r.number}`, `still holds ${n}`);
+    for (const n of (r.add ?? []).map(rename)) if (!c.labels.some((l) => same(l, n))) want(`${r.kind} ${r.number}`, `does not hold ${n}`);
+    for (const n of (r.remove ?? []).map(rename)) if (c.labels.some((l) => same(l, n))) want(`${r.kind} ${r.number}`, `still holds ${n}`);
   }
-  out({ ok: mismatches.length === 0 && snap.complete !== false, forge: snap.forge, mismatches });
+  const complete = snap.complete !== false;
+  out({ ok: complete && mismatches.length === 0, forge: snap.forge, complete, mismatches });
 }
 
 ({ snapshot, 'check-set': checkSet, 'check-roles': checkRoles, verify })[cmd]();

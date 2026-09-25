@@ -326,13 +326,9 @@ export function requestsOf(found, cwd, repo, oid) {
   return { rows: rows.filter((q) => q && typeof q === 'object').map(found.reader.row) };
 }
 
-// A runner result's failure in words: a timeout names itself, since a killed process leaves no
-// line of its own.
-export const failureOf = (r) => (r.timedOut ? 'no answer in time' : r.line());
-
 // A host as a URL reads it: only the scheme's own default port is dropped, and a port named on
 // purpose stays, picking an endpoint of its own.
-export const hostNorm = (h) => { try { return new URL(`https://${h}`).host.toLowerCase(); } catch { return h.toLowerCase(); } };
+const hostNorm = (h) => { try { return new URL(`https://${h}`).host.toLowerCase(); } catch { return h.toLowerCase(); } };
 const hostBare = (h) => hostNorm(h).replace(/:\d+$/, '');
 // An ssh alias is a word of the user's own configuration; a leading `-` would reach ssh as an option.
 const aliasOk = (v) => /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(v);
@@ -342,7 +338,7 @@ const aliasOk = (v) => /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(v);
 // user's own ssh configuration stands for the host it names; `ssh.<host>` is the port-443 SSH front
 // a forge keeps beside itself. A web remote keeps a port it names; an SSH remote's port is SSH's,
 // and says nothing of the web endpoint.
-export function remoteHosts(dir) {
+function remoteHosts(dir) {
   const r = runner(dir, 'git')(['remote', '-v'], 30000);
   const web = new Set();
   const ssh = new Set();
@@ -367,6 +363,11 @@ export function remoteHosts(dir) {
   return { has: (h) => web.has(hostNorm(h)) || (hostNorm(h) === hostBare(h) && ssh.has(hostBare(h))) };
 }
 
+// A label name as either forge takes one; GitHub reads two spellings that differ in case alone as
+// one label, GitLab as two.
+export const labelNameOk = (n) => typeof n === 'string' && n !== '' && n.trim() === n && [...n].length <= 255;
+export const sameLabel = (forge) => (forge === 'gh' ? (a, b) => a.toLowerCase() === b.toLowerCase() : (a, b) => a === b);
+
 // Which forge, host and repository a run writes to — resolved from what answers, never from a
 // hostname, and only onto a host a remote of the checkout names or the caller named after checking.
 // With `url`, a change request's URL a CLI printed: its repository is the one the forge answers for
@@ -385,7 +386,7 @@ export function resolveRepository({ dir, forge = null, host = null, repo = null,
       ? ['repo', 'view', ...(target ? [target] : []), '--json', 'url,nameWithOwner']
       : ['api', ...(h0 ? ['--hostname', h0] : []), r0 ? `projects/${encodeURIComponent(r0)}` : 'projects/:fullpath'];
     const r = runner(dir, cmd)(args, 60000);
-    if (!r.ok) return { cmd, ok: false, why: `${cmd}: ${failureOf(r)}` };
+    if (!r.ok) return { cmd, ok: false, why: `${cmd}: ${why(r)}` };
     try {
       const v = JSON.parse(r.out);
       const u = new URL(cmd === 'gh' ? v?.url : v?.web_url);
@@ -397,6 +398,7 @@ export function resolveRepository({ dir, forge = null, host = null, repo = null,
     }
   };
   let answer;
+  if (url && forge !== 'gh' && forge !== 'glab') return fail('a request URL takes the forge that printed it');
   if (url) {
     const h = url.host;
     // A host the user named and checked stands for the remotes; otherwise a remote must name it.
@@ -414,7 +416,7 @@ export function resolveRepository({ dir, forge = null, host = null, repo = null,
       let last = 'nothing asked';
       for (let k = 0; k < project.length - 1 && !answer; k += 1) {
         const r = runner(dir, 'glab')(['api', '--hostname', h, `projects/${encodeURIComponent(project.slice(k).join('/'))}`], 60000);
-        if (!r.ok) { last = failureOf(r); continue; }
+        if (!r.ok) { last = why(r); continue; }
         try {
           const v = JSON.parse(r.out);
           if (`${String(v?.web_url).replace(/\/+$/, '')}/-/merge_requests/${number}` === whole

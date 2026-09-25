@@ -29,7 +29,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  dirOk, failureOf, hostOk, parsePages, projectPathOk, repoOk, resolveRepository, runner, text, writeAll,
+  dirOk, hostOk, labelNameOk, parsePages, projectPathOk, repoOk, resolveRepository, runner, sameLabel, text, why, writeAll,
 } from './lib/forge.mjs';
 
 const usage = 'usage: node label-write.mjs (--number <n> --kind issue|request | --url <request URL>)'
@@ -93,7 +93,7 @@ const names = (file, flag) => {
   try { parsed = JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, '')); } catch { die(`${flag} '${file}' is not a JSON file`); }
   if (!Array.isArray(parsed)) die(`${flag} takes a JSON array of label names`);
   for (const n of parsed) {
-    if (typeof n !== 'string' || n === '' || n.trim() !== n || [...n].length > 255) {
+    if (!labelNameOk(n)) {
       die(`${flag} holds something that is not a label name`);
     }
   }
@@ -122,7 +122,6 @@ const answer = {
 };
 const out = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const refuse = (msg) => { answer.reason = text(msg); out(); };
-const why = failureOf;
 
 const resolved = resolveRepository({
   dir: opts.dir, forge: opts.forge, host: opts.host, repo: opts.repo, url: requestUrl, number: opts.number,
@@ -132,7 +131,7 @@ const { forge, host, path } = resolved;
 answer.forge = forge;
 answer.host = host;
 // GitHub reads two spellings as one label: added and taken off at once, that is a contradiction.
-if (forge === 'gh' && add.some((n) => remove.some((m) => m.toLowerCase() === n.toLowerCase()))) {
+if (forge === 'gh' && add.some((n) => remove.some((m) => sameLabel(forge)(m, n)))) {
   refuse('a name is both added and taken off, in two spellings GitHub reads as one');
 }
 const cli = runner(opts.dir, forge);
@@ -172,7 +171,7 @@ if (before.isRequest !== (opts.kind === 'request')) {
   refuse(`${opts.number} is ${before.isRequest ? 'a change request' : 'an issue'}, not the ${opts.kind} asked for`);
 }
 // GitHub matches label names without regard to case; GitLab by the exact name.
-const same = (a, b) => (forge === 'gh' ? a.toLowerCase() === b.toLowerCase() : a === b);
+const same = sameLabel(forge);
 const holds = (list, n) => list.some((l) => same(l, n));
 const toAdd = add.filter((n) => !holds(before.labels, n));
 // Taken off under the spelling the carrier holds it by: that is the name the forge knows.
