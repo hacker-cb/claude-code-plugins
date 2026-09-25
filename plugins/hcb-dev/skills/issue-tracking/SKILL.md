@@ -1,16 +1,16 @@
 ---
 name: issue-tracking
 description: >-
-  Keep deferred work in the forge's issue tracker — open one, update one, classify
-  it, decompose it, close it. Use it when the user asks to file, update or triage
+  Keep deferred work in the forge's issue tracker, GitHub or GitLab — open one,
+  update one, classify it, decompose it, close it. Use it when the user asks to file, update or triage
   an issue, ticket, bug or piece of tech debt; when something surfaces outside the
   current task that will not be fixed now — a defect, a missing test, a
   duplication, a TODO left behind; before substantive work, to find the issue that
   already covers it; when the user asks whether an issue is still current — still
   true of the code ("#42 ещё актуален?"); when the user asks what to pick up next —
   though a survey of the whole backlog is `hcb-dev:backlog-survey`; and when a
-  discussion lands on a topic whose earlier decisions may sit in an issue. GitHub
-  and GitLab alike. Not for implementing an issue
+  discussion lands on a topic whose earlier decisions may sit in an issue. Not for
+  the whole label set (`hcb-dev:label-taxonomy`), not for implementing an issue
   (`hcb-dev:implementation-workflow`), not for completing finished work
   (`hcb-dev:shipping-workflow`), and not a review of a diff
   (`hcb-dev:multi-review`) — each of those calls this skill where it needs the

@@ -7,7 +7,7 @@ description: >-
   parallel layout of candidate batches, and recommend what to take next. Use
   when the user asks to study, re-check or lay out the backlog as a whole —
   "изучи все issues", "раздели по важности", "что брать в работу", "разложи
-  бэклог", "перепроверь все issues вехи/метки" — and before an epic is split
+  бэклог", "перепроверь все issues вехи" — and before an epic is split
   into waves when no survey exists yet. Report-first: every tracker edit it
   proposes executes only on the user's word, item by item through
   `hcb-dev:issue-tracking`.

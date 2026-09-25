@@ -56,3 +56,5 @@ gl-twokeys	--number 5 --kind issue --add tests/suites/label-write/names/two-prio
 gh-ignored	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|applied none of it	GitHub, too, answers success to an account that may not label and applies nothing: that is a refusal
 gh-sshport	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|no remote of this checkout names	a remote on ssh.<host> at another port is another service, not the forge's front
 gh-sshalias443	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": true	an alias the ssh configuration points at ssh.<host> on port 443 names the forge's own host
+gh-add	--number 5 --kind issue --add tests/suites/label-write/names/api.json --expect tests/suites/label-write/names/bug.json	0	"wrote": false|moved since it was read|NOT:"add 1"	a carrier that does not hold what the caller read is refused before anything is written
+gh-add	--number 5 --kind issue --add tests/suites/label-write/names/api.json --expect tests/suites/label-write/names/none.json	0	"wrote": true	a carrier holding exactly what the caller read is written
