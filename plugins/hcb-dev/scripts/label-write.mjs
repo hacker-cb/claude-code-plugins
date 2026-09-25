@@ -379,18 +379,15 @@ const changed = after.labels.length !== before.labels.length
 if (answer.missing.length === 0 && answer.standing.length === 0 && answer.lost.length === 0) {
   answer.wrote = true;
   if (failures.length) answer.reason = text(`landed, though the forge answered: ${failures.join('; ')}`);
-} else if (!changed && !unanswered && failures.length) {
-  answer.wrote = false;
-  answer.reason = text(`refused: ${failures.join('; ')}`);
 } else if (!changed && !unanswered) {
-  // Both forges answer an account that may not label with success and leave the labels as they were.
+  // Nothing moved and every call was answered: refused — outright, or with a success that applied
+  // nothing, as an account that may not label can be answered.
   answer.wrote = false;
-  answer.reason = 'refused: the forge accepted the write and applied none of it, as it does for an account that may not label';
+  answer.reason = text(failures.length ? `refused: ${failures.join('; ')}`
+    : 'refused: the forge accepted the write and applied none of it');
 } else {
   answer.wrote = null;
-  let why0 = 'did not read back as written';
-  if (unanswered) why0 = 'a write went unanswered and may land yet';
-  else if (!changed) why0 = 'the forge accepted the write and the carrier did not change';
-  answer.reason = text(`${why0}${failures.length ? ` — ${failures.join('; ')}` : ''}`);
+  answer.reason = text(`${unanswered ? 'a write went unanswered and may land yet' : 'did not read back as written'}${
+    failures.length ? ` — ${failures.join('; ')}` : ''}`);
 }
 out();
