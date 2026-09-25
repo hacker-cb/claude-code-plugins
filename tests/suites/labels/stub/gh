@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+me=${STUB_AS:-$(basename "$0")}
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+if [ "$me" = gh ] && [ "$1 $2" = "repo view" ]; then
+  [ "$(ask '.probe_gh')" = yes ] || { echo "no GitHub repository here" >&2; exit 1; }
+  echo '{"url":"https://forge.example/team/app","nameWithOwner":"team/app"}'; exit 0
+fi
+[ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
+path="" query="" after="" prev=""
+for a in "$@"; do
+  case "$prev" in -f) case "$a" in query=*) query=${a#query=} ;; after=*) after=${a#after=} ;; esac ;; esac
+  case "$a" in repos/*|projects/*) path=$a ;; esac
+  prev=$a
+done
+if [ "$2" = graphql ]; then
+  case "$query" in
+    *"issues(first"*) key=issues_pages ;;
+    *"pullRequests(first"*) key=requests_pages ;;
+    *) echo "unplanned query" >&2; exit 1 ;;
+  esac
+  if [ "$key" = issues_pages ] && [ "$(ask '.no_subissues')" = yes ]; then
+    case "$query" in *subIssuesSummary*) echo '{"errors":[{"message":"Field '"'"'subIssuesSummary'"'"' doesn'"'"'t exist on type '"'"'Issue'"'"'"}]}'; exit 1 ;; esac
+  fi
+  i=0; [ -n "$after" ] && i=${after#c}
+  jq -r --arg k "$key" --argjson i "$i" '.[$k][$i] // empty' "$env"; exit 0
+fi
+if [ "$me" = glab ] && [ "$path" = "projects/:fullpath" ]; then
+  [ "$(ask '.probe_glab')" = yes ] || { echo "404 Project Not Found" >&2; exit 1; }
+  echo '{"web_url":"https://lab.example/team/app","path_with_namespace":"team/app"}'; exit 0
+fi
+case "$path" in
+  */labels\?*) v=$(ask '.set'); [ -n "$v" ] && [ "$v" != unread ] || { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }; printf '%s\n' "$v" ;;
+  */issues\?*) printf '%s\n' "$(ask '.issues')" ;;
+  */merge_requests\?*) printf '%s\n' "$(ask '.requests')" ;;
+  repos/team/app|projects/team%2Fapp) echo '{"default_branch":"main"}' ;;
+  *) echo "unplanned $me api call: $*" >&2; exit 1 ;;
+esac

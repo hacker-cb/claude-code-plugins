@@ -28,7 +28,9 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { dirOk, hostOk, parsePages, projectPathOk, repoOk, runner, text, writeAll } from './lib/forge.mjs';
+import {
+  dirOk, failureOf, hostOk, parsePages, projectPathOk, repoOk, resolveRepository, runner, text, writeAll,
+} from './lib/forge.mjs';
 
 const usage = 'usage: node label-write.mjs (--number <n> --kind issue|request | --url <request URL>)'
   + ' [--add <file>] [--remove <file>] [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]';
@@ -120,128 +122,13 @@ const answer = {
 };
 const out = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const refuse = (msg) => { answer.reason = text(msg); out(); };
-const why = (r) => (r.timedOut ? 'no answer in time' : r.line());
+const why = failureOf;
 
-// Which forge and host this repository lives on — what answers for it, never the hostname — and
-// its path as the API names it: a web URL carries an instance's relative root in front of it.
-const probe = (cmd, checkout = false) => {
-  const repo = checkout ? null : opts.repo;
-  const hostArg = checkout ? null : opts.host;
-  const target = repo && hostArg && cmd === 'gh' ? `${hostArg}/${repo}` : repo;
-  const args = cmd === 'gh'
-    ? ['repo', 'view', ...(target ? [target] : []), '--json', 'url,nameWithOwner']
-    : ['api', ...(hostArg ? ['--hostname', hostArg] : []),
-      repo ? `projects/${encodeURIComponent(repo)}` : 'projects/:fullpath'];
-  const r = runner(opts.dir, cmd)(args, 60000);
-  if (!r.ok) return { cmd, ok: false, why: `${cmd}: ${why(r)}` };
-  try {
-    const v = JSON.parse(r.out);
-    const url = new URL(cmd === 'gh' ? v?.url : v?.web_url);
-    const path = cmd === 'gh' ? v?.nameWithOwner : v?.path_with_namespace;
-    if (typeof path !== 'string') throw new Error('no path');
-    return { cmd, ok: true, host: url.host, path };
-  } catch {
-    return { cmd, ok: false, why: `${cmd}: answered without a repository and its path` };
-  }
-};
-// The hosts this checkout's remotes name. A host no remote names and nobody passed is a server
-// telling this run where to write — with the user's token for that host — and is refused.
-// An SSH alias of the user's own ssh configuration stands for the host it names; `ssh.<host>` is
-// the port-443 SSH front a forge keeps beside itself. A web remote keeps a port it names; an SSH
-// remote's port is SSH's, and says nothing of the web endpoint.
-// A host as a URL reads it: only the scheme's own default port is dropped, and a port named on
-// purpose stays, picking an endpoint of its own.
-const norm = (h) => { try { return new URL(`https://${h}`).host.toLowerCase(); } catch { return h.toLowerCase(); } };
-const bare = (h) => norm(h).replace(/:\d+$/, '');
-// An ssh alias is a word of the user's own configuration; a leading `-` would reach ssh as an option.
-const aliasOk = (h) => /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(h);
-let remoteHostsRead = null;
-const remoteHosts = () => {
-  if (remoteHostsRead) return remoteHostsRead;
-  const r = runner(opts.dir, 'git')(['remote', '-v'], 30000);
-  const web = new Set();
-  const ssh = new Set();
-  for (const line of r.ok ? r.out.split('\n') : []) {
-    const url = line.split(/\s+/)[1] ?? '';
-    const scheme = url.match(/^([a-z][a-z0-9+.-]*):\/\/(?:[^@/]*@)?([^/]+)/i);
-    const scp = scheme || url.includes('://') || /^[A-Za-z]:[\\/]/.test(url) ? null : url.match(/^(?:[^@/]*@)?([^/:]+):/);
-    if (scheme && !/ssh/i.test(scheme[1])) {
-      try { web.add(new URL(url).host.toLowerCase()); } catch { /* not a URL a web host reads from */ }
-      continue;
-    }
-    const h = scheme ? scheme[2].replace(/:\d+$/, '') : scp?.[1];
-    if (!h || !aliasOk(h)) continue;
-    ssh.add(h.toLowerCase());
-  }
-  for (const h of [...ssh]) {
-    const g = runner(opts.dir, 'ssh')(['-G', '--', h], 10000);
-    const name = g.ok ? g.out.split('\n').find((l) => l.startsWith('hostname '))?.slice(9).trim() : null;
-    if (name && hostOk(name)) ssh.add(name.toLowerCase());
-  }
-  for (const h of [...ssh]) if (h.startsWith('ssh.')) ssh.add(h.slice(4));
-  remoteHostsRead = { has: (h) => web.has(norm(h)) || (norm(h) === bare(h) && ssh.has(bare(h))) };
-  return remoteHostsRead;
-};
-// The request the URL names: its host must be one a remote of this checkout names, and its
-// repository the one the forge answers for at that host — on GitLab the path may sit under the
-// instance's relative root, so the path is tried from its longest and taken where the project's own
-// URL is the request's.
-const fromUrl = () => {
-  const h = requestUrl.host;
-  // A host the user named and checked stands for the remotes; otherwise a remote must name it.
-  if (opts.host !== null ? norm(opts.host) !== norm(h) : !remoteHosts().has(h)) {
-    refuse(`the request's URL names ${h}, which ${opts.host !== null ? 'is not the --host named' : 'no remote of this checkout names'}`);
-  }
-  const segs = requestUrl.pathname.split('/').filter(Boolean);
-  const target = `${requestUrl.origin}${requestUrl.pathname}`.replace(/\/+$/, '');
-  if (opts.forge === 'gh') {
-    const repo = segs.slice(0, 2).join('/');
-    if (segs.length !== 4 || !repoOk(repo)) refuse('the request\'s URL names no owner/name');
-    return { forge: 'gh', host: h, path: repo };
-  }
-  const project = segs.slice(0, segs.lastIndexOf('-'));
-  let last = 'nothing asked';
-  for (let k = 0; k < project.length - 1; k += 1) {
-    const r = runner(opts.dir, 'glab')(['api', '--hostname', h, `projects/${encodeURIComponent(project.slice(k).join('/'))}`], 60000);
-    if (!r.ok) { last = why(r); continue; }
-    try {
-      const v = JSON.parse(r.out);
-      if (`${String(v?.web_url).replace(/\/+$/, '')}/-/merge_requests/${opts.number}` === target
-        && typeof v.path_with_namespace === 'string') return { forge: 'glab', host: h, path: v.path_with_namespace };
-    } catch { /* not this one */ }
-  }
-  return refuse(`no project on that host answers for the request's URL — the last answer: ${last}`);
-};
-
-let forge; let host; let path;
-if (requestUrl) {
-  ({ forge, host, path } = fromUrl());
-} else {
-  // A repository named without a host is looked for on the host this checkout lives on, never on
-  // whichever host the CLI would otherwise default to.
-  if (opts.repo !== null && opts.host === null) {
-    const here = probe(opts.forge, true);
-    if (!here.ok) refuse(`--repo without --host takes this checkout's host, and it did not answer — ${here.why}`);
-    if (!remoteHosts().has(here.host)) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
-    opts.host = here.host;
-  }
-  const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map((c) => probe(c));
-  for (const p of probed) {
-    if (p.ok && opts.host && norm(p.host) !== norm(opts.host)) {
-      Object.assign(p, { ok: false, why: `${p.cmd}: this repository lives on ${p.host}` });
-    } else if (p.ok && !opts.host && !remoteHosts().has(p.host)) {
-      Object.assign(p, { ok: false, why: `${p.cmd}: answered with ${p.host}, which no remote of this checkout names — pass --host` });
-    }
-  }
-  const answered = probed.filter((p) => p.ok);
-  if (answered.length === 0) refuse(`no forge CLI answered for this repository — ${probed.map((p) => p.why).join('; ')}`);
-  if (answered.length > 1) refuse('both forges answer for this repository — name one with --forge');
-  ({ cmd: forge, host, path } = answered[0]);
-}
-if (forge === 'gh' && process.env.GH_REPO && opts.repo === null && !requestUrl) {
-  refuse('GH_REPO is set: name the repository with --repo, or the request with --url');
-}
-if (!hostOk(host) || !projectPathOk(path)) refuse('the repository answered without a host and path this run can name');
+const resolved = resolveRepository({
+  dir: opts.dir, forge: opts.forge, host: opts.host, repo: opts.repo, url: requestUrl, number: opts.number,
+});
+if (resolved.reason) refuse(resolved.reason);
+const { forge, host, path } = resolved;
 answer.forge = forge;
 answer.host = host;
 // GitHub reads two spellings as one label: added and taken off at once, that is a contradiction.
