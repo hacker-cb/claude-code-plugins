@@ -148,6 +148,22 @@ const mustCommit = (ref) => {
 answer.ref.sha = mustCommit(opts.ref);
 readHead(true);
 
+// Before anything else is read: whether the base holds its remote copy is an answer the
+// caller needs from the main checkout as much as from a tree it may move.
+if (answer.contains) {
+  answer.contains.sha = mustCommit(opts.contains);
+  const a = git(['merge-base', '--is-ancestor', answer.contains.sha, answer.ref.sha]);
+  if (a.ok) {
+    answer.contains.held = true;
+  } else if (a.code === 1) {
+    answer.contains.held = false;
+    answer.blockers.push(`${opts.ref} lacks commits ${opts.contains} carries — a local parent`
+      + ' behind or apart from its remote copy is not the base yet');
+  } else {
+    refuse(`could not read whether ${opts.ref} holds ${opts.contains} (${why(a)})`);
+  }
+}
+
 if (!answer.linked) {
   answer.blockers.push('this is the main checkout — a master moves no tree but a linked worktree'
     + ' of its own, so here it reads through refs and moves nothing');
@@ -190,20 +206,6 @@ for (const name of ['rebase-merge', 'rebase-apply', 'MERGE_HEAD', 'CHERRY_PICK_H
 if (answer.inProgress.length) {
   answer.blockers.push(`an operation git left half done stands in the tree (${answer.inProgress.join(', ')})`
     + ' — finishing or aborting it is the user\'s');
-}
-
-if (answer.contains) {
-  answer.contains.sha = mustCommit(opts.contains);
-  const a = git(['merge-base', '--is-ancestor', answer.contains.sha, answer.ref.sha]);
-  if (a.ok) {
-    answer.contains.held = true;
-  } else if (a.code === 1) {
-    answer.contains.held = false;
-    answer.blockers.push(`${opts.ref} lacks commits ${opts.contains} carries — a local parent`
-      + ' behind or apart from its remote copy is not the base yet');
-  } else {
-    refuse(`could not read whether ${opts.ref} holds ${opts.contains} (${why(a)})`);
-  }
 }
 
 // --- what the index says of the tree: each entry's tag and mode. A lowercase tag is

@@ -37,7 +37,7 @@ with other sessions. Verify you are in a worktree of your own before the first
 write; where you are not, cut your own worktree from <the base | the branch
 batch `<epic>/<id>` is building on, where this batch stacks on it>. <Or: no
 checkout is touched.>
-Base pin: <remote>/<branch>@<sha> — the commit these facts were verified on.
+Base pin: <remote>/<branch>@<sha> | <branch>@<sha> — the commit these facts were verified on.
 The delta from the pin to the tip you read these facts against is the list to
 re-verify, before anything of yours rests on them. Do not build on the pin.
 <Or: no base pin — these facts are the tracker's, and you re-verify them

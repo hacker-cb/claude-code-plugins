@@ -9,5 +9,5 @@
   "status": "? lib/old/",
   "own_log": "",
   "behind": "3",
-  "top": "tests/suites/master-tree/trees/stranded/top"
+  "stranded": "lib/old"
 }

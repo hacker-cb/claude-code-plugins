@@ -11,9 +11,10 @@ this file is the form.
 
 ## The base's delta
 
-Taken per [`../../../references/base-delta.md`](../../../references/base-delta.md), with the pin
-the point to diff from names standing where that file has `M`, and the pin taken now as its
-ref; the work it is read against is the ledger's verdicts and the orders of the batches
+Taken per [`../../../references/base-delta.md`](../../../references/base-delta.md), with the sha
+of the pin the point to diff from names standing where that file has `M` — never a merge base
+computed from HEAD, which a master's tree on the base makes the new pin itself — and the pin
+taken now as its ref; the work it is read against is the ledger's verdicts and the orders of the batches
 holding ground. So:
 
 - a verdict whose coordinate a path the range touched stands on is re-derived, not carried;
