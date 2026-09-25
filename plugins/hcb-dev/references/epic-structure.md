@@ -41,12 +41,12 @@ HOST="$(gh repo view --json url --jq '.url | split("/")[2]')"   # this checkout'
 if ! out=$(gh api --hostname "$HOST" "repos/{owner}/{repo}/labels/$LABEL" 2>&1); then
   case "$out" in *"(HTTP 404)"*) gh label create "$LABEL" --color "$COLOUR" --description "$DESC" ;;
     *) echo "unread: $out"; false ;; esac
-fi && node "$W" --number "$N" --kind issue --forge gh --add "$F"
+fi && node "$W" --number "$N" --kind issue --forge gh --add "$F" | jq -e '., .wrote == true'
 # GitLab — the same
 if ! out=$(glab api "projects/:fullpath/labels/$LABEL?include_ancestor_groups=true" 2>&1); then
   case "$out" in *"(HTTP 404)"*) glab label create --name "$LABEL" --color "#$COLOUR" --description "$DESC" ;;
     *) echo "unread: $out"; false ;; esac
-fi && node "$W" --number "$N" --kind issue --forge glab --add "$F"; rm -f "$F"
+fi && node "$W" --number "$N" --kind issue --forge glab --add "$F" | jq -e '., .wrote == true'; rm -f "$F"
 ```
 
 ## The title and the body

@@ -126,7 +126,8 @@ costs), titled in `branch-naming.md`'s shape, its body per
 # Title, body and label names are files the agent wrote — data, never pasted into this line.
 T="<title file>"; B="<body file>"; A="<the file of label names — a JSON array — per label-lifecycle.md>"
 URL="$(gh pr create --base <base> --head <branch> --title "$(cat "$T")" --body-file "$B")" \
-  && printf '%s\n' "$URL" && node "${CLAUDE_PLUGIN_ROOT}/scripts/label-write.mjs" --url "$URL" --add "$A"
+  && printf '%s\n' "$URL" && node "${CLAUDE_PLUGIN_ROOT}/scripts/label-write.mjs" --url "$URL" --add "$A" \
+  | jq -e '., .wrote == true'   # the exit is 0 whatever landed: `wrote` is the answer
 ```
 
 ## Step 4 — The fix loop (until GitHub says mergeable)

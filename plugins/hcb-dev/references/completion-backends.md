@@ -76,7 +76,8 @@ forge call. Publishing is the escalation offer below, and only by consent.
     --description "$(cat "$B")" --yes)"
   # Either: the request's URL out of what it printed, then its labels.
   printf '%s\n' "$OUT"; URL="$(printf '%s' "$OUT" | grep -oE 'https?://[^ ]+/(pull|merge_requests)/[0-9]+' | tail -n 1)"
-  [ -n "$URL" ] && node "$W" --url "$URL" --add "$A"
+  [ -n "$URL" ] || { echo "no request URL in what it printed"; false; } \
+    && node "$W" --url "$URL" --add "$A" | jq -e '., .wrote == true'   # `wrote`, never the exit
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md), the installed CLI's
   `--help` first. A ref published under `old-name` stays here too — nothing on this path proves
