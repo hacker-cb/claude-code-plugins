@@ -100,7 +100,7 @@ what REST does not.
 | write the milestone | `-m` on create and edit, `--remove-milestone` | `-m` on `glab issue create` and `glab issue update` |
 | write an issue's labels | `gh issue edit --add-label`, `--remove-label` | `glab issue update --label`, `--unlabel` |
 | a change request's labels | `gh pr create --label`; `gh pr edit --add-label`, `--remove-label` | `glab mr create --label`; `glab mr update --label`, `--unlabel` |
-| a label name holding a comma or a double quote | `gh api repos/{owner}/{repo}/issues/<n>/labels --input <file>` adds, the names a JSON array under `labels` — a pull request is an issue here; `-X DELETE` on `…/labels/<name>`, URL-encoded, takes one off | none: the API takes its list comma-separated |
+| writing labels by name, from a script | `repos/{owner}/{repo}/issues/<n>/labels` — POST a JSON body `{"labels": […]}`, DELETE `…/labels/<name>` URL-encoded; a pull request is an issue here | PUT `projects/<id>/issues/<n>` or `…/merge_requests/<n>`, a JSON body with `add_labels` and `remove_labels`, each comma-separated |
 | the label set — every name read in, never pasted ([`label-lifecycle.md`](label-lifecycle.md)) | `gh label create`; `gh label edit <name> --name` (a rename), `--color`, `--description`; `gh label delete <name> --yes` | `glab label create`; `glab label edit --label-id <id> --new-name`, `--color`, `--description`; `glab label delete <name>` |
 | close as a duplicate | `gh issue close --reason duplicate --duplicate-of <n>` — closing is the only route, the schema has no mutation that marks a duplicate on its own | none — `glab issue close` takes no reason |
 | the CLI build it needs | `gh` 2.94.0 for every hierarchy, dependency and type field and flag; 2.88.0 for `--duplicate-of`; 2.73.0 for `closedByPullRequestsReferences`; 2.48.0 for `gh api --slurp` | `glab` 1.64.0 for a working `glab api graphql`; 1.77.0 for `glab milestone list --include-ancestors` |
@@ -128,4 +128,5 @@ is fixed, while
 [GitLab's](https://docs.gitlab.com/user/project/issues/managing_issues/index.md)
 matches more words and is
 [redefinable on a self-managed instance](https://docs.gitlab.com/administration/issue_closing_pattern/index.md).
-Either acts only on a request into the default branch: one into any other base closes nothing.
+A keyword in a request into any other base closes nothing when that request merges; one in a
+commit message closes its issue once the commit reaches the default branch.

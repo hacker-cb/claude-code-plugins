@@ -97,8 +97,8 @@ with none threaded, the body's own keywords are the list — and where this PR's
 the default branch, a claim to put to the user before anything is closed, never a list to
 close on: a slice's request onto a feature branch is where a set's issue gets closed early.
 Close what is still open explicitly (`hcb-dev:issue-tracking`); carry what stays open into
-the report. Each issue this merge closed, by keyword or explicitly, takes its labels at close per
-[`../../../references/label-lifecycle.md`](../../../references/label-lifecycle.md).
+the report. Each issue closed that was threaded in or named by the user takes its labels at close
+per [`../../../references/label-lifecycle.md`](../../../references/label-lifecycle.md).
 
 ### Retiring both refs
 

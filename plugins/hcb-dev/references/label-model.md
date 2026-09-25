@@ -72,8 +72,9 @@ nor has a milestone, or anything as a side effect of applying a label.
 Only on the user's explicit word, naming the labels:
 
 - **Snapshot first** — the set, and every carrier: issues, change requests and discussions, in
-  every state — issues by `<plugin root>/scripts/issue-slice.mjs --label <name> --state all`,
-  whose answer says whether it read them all.
+  every state. A listing that reads some kinds of carrier and not others — GitLab's incidents
+  beside its issues — leaves the rest unread, and a deletion standing on it goes to the user
+  saying so.
 - **Find what names it** — workflow conditions, labeler and release configuration, permission
   wildcards — by searching the default branch, and change it with the rename or deletion.
 - **Rename rather than delete and create** — what a rename carries is `forge-behaviour.md`'s.

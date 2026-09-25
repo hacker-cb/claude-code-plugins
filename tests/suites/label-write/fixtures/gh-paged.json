@@ -1,0 +1,5 @@
+{
+  "probe_gh": "yes",
+  "set": "[{\"name\":\"type:bug\"}]\n[{\"name\":\"scope:api\"}]",
+  "labels": []
+}

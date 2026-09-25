@@ -29,8 +29,8 @@ routes to is [`../../references/slice-completion.md`](../../references/slice-com
 ## Autonomy model
 
 Autonomous, without asking: renaming the branch, rebasing onto base, pushing (with
-`--force-with-lease`, never plain `--force`), opening the PR and setting its labels, aligning at
-close the issues it settled — save a label name something keys on — committing and pushing fixes, replying to Copilot and the one request of its own
+`--force-with-lease`, never plain `--force`), opening the PR, setting its labels and those of the
+issues it closes (`label-lifecycle.md`), committing and pushing fixes, replying to Copilot and the one request of its own
 [`references/copilot-request.md`](references/copilot-request.md) allows, reading state, and
 parking the run on a platform outage — each narrated in a line as you go.
 
@@ -123,10 +123,10 @@ costs), titled in `branch-naming.md`'s shape, its body per
 
 ```bash
 # Title, body and label names are files the agent wrote — data, never pasted into this line.
-T="<title file>"; B="<body file>"; F="<label-name file per label-lifecycle.md; empty for none>"
-ARGS=(); while IFS= read -r l || [ -n "$l" ]; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
-gh pr create --base <base> --head <branch> --title "$(cat "$T")" --body-file "$B" "${ARGS[@]}"
-OUT="$(gh pr view --json labels)" && printf '%s\n' "$OUT" || echo "UNREAD: the PR's labels"
+T="<title file>"; B="<body file>"; A="<label names, a JSON array, per label-lifecycle.md>"
+URL="$(gh pr create --base <base> --head <branch> --title "$(cat "$T")" --body-file "$B")" \
+  && [ -n "$URL" ] && printf '%s\n' "$URL" && node "${CLAUDE_PLUGIN_ROOT}/scripts/label-write.mjs" \
+  --number "${URL##*/}" --kind request --add "$A"
 ```
 
 ## Step 4 — The fix loop (until GitHub says mergeable)
@@ -137,7 +137,7 @@ where they diverge the stricter wins. Severity decides what you *fix*, never whe
 *done*. The bar, whatever the repo enforces: every required check green and CI genuinely
 green; the base's own review and thread requirements met (`references/merge-gates.md`); the PR
 body describing the head about to land (`merge-message.md`, rewritten with `gh pr edit <pr>
---body`), and its labels too where `label-lifecycle.md` says they hold it; and every Copilot review **this driver waits for** settled
+--body-file <file>`), and its labels too where `label-lifecycle.md` says they hold it; and every Copilot review **this driver waits for** settled
 with its Critical and Important findings fixed, its comments answered and its threads resolved — or,
 where a wait ran out, the addressee's word to merge with the head unreviewed, said in the report.
 

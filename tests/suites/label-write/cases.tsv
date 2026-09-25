@@ -1,0 +1,23 @@
+# fixture	args	want	expect	note
+-	--kind issue --add tests/suites/label-write/names/api.json	2	--number takes	no carrier, no call
+-	--number 5 --kind issue	2	give --add, --remove, or both	nothing to write is a wrong call, not an empty answer
+-	--number 5 --kind pr --add tests/suites/label-write/names/api.json	2	--kind takes issue or request	the kind is one of two words
+-	--number 5 --kind issue --add tests/suites/label-write/names/api.json --remove tests/suites/label-write/names/api.json	2	both added and taken off	a name both ways is a contradiction, refused before any call
+-	--number 5 --kind issue --add tests/suites/label-write/names/padded.json	2	not a label name	a name with padding is another label and is refused, never trimmed into one
+-	--number 5 --kind issue --add tests/suites/label-write/names/object.json	2	a JSON array of label names	the file holds a list, nothing else
+gh-add	--number 5 --kind issue --add tests/suites/label-write/names/api-bug.json	0	"wrote": true|"add 2"|"after": [|"scope:api"|"type:bug"	names go in one POST body on the carrier's own host and path, and read back
+gh-held	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|already holds|NOT:"add 	a carrier already holding the name is not written to
+gh-add	--number 5 --kind issue --add tests/suites/label-write/names/shell.json	0	"wrote": true|touch /tmp/label-write-pwned	a name carrying shell travels as data: the stub refuses any label on argv, and nothing runs
+gh-swap	--number 5 --kind issue --add tests/suites/label-write/names/api.json --remove tests/suites/label-write/names/slash.json	0	"wrote": true|take one off|"standing": []	a name with a slash and a space is taken off by its URL-encoded path
+gh-add	--number 5 --kind issue --add tests/suites/label-write/names/comma.json	0	"wrote": true|"a, b"	on GitHub a comma inside a name survives: it never reaches a flag that splits it
+gh-add	--number 5 --kind issue --add tests/suites/label-write/names/unknown.json	0	"wrote": false|"unknown": [|scope:gone|not in the repository's label set|NOT:"add 	a name the set lacks is refused, never sent — a forge would create it
+gh-paged	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": true	the set is read to its last page: a name on page two is known
+gh-set-unread	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|could not read the label set	an unread set is not an empty one, and nothing is written on it
+gh-refused	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|refused:|HTTP 403	a refused write that left nothing is false, with the forge's words
+gh-landed	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": true|landed, though the forge answered	a write that landed and then answered an error is read by what the carrier holds
+gh-partial	--number 5 --kind issue --add tests/suites/label-write/names/api-bug.json	0	"wrote": null|did not read back as written|"missing": [|type:bug	half landed is neither done nor not done
+gh-readback	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": null|could not read issue 5 back	a read-back that failed leaves the write unsettled, not done
+both-answer	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|both forges answer	two forges answering for one checkout is a question, not a guess
+gl-add	--number 7 --kind request --add tests/suites/label-write/names/api.json --forge glab	0	"wrote": true|add 1, take 0 off|"scope:api"|"type:bug"	GitLab's labels go on the merge request by its own path, one PUT with a JSON body
+gl-issue	--number 5 --kind issue --add tests/suites/label-write/names/comma.json --forge glab	0	"wrote": false|comma cannot be written on GitLab	GitLab's lists are comma-separated, so a comma inside a name is refused rather than split
+gl-issue	--number 5 --kind issue --add tests/suites/label-write/names/archived.json --forge glab	0	"wrote": false|"unknown": [|scope:old	an archived label does not apply, so it counts as not in the set

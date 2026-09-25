@@ -66,13 +66,15 @@ forge call. Publishing is the escalation offer below, and only by consent.
   [`label-lifecycle.md`](label-lifecycle.md) gives it:
   ```bash
   # Title, body and label names are files the agent wrote — data, never pasted into this line.
-  T="<title file>"; B="<body file>"; F="<label-name file per label-lifecycle.md; empty for none>"
-  ARGS=(); while IFS= read -r l || [ -n "$l" ]; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
+  T="<title file>"; B="<body file>"; A="<label names, a JSON array, per label-lifecycle.md>"
+  W="<plugin root>/scripts/label-write.mjs"
   # GitHub
-  gh pr create   --base <parent> --head <branch> --title "$(cat "$T")" --body-file "$B" "${ARGS[@]}"
+  URL="$(gh pr create --base <parent> --head <branch> --title "$(cat "$T")" --body-file "$B")" \
+    && [ -n "$URL" ] && node "$W" --number "${URL##*/}" --kind request --add "$A"
   # GitLab
-  glab mr create --target-branch <parent> --source-branch <branch> --title "$(cat "$T")" \
-    --description "$(cat "$B")" "${ARGS[@]}"
+  URL="$(glab mr create --target-branch <parent> --source-branch <branch> --title "$(cat "$T")" \
+    --description "$(cat "$B")" --yes | grep -oE 'https://[^ ]+/merge_requests/[0-9]+' | tail -n 1)" \
+    && [ -n "$URL" ] && node "$W" --number "${URL##*/}" --kind request --add "$A"
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md), the installed CLI's
   `--help` first. A ref published under `old-name` stays here too — nothing on this path proves

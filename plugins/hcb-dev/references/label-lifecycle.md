@@ -5,31 +5,30 @@ It owns when each label on an issue or a change request is written, from what, a
 authority. The roles are [`classification.md`](classification.md)'s, the invocations
 [`forge-docs.md`](forge-docs.md)'s.
 
-**Every batch of writes reads the set first, passes only names that read answered with**, and
-reads back what landed ([`forge-behaviour.md`](forge-behaviour.md)). A value the work needs and
-the set lacks is named in the report, never created ([`label-model.md`](label-model.md)).
+**Every write passes only names the set holds**, and reads back what landed
+([`forge-behaviour.md`](forge-behaviour.md)). A value the work needs and the set lacks is named in
+the report, never created ([`label-model.md`](label-model.md)).
 
 **A name something keys on is the user's to write.** Before the first write of a run, read what
 in the repository reacts to a label — a workflow triggered on `labeled` or `unlabeled`, a merge,
 release or deploy rule matching a name; a name it matches, added or taken off, goes to the user
 rather than onto the carrier.
 
-## Passing a name
+## Writing them
 
-A label name reaches a command as data — written to a file out of the set's answer, one per line,
-and read inside the block — never pasted into one: a name may carry `$`, quotes and backticks.
-The CLIs split a flag's value on commas, so a name holding a comma or a double quote goes through
-the REST call `forge-docs.md` names for it instead, its names in a JSON body.
+Every label write goes through one script: the names arrive as a JSON array in a file written out
+of the set's answer, and leave in a JSON body — never on a command line, never through a CLI's
+label flag, which splits a name on its commas. It refuses a name the set does not hold, and reads
+the carrier back.
 
 ```bash
-F="<the file of names, written out of the set's answer — an empty file where there are none>"
-FLAG="<the flag the invocation takes per name: --label, --add-label, --remove-label, --unlabel>"
-ARGS=(); while IFS= read -r l || [ -n "$l" ]; do [ -n "$l" ] && ARGS+=("$FLAG" "$l"); done < "$F"
-# then the invocation forge-docs.md gives, "${ARGS[@]}" in place of its label flags; read back
-# captured, never piped — a failed read and an empty answer look alike ("pr" or "issue"):
-OUT="$(gh <pr|issue> view <n> --json labels)" && printf '%s\n' "$OUT" || echo "UNREAD <n>"
-OUT="$(glab <mr|issue> view <n> -F json)" && jq '.labels' <<<"$OUT" || echo "UNREAD <n>"
+node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request> \
+  [--add <file>] [--remove <file>] [--repo <path of another repository>]
 ```
+
+`wrote` true is done; false wrote nothing — `reason` says whether nothing was needed, a name was
+`unknown`, or the forge refused, as an account that may not label is refused; null is a write that
+did not read back as meant, `missing` and `standing` naming what differs, and is a stop.
 
 ## Filing and splitting
 
@@ -65,8 +64,8 @@ request none, said in one line of the report.
 
 **Re-derived with the body** ([`merge-message.md`](merge-message.md)) — before the merge, and after
 a push that changes which files the request touches. A request whose labels describe something
-else is not ready to merge — save where the account cannot label it: the read-back shows none
-landed, and the report names the labels for someone who can.
+else is not ready to merge — save where the account cannot label it: the script is refused, and
+the report names the labels for someone who can.
 
 ## At close
 

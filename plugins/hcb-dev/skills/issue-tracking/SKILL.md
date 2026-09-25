@@ -168,8 +168,8 @@ session, whatever carried it here — whoever that order names **for writing to 
 addressee named for its forks is not that, and an order naming none leaves the user. Opening or
 updating anything waits for it, every time. **A standing instruction to work autonomously is not
 that answer** — it authorizes the work, not the tracker — and an approval covers the batch it
-was given for, never what turns up afterwards. The label writes `label-lifecycle.md` names ride
-on another answer instead.
+was given for, never what turns up afterwards. The label writes `label-lifecycle.md`'s
+authority table names ride on another answer instead.
 
 **The answer takes the form the person gives it**, and three forms answer: agreement with what
 was recommended; a bar — "file the important ones" — settling every candidate of that pass which

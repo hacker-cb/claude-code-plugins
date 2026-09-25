@@ -177,8 +177,7 @@ rather than dropped.
 - [`../../references/verification.md`](../../references/verification.md) — the store, the checker,
   and when a carried verdict stands; read before step 1.
 - [`../../references/classification.md`](../../references/classification.md) — read before
-  anything is proposed for an issue; [`../../references/label-model.md`](../../references/label-model.md)
-  where a role has no vocabulary.
+  anything is proposed for an issue.
 - [`../../references/base-resolution.md`](../../references/base-resolution.md) — read before the
   tree a check reads is named.
 - [`../../references/invariants.md`](../../references/invariants.md) — read once, before the first

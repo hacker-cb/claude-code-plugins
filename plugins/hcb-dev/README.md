@@ -445,7 +445,7 @@ name stands for.
   and on which side. The local half and the published half fail separately and are
   answered separately; it reads and judges, and deletes nothing.
 - [`scripts/branch-publish.mjs`](scripts/branch-publish.mjs) — the name a branch ships
-  under, put on the remote, and the names it used to carry taken off it. **One of the two scripts
+  under, put on the remote, and the names it used to carry taken off it. **One of the three scripts
   here that act**, because the order of the three is the hazard: a rename is refused
   where a request pins the name, the publish is unconditional, and a name comes off the
   remote only after the new one is up. What each push did is read off the remote rather
@@ -454,10 +454,15 @@ name stands for.
 - [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
   stands on the epic's issue or a wave's, which of the two it is, whether the next write fits under the cap — in bytes, whatever
   unit the forge's own refusal names — and whether the archives beside it and the index
-  naming them agree — and, asked, **the other that acts**: writes a ledger the session
+  naming them agree — and, asked, **another that acts**: writes a ledger the session
   composed, moving the journal's oldest entries into its own archive first where the body is over
   its budget, every write read back; what else may leave stays the session's judgement. `--check`
   reads the text against the ledger's shape.
+- [`scripts/label-write.mjs`](scripts/label-write.mjs) — **the third that acts**: puts labels
+  on one issue or change request and takes them off, the names arriving in a JSON file and leaving
+  in a JSON body — never on a command line, never through a CLI flag that splits them on commas.
+  It refuses a name the repository's set does not hold, since a forge would create it, and says
+  from the carrier read back whether the write landed.
 - [`scripts/epics.mjs`](scripts/epics.mjs) — which epics are open: every issue carrying
   the `epic` label, across every owner the account reaches — its own by default, any
   author's under owners named — on the host the checkout lives on rather than the CLI's
