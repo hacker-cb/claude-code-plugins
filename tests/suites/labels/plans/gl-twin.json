@@ -1,0 +1,1 @@
+{"create": [], "edit": [], "delete": [], "relabel": [{"kind": "issue", "number": 1, "add": ["type::bug", "type::feature"], "remove": []}]}

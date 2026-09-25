@@ -15,6 +15,8 @@
 // close it. It prints what it read: `read`, `complete` (false where a listing came back short or
 // cut), `unavailable` (what this forge or server does not carry), `reason`. `check-roles` and
 // `verify` answer `complete` too: nothing a snapshot read short says is the whole.
+// `check-roles` lists under `bothWays` each carrier whose kind stands in a native type and a label
+// both: whether the two agree is the reader's to judge.
 //
 // The plan (`--plan`) is JSON: { "create": [{ "name", "color", "description" }],
 // "edit": [{ "name", "newName"?, "color"?, "description"? }], "delete": [name],
@@ -236,9 +238,10 @@ function snapshot() {
         bot: typeof w.author?.bot === 'boolean' ? w.author.bot : null,
         labels: by.LABELS ? labelsOf(by.LABELS.labels, `work item ${w.iid}`, 'title', 'count') : [],
         // `hasChildren` holds where the children themselves are hidden from this token.
-        children: h ? (h.children?.count ?? null) : 0, parent: h ? h.hasChildren === true : false,
+        // A type without the hierarchy widget leaves its children unread, not absent.
+        children: h ? (h.children?.count ?? null) : null, parent: h ? h.hasChildren === true : null,
         type: w.workItemType?.name ?? null,
-        closedBy: closers(closing, by.DEVELOPMENT?.closingMergeRequests, `work item ${w.iid}`,
+        closedBy: closers(closing && by.DEVELOPMENT !== undefined, by.DEVELOPMENT?.closingMergeRequests, `work item ${w.iid}`,
           (m) => (typeof m?.mergeRequest?.reference === 'string' ? m.mergeRequest.reference : null)),
       };
     });
@@ -269,10 +272,10 @@ function snapshot() {
 const loadSnapshot = () => {
   if (!opts['--snapshot']) die(`${cmd} takes --snapshot <file>`);
   const s = readJson(opts['--snapshot'], '--snapshot');
-  if (!s || !Array.isArray(s.set) || !Array.isArray(s.issues) || !Array.isArray(s.requests) || (s.forge !== 'gh' && s.forge !== 'glab')) {
+  if (!s || !Array.isArray(s.set) || !Array.isArray(s.issues) || !Array.isArray(s.requests) || !Array.isArray(s.discussions)
+    || (s.forge !== 'gh' && s.forge !== 'glab') || typeof s.complete !== 'boolean' || !Object.hasOwn(s, 'defaultBranch')) {
     die('--snapshot is not a file `snapshot` wrote');
   }
-  s.discussions ??= [];
   return s;
 };
 const descOk = (d) => d === undefined || d === null || typeof d === 'string';
@@ -375,7 +378,7 @@ function checkSet() {
     const l = held(d);
     if (!l) { flag('delete', d, 'not in the set'); continue; }
     if (l.inherited) flag('delete', d, 'a label its group passes down: the project cannot delete it');
-    if (snap.complete === false) flag('delete', d, 'the snapshot read the carriers short, so who holds it is unread');
+    if (!snap.complete) flag('delete', d, 'the snapshot read the carriers short, so who holds it is unread');
     const holders = carriers.filter(({ c }) => c.labels.some((n) => same(n, d)));
     if (holders.length) flag('delete', d, `still on ${holders.slice(0, 10).map(({ kind, c }) => `${kind} ${c.number}`).join(', ')}${holders.length > 10 ? ` and ${holders.length - 10} more` : ''}`);
   }
@@ -389,9 +392,13 @@ function checkSet() {
     if (snap.forge === 'glab' && carrier) {
       const key = (n) => (n.includes('::') ? n.slice(0, n.lastIndexOf('::')) : null);
       const removed = (r.remove ?? []).map(rename);
-      for (const n of (r.add ?? []).map(rename)) {
-        const other = key(n) !== null && carrier.labels.map(rename).find((l) => key(l) === key(n) && l !== n && !removed.includes(l));
+      const added = (r.add ?? []).map(rename);
+      const kept = carrier.labels.map(rename);
+      for (const n of added) {
+        const other = key(n) !== null && kept.find((l) => key(l) === key(n) && l !== n && !removed.includes(l));
         if (other) flag('relabel', n, `added to ${r.kind} ${r.number} beside ${other}: take ${other} off in the same row`);
+        const twin = key(n) !== null && added.find((l) => key(l) === key(n) && l !== n);
+        if (twin) flag('relabel', n, `added to ${r.kind} ${r.number} with ${twin}, a value of the same scope`);
       }
     }
     for (const n of r.add ?? []) {
@@ -402,7 +409,7 @@ function checkSet() {
       if (plan.delete.some((d) => same(d, n))) flag('relabel', n, `added to ${r.kind} ${r.number} and deleted by the same plan`);
     }
     const where = r.kind === 'issue' ? snap.issues : snap.requests;
-    if (!where.some((c) => c.number === r.number)) flag('relabel', `${r.kind} ${r.number}`, `no such carrier in the snapshot${snap.complete === false ? ', which read short' : ''}`);
+    if (!where.some((c) => c.number === r.number)) flag('relabel', `${r.kind} ${r.number}`, `no such carrier in the snapshot${!snap.complete ? ', which read short' : ''}`);
   }
   out({ ok: problems.length === 0, forge: snap.forge, problems });
 }
@@ -427,6 +434,7 @@ function checkRoles() {
   const fold = snap.forge === 'gh' ? (s) => s.toLowerCase() : (s) => s;
   const after = afterPlan(snap, plan);
   const violations = [];
+  const bothWays = [];
   const skipped = (c) => c.bot === true || c.labels.some((l) => skip.some((s) => same(s, l)));
   const inScope = (c) => !skipped(c) && snap.defaultBranch !== null && c.base === snap.defaultBranch && c.state !== 'closed';
 
@@ -440,7 +448,11 @@ function checkRoles() {
       let n = c.labels.filter((l) => fold(l).startsWith(fold(f.prefix))).length;
       // A native type names the role where it is one the roles adopt; beside a label of the family
       // it is the same value carried two ways, not a second one.
-      if (roles.nativeKind === f.prefix && native(c)) n = Math.max(n, 1);
+      if (roles.nativeKind === f.prefix && native(c)) {
+        // Whether the two name the same kind is the reader's to judge: they are listed.
+        if (n > 0) bothWays.push({ kind, number: c.number, type: c.type, labels: c.labels.filter((l) => fold(l).startsWith(fold(f.prefix))) });
+        n = Math.max(n, 1);
+      }
       let [min, max] = f[place];
       if (f.whileOpen && c.state !== 'open') { min = 0; max = 0; }
       if (n < min || (max !== null && n > max)) violations.push({ kind, number: c.number, place, family: f.prefix, count: n, want: [min, max] });
@@ -480,10 +492,10 @@ function checkRoles() {
     };
   }
   // A snapshot read short counts only what it read, and one without the default branch no request.
-  const complete = snap.complete !== false && snap.defaultBranch !== null;
+  const complete = snap.complete && snap.defaultBranch !== null;
   out({
     ok: complete && violations.length === 0 && (!coverage || Object.values(coverage).every((l) => l.length === 0)),
-    forge: snap.forge, complete, violations, coverage,
+    forge: snap.forge, complete, violations, bothWays, coverage,
   });
 }
 
@@ -508,7 +520,9 @@ function verify() {
     // A rename is read by its exact spelling: on GitHub a change of case alone matches either way.
     const l = e.newName !== undefined ? snap.set.find((x) => x.name === e.newName) : held(e.name);
     if (!l) { want(name, e.newName !== undefined ? 'not renamed' : 'not in the set'); continue; }
-    if (e.newName !== undefined && e.name !== e.newName && snap.set.some((x) => x.name === e.name)) want(e.name, 'still in the set beside its new name');
+    // The old name is gone: by its exact spelling where only its case changes, as the forge reads it otherwise.
+    const stays = same(e.name, e.newName ?? e.name) ? snap.set.some((x) => x.name === e.name) : Boolean(held(e.name));
+    if (e.newName !== undefined && e.name !== e.newName && stays) want(e.name, 'still in the set beside its new name');
     if (e.color !== undefined && String(l.color).toLowerCase() !== e.color.toLowerCase()) want(name, 'the colour is not the planned one');
     if (e.description !== undefined && desc(l.description) !== desc(e.description)) want(name, 'the description is not the planned one');
   }
@@ -519,7 +533,7 @@ function verify() {
     for (const n of (r.add ?? []).map(rename)) if (!c.labels.some((l) => same(l, n))) want(`${r.kind} ${r.number}`, `does not hold ${n}`);
     for (const n of (r.remove ?? []).map(rename)) if (c.labels.some((l) => same(l, n))) want(`${r.kind} ${r.number}`, `still holds ${n}`);
   }
-  const complete = snap.complete !== false;
+  const { complete } = snap;
   out({ ok: complete && mismatches.length === 0, forge: snap.forge, complete, mismatches });
 }
 
