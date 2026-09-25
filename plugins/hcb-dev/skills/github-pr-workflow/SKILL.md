@@ -123,7 +123,7 @@ costs), titled in `branch-naming.md`'s shape, its body per
 
 ```bash
 # Title, body and label names are files the agent wrote — data, never pasted into this line.
-T="<title file>"; B="<body file>"; A="<label names, a JSON array, per label-lifecycle.md>"
+T="<title file>"; B="<body file>"; A="<the file of label names — a JSON array — per label-lifecycle.md>"
 URL="$(gh pr create --base <base> --head <branch> --title "$(cat "$T")" --body-file "$B")" \
   && [ -n "$URL" ] && printf '%s\n' "$URL" && node "${CLAUDE_PLUGIN_ROOT}/scripts/label-write.mjs" \
   --number "${URL##*/}" --kind request --forge gh --add "$A"

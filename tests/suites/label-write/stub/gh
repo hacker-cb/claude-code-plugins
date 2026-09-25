@@ -14,7 +14,14 @@ urldecode() { local s=${1//+/ }; printf '%b' "${s//%/\\x}"; }
 # The probe: which forge answers for this repository, and on which host.
 if [ "$me" = gh ] && [ "$1 $2" = "repo view" ]; then
   [ "$(ask '.probe_gh')" = yes ] || { echo "no GitHub repository here" >&2; exit 1; }
-  echo '{"url":"https://forge.example/team/app","nameWithOwner":"team/app"}'; exit 0
+  # A named repository: HOST/OWNER/REPO where a host leads it, else the checkout's own.
+  case "$3" in
+    */*/*) h=${3%%/*}; r=${3#*/}; echo "{\"url\":\"https://$h/$r\",\"nameWithOwner\":\"$r\"}" ;;
+    */*) [ "$(ask '.bare_repo')" = elsewhere ] && { echo '{"url":"https://github.example/'"$3"'","nameWithOwner":"'"$3"'"}'; exit 0; }
+         echo "{\"url\":\"https://forge.example/$3\",\"nameWithOwner\":\"$3\"}" ;;
+    *) echo '{"url":"https://forge.example/team/app","nameWithOwner":"team/app"}' ;;
+  esac
+  exit 0
 fi
 [ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
 host="" method=GET input="" path="" paginate=0 prev=""
@@ -52,6 +59,8 @@ for a in "$@"; do case "$a" in --label|--add-label|--remove-label|--unlabel|-f|-
 w=$(cat "$store/writes"); echo $((w + 1)) > "$store/writes"
 fail=$(ask '.write_fail')
 [ "$fail" = refuse ] && { echo "$me: Forbidden (HTTP 403)" >&2; exit 1; }
+[ "$fail" = delete ] && [ "$method" = DELETE ] && { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }
+echo "$method ${path##*/}" >> "$store/calls"
 cur=$(cat "$store/labels")
 if [ "$me" = gh ]; then
   case "$method" in
@@ -59,7 +68,9 @@ if [ "$me" = gh ]; then
           adds=$(jq -c '.labels' "$input")
           [ "$fail" = partial ] && adds=$(jq -c '.[:1]' <<<"$adds")
           cur=$(jq -c --argjson a "$adds" '. + $a | unique' <<<"$cur") ;;
-    DELETE) name=$(urldecode "${path##*/labels/}")
+    # A server resolves a bare `.` step away: `…/labels/.` is `…/labels`, which takes every label off.
+    DELETE) case "$path" in */labels/.) echo '[]' > "$store/labels"; echo '[]'; exit 0 ;; esac
+          name=$(urldecode "${path##*/labels/}")
           cur=$(jq -c --arg n "$name" 'map(select(. != $n))' <<<"$cur") ;;
     *) echo "a label write here is POST or DELETE, not $method" >&2; exit 1 ;;
   esac

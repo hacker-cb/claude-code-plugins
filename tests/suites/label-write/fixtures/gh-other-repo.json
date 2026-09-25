@@ -1,0 +1,8 @@
+{
+  "probe_gh": "yes",
+  "bare_repo": "elsewhere",
+  "want_host": "forge.example",
+  "want_carrier": "repos/team/other/issues/5",
+  "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"type:feature\"},{\"name\":\".\"},{\"name\":\"type:old\",\"archived_at\":\"2026-01-01T00:00:00Z\"}]",
+  "labels": []
+}

@@ -75,8 +75,8 @@ const names = (file, flag) => {
 };
 const add = names(opts.add, '--add');
 const remove = names(opts.remove, '--remove');
-const both = add.filter((n) => remove.includes(n));
-if (both.length) die('a name is both added and taken off');
+// Compared without case: GitHub reads two spellings as one label.
+if (add.some((n) => remove.some((m) => m.toLowerCase() === n.toLowerCase()))) die('a name is both added and taken off');
 
 const answer = {
   read: false,
@@ -91,6 +91,7 @@ const answer = {
   unknown: [],
   missing: [],
   standing: [],
+  lost: [],
   wrote: false,
   reason: null,
 };
@@ -100,12 +101,14 @@ const why = (r) => (r.timedOut ? 'no answer in time' : r.line());
 
 // Which forge and host this repository lives on — what answers for it, never the hostname — and
 // its path as the API names it: a web URL carries an instance's relative root in front of it.
-const probe = (cmd) => {
-  const target = opts.repo && opts.host && cmd === 'gh' ? `${opts.host}/${opts.repo}` : opts.repo;
+const probe = (cmd, checkout = false) => {
+  const repo = checkout ? null : opts.repo;
+  const hostArg = checkout ? null : opts.host;
+  const target = repo && hostArg && cmd === 'gh' ? `${hostArg}/${repo}` : repo;
   const args = cmd === 'gh'
     ? ['repo', 'view', ...(target ? [target] : []), '--json', 'url,nameWithOwner']
-    : ['api', ...(opts.host ? ['--hostname', opts.host] : []),
-      opts.repo ? `projects/${encodeURIComponent(opts.repo)}` : 'projects/:fullpath'];
+    : ['api', ...(hostArg ? ['--hostname', hostArg] : []),
+      repo ? `projects/${encodeURIComponent(repo)}` : 'projects/:fullpath'];
   const r = runner(opts.dir, cmd)(args, 60000);
   if (!r.ok) return { cmd, ok: false, why: `${cmd}: ${why(r)}` };
   try {
@@ -118,9 +121,16 @@ const probe = (cmd) => {
     return { cmd, ok: false, why: `${cmd}: answered without a repository and its path` };
   }
 };
-const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map(probe);
+// A repository named without a host is looked for on the host this checkout lives on, never on
+// whichever host the CLI would otherwise default to.
+if (opts.repo !== null && opts.host === null) {
+  const here = probe.call(null, opts.forge, true);
+  if (!here.ok) refuse(`--repo without --host takes this checkout's host, and it did not answer — ${here.why}`);
+  opts.host = here.host;
+}
+const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map((c) => probe(c));
 for (const p of probed) {
-  if (p.ok && opts.host && p.host !== opts.host) {
+  if (p.ok && opts.host && p.host.toLowerCase() !== opts.host.toLowerCase()) {
     Object.assign(p, { ok: false, why: `${p.cmd}: this repository lives on ${p.host}` });
   }
 }
@@ -185,8 +195,10 @@ const pages = setRead === null ? [[]] : (setRead.ok ? parsePages(setRead.out) : 
 if (!pages || pages.some((pg) => !Array.isArray(pg))) {
   refuse(`could not read the label set: ${setRead.ok ? 'it answered with something that is not a list' : why(setRead)}`);
 }
-const held = new Set(pages.flat().filter((l) => l && l.archived !== true).map((l) => l.name));
-answer.unknown = toAdd.filter((n) => ![...held].some((h) => same(h, n)));
+// Archived is `archived` on GitLab, `archived_at` on GitHub: neither applies.
+const held = pages.flat().filter((l) => l && typeof l.name === 'string' && l.archived !== true && !l.archived_at)
+  .map((l) => l.name);
+answer.unknown = toAdd.filter((n) => !holds(held, n));
 if (answer.unknown.length) refuse('a name to add is not in the repository\'s label set');
 
 if (toAdd.length === 0 && toRemove.length === 0) {
@@ -206,17 +218,21 @@ let unanswered = false;
 const send = (args, label) => {
   const r = cli(args, 60000);
   answer.ran.push(label);
-  if (r.timedOut) unanswered = true;
+  // Killed or timed out, the process never heard the forge's answer: the write may land yet.
+  if (r.timedOut || r.code === null) unanswered = true;
   if (!r.ok) failures.push(`${label}: ${why(r)}`);
 };
 try {
   if (forge === 'gh') {
     // Off before on: a sibling swapped out of a one-value family never stands beside its successor.
+    // A name of dots stays a name: unencoded, `.` and `..` are path steps a server resolves away.
+    const seg = (n) => encodeURIComponent(n).replace(/\./g, '%2E');
     for (const n of toRemove) {
-      send(['api', '--hostname', host, '--method', 'DELETE', `${carrierPath}/labels/${encodeURIComponent(n)}`],
-        'take one off');
+      send(['api', '--hostname', host, '--method', 'DELETE', `${carrierPath}/labels/${seg(n)}`], 'take one off');
     }
-    if (toAdd.length) {
+    // A removal that failed holds the addition back, so a swapped-out value never stands beside
+    // its successor.
+    if (toAdd.length && failures.length === 0) {
       send(['api', '--hostname', host, '--method', 'POST', `${carrierPath}/labels`, '--input', body({ labels: toAdd })],
         `add ${toAdd.length}`);
     }
@@ -240,17 +256,19 @@ if (!after.ok) {
 answer.after = after.labels;
 answer.missing = add.filter((n) => !holds(after.labels, n));
 answer.standing = remove.filter((n) => holds(after.labels, n));
+// What nobody asked to take off and is gone: a write that reached further than it was sent.
+answer.lost = before.labels.filter((l) => !toRemove.includes(l) && !holds(after.labels, l));
 const changed = after.labels.length !== before.labels.length
   || after.labels.some((n) => !before.labels.includes(n));
-if (answer.missing.length === 0 && answer.standing.length === 0) {
+if (answer.missing.length === 0 && answer.standing.length === 0 && answer.lost.length === 0) {
   answer.wrote = true;
   if (failures.length) answer.reason = text(`landed, though the forge answered: ${failures.join('; ')}`);
-} else if (!changed && !unanswered) {
+} else if (!changed && !unanswered && failures.length) {
   answer.wrote = false;
   answer.reason = text(failures.length ? `refused: ${failures.join('; ')}` : 'nothing landed');
 } else {
   answer.wrote = null;
   answer.reason = text(`${unanswered && !changed ? 'a write went unanswered and may land yet'
-    : 'did not read back as written'}${failures.length ? ` — ${failures.join('; ')}` : ''}`);
+    : (!changed ? 'the forge accepted the write and the carrier did not change' : 'did not read back as written')}${failures.length ? ` — ${failures.join('; ')}` : ''}`);
 }
 out();

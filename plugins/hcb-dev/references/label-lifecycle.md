@@ -28,7 +28,7 @@ node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request>
 
 `wrote` true is done; false wrote nothing — `reason` says whether nothing was needed, a name was
 `unknown`, or the forge refused, as an account that may not label is refused; null is a write that
-did not read back as meant, `missing` and `standing` naming what differs, and is a stop.
+did not read back as meant, `missing`, `standing` and `lost` naming what differs, and is a stop.
 
 ## Filing and splitting
 

@@ -66,7 +66,7 @@ forge call. Publishing is the escalation offer below, and only by consent.
   [`label-lifecycle.md`](label-lifecycle.md) gives it:
   ```bash
   # Title, body and label names are files the agent wrote — data, never pasted into this line.
-  T="<title file>"; B="<body file>"; A="<label names, a JSON array, per label-lifecycle.md>"
+  T="<title file>"; B="<body file>"; A="<the file of label names — a JSON array — per label-lifecycle.md>"
   W="<plugin root>/scripts/label-write.mjs"
   # GitHub
   OUT="$(gh pr create --base <parent> --head <branch> --title "$(cat "$T")" --body-file "$B")"; F=gh
