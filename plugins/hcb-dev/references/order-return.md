@@ -46,7 +46,8 @@ verdict is re-checked against it before anything rests on it. A reviewer the
 return says did not run on work it should have covered is not a note to file:
 reopen, naming it, and have the review run before acceptance — where the work
 already merged, over the landed range, with the commit before the landing handed
-to the reviewers as the explicit base. Run it here, or, where this session runs
-no review of its own, have the returning session run it; where that session has
+to the reviewers as the explicit base. Run it here, on a tree standing on that
+work, or, where this session runs no review of its own, have the returning
+session run it; where that session has
 ended, the review goes out as an order of its own, and this one stays open until
 it returns. Then close that order, or reopen it naming what is still missing.

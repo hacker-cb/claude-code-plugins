@@ -72,6 +72,15 @@ case "$1" in
     v=$(ask '.ls'); [ -n "$v" ] && printf '%s\n' "$v" | tr '\n' '\0'
     exit 0 ;;
   merge-base)
+    # `--since`: whether the base still holds the commit landings were taken up to.
+    if [ -n "$(ask '.since')" ] && [ "$3" = "$(ask '.since')" ]; then
+      [ "$4" = "$(ask '.refs | to_entries[0].value')" ] || refuse "since held against another commit: $*"
+      case "$(ask '.since_held')" in
+        no) exit 1 ;;
+        fail) echo "fatal: not a valid commit" >&2; exit 128 ;;
+        *) exit 0 ;;
+      esac
+    fi
     # Ancestor first: the remote copy the local parent must hold, then the parent.
     [ "$3" = "$(ask '.refs["refs/remotes/origin/epic"]')" ] && [ "$4" = "$(ask '.refs["refs/heads/epic"]')" ] \
       || refuse "merge-base asked the other way round: $*"
@@ -93,21 +102,19 @@ case "$1" in
     exit 0 ;;
   log|rev-list)
     # Two questions, each asked in one shape — or no answer. `--first-parent`: what the base took
-    # since HEAD began, asked only of a HEAD that began detached. Otherwise: the commits HEAD
-    # carries, held against the base, every remote and every other branch.
+    # after `--since`. Otherwise: the commits HEAD carries, held against the base, every remote
+    # and every other branch.
     base=$(ask '.refs | to_entries[0].value')
-    if [ "$1" = rev-list ]; then want=" rev-list --count"; else want=" log --no-show-signature --max-count=20 --format=%H %s"; fi
-    case " $* " in
-      *" --first-parent "*)
-        [ -z "$(ask '.branch')" ] || refuse "landed asked of a HEAD on a branch: $*"
-        [ "$1" = rev-list ] && want=" rev-list --first-parent --count" || want=" log --no-show-signature --first-parent --max-count=20 --format=%H %s"
-        case " $* " in "$want $(ask '.head')..$base -- ") ;; *) refuse "landed asked as: $*" ;; esac
-        v=$(ask '.landed'); n=$(ask '.landed_count') ;;
-      *)
-        case " $* " in "$want HEAD --not $base --remotes"*" --branches -- ") ;; *) refuse "$1 asked as: $*" ;; esac
-        b=$(ask '.branch'); [ -n "$b" ] && { case " $* " in *" --exclude=$b --branches "*) ;; *) refuse "log holds HEAD's own branch as other: $*" ;; esac; }
-        v=$(ask '.own_log'); n=$(ask '.own_count') ;;
-    esac
+    case " $* " in *" --first-parent "*) fp=" --first-parent" ;; *) fp="" ;; esac
+    if [ "$1" = rev-list ]; then want=" rev-list$fp --count"; else want=" log --no-show-signature$fp --max-count=20 --format=%H %s"; fi
+    if [ -n "$fp" ]; then
+      case " $* " in "$want $(ask '.since')..$base -- ") ;; *) refuse "landed asked as: $*" ;; esac
+      v=$(ask '.landed'); n=$(ask '.landed_count')
+    else
+      case " $* " in "$want HEAD --not $base --remotes"*" --branches -- ") ;; *) refuse "$1 asked as: $*" ;; esac
+      b=$(ask '.branch'); [ -n "$b" ] && { case " $* " in *" --exclude=$b --branches "*) ;; *) refuse "log holds HEAD's own branch as other: $*" ;; esac; }
+      v=$(ask '.own_log'); n=$(ask '.own_count')
+    fi
     [ "$v" = fail ] && { echo "fatal: bad revision" >&2; exit 128; }
     if [ "$1" = rev-list ]; then
       [ -n "$n" ] || n=$([ -n "$v" ] && printf '%s\n' "$v" | wc -l | tr -d ' ' || echo 0)

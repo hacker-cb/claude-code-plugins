@@ -160,12 +160,12 @@ to: where the host would not give that name — it handed back a variant, or a n
 session took over the role — what answers wins, the ledger header is corrected
 to it before anything else is sent, and the batches hear it as the change
 `session-comms.md` has them announce. Then this session's tree, per `master-tree.md`,
-before any code is read — what it names as landed while this session was away is taken
-against the ledger's landings as the loop takes one. Then the live
+before any code is read — what it names as landed since the ledger's mark is taken as the
+loop takes a landing. Then the live
 registry, then a re-introduction to
 every batch still engaged, carrying what first contact carries: the name this
 session answers to, the standing plan, and a status request. Expectations the ledger lists and the registry cannot
-see are chased by the comms ladder, not assumed dead — a `chipped` row with no session among them, as `wave-ledger.md` reads it.
+see are chased by the comms ladder, not assumed dead — and a `chipped` row with no session goes to the user as `wave-ledger.md` reads it.
 
 ## Closing the epic
 

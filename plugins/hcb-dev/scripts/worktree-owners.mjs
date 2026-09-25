@@ -48,9 +48,7 @@ const answer = {
   // `present: false` is "no registry to read" — which is not "nobody is working". Both
   // that and records with no readable cwd are `probeFailed`, and a failed probe makes
   // every worktree but this one unknown rather than free.
-  // `placeless`: the unreadable records whose directory is unknown too — the only ones that
-  // could stand anywhere; the rest are named with their directory among the sessions.
-  registry: { path: null, present: false, records: 0, unreadable: 0, placeless: 0, live: 0 },
+  registry: { path: null, present: false, records: 0, unreadable: 0, live: 0 },
   probeFailed: true,
   worktrees: [],
   // The two answers a caller acts on, as lists rather than a scan it repeats: what is
@@ -141,7 +139,6 @@ for (const name of files) {
   try { rec = JSON.parse(readFileSync(join(sessionsDir, name), 'utf8')); } catch { rec = null; }
   if (!rec || typeof rec !== 'object' || Array.isArray(rec) || typeof rec.cwd !== 'string') {
     answer.registry.unreadable += 1;
-    answer.registry.placeless += 1;
     continue;
   }
   // The record carries its own `pid`; the filename carries it too. The field is the one

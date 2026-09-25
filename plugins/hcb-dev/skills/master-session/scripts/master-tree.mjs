@@ -6,16 +6,17 @@
 // This measures whether that switch is safe and, with --move, makes it. It does not fetch
 // the base — `resolve-base.mjs` refreshes the ref it is handed — and never stashes,
 // resets or cleans: a tree that is not safe to move is reported with what stands in it,
-// and clearing that is the user's. It also names what the base took since the tree last
-// stood on it (`from` to the base's commit), which is how a master learns of a landing
-// nobody reported.
+// and clearing that is the user's. With --since it also names what the base took after
+// that commit, which is how a master learns of a landing nobody reported.
 //
-// Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--move] [--repo-dir <path>]
+// Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>] [--move]
+//          [--repo-dir <path>]
 //
 //   --ref       the commit to stand on: the base's remote-tracking ref, or the local
 //               parent where the epic completes locally
 //   --contains  a ref --ref must already hold — the remote copy, where --ref is a local
 //               parent that must not lag it
+//   --since     the base's commit the master has taken landings up to
 //
 // Exit 0 either way: `"read": true` with the verdict, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
@@ -27,13 +28,13 @@ import { fileURLToPath } from 'node:url';
 import { dirOk, refNameOk, runner, writeAll } from '../../../scripts/lib/forge.mjs';
 
 const OWNERS = fileURLToPath(new URL('../../../scripts/worktree-owners.mjs', import.meta.url));
-const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--move]'
+const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>] [--move]'
   + ' [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `master-tree: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { ref: null, contains: null, move: false, repoDir: null };
-const FLAGS = { '--ref': 'ref', '--contains': 'contains', '--repo-dir': 'repoDir' };
+const opts = { ref: null, contains: null, since: null, move: false, repoDir: null };
+const FLAGS = { '--ref': 'ref', '--contains': 'contains', '--since': 'since', '--repo-dir': 'repoDir' };
 for (let i = 0; i < argv.length; i += 1) {
   if (argv[i] === '--move') { opts.move = true; continue; }
   // Own keys only: `constructor` or `__proto__` would otherwise read as a flag.
@@ -48,8 +49,8 @@ for (let i = 0; i < argv.length; i += 1) {
 // goes near a URL or a shell — every value is one argv word.
 if (!opts.ref) die('--ref is required — the commit the tree is to stand on');
 if (!refNameOk(opts.ref)) die(`--ref '${opts.ref}' is not a ref this can read`);
-if (opts.contains !== null && !refNameOk(opts.contains)) {
-  die(`--contains '${opts.contains}' is not a ref this can read`);
+for (const f of ['contains', 'since']) {
+  if (opts[f] !== null && !refNameOk(opts[f])) die(`--${f} '${opts[f]}' is not a ref this can read`);
 }
 // A directory, proved here: passed on as `cwd` it would come back as a call that failed
 // with nothing on stderr, which reads as a checkout that would not answer.
@@ -68,6 +69,9 @@ const answer = {
   head: null, detached: null, branch: null,
   ref: { name: opts.ref, sha: null },
   contains: opts.contains === null ? null : { name: opts.contains, sha: null, held: null },
+  // `held` false: the base no longer holds that commit — rewritten since. `reason` wherever
+  // `landed` could not be told.
+  since: opts.since === null ? null : { name: opts.since, sha: null, held: null, reason: null },
   // Live sessions other than this run standing in this worktree: a move changes files
   // under them.
   others: [],
@@ -90,9 +94,8 @@ const answer = {
   // Commits HEAD carries that neither the base, a remote nor another branch holds: work of
   // this tree's own, or a base rewritten under it. A switch away from them strands them.
   ownWork: [], ownWorkCount: 0,
-  // What the base took since the tree last stood on it: its first-parent commits from `from`
-  // to the base's, where HEAD began detached. null where it began on a branch — before the
-  // first move — since then it had stood on no base.
+  // What the base took after `since`: its first-parent commits, newest first. null where
+  // --since was not given, or `since` says why it could not be told.
   landed: null, landedCount: null,
   atRef: null,
   blockers: [],
@@ -107,16 +110,27 @@ const answer = {
 };
 const finish = () => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const refuse = (reason) => { answer.reason = reason; finish(); };
-// `whole`: git's whole message, where its last line ("Aborting") says nothing of why.
-const why = (r, whole) => (r.timedOut ? 'timed out' : (whole ? r.err || 'no detail' : r.line()));
+const why = (r) => (r.timedOut ? 'timed out' : r.line());
 const listed = (field, lines, count = lines.length) => {
   answer[`${field}Count`] = count;
   answer[field] = lines.slice(0, LIST);
 };
+// A range of commits counted apart and listed only as far as the answer shows — either can
+// run to thousands. Returns what git would not give, or null.
+const span = (field, flags, range) => {
+  const n = git(['rev-list', ...flags, '--count', ...range]);
+  if (!n.ok || !/^[0-9]+$/.test(n.out)) return why(n);
+  const l = n.out === '0' ? { ok: true, out: '' }
+    : git(['log', '--no-show-signature', ...flags, `--max-count=${LIST}`, '--format=%H %s', ...range]);
+  if (!l.ok) return why(l);
+  listed(field, l.out.split('\n').filter(Boolean), Number(n.out));
+  return null;
+};
 
 // Git takes these over the directory it runs in: set, they name a tree other than this
 // session's, and the switch would land there.
-const steered = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY']
+const steered = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY',
+  'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT']
   .filter((n) => process.env[n]);
 if (steered.length) {
   refuse(`${steered.join(', ')} set in this session's environment — git would answer about the tree`
@@ -165,7 +179,6 @@ const mustCommit = (ref) => {
 answer.ref.sha = mustCommit(opts.ref);
 readHead(true);
 answer.from = answer.head;
-const startedDetached = answer.detached;
 
 // Before anything else is read: whether the base holds its remote copy is an answer the
 // caller needs from the main checkout as much as from a tree it may move.
@@ -183,6 +196,27 @@ if (answer.contains) {
   }
 }
 
+// --- what landed: asked of the base, not of this tree, so the main checkout answers it too.
+// Each first-parent commit is a merge, a squash, or one of a rebased request's commits.
+if (answer.since) {
+  const sn = answer.since;
+  const c = git(['rev-parse', '--verify', '-q', `${opts.since}^{commit}`]);
+  if (!c.ok || !c.out) {
+    sn.reason = `${opts.since} is not a commit this checkout knows`;
+  } else {
+    sn.sha = c.out;
+    const a = git(['merge-base', '--is-ancestor', sn.sha, answer.ref.sha]);
+    if (a.ok) sn.held = true;
+    else if (a.code === 1) {
+      sn.held = false;
+      sn.reason = `${opts.ref} no longer holds ${opts.since} — the base was rewritten since, and what landed`
+        + ' cannot be told from it';
+    } else sn.reason = `could not read whether ${opts.ref} holds ${opts.since} (${why(a)})`;
+    const lost = sn.held ? span('landed', ['--first-parent'], [`${sn.sha}..${answer.ref.sha}`, '--']) : null;
+    if (lost) sn.reason = `could not list what the base took after ${opts.since} (${lost})`;
+  }
+}
+
 if (!answer.linked) {
   answer.blockers.push('this is the main checkout — a master moves no tree but a linked worktree'
     + ' of its own, so here it reads through refs and moves nothing');
@@ -193,10 +227,8 @@ if (!answer.linked) {
 const top = dir('--show-toplevel');
 
 // --- who else stands in this tree: the live-session registry, read by the script that owns
-// it. A registry that is missing, or holds a record whose directory would not read, leaves
-// the question open, which stops a move as a second session does. A record read with its
-// directory but not its liveness stops it only where that directory is this tree — it is
-// then among `others`.
+// it. A registry that could not be read leaves the question open, which stops a move as a
+// second session does.
 const o = spawnSync(process.execPath, [OWNERS, ...(opts.repoDir ? ['--repo-dir', opts.repoDir] : [])],
   { cwd, encoding: 'utf8', timeout: 120000, maxBuffer: 32 * 1024 * 1024 });
 let owners = null;
@@ -206,7 +238,7 @@ if (!owners || owners.read !== true || !Array.isArray(owners.worktrees)) {
 }
 const mine = owners.worktrees.find((w) => w && w.isHere);
 answer.others = (mine?.sessions || []).filter((s) => !s.isThisRun).map((s) => s.pid);
-if (owners.registry?.present !== true || owners.registry.placeless !== 0 || !mine) {
+if (owners.probeFailed || !mine) {
   answer.blockers.push('the live-session registry could not be read — whether another session'
     + ' stands in this tree is unknown');
 }
@@ -294,31 +326,13 @@ if (answer.dirtyCount) {
 // `--branches` every other local one: a host branch cut from the default while the base is an
 // epic branch carries commits the base lacks, all held elsewhere — nothing a switch strands.
 // The branch HEAD is on is left out of `--branches`, or its own commits would hold themselves.
-// Counted apart and listed only as far as the answer shows: a base rewritten under the tree
-// can leave thousands.
-const ownRange = ['HEAD', '--not', answer.ref.sha, '--remotes',
-  ...(answer.branch ? [`--exclude=${answer.branch}`] : []), '--branches', '--'];
-const ownCount = git(['rev-list', '--count', ...ownRange]);
-const own = ownCount.ok ? git(['log', '--no-show-signature', `--max-count=${LIST}`, '--format=%H %s', ...ownRange]) : ownCount;
-if (!own.ok || !/^[0-9]+$/.test(ownCount.out)) {
-  refuse(`could not list the commits HEAD carries beyond the base (${why(own)})`);
-}
-listed('ownWork', own.out.split('\n').filter(Boolean), Number(ownCount.out));
+const own = span('ownWork', [], ['HEAD', '--not', answer.ref.sha, '--remotes',
+  ...(answer.branch ? [`--exclude=${answer.branch}`] : []), '--branches', '--']);
+if (own) refuse(`could not list the commits HEAD carries beyond the base (${own})`);
 if (answer.ownWorkCount) {
   answer.blockers.push(`HEAD carries ${answer.ownWorkCount} commit(s) neither ${opts.ref}, a remote nor`
     + ' another branch holds — work of this tree\'s own, or a base rewritten under it; a switch would'
     + ' strand them');
-}
-
-// --- what landed: each first-parent commit is one landing, a merge or a squash — what a
-// master takes as a landing whether or not anyone reported it, so a list git would not give
-// is unread rather than empty.
-if (startedDetached) {
-  const range = [`${answer.from}..${answer.ref.sha}`, '--'];
-  const n = git(['rev-list', '--first-parent', '--count', ...range]);
-  const l = n.ok ? git(['log', '--no-show-signature', '--first-parent', `--max-count=${LIST}`, '--format=%H %s', ...range]) : n;
-  if (!l.ok || !/^[0-9]+$/.test(n.out)) refuse(`could not list what the base took since ${answer.from} (${why(l)})`);
-  listed('landed', l.out.split('\n').filter(Boolean), Number(n.out));
 }
 
 answer.movable = answer.blockers.length === 0;
@@ -332,7 +346,8 @@ if (opts.move && answer.movable) {
     // overwritten, no hook runs, and no submodule is moved under its own work.
     const s = git(['-c', 'core.hooksPath=/dev/null', 'switch', '--detach', '--no-overwrite-ignore',
       '--no-recurse-submodules', '--quiet', answer.ref.sha], 600000);
-    const said = s.ok ? null : why(s, true);
+    // Git's whole message: its last line is "Aborting", and the reason sits above it.
+    const said = s.ok ? null : (s.timedOut ? 'timed out' : s.err || 'no detail');
     // The tree is read again whatever the switch answered: an interrupted one may have
     // written half of what it meant to — and one that failed may still have landed, in which
     // case `done` carries git's words beside it.

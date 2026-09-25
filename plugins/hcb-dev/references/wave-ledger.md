@@ -75,7 +75,7 @@ whether deleting it changes what anyone does next.
    with the moment it read the tracker at, the link to the graph a refresh leaves in a comment of
    its own and that graph's digest (`hcb-dev:wave-refresh` owns both) and the ground it covered:
    what the next refresh takes its delta from, since an issue closes without a commit and a link
-   moves without either; a lesser reading does not take the slot; the epic's merge authority as the
+   moves without either; a lesser reading does not take the slot; the base commit the master has taken landings up to, read and moved as `hcb-dev:master-session` says; the epic's merge authority as the
    user settled it ([`slice-completion.md`](slice-completion.md)); the plugin version this role last
    reconciled against, which is what a later **plugin** refresh diffs from and not necessarily what
    the session is running — it starts as the running version and `hcb-dev:session-plugin-refresh`
