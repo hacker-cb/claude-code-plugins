@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+me=${STUB_AS:-$(basename "$0")}
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+if [ "$me" = gh ] && [ "$1 $2" = "repo view" ]; then
+  [ "$(ask '.probe_gh')" = yes ] || { echo "no GitHub repository here" >&2; exit 1; }
+  echo '{"url":"https://forge.example/team/app","nameWithOwner":"team/app"}'; exit 0
+fi
+[ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
+path="" query="" after="" prev=""
+for a in "$@"; do
+  [ "$2" = graphql ] && [ "$prev" = -F ] && { echo "a typed field reached graphql: $a" >&2; exit 1; }
+  case "$prev" in -f) case "$a" in query=*) query=${a#query=} ;; after=*) after=${a#after=} ;; esac ;; esac
+  case "$a" in repos/*|projects/*) path=$a ;; esac
+  prev=$a
+done
+if [ "$2" = graphql ]; then
+  case "$query" in
+    *"__type(name"*)
+      # The fields of the type asked for this server carries: the fixture's, or every one the script asks.
+      v=$(ask '.schema'); t=issue
+      if [ "$me" = glab ]; then t=dev; [ -n "$v" ] || v='["closingMergeRequests"]'
+      else [ -n "$v" ] || v='["subIssuesSummary","issueType","stateReason",{"name":"closedByPullRequestsReferences","args":["includeClosedPrs"]}]'; fi
+      jq -c --arg t "$t" '{data: {($t): {fields: map(if type == "string" then {name: ., args: []} else {name, args: (.args | map({name: .}))} end)}}}' <<<"$v"; exit 0 ;;
+    *"issues(first"*|*"workItems(first"*) key=issues_pages ;;
+    *"pullRequests(first"*|*"mergeRequests(first"*) key=requests_pages ;;
+    *"discussions(first"*) key=discussions_pages ;;
+    *) echo "unplanned query" >&2; exit 1 ;;
+  esac
+  i=0; [ -n "$after" ] && i=${after#c}
+  jq -r --arg k "$key" --argjson i "$i" '.[$k][$i] // empty' "$env"; exit 0
+fi
+if [ "$me" = glab ] && [ "$path" = "projects/:fullpath" ]; then
+  [ "$(ask '.probe_glab')" = yes ] || { echo "404 Project Not Found" >&2; exit 1; }
+  echo '{"web_url":"https://lab.example/team/app","path_with_namespace":"team/app"}'; exit 0
+fi
+case "$path" in
+  */labels\?*) v=$(ask '.set'); [ -n "$v" ] && [ "$v" != unread ] || { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }; printf '%s\n' "$v" ;;
+  repos/team/app|projects/team%2Fapp) d=$(ask '.has_discussions'); echo "{\"default_branch\":\"main\",\"has_discussions\":${d:-false}}" ;;
+  *) echo "unplanned $me api call: $*" >&2; exit 1 ;;
+esac

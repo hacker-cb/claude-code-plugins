@@ -1,0 +1,1 @@
+{"create": [{"name": "type:chore", "color": "fbca04", "description": "Type: chore"}], "edit": [{"name": "scope:web", "newName": "scope:ui"}], "delete": [], "relabel": [{"kind": "issue", "number": 1, "add": ["scope:web"], "remove": ["type:bug"]}]}

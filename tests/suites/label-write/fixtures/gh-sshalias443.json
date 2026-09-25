@@ -1,0 +1,1 @@
+{"probe_gh": "yes", "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"q\\\"$(touch /tmp/label-write-pwned)`id`\"},{\"name\":\"scope:web/ui x\"},{\"name\":\"a, b\"}]", "labels": [], "remotes": "origin\tgit@forge-front:team/app.git (fetch)", "ssh_hostnames": {"forge-front": "ssh.forge.example"}, "ssh_ports": {"forge-front": "443"}}

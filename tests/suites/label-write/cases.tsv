@@ -54,3 +54,5 @@ gh-url-host	--url https://forge.example/team/app/pull/9 --host forge.example --a
 gl-guest	--number 5 --kind issue --add tests/suites/label-write/names/api.json --forge glab	0	"wrote": false|applied none of it	GitLab answering success and applying nothing is how it refuses an account that may not label
 gl-twokeys	--number 5 --kind issue --add tests/suites/label-write/names/two-priorities.json --forge glab	0	"wrote": true|"add 2, take 0 off"	GitLab's free tier keeps two values of one scoped key side by side, so they are written, not refused
 gh-ignored	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|applied none of it	GitHub, too, answers success to an account that may not label and applies nothing: that is a refusal
+gh-sshport	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": false|no remote of this checkout names	a remote on ssh.<host> at another port is another service, not the forge's front
+gh-sshalias443	--number 5 --kind issue --add tests/suites/label-write/names/api.json	0	"wrote": true	an alias the ssh configuration points at ssh.<host> on port 443 names the forge's own host
