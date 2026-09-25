@@ -26,8 +26,9 @@ Nothing is written to the forge before approval 2, and nothing the approvals did
 
 ## The run's files
 
-One directory per repository, under `$HOME/.claude/plans` written out literally, named
-`<repository>-labels`, the first line of its `README` naming the checkout ([`../../references/session-naming.md`](../../references/session-naming.md)). It holds
+One directory per run, under `$HOME/.claude/plans` written out literally, named
+`<repository>-labels-<date the run began>` — a new run never reuses an earlier one's — the first line
+of its `README` naming the checkout ([`../../references/session-naming.md`](../../references/session-naming.md)). It holds
 `snapshot.json`, `set.md` (approval 1), `roles.json`, `rows/<batch>.jsonl`, `plan.json` and
 `journal.jsonl`; nothing of it goes into the repository.
 
@@ -40,7 +41,7 @@ them that settled an issue and of those that settled none. Discussions are read,
 ## 2. Read
 
 ```bash
-D="$HOME/.claude/plans/<repository>-labels"; mkdir -p "$D/rows"
+D="$HOME/.claude/plans/<repository>-labels-<date>"; mkdir -p "$D/rows"
 L="${CLAUDE_PLUGIN_ROOT}/skills/label-taxonomy/scripts/labels.mjs"
 node "$L" snapshot --out "$D/snapshot.json"
 ```
@@ -62,7 +63,7 @@ of the plan before showing it — `create` and `edit` alone, the deletions waiti
 take each label off (step 6):
 
 ```bash
-D="$HOME/.claude/plans/<repository>-labels"
+D="$HOME/.claude/plans/<repository>-labels-<date>"
 L="${CLAUDE_PLUGIN_ROOT}/skills/label-taxonomy/scripts/labels.mjs"
 node "$L" check-set --snapshot "$D/snapshot.json" --plan "$D/plan.json"
 ```
@@ -95,7 +96,7 @@ carrier in it exactly once, `--population` a list of `open-issues`, `closed-issu
 `open-requests`, `merged-requests`:
 
 ```bash
-D="$HOME/.claude/plans/<repository>-labels"
+D="$HOME/.claude/plans/<repository>-labels-<date>"
 L="${CLAUDE_PLUGIN_ROOT}/skills/label-taxonomy/scripts/labels.mjs"
 node "$L" check-roles --snapshot "$D/snapshot.json" --roles "$D/roles.json" --rows "$D/rows" --population "<scope>"
 ```
@@ -114,7 +115,7 @@ Fold the rows into `plan.json` beside the set's part — one `relabel` row a car
 and check both:
 
 ```bash
-D="$HOME/.claude/plans/<repository>-labels"
+D="$HOME/.claude/plans/<repository>-labels-<date>"
 L="${CLAUDE_PLUGIN_ROOT}/skills/label-taxonomy/scripts/labels.mjs"
 node "$L" check-set --snapshot "$D/snapshot.json" --plan "$D/plan.json"
 node "$L" check-roles --snapshot "$D/snapshot.json" --roles "$D/roles.json" --plan "$D/plan.json"
@@ -139,16 +140,17 @@ the run.
 ## 8. Apply, then verify
 
 ```bash
-D="$HOME/.claude/plans/<repository>-labels"
+D="$HOME/.claude/plans/<repository>-labels-<date>"
 L="${CLAUDE_PLUGIN_ROOT}/skills/label-taxonomy/scripts/labels.mjs"
-node "$L" apply --snapshot "$D/snapshot.json" --plan "$D/plan.json" --journal "$D/journal.jsonl"
-rm -f "$D/after.json"   # a verify never reads an earlier run's
+node "$L" apply --snapshot "$D/snapshot.json" --plan "$D/plan.json" --journal "$D/journal.jsonl" \
+  | tee "$D/applied.json" | jq -e '.applied' >/dev/null || exit 0   # stopped: read applied.json
+rm -f "$D/after.json"   # a verify never reads an earlier snapshot
 node "$L" snapshot --out "$D/after.json" | jq -e '.read and .complete' >/dev/null \
   && node "$L" verify --snapshot "$D/after.json" --plan "$D/plan.json"
 ```
 
-`stopped` names the step and why: fix the cause, then run `apply` again over the same journal —
-it skips what is done. A step `skipped` — a carrier whose labels moved since the snapshot, a label
+`stopped` names the step and why: fix the cause on the forge, then run `apply` again over the same
+journal — it skips what is done. A plan changed is a new plan: approved again, over a new journal. A step `skipped` — a carrier whose labels moved since the snapshot, a label
 something still holds — is named in the report with what it would take; it is not retried on its
 own. `verify` answering `ok` true over a `complete` snapshot is the end of the write.
 

@@ -16,6 +16,8 @@ gh-lost-resume	--repo-dir .	0	BEFORE:== run 2<<a stopped write left it without s
 gh-started	--repo-dir .	0	"applied": true|"issue 1":["scope:ui","type:chore"]	a row whose write started and never answered resumes from the half it left
 gh-skipped	--repo-dir .	0	"applied": true|NOT:issues/2/labels	a step the journal holds skipped stays skipped
 gh-disc-short	--repo-dir .	0	"stopped": "delete old-scope: could not read the discussions whole|NOT:DELETE repos/team/app/labels/old-scope	discussions read short are no count of none
-gl-rest-hidden	--repo-dir .	0	"stopped": "relabel issue 1: could not read it|NOT:"applied": true	a work item REST does not reach, which the project still lists, is a stop and never read as gone
+gl-rest-hidden	--repo-dir .	0	"applied": true|the REST API does not reach|NOT:it is gone since the snapshot|NOT:issues/1 {	a work item REST does not reach, which the project still lists, is skipped for a hand to label — never read as gone, never a stop for the rest
 gl-gone	--repo-dir .	0	"applied": true|it is gone since the snapshot	a GitLab request the project no longer lists is gone, and skipped
 gh-race	--repo-dir .	0	"stopped": "relabel issue 1: label-write: the carrier does not hold the labels --expect names|NOT:POST repos/team/app/issues/1/labels	a carrier another hand moved between the check and the write is refused by the writer, never written over
+gh-race-resume	--repo-dir .	0	BEFORE:== run 2<<its labels moved since the snapshot|NOT:POST repos/team/app/issues/1/labels	a row the writer refused before sending anything is not resumed as half-written: the next run finds it moved
+gh-lost-noadd	--repo-dir .	0	"stopped": "relabel issue 1: a stopped write left it without scope:ui|NOT:"applied": true	a label a stopped write lost stops the row again, before or after what was asked landed

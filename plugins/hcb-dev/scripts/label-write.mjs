@@ -34,7 +34,7 @@ import {
 } from './lib/forge.mjs';
 
 const usage = 'usage: node label-write.mjs (--number <n> --kind issue|request | --url <request URL>)'
-  + ' [--add <file>] [--remove <file>] [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]';
+  + ' [--add <file>] [--remove <file>] [--expect <file>] [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]';
 const die = (msg) => { writeAll(2, `label-write: ${msg}\n${usage}\n`); process.exit(2); };
 
 const FLAGS = {

@@ -457,8 +457,9 @@ function checkRoles() {
   const after = afterPlan(snap, plan);
   const violations = [];
   const bothWays = [];
-  const skipped = (c) => c.bot === true || c.labels.some((l) => skip.some((s) => same(s, l)));
-  const inScope = (c) => !skipped(c) && snap.defaultBranch !== null && c.base === snap.defaultBranch && c.state !== 'closed';
+  // A tool's own requests stand outside the roles; an issue a tool filed is work like any other.
+  const skipped = (c) => c.labels.some((l) => skip.some((s) => same(s, l)));
+  const inScope = (c) => !skipped(c) && c.bot !== true && snap.defaultBranch !== null && c.base === snap.defaultBranch && c.state !== 'closed';
 
   const native = (c) => typeof c.type === 'string'
     && (roles.nativeTypes ? roles.nativeTypes.includes(c.type) : snap.forge === 'gh');
@@ -480,16 +481,20 @@ function checkRoles() {
       if (n < min || (max !== null && n > max)) violations.push({ kind, number: c.number, place, family: f.prefix, count: n, want: [min, max] });
     }
   };
-  for (const c of after.issues) if (!skipped(c)) check('issue', c, isParent(c) ? 'parent' : 'leaf');
-  for (const c of after.requests) if (inScope(c)) check('request', c, 'request');
+  // The run's scope: open and closed issues, open and merged requests into the default branch —
+  // every carrier where none is named.
+  const PARTS = ['open-issues', 'closed-issues', 'open-requests', 'merged-requests'];
+  const words = { issues: PARTS.slice(0, 2), requests: PARTS.slice(2), all: PARTS };
+  const population = new Set(String(opts['--population'] ?? 'all').split(',').flatMap((w) => words[w] ?? [w]));
+  if (!population.size || ![...population].every((p) => PARTS.includes(p))) die(`--population takes issues|requests|all, or a list of ${PARTS.join(', ')}`);
+  if (opts['--rows'] !== undefined && opts['--population'] === undefined) die('--rows takes --population: coverage is of a named scope');
+  const issueIn = (c) => !skipped(c) && population.has(`${c.state === 'open' ? 'open' : 'closed'}-issues`);
+  const requestIn = (c) => inScope(c) && population.has(`${c.state === 'open' ? 'open' : 'merged'}-requests`);
+  for (const c of after.issues) if (issueIn(c)) check('issue', c, isParent(c) ? 'parent' : 'leaf');
+  for (const c of after.requests) if (requestIn(c)) check('request', c, 'request');
 
   let coverage = null;
   if (opts['--rows'] !== undefined) {
-    // The run's scope: open and closed issues, open and merged requests into the default branch.
-    const PARTS = ['open-issues', 'closed-issues', 'open-requests', 'merged-requests'];
-    const words = { issues: PARTS.slice(0, 2), requests: PARTS.slice(2), all: PARTS };
-    const population = new Set(String(opts['--population'] ?? '').split(',').flatMap((w) => words[w] ?? [w]));
-    if (!population.size || ![...population].every((p) => PARTS.includes(p))) die(`--rows takes --population issues|requests|all, or a list of ${PARTS.join(', ')}`);
     if (!dirOk(opts['--rows'])) die(`--rows '${opts['--rows']}' is not a directory`);
     const seen = new Map();
     const bad = [];
@@ -506,8 +511,8 @@ function checkRoles() {
       }
     }
     const want = new Set([
-      ...after.issues.filter((c) => !skipped(c) && population.has(`${c.state === 'open' ? 'open' : 'closed'}-issues`)).map((c) => `issue ${c.number}`),
-      ...after.requests.filter((c) => inScope(c) && population.has(`${c.state === 'open' ? 'open' : 'merged'}-requests`)).map((c) => `request ${c.number}`),
+      ...after.issues.filter(issueIn).map((c) => `issue ${c.number}`),
+      ...after.requests.filter(requestIn).map((c) => `request ${c.number}`),
     ]);
     coverage = {
       missing: [...want].filter((k) => !seen.has(k)),
@@ -636,19 +641,20 @@ function apply() {
   const exact = (set, n) => set.find((l) => l.name === n);
   const planned = (l, c) => l && (c.color === undefined || l.color === c.color.toLowerCase())
     && (c.description === undefined || l.description === (c.description ?? ''));
-  const idOf = (n) => snap.set.find((l) => same(l.name, n))?.id;
 
   // 1. Renames, before anything takes the new names.
   for (const e of plan.edit.filter((x) => x.newName !== undefined && x.newName !== x.name)) {
     const step = `rename ${e.name}`;
     if (done.has(step)) continue;
-    const gone = (set) => (same(e.name, e.newName) ? !exact(set, e.name) : !set.some((l) => same(l.name, e.name)));
+    const left = (set) => (same(e.name, e.newName) ? !exact(set, e.name) : !set.some((l) => same(l.name, e.name)));
     let set = readSet(step);
-    if (!(exact(set, e.newName) && gone(set))) {
-      const r = forge === 'gh' ? send('PATCH', `repos/${path}/labels/${seg(e.name)}`, { new_name: e.newName })
-        : send('PUT', `projects/${enc}/labels/${set.find((l) => same(l.name, e.name))?.id ?? idOf(e.name)}`, { new_name: e.newName });
+    if (!(exact(set, e.newName) && left(set))) {
+      const cur = set.find((l) => same(l.name, e.name));
+      if (!cur) stop(step, `${e.name} is not in the set, and ${e.newName} is not what took its place`);
+      const r = forge === 'gh' ? send('PATCH', `repos/${path}/labels/${seg(cur.name)}`, { new_name: e.newName })
+        : send('PUT', `projects/${enc}/labels/${cur.id}`, { new_name: e.newName });
       set = readSet(step);
-      if (!(exact(set, e.newName) && gone(set))) stop(step, `not renamed${r.ok ? '' : `: ${why(r)}`}`);
+      if (!(exact(set, e.newName) && left(set))) stop(step, `not renamed${r.ok ? '' : `: ${why(r)}`}`);
     }
     log(step, 'done');
   }
@@ -680,7 +686,7 @@ function apply() {
         ...(e.description !== undefined ? { description: e.description ?? '' } : {}),
       };
       const r = forge === 'gh' ? send('PATCH', `repos/${path}/labels/${seg(now.name)}`, body)
-        : send('PUT', `projects/${enc}/labels/${now.id ?? idOf(e.name)}`, body);
+        : send('PUT', `projects/${enc}/labels/${now.id}`, body);
       set = readSet(step);
       if (!planned(set.find((l) => same(l.name, name)), e)) stop(step, `not edited as planned${r.ok ? '' : `: ${why(r)}`}`);
     }
@@ -702,14 +708,18 @@ function apply() {
     const v = parseOut(g);
     const at = forge === 'gh' ? v?.data?.repository : v?.data?.project;
     if (!at) return false;
-    return forge === 'gh' ? at.issueOrPullRequest === null && !v.errors?.some((e) => e?.type !== 'NOT_FOUND')
-      : Array.isArray(Object.values(at)[0]?.nodes) && Object.values(at)[0].nodes.length === 0;
+    if (forge === 'gh') return at.issueOrPullRequest === null && !v.errors?.some((e) => e?.type !== 'NOT_FOUND') ? null : false;
+    const nodes = Object.values(at)[0]?.nodes;
+    if (!Array.isArray(nodes)) return false;
+    // Listed, yet out of REST's reach: a work item type the writer cannot label.
+    return nodes.length === 0 ? null : 'unreachable';
   };
   const labelsNow = (step, kind, n) => {
     const r = cli(['api', '--hostname', host, carrierPath(kind, n)], 60000);
     const v = parseOut(r);
     if (r.ok && Array.isArray(v?.labels)) return v.labels.map((l) => (typeof l === 'string' ? l : l?.name)).filter((l) => typeof l === 'string');
-    if (gone(step, kind, n)) return null;
+    const g = gone(step, kind, n);
+    if (g !== false) return g;
     return stop(step, `could not read it: ${r.ok ? 'no labels in the answer' : why(r)}`);
   };
   const holds = (list, n) => list.some((l) => same(l, n));
@@ -720,18 +730,16 @@ function apply() {
     const remove = (r.remove ?? []).map(rename);
     const now = labelsNow(step, r.kind, r.number);
     if (now === null) { log(step, 'skipped', 'it is gone since the snapshot'); continue; }
+    if (now === 'unreachable') { log(step, 'skipped', 'a work item type the REST API does not reach: label it by hand'); continue; }
     const meant = (list) => add.every((n) => holds(list, n)) && !remove.some((n) => holds(list, n));
     // Unmoved is the snapshot's labels; along, those labels part of the way through this row —
     // some taken off, some put on, nothing else — which a run of this plan that stopped on it left.
     const was = (r.kind === 'issue' ? snap.issues : snap.requests).find((c) => c.number === r.number)?.labels.map(rename);
     const along = Boolean(was) && now.every((l) => holds(was, l) || holds(add, l)) && was.every((l) => holds(now, l) || holds(remove, l));
     const unmoved = Boolean(was) && now.length === was.length && now.every((l) => holds(was, l));
-    if (meant(now)) {
-      // What this plan's own stopped write left is read again: a label it lost is still lost.
-      if (failed.has(step) && !along) stop(step, `a stopped write left it without ${was.filter((l) => !holds(now, l) && !holds(remove, l)).join(', ') || 'what it held'}`);
-      log(step, 'done', 'already as planned');
-      continue;
-    }
+    // What this plan's own stopped write left is read again: a label it lost is still lost.
+    if (failed.has(step) && !along) stop(step, `a stopped write left it without ${(was ?? []).filter((l) => !holds(now, l) && !holds(remove, l)).join(', ') || 'what it held'}`);
+    if (meant(now)) { log(step, 'done', 'already as planned'); continue; }
     if (!(failed.has(step) ? along : unmoved)) { log(step, 'skipped', `its labels moved since the snapshot: ${now.join(', ')}`); continue; }
     log(step, 'started');
     const w = spawnSync(process.execPath, [writer, '--number', String(r.number), '--kind', r.kind, '--forge', forge,
@@ -741,6 +749,11 @@ function apply() {
     try { v = JSON.parse(w.stdout); } catch { /* read below */ }
     // A write that reached further than it was sent — a label lost — is a stop, whatever landed.
     if (v?.wrote === null) stop(step, `label-write: ${v.reason ?? 'the carrier read back otherwise'}${v.lost?.length ? ` — lost ${v.lost.join(', ')}` : ''}`);
+    if (v?.wrote === false && Array.isArray(v.ran) && v.ran.length === 0) {
+      // Refused before anything was sent: nothing of this row is on the carrier to resume from.
+      log(step, 'refused', `label-write: ${v.reason}`);
+      out({ ...answer, stopped: text(`${step}: label-write: ${v.reason}`) });
+    }
     if (v?.wrote !== true) {
       stop(step, v ? `label-write: ${v.reason ?? `wrote ${v.wrote}`}` : `label-write answered nothing: ${(w.stderr || '').trim().split('\n').pop()}`);
     }
