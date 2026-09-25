@@ -75,7 +75,7 @@ whether deleting it changes what anyone does next.
    with the moment it read the tracker at, the link to the graph a refresh leaves in a comment of
    its own and that graph's digest (`hcb-dev:wave-refresh` owns both) and the ground it covered:
    what the next refresh takes its delta from, since an issue closes without a commit and a link
-   moves without either; a lesser reading does not take the slot; the epic's merge authority as the
+   moves without either; a lesser reading does not take the slot; the base commit the master has taken landings up to, read and moved as `hcb-dev:master-session` says; the epic's merge authority as the
    user settled it ([`slice-completion.md`](slice-completion.md)); the plugin version this role last
    reconciled against, which is what a later **plugin** refresh diffs from and not necessarily what
    the session is running — it starts as the running version and `hcb-dev:session-plugin-refresh`
@@ -106,7 +106,7 @@ whether deleting it changes what anyone does next.
    name, state, result coordinates. A batch runs `planned → chipped → started → confirmed → building
    → completed(<mode> — request merged, merged locally, tracker state delivered, verdict delivered)
    → accepted`, standing at `blocked(<condition>)` for as long as something holds it; a state is
-   advanced, never skipped silently. It **ends** in one of three, and the three carry equal weight:
+   advanced, never skipped silently; a `chipped` row with no session is a click the user owes, never a session lost or a batch failed. It **ends** in one of three, and the three carry equal weight:
    - `released` — acceptance passed, the work landed, the batch was let go;
    - `withdrawn(<reason>)` — called off, from wherever it stood;
    - `failed(<what stands>)` — it did not come off, from wherever it stood; what stands is named.
