@@ -66,9 +66,10 @@ the repository runs that as a native type. A set with no kind-of-work or outcome
 request none, said in one line of the report.
 
 **Re-derived with the body** ([`merge-message.md`](merge-message.md)) — before the merge, and after
-a push that changes which files the request touches. A request whose labels describe something
-else is not ready to merge — save where the account cannot label it: the script is refused, and
-the report names the labels for someone who can.
+a push that changes which files the request touches — through the script's `--url` form, the request
+named by its URL. A request whose labels describe something else is not ready to merge — save where
+the account cannot label it: the script is refused, and the report names the labels for someone who
+can.
 
 ## At close
 

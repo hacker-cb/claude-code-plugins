@@ -63,6 +63,7 @@ for a in "$@"; do case "$a" in --label|--add-label|--remove-label|--unlabel|-f|-
 w=$(cat "$store/writes"); echo $((w + 1)) > "$store/writes"
 fail=$(ask '.write_fail')
 [ "$fail" = refuse ] && { echo "$me: Forbidden (HTTP 403)" >&2; exit 1; }
+[ "$fail" = ignore ] && { echo '[]'; exit 0; }
 [ "$fail" = delete ] && [ "$method" = DELETE ] && { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }
 echo "$method ${path##*/}" >> "$store/calls"
 cur=$(cat "$store/labels")

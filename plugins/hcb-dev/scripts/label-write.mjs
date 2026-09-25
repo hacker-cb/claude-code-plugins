@@ -43,7 +43,7 @@ const opts = {
 };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
-  const key = FLAGS[argv[i]];
+  const key = Object.hasOwn(FLAGS, argv[i]) ? FLAGS[argv[i]] : null;
   if (!key) die(`unknown argument '${argv[i]}'`);
   if (i + 1 >= argv.length || argv[i + 1] === '') die(`${argv[i]} takes a value`);
   if (opts[key] !== null) die(`${argv[i]} given twice`);
@@ -288,8 +288,6 @@ if (before.isRequest !== (opts.kind === 'request')) {
 const same = (a, b) => (forge === 'gh' ? a.toLowerCase() === b.toLowerCase() : a === b);
 const holds = (list, n) => list.some((l) => same(l, n));
 const toAdd = add.filter((n) => !holds(before.labels, n));
-const keys = toAdd.filter((n) => n.includes('::')).map((n) => n.slice(0, n.lastIndexOf('::')));
-if (forge === 'glab' && new Set(keys).size !== keys.length) refuse('two names to add share one scoped key: GitLab keeps one of them');
 // Taken off under the spelling the carrier holds it by: that is the name the forge knows.
 const toRemove = before.labels.filter((l) => remove.some((n) => same(l, n)));
 
@@ -384,10 +382,10 @@ if (answer.missing.length === 0 && answer.standing.length === 0 && answer.lost.l
 } else if (!changed && !unanswered && failures.length) {
   answer.wrote = false;
   answer.reason = text(`refused: ${failures.join('; ')}`);
-} else if (!changed && !unanswered && forge === 'glab') {
-  // GitLab answers an account that may not label with success and leaves the labels as they were.
+} else if (!changed && !unanswered) {
+  // Both forges answer an account that may not label with success and leave the labels as they were.
   answer.wrote = false;
-  answer.reason = 'refused: GitLab accepted the write and applied none of it, as it does for an account that may not label';
+  answer.reason = 'refused: the forge accepted the write and applied none of it, as it does for an account that may not label';
 } else {
   answer.wrote = null;
   let why0 = 'did not read back as written';

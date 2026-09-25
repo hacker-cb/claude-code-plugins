@@ -46,7 +46,7 @@ fi && node "$W" --number "$N" --kind issue --forge gh --add "$F"
 if ! out=$(glab api "projects/:fullpath/labels/$LABEL?include_ancestor_groups=true" 2>&1); then
   case "$out" in *"(HTTP 404)"*) glab label create --name "$LABEL" --color "#$COLOUR" --description "$DESC" ;;
     *) echo "unread: $out"; false ;; esac
-fi && node "$W" --number "$N" --kind issue --forge glab --add "$F"
+fi && node "$W" --number "$N" --kind issue --forge glab --add "$F"; rm -f "$F"
 ```
 
 ## The title and the body
