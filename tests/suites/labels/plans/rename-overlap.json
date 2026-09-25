@@ -1,0 +1,1 @@
+{"create": [], "edit": [{"name": "scope:web", "newName": "scope:ui"}], "delete": [], "relabel": [{"kind": "issue", "number": 1, "add": ["scope:ui"], "remove": ["scope:web"]}]}

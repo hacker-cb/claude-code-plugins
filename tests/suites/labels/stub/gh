@@ -18,9 +18,11 @@ done
 if [ "$2" = graphql ]; then
   case "$query" in
     *"__type(name"*)
-      # The fields of an issue this server carries: the fixture's, or every one the script asks.
-      v=$(ask '.schema'); [ -n "$v" ] || v='["subIssuesSummary","issueType","stateReason",{"name":"closedByPullRequestsReferences","args":["includeClosedPrs"]}]'
-      jq -c '{data: {issue: {fields: map(if type == "string" then {name: ., args: []} else {name, args: (.args | map({name: .}))} end)}}}' <<<"$v"; exit 0 ;;
+      # The fields of the type asked for this server carries: the fixture's, or every one the script asks.
+      v=$(ask '.schema'); t=issue
+      if [ "$me" = glab ]; then t=dev; [ -n "$v" ] || v='["closingMergeRequests"]'
+      else [ -n "$v" ] || v='["subIssuesSummary","issueType","stateReason",{"name":"closedByPullRequestsReferences","args":["includeClosedPrs"]}]'; fi
+      jq -c --arg t "$t" '{data: {($t): {fields: map(if type == "string" then {name: ., args: []} else {name, args: (.args | map({name: .}))} end)}}}' <<<"$v"; exit 0 ;;
     *"issues(first"*|*"workItems(first"*) key=issues_pages ;;
     *"pullRequests(first"*|*"mergeRequests(first"*) key=requests_pages ;;
     *"discussions(first"*) key=discussions_pages ;;

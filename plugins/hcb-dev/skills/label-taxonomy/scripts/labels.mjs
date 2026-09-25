@@ -21,7 +21,10 @@
 // "relabel": [{ "kind": "issue"|"request", "number", "add": [name], "remove": [name] }] }, a colour
 // six hex digits without `#`. The roles (`--roles`) are JSON: { "families": [{ "prefix", "leaf": [min,
 // max|null], "parent": [...], "request": [...], "whileOpen": bool? }], "skip": [name], "nativeKind":
-// "<prefix>"? } — the prefix whose role a native type may carry instead.
+// "<prefix>"?, "nativeTypes": [name]?, "parentLabel": name? }: `nativeKind` the prefix whose role a
+// native type may carry instead — any GitHub issue type, or only the types `nativeTypes` names (on
+// GitLab only those, every work item having a type by being one); `parentLabel` the label that marks
+// a parent where the server carries no hierarchy.
 //
 // Exit: 0 whenever an answer is printed; 2 called wrong.
 
@@ -46,13 +49,13 @@ const opts = {};
 for (let i = 0; i < rest.length; i += 1) {
   const flag = rest[i];
   if (!SPEC[cmd].includes(flag)) die(`${cmd} takes no ${flag}`);
-  if (i + 1 >= rest.length || rest[i + 1] === '') die(`${flag} takes a value`);
+  if (i + 1 >= rest.length || rest[i + 1] === '' || rest[i + 1].startsWith('--')) die(`${flag} takes a value`);
   if (Object.hasOwn(opts, flag)) die(`${flag} given twice`);
   opts[flag] = rest[i += 1];
 }
 const out = (answer) => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const readJson = (file, flag) => {
-  try { return JSON.parse(readFileSync(file, 'utf8').replace(/^﻿/, '')); } catch { return die(`${flag} '${file}' is not a JSON file`); }
+  try { return JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, '')); } catch { return die(`${flag} '${file}' is not a JSON file`); }
 };
 
 // ---------------------------------------------------------------- snapshot
@@ -120,6 +123,19 @@ function snapshot() {
     return nodes.map((l) => l[key]);
   };
 
+  // The requests that close an issue: null where the server carries none, or where the list came
+  // back cut or with an entry unread — a short read.
+  const closers = (asked, conn, what, ref) => {
+    if (!asked) return null;
+    const refs = Array.isArray(conn?.nodes) ? conn.nodes.map(ref) : null;
+    const total = Number.isInteger(conn?.totalCount) ? conn.totalCount : conn?.count;
+    if (!refs || refs.includes(null) || !Number.isInteger(total) || total > refs.length) {
+      shortfalls.push(`${what}: its closing requests are cut`);
+      return null;
+    }
+    return refs;
+  };
+
   const snap = { forge, host, path, readAt: new Date().toISOString(), defaultBranch: null, set: [], issues: [], requests: [], discussions: [], unavailable: [] };
   const enc = encodeURIComponent(path);
   const setOf = (what, endpoint) => {
@@ -161,16 +177,15 @@ function snapshot() {
       issues(first:100,after:$after,states:[OPEN,CLOSED],orderBy:{field:CREATED_AT,direction:ASC}){totalCount pageInfo{hasNextPage endCursor}
       nodes{number id state author{__typename} ${labels} ${f.reason ? 'stateReason' : ''}
       ${f.children ? 'subIssuesSummary{total}' : ''} ${f.type ? 'issueType{name}' : ''}
-      ${f.closedBy ? 'closedByPullRequestsReferences(first:25,includeClosedPrs:true){totalCount nodes{number repository{nameWithOwner}}}' : ''}}}}}`,
+      ${f.closedBy ? 'closedByPullRequestsReferences(first:100,includeClosedPrs:true){totalCount nodes{number repository{nameWithOwner}}}' : ''}}}}}`,
     vars, (d) => d?.repository?.issues).map((n) => {
-      const refs = n.closedByPullRequestsReferences;
       const children = Number.isInteger(n.subIssuesSummary?.total) ? n.subIssuesSummary.total : null;
       return {
         number: n.number, id: n.id, state: n.state === 'OPEN' ? 'open' : 'closed', reason: n.stateReason ?? null,
         bot: n.author?.__typename === 'Bot', labels: labelsOf(n.labels, `issue ${n.number}`, 'name', 'totalCount'),
         children, parent: children === null ? null : children > 0, type: n.issueType?.name ?? null,
-        closedBy: !Array.isArray(refs?.nodes) || refs.totalCount > refs.nodes.length ? null
-          : refs.nodes.map((p) => `${p?.repository?.nameWithOwner}#${p?.number}`),
+        closedBy: closers(f.closedBy, n.closedByPullRequestsReferences, `issue ${n.number}`,
+          (p) => (typeof p?.repository?.nameWithOwner === 'string' && Number.isInteger(p.number) ? `${p.repository.nameWithOwner}#${p.number}` : null)),
       };
     });
     snap.requests = walk('pull requests', `${head}
@@ -194,27 +209,37 @@ function snapshot() {
       name: l.name, id: l.id ?? null, color: typeof l.color === 'string' ? l.color.replace(/^#/, '') : null,
       description: l.description ?? null, archived: l.archived === true, inherited: l.is_project_label === false,
     }));
+    const schema = cli(['api', 'graphql', '--hostname', host, '-f', 'query={dev:__type(name:"WorkItemWidgetDevelopment"){fields{name}}}'], 60000);
+    const dev = parse(schema)?.data;
+    if (!dev || typeof dev !== 'object') {
+      if (!schema.ok) unread('the schema', schema);
+      out({ ...answer, reason: 'the schema answered without its types' });
+    }
+    const closing = Array.isArray(dev.dev?.fields) && dev.dev.fields.some((x) => x?.name === 'closingMergeRequests');
+    if (!closing) snap.unavailable.push('the change request that closed an issue');
+    snap.unavailable.push('the reason an issue closed');
     const vars = { fullPath: path };
     const head = 'query($fullPath:ID!,$after:String){project(fullPath:$fullPath){';
     const labels = 'labels(first:100){count nodes{title}}';
     // Every work item type the project holds — issues, incidents, tasks — carries labels.
     snap.issues = walk('work items', `${head}
       workItems(first:100,after:$after,sort:CREATED_ASC){count pageInfo{hasNextPage endCursor}
-      nodes{iid id state author{bot} widgets{type ... on WorkItemWidgetLabels{${labels}}
+      nodes{iid id state workItemType{name} author{bot} widgets{type ... on WorkItemWidgetLabels{${labels}}
       ... on WorkItemWidgetHierarchy{hasChildren children(first:1){count}}
-      ... on WorkItemWidgetDevelopment{closingMergeRequests(first:25){count nodes{mergeRequest{reference(full:true)}}}}}}}}}`,
+      ${closing ? '... on WorkItemWidgetDevelopment{closingMergeRequests(first:100){count nodes{mergeRequest{reference(full:true)}}}}' : ''}}}}}}`,
     vars, (d) => d?.project?.workItems).map((w) => {
       const by = {};
       for (const x of Array.isArray(w.widgets) ? w.widgets : []) if (x?.type) by[x.type] = x;
       const h = by.HIERARCHY;
-      const c = by.DEVELOPMENT?.closingMergeRequests;
       return {
         number: Number(w.iid), id: w.id, state: w.state === 'OPEN' ? 'open' : 'closed', reason: null,
         bot: typeof w.author?.bot === 'boolean' ? w.author.bot : null,
         labels: by.LABELS ? labelsOf(by.LABELS.labels, `work item ${w.iid}`, 'title', 'count') : [],
         // `hasChildren` holds where the children themselves are hidden from this token.
-        children: h ? (h.children?.count ?? null) : 0, parent: h ? h.hasChildren === true : false, type: null,
-        closedBy: !Array.isArray(c?.nodes) || c.count > c.nodes.length ? null : c.nodes.map((m) => m?.mergeRequest?.reference ?? null),
+        children: h ? (h.children?.count ?? null) : 0, parent: h ? h.hasChildren === true : false,
+        type: w.workItemType?.name ?? null,
+        closedBy: closers(closing, by.DEVELOPMENT?.closingMergeRequests, `work item ${w.iid}`,
+          (m) => (typeof m?.mergeRequest?.reference === 'string' ? m.mergeRequest.reference : null)),
       };
     });
     snap.requests = walk('merge requests', `${head}
@@ -254,6 +279,7 @@ const descOk = (d) => d === undefined || d === null || typeof d === 'string';
 const loadPlan = (required, forge) => {
   if (!opts['--plan']) { if (required) die(`${cmd} takes --plan <file>`); return { create: [], edit: [], delete: [], relabel: [] }; }
   const p = readJson(opts['--plan'], '--plan');
+  if (p === null || typeof p !== 'object' || Array.isArray(p)) die('--plan is a JSON object');
   const plan = { create: p?.create ?? [], edit: p?.edit ?? [], delete: p?.delete ?? [], relabel: p?.relabel ?? [] };
   if (![plan.create, plan.edit, plan.delete, plan.relabel].every(Array.isArray)) die('--plan: create, edit, delete and relabel are lists');
   for (const c of plan.create) {
@@ -353,7 +379,21 @@ function checkSet() {
     const holders = carriers.filter(({ c }) => c.labels.some((n) => same(n, d)));
     if (holders.length) flag('delete', d, `still on ${holders.slice(0, 10).map(({ kind, c }) => `${kind} ${c.number}`).join(', ')}${holders.length > 10 ? ` and ${holders.length - 10} more` : ''}`);
   }
+  const rename = renamer(plan, same);
   for (const r of plan.relabel) {
+    const both = (r.add ?? []).find((n) => (r.remove ?? []).some((m) => same(rename(m), rename(n))));
+    if (both !== undefined) flag('relabel', both, `added to and taken off ${r.kind} ${r.number} once the plan's renames apply`);
+    // Where GitLab's tier keeps one value a scope, adding one takes the other off; where it does not,
+    // both stay. The plan says which by taking the old value off itself.
+    const carrier = (r.kind === 'issue' ? snap.issues : snap.requests).find((c) => c.number === r.number);
+    if (snap.forge === 'glab' && carrier) {
+      const key = (n) => (n.includes('::') ? n.slice(0, n.lastIndexOf('::')) : null);
+      const removed = (r.remove ?? []).map(rename);
+      for (const n of (r.add ?? []).map(rename)) {
+        const other = key(n) !== null && carrier.labels.map(rename).find((l) => key(l) === key(n) && l !== n && !removed.includes(l));
+        if (other) flag('relabel', n, `added to ${r.kind} ${r.number} beside ${other}: take ${other} off in the same row`);
+      }
+    }
     for (const n of r.add ?? []) {
       const l = held(n);
       // A renamed label keeps what it was: an archived one renamed is still archived.
@@ -362,7 +402,7 @@ function checkSet() {
       if (plan.delete.some((d) => same(d, n))) flag('relabel', n, `added to ${r.kind} ${r.number} and deleted by the same plan`);
     }
     const where = r.kind === 'issue' ? snap.issues : snap.requests;
-    if (!where.some((c) => c.number === r.number)) flag('relabel', `${r.kind} ${r.number}`, 'no such carrier in the snapshot');
+    if (!where.some((c) => c.number === r.number)) flag('relabel', `${r.kind} ${r.number}`, `no such carrier in the snapshot${snap.complete === false ? ', which read short' : ''}`);
   }
   out({ ok: problems.length === 0, forge: snap.forge, problems });
 }
@@ -373,12 +413,15 @@ function checkRoles() {
   const plan = loadPlan(false, snap.forge);
   if (!opts['--roles']) die('check-roles takes --roles <file>');
   const roles = readJson(opts['--roles'], '--roles');
+  if (roles === null || typeof roles !== 'object' || Array.isArray(roles)) die('--roles is a JSON object');
   const range = (v) => Array.isArray(v) && v.length === 2 && Number.isInteger(v[0]) && v[0] >= 0 && (v[1] === null || (Number.isInteger(v[1]) && v[1] >= v[0]));
   if (!Array.isArray(roles?.families) || !roles.families.every((f) => typeof f?.prefix === 'string' && f.prefix !== ''
     && range(f.leaf) && range(f.parent) && range(f.request))) {
     die('--roles: families are { prefix, leaf: [min, max|null], parent: [...], request: [...] }');
   }
   if (roles.skip !== undefined && !(Array.isArray(roles.skip) && roles.skip.every((s) => typeof s === 'string'))) die('--roles: skip is a list of label names');
+  if (roles.nativeTypes !== undefined && !(Array.isArray(roles.nativeTypes) && roles.nativeTypes.every((t) => typeof t === 'string'))) die('--roles: nativeTypes is a list of type names');
+  if (roles.parentLabel !== undefined && !labelNameOk(roles.parentLabel)) die('--roles: parentLabel is a label name');
   const skip = roles.skip ?? [];
   const same = sameLabel(snap.forge);
   const fold = snap.forge === 'gh' ? (s) => s.toLowerCase() : (s) => s;
@@ -387,16 +430,23 @@ function checkRoles() {
   const skipped = (c) => c.bot === true || c.labels.some((l) => skip.some((s) => same(s, l)));
   const inScope = (c) => !skipped(c) && snap.defaultBranch !== null && c.base === snap.defaultBranch && c.state !== 'closed';
 
+  const native = (c) => typeof c.type === 'string'
+    && (roles.nativeTypes ? roles.nativeTypes.includes(c.type) : snap.forge === 'gh');
+  // Where the server carries no hierarchy, the label the roles name marks a parent.
+  const isParent = (c) => c.parent === true
+    || (c.parent === null && roles.parentLabel !== undefined && c.labels.some((l) => same(l, roles.parentLabel)));
   const check = (kind, c, place) => {
     for (const f of roles.families) {
       let n = c.labels.filter((l) => fold(l).startsWith(fold(f.prefix))).length;
-      if (roles.nativeKind === f.prefix && c.type) n += 1;
+      // A native type names the role where it is one the roles adopt; beside a label of the family
+      // it is the same value carried two ways, not a second one.
+      if (roles.nativeKind === f.prefix && native(c)) n = Math.max(n, 1);
       let [min, max] = f[place];
       if (f.whileOpen && c.state !== 'open') { min = 0; max = 0; }
       if (n < min || (max !== null && n > max)) violations.push({ kind, number: c.number, place, family: f.prefix, count: n, want: [min, max] });
     }
   };
-  for (const c of after.issues) if (!skipped(c)) check('issue', c, c.parent === true ? 'parent' : 'leaf');
+  for (const c of after.issues) if (!skipped(c)) check('issue', c, isParent(c) ? 'parent' : 'leaf');
   for (const c of after.requests) if (inScope(c)) check('request', c, 'request');
 
   let coverage = null;
@@ -406,9 +456,10 @@ function checkRoles() {
     if (!dirOk(opts['--rows'])) die(`--rows '${opts['--rows']}' is not a directory`);
     const seen = new Map();
     const bad = [];
+    const read = (file) => { try { return readFileSync(join(opts['--rows'], file), 'utf8'); } catch { return die(`--rows: ${file} is not a readable file`); } };
     for (const f of readdirSync(opts['--rows'])) {
       if (!f.endsWith('.jsonl')) continue;
-      for (const [i, line] of readFileSync(join(opts['--rows'], f), 'utf8').replace(/^﻿/, '').split('\n').entries()) {
+      for (const [i, line] of read(f).replace(/^\uFEFF/, '').split('\n').entries()) {
         if (!line.trim()) continue;
         let row;
         try { row = JSON.parse(line); } catch { bad.push(`${f}:${i + 1}`); continue; }
@@ -428,8 +479,8 @@ function checkRoles() {
       unreadable: bad,
     };
   }
-  // A snapshot read short counts only what it read: nothing it says is the whole.
-  const complete = snap.complete !== false;
+  // A snapshot read short counts only what it read, and one without the default branch no request.
+  const complete = snap.complete !== false && snap.defaultBranch !== null;
   out({
     ok: complete && violations.length === 0 && (!coverage || Object.values(coverage).every((l) => l.length === 0)),
     forge: snap.forge, complete, violations, coverage,
