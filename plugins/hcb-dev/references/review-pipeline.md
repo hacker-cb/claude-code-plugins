@@ -142,9 +142,9 @@ node "<plugin root>/scripts/review-round.mjs" result --round "<round>"
 
 What `result` holds besides the coverage above — the findings, the refuted, the warnings — is
 read as `verification.md`'s *Reading the result* reads it; a finding's `found_by` names every
-source that reported it, and Codex's row names the model and level it ran at.
-
-Report it as `## Review coverage` from `coverage` — a row per source the round was opened with,
-with the round's base, its file count and its rung — and `## Findings` laid out by
-`findings-table.md`, `verified by verifier` where any check ran. A finding's text is its finder's, in the round's language: pass
-it on as written.
+source that reported it, and Codex's row names the model and level it ran at. Report it as
+`## Review coverage` from `coverage` — a row per source the round was opened with, with the
+round's base, its file count, its rung and its `time_s`, then a last row, `round`, from `timing`:
+`wall_s` its time, `checks <check_s> · sweep <sweep_s>` its result — and `## Findings` laid out
+by `findings-table.md`, `verified by verifier` where any check ran. A finding's text is its
+finder's, in the round's language: pass it on as written.

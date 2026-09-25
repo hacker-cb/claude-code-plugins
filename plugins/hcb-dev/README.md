@@ -151,8 +151,9 @@ form: you paste every one of them yourself.
   One round over one change with every source at once — Claude's angles, the
   security angles and the Codex pass — at the rung the change's risk sets, the
   findings a caller noticed on the way checked beside the round's own, then a
-  report of the findings and of what each source actually covered (the coverage
-  gate most of the skill exists to keep honest). Report-only.
+  report of the findings, of what each source actually covered (the coverage
+  gate most of the skill exists to keep honest) and of how long each source and
+  the round ran. Report-only.
 
 ### Completing it
 
@@ -513,7 +514,8 @@ saying something else. Each file opens by saying what it owns.
   hands back is read. Read wherever one is waited for, and wherever its answer is read.
 - [`references/review-pipeline.md`](references/review-pipeline.md) — a review
   round's shape: the store it keeps, its rungs, who runs what, what each agent's
-  outcome becomes and the coverage it reports. Read by whatever opens a round.
+  outcome becomes, and the coverage and the time it reports. Read by whatever
+  opens a round.
 - [`references/verification.md`](references/verification.md) — the one checker:
   how a candidate reaches it, and when a verdict it made stands. Read by whatever
   has findings checked.

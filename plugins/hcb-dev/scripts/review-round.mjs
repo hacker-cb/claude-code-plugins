@@ -378,6 +378,20 @@ const planFile = (round) => path.join(round.dir, 'plan.json');
 const planOf = (round) => (existsSync(planFile(round)) ? readJson(planFile(round)) : null);
 const plannedTasks = (plan) => (plan ? [...plan.tasks, ...(plan.sweep ? [plan.sweep] : [])] : []);
 
+// When a task began: its first brief, or the Codex pass taking its lock — a brief read again
+// later is the same task still running. Kept apart from `sources/`, where every file but a
+// status is read as a submission. A stamp that cannot be written costs the round its time,
+// never the task its brief.
+function stampStart(round, task) {
+  try {
+    mkdirSync(path.join(round.dir, 'started'), { recursive: true, mode: 0o700 });
+    claimJson(path.join(round.dir, 'started', `${task}.json`), { task, at: new Date().toISOString() });
+  } catch { /* the time goes unknown; the task goes on */ }
+}
+const startedOf = (dir, task) => {
+  try { return readJson(path.join(dir, 'started', `${task}.json`)).at ?? null; } catch { return null; }
+};
+
 // Which tree a side names. In a round, `head` is the working tree the diff was taken
 // from and `base` the merge base; in a pass there is one tree, the one the caller named.
 function treeOf(req, side) {
@@ -854,6 +868,7 @@ function brief() {
   const t = plannedTasks(p).find((x) => x.task === id);
   if (!t) cannot(`${id} is not a task of round ${round.id}'s plan`);
   if (t.kind === 'codex') die(`${id} is the Codex pass — the codex subcommand runs it; a brief is a finder's`);
+  stampStart(round, id);
   const c = catalog();
   const spec = c.tasks[id];
   const { req } = round;
@@ -1224,6 +1239,7 @@ async function codex() {
   process.on('exit', () => {
     try { if (readJson(lock).pid === process.pid) rmSync(lock, { force: true }); } catch { /* gone already */ }
   });
+  stampStart(round, task);
   // A loss the round records, never a crash: the conductor reads the store, not this answer.
   const lose = (why, extra = {}) => {
     claimJson(path.join(round.dir, 'sources', `${task}.status.json`), {
@@ -1529,7 +1545,10 @@ function queue() {
     const standing = u.carried.find((v) => (v.verdict === 'confirmed' || v.verdict === 'unproven')
       && readsOwn(v.evidence, u) && v.evidence.every(stands));
     if (standing) {
-      writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), { ...standing, unit: u.unit, reused: true });
+      // When a carried verdict was made is some earlier check's time, never this round's.
+      const kept = { ...standing, unit: u.unit, reused: true };
+      delete kept.at;
+      writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), kept);
       reused.push(u.unit);
     } else open.push(u);
   }
@@ -1564,14 +1583,17 @@ function queue() {
     order = order.slice(0, budget);
   }
   // What each call stopped on is its answer's; the file keeps what later calls read.
-  // When this queue's checks began, for a wait on them to count from.
+  // When this queue's checks began, for a wait on them to count from; and every call's
+  // start with what it queued, for the result to time each call's checks by.
+  const at = new Date().toISOString();
   const q = {
     queue: [...prior.queue, ...order],
     reused: [...prior.reused, ...reused],
     budget_cut: [...prior.budget_cut, ...cut],
     unreachable: [...prior.unreachable, ...unreachable],
     latest: order,
-    started_at: new Date().toISOString(),
+    started_at: at,
+    calls: [...(Array.isArray(prior.calls) ? prior.calls : []), { at, units: order }],
   };
   writeJson(qf, q);
   // The answer names what this call queued; the file holds the whole queue.
@@ -1657,6 +1679,7 @@ function verdict() {
   const stored = { unit: u.unit, verdict: value.verdict, snapshot, evidence };
   if (value.settle) stored.settle = value.settle;
   if (value.refuted_because) stored.refuted_because = value.refuted_because;
+  stored.at = new Date().toISOString();
   const check = validate(load, 'verdict.json', '/$defs/stored', stored);
   if (check.length) cannot(`the stored verdict does not fit its own schema: ${JSON.stringify(check)}`);
   writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), stored);
@@ -1739,20 +1762,36 @@ function result() {
   const warnings = [...(req.warnings || [])];
 
   const p = planOf(round);
+  // Counts come from what each task handed in, states from its status: a loss recorded
+  // beside a submission changes how covered the task is, not what it found.
+  const handed = new Map(sourceFiles(round.dir).map((f) => {
+    const sub = readJson(path.join(round.dir, 'sources', f));
+    return [sub.task, sub];
+  }));
+  const answers = statuses(round.dir);
+  // How long it ran, read from the store alone, so a result built twice answers the same. A
+  // time the store does not hold, or holds unreadably, is null — never a refusal.
+  const when = (t) => (typeof t === 'string' && Number.isFinite(Date.parse(t)) ? t : null);
+  const secs = (from, to) => {
+    const d = Date.parse(when(to) ?? '') - Date.parse(when(from) ?? '');
+    return Number.isFinite(d) && d >= 0 ? Math.round(d / 1000) : null;
+  };
+  const byTime = (times) => times.map(when).filter(Boolean).sort((a, b) => Date.parse(a) - Date.parse(b));
+  const earliest = (times) => byTime(times)[0] ?? null;
+  const latest = (times) => byTime(times).at(-1) ?? null;
+  // A task began at its stamp, or with the plan where it left none. It ended when it handed
+  // in — a loss recorded after that rewrites its status, not when it answered — or, where it
+  // never did, when its loss was recorded.
+  const startOf = (s) => when(startedOf(round.dir, s.task)) ?? when(p?.planned_at);
+  const endOf = (s) => when(handed.get(s.task)?.submitted_at) ?? when(s.at);
+  const sweepTask = p?.sweep?.task ?? null;
   const coverage = [];
   if (req.mode === 'round') {
     const bySource = new Map();
     const rowOf = (source) => {
-      if (!bySource.has(source)) bySource.set(source, { source, state: null, tasks: 0, candidates: 0, rejected: 0, notes: [], missing: [], models: [] });
+      if (!bySource.has(source)) bySource.set(source, { source, state: null, tasks: 0, candidates: 0, rejected: 0, notes: [], missing: [], models: [], timed: [] });
       return bySource.get(source);
     };
-    // Counts come from what each task handed in, states from its status: a loss recorded
-    // beside a submission changes how covered the task is, not what it found.
-    const handed = new Map(sourceFiles(round.dir).map((f) => {
-      const sub = readJson(path.join(round.dir, 'sources', f));
-      return [sub.task, sub];
-    }));
-    const answers = statuses(round.dir);
     // The Codex pass states one model and level for its row; a finder names its task where
     // it was launched again on another model.
     const passes = new Set(plannedTasks(p).filter((t) => t.kind === 'codex').map((t) => t.task));
@@ -1761,6 +1800,8 @@ function result() {
       // no row: its findings are in the result, its coverage is nobody's.
       if (!reviews(req, s.source)) continue;
       const row = rowOf(s.source);
+      // The sweep runs after the checks, and is timed as a phase of its own.
+      if (s.task !== sweepTask) row.timed.push(s);
       row.state = row.state === null ? s.state : worse(row.state, s.state);
       row.tasks += 1;
       row.candidates += handed.get(s.task)?.candidates.length ?? 0;
@@ -1796,6 +1837,8 @@ function result() {
       const model = row.model ?? (row.models.length ? row.models.join(', ') : null);
       if (model) line.model = model;
       if (row.effort) line.effort = row.effort;
+      // From its first task's start to its last task's end: its tasks run side by side.
+      line.time_s = secs(earliest(row.timed.map(startOf)), latest(row.timed.map(endOf)));
       coverage.push(line);
     }
   }
@@ -1875,13 +1918,35 @@ function result() {
     warnings.push(`coverage-warning: the working tree changed while the round ran (${[...drifted].join(', ')}) — verdicts read a tree the finders did not`);
   }
   findings.sort((a, b) => RANK[a.severity] - RANK[b.severity]);
+  // Each queue call's checks ran from the call to the last verdict it asked for. A verdict let
+  // stand from before the round was no check of this one, and a call nothing answered is left
+  // out rather than guessed at.
+  const checkedAt = (unit) => {
+    const v = verdicts.get(unit);
+    return v && !v.reused ? v.at : null;
+  };
+  let checking = null;
+  for (const c of Array.isArray(q?.calls) ? q.calls : []) {
+    const s = secs(c?.at, latest((Array.isArray(c?.units) ? c.units : []).map(checkedAt)));
+    if (s !== null) checking = (checking ?? 0) + s;
+  }
+  const sweep = sweepTask ? answers.find((s) => s.task === sweepTask) : null;
+  // The round ends at the last thing its store records, not when a result is asked for.
+  const ended = latest([...answers.map(endOf), ...all.map((u) => checkedAt(u.unit))]);
+  const timing = {
+    opened_at: when(req.created_at),
+    ended_at: ended,
+    wall_s: secs(req.created_at, ended),
+    check_s: checking,
+    sweep_s: sweep ? secs(startedOf(round.dir, sweepTask), endOf(sweep)) : null,
+  };
   const out = {
     round: round.id, mode: req.mode, snapshot: req.snapshot,
     base: req.mode === 'round' ? req.base.ref : null,
     tree: req.mode === 'pass' ? (req.tree.ref || 'worktree') : null,
     files: req.mode === 'round' ? req.files.length : 0,
     rung: req.rung || null, language: req.language,
-    coverage, findings, refuted, warnings,
+    coverage, findings, refuted, warnings, timing,
   };
   const check = validate(load, 'result.json', null, out);
   if (check.length) cannot(`the result does not fit its schema: ${JSON.stringify(check)}`);

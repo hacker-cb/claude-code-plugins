@@ -1,0 +1,14 @@
+{
+  "unit": "U1",
+  "verdict": "confirmed",
+  "snapshot": "0a1b2c3",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "side": "base",
+      "absent": true
+    }
+  ],
+  "reused": true,
+  "at": "2100-01-01T00:00:00.000Z"
+}
