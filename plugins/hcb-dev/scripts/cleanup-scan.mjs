@@ -19,7 +19,7 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { dirOk, forgeFor, nameSafe, refNameOk, refOk, repoOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
+import { dirOk, forgeFor, nameSafe, refNameOk, refOk, repoOk, requestsOf, runner, text, worktrees, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node cleanup-scan.mjs [--default <name>] [--default-ref <ref>]'
   + ' [--repo-dir <path>] [--repo <owner/name>] [--no-forge]\n';
@@ -226,32 +226,20 @@ for (let at = 0; at + WIDE <= fields.length; at += WIDE) {
 if (opts.forge && answer.branches.length) {
   answer.forge.asked = true;
   const found = forgeFor(cwd, opts.cli, opts.repo);
-  const reader = found.reader;
   answer.forge.cli = found.cli;
   answer.forge.reason = found.reason;
-  if (reader) {
-    const forge = runner(cwd, answer.forge.cli);
-    const { hostArgs } = found;
+  if (found.reader) {
     for (const b of answer.branches) {
       if (!b.oid || !refOk(b.oid)) continue;
       // By TIP, never by name: a merged `fix/login` may have come from a fork, and the
-      // local branch of that name may have been recreated since. `--paginate`, or an open
-      // request on page two is one the sweep deletes over. The repository goes in the
-      // PATH, because neither CLI's `api` takes a `--repo` — it would read the one the
-      // working directory names and answer about somebody else's requests.
-      const r = forge(['api', ...hostArgs, '--paginate', reader.path(opts.repo, b.oid)]);
-      if (!r.ok) {
-        if (!answer.forge.reason) answer.forge.reason = r.line();
-        continue;
-      }
-      const rows = reader.read(r.out);
-      if (rows === null) {
-        if (!answer.forge.reason) answer.forge.reason = 'the answer was not JSON';
+      // local branch of that name may have been recreated since.
+      const got = requestsOf(found, cwd, opts.repo, b.oid);
+      if (got.error) {
+        if (!answer.forge.reason) answer.forge.reason = got.error;
         continue;
       }
       answer.forge.answered = true;
-      b.requests = rows.filter((q) => q && typeof q === 'object').map((q) => (
-        { ...reader.row(q), mergeInBase: null }));
+      b.requests = got.rows.map((q) => ({ ...q, mergeInBase: null }));
       b.openRequest = b.requests.some((q) => q.state === 'open');
       for (const q of b.requests) {
         if (q.state !== 'merged' || !q.mergeCommit || !answer.base.usable) continue;

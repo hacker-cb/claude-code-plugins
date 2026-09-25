@@ -15,5 +15,7 @@
   "pulls": {
     "f1x7222222222222222222222222222222222222": "[{\"number\": 12, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7222222222222222222222222222222222222\", \"base\": {\"ref\": \"dev\"}}]",
     "f1x7333333333333333333333333333333333333": "[{\"number\": 11, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7333333333333333333333333333333333333\", \"base\": {\"ref\": \"dev\"}}]"
-  }
+  },
+  "remote_name": "origin",
+  "remote_url": "https://github.example.com/acme/app.git"
 }

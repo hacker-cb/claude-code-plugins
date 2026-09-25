@@ -10,15 +10,16 @@
 // that commit, which is how a master learns of a landing nobody reported.
 //
 // Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>]
-//          [--landings-base <branch>] [--move] [--repo-dir <path>]
+//          [--landings-base <branch> --landings-remote <name>] [--move] [--repo-dir <path>]
 //
 //   --ref       the commit to stand on: the base's remote-tracking ref, or the local
 //               parent where the epic completes locally
 //   --contains  a ref --ref must already hold — the remote copy, where --ref is a local
 //               parent that must not lag it
 //   --since     the base's commit the master has taken landings up to
-//   --landings-base  the base's branch as the forge names it: what landed is sorted into
-//               change requests by asking the forge — without it, every commit alone
+//   --landings-base, --landings-remote  the base's branch as the forge names it, and the
+//               remote carrying it: what landed is sorted into change requests by asking
+//               that forge — without them, every commit alone
 //
 // Exit 0 either way: `"read": true` with the verdict, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
@@ -32,13 +33,14 @@ import { dirOk, refNameOk, runner, writeAll } from '../../../scripts/lib/forge.m
 const OWNERS = fileURLToPath(new URL('../../../scripts/worktree-owners.mjs', import.meta.url));
 const LANDINGS = fileURLToPath(new URL('./landings.mjs', import.meta.url));
 const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>]'
-  + ' [--landings-base <branch>] [--move] [--repo-dir <path>]\n';
+  + ' [--landings-base <branch> --landings-remote <name>] [--move] [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `master-tree: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { ref: null, contains: null, since: null, landingsBase: null, move: false, repoDir: null };
+const opts = { ref: null, contains: null, since: null, landingsBase: null, landingsRemote: null, move: false,
+  repoDir: null };
 const FLAGS = { '--ref': 'ref', '--contains': 'contains', '--since': 'since', '--landings-base': 'landingsBase',
-  '--repo-dir': 'repoDir' };
+  '--landings-remote': 'landingsRemote', '--repo-dir': 'repoDir' };
 for (let i = 0; i < argv.length; i += 1) {
   if (argv[i] === '--move') { opts.move = true; continue; }
   // Own keys only: `constructor` or `__proto__` would otherwise read as a flag.
@@ -53,8 +55,13 @@ for (let i = 0; i < argv.length; i += 1) {
 // goes near a URL or a shell — every value is one argv word.
 if (!opts.ref) die('--ref is required — the commit the tree is to stand on');
 if (!refNameOk(opts.ref)) die(`--ref '${opts.ref}' is not a ref this can read`);
-for (const [f, flag] of [['contains', 'contains'], ['since', 'since'], ['landingsBase', 'landings-base']]) {
-  if (opts[f] !== null && !refNameOk(opts[f])) die(`--${flag} '${opts[f]}' is not a ref this can read`);
+for (const [flag, key] of Object.entries(FLAGS)) {
+  if (!['ref', 'repoDir'].includes(key) && opts[key] !== null && !refNameOk(opts[key])) {
+    die(`${flag} '${opts[key]}' is not a ref this can read`);
+  }
+}
+if (Boolean(opts.landingsBase) !== Boolean(opts.landingsRemote)) {
+  die('--landings-base and --landings-remote go together: the branch, and the remote whose forge names it');
 }
 // A directory, proved here: passed on as `cwd` it would come back as a call that failed
 // with nothing on stderr, which reads as a checkout that would not answer.
@@ -239,14 +246,15 @@ if (answer.since) {
 }
 // Which change request each landed commit belongs to is the forge's to say.
 if (answer.since?.to && answer.landedCount > 0) {
+  // Run in the resolved directory, so no --repo-dir is handed on to be resolved a second time.
   const l = spawnSync(process.execPath, [LANDINGS, '--since', answer.since.sha, '--to', answer.since.to,
-    '--base', opts.landingsBase || opts.ref, ...(opts.landingsBase ? [] : ['--no-forge']),
-    ...(opts.repoDir ? ['--repo-dir', opts.repoDir] : [])],
+    '--base', opts.landingsBase || opts.ref,
+    ...(opts.landingsBase ? ['--remote', opts.landingsRemote] : ['--no-forge'])],
   { cwd, encoding: 'utf8', timeout: 600000, maxBuffer: 32 * 1024 * 1024 });
-  try { answer.landings = JSON.parse(l.stdout); } catch { answer.landings = null; }
-  if (!answer.landings || typeof answer.landings !== 'object') {
-    answer.landings = { read: false, reason: (l.stderr || '').trim() || (l.error ? l.error.code : 'no answer') };
-  }
+  let got = null;
+  try { got = JSON.parse(l.stdout); } catch { /* no answer: said below */ }
+  answer.landings = got && typeof got === 'object' ? got
+    : { read: false, reason: (l.stderr || '').trim() || (l.error ? l.error.code : 'no answer') };
 }
 
 if (!answer.linked) {

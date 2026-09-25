@@ -49,6 +49,10 @@ case "$1" in
       [ -n "$v" ] && { echo "$v"; exit 0; }
       exit 1
     fi ;;
+  remote)
+    [ "$*" = "remote get-url $(ask '.remote_name')" ] || refuse "remote asked as: $*"
+    v=$(ask '.remote_url'); [ -n "$v" ] && { echo "$v"; exit 0; }
+    echo "error: No such remote" >&2; exit 2 ;;
   symbolic-ref)
     [ -n "$(moved)" ] && exit 1
     v=$(ask '.branch')

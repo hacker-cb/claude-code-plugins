@@ -20,6 +20,10 @@ case "$1" in
     [ "$*" = "rev-list --first-parent --count $since..$to --" ] || refuse "rev-list asked as: $*"
     n=$(ask '.count'); [ -n "$n" ] || n=$(ask '.log' | grep -c .)
     echo "$n"; exit 0 ;;
+  remote)
+    [ "$*" = "remote get-url $(ask '.remote_name')" ] || refuse "remote asked as: $*"
+    v=$(ask '.remote_url'); [ -n "$v" ] && { echo "$v"; exit 0; }
+    echo "error: No such remote" >&2; exit 2 ;;
   log)
     # Oldest first, one landing's worth of first-parent commits — or no answer.
     [ "$*" = "log --no-show-signature --first-parent --reverse --format=%H %s $since..$to --" ] || refuse "log asked as: $*"
