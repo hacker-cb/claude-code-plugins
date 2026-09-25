@@ -388,6 +388,9 @@ function stampStart(round, task) {
     claimJson(path.join(round.dir, 'started', `${task}.json`), { task, at: new Date().toISOString() });
   } catch { /* the time goes unknown; the task goes on */ }
 }
+// Every queue call with what it queued and when. A queue written before calls were kept holds
+// its groups as one call, begun at a time unknown: its `started_at` was only its last call's.
+const callsOf = (q) => q?.calls ?? (q?.queue?.length ? [{ at: null, units: q.queue }] : []);
 const startedOf = (dir, task) => {
   try { return readJson(path.join(dir, 'started', `${task}.json`)).at ?? null; } catch { return null; }
 };
@@ -1585,15 +1588,13 @@ function queue() {
   }
   // What each call stopped on is its answer's; the file keeps what later calls read.
   // When each call began, with what it queued: a wait takes the latest's groups and counts
-  // from it, and the result times each call's checks by it. A queue written before calls were
-  // kept is one call, begun at its own start or at a time unknown.
-  const earlier = prior.calls ?? (prior.queue.length ? [{ at: prior.started_at ?? null, units: prior.queue }] : []);
+  // from it, and the result times each call's checks by it.
   const q = {
     queue: [...prior.queue, ...order],
     reused: [...prior.reused, ...reused],
     budget_cut: [...prior.budget_cut, ...cut],
     unreachable: [...prior.unreachable, ...unreachable],
-    calls: [...earlier, { at: new Date().toISOString(), units: order }],
+    calls: [...callsOf(prior), { at: new Date().toISOString(), units: order }],
   };
   writeJson(qf, q);
   // The answer names what this call queued; the file holds the whole queue.
@@ -1927,9 +1928,10 @@ function result() {
     const v = verdicts.get(unit);
     return v && !v.reused ? when(v.at) : null;
   };
-  const calls = (q?.calls ?? []).filter((c) => c.units.length);
+  const calls = callsOf(q).filter((c) => c.units.length);
+  const checked = calls.every((c) => c.units.every(checkedAt));
   let checking = null;
-  if (calls.length && calls.every((c) => c.units.every(checkedAt))) {
+  if (calls.length && checked) {
     const spans = calls.map((c) => [Date.parse(c.at), Date.parse(latest(c.units.map(checkedAt)))])
       .sort((a, b) => a[0] - b[0]);
     let [from, to] = spans[0];
@@ -1944,9 +1946,9 @@ function result() {
   // The round ends at the last thing its store records, not when a result is asked for —
   // unknown where a task it started or a group it queued never answered, since the wait on
   // them left no record.
-  const unanswered = ran.some((t) => t.end === null) || calls.some((c) => !c.units.every(checkedAt));
+  const unanswered = ran.some((t) => t.end === null) || !checked;
   const ended = unanswered ? null
-    : latest([...answers.map(endOf), ...all.map((u) => checkedAt(u.unit)), ...(q?.calls ?? []).map((c) => c.at)]);
+    : latest([...answers.map(endOf), ...all.map((u) => checkedAt(u.unit)), ...callsOf(q).map((c) => c.at)]);
   const timing = {
     opened_at: when(req.created_at),
     ended_at: ended,
