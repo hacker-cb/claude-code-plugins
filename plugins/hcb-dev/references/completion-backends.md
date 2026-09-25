@@ -63,7 +63,8 @@ forge call. Publishing is the escalation offer below, and only by consent.
   a closed request. Then push and open it inline, mirrored, with a body per
   [`merge-message.md`](merge-message.md) carrying the closing keywords `issues` names — a
   body filled from the commits carries none — and the labels
-  [`label-lifecycle.md`](label-lifecycle.md) gives it:
+  [`label-lifecycle.md`](label-lifecycle.md) gives it — the script's `wrote` read as that file says,
+  never its exit status:
   ```bash
   # Title, body and label names are files the agent wrote — data, never pasted into this line.
   T="<title file>"; B="<body file>"; A="<the file of label names — a JSON array — per label-lifecycle.md>"

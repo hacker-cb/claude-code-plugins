@@ -152,6 +152,9 @@ an issue takes at close (`label-lifecycle.md`):
 gh issue comment <n> --body-file "<file>" && gh issue close <n> --reason "<reason>"
 # GitLab — the close takes no reason, so the comment carries it; -F reads the file, -f not
 glab api "projects/<project>/issues/<n>/notes" -F body=@"<file>" && glab issue close <n>
+# Either: its labels at close — the parked reason off, the settling change's reading on
+node "${CLAUDE_PLUGIN_ROOT}/scripts/label-write.mjs" --number <n> --kind issue --forge <gh|glab> \
+  --remove "<file: its parked reason>" [--add "<file: the reading>"]
 ```
 
 In a set, each child

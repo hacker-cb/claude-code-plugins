@@ -120,7 +120,7 @@ An open PR for this branch is not recreated — skip to the loop. Otherwise crea
 for review**, never draft ([`references/copilot.md`](references/copilot.md) says what a draft
 costs), titled in `branch-naming.md`'s shape, its body per
 [`../../references/merge-message.md`](../../references/merge-message.md), and carrying the labels
-`label-lifecycle.md` gives it:
+`label-lifecycle.md` gives it — the script's `wrote` read as that file says, never its exit status:
 
 ```bash
 # Title, body and label names are files the agent wrote — data, never pasted into this line.
