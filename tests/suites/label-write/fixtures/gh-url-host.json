@@ -1,0 +1,7 @@
+{
+  "probe_gh": "yes",
+  "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"q\\\"$(touch /tmp/label-write-pwned)`id`\"},{\"name\":\"scope:web/ui x\"},{\"name\":\"a, b\"}]",
+  "labels": [],
+  "pull_request": "yes",
+  "remotes": "origin\thttps://elsewhere.example/team/app.git (fetch)"
+}

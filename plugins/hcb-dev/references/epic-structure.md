@@ -13,15 +13,16 @@ Two labels belong to the plugin's own process, spelled the same in every reposit
 
 | label | colour | description | on |
 |---|---|---|---|
-| `epic` | `5319e7` | An epic run by a coordinating session: the issue its wave ledger hangs on | the umbrella issue — only one a ledger hangs on |
-| `wave` | `c5def5` | One wave of an epic: its plan, its ledger and its batches' returns | each wave issue |
+| `epic` | `d93f0b` | An epic run by a coordinating session: the issue its wave ledger hangs on | the umbrella issue — only one a ledger hangs on |
+| `wave` | `f9d0c4` | One wave of an epic: its plan, its ledger and its batches' returns | each wave issue |
 
 They are **not classification roles** ([`classification.md`](classification.md)): they say where
 an issue stands in the coordination, never its kind of work, component or priority, and a reading
 of a slice's roles, cardinality or tiers reads past them — **unless the repository's own set
 already gives the name a role**. Then that label is read as the set reads it, and applying it is
-a classification edit like any other, which goes to the user. The epic keeps the labels the
-repository classifies it by; a wave issue carries `wave` alone.
+a classification edit like any other, which goes to the user. The epic is classified as the
+parent it is — its kind of work and queue labels, as the user gives them; a wave issue carries
+`wave` alone.
 
 **The role assignment authorizes them**, as it authorizes filing the umbrella: the master
 creates either label where the repository lacks it and applies `epic` to its own epic and
@@ -34,17 +35,18 @@ one the group passes down counts — is the label, whatever colour it has.
 ```bash
 # From a checkout of the epic's own repository, as every command here.
 LABEL="<epic | wave>"; COLOUR="<its colour>"; DESC="<its description>"; N="<the issue>"
+F="$(mktemp)"; printf '["%s"]' "$LABEL" > "$F"; W="<plugin root>/scripts/label-write.mjs"
 # GitHub — created only where the read answers 404; any other failure is unread, never absent
 HOST="$(gh repo view --json url --jq '.url | split("/")[2]')"   # this checkout's, not gh's default
 if ! out=$(gh api --hostname "$HOST" "repos/{owner}/{repo}/labels/$LABEL" 2>&1); then
   case "$out" in *"(HTTP 404)"*) gh label create "$LABEL" --color "$COLOUR" --description "$DESC" ;;
     *) echo "unread: $out"; false ;; esac
-fi && gh issue edit "$N" --add-label "$LABEL"
+fi && node "$W" --number "$N" --kind issue --forge gh --add "$F"
 # GitLab — the same
 if ! out=$(glab api "projects/:fullpath/labels/$LABEL?include_ancestor_groups=true" 2>&1); then
   case "$out" in *"(HTTP 404)"*) glab label create --name "$LABEL" --color "#$COLOUR" --description "$DESC" ;;
     *) echo "unread: $out"; false ;; esac
-fi && glab issue update "$N" --label "$LABEL"
+fi && node "$W" --number "$N" --kind issue --forge glab --add "$F"; rm -f "$F"
 ```
 
 ## The title and the body

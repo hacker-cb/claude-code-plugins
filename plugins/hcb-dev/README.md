@@ -84,7 +84,8 @@ form: you paste every one of them yourself.
   takes, the shape of the issue body, and the three moments worth consulting open
   issues at. Classification against the
   mechanism you adopted, else against what the repository itself defines and
-  uses, is `references/classification.md`. Asked whether one issue still holds, it rules it by
+  uses, is `references/classification.md`; when each label is written, `references/label-lifecycle.md`.
+  Asked whether one issue still holds, it rules it by
   `references/issue-currency.md`'s four verdicts; a whole slice is `backlog-survey`'s. An issue
   that waits on another carries the forge's own dependency link — or, where the forge has none, a
   `Blocked by` line — per `references/issue-links.md`. Called by
@@ -444,7 +445,7 @@ name stands for.
   and on which side. The local half and the published half fail separately and are
   answered separately; it reads and judges, and deletes nothing.
 - [`scripts/branch-publish.mjs`](scripts/branch-publish.mjs) — the name a branch ships
-  under, put on the remote, and the names it used to carry taken off it. **One of the two scripts
+  under, put on the remote, and the names it used to carry taken off it. **One of the three scripts
   here that act**, because the order of the three is the hazard: a rename is refused
   where a request pins the name, the publish is unconditional, and a name comes off the
   remote only after the new one is up. What each push did is read off the remote rather
@@ -453,10 +454,15 @@ name stands for.
 - [`scripts/ledger.mjs`](scripts/ledger.mjs) — where a coordinating session's ledger
   stands on the epic's issue or a wave's, which of the two it is, whether the next write fits under the cap — in bytes, whatever
   unit the forge's own refusal names — and whether the archives beside it and the index
-  naming them agree — and, asked, **the other that acts**: writes a ledger the session
+  naming them agree — and, asked, **another that acts**: writes a ledger the session
   composed, moving the journal's oldest entries into its own archive first where the body is over
   its budget, every write read back; what else may leave stays the session's judgement. `--check`
   reads the text against the ledger's shape.
+- [`scripts/label-write.mjs`](scripts/label-write.mjs) — **the third that acts**: puts labels
+  on one issue or change request and takes them off, the names arriving in a JSON file and leaving
+  in a JSON body — never on a command line, never through a CLI flag that splits them on commas.
+  It refuses a name the repository's set does not hold, since a forge would create it, and says
+  from the carrier read back whether the write landed.
 - [`scripts/epics.mjs`](scripts/epics.mjs) — which epics are open: every issue carrying
   the `epic` label, across every owner the account reaches — its own by default, any
   author's under owners named — on the host the checkout lives on rather than the CLI's
@@ -586,10 +592,19 @@ saying something else. Each file opens by saying what it owns.
   what stands in where the forge carries none. Read wherever an issue is filed, split
   or found waiting on another.
 - [`references/classification.md`](references/classification.md) — how an issue
-  gets classified — against the mechanism the user adopted, else against what the
-  repository itself defines and actually uses — and what to do with one
-  classified outside it. Read wherever an issue is
-  classified or a backlog is read by what its tracker declares.
+  or a change request gets classified — the roles in three layers (goal, outcome,
+  queue) and how many of each a leaf, a parent and a request carry, against the
+  mechanism the user adopted, else against what the repository itself defines and
+  actually uses — and what to do with one classified outside it. Read wherever an
+  issue is classified or a backlog is read by what its tracker declares.
+- [`references/label-model.md`](references/label-model.md) — the families this
+  plugin proposes, their colours and description form, where their values come
+  from, and how a label is renamed or deleted. Read wherever a label set is
+  proposed or a label leaves one.
+- [`references/label-lifecycle.md`](references/label-lifecycle.md) — when each label
+  on an issue or a change request is written, from what, and on which authority:
+  filing, taking up, opening a request, re-deriving it before the merge, and
+  aligning an issue at its close. Read by whatever does any of those.
 - [`references/findings.md`](references/findings.md) — how a finding is rated,
   whether it is fixed in the work that found it, whether it is work put off and so
   worth a tracker entry at all, and the closed list of outcomes one can end in. Read wherever a

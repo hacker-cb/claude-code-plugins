@@ -1,0 +1,7 @@
+{
+  "probe_gh": "yes",
+  "want_host": "forge.example",
+  "want_carrier": "repos/team/app/issues/5",
+  "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"q\\\"$(touch /tmp/label-write-pwned)`id`\"},{\"name\":\"scope:web/ui x\"},{\"name\":\"a, b\"}]",
+  "labels": []
+}

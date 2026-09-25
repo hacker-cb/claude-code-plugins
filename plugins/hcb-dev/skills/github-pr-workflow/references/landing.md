@@ -1,8 +1,7 @@
 # Merging, watching it land, and the report
 
 Read by `hcb-dev:github-pr-workflow` once its fix loop has exited, and before the merge is
-issued. It sits outside the skill because a run that stops at ready — the common one, and
-what every `ask` and `queued` authorization produces — reads none of it.
+issued.
 
 Resolve anything here that this file does not spell out per
 [`../../../references/forge-docs.md`](../../../references/forge-docs.md).
@@ -92,13 +91,14 @@ ISSUES="$(gh api graphql --hostname "$HOST" -F o='{owner}' -F r='{repo}' -F n=<p
 printf '%s\n' "$ISSUES"
 ```
 
-That list is what the forge parsed out of the body, not what the work settles — read it
-against the `issues` threaded in, which are what this PR set out to close. On a direct entry
-with none threaded, the body's own keywords are the list — and where this PR's base is not
-the default branch, a claim to put to the user before anything is closed, never a list to
-close on: a slice's request onto a feature branch is where a set's issue gets closed early.
-Close what is still open explicitly (`hcb-dev:issue-tracking`); carry what stays open into
-the report.
+That list is what the forge parsed out of the body, not what the work settles — read it against the
+`issues` threaded in, which are what this PR set out to close. On a direct entry with none threaded,
+the body's own keywords are the list — and where this PR's base is not the default branch, a claim
+to put to the user before anything is closed, never a list to close on: a slice's request onto a
+feature branch is where a set's issue gets closed early. Close what is still open explicitly
+(`hcb-dev:issue-tracking`); carry what stays open into the report. Each issue closed loses its
+parked reason, and one threaded in or named by the user takes its labels at close, per
+[`../../../references/label-lifecycle.md`](../../../references/label-lifecycle.md).
 
 ### Retiring both refs
 
@@ -143,8 +143,8 @@ Then the report ([`../../../references/report-format.md`](../../../references/re
   review's are, laid out by [`../../../references/findings-table.md`](../../../references/findings-table.md).
   Where nothing called this driver, this report ends the session and `hcb-dev:findings-pass` runs
   over them first — never in a wave's batch, whose return carries them; under an orchestrator, a slice.
-- **`## Issues`** — the issues this PR was to close, at the state read above: closed, or still
-  open and what closing one now waits on.
+- **`## Issues`** — the issues this PR was to close, at the state read above: closed, with the
+  labels its close changed (in `## Without your word` too), or open and what closing waits on.
 - **`## What it leaves`** — a ref Step 6 could not retire, with its `blockers`.
 - **`## Needs your word`** — what the rows above leave to the reader, plus the tech debt, tests
   and related work this merge surfaced. Nothing counted twice.

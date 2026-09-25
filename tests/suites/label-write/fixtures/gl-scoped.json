@@ -1,0 +1,9 @@
+{
+  "probe_glab": "yes",
+  "scoped": "yes",
+  "set": "[{\"name\":\"priority::high\"},{\"name\":\"priority::low\"},{\"name\":\"scope:api\"}]",
+  "labels": [
+    "priority::low",
+    "scope:api"
+  ]
+}

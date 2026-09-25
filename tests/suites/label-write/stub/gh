@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# The carrier's labels live in a store beside the marker, which the runner removes before each
+# case: its absence is this case's first call.
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+me=${STUB_AS:-$(basename "$0")}
+store="${STUB_MARKER_FILE:-/tmp/label-write-stub}.store"
+if [ ! -f "${STUB_MARKER_FILE:-/nonexistent}" ]; then
+  rm -rf "$store"; mkdir -p "$store"; : > "${STUB_MARKER_FILE:-/tmp/label-write-stub}"
+  jq -c '.labels // []' "$env" > "$store/labels"; echo 0 > "$store/writes"; echo 0 > "$store/reads"
+fi
+urldecode() { local s=${1//+/ }; printf '%b' "${s//%/\\x}"; }
+
+# The probe: which forge answers for this repository, and on which host.
+if [ "$me" = gh ] && [ "$1 $2" = "repo view" ]; then
+  [ "$(ask '.probe_gh')" = yes ] || { echo "no GitHub repository here" >&2; exit 1; }
+  # A named repository: HOST/OWNER/REPO where a host leads it, else the checkout's own.
+  case "$3" in
+    */*/*) h=${3%%/*}; r=${3#*/}; echo "{\"url\":\"https://$h/$r\",\"nameWithOwner\":\"$r\"}" ;;
+    */*) [ "$(ask '.bare_repo')" = elsewhere ] && { echo '{"url":"https://github.example/'"$3"'","nameWithOwner":"'"$3"'"}'; exit 0; }
+         echo "{\"url\":\"https://forge.example/$3\",\"nameWithOwner\":\"$3\"}" ;;
+    *) echo '{"url":"https://forge.example/team/app","nameWithOwner":"team/app"}' ;;
+  esac
+  exit 0
+fi
+[ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
+host="" method=GET input="" path="" paginate=0 prev=""
+for a in "$@"; do
+  case "$prev" in --hostname) host=$a ;; --method) method=$a ;; --input) input=$a ;; esac
+  case "$a" in repos/*|projects/*) path=$a ;; --paginate) paginate=1 ;; esac
+  prev=$a
+done
+if [ "$me" = glab ] && [ "$method" = GET ] && [ -z "$(printf %s "$path" | grep -E '/(issues|merge_requests|labels)')" ]; then
+  [ "$(ask '.probe_glab')" = yes ] || { echo "404 Project Not Found" >&2; exit 1; }
+  # A project named by path answers only under its own path, as a real instance does.
+  pp=$(ask '.project_path'); if [ -n "$pp" ] && [ "$path" != "projects/:fullpath" ]; then
+    [ "$(urldecode "${path#projects/}")" = "$pp" ] || { echo "glab: 404 Project Not Found (HTTP 404)" >&2; exit 1; }
+  fi
+  echo "{\"web_url\":\"https://lab.example$(ask '.relative_root')/team/app\",\"path_with_namespace\":\"team/app\"}"; exit 0
+fi
+want=$(ask '.want_host'); [ -z "$want" ] || [ "$want" = "$host" ] || { echo "went to '${host:-the default host}', not '$want'" >&2; exit 1; }
+
+case "$path" in
+  */labels\?*)  # the set
+    [ "$paginate" = 1 ] || { echo "the set was read unpaginated" >&2; exit 1; }
+    s=$(ask '.set'); [ -n "$s" ] && [ "$s" != unread ] || { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }
+    printf '%s\n' "$s"; exit 0 ;;
+esac
+
+carrier=${path%%/labels*}
+want=$(ask '.want_carrier'); [ -z "$want" ] || [ "$want" = "$carrier" ] || { echo "carrier '$carrier', not '$want'" >&2; exit 1; }
+
+if [ "$method" = GET ]; then
+  n=$(cat "$store/reads"); echo $((n + 1)) > "$store/reads"
+  [ "$(ask '.readback')" = fail ] && [ "$n" -ge 1 ] && { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }
+  if [ "$me" = gh ]; then jq -c --arg pr "$(ask '.pull_request')" '{labels: map({name: .})} + (if $pr == "yes" then {pull_request: {url: "x"}} else {} end)' "$store/labels"
+  else jq -c '{labels: .}' "$store/labels"; fi
+  exit 0
+fi
+
+# A write. The name must travel in the body: an argv holding a label flag is a failure here.
+for a in "$@"; do case "$a" in --label|--add-label|--remove-label|--unlabel|-f|-F|--field|--raw-field) echo "a label passed as a flag" >&2; exit 1 ;; esac; done
+w=$(cat "$store/writes"); echo $((w + 1)) > "$store/writes"
+fail=$(ask '.write_fail')
+[ "$fail" = refuse ] && { echo "$me: Forbidden (HTTP 403)" >&2; exit 1; }
+[ "$fail" = ignore ] && { echo '[]'; exit 0; }
+[ "$fail" = delete ] && [ "$method" = DELETE ] && { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }
+echo "$method ${path##*/}" >> "$store/calls"
+cur=$(cat "$store/labels")
+if [ "$me" = gh ]; then
+  case "$method" in
+    POST) [ -n "$input" ] || { echo "an add without --input" >&2; exit 1; }
+          adds=$(jq -c '.labels' "$input")
+          [ "$fail" = partial ] && adds=$(jq -c '.[:1]' <<<"$adds")
+          cur=$(jq -c --argjson a "$adds" '. + $a | unique' <<<"$cur") ;;
+    # A server resolves a bare `.` step away: `…/labels/.` is `…/labels`, which takes every label off.
+    DELETE) case "$path" in */labels/.) echo '[]' > "$store/labels"; echo '[]'; exit 0 ;; esac
+          name=$(urldecode "${path##*/labels/}")
+          cur=$(jq -c --arg n "$name" 'map(select(. != $n))' <<<"$cur") ;;
+    *) echo "a label write here is POST or DELETE, not $method" >&2; exit 1 ;;
+  esac
+else
+  [ "$method" = PUT ] || { echo "a label write here is a PUT, not $method" >&2; exit 1; }
+  # An account that may not label: GitLab answers success and applies nothing.
+  [ "$(ask '.ignore_writes')" = yes ] && { echo '{}'; exit 0; }
+  [ -n "$input" ] || { echo "a PUT without --input" >&2; exit 1; }
+  add=$(jq -r '.add_labels // ""' "$input"); rm=$(jq -r '.remove_labels // ""' "$input")
+  cur=$(jq -c --arg a "$add" --arg r "$rm" '(. + ($a | split(",") | map(select(. != "")))) - ($r | split(",")) | unique' <<<"$cur")
+  # A scoped label displaces its sibling of the same key, as a paid tier does.
+  if [ "$(ask '.scoped')" = yes ]; then
+    cur=$(jq -c --arg a "$add" '($a | split(",") | map(select(contains("::")) | sub("::[^:]*$"; ""))) as $k
+      | map(. as $l | select(($l | contains("::") | not) or ((($l | sub("::[^:]*$"; "")) as $s | $k | any(. == $s)) | not)
+          or ($a | split(",") | any(. == $l))))' <<<"$cur")
+  fi
+fi
+echo "$cur" > "$store/labels"
+[ "$fail" = landed ] && { echo "$me: Bad Gateway (HTTP 502)" >&2; exit 1; }
+echo '{}'

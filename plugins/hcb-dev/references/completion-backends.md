@@ -62,12 +62,21 @@ forge call. Publishing is the escalation offer below, and only by consent.
   and once the request is open the name is fixed, renaming meaning a deleted head ref and
   a closed request. Then push and open it inline, mirrored, with a body per
   [`merge-message.md`](merge-message.md) carrying the closing keywords `issues` names — a
-  body filled from the commits carries none:
+  body filled from the commits carries none — and the labels
+  [`label-lifecycle.md`](label-lifecycle.md) gives it — the script's `wrote` read as that file says,
+  never its exit status:
   ```bash
+  # Title, body and label names are files the agent wrote — data, never pasted into this line.
+  T="<title file>"; B="<body file>"; A="<the file of label names — a JSON array — per label-lifecycle.md>"
+  W="<plugin root>/scripts/label-write.mjs"
   # GitHub
-  gh pr create   --base <parent> --head <branch> --title "<title>" --body "<body>"
+  OUT="$(gh pr create --base <parent> --head <branch> --title "$(cat "$T")" --body-file "$B")"
   # GitLab
-  glab mr create --target-branch <parent> --source-branch <branch> --title "<title>" --description "<body>"
+  OUT="$(glab mr create --target-branch <parent> --source-branch <branch> --title "$(cat "$T")" \
+    --description "$(cat "$B")" --yes)"
+  # Either: the request's URL out of what it printed, then its labels.
+  printf '%s\n' "$OUT"; URL="$(printf '%s' "$OUT" | grep -oE 'https?://[^ ]+/(pull|merge_requests)/[0-9]+' | tail -n 1)"
+  [ -n "$URL" ] && node "$W" --url "$URL" --add "$A"
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md), the installed CLI's
   `--help` first. A ref published under `old-name` stays here too — nothing on this path proves

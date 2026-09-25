@@ -2,10 +2,22 @@
 
 Read by whatever *lands* work: a change-request driver on its way to a merge, and
 a local merge that collapses a branch into one commit. It owns the text they
-leave behind — what the body must say by the time it is merged, and what the
-merge's own message says. Names — the branch, the commit subject, the request
+leave behind — what the body says from the request's opening to its merge, and
+what the merge's own message says. Names — the branch, the commit subject, the request
 title — are [`branch-naming.md`](branch-naming.md)'s; what becomes of the branch
 afterwards is [`branch-retirement.md`](branch-retirement.md)'s.
+
+## The body at opening
+
+What changed and why, in the user's own framing where it is known — a short
+summary, then the notable changes — and a closing keyword for every issue this
+change settles: the `issues` a flow upstream threaded in, or on a direct entry
+the ones the user names. The keyword is the forge's own word, verbatim, never
+translated to match the prose around it — English on both forges by default;
+which words a forge matches, whether its pattern can be reconfigured, and where
+it acts on one is [`forge-docs.md`](forge-docs.md). Write it whatever the base;
+where the forge will not act on it, closing those issues is
+`hcb-dev:issue-tracking`'s, on the go-ahead it names.
 
 ## The body describes what is landing
 

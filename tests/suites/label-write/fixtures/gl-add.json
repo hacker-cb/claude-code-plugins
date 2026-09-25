@@ -1,0 +1,9 @@
+{
+  "probe_glab": "yes",
+  "want_host": "lab.example",
+  "want_carrier": "projects/team%2Fapp/merge_requests/7",
+  "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"scope:old\",\"archived\":true}]",
+  "labels": [
+    "type:bug"
+  ]
+}

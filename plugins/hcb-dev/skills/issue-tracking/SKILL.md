@@ -100,12 +100,13 @@ it; never the lowest numbers and never a relevance-ranked search hit. Identifier
 and paths stay verbatim whatever the language.
 
 Labels, native types and milestones — that same reference, before applying any of
-them and before proposing one the repository lacks.
+them; proposing one the repository lacks is
+[`../../references/label-model.md`](../../references/label-model.md)'s.
 
 ## Hierarchy and dependencies are separate questions
 
-**Hierarchy** — one child per independently completable piece, and the parent
-carries its own kind of work; written per
+**Hierarchy** — one child per independently completable piece, the labels of both per
+[`../../references/label-lifecycle.md`](../../references/label-lifecycle.md); written per
 [`../../references/forge-docs.md`](../../references/forge-docs.md).
 
 **Dependencies** — what blocks what: when an edge is written, in what, and what stands in
@@ -137,18 +138,13 @@ all. A whole slice is `hcb-dev:backlog-survey`'s.
 Where a bare `#N` would not autolink — documentation, code comments, anything read
 outside its own issue or change request — write `[#N](<url>)`.
 
-The closing keyword is the forge's own — the word its pattern matches, verbatim,
-never translated to match the prose around it. That word is English on both forges
-by default. Which words a forge matches, and whether its pattern can be
-reconfigured at all, is `../../references/forge-docs.md`.
-
-A closing keyword in the change request body closes the issue **only where the
-forge acts on it** — which it does for a request targeting the default branch, and
-not for one targeting a feature branch or any other trunk the repository merges
-into. Write the keyword anyway; where the forge will not act on it, and wherever
-the work completes with no change request at all, close or link the issue
-explicitly once the work lands, with the user's go-ahead — the close carrying
-what settled it, which the table above reads back:
+The closing keyword goes into the change request body per
+[`../../references/merge-message.md`](../../references/merge-message.md), and closes
+the issue **only where the forge acts on it** (`../../references/forge-docs.md`).
+Where it will not, and wherever the work completes with no change request at all,
+close or link the issue explicitly once the work lands, with the user's go-ahead —
+the close carrying what settled it, which the table above reads back, and the labels
+an issue takes at close (`label-lifecycle.md`):
 
 ```bash
 # The comment goes from a file: inline in quotes, the shell runs the backquotes it holds.
@@ -156,6 +152,9 @@ what settled it, which the table above reads back:
 gh issue comment <n> --body-file "<file>" && gh issue close <n> --reason "<reason>"
 # GitLab — the close takes no reason, so the comment carries it; -F reads the file, -f not
 glab api "projects/<project>/issues/<n>/notes" -F body=@"<file>" && glab issue close <n>
+# Either: its labels at close — the parked reason off, the settling change's reading on
+node "${CLAUDE_PLUGIN_ROOT}/scripts/label-write.mjs" --number <n> --kind issue --forge <gh|glab> \
+  --remove "<file: its parked reason>" [--add "<file: the reading>"]
 ```
 
 In a set, each child
@@ -172,7 +171,8 @@ session, whatever carried it here — whoever that order names **for writing to 
 addressee named for its forks is not that, and an order naming none leaves the user. Opening or
 updating anything waits for it, every time. **A standing instruction to work autonomously is not
 that answer** — it authorizes the work, not the tracker — and an approval covers the batch it
-was given for, never what turns up afterwards.
+was given for, never what turns up afterwards. The label writes `label-lifecycle.md`'s
+authority table names ride on another answer instead.
 
 **The answer takes the form the person gives it**, and three forms answer: agreement with what
 was recommended; a bar — "file the important ones" — settling every candidate of that pass which
@@ -188,7 +188,7 @@ one unanswered: ask again rather than filling it in.
 ## Reference files
 
 - [`../../references/classification.md`](../../references/classification.md) — read
-  it before applying anything to an issue, and before proposing one.
+  it before applying anything to an issue; [`../../references/label-model.md`](../../references/label-model.md) before proposing one.
 - [`../../references/findings.md`](../../references/findings.md) — read
   it before proposing an out-of-scope finding: it owns the rating, the scope test
   and the outcome each one ends in.
