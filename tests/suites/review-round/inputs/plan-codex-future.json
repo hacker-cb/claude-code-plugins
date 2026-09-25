@@ -1,0 +1,16 @@
+{
+  "rung": "medium",
+  "depth": false,
+  "budget": 15,
+  "tasks": [
+    {
+      "task": "codex",
+      "source": "codex",
+      "kind": "codex",
+      "category": "correctness",
+      "limit": 12
+    }
+  ],
+  "sweep": null,
+  "planned_at": "2100-01-01T00:00:00.000Z"
+}

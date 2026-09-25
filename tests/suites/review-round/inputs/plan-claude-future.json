@@ -1,0 +1,51 @@
+{
+  "rung": "medium",
+  "depth": false,
+  "budget": 15,
+  "tasks": [
+    {
+      "task": "line-by-line",
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "limit": 6
+    },
+    {
+      "task": "removed-behavior",
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "limit": 6
+    },
+    {
+      "task": "call-tracing",
+      "source": "claude",
+      "kind": "finder",
+      "category": "correctness",
+      "limit": 6
+    },
+    {
+      "task": "reuse",
+      "source": "claude",
+      "kind": "finder",
+      "category": "reuse",
+      "limit": 6
+    },
+    {
+      "task": "simplification",
+      "source": "claude",
+      "kind": "finder",
+      "category": "simplification",
+      "limit": 6
+    },
+    {
+      "task": "project-rules",
+      "source": "claude",
+      "kind": "finder",
+      "category": "project-rules",
+      "limit": 6
+    }
+  ],
+  "sweep": null,
+  "planned_at": "2100-01-01T00:00:00.000Z"
+}

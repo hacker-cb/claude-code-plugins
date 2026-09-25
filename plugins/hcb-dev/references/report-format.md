@@ -49,6 +49,8 @@ What the report goes on to ask is never announced there as settled.
   footer among them.
 - **No bracket tags.** A category is a heading, a group, a column or a label — never `[text]`
   inside a line.
+- **A time** reads `<m> min <s> s`, under a minute `<s> s`. One not known is `—` where it stands
+  alone in a cell, and is left out of a cell listing several.
 - **A block or a group with nothing in it is left out**, the ask block included — "nothing waits
   on you" is the first line's to say. Two stand anyway: `## Findings`, whose header line says
   `0 after dedup`, and a block an occasion keeps to show it looked, which says that in one bullet.
