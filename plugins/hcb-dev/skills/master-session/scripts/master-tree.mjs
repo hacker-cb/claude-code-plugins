@@ -6,7 +6,8 @@
 // This measures whether that switch is safe and, with --move, makes it. It does not fetch
 // the base — `resolve-base.mjs` refreshes the ref it is handed — and never stashes,
 // resets or cleans: a tree that is not safe to move is reported with what stands in it,
-// and clearing that is the user's.
+// and clearing that is the user's. Without --move it is also the check a read of the
+// working tree takes first: whether what is on disk is the commit `head` names.
 //
 // Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--move] [--repo-dir <path>]
 //
@@ -20,8 +21,11 @@
 
 import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { dirOk, refNameOk, runner, writeAll } from '../../../scripts/lib/forge.mjs';
 
+const OWNERS = fileURLToPath(new URL('../../../scripts/worktree-owners.mjs', import.meta.url));
 const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--move]'
   + ' [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `master-tree: ${m}\n${USAGE}`); process.exit(2); };
@@ -49,7 +53,8 @@ if (opts.contains !== null && !refNameOk(opts.contains)) {
 // with nothing on stderr, which reads as a checkout that would not answer.
 if (opts.repoDir !== null && !dirOk(opts.repoDir)) die(`--repo-dir '${opts.repoDir}' is not a directory`);
 
-const git = runner(opts.repoDir || process.cwd(), 'git');
+const cwd = opts.repoDir || process.cwd();
+const git = runner(cwd, 'git');
 
 const LIST = 20;
 const answer = {
@@ -59,17 +64,25 @@ const answer = {
   head: null, detached: null, branch: null,
   ref: { name: opts.ref, sha: null },
   contains: opts.contains === null ? null : { name: opts.contains, sha: null, held: null },
+  // Live sessions other than this run standing in this worktree: a move changes files
+  // under them.
+  others: [],
   // A sparse checkout holds part of the tree on disk: its files answer for the base only
   // through the base's own objects.
   sparse: null,
+  // Paths whose index flags keep a change out of `git status` (assume-unchanged,
+  // skip-worktree): on disk they need not be the commit `head` names.
+  hidden: [], hiddenCount: 0,
+  // Every submodule path, and a former submodule's checkout a switch left behind: its files
+  // on disk are not the base's, and are read through the submodule's own objects.
+  submodules: [],
   // An operation git left half done — a rebase, a merge, a cherry-pick, a sequence of them, a
   // bisect — which a switch would refuse or carry, and which is the user's to finish.
   inProgress: [],
-  // What `git status` lists, save a submodule whose checkout merely lags the commit the
-  // index records: a switch moves that commit and leaves the checkout where it was, and
-  // counting it would stop every move after the first. Those lag in `submodulesBehind`:
-  // their files on disk are not the base's.
-  dirty: [], dirtyCount: 0, submodulesBehind: [],
+  // What `git status` lists, save a submodule whose checkout merely lags the commit the index
+  // records, and the checkout of one the base removed: a switch leaves both, and counting them
+  // would stop every move after the first.
+  dirty: [], dirtyCount: 0,
   // Commits HEAD carries that neither the base, a remote nor another branch holds: work of
   // this tree's own, or a base rewritten under it. A switch away from them strands them.
   ownWork: [], ownWorkCount: 0,
@@ -142,6 +155,29 @@ if (!answer.linked) {
   finish();
 }
 
+const top = dir('--show-toplevel');
+
+// --- who else stands in this tree: the live-session registry, read by the script that owns
+// it. A registry that could not be read leaves the question open, which stops a move as a
+// second session does.
+const o = spawnSync(process.execPath, [OWNERS, ...(opts.repoDir ? ['--repo-dir', opts.repoDir] : [])],
+  { cwd, encoding: 'utf8', timeout: 120000, maxBuffer: 32 * 1024 * 1024 });
+let owners = null;
+try { owners = JSON.parse(o.stdout); } catch { owners = null; }
+if (!owners || owners.read !== true || !Array.isArray(owners.worktrees)) {
+  refuse(`could not read who stands in this worktree (${owners?.reason || (o.stderr || '').trim() || 'no answer'})`);
+}
+const mine = owners.worktrees.find((w) => w && w.isHere);
+answer.others = (mine?.sessions || []).filter((s) => !s.isThisRun).map((s) => s.pid);
+if (owners.probeFailed || !mine) {
+  answer.blockers.push('the live-session registry could not be read — whether another session'
+    + ' stands in this tree is unknown');
+}
+if (answer.others.length) {
+  answer.blockers.push(`another session stands in this tree (pid ${answer.others.join(', ')}) — a move`
+    + ' would change files under it');
+}
+
 const sp = git(['config', '--bool', 'core.sparseCheckout']);
 // 1 is "not set"; any other failure did not answer.
 if (!sp.ok && sp.code !== 1) refuse(`could not read whether this checkout is sparse (${why(sp)})`);
@@ -170,6 +206,25 @@ if (answer.contains) {
   }
 }
 
+// --- what the index says of the tree: each entry's tag and mode. A lowercase tag is
+// assume-unchanged and `S` skip-worktree — either keeps a change out of `git status`; mode
+// 160000 is a submodule. Read again after a switch, which changes both.
+const readIndex = () => {
+  const ls = git(['ls-files', '-s', '-v', '-z']);
+  if (!ls.ok) return `the index (${why(ls)})`;
+  const hidden = [];
+  const subs = [];
+  for (const e of ls.out.split('\0')) {
+    const m = /^(\S) (\d+) \S+ \d+\t([\s\S]*)$/.exec(e);
+    if (!m) continue;
+    if (m[1] !== m[1].toUpperCase() || m[1] === 'S') hidden.push(m[3]);
+    if (m[2] === '160000') subs.push(m[3]);
+  }
+  listed('hidden', hidden);
+  answer.submodules = subs;
+  return null;
+};
+
 // --- what stands in the tree. Porcelain v2: every entry opens with its kind, so nothing a
 // trim takes off the ends is part of one, and a submodule entry says what changed in it.
 // Untracked files and submodules named outright — a config hiding either hides what a
@@ -179,14 +234,19 @@ const readDirty = () => {
   if (!st.ok) return `the working tree's status (${why(st)})`;
   const tokens = st.out.split('\0');
   const out = [];
-  const lagging = [];
   // Fields before the path: 8 for an ordinary change, 9 for a rename or copy, 10 for an
   // unmerged one.
   const fields = { 1: 8, 2: 9, u: 10 };
   for (let i = 0; i < tokens.length; i += 1) {
     const t = tokens[i];
     if (t === '' || t[0] === '#' || t[0] === '!') continue;
-    if (t[0] === '?') { out.push(`?? ${t.slice(2)}`); continue; }
+    if (t[0] === '?') {
+      const path = t.slice(2);
+      // A directory holding its own `.git` is the checkout of a submodule the base removed.
+      if (path.endsWith('/') && existsSync(join(top, path, '.git'))) answer.submodules.push(path.slice(0, -1));
+      else out.push(`?? ${path}`);
+      continue;
+    }
     const n = fields[t[0]];
     if (!n) return 'the working tree\'s status, which came back in a shape this cannot read';
     const parts = t.split(' ');
@@ -194,14 +254,13 @@ const readDirty = () => {
     let entry = `${xy} ${parts.slice(n).join(' ')}`;
     // A rename or a copy carries its source as the next field, which is not an entry.
     if (t[0] === '2') { i += 1; entry += ` (from ${tokens[i] ?? 'an unnamed path'})`; }
-    if (xy === '.M' && sub === 'SC..') lagging.push(parts.slice(n).join(' '));
-    else out.push(entry);
+    if (!(xy === '.M' && sub === 'SC..')) out.push(entry);
   }
   listed('dirty', out);
-  answer.submodulesBehind = lagging;
   return null;
 };
-const unread = readDirty();
+const readTree = () => readIndex() || readDirty();
+const unread = readTree();
 if (unread) refuse(`could not read ${unread}`);
 if (answer.dirtyCount) {
   answer.blockers.push(`the tree carries ${answer.dirtyCount} uncommitted change(s) — a master's tree`
@@ -242,7 +301,7 @@ if (opts.move && answer.movable) {
     // The tree is read again whatever the switch answered: an interrupted one may have
     // written half of what it meant to.
     const lost = readHead(false);
-    const after = readDirty();
+    const after = readTree();
     if (lost || after) {
       answer.move = 'unread';
       answer.moveError = [answer.moveError, `after the switch, could not read ${lost || after}`]

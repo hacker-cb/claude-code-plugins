@@ -11,6 +11,11 @@ cfg=" "
 while [ "$1" = "-c" ]; do cfg="$cfg$2 "; shift 2; done
 case "$1" in
   rev-parse)
+    # What `worktree-owners.mjs` asks, from the caller's directory: a checkout, and where it stands.
+    [ "$*" = "rev-parse --git-dir" ] && { echo ".git"; exit 0; }
+    if [ "$*" = "rev-parse --show-toplevel" ]; then
+      v=$(ask '.here'); echo "${v:-/tmp/example-checkout/.claude/worktrees/master-a1b2c3}"; exit 0
+    fi
     # Answered one directory at a time, and in the absolute form only. The envelope's paths
     # are relative to the repository root the runner works from; `old_git` plays a git that
     # prints the unknown flag back.
@@ -20,6 +25,7 @@ case "$1" in
       case "$3" in
         --git-dir) echo "$PWD/$(ask '.git_dir')"; exit 0 ;;
         --git-common-dir) echo "$PWD/$(ask '.common_dir')"; exit 0 ;;
+        --show-toplevel) v=$(ask '.top'); echo "$PWD/${v:-tests/suites/master-tree/trees/linked/common}"; exit 0 ;;
       esac
     fi
     if [ "$2 $3" = "--verify -q" ]; then
@@ -45,6 +51,18 @@ case "$1" in
     if [ "$2 $3" = "--bool core.sparseCheckout" ]; then
       case "$(ask '.sparse')" in "") exit 1 ;; fail) exit 128 ;; *) ask '.sparse'; exit 0 ;; esac
     fi ;;
+  worktree)
+    # The listing `worktree-owners.mjs` reads: the main checkout and this linked one, in the
+    # `-z` shape — the line form with NUL where the newlines are.
+    v=$(ask '.worktrees')
+    [ -n "$v" ] || v=$(printf '%s\n' "worktree /tmp/example-checkout" "HEAD f1x7eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" \
+      "branch refs/heads/dev" "" "worktree /tmp/example-checkout/.claude/worktrees/master-a1b2c3" \
+      "HEAD f1x7eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" "detached")
+    printf '%s\n\n' "$v" | tr '\n' '\0'; exit 0 ;;
+  ls-files)
+    [ "$*" = "ls-files -s -v -z" ] || refuse "ls-files asked as: $*"
+    v=$(ask '.ls'); [ -n "$v" ] && printf '%s\n' "$v" | tr '\n' '\0'
+    exit 0 ;;
   merge-base)
     # Ancestor first: the remote copy the local parent must hold, then the parent.
     [ "$3" = "$(ask '.refs["refs/remotes/origin/epic"]')" ] && [ "$4" = "$(ask '.refs["refs/heads/epic"]')" ] \

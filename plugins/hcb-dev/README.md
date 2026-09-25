@@ -279,8 +279,9 @@ the plan stages them.
   [`skills/master-session/references/master-tree.md`](skills/master-session/references/master-tree.md).
   Whether the tree may move, and the switch itself, is
   [`skills/master-session/scripts/master-tree.mjs`](skills/master-session/scripts/master-tree.mjs):
-  the main checkout is never moved, and an uncommitted change, a commit no remote holds or
-  an operation left half done stops the move rather than being stashed, reset or stranded.
+  the main checkout is never moved, and another session in the tree, an uncommitted change,
+  a commit no remote holds or an operation left half done stops the move rather than being
+  stashed, reset or stranded.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
   What can start right now, recomputed rather than recalled: pin and refresh the
   base and read every fact through that ref rather than through a working tree,
