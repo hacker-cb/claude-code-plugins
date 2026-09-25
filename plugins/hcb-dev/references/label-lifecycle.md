@@ -9,19 +9,26 @@ authority. The roles are [`classification.md`](classification.md)'s, the invocat
 reads back what landed ([`forge-behaviour.md`](forge-behaviour.md)). A value the work needs and
 the set lacks is named in the report, never created ([`label-model.md`](label-model.md)).
 
+**A name something keys on is the user's to write.** Before the first write of a run, read what
+in the repository reacts to a label — a workflow triggered on `labeled` or `unlabeled`, a merge,
+release or deploy rule matching a name; a name it matches, added or taken off, goes to the user
+rather than onto the carrier.
+
 ## Passing a name
 
 A label name reaches a command as data — written to a file out of the set's answer, one per line,
 and read inside the block — never pasted into one: a name may carry `$`, quotes and backticks.
+The CLIs split a flag's value on commas, so a name holding a comma or a double quote goes through
+the REST call `forge-docs.md` names for it instead, its names in a JSON body.
 
 ```bash
-F="<the file of names, written out of the set's answer; empty where there are none>"
+F="<the file of names, written out of the set's answer — an empty file where there are none>"
 FLAG="<the flag the invocation takes per name: --label, --add-label, --remove-label, --unlabel>"
-ARGS=(); while IFS= read -r l; do [ -n "$l" ] && ARGS+=("$FLAG" "$l"); done < "$F"
-# then the invocation forge-docs.md gives, with "${ARGS[@]}" in place of its label flags;
-# read back captured, never piped — a failed read and an empty answer look alike:
-OUT="$(gh pr view <pr> --json labels)" || echo "UNREAD <pr>"           # GitHub
-OUT="$(glab mr view <mr> -F json)" && jq '.labels' <<<"$OUT" || echo "UNREAD <mr>"   # GitLab
+ARGS=(); while IFS= read -r l || [ -n "$l" ]; do [ -n "$l" ] && ARGS+=("$FLAG" "$l"); done < "$F"
+# then the invocation forge-docs.md gives, "${ARGS[@]}" in place of its label flags; read back
+# captured, never piped — a failed read and an empty answer look alike ("pr" or "issue"):
+OUT="$(gh <pr|issue> view <n> --json labels)" && printf '%s\n' "$OUT" || echo "UNREAD <n>"
+OUT="$(glab <mr|issue> view <n> -F json)" && jq '.labels' <<<"$OUT" || echo "UNREAD <n>"
 ```
 
 ## Filing and splitting
@@ -56,10 +63,6 @@ being where the reading starts rather than the answer. Never a queue label; no k
 the repository runs that as a native type. A set with no kind-of-work or outcome family gives the
 request none, said in one line of the report.
 
-**A name something keys on is the user's to set.** Before the first label of a run, read what in
-the repository reacts to one — a workflow triggered on `labeled`, a merge or deploy rule matching a
-name; a name it matches goes to the user rather than onto the request.
-
 **Re-derived with the body** ([`merge-message.md`](merge-message.md)) — before the merge, and after
 a push that changes which files the request touches. A request whose labels describe something
 else is not ready to merge — save where the account cannot label it: the read-back shows none
@@ -67,14 +70,15 @@ landed, and the report names the labels for someone who can.
 
 ## At close
 
-**An issue a change settled** — one threaded in or named by the user, never one the body's
-keywords alone name — takes that change's reading in place of its forecast: a leaf its kind of
-work and outcome, a parent its kind of work alone. The reading is the request's labels where it
-settled that issue alone and carries them; otherwise the part of the diff that settled it, read
-as a request's are above, split by the session that did the work. The kind of work goes into the
-mechanism the repository runs it in, a native type included. An issue in another repository is
-aligned against that repository's own set, a role it has no vocabulary for left and named. Where
-the session cannot tell, the issue keeps what it carried and the report says so.
+**An issue a change settled** — one threaded in or named by the user, never one the body's keywords
+alone name — takes that change's reading in place of its forecast: a leaf its kind of work and
+outcome; a parent no outcome, and its children's dominant kind, read again. A leaf's reading is the
+request's labels where it settled that issue alone and carries them, a role the request cannot carry
+— a kind of work run as a native type — read from its diff; otherwise the part of the diff that
+settled it, read as a request's are above, split by the session that did the work. The kind of work
+goes into the mechanism the repository runs it in, a native type included. An issue in another
+repository is aligned against that repository's own set, a role it has no vocabulary for left and
+named. Where the session cannot tell, the issue keeps what it carried and the report says so.
 
 **Any close** takes the parked reason off and keeps the priority; an issue closed with no change
 behind it — not planned, a duplicate — keeps everything else.
@@ -98,4 +102,4 @@ aligns nothing.
   ([`completion-backends.md`](completion-backends.md)), and nothing re-derives them or aligns its
   issues at close.
 - **A server without hierarchy** tells no parent from a leaf: every issue there is read as a leaf,
-  and the report says so.
+  save one carrying `epic`, and the report says so.

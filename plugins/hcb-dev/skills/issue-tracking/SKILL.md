@@ -140,7 +140,7 @@ outside its own issue or change request — write `[#N](<url>)`.
 
 The closing keyword goes into the change request body per
 [`../../references/merge-message.md`](../../references/merge-message.md), and closes
-the issue **only where the forge acts on it**: a request into the default branch.
+the issue **only where the forge acts on it** (`../../references/forge-docs.md`).
 Where it will not, and wherever the work completes with no change request at all,
 close or link the issue explicitly once the work lands, with the user's go-ahead —
 the close carrying what settled it, which the table above reads back, and the labels
@@ -185,7 +185,7 @@ one unanswered: ask again rather than filling it in.
 ## Reference files
 
 - [`../../references/classification.md`](../../references/classification.md) — read
-  it before applying anything to an issue; `label-model.md` before proposing one.
+  it before applying anything to an issue; [`../../references/label-model.md`](../../references/label-model.md) before proposing one.
 - [`../../references/findings.md`](../../references/findings.md) — read
   it before proposing an out-of-scope finding: it owns the rating, the scope test
   and the outcome each one ends in.

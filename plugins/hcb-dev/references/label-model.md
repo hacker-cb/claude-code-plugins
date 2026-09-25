@@ -27,7 +27,7 @@ the repository's own set answered with (`classification.md`).
   ([`forge-behaviour.md`](forge-behaviour.md)); a family holding several never does.
 - **Colour is a scanning aid on top of the name**, never the only thing carrying a distinction: a
   family whose values are peers shares one hue, `type` and `priority` colour each value by what it
-  signals, and a hue another family or label in the set already wears is not proposed.
+  signals, and a hue another family in the set already wears is not proposed.
 - **The description reads `<Family>: <when to apply> — <examples>`** and fits the forge's limit
   ([`forge-docs.md`](forge-docs.md)). A rule that will not fit its description is a label too
   fine to be applied alike: split it, or drop it.
@@ -72,13 +72,15 @@ nor has a milestone, or anything as a side effect of applying a label.
 Only on the user's explicit word, naming the labels:
 
 - **Snapshot first** — the set, and every carrier: issues, change requests and discussions, in
-  every state.
+  every state — issues by `<plugin root>/scripts/issue-slice.mjs --label <name> --state all`,
+  whose answer says whether it read them all.
+- **Find what names it** — workflow conditions, labeler and release configuration, permission
+  wildcards — by searching the default branch, and change it with the rename or deletion.
 - **Rename rather than delete and create** — what a rename carries is `forge-behaviour.md`'s.
 - **Delete last**, and only a label no carrier holds beyond the ones the approved plan relabels;
   a carrier found outside the plan stops the deletion.
 - **A label a GitLab group passes down** is the group's: a rename or deletion from the project is
-  refused. The plugin's own `epic` and `wave` are never renamed or deleted here: it finds them by
-  name ([`epic-structure.md`](epic-structure.md)).
+  refused. The plugin's own `epic` and `wave` are [`epic-structure.md`](epic-structure.md)'s.
 - **Read back** the set and the carriers once written.
 
 The invocations are `forge-docs.md`'s.

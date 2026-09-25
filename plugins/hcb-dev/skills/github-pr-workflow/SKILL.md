@@ -29,8 +29,8 @@ routes to is [`../../references/slice-completion.md`](../../references/slice-com
 ## Autonomy model
 
 Autonomous, without asking: renaming the branch, rebasing onto base, pushing (with
-`--force-with-lease`, never plain `--force`), opening the PR and setting its labels, committing
-and pushing fixes, replying to Copilot and the one request of its own
+`--force-with-lease`, never plain `--force`), opening the PR and setting its labels, aligning at
+close the issues it settled — save a label name something keys on — committing and pushing fixes, replying to Copilot and the one request of its own
 [`references/copilot-request.md`](references/copilot-request.md) allows, reading state, and
 parking the run on a platform outage — each narrated in a line as you go.
 
@@ -122,9 +122,11 @@ costs), titled in `branch-naming.md`'s shape, its body per
 [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) gives it:
 
 ```bash
-F="<the file of label names label-lifecycle.md writes — empty where the PR takes none>"
-ARGS=(); while IFS= read -r l; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
-gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>" "${ARGS[@]}"
+# Title, body and label names are files the agent wrote — data, never pasted into this line.
+T="<title file>"; B="<body file>"; F="<label-name file per label-lifecycle.md; empty for none>"
+ARGS=(); while IFS= read -r l || [ -n "$l" ]; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
+gh pr create --base <base> --head <branch> --title "$(cat "$T")" --body-file "$B" "${ARGS[@]}"
+OUT="$(gh pr view --json labels)" && printf '%s\n' "$OUT" || echo "UNREAD: the PR's labels"
 ```
 
 ## Step 4 — The fix loop (until GitHub says mergeable)

@@ -65,13 +65,14 @@ forge call. Publishing is the escalation offer below, and only by consent.
   body filled from the commits carries none — and the labels
   [`label-lifecycle.md`](label-lifecycle.md) gives it:
   ```bash
-  F="<the file of label names label-lifecycle.md writes — empty where the request takes none>"
-  ARGS=(); while IFS= read -r l; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
+  # Title, body and label names are files the agent wrote — data, never pasted into this line.
+  T="<title file>"; B="<body file>"; F="<label-name file per label-lifecycle.md; empty for none>"
+  ARGS=(); while IFS= read -r l || [ -n "$l" ]; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
   # GitHub
-  gh pr create   --base <parent> --head <branch> --title "<title>" --body "<body>" "${ARGS[@]}"
+  gh pr create   --base <parent> --head <branch> --title "$(cat "$T")" --body-file "$B" "${ARGS[@]}"
   # GitLab
-  glab mr create --target-branch <parent> --source-branch <branch> --title "<title>" \
-    --description "<body>" "${ARGS[@]}"
+  glab mr create --target-branch <parent> --source-branch <branch> --title "$(cat "$T")" \
+    --description "$(cat "$B")" "${ARGS[@]}"
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md), the installed CLI's
   `--help` first. A ref published under `old-name` stays here too — nothing on this path proves
