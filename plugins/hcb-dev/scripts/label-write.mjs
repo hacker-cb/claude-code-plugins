@@ -8,14 +8,15 @@
 // name ever reaches a shell or a flag.
 //
 // usage: node label-write.mjs --number <n> --kind issue|request [--add <file>] [--remove <file>]
-//          [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]
+//          [--expect <file>] [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]
 //        node label-write.mjs --url <a change request's URL> [--add <file>] [--remove <file>]
 //
 // `--url` takes the request a CLI just opened by the URL it printed: forge, host, repository and
 // number all come from it, the repository confirmed by the forge's own answer for it.
 //
 // `--add` / `--remove` each name a file holding a JSON array of label names; at least one is
-// given. `--repo` names another repository than this checkout's, and takes `--forge` with it: a
+// given. `--expect`, the same, names every label the carrier must hold before anything is written:
+// a carrier that moved since the caller read it is refused. `--repo` names another repository than this checkout's, and takes `--forge` with it: a
 // path alone answers on whichever forge happens to hold one of that name.
 //
 // Exit: 0 whenever an answer is printed — a refusal and an unread carrier included, told apart
@@ -38,10 +39,10 @@ const die = (msg) => { writeAll(2, `label-write: ${msg}\n${usage}\n`); process.e
 
 const FLAGS = {
   '--number': 'number', '--kind': 'kind', '--add': 'add', '--remove': 'remove', '--forge': 'forge',
-  '--host': 'host', '--repo': 'repo', '--repo-dir': 'dir', '--url': 'url',
+  '--host': 'host', '--repo': 'repo', '--repo-dir': 'dir', '--url': 'url', '--expect': 'expect',
 };
 const opts = {
-  number: null, kind: null, add: null, remove: null, forge: null, host: null, repo: null, dir: null, url: null,
+  number: null, kind: null, add: null, remove: null, forge: null, host: null, repo: null, dir: null, url: null, expect: null,
 };
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i += 1) {
@@ -101,6 +102,7 @@ const names = (file, flag) => {
 };
 const add = names(opts.add, '--add');
 const remove = names(opts.remove, '--remove');
+const expect = opts.expect === null ? null : names(opts.expect, '--expect');
 if (add.some((n) => remove.includes(n))) die('a name is both added and taken off');
 
 const answer = {
@@ -173,6 +175,9 @@ if (before.isRequest !== (opts.kind === 'request')) {
 // GitHub matches label names without regard to case; GitLab by the exact name.
 const same = sameLabel(forge);
 const holds = (list, n) => list.some((l) => same(l, n));
+if (expect !== null && !(expect.every((n) => holds(before.labels, n)) && before.labels.every((l) => holds(expect, l)))) {
+  refuse('the carrier does not hold the labels --expect names: it moved since it was read');
+}
 const toAdd = add.filter((n) => !holds(before.labels, n));
 // Taken off under the spelling the carrier holds it by: that is the name the forge knows.
 const toRemove = before.labels.filter((l) => remove.some((n) => same(l, n)));

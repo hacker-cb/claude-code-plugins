@@ -68,6 +68,7 @@ for (let i = 0; i < rest.length; i += 1) {
   if (Object.hasOwn(opts, flag)) die(`${flag} given twice`);
   opts[flag] = rest[i += 1];
 }
+const parseOut = (r) => { try { return JSON.parse(r.out); } catch { return null; } };
 const out = (answer) => { writeAll(1, `${JSON.stringify(answer, null, 2)}\n`); process.exit(0); };
 const readJson = (file, flag) => {
   try { return JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, '')); } catch { return die(`${flag} '${file}' is not a JSON file`); }
@@ -398,6 +399,8 @@ function setProblems(snap, plan) {
     if (!l) { flag('delete', d, 'not in the set'); continue; }
     if (l.inherited) flag('delete', d, 'a label its group passes down: the project cannot delete it');
     if (!snap.complete) flag('delete', d, 'the snapshot read the carriers short, so who holds it is unread');
+    // GitLab's label filters read these two as "no label" and "any label", never as a name.
+    if (snap.forge === 'glab' && /^(none|any)$/i.test(d)) flag('delete', d, 'GitLab reads this name as a filter, so who holds it cannot be counted');
     const holders = carriers.filter(({ c }) => c.labels.some((n) => same(n, d)));
     if (holders.length) flag('delete', d, `still on ${holders.slice(0, 10).map(({ kind, c }) => `${kind} ${c.number}`).join(', ')}${holders.length > 10 ? ` and ${holders.length - 10} more` : ''}`);
   }
@@ -595,8 +598,9 @@ function apply() {
       if (e.run !== run) out({ ...answer, stopped: `the journal ${journal} holds another plan's run: start a journal of its own` });
       done.delete(e.step);
       failed.delete(e.step);
-      if (e.outcome === 'done') done.add(e.step);
-      if (e.outcome === 'failed') failed.add(e.step);
+      // A step skipped stays skipped; one that failed, or started and never answered, may resume.
+      if (e.outcome === 'done' || e.outcome === 'skipped') done.add(e.step);
+      if (e.outcome === 'failed' || e.outcome === 'started') failed.add(e.step);
     }
   }
   const log = (step, outcome, detail = null) => {
@@ -642,7 +646,7 @@ function apply() {
     let set = readSet(step);
     if (!(exact(set, e.newName) && gone(set))) {
       const r = forge === 'gh' ? send('PATCH', `repos/${path}/labels/${seg(e.name)}`, { new_name: e.newName })
-        : send('PUT', `projects/${enc}/labels/${idOf(e.name)}`, { new_name: e.newName });
+        : send('PUT', `projects/${enc}/labels/${set.find((l) => same(l.name, e.name))?.id ?? idOf(e.name)}`, { new_name: e.newName });
       set = readSet(step);
       if (!(exact(set, e.newName) && gone(set))) stop(step, `not renamed${r.ok ? '' : `: ${why(r)}`}`);
     }
@@ -659,7 +663,7 @@ function apply() {
       set = readSet(step);
       if (!exact(set, c.name)) stop(step, `not created${r.ok ? '' : `: ${why(r)}`}`);
     }
-    if (!planned(exact(set, c.name), c)) stop(step, 'a label stands under this name, not as planned');
+    if (!planned(exact(set, c.name), { ...c, description: c.description ?? '' })) stop(step, 'a label stands under this name, not as planned');
     log(step, 'done');
   }
   // 3. Colour and description, on the name each label carries now.
@@ -686,14 +690,27 @@ function apply() {
   const writer = fileURLToPath(new URL('../../../scripts/label-write.mjs', import.meta.url));
   const carrierPath = (kind, n) => (forge === 'gh' ? `repos/${path}/issues/${n}`
     : `projects/${enc}/${kind === 'issue' ? 'issues' : 'merge_requests'}/${n}`);
+  // A carrier REST cannot find is gone only where the repository answers and the forge's own
+  // listing holds no such number either: on GitLab REST reaches issues and tasks, not every type.
+  const gone = (step, kind, n) => {
+    const q = forge === 'gh'
+      ? `query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issueOrPullRequest(number:${n}){__typename}}}`
+      : `query($fullPath:ID!){project(fullPath:$fullPath){${kind === 'issue' ? `workItems(iids:["${n}"])` : `mergeRequests(iids:["${n}"])`}{nodes{iid}}}}`;
+    const [owner, name] = path.split('/');
+    const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`,
+      ...(forge === 'gh' ? ['-f', `owner=${owner}`, '-f', `name=${name}`] : ['-f', `fullPath=${path}`])], 60000);
+    const v = parseOut(g);
+    const at = forge === 'gh' ? v?.data?.repository : v?.data?.project;
+    if (!at) return false;
+    return forge === 'gh' ? at.issueOrPullRequest === null && !v.errors?.some((e) => e?.type !== 'NOT_FOUND')
+      : Array.isArray(Object.values(at)[0]?.nodes) && Object.values(at)[0].nodes.length === 0;
+  };
   const labelsNow = (step, kind, n) => {
     const r = cli(['api', '--hostname', host, carrierPath(kind, n)], 60000);
-    let v = null;
-    try { v = JSON.parse(r.out); } catch { /* read below */ }
-    // Gone since the snapshot — deleted, or moved to another project — is the forge's 404 or 410.
-    if (!r.ok && /\bHTTP (404|410)\b/.test(r.err)) return null;
-    if (!r.ok || !Array.isArray(v?.labels)) return stop(step, `could not read it: ${r.ok ? 'no labels in the answer' : why(r)}`);
-    return v.labels.map((l) => (typeof l === 'string' ? l : l?.name)).filter((l) => typeof l === 'string');
+    const v = parseOut(r);
+    if (r.ok && Array.isArray(v?.labels)) return v.labels.map((l) => (typeof l === 'string' ? l : l?.name)).filter((l) => typeof l === 'string');
+    if (gone(step, kind, n)) return null;
+    return stop(step, `could not read it: ${r.ok ? 'no labels in the answer' : why(r)}`);
   };
   const holds = (list, n) => list.some((l) => same(l, n));
   for (const r of plan.relabel) {
@@ -704,93 +721,94 @@ function apply() {
     const now = labelsNow(step, r.kind, r.number);
     if (now === null) { log(step, 'skipped', 'it is gone since the snapshot'); continue; }
     const meant = (list) => add.every((n) => holds(list, n)) && !remove.some((n) => holds(list, n));
-    if (meant(now)) { log(step, 'done', 'already as planned'); continue; }
-    // Unmoved is the snapshot's labels — or, after a run of this plan stopped on this row, those
-    // labels part of the way along it: some taken off, some put on, nothing else.
-    const was = ((r.kind === 'issue' ? snap.issues : snap.requests).find((c) => c.number === r.number)?.labels ?? null)?.map(rename);
-    const along = was && now.every((l) => holds(was, l) || holds(add, l)) && was.every((l) => holds(now, l) || holds(remove, l));
-    const unmoved = was && (failed.has(step) ? along : now.length === was.length && now.every((l) => holds(was, l)));
-    if (!unmoved) { log(step, 'skipped', `its labels moved since the snapshot: ${now.join(', ')}`); continue; }
+    // Unmoved is the snapshot's labels; along, those labels part of the way through this row —
+    // some taken off, some put on, nothing else — which a run of this plan that stopped on it left.
+    const was = (r.kind === 'issue' ? snap.issues : snap.requests).find((c) => c.number === r.number)?.labels.map(rename);
+    const along = Boolean(was) && now.every((l) => holds(was, l) || holds(add, l)) && was.every((l) => holds(now, l) || holds(remove, l));
+    const unmoved = Boolean(was) && now.length === was.length && now.every((l) => holds(was, l));
+    if (meant(now)) {
+      // What this plan's own stopped write left is read again: a label it lost is still lost.
+      if (failed.has(step) && !along) stop(step, `a stopped write left it without ${was.filter((l) => !holds(now, l) && !holds(remove, l)).join(', ') || 'what it held'}`);
+      log(step, 'done', 'already as planned');
+      continue;
+    }
+    if (!(failed.has(step) ? along : unmoved)) { log(step, 'skipped', `its labels moved since the snapshot: ${now.join(', ')}`); continue; }
+    log(step, 'started');
     const w = spawnSync(process.execPath, [writer, '--number', String(r.number), '--kind', r.kind, '--forge', forge,
-      '--host', host, '--repo', path, '--repo-dir', dir, ...(add.length ? ['--add', file(add)] : []),
+      '--host', host, '--repo', path, '--repo-dir', dir, '--expect', file(now), ...(add.length ? ['--add', file(add)] : []),
       ...(remove.length ? ['--remove', file(remove)] : [])], { encoding: 'utf8', timeout: 300000 });
     let v = null;
     try { v = JSON.parse(w.stdout); } catch { /* read below */ }
     // A write that reached further than it was sent — a label lost — is a stop, whatever landed.
     if (v?.wrote === null) stop(step, `label-write: ${v.reason ?? 'the carrier read back otherwise'}${v.lost?.length ? ` — lost ${v.lost.join(', ')}` : ''}`);
-    if (v?.wrote !== true && !meant(labelsNow(step, r.kind, r.number) ?? [])) {
+    if (v?.wrote !== true) {
       stop(step, v ? `label-write: ${v.reason ?? `wrote ${v.wrote}`}` : `label-write answered nothing: ${(w.stderr || '').trim().split('\n').pop()}`);
     }
     log(step, 'done');
   }
-  // 5. Deletions last, and only of a label nothing holds now — discussions included, read whole
-  // once, since a label counts none of them.
-  let discussions = null;
+  // 5. Deletions last, and only of a label nothing holds now — each counted on the spot, the
+  // discussions read whole for it, since a label counts none of them.
   const discussionsHolding = (step, d) => {
-    if (discussions === null) {
-      const repo = cli(['api', '--hostname', host, `repos/${path}`], 60000);
-      let v = null;
-      try { v = JSON.parse(repo.out); } catch { /* read below */ }
-      if (!repo.ok || typeof v?.has_discussions !== 'boolean') stop(step, `could not read whether discussions are kept: ${repo.ok ? 'no answer to it' : why(repo)}`);
-      discussions = [];
-      if (v.has_discussions) {
-        const [owner, name] = path.split('/');
-        const q = 'query($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){discussions(first:100,after:$after){'
-          + 'totalCount pageInfo{hasNextPage endCursor} nodes{number labels(first:100){totalCount nodes{name}}}}}}';
-        let after = null;
-        for (;;) {
-          const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`, '-f', `owner=${owner}`, '-f', `name=${name}`, ...(after ? ['-f', `after=${after}`] : [])], 120000);
-          let p = null;
-          try { p = JSON.parse(g.out); } catch { /* read below */ }
-          const c = p?.data?.repository?.discussions;
-          if (!g.ok || p?.errors || !Array.isArray(c?.nodes) || c.nodes.some((n) => !Array.isArray(n?.labels?.nodes) || n.labels.totalCount > n.labels.nodes.length)) {
-            stop(step, `could not read the discussions whole: ${g.ok ? 'a short answer' : why(g)}`);
-          }
-          discussions.push(...c.nodes.map((n) => n.labels.nodes.map((l) => l.name)));
-          if (!c.pageInfo?.hasNextPage || !c.pageInfo.endCursor || c.pageInfo.endCursor === after) break;
-          after = c.pageInfo.endCursor;
-        }
+    const repo = cli(['api', '--hostname', host, `repos/${path}`], 60000);
+    const v = parseOut(repo);
+    if (!repo.ok || typeof v?.has_discussions !== 'boolean') stop(step, `could not read whether discussions are kept: ${repo.ok ? 'no answer to it' : why(repo)}`);
+    if (!v.has_discussions) return 0;
+    const [owner, name] = path.split('/');
+    const q = 'query($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){discussions(first:100,after:$after){'
+      + 'totalCount pageInfo{hasNextPage endCursor} nodes{labels(first:100){totalCount nodes{name}}}}}}';
+    const read = [];
+    let after = null;
+    let total = null;
+    for (;;) {
+      const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`, '-f', `owner=${owner}`, '-f', `name=${name}`, ...(after ? ['-f', `after=${after}`] : [])], 120000);
+      const p = parseOut(g);
+      const c = p?.data?.repository?.discussions;
+      if (!g.ok || p?.errors || !Array.isArray(c?.nodes) || c.nodes.some((n) => !Array.isArray(n?.labels?.nodes) || n.labels.totalCount > n.labels.nodes.length)) {
+        stop(step, `could not read the discussions whole: ${g.ok ? 'a short answer' : why(g)}`);
       }
+      total ??= c.totalCount;
+      read.push(...c.nodes.map((n) => n.labels.nodes.map((l) => l.name)));
+      if (!c.pageInfo?.hasNextPage) break;
+      if (!c.pageInfo.endCursor || c.pageInfo.endCursor === after) stop(step, 'could not read the discussions whole: the cursor did not advance');
+      after = c.pageInfo.endCursor;
     }
-    return discussions.filter((ls) => holds(ls, d)).length;
+    if (read.length !== total) stop(step, `could not read the discussions whole: ${read.length} of ${total}`);
+    return read.filter((ls) => holds(ls, d)).length;
   };
   for (const d of plan.delete) {
     const step = `delete ${d}`;
     if (done.has(step)) continue;
+    let set = readSet(step);
+    // Counted under the name the set spells it, the one the forge files its holders under.
+    const l = set.find((x) => same(x.name, d));
+    if (!l) { log(step, 'done', 'not in the set'); continue; }
     let held;
-    // GitLab's label filter reads these two as "no label" and "any label", never as a name.
-    if (forge === 'glab' && /^(none|any)$/i.test(d)) { log(step, 'skipped', 'GitLab reads this name as a filter, so who holds it cannot be counted'); continue; }
     if (forge === 'gh') {
       const [owner, name] = path.split('/');
       const q = 'query($owner:String!,$name:String!,$label:String!){repository(owner:$owner,name:$name){label(name:$label){'
         + 'issues(states:[OPEN,CLOSED]){totalCount} pullRequests(states:[OPEN,CLOSED,MERGED]){totalCount}}}}';
-      const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`, '-f', `owner=${owner}`, '-f', `name=${name}`, '-f', `label=${d}`], 60000);
-      let v = null;
-      try { v = JSON.parse(g.out); } catch { /* read below */ }
+      const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`, '-f', `owner=${owner}`, '-f', `name=${name}`, '-f', `label=${l.name}`], 60000);
+      const v = parseOut(g);
       const label = v?.data?.repository?.label;
-      if (!g.ok || v?.errors) stop(step, `could not read who holds it: ${g.ok ? v.errors.map((e) => e?.message).join('; ') : why(g)}`);
-      if (label === null && v?.data?.repository) held = discussionsHolding(step, d);
-      else if (Number.isInteger(label?.issues?.totalCount) && Number.isInteger(label?.pullRequests?.totalCount)) held = label.issues.totalCount + label.pullRequests.totalCount + discussionsHolding(step, d);
-      else stop(step, `could not read who holds it: ${g.ok ? 'no count in the answer' : why(g)}`);
-    } else {
-      // GitLab refuses a comma in a label name, so the name is the whole of this filter.
-      held = 0;
-      for (const kind of ['issues', 'merge_requests']) {
-        const g = cli(['api', '--hostname', host, `projects/${enc}/${kind}?labels=${encodeURIComponent(d)}&scope=all&state=all&per_page=1`], 60000);
-        let v = null;
-        try { v = JSON.parse(g.out); } catch { /* read below */ }
-        if (!g.ok || !Array.isArray(v)) stop(step, `could not read who holds it: ${g.ok ? 'not a list' : why(g)}`);
-        held += v.length;
+      if (!g.ok || v?.errors || !Number.isInteger(label?.issues?.totalCount) || !Number.isInteger(label?.pullRequests?.totalCount)) {
+        stop(step, `could not read who holds it: ${!g.ok ? why(g) : (v?.errors ?? []).map((e) => e?.message).join('; ') || 'no count in the answer'}`);
       }
+      held = label.issues.totalCount + label.pullRequests.totalCount + discussionsHolding(step, l.name);
+    } else {
+      // Every work item type and every request, whatever their state.
+      const q = 'query($fullPath:ID!,$label:String!){project(fullPath:$fullPath){workItems(labelName:[$label]){count} mergeRequests(labels:[$label]){count}}}';
+      const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`, '-f', `fullPath=${path}`, '-f', `label=${l.name}`], 60000);
+      const v = parseOut(g);
+      const p = v?.data?.project;
+      if (!g.ok || v?.errors || !Number.isInteger(p?.workItems?.count) || !Number.isInteger(p?.mergeRequests?.count)) {
+        stop(step, `could not read who holds it: ${!g.ok ? why(g) : (v?.errors ?? []).map((e) => e?.message).join('; ') || 'no count in the answer'}`);
+      }
+      held = p.workItems.count + p.mergeRequests.count;
     }
     if (held > 0) { log(step, 'skipped', `still held by ${held}`); continue; }
-    let set = readSet(step);
-    const l = set.find((x) => same(x.name, d));
-    if (l) {
-      const r = send('DELETE', forge === 'gh' ? `repos/${path}/labels/${seg(l.name)}` : `projects/${enc}/labels/${l.id ?? idOf(d)}`);
-      set = readSet(step);
-      if (set.some((x) => same(x.name, d))) stop(step, `not deleted${r.ok ? '' : `: ${why(r)}`}`);
-    }
+    const r = send('DELETE', forge === 'gh' ? `repos/${path}/labels/${seg(l.name)}` : `projects/${enc}/labels/${l.id}`);
+    set = readSet(step);
+    if (set.some((x) => same(x.name, d))) stop(step, `not deleted${r.ok ? '' : `: ${why(r)}`}`);
     log(step, 'done');
   }
   out({ ...answer, applied: true });

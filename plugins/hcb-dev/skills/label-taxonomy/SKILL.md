@@ -142,8 +142,9 @@ the run.
 D="$HOME/.claude/plans/<repository>-labels"
 L="${CLAUDE_PLUGIN_ROOT}/skills/label-taxonomy/scripts/labels.mjs"
 node "$L" apply --snapshot "$D/snapshot.json" --plan "$D/plan.json" --journal "$D/journal.jsonl"
-node "$L" snapshot --out "$D/after.json"
-node "$L" verify --snapshot "$D/after.json" --plan "$D/plan.json"
+rm -f "$D/after.json"   # a verify never reads an earlier run's
+node "$L" snapshot --out "$D/after.json" | jq -e '.read and .complete' >/dev/null \
+  && node "$L" verify --snapshot "$D/after.json" --plan "$D/plan.json"
 ```
 
 `stopped` names the step and why: fix the cause, then run `apply` again over the same journal —

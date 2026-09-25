@@ -42,10 +42,27 @@ finish() { if [ -n "${landed_fail:-}" ]; then echo "$me: Unprocessable Entity (H
 case "$me $method $endpoint" in
   "gh GET repos/team/app")
     jq -c '{default_branch: "main", has_discussions: (.discussions != null)}' "$st" ;;
-  "gh GET graphql")
+  "gh GET graphql"|"glab GET graphql")
     [ "$(jq -r '.graphql_error // false' "$st")" = true ] && { echo '{"errors":[{"message":"Something went wrong"}],"data":{"repository":{"label":null}}}'; exit 0; }
+    # A number looked up: GitHub's issueOrPullRequest, GitLab's iids.
+    if [[ $query == *"issueOrPullRequest(number:"* ]]; then
+      n=${query#*number:}; n=${n%%)*}
+      jq -c --arg n "$n" 'if .carriers["issue " + $n] or .carriers["request " + $n] then {data: {repository: {issueOrPullRequest: {__typename: "Issue"}}}}
+        else {data: {repository: {issueOrPullRequest: null}}, errors: [{type: "NOT_FOUND"}]} end' "$st"; exit 0
+    fi
+    if [[ $query == *"(iids:"* ]]; then
+      n=${query#*iids:[\"}; n=${n%%\"*}
+      if [[ $query == *workItems* ]]; then kind=issue f=workItems; else kind=request f=mergeRequests; fi
+      jq -c --arg k "$kind $n" --arg f "$f" '{data: {project: {($f): {nodes: (if .carriers[$k] then [{iid: ($k | split(" ")[1])}] else [] end)}}}}' "$st"; exit 0
+    fi
+    # GitLab: how many work items and requests hold a label.
+    if [ "$me" = glab ]; then
+      jq -c --arg l "$label" '[.carriers | to_entries[] | select(.value | index($l)) | .key | split(" ")[0]] as $k
+        | {data: {project: {workItems: {count: ($k | map(select(. == "issue")) | length)}, mergeRequests: {count: ($k | map(select(. == "request")) | length)}}}}' "$st"
+      exit 0
+    fi
     if [[ $query == *"discussions(first"* ]]; then
-      jq -c '{data: {repository: {discussions: {totalCount: (.discussions | length), pageInfo: {hasNextPage: false, endCursor: null},
+      jq -c '{data: {repository: {discussions: {totalCount: ((.discussions | length) + (.discussions_unread // 0)), pageInfo: {hasNextPage: false, endCursor: null},
         nodes: [.discussions | to_entries[] | {number: (.key + 1), labels: {totalCount: (.value | length), nodes: [.value[] | {name: .}]}}]}}}}' "$st"
       exit 0
     fi
@@ -82,6 +99,9 @@ case "$me $method $endpoint" in
     finish ;;
   "gh GET repos/team/app/issues/"*)
     n=${endpoint##*/}
+    # `move_on_read`: another hand changes this carrier just before its next read.
+    put --arg n "$n" 'if .move_on_read and (.move_on_read.carrier | endswith(" " + $n)) then
+        .move_on_read.reads += 1 | if .move_on_read.reads == 2 then .carriers[.move_on_read.carrier] = .move_on_read.labels else . end else . end'
     jq -c --arg n "$n" 'if .carriers["issue " + $n] then {labels: [.carriers["issue " + $n][] | {name: .}]}
       elif .carriers["request " + $n] then {labels: [.carriers["request " + $n][] | {name: .}], pull_request: {}}
       else error("none") end' "$st" 2>/dev/null || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; } ;;
@@ -97,18 +117,14 @@ case "$me $method $endpoint" in
     finish ;;
   "glab GET projects/team%2Fapp/issues/"*|"glab GET projects/team%2Fapp/merge_requests/"*)
     kind=$([[ $endpoint == */issues/* ]] && echo issue || echo request); n=${endpoint##*/}
-    jq -c --arg k "$kind $n" 'if .carriers[$k] then {labels: .carriers[$k]} else error("none") end' "$st" 2>/dev/null \
-      || { echo "glab: 404 Not Found" >&2; exit 1; } ;;
+    # `rest_hidden` names carriers REST does not reach — a work item type outside issues and tasks.
+    jq -c --arg k "$kind $n" 'if .carriers[$k] and ((.rest_hidden // []) | index($k) | not) then {labels: .carriers[$k]} else error("none") end' "$st" 2>/dev/null \
+      || { echo "glab: 404 Not Found (HTTP 404)" >&2; exit 1; } ;;
   "glab PUT projects/team%2Fapp/issues/"*|"glab PUT projects/team%2Fapp/merge_requests/"*)
     kind=$([[ $endpoint == */issues/* ]] && echo issue || echo request); n=${endpoint##*/}
     put --arg k "$kind $n" --argjson b "$(body)" '
       (($b.remove_labels // "") | split(",")) as $r | (($b.add_labels // "") | split(",") | map(select(. != ""))) as $a
       | .carriers[$k] |= ((map(select(. as $x | $r | index($x) | not)) + $a) | unique)'
     finish ;;
-  "glab GET projects/team%2Fapp/issues?"*|"glab GET projects/team%2Fapp/merge_requests?"*)
-    kind=$([[ $endpoint == */issues\?* ]] && echo issue || echo request)
-    q=${endpoint#*labels=}; name=$(dec "${q%%&*}")
-    jq -c --arg kind "$kind" --arg l "$name" '[.carriers | to_entries[] | select((.key | startswith($kind + " ")) and (.value | index($l)))
-      | {iid: (.key | split(" ")[1] | tonumber)}]' "$st" ;;
   *) echo "unplanned $me api call: $method $endpoint" >&2; exit 1 ;;
 esac
