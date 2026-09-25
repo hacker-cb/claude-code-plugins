@@ -152,8 +152,9 @@ form: you paste every one of them yourself.
   One round over one change with every source at once — Claude's angles, the
   security angles and the Codex pass — at the rung the change's risk sets, the
   findings a caller noticed on the way checked beside the round's own, then a
-  report of the findings and of what each source actually covered (the coverage
-  gate most of the skill exists to keep honest). Report-only.
+  report of the findings, of what each source actually covered (the coverage
+  gate most of the skill exists to keep honest) and of how long each source and
+  the round ran. Report-only.
 
 ### Completing it
 
@@ -274,7 +275,8 @@ the plan stages them.
   line instead of a report.
   Recovers after a restart from the ledger before the live registry. It does not
   build batches itself, and hands a change you ask of it to a session that does.
-  Its own tree stands detached on the base and moves only onto a newer tip; it
+  Its own tree stands detached on the base and moves onto the newest tip first in
+  every event, which is how it learns of a landing nobody reported; it
   reads through a pinned revision, and runs anything — tests, a build, a probe — in
   an isolated subagent:
   [`skills/master-session/references/master-tree.md`](skills/master-session/references/master-tree.md).
@@ -282,7 +284,11 @@ the plan stages them.
   [`skills/master-session/scripts/master-tree.mjs`](skills/master-session/scripts/master-tree.mjs):
   the main checkout is never moved, and another session in the tree, an uncommitted change,
   a commit no remote holds or an operation left half done stops the move rather than being
-  stashed, reset or stranded.
+  stashed, reset or stranded. What landed since the mark its ledger keeps is sorted into
+  landings by
+  [`skills/master-session/scripts/landings.mjs`](skills/master-session/scripts/landings.mjs):
+  the forge names the change request each commit belongs to, so a rebase-merge's commits are
+  one landing and a push's commits another.
 - **`wave-refresh`** — `/hcb-dev:wave-refresh`
   What can start right now, recomputed rather than recalled: pin and refresh the
   base and read every fact through that ref rather than through a working tree,
@@ -514,7 +520,8 @@ saying something else. Each file opens by saying what it owns.
   hands back is read. Read wherever one is waited for, and wherever its answer is read.
 - [`references/review-pipeline.md`](references/review-pipeline.md) — a review
   round's shape: the store it keeps, its rungs, who runs what, what each agent's
-  outcome becomes and the coverage it reports. Read by whatever opens a round.
+  outcome becomes, and the coverage and the time it reports. Read by whatever
+  opens a round.
 - [`references/verification.md`](references/verification.md) — the one checker:
   how a candidate reaches it, and when a verdict it made stands. Read by whatever
   has findings checked.

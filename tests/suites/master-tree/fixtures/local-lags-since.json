@@ -1,0 +1,17 @@
+{
+  "git_dir": "tests/suites/master-tree/trees/linked/gitdir",
+  "common_dir": "tests/suites/master-tree/trees/linked/common",
+  "head": "f1x7111111111111111111111111111111111111",
+  "branch": "",
+  "refs": {
+    "refs/heads/epic": "f1x7222222222222222222222222222222222222",
+    "refs/remotes/origin/epic": "f1x7333333333333333333333333333333333333",
+    "f1x7222222222222222222222222222222222222": "f1x7222222222222222222222222222222222222"
+  },
+  "held": "no",
+  "status": "",
+  "own_log": "",
+  "since": "f1x7222222222222222222222222222222222222",
+  "landed_to": "f1x7333333333333333333333333333333333333",
+  "landed": "f1x7333333333333333333333333333333333333 Merge pull request #21 from example/c"
+}

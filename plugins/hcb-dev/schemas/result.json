@@ -5,7 +5,7 @@
   "description": "Built by `review-round.mjs result` from the round's store; no model writes it. The session lays it out by findings-table.md.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["round", "mode", "snapshot", "language", "coverage", "findings", "refuted", "warnings"],
+  "required": ["round", "mode", "snapshot", "language", "coverage", "findings", "refuted", "warnings", "timing"],
   "properties": {
     "round": { "type": "string", "pattern": "^r-[0-9a-f]{8}$" },
     "mode": { "type": "string", "enum": ["round", "pass"] },
@@ -30,14 +30,15 @@
     "warnings": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 }
-    }
+    },
+    "timing": { "$ref": "#/$defs/timing" }
   },
   "$defs": {
     "state": { "type": "string", "enum": ["covered", "partial", "depth", "unavailable", "nothing", "n/a"] },
     "coverageRow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["source", "state", "tasks", "candidates", "rejected"],
+      "required": ["source", "state", "tasks", "candidates", "rejected", "time_s"],
       "properties": {
         "source": { "type": "string", "minLength": 1 },
         "state": { "$ref": "#/$defs/state" },
@@ -46,7 +47,21 @@
         "rejected": { "type": "integer", "minimum": 0 },
         "effort": { "type": "string" },
         "model": { "type": "string" },
-        "notes": { "type": "array", "items": { "type": "string" } }
+        "notes": { "type": "array", "items": { "type": "string" } },
+        "time_s": { "$ref": "#/$defs/seconds" }
+      }
+    },
+    "seconds": { "type": ["integer", "null"], "minimum": 0 },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opened_at", "ended_at", "wall_s", "check_s", "sweep_s"],
+      "properties": {
+        "opened_at": { "type": ["string", "null"] },
+        "ended_at": { "type": ["string", "null"] },
+        "wall_s": { "$ref": "#/$defs/seconds" },
+        "check_s": { "$ref": "#/$defs/seconds" },
+        "sweep_s": { "$ref": "#/$defs/seconds" }
       }
     },
     "finding": {

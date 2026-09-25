@@ -1,0 +1,15 @@
+{
+  "unit": "U2",
+  "verdict": "refuted",
+  "snapshot": "0a1b2c3",
+  "evidence": [
+    {
+      "path": "limit.sh",
+      "side": "base",
+      "lines": "4",
+      "quote": "if [ \"$count\" -le \"$limit\" ]"
+    }
+  ],
+  "refuted_because": "the comparison matches the documented one",
+  "at": "2026-01-01T00:11:00.000Z"
+}

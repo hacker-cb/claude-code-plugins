@@ -1,0 +1,13 @@
+{
+  "since": "f1x7000000000000000000000000000000000000",
+  "to": "f1x7999999999999999999999999999999999999",
+  "refs": {
+    "f1x7000000000000000000000000000000000000": "f1x7000000000000000000000000000000000000",
+    "f1x7999999999999999999999999999999999999": "f1x7999999999999999999999999999999999999"
+  },
+  "log": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa m",
+  "pulls": {
+    "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "[{\"number\": 3, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": null, \"base\": {\"ref\": \"main\"}}, {\"number\": 4, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"base\": {\"ref\": \"main\"}}]"
+  },
+  "repo_view": "{\"url\": \"https://github.example.com/acme/app\"}"
+}

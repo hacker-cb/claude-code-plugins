@@ -21,9 +21,8 @@ its first report.
 
 ## Moving it
 
-- on assuming the role, and first after a restart or a compaction;
-- at every landing on the base — its batch's, another session's, the user's;
-- before a read of its working tree where the check under *Reading* finds HEAD off the base.
+First in every event of the master's loop, before anything in it is read — a report of a landing
+among them — and on assuming the role, and first after a restart or a compaction. Where the base has not moved, the answer is `already`.
 
 ```bash
 BASE="$(cat <<'NAME'
@@ -31,12 +30,14 @@ BASE="$(cat <<'NAME'
 NAME
 )"
 LOCAL='<yes where the epic completes in local mode, no otherwise>'
-S="<plugin root>/skills/master-session/scripts/master-tree.mjs"
+SINCE='<the commit the epic ledger's header says landings are taken up to — else its pin's sha; empty before either>'
+S="<plugin root>/skills/master-session/scripts/master-tree.mjs"; A=(); [ -n "$SINCE" ] && A=(--since "$SINCE")
 R="$(node "<plugin root>/scripts/resolve-base.mjs" --base "$BASE")"; printf '%s' "$R" | jq '{base, reason}'
 REF="$(printf '%s' "$R" | jq -r 'if .base.current and .base.sharesHistory then .base.ref else "" end')"
+NAME="$(printf '%s' "$R" | jq -r .base.name)"
 if [ -z "$REF" ]; then echo "no current base: the resolver's answer above says why"
-elif [ "$LOCAL" = yes ]; then node "$S" --ref "refs/heads/$(printf '%s' "$R" | jq -r .base.name)" --contains "$REF" --move
-else node "$S" --ref "$REF" --move; fi
+elif [ "$LOCAL" = yes ]; then node "$S" --ref "refs/heads/$NAME" --contains "$REF" "${A[@]}" --move
+else node "$S" --ref "$REF" --landings-base "$NAME" "${A[@]}" --move; fi
 ```
 
 The resolver's outcomes are
@@ -51,16 +52,23 @@ answer means here:
 | `base.sharesHistory` false, or null | refused, or unknown: stop, saying which |
 | `read: false` | nothing was measured: `reason` goes to the user, and nothing moves |
 | `linked: false` | the main checkout: move nothing, read through refs only |
-| `movable: false` | what stands — another session in the tree (`others`), the `dirty` entries, the `ownWork` commits, an operation `inProgress`, a local parent that lags — goes to the user, recommendation first; clearing it is theirs, and until then the tree is read through refs only |
-| `move: "done"`, or `"already"` | `head` is the base, and the sha every fact is read at |
+| `movable: false` | what stands — another session in the tree (`others`), the `dirty` entries, the `ownWork` commits, an operation `inProgress`, a local parent that lags — goes to the user, recommendation first, and not again while it stands unchanged; clearing it is theirs, and until then the tree is read through refs only |
+| `move: "done"`, or `"already"` | `head` is the base, and the sha every fact of this event is read at; a `done` carrying `moveError` reached the base, and git's words go to the user all the same |
 | `move: "dirty"`, `"refused"` or `"unread"` | `moveError` goes to the user, with where `head` stands and what `dirty` lists; nothing else is tried |
+| the tree did not move | what this event reads, it reads through `ref.sha` — the tip just refreshed — never through `head`; through `contains.sha` where `contains.held` is false |
+| `since.to`, with `landedCount` 0 | nothing landed since the mark |
+| `since.to`, with landings | `landings` sorts them, oldest first — by the change request this checkout's forge names for each commit, a commit to a landing in `local` mode. Each landing the ledger does not record is one the master's loop takes, reported or not — a `request` by its `number`, a `push` or a `commit` read at its `tip`. What it could not settle — an `unsure` landing and its `requests`, an `unread` one with `forge.reason`, a range read no further than its count (`commits`, with `reason`), the whole range where `landings.read` is false — goes to the user as an expectation, recommendation first. Once every landing is in the ledger or in that expectation, the header's mark moves to `since.to`. A reported landing neither the ledger records nor this answer names is answered as not on the base yet where `complete` is true — and joins that expectation where it is not |
+| `since` null | run with no mark: the header's mark is set to the tip this event reads |
+| `since.held` false | the base no longer holds the mark — rewritten past it: to the user, and the mark moves only on their word |
+| `since.reason`, `held` not false | this event's landings are untold: said so; the mark stays, and the next event asks from it |
 
 ## Reading
 
 Per `base-resolution.md`: the base's own objects, and every claim naming the revision it was
-read at — the `head` the last move left, or the sha a ref resolved to. The working tree is read
-only on an answer `master-tree.mjs` gave just before that read — `--ref <that sha>`, without
-`--move` — saying `head` is that sha, with nothing `dirty`, `hidden` or `sparse`; and
+read at — the `head` this event's move left, or the sha a ref resolved to. The working tree is
+read only in an event whose move answered `done` or `already` with nothing `dirty`, `hidden` or
+`sparse` — and once that event has waited on anything (checks, a subagent, the user), only on
+the script's answer taken again first, `--ref <head>` without `--move`, saying the same; and
 never under a path `submodules` names, which is read through that submodule's own objects.
 
 Another ref — a batch's branch, a change request's head, an older pin — is resolved to its sha
@@ -75,11 +83,17 @@ other than the base runs isolated, as below.
 
 Anything that runs the project's code or tools — tests, linters, a build, a generator, a probe,
 a mutation — runs in a subagent launched with worktree isolation (`claude-worktrees.md`), on the
-base as on any other ref. One subagent per question, handed the sha: it switches its own
-worktree there (`git switch --detach <sha>`) and confirms `git rev-parse HEAD`, prepares what
-the run needs, runs, removes what the run left that `git status` lists, switches back to its
-own branch (`git switch -`), and returns what it ran, the exit and what it printed. The reads
-above are not runs, and neither is `git merge-tree`.
+base as on any other ref. One subagent per question, handed the sha: it notes where it stands
+(`git branch --show-current`, or `git rev-parse HEAD` where that is empty), switches its
+worktree to the sha (`git switch --detach <sha>`)
+and confirms `git rev-parse HEAD`, prepares what the run needs, runs, puts the worktree back
+(`git reset --hard -q <sha> && git clean -fdq`, then `git status --porcelain` empty — what does
+not clear is part of its answer), switches back to what it noted (`git switch <branch>`, or
+`git switch --detach <commit>`), and returns what it
+ran, the exit and what it printed. The
+reads above are not runs, and neither is `git merge-tree`. A ref carrying commits from outside
+this repository — a change request from a fork — runs only on the user's word, asked with what
+would run.
 
 A workflow's steps read through the sha and run nothing; a run goes to such a subagent. No
 review round runs in this session: a review a return says was skipped is the reopened batch's

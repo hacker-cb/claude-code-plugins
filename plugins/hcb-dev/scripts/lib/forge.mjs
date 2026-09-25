@@ -244,3 +244,84 @@ export function worktrees(git) {
   push();
   return { trees, error: null };
 }
+
+// The requests that carry a commit, asked of either forge — mirrored, because the same
+// question has two answers and neither forge is assumed. The repository goes in the PATH:
+// neither CLI's `api` takes a `--repo`, and without it each reads the one the working
+// directory names.
+export const COMMIT_REQUESTS = {
+  gh: {
+    // Positionally, because this command has no `--repo`: passing one fails with
+    // `unknown flag`, the probe then answers nothing, and the host goes unresolved.
+    probe: (repo) => ['repo', 'view', ...(repo ? [repo] : []), '--json', 'url'],
+    // The host this repository actually lives on, read from its own url: a self-hosted
+    // instance asked of the SaaS answers about somebody else, or about nothing.
+    host: (out) => { try { return new URL(JSON.parse(out).url).host; } catch { return null; } },
+    path: (repo, oid) => `repos/${repo || '{owner}/{repo}'}/commits/${oid}/pulls`,
+    // `--paginate` here prints ONE DOCUMENT PER PAGE, concatenated; `parsePages` splits
+    // them. Parsed as one document it is a syntax error, and as the first page it is the
+    // first page — the failure this whole reader exists to avoid.
+    read: (out) => { const p = parsePages(out); return p === null ? null : p.flat(); },
+    // `state` is open or closed, and `merged_at` is what tells a merged request from a
+    // dropped one.
+    row: (q) => ({
+      number: Number.isInteger(q.number) ? q.number : null,
+      state: q.state === 'open' ? 'open' : q.merged_at ? 'merged' : 'closed',
+      mergeCommit: refOk(q.merge_commit_sha || '') ? q.merge_commit_sha : null,
+      base: typeof q.base?.ref === 'string' ? q.base.ref : null,
+    }),
+  },
+  glab: {
+    // No url to read: this CLI takes the host from the checkout itself.
+    probe: (repo) => ['api', `projects/${repo ? encodeURIComponent(repo) : ':id'}`],
+    host: () => null,
+    path: (repo, oid) => `projects/${repo ? encodeURIComponent(repo) : ':id'}`
+      + `/repository/commits/${oid}/merge_requests`,
+    // `--paginate` here is read either way: one array holding every page, or one array per
+    // page as the other CLI prints them — a version may print either.
+    read: (out) => { const p = parsePages(out); return p === null || !p.every(Array.isArray) ? null : p.flat(); },
+    // `state` carries `merged` outright, and either commit field can hold the landing.
+    row: (q) => ({
+      number: Number.isInteger(q.iid) ? q.iid : null,
+      state: q.state === 'opened' ? 'open' : q.state === 'merged' ? 'merged' : 'closed',
+      mergeCommit: refOk(q.merge_commit_sha || '') ? q.merge_commit_sha
+        : refOk(q.squash_commit_sha || '') ? q.squash_commit_sha : null,
+      base: typeof q.target_branch === 'string' ? q.target_branch : null,
+    }),
+  },
+};
+
+// What a call that did not answer says: its last line, or that it ran out of time.
+export const why = (r) => (r.timedOut ? 'timed out' : r.line());
+
+// Which CLI answers for THIS REPOSITORY — whichever RESPONDS here, since a hostname cannot
+// say it: a self-hosted instance answers on an arbitrary domain. BOTH answering is an
+// ambiguity rather than a race the first one wins: a GitLab project mirrored to GitHub under
+// the same path answers on both, and a first-success order asks the mirror. `cli` is how a
+// caller settles it. `reader` null with `reason` where none can be asked.
+export function forgeFor(cwd, cli, repo) {
+  const answers = [];
+  let reason = null;
+  for (const c of cli ? [cli] : ['gh', 'glab']) {
+    const p = runner(cwd, c)(COMMIT_REQUESTS[c].probe(repo));
+    if (!p.ok) { if (!reason) reason = `${c}: ${p.line()}`; continue; }
+    answers.push({ cli: c, out: p.out });
+  }
+  if (answers.length !== 1) {
+    return { cli: null, reader: null, hostArgs: [], reason: answers.length ? `both ${answers.map((a) => a.cli).join(' and ')}`
+      + ' answer for this repository — name one with --forge, since the wrong one answers about a mirror' : reason };
+  }
+  const { cli: c, out } = answers[0];
+  const host = COMMIT_REQUESTS[c].host(out);
+  return { cli: c, reader: COMMIT_REQUESTS[c], hostArgs: hostOk(host) ? ['--hostname', host] : [], reason: null };
+}
+
+// The requests that carry one commit, read as `COMMIT_REQUESTS` rows: `rows`, or `error` where
+// the forge did not answer. `--paginate`, or a request on page two is one nobody saw.
+export function requestsOf(found, cwd, repo, oid) {
+  const r = runner(cwd, found.cli)(['api', ...found.hostArgs, '--paginate', found.reader.path(repo, oid)]);
+  if (!r.ok) return { error: why(r) };
+  const rows = found.reader.read(r.out);
+  if (rows === null) return { error: 'the answer was not JSON' };
+  return { rows: rows.filter((q) => q && typeof q === 'object').map(found.reader.row) };
+}

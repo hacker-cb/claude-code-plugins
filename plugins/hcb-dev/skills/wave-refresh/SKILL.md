@@ -73,8 +73,8 @@ disagreement is itself a finding:
 
 Every disagreement goes to the user — a request reaching past its zone, a row
 past `chipped` and short of `accepted` with no session, `blocked` after it included, a
-session with no row. A `chipped` row with no session goes to the user as the
-click the ledger's expectations say they owe, with the chip's age. Until one is settled the ground is read
+session with no row. A `chipped` row with no session goes to the user as
+`wave-ledger.md` reads it, with the chip's age. Until one is settled the ground is read
 the **safer** way rather than the wider or the narrower: a zone read two ways is
 occupied to the union of both, and a session whose zone no source gives holds
 **everything a candidate would touch**, since an unknown zone is unbounded and

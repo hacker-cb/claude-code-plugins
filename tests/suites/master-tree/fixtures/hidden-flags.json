@@ -8,6 +8,5 @@
   },
   "status": "",
   "own_log": "",
-  "behind": "3",
   "ls": "h 100644 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 0\tsrc/a.c\nS 100644 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 0\tsrc/b.c\nH 100644 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 0\tsrc/c.c\nH 160000 f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 0\tlib/sub"
 }

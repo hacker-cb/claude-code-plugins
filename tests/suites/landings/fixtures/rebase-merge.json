@@ -1,0 +1,16 @@
+{
+  "since": "f1x7000000000000000000000000000000000000",
+  "to": "f1x7999999999999999999999999999999999999",
+  "refs": {
+    "f1x7000000000000000000000000000000000000": "f1x7000000000000000000000000000000000000",
+    "f1x7999999999999999999999999999999999999": "f1x7999999999999999999999999999999999999"
+  },
+  "log": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa r1\nf1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb r2\nf1x7cccccccccccccccccccccccccccccccccccc r3\nf1x7dddddddddddddddddddddddddddddddddddd after",
+  "pulls": {
+    "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "[{\"number\": 7, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7cccccccccccccccccccccccccccccccccccc\", \"base\": {\"ref\": \"main\"}}]",
+    "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": "[{\"number\": 7, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7cccccccccccccccccccccccccccccccccccc\", \"base\": {\"ref\": \"main\"}}]",
+    "f1x7cccccccccccccccccccccccccccccccccccc": "[{\"number\": 7, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7cccccccccccccccccccccccccccccccccccc\", \"base\": {\"ref\": \"main\"}}]",
+    "f1x7dddddddddddddddddddddddddddddddddddd": "[{\"number\": 8, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7dddddddddddddddddddddddddddddddddddd\", \"base\": {\"ref\": \"main\"}}]"
+  },
+  "repo_view": "{\"url\": \"https://github.example.com/acme/app\"}"
+}

@@ -1,0 +1,14 @@
+{
+  "git_dir": "tests/suites/master-tree/trees/linked/common",
+  "common_dir": "tests/suites/master-tree/trees/linked/common",
+  "head": "f1x7111111111111111111111111111111111111",
+  "branch": "dev",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222",
+    "f1x7111111111111111111111111111111111111": "f1x7111111111111111111111111111111111111"
+  },
+  "status": "",
+  "own_log": "",
+  "landed": "f1x7222222222222222222222222222222222222 Merge pull request #12 from example/b",
+  "since": "f1x7111111111111111111111111111111111111"
+}

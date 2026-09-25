@@ -75,7 +75,8 @@
         },
         "settle": { "type": "string", "minLength": 1, "maxLength": 2000 },
         "refuted_because": { "type": "string", "minLength": 1, "maxLength": 2000 },
-        "reused": { "type": "boolean" }
+        "reused": { "type": "boolean" },
+        "at": { "type": "string", "minLength": 1 }
       },
       "allOf": [ { "$ref": "#/$defs/rules" } ]
     },

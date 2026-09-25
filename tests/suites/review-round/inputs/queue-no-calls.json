@@ -1,0 +1,14 @@
+{
+  "queue": [
+    "U1",
+    "U2"
+  ],
+  "reused": [],
+  "budget_cut": [],
+  "unreachable": [],
+  "latest": [
+    "U1",
+    "U2"
+  ],
+  "started_at": "2026-01-01T00:00:00.000Z"
+}

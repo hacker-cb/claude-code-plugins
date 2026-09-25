@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Stubbed outright, not proxied: see suite.conf.
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+env=${STUB_ENVELOPE:-}
+ask() { [ -n "$env" ] && jq -r "$1 // empty" "$env"; }
+refuse() { echo "stub git: $*" >&2; exit 3; }
+since=$(ask '.since'); to=$(ask '.to')
+case "$1" in
+  rev-parse)
+    [ "$2 $3" = "--verify -q" ] || refuse "rev-parse asked as: $*"
+    want=${4%"^{commit}"}
+    v=$(ask ".refs[\"$want\"]")
+    # A full id this checkout carries resolves to itself; `missing` names the ones it lacks.
+    if [ -z "$v" ] && [ ${#want} -eq 40 ] && ! ask '.missing[]?' | grep -qx -- "$want"; then v=$want; fi
+    [ "$v" = fail ] && { echo "fatal: bad object" >&2; exit 128; }
+    [ -n "$v" ] && { echo "$v"; exit 0; }
+    exit 1 ;;
+  merge-base)
+    [ "$2 $4" = "--is-ancestor $to" ] || refuse "merge-base asked as: $*"
+    # The range itself; then whether a request's merge commit is inside it.
+    if [ "$3" = "$since" ]; then h=$(ask '.held'); else h=$(ask ".merge_held[\"$3\"]"); fi
+    case "$h" in no) exit 1 ;; fail) echo "fatal: not a valid commit" >&2; exit 128 ;; *) exit 0 ;; esac ;;
+  rev-list)
+    [ "$*" = "rev-list --first-parent --count $since..$to --" ] || refuse "rev-list asked as: $*"
+    n=$(ask '.count'); [ -n "$n" ] || n=$(ask '.log' | grep -c .)
+    echo "$n"; exit 0 ;;
+  log)
+    # Oldest first, one landing's worth of first-parent commits — or no answer.
+    [ "$*" = "log --no-show-signature --first-parent --reverse --format=%H %s $since..$to --" ] || refuse "log asked as: $*"
+    v=$(ask '.log'); [ "$v" = fail ] && { echo "fatal: bad revision" >&2; exit 128; }
+    [ -n "$v" ] && printf '%s\n' "$v"
+    exit 0 ;;
+esac
+refuse "no envelope answer for: $*"
