@@ -132,25 +132,26 @@ what separates the ones kept apart — and the gates the dependencies imply. Wha
 issue's closure is then the hygiene plan's to propose. What a builder reads is the tracker's
 body, never this report.
 
-**`## Needs your word`** — one recommendation for what to take next, with its rationale and the
-cut to start with, the declared priorities of what it names among its reasons where they weigh;
+**`## Needs your word`** — one recommendation for what to take next, with its rationale and the cut
+to start with, the declared priorities of what it names among its reasons where they weigh;
 alternatives only where the choice genuinely turns on what the user wants next. Then the hygiene
-plan, an ask each: bodies to rewrite, issues to close or re-milestone, links to fix, the edges
-drawn as not in the tracker to write, and the issues read here that `classification.md` leaves out of line. Where it leaves any, the rest of
-the repository's carrying that same value ride the ask with them — closed ones included, found
-by filtering on the value itself in every mechanism that can carry it, the stray one as much as
-the ones the resolution names, and over every state rather than the open ones a listing answers
-with by default; never by a text search a title can answer, and never by reading the closed
-backlog through. A label or a milestone is counted on the first line alone of a wide read over
-`--state all` with it as the filter — on GitLab within that slice's own types — one label a
-call; a native type, which the script does not filter on, by the forge's own filter for it. They
-are counted rather than listed, save the ones carrying a second value that contradicts it: those
-are named one by one, the value on them being the user's. The count is what the ask proposes —
-taking it enumerates them, each edit going through the tracker as any other, and what the
-enumeration finds past that count goes back to the user before it is touched; where the forge
-answers for no such value the ask says so instead of standing on a number nobody read. The
-hygiene plan holds up nothing; a rewrite a candidate batch stands on is an ask of its own, among
-the blocking ones, since the layout launches on it.
+plan, an ask each: bodies to rewrite, issues to close or re-milestone, links to fix, the edges drawn
+as not in the tracker to write, and the issues read here that `classification.md` leaves out of
+line. Where it leaves any, the rest of the repository's carrying that same value ride the ask with
+them — save where what is out of line is the carrier's own place, a parent or a closed issue, which
+rides alone — closed ones included, found by filtering on the value itself in every mechanism that
+can carry it, the stray one as much as the ones the resolution names, and over every state rather
+than the open ones a listing answers with by default; never by a text search a title can answer, and
+never by reading the closed backlog through. A label or a milestone is counted on the first line
+alone of a wide read over `--state all` with it as the filter — on GitLab within that slice's own
+types — one label a call; a native type, which the script does not filter on, by the forge's own
+filter for it. They are counted rather than listed, save the ones carrying a second value that
+contradicts it: those are named one by one, the value on them being the user's. The count is what
+the ask proposes — taking it enumerates them, each edit going through the tracker as any other, and
+what the enumeration finds past that count goes back to the user before it is touched; where the
+forge answers for no such value the ask says so instead of standing on a number nobody read. The
+hygiene plan holds up nothing; a rewrite a candidate batch stands on is an ask of its own, among the
+blocking ones, since the layout launches on it.
 
 ## After the report
 

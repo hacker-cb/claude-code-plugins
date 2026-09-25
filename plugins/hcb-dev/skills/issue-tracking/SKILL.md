@@ -105,10 +105,9 @@ them; proposing one the repository lacks is
 
 ## Hierarchy and dependencies are separate questions
 
-**Hierarchy** — one child per independently completable piece; the parent keeps its
-kind of work and its queue labels, its outcome labels moving onto the children in the
-same edit ([`../../references/label-lifecycle.md`](../../references/label-lifecycle.md));
-written per [`../../references/forge-docs.md`](../../references/forge-docs.md).
+**Hierarchy** — one child per independently completable piece, the labels of both per
+[`../../references/label-lifecycle.md`](../../references/label-lifecycle.md); written per
+[`../../references/forge-docs.md`](../../references/forge-docs.md).
 
 **Dependencies** — what blocks what: when an edge is written, in what, and what stands in
 where the forge carries none is [`../../references/issue-links.md`](../../references/issue-links.md).
@@ -169,9 +168,8 @@ session, whatever carried it here — whoever that order names **for writing to 
 addressee named for its forks is not that, and an order naming none leaves the user. Opening or
 updating anything waits for it, every time. **A standing instruction to work autonomously is not
 that answer** — it authorizes the work, not the tracker — and an approval covers the batch it
-was given for, never what turns up afterwards. Three label writes ride on another answer
-instead, each named by `label-lifecycle.md`: a change request's own, an issue's at its close,
-and a parked reason the answer taking the work named.
+was given for, never what turns up afterwards. The label writes `label-lifecycle.md` names ride
+on another answer instead.
 
 **The answer takes the form the person gives it**, and three forms answer: agreement with what
 was recommended; a bar — "file the important ones" — settling every candidate of that pass which
@@ -187,7 +185,7 @@ one unanswered: ask again rather than filling it in.
 ## Reference files
 
 - [`../../references/classification.md`](../../references/classification.md) — read
-  it before applying anything to an issue, and before proposing one.
+  it before applying anything to an issue; `label-model.md` before proposing one.
 - [`../../references/findings.md`](../../references/findings.md) — read
   it before proposing an out-of-scope finding: it owns the rating, the scope test
   and the outcome each one ends in.

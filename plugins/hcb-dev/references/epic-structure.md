@@ -26,8 +26,8 @@ parent it is — its kind of work and queue labels, as the user gives them; a wa
 
 **The role assignment authorizes them**, as it authorizes filing the umbrella: the master
 creates either label where the repository lacks it and applies `epic` to its own epic and
-`wave` to its own waves — nothing wider. Renaming or deleting one is done only on the user's
-explicit word ([`label-model.md`](label-model.md)).
+`wave` to its own waves — nothing wider. Renaming or deleting one stays the user's, and takes the
+plugin's consumers with it: they find these labels by name.
 
 **Read the name, create it, then apply it** — never apply a name first
 ([`forge-behaviour.md`](forge-behaviour.md)). A label of that name already in the set — on GitLab

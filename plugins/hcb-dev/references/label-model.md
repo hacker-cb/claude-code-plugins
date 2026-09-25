@@ -21,9 +21,13 @@ the repository's own set answered with (`classification.md`).
 | `awaits:` | parked reason | `d4c5f9` | `design`, `upstream`; `internal` only where the forge carries no dependency link ([`issue-links.md`](issue-links.md)); others the project's |
 | `priority:` | priority | `high` `e11d21` · `low` `c2e0c6` | these two; no label means normal |
 
-- **The separator is `:`.** On GitLab a family holding one value per carrier — `type`, `awaits`,
-  `priority` — may take `::` where the tier makes the platform keep it so
+- **The separator is `:`**, or the one the set already uses, uniform across it — automation and
+  permission wildcards key off the prefix. On GitLab a family holding one value per carrier —
+  `type`, `awaits`, `priority` — may take `::` where the tier makes the platform keep it so
   ([`forge-behaviour.md`](forge-behaviour.md)); a family holding several never does.
+- **Colour is a scanning aid on top of the name**, never the only thing carrying a distinction: a
+  family whose values are peers shares one hue, `type` and `priority` colour each value by what it
+  signals, and a hue another family or label in the set already wears is not proposed.
 - **The description reads `<Family>: <when to apply> — <examples>`** and fits the forge's limit
   ([`forge-docs.md`](forge-docs.md)). A rule that will not fit its description is a label too
   fine to be applied alike: split it, or drop it.
@@ -37,9 +41,8 @@ the repository's own set answered with (`classification.md`).
   own; subsystems, concerns and resources from what its issues are about.
 - **A set the user names as the model** — another repository of theirs — may seed them. Each
   value still has to be one this project's issues carry.
-- **A candidate concern or resource is a question to the issues** — security, concurrency,
-  lifecycle, observability, what freezes once shipped; memory, storage, loop time, bus time — and
-  enters only where they carry it.
+- **A candidate concern or resource is a question to the issues** — a property of the result, or
+  a budget, they keep coming back to — and enters only where they carry it.
 
 ## Proposing a set the repository does not have
 
@@ -68,12 +71,14 @@ nor has a milestone, or anything as a side effect of applying a label.
 
 Only on the user's explicit word, naming the labels:
 
-- **Snapshot first** — the set, and every carrier: issues and change requests, in every state.
-- **Rename rather than delete and create** — a rename carries every carrier with it.
+- **Snapshot first** — the set, and every carrier: issues, change requests and discussions, in
+  every state.
+- **Rename rather than delete and create** — what a rename carries is `forge-behaviour.md`'s.
 - **Delete last**, and only a label no carrier holds beyond the ones the approved plan relabels;
   a carrier found outside the plan stops the deletion.
 - **A label a GitLab group passes down** is the group's: a rename or deletion from the project is
-  refused.
+  refused. The plugin's own `epic` and `wave` are never renamed or deleted here: it finds them by
+  name ([`epic-structure.md`](epic-structure.md)).
 - **Read back** the set and the carriers once written.
 
 The invocations are `forge-docs.md`'s.

@@ -53,8 +53,8 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
   shared feature branch.
 - **The lower bound (Tier 0).** Trivial work — one slice, no architectural decisions, a couple of
   files — skips the gate and this whole orchestration: make the edit and hand it to
-  `hcb-dev:shipping-workflow`. A verdict of anything but `current`, or a parked reason that still
-  holds, is never trivial, whatever edit it implies: it carries a fork, and a fork is the gate.
+  `hcb-dev:shipping-workflow`. A verdict of anything but `current`, or a parked reason still on the
+  issue, is never trivial, whatever edit it implies: it carries a fork, and a fork is the gate.
   Skipping the gate skips the **asking**, never the **threading** — settlements the invocation
   carried travel on exactly as they arrived, what none carried `slice-completion.md`'s ladders
   settle downstream, and nothing was approved here, so no approval is what those ladders read.
@@ -190,8 +190,8 @@ through `hcb-dev:status`, invoked through the Skill tool; a title this session g
 |---|---|
 | [`../../references/invariants.md`](../../references/invariants.md) | once, before the first read of anything a tool, a forge or another session answers |
 | [`../../references/slice-completion.md`](../../references/slice-completion.md) | at Phase 0's Tier 0 call, and before Phase 2's first cut |
-| [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) | before Phase 1 |
-| [`../../references/issue-currency.md`](../../references/issue-currency.md), [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) | at Phase 0, before anything is built on an issue |
+| [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md), [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) | before Phase 1 |
+| [`../../references/issue-currency.md`](../../references/issue-currency.md) | at Phase 0, before anything is built on an issue |
 | [`../../references/base-resolution.md`](../../references/base-resolution.md) | before Phase 0's refresh and Phase 2's cut |
 | [`../../references/branch-naming.md`](../../references/branch-naming.md) | before Phase 1's layout and Phase 2's cut |
 | [`../../references/findings.md`](../../references/findings.md) | before Phase 2's development, and again before Phase 3's issues output |

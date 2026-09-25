@@ -63,20 +63,21 @@ forge call. Publishing is the escalation offer below, and only by consent.
   a closed request. Then push and open it inline, mirrored, with a body per
   [`merge-message.md`](merge-message.md) carrying the closing keywords `issues` names — a
   body filled from the commits carries none — and the labels
-  [`label-lifecycle.md`](label-lifecycle.md) gives a request into the default branch, one
-  `--label` each:
+  [`label-lifecycle.md`](label-lifecycle.md) gives it:
   ```bash
+  F="<the file of label names label-lifecycle.md writes — empty where the request takes none>"
+  ARGS=(); while IFS= read -r l; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
   # GitHub
-  gh pr create   --base <parent> --head <branch> --title "<title>" --body "<body>" --label "<label>"
+  gh pr create   --base <parent> --head <branch> --title "<title>" --body "<body>" "${ARGS[@]}"
   # GitLab
   glab mr create --target-branch <parent> --source-branch <branch> --title "<title>" \
-    --description "<body>" --label "<label>"
+    --description "<body>" "${ARGS[@]}"
   ```
   Any flag beyond these comes from [`forge-docs.md`](forge-docs.md), the installed CLI's
   `--help` first. A ref published under `old-name` stays here too — nothing on this path proves
   it this branch's — and the report names it as standing. **Opening it is all this path does —
-  say so**: no fix loop is being driven, no merge, and no label re-derived or aligned at close,
-  so nobody who asked to "ship it" assumes the change is on its way. An `on-green` or `queued` goes unspent for the same reason.
+  say so**: no fix loop is being driven and no merge, so nobody who asked to "ship it" assumes
+  the change is on its way. An `on-green` or `queued` goes unspent for the same reason.
 - **Merge authorization.** Pass `merge-auth`, value and addressee both, into the driver, where a
   threaded value **outranks** whatever the driver would otherwise read out of the words that
   started the run. Completion never invents an authorization it was not handed, nor upgrades one.

@@ -7,14 +7,14 @@ repository at hand, the model set [`label-model.md`](label-model.md) proposes in
 
 ## The roles
 
-| role | layer | leaf issue | parent issue | change request | what it names |
+| role | layer | leaf issue | parent issue | change request that carries labels | what it names |
 |---|---|---|---|---|---|
-| kind of work | goal | exactly one | exactly one — its children's dominant kind | exactly one | a capability that does not exist yet · shipped behaviour deviating from spec or intent, latent defects included · internal quality with no new capability |
+| kind of work | goal | exactly one | exactly one — its children's dominant kind | exactly one, unless the kind is a native type | a capability that does not exist yet · shipped behaviour deviating from spec or intent, latent defects included · internal quality with no new capability |
 | component | outcome | at least one | none | at least one | where the work lands — the parts of the tree its diff changes; docs follow their subject. Three or more on a leaf is a signal to decompose, not to label harder |
 | subsystem | outcome | any | none | any | a second axis where the project has one: the subsystem the result belongs to, judged where the component is derived |
 | concern | outcome | any | none | any | a property of the result across components — security among them |
 | resource | outcome | any | none | any | a budget the result changes: its use, its peak, what happens when it runs out |
-| parked reason | queue | at most one, while open | at most one | none | the pending trigger that should reopen attention — a decision, an upstream release, a dependency the tracker cannot link ([`issue-links.md`](issue-links.md)). **Absence means ready to pick up**, unless an open blocker holds it |
+| parked reason | queue | at most one, while open | at most one, while open | none | the pending trigger that should reopen attention — a decision, an upstream release, a dependency the tracker cannot link ([`issue-links.md`](issue-links.md)). **Absence means ready to pick up**, unless an open blocker holds it |
 | priority | queue | at most one | at most one | none | how far up the queue the work is wanted, ordinal within the family. **Absence means normal** |
 
 **A label goes by what the result changes, never by what the text mentions**; in doubt, none. A
@@ -93,15 +93,16 @@ meaning a human accepted it.
 
 ## A carrier out of line
 
-One carrying a role outside the mechanism resolved above — a native field nobody adopted, a
-family the repository has moved off — one carrying it in a mechanism that resolution names but
-not in another it names as well, one carrying two contradicting values, and one carrying a role
-its column in the table above gives none: a parent with an outcome label, a closed issue still
-parked, a change request with a queue label. One carrying a role nowhere is not out of line but
-unclassified. Align it to a single value, carried in every mechanism resolution names and in none
-it does not: added where missing, cleared where it stands outside them, and put in place of a
-value that contradicts it. Which value that is, is the user's wherever the two disagree. It is a
-tracker edit — proposed, and made only on the answer that authorizes one
+One carrying a role outside the mechanism resolved above — a native field nobody adopted, a family
+the repository has moved off — one carrying it in a mechanism that resolution names but not in
+another it names as well, one carrying two contradicting values, and one carrying a role its column
+in the table above gives none: a parent with an outcome label, a closed issue still parked, a change
+request with a queue label. One carrying a role nowhere is not out of line but unclassified. Align
+it to a single value, carried in every mechanism resolution names and in none it does not: added
+where missing, cleared where it stands outside them, and put in place of a value that contradicts it
+— or, for a role its column gives none, cleared. Which value that is, is the user's wherever the two
+disagree; the last case is the carrier's own, the same value elsewhere not out of line with it. It
+is a tracker edit — proposed, and made only on the answer that authorizes one
 (`hcb-dev:issue-tracking`), never as a side effect of classifying something else, save the writes
 `label-lifecycle.md` names.
 

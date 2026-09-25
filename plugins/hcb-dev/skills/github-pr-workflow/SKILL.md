@@ -119,11 +119,12 @@ An open PR for this branch is not recreated — skip to the loop. Otherwise crea
 for review**, never draft ([`references/copilot.md`](references/copilot.md) says what a draft
 costs), titled in `branch-naming.md`'s shape, its body per
 [`../../references/merge-message.md`](../../references/merge-message.md), and carrying the labels
-[`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) gives it — one
-`--label` each, none on a PR into anything but the default branch:
+[`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) gives it:
 
 ```bash
-gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>" --label "<label>"
+F="<the file of label names label-lifecycle.md writes — empty where the PR takes none>"
+ARGS=(); while IFS= read -r l; do [ -n "$l" ] && ARGS+=(--label "$l"); done < "$F"
+gh pr create --base <base> --head <branch> --fill --title "<title>" --body "<body>" "${ARGS[@]}"
 ```
 
 ## Step 4 — The fix loop (until GitHub says mergeable)
@@ -133,8 +134,8 @@ iterations, then escalate. Gates decide *permission* to merge, your bar decides 
 where they diverge the stricter wins. Severity decides what you *fix*, never when you are
 *done*. The bar, whatever the repo enforces: every required check green and CI genuinely
 green; the base's own review and thread requirements met (`references/merge-gates.md`); the PR
-body and labels describing the head about to land (`merge-message.md`, `label-lifecycle.md`,
-rewritten with `gh pr edit <pr>`); and every Copilot review **this driver waits for** settled
+body describing the head about to land (`merge-message.md`, rewritten with `gh pr edit <pr>
+--body`), and its labels too where `label-lifecycle.md` says they hold it; and every Copilot review **this driver waits for** settled
 with its Critical and Important findings fixed, its comments answered and its threads resolved — or,
 where a wait ran out, the addressee's word to merge with the head unreviewed, said in the report.
 
@@ -173,7 +174,7 @@ either becomes a stop.
    waits for before the exit above is evaluated, and what a review that did not approve asks for;
    `copilot-findings.md` owns the readings, the ladder, the pushes and the reply protocol.
 4. **Re-read from this loop's step 1**, not the top-level Step 1 — and after any push, bring the
-   body and labels back to what is landing first (`merge-message.md`).
+   body back to what is landing first (`merge-message.md`), and the labels per `label-lifecycle.md`.
 
 ## Steps 5 to 7 — merge, watch it land, report
 
