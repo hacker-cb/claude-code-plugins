@@ -64,14 +64,13 @@ const answer = {
   read: false,
   // Only a linked worktree is a tree a master may move; `false` here means move nothing.
   linked: null,
-  // Where HEAD stood when this run began; `head` is where it stands now.
-  from: null,
   head: null, detached: null, branch: null,
   ref: { name: opts.ref, sha: null },
   contains: opts.contains === null ? null : { name: opts.contains, sha: null, held: null },
-  // `held` false: the base no longer holds that commit — rewritten since. `reason` wherever
-  // `landed` could not be told.
-  since: opts.since === null ? null : { name: opts.since, sha: null, held: null, reason: null },
+  // `held` false: the base no longer holds that commit, or this checkout never had it —
+  // rewritten past it. `to`: the tip `landed` was read to, set only where it was read whole;
+  // `reason` wherever it was not.
+  since: opts.since === null ? null : { name: opts.since, sha: null, held: null, to: null, reason: null },
   // Live sessions other than this run standing in this worktree: a move changes files
   // under them.
   others: [],
@@ -115,22 +114,36 @@ const listed = (field, lines, count = lines.length) => {
   answer[`${field}Count`] = count;
   answer[field] = lines.slice(0, LIST);
 };
-// A range of commits counted apart and listed only as far as the answer shows — either can
-// run to thousands. Returns what git would not give, or null.
+// A range of commits listed only as far as the answer shows, and counted apart only where it
+// runs past that — it can run to thousands. Returns what git would not give, or null.
 const span = (field, flags, range) => {
-  const n = git(['rev-list', ...flags, '--count', ...range]);
-  if (!n.ok || !/^[0-9]+$/.test(n.out)) return why(n);
-  const l = n.out === '0' ? { ok: true, out: '' }
-    : git(['log', '--no-show-signature', ...flags, `--max-count=${LIST}`, '--format=%H %s', ...range]);
+  const l = git(['log', '--no-show-signature', ...flags, `--max-count=${LIST + 1}`, '--format=%H %s', ...range]);
   if (!l.ok) return why(l);
-  listed(field, l.out.split('\n').filter(Boolean), Number(n.out));
+  const lines = l.out.split('\n').filter(Boolean);
+  let count = lines.length;
+  if (count > LIST) {
+    const n = git(['rev-list', ...flags, '--count', ...range]);
+    if (!n.ok || !/^[0-9]+$/.test(n.out)) return why(n);
+    count = Number(n.out);
+  }
+  listed(field, lines, count);
   return null;
+};
+// A ref's commit: `sha`, null where this checkout names none, or `error` where git did not answer.
+const commitOf = (ref) => {
+  const r = git(['rev-parse', '--verify', '-q', `${ref}^{commit}`]);
+  if (r.ok && r.out) return { sha: r.out };
+  return r.code === 1 ? { sha: null } : { error: why(r) };
+};
+// Whether `a` is in `b`'s history: true, false, or what git said instead of answering.
+const holds = (b, a) => {
+  const r = git(['merge-base', '--is-ancestor', a, b]);
+  return r.ok ? true : r.code === 1 ? false : why(r);
 };
 
 // Git takes these over the directory it runs in: set, they name a tree other than this
 // session's, and the switch would land there.
-const steered = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY',
-  'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT']
+const steered = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY']
   .filter((n) => process.env[n]);
 if (steered.length) {
   refuse(`${steered.join(', ')} set in this session's environment — git would answer about the tree`
@@ -172,48 +185,50 @@ const readHead = (strict) => {
 const onBase = () => answer.atRef && answer.detached;
 
 const mustCommit = (ref) => {
-  const r = git(['rev-parse', '--verify', '-q', `${ref}^{commit}`]);
-  if (!r.ok || !r.out) refuse(`${ref} is not a commit this checkout knows — refresh it, or name another`);
-  return r.out;
+  const c = commitOf(ref);
+  if (c.error) refuse(`could not read ${ref} (${c.error})`);
+  if (!c.sha) refuse(`${ref} is not a commit this checkout knows — refresh it, or name another`);
+  return c.sha;
 };
 answer.ref.sha = mustCommit(opts.ref);
 readHead(true);
-answer.from = answer.head;
 
 // Before anything else is read: whether the base holds its remote copy is an answer the
 // caller needs from the main checkout as much as from a tree it may move.
 if (answer.contains) {
   answer.contains.sha = mustCommit(opts.contains);
-  const a = git(['merge-base', '--is-ancestor', answer.contains.sha, answer.ref.sha]);
-  if (a.ok) {
-    answer.contains.held = true;
-  } else if (a.code === 1) {
-    answer.contains.held = false;
+  const held = holds(answer.ref.sha, answer.contains.sha);
+  if (typeof held === 'string') refuse(`could not read whether ${opts.ref} holds ${opts.contains} (${held})`);
+  answer.contains.held = held;
+  if (!held) {
     answer.blockers.push(`${opts.ref} lacks commits ${opts.contains} carries — a local parent`
       + ' behind or apart from its remote copy is not the base yet');
-  } else {
-    refuse(`could not read whether ${opts.ref} holds ${opts.contains} (${why(a)})`);
   }
 }
 
-// --- what landed: asked of the base, not of this tree, so the main checkout answers it too.
-// Each first-parent commit is a merge, a squash, or one of a rebased request's commits.
+// --- what landed: asked of the base, not of this tree, so the main checkout answers it too;
+// of the remote copy where a local parent lags it, that being what is read then. Each
+// first-parent commit is a merge, a squash, or one of a rebased request's or a push's commits.
 if (answer.since) {
   const sn = answer.since;
-  const c = git(['rev-parse', '--verify', '-q', `${opts.since}^{commit}`]);
-  if (!c.ok || !c.out) {
-    sn.reason = `${opts.since} is not a commit this checkout knows`;
+  const [tipName, tip] = answer.contains?.held === false
+    ? [opts.contains, answer.contains.sha] : [opts.ref, answer.ref.sha];
+  const c = commitOf(opts.since);
+  // A base that held it would have brought it here: a commit this checkout lacks is one the
+  // base no longer holds.
+  const held = c.error ? c.error : c.sha ? holds(tip, c.sha) : false;
+  sn.sha = c.sha || null;
+  if (typeof held === 'string') {
+    sn.reason = `could not read whether ${tipName} holds ${opts.since} (${held})`;
+  } else if (!held) {
+    sn.held = false;
+    sn.reason = `${tipName} no longer holds ${opts.since} — the base was rewritten past it, and what`
+      + ' landed cannot be told from it';
   } else {
-    sn.sha = c.out;
-    const a = git(['merge-base', '--is-ancestor', sn.sha, answer.ref.sha]);
-    if (a.ok) sn.held = true;
-    else if (a.code === 1) {
-      sn.held = false;
-      sn.reason = `${opts.ref} no longer holds ${opts.since} — the base was rewritten since, and what landed`
-        + ' cannot be told from it';
-    } else sn.reason = `could not read whether ${opts.ref} holds ${opts.since} (${why(a)})`;
-    const lost = sn.held ? span('landed', ['--first-parent'], [`${sn.sha}..${answer.ref.sha}`, '--']) : null;
-    if (lost) sn.reason = `could not list what the base took after ${opts.since} (${lost})`;
+    sn.held = true;
+    const unread = span('landed', ['--first-parent'], [`${sn.sha}..${tip}`, '--']);
+    if (unread) sn.reason = `could not list what the base took after ${opts.since} (${unread})`;
+    else sn.to = tip;
   }
 }
 

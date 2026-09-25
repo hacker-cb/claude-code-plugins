@@ -74,7 +74,8 @@ case "$1" in
   merge-base)
     # `--since`: whether the base still holds the commit landings were taken up to.
     if [ -n "$(ask '.since')" ] && [ "$3" = "$(ask '.since')" ]; then
-      [ "$4" = "$(ask '.refs | to_entries[0].value')" ] || refuse "since held against another commit: $*"
+      to=$(ask '.landed_to'); [ -n "$to" ] || to=$(ask '.refs | to_entries[0].value')
+      [ "$4" = "$to" ] || refuse "since held against another commit: $*"
       case "$(ask '.since_held')" in
         no) exit 1 ;;
         fail) echo "fatal: not a valid commit" >&2; exit 128 ;;
@@ -106,9 +107,11 @@ case "$1" in
     # and every other branch.
     base=$(ask '.refs | to_entries[0].value')
     case " $* " in *" --first-parent "*) fp=" --first-parent" ;; *) fp="" ;; esac
-    if [ "$1" = rev-list ]; then want=" rev-list$fp --count"; else want=" log --no-show-signature$fp --max-count=20 --format=%H %s"; fi
+    if [ "$1" = rev-list ]; then want=" rev-list$fp --count"; else want=" log --no-show-signature$fp --max-count=21 --format=%H %s"; fi
     if [ -n "$fp" ]; then
-      case " $* " in "$want $(ask '.since')..$base -- ") ;; *) refuse "landed asked as: $*" ;; esac
+      # Read to the remote copy where the local parent lags it, to the base otherwise.
+      to=$(ask '.landed_to'); [ -n "$to" ] || to=$base
+      case " $* " in "$want $(ask '.since')..$to -- ") ;; *) refuse "landed asked as: $*" ;; esac
       v=$(ask '.landed'); n=$(ask '.landed_count')
     else
       case " $* " in "$want HEAD --not $base --remotes"*" --branches -- ") ;; *) refuse "$1 asked as: $*" ;; esac

@@ -22,8 +22,7 @@ its first report.
 ## Moving it
 
 First in every event of the master's loop, before anything in it is read — a report of a landing
-among them, which is a reason to look rather than the landing itself — and on assuming the role,
-and first after a restart or a compaction. Where the base has not moved, the answer is `already`.
+among them — and on assuming the role, and first after a restart or a compaction. Where the base has not moved, the answer is `already`.
 
 ```bash
 BASE="$(cat <<'NAME'
@@ -53,14 +52,14 @@ answer means here:
 | `base.sharesHistory` false, or null | refused, or unknown: stop, saying which |
 | `read: false` | nothing was measured: `reason` goes to the user, and nothing moves |
 | `linked: false` | the main checkout: move nothing, read through refs only |
-| `movable: false` | what stands — another session in the tree (`others`), the `dirty` entries, the `ownWork` commits, an operation `inProgress`, a local parent that lags — goes to the user, recommendation first; clearing it is theirs, and until then the tree is read through refs only |
+| `movable: false` | what stands — another session in the tree (`others`), the `dirty` entries, the `ownWork` commits, an operation `inProgress`, a local parent that lags — goes to the user, recommendation first, and not again while it stands unchanged; clearing it is theirs, and until then the tree is read through refs only |
 | `move: "done"`, or `"already"` | `head` is the base, and the sha every fact of this event is read at; a `done` carrying `moveError` reached the base, and git's words go to the user all the same |
 | `move: "dirty"`, `"refused"` or `"unread"` | `moveError` goes to the user, with where `head` stands and what `dirty` lists; nothing else is tried |
-| the tree did not move | what this event reads, it reads through `ref.sha` — the tip just refreshed — never through `head`; through `contains.sha` where `contains.held` is false, the remote copy being ahead of the parent |
-| `since.held` true | `landed` is what the base took after that commit, newest first; where `landedCount` is more than it lists, the rest through `git log --first-parent <since.sha>..<ref.sha>`. Sort them into landings — the commits of one change request are one landing, the forge naming the request a commit belongs to, and a commit none carries is a push of its own. One the wave's queue already records is taken; every other is a landing as the master's loop takes one, reported or not. Once they are in the ledger, its header's mark moves to `ref.sha` |
-| `since` null | run with no mark: nothing tells what landed before this, and the header's mark is set to `ref.sha` |
-| `since.held` false | the base was rewritten under the mark: to the user, and the mark moves only on their word |
-| `since.reason`, `held` not false | this event's landings are untold: said so, and asked again at the next event from the same mark |
+| the tree did not move | what this event reads, it reads through `ref.sha` — the tip just refreshed — never through `head`; through `contains.sha` where `contains.held` is false |
+| `since.to` | `landed` is what the base took after `since.sha` up to `since.to`, newest first; where `landedCount` is more than it lists, the rest through `git log --first-parent <since.sha>..<since.to>`. Sort them into landings — the commits of one change request are one landing, the forge naming the request a commit belongs to; the commits none carries, together, are one push, its checks read at the newest of them. One the ledger already records is taken; every other is a landing as the master's loop takes one, reported or not. Once they are in the ledger, its header's mark moves to `since.to`. A reported landing neither the ledger records nor `landed` names is answered as not on the base yet, and looked for again at the next event |
+| `since` null | run with no mark: the header's mark is set to the tip this event reads |
+| `since.held` false | the base no longer holds the mark — rewritten past it: to the user, and the mark moves only on their word |
+| `since.reason`, `held` not false | this event's landings are untold: said so; the mark stays, and the next event asks from it |
 
 ## Reading
 
@@ -83,11 +82,13 @@ other than the base runs isolated, as below.
 
 Anything that runs the project's code or tools — tests, linters, a build, a generator, a probe,
 a mutation — runs in a subagent launched with worktree isolation (`claude-worktrees.md`), on the
-base as on any other ref. One subagent per question, handed the sha: it notes its own branch
-(`git branch --show-current`), switches its worktree to the sha (`git switch --detach <sha>`)
+base as on any other ref. One subagent per question, handed the sha: it notes where it stands
+(`git branch --show-current`, or `git rev-parse HEAD` where that is empty), switches its
+worktree to the sha (`git switch --detach <sha>`)
 and confirms `git rev-parse HEAD`, prepares what the run needs, runs, puts the worktree back
 (`git reset --hard -q <sha> && git clean -fdq`, then `git status --porcelain` empty — what does
-not clear is part of its answer), switches back to the branch it noted, and returns what it
+not clear is part of its answer), switches back to what it noted (`git switch <branch>`, or
+`git switch --detach <commit>`), and returns what it
 ran, the exit and what it printed. The
 reads above are not runs, and neither is `git merge-tree`. A ref carrying commits from outside
 this repository — a change request from a fork — runs only on the user's word, asked with what
