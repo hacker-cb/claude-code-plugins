@@ -44,7 +44,7 @@ concludes rather than a number handed in.
 Resolve and refresh it per
 [`../../references/base-resolution.md`](../../references/base-resolution.md) —
 where the epic completes in `local` mode, the local parent holding its remote
-copy — and pin it as `<remote>/<branch>@<sha>` beside the moment the tracker is read at:
+copy — and pin it as `<remote>/<branch>@<sha>` — `<branch>@<sha>` for a local parent — beside the moment the tracker is read at:
 together they are what this pass verified on, and what the next one diffs from.
 
 **Every read of this pass goes through that ref, never through a working tree** —
@@ -72,7 +72,7 @@ disagreement is itself a finding:
   claims holds just as much.
 
 Every disagreement goes to the user — a request reaching past its zone, a row
-past `chipped` and short of `accepted` with no session, `blocked` included, a
+past `chipped` and short of `accepted` with no session, `blocked` after it included, a
 session with no row. A `chipped` row with no session goes to the user as the
 click the ledger's expectations say they owe, with the chip's age. Until one is settled the ground is read
 the **safer** way rather than the wider or the narrower: a zone read two ways is

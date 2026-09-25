@@ -3,8 +3,8 @@
 //
 // A master reads code on everyone's behalf, so its tree stands detached on the base and
 // carries nothing of its own; the one write it ever takes is the switch to a newer tip.
-// This measures whether that switch is safe and, with --move, makes it. It never
-// fetches — `resolve-base.mjs` refreshes the ref it is handed — and never stashes,
+// This measures whether that switch is safe and, with --move, makes it. It does not fetch
+// the base — `resolve-base.mjs` refreshes the ref it is handed — and never stashes,
 // resets or cleans: a tree that is not safe to move is reported with what stands in it,
 // and clearing that is the user's.
 //
@@ -67,8 +67,9 @@ const answer = {
   inProgress: [],
   // What `git status` lists, save a submodule whose checkout merely lags the commit the
   // index records: a switch moves that commit and leaves the checkout where it was, and
-  // counting it would stop every move after the first.
-  dirty: [], dirtyCount: 0,
+  // counting it would stop every move after the first. Those lag in `submodulesBehind`:
+  // their files on disk are not the base's.
+  dirty: [], dirtyCount: 0, submodulesBehind: [],
   // Commits HEAD carries that neither the base, a remote nor another branch holds: work of
   // this tree's own, or a base rewritten under it. A switch away from them strands them.
   ownWork: [], ownWorkCount: 0,
@@ -76,13 +77,11 @@ const answer = {
   atRef: null,
   blockers: [],
   movable: false,
-  // Filters the repository configures, passed through for every read and write of the working
-  // tree here: no project code runs in it, so a file under one lands in its stored form.
-  filtersOff: [],
   // null: not asked, or blocked · `done`: on the base, clean · `already`: detached on it
-  // already · `refused`: git would not switch and HEAD stands where it stood · `dirty`: on
-  // the base, but the switch left changes behind · `unread`: where HEAD went could not be
-  // read. `moveError` carries git's words wherever the switch did not come off clean.
+  // already · `dirty`: the switch left changes in the tree, HEAD standing where `head` says ·
+  // `refused`: git would not switch, and HEAD stands where it stood · `unread`: what the
+  // switch left could not be read. `moveError` carries git's words wherever the switch did
+  // not come off clean.
   move: null, moveError: null,
   reason: null,
 };
@@ -110,7 +109,9 @@ answer.linked = gitDir !== dir('--git-common-dir');
 // instead, since the tree has moved whatever the read says, and clears what it no longer knows.
 const readHead = (strict) => {
   const h = git(['rev-parse', '--verify', '-q', 'HEAD^{commit}']);
-  const b = h.ok ? git(['symbolic-ref', '--quiet', '--short', 'HEAD']) : null;
+  // The full name, cut here: `--short` answers `heads/<name>` where a tag shares the name,
+  // and the `--exclude` below matches a branch's name without its `refs/heads/`.
+  const b = h.ok ? git(['symbolic-ref', '--quiet', 'HEAD']) : null;
   // 1 is git's "detached", said without a word; any other failure did not answer.
   if (!h.ok || (!b.ok && b.code !== 1)) {
     const what = !h.ok ? `HEAD names no commit (${why(h)})` : `whether HEAD is on a branch (${why(b)})`;
@@ -119,11 +120,12 @@ const readHead = (strict) => {
     return what;
   }
   answer.head = h.out;
-  answer.branch = b.ok ? b.out : null;
+  answer.branch = b.ok ? b.out.replace(/^refs\/heads\//, '') : null;
   answer.detached = !b.ok;
   answer.atRef = answer.head === answer.ref.sha;
   return null;
 };
+const onBase = () => answer.atRef && answer.detached;
 
 const mustCommit = (ref) => {
   const r = git(['rev-parse', '--verify', '-q', `${ref}^{commit}`]);
@@ -168,25 +170,16 @@ if (answer.contains) {
   }
 }
 
-// --- the repository's filters, every one passed through for each read or write of the
-// working tree below: a clean or smudge filter is project code, and none runs in this tree.
-// 1 from `--get-regexp` is "none configured".
-const f = git(['config', '--get-regexp', '^filter\\..*\\.(clean|smudge|process)$']);
-if (!f.ok && f.code !== 1) refuse(`could not read which filters this repository configures (${why(f)})`);
-answer.filtersOff = [...new Set(f.ok ? f.out.split('\n').filter(Boolean)
-  .map((l) => l.split(/\s/)[0].replace(/^filter\./, '').replace(/\.(clean|smudge|process)$/, '')) : [])];
-const unfiltered = answer.filtersOff.flatMap((n) => ['-c', `filter.${n}.smudge=cat`, '-c', `filter.${n}.clean=cat`,
-  '-c', `filter.${n}.process=`, '-c', `filter.${n}.required=false`]);
-
 // --- what stands in the tree. Porcelain v2: every entry opens with its kind, so nothing a
 // trim takes off the ends is part of one, and a submodule entry says what changed in it.
 // Untracked files and submodules named outright — a config hiding either hides what a
 // switch would carry.
 const readDirty = () => {
-  const st = git([...unfiltered, 'status', '--porcelain=v2', '-z', '--untracked-files=normal', '--ignore-submodules=none']);
+  const st = git(['status', '--porcelain=v2', '-z', '--untracked-files=normal', '--ignore-submodules=none']);
   if (!st.ok) return `the working tree's status (${why(st)})`;
   const tokens = st.out.split('\0');
   const out = [];
+  const lagging = [];
   // Fields before the path: 8 for an ordinary change, 9 for a rename or copy, 10 for an
   // unmerged one.
   const fields = { 1: 8, 2: 9, u: 10 };
@@ -201,9 +194,11 @@ const readDirty = () => {
     let entry = `${xy} ${parts.slice(n).join(' ')}`;
     // A rename or a copy carries its source as the next field, which is not an entry.
     if (t[0] === '2') { i += 1; entry += ` (from ${tokens[i] ?? 'an unnamed path'})`; }
-    if (!(xy === '.M' && sub === 'SC..')) out.push(entry);
+    if (xy === '.M' && sub === 'SC..') lagging.push(parts.slice(n).join(' '));
+    else out.push(entry);
   }
   listed('dirty', out);
+  answer.submodulesBehind = lagging;
   return null;
 };
 const unread = readDirty();
@@ -227,21 +222,21 @@ if (answer.ownWorkCount) {
     + ' strand them');
 }
 
+// A count for the report alone: one git would not give leaves it null and decides nothing.
 const behind = git(['rev-list', '--count', `HEAD..${answer.ref.sha}`, '--']);
-if (!behind.ok || !/^[0-9]+$/.test(behind.out)) refuse(`could not count what the base has that HEAD lacks (${why(behind)})`);
-answer.behind = Number(behind.out);
+answer.behind = behind.ok && /^[0-9]+$/.test(behind.out) ? Number(behind.out) : null;
 
 answer.movable = answer.blockers.length === 0;
 
 if (opts.move && answer.movable) {
-  if (answer.atRef && answer.detached) {
+  if (onBase()) {
     answer.move = 'already';
   } else {
     // By the commit read above, not by the name: a fetch between the two would put HEAD on a
     // tip nothing here measured. An ignored file the base tracks is refused rather than
     // overwritten, no hook runs, and no submodule is moved under its own work.
-    const s = git(['-c', 'core.hooksPath=/dev/null', ...unfiltered, 'switch', '--detach', '--no-overwrite-ignore',
-      '--no-recurse-submodules', '--quiet', answer.ref.sha]);
+    const s = git(['-c', 'core.hooksPath=/dev/null', 'switch', '--detach', '--no-overwrite-ignore',
+      '--no-recurse-submodules', '--quiet', answer.ref.sha], 600000);
     // Git's whole message: its last line is "Aborting", and the reason sits above it.
     if (!s.ok) answer.moveError = s.timedOut ? 'timed out' : (s.err || 'no detail');
     // The tree is read again whatever the switch answered: an interrupted one may have
@@ -252,13 +247,15 @@ if (opts.move && answer.movable) {
       answer.move = 'unread';
       answer.moveError = [answer.moveError, `after the switch, could not read ${lost || after}`]
         .filter(Boolean).join(' — ');
-    } else if (!(answer.atRef && answer.detached)) {
+    } else if (answer.dirtyCount) {
+      answer.move = 'dirty';
+      if (!answer.moveError) answer.moveError = 'the switch left changes in the tree';
+    } else if (!onBase()) {
       answer.move = 'refused';
       if (!answer.moveError) answer.moveError = `git answered the switch, yet HEAD stands on ${answer.head}`;
     } else {
       answer.behind = 0;
-      answer.move = answer.dirtyCount ? 'dirty' : 'done';
-      if (answer.dirtyCount && !answer.moveError) answer.moveError = 'the switch left changes in the tree';
+      answer.move = 'done';
     }
   }
 }

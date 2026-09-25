@@ -257,7 +257,7 @@ the plan stages them.
   it, and each wave's own issue filed on it, labelled `wave`, with a ledger of its own
   and the wave's issues hung under it per `references/wave-issue.md` — launch
   through `wave-dispatch`, then run the
-  loop — answering batch questions only after re-verifying against the base,
+  loop — answering batch questions only after re-verifying them through a pinned revision,
   accepting returns against the ledger's standing constraints, recomputing what
   an executed tracker edit moved in the slice, keeping the epic's own wave table
   level with every redraw, and opening each wave as its gate clears. Never takes

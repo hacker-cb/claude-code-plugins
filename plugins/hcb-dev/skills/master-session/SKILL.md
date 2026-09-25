@@ -7,7 +7,7 @@ description: >-
   a named body of work; when a wave plan must be drawn or redrawn; and when a
   session resumes mastering after a restart ("ты мастер #N — восстановись").
   The master plans batches, launches them through `hcb-dev:wave-dispatch`,
-  answers their questions only after re-verifying against the base, accepts
+  answers their questions only after re-verifying them, never from memory, accepts
   their returns per the acceptance protocol, keeps the wave ledgers current,
   and opens each next wave as its gate clears — it does not build batches
   itself. Not for being one batch of a wave (`hcb-dev:wave-worker`), and not

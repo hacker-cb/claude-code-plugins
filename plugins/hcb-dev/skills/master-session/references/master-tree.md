@@ -1,8 +1,7 @@
 # The master's own tree
 
 Where a master session's working tree stands, when it moves, and how the master reads and
-runs anything off it. Every answer, acceptance and ruling the master gives rests on the code
-this puts in front of it.
+runs anything off it.
 
 ## Where it stands
 
@@ -14,18 +13,11 @@ edit, no commit, no branch checked out — the switch to a newer tip is the only
 The branch the first switch leaves behind is residue for the epic's close to offer
 `/hcb-dev:git-cleanup` for.
 
-Only this session's own linked worktree moves, and only while no other session stands in it:
-nothing here writes to the main checkout or to another session's worktree — no `cd` into one,
-no `git -C` at one. On assuming the role:
-
-```bash
-node "<plugin root>/scripts/worktree-owners.mjs" | jq '{read, reason, probeFailed, others: [.worktrees[] | select(.isHere) | .sessions[] | select(.isThisRun | not) | .pid]}'
-```
-
-`read` true, `probeFailed` false and no `others` is a tree this session may move
-([`../../../references/claude-worktrees.md`](../../../references/claude-worktrees.md)). Anything
-else, or a master standing in the main checkout, moves nothing at all: it reads through refs
-only, and says so in its first report.
+Only this session's own linked worktree moves, and only while no other session stands in it
+([`../../../references/claude-worktrees.md`](../../../references/claude-worktrees.md)): nothing
+here writes to the main checkout or to another session's worktree — no `cd` into one, no
+`git -C` at one. A master that may not move its tree reads through refs only, and says so in
+its first report.
 
 ## Moving it
 
@@ -36,14 +28,15 @@ only, and says so in its first report.
 
 ```bash
 BASE="$(cat <<'NAME'
-<the base branch the ledger's pins name, alone on this line>
+<the branch the ledger's pins name — before any pin, the base the assignment named, else the default branch>
 NAME
 )"
 LOCAL='<yes where the epic completes in local mode, no otherwise>'
 S="<plugin root>/skills/master-session/scripts/master-tree.mjs"
+O="$(node "<plugin root>/scripts/worktree-owners.mjs" | jq -c '{read, probeFailed, others: [.worktrees[] | select(.isHere) | .sessions[] | select(.isThisRun | not) | .pid]}')"; echo "$O"
 R="$(node "<plugin root>/scripts/resolve-base.mjs" --base "$BASE")"; printf '%s' "$R" | jq '{base, reason}'
 REF="$(printf '%s' "$R" | jq -r 'if .base.current and .base.sharesHistory then .base.ref else "" end')"
-if [ -z "$REF" ]; then echo "no current base: the resolver's answer above says why"
+if [ "$O" != '{"read":true,"probeFailed":false,"others":[]}' ] || [ -z "$REF" ]; then echo "nothing moves: the answers above say why"
 elif [ "$LOCAL" = yes ]; then node "$S" --ref "refs/heads/$(printf '%s' "$R" | jq -r .base.name)" --contains "$REF" --move
 else node "$S" --ref "$REF" --move; fi
 ```
@@ -54,6 +47,7 @@ answer means here:
 
 | what came back | here |
 |---|---|
+| the owners' answer not `read`, `probeFailed`, or `others` named | another session may stand in this tree: move nothing, read through refs only |
 | `silent` | the tree stays where it stands, and what it reads is said to rest on a base not refreshed |
 | `silent`, with `base.remote` null and several remotes named in `base.reason` | which remote carries the base is the user's to name: ask |
 | `gone` | nobody carries the base's name: stop, and settle the base with the user before the ledger records another |
@@ -62,19 +56,19 @@ answer means here:
 | `linked: false` | the main checkout: move nothing, read through refs only |
 | `movable: false` | what stands — the `dirty` entries, the `ownWork` commits, an operation `inProgress`, a local parent that lags — goes to the user, recommendation first; clearing it is theirs |
 | `move: "done"`, or `"already"` | `head` is the base, and the sha every fact is read at |
-| `move: "refused"`, `"dirty"` or `"unread"` | `moveError` goes to the user, with where `head` stands; nothing else is tried |
+| `move: "dirty"`, `"refused"` or `"unread"` | `moveError` goes to the user, with where `head` stands and what `dirty` lists; nothing else is tried |
 
 ## Reading
 
 Per `base-resolution.md`: the base's own objects, and every claim naming the revision it was
 read at — the `head` the last move left, or the sha a ref resolved to. The working tree is read
-only while HEAD is that sha and the last answer said `sparse: false`; a file under a filter
-`filtersOff` names is its stored form there.
+only while HEAD is that sha and the last answer said `sparse: false`, and never under a path
+`submodulesBehind` names — that submodule is read through its own objects.
 
 Another ref — a batch's branch, a change request's head, an older pin — is resolved to its sha
 once and read through it: never checked out, and never resolved again between two reads of one
-question. Git reads through `git show <sha>:<path>`, `git grep <pattern> <sha>`, and `git diff`,
-`git log -p` or `git show` of a commit with `--no-ext-diff --no-textconv`.
+question. Git reads through `git show <sha>:<path>`, `git grep -e <pattern> <sha> --`, and
+`git diff`, `git log -p` or `git show` of a commit with `--no-ext-diff --no-textconv`.
 
 A reader subagent is handed the sha and reads through it, writing nothing; one reading a ref
 other than the base runs isolated, as below.
@@ -87,8 +81,7 @@ base as on any other ref. One subagent per question, handed the sha: it switches
 worktree there (`git switch --detach <sha>`) and confirms `git rev-parse HEAD`, prepares what
 the run needs, runs, removes what the run left that `git status` lists, switches back to its
 own branch (`git switch -`), and returns what it ran, the exit and what it printed. The reads
-above are not runs, nor is `merge-tree` where `git config --get-regexp '^merge\..*\.driver$'`
-names no driver; where it names one, a `merge-tree` goes to such a subagent too.
+above are not runs, and neither is `git merge-tree`.
 
 A workflow's steps read through the sha and run nothing; a run goes to such a subagent. No
 review round runs in this session: a review a return says was skipped is the reopened batch's

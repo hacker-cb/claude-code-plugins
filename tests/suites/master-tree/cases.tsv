@@ -9,7 +9,7 @@ main-checkout	--ref refs/remotes/origin/dev --move	0	"linked": false|this is the
 old-git	--ref refs/remotes/origin/dev --move	0	"read": false|could not read this tree's git-dir|NOT:"move": "done"	a git that prints the flag back answers no path at all — unread, never a second tree that may be moved
 in-merge	--ref refs/remotes/origin/dev --move	0	"inProgress": [|MERGE_HEAD|half done|"move": null	a merge, rebase or cherry-pick git left half done is the user's to finish, and stops the move
 dirty	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 4|".M src/a.c"|"R. src/b2.c (from src/b.c)"|".M docs/read me.md"|"?? notes.txt"|"move": null	an untracked file rides a switch silently, so it stops the move like any change; a rename is one entry, and a path keeps its spaces
-submodule-drift	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 0|"move": "done"	a submodule whose checkout only lags the commit the index records is what every move leaves — not dirt
+submodule-drift	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 0|"submodulesBehind": [|lib/sub|"move": "done"	a submodule whose checkout only lags the commit the index records is what every move leaves — not dirt, but named: its files on disk are not the base's
 staged-gitlink	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 1|M. lib/sub|"move": null	a submodule commit staged in the index is a change of the tree's own, and stops the move
 own-work	--ref refs/remotes/origin/dev --move	0	"ownWorkCount": 1|probe left behind|a switch would strand them|"move": null	a commit neither the base nor any remote holds is work a switch would strand — or a base rewritten under the tree; either way the user's
 local-lags	--ref refs/heads/epic --contains refs/remotes/origin/epic --move	0	"held": false|lacks commits|"move": null	a local parent behind or apart from its remote copy is not the base yet
@@ -23,7 +23,7 @@ status-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not rea
 symref-unread	--ref refs/remotes/origin/dev --move	0	"read": false|whether HEAD is on a branch	only exit 1 means detached; any other failure did not answer
 dirs-unread	--ref refs/remotes/origin/dev --move	0	"read": false|git-dir|not a git repository	which tree this is could not be read — outside a checkout among the reasons, reported in git's words rather than as a call made wrong — so nothing is measured against it
 log-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not list the commits	a list git did not give is not zero commits of its own
-count-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not count	a count git did not give is not zero
+count-unread	--ref refs/remotes/origin/dev --move	0	"behind": 0|"move": "done"	how far behind is a count for the report alone: one git would not give leaves it null and decides nothing
 -	-	2	--ref is required	no base named is a call this cannot act on
 -	--ref --move	2	is not a ref this can read	a flag in the place of the ref is refused, not read as the ref
 -	--ref refs/remotes/../x	2	is not a ref this can read	a value git would not take as a ref name is refused before git sees it
@@ -31,7 +31,7 @@ count-unread	--ref refs/remotes/origin/dev --move	0	"read": false|could not coun
 -	--ref refs/remotes/origin/dev --repo-dir tests/suites/master-tree/no-such-dir	2	is not a directory	a directory that is not there is the caller's to fix, not a checkout that would not answer
 -	--ref refs/remotes/origin/dev --stash	2	unknown argument '--stash'	an argument it does not know is refused rather than ignored
 sparse	--ref refs/remotes/origin/dev --move	0	"sparse": true|"move": "done"	a sparse checkout still moves, and says it is sparse: its files on disk are not the whole base
-filters	--ref refs/remotes/origin/dev --move	0	"filtersOff": [|"gen.x"|"move": "done"	every filter the repository configures is passed through for status and the switch — or the stub refuses — so no project code runs in the tree; a name with a dot in it stays whole
 in-sequence	--ref refs/remotes/origin/dev --move	0	sequencer|half done|"move": null	a cherry-pick of several commits after its conflicted step was committed leaves no CHERRY_PICK_HEAD, only the sequence — and it still stops the move
-own-work-on-branch	--ref refs/remotes/origin/dev --move	0	"ownWorkCount": 1|committed on the host branch|"move": null	a commit on the branch HEAD is on is held by no OTHER branch: that branch is left out of the branches that hold, or its own commits would hold themselves
+own-work-on-branch	--ref refs/remotes/origin/dev --move	0	"ownWorkCount": 1|committed on the host branch|"move": null	a commit on the branch HEAD is on is held by no OTHER branch: that branch is left out of the branches that hold, or its own commits would hold themselves; the name is read in full and cut, since the short form of an ambiguous one is `heads/<name>`
 submodule-dirty-inside	--ref refs/remotes/origin/dev --move	0	"dirtyCount": 1|.M lib/sub|"move": null	a submodule with changes inside it is dirt, whatever the submodule's own ignore setting says — only a checkout that lags its recorded commit is not
+switch-partial	--ref refs/remotes/origin/dev --move	0	"move": "dirty"|src/half-written.c|killed	a switch git died in, HEAD where it was but the tree half written, is reported as the changes it left — never as a refusal that touched nothing
