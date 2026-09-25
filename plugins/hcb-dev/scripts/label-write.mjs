@@ -75,8 +75,7 @@ const names = (file, flag) => {
 };
 const add = names(opts.add, '--add');
 const remove = names(opts.remove, '--remove');
-// Compared without case: GitHub reads two spellings as one label.
-if (add.some((n) => remove.some((m) => m.toLowerCase() === n.toLowerCase()))) die('a name is both added and taken off');
+if (add.some((n) => remove.includes(n))) die('a name is both added and taken off');
 
 const answer = {
   read: false,
@@ -121,17 +120,33 @@ const probe = (cmd, checkout = false) => {
     return { cmd, ok: false, why: `${cmd}: answered without a repository and its path` };
   }
 };
+// The hosts this checkout's remotes name. A host no remote names and nobody passed is a server
+// telling this run where to write — with the user's token for that host — and is refused.
+const remoteHosts = (() => {
+  const r = runner(opts.dir, 'git')(['remote', '-v'], 30000);
+  const hosts = new Set();
+  for (const line of r.ok ? r.out.split('\n') : []) {
+    const url = line.split(/\s+/)[1] ?? '';
+    const m = url.match(/^[a-z+]+:\/\/(?:[^@/]*@)?([^/:]+)/i) ?? url.match(/^(?:[^@/]*@)?([^/:]+):/);
+    if (m) hosts.add(m[1].toLowerCase());
+  }
+  return hosts;
+})();
+const bare = (h) => h.toLowerCase().replace(/:\d+$/, '');
 // A repository named without a host is looked for on the host this checkout lives on, never on
 // whichever host the CLI would otherwise default to.
 if (opts.repo !== null && opts.host === null) {
-  const here = probe.call(null, opts.forge, true);
+  const here = probe(opts.forge, true);
   if (!here.ok) refuse(`--repo without --host takes this checkout's host, and it did not answer — ${here.why}`);
+  if (!remoteHosts.has(bare(here.host))) refuse(`this checkout answered with ${here.host}, which none of its remotes names — pass --host`);
   opts.host = here.host;
 }
 const probed = (opts.forge ? [opts.forge] : ['gh', 'glab']).map((c) => probe(c));
 for (const p of probed) {
-  if (p.ok && opts.host && p.host.toLowerCase() !== opts.host.toLowerCase()) {
+  if (p.ok && opts.host && bare(p.host) !== bare(opts.host)) {
     Object.assign(p, { ok: false, why: `${p.cmd}: this repository lives on ${p.host}` });
+  } else if (p.ok && !opts.host && !remoteHosts.has(bare(p.host))) {
+    Object.assign(p, { ok: false, why: `${p.cmd}: answered with ${p.host}, which no remote of this checkout names — pass --host` });
   }
 }
 const answered = probed.filter((p) => p.ok);
@@ -141,6 +156,10 @@ const { cmd: forge, host, path } = answered[0];
 if (!hostOk(host) || !projectPathOk(path)) refuse('the repository answered without a host and path this run can name');
 answer.forge = forge;
 answer.host = host;
+// GitHub reads two spellings as one label: added and taken off at once, that is a contradiction.
+if (forge === 'gh' && add.some((n) => remove.some((m) => m.toLowerCase() === n.toLowerCase()))) {
+  refuse('a name is both added and taken off, in two spellings GitHub reads as one');
+}
 const cli = runner(opts.dir, forge);
 
 // GitHub keeps a pull request's labels on the issue of the same number; GitLab on the request.
@@ -218,9 +237,11 @@ let unanswered = false;
 const send = (args, label) => {
   const r = cli(args, 60000);
   answer.ran.push(label);
-  // Killed or timed out, the process never heard the forge's answer: the write may land yet.
-  if (r.timedOut || r.code === null) unanswered = true;
-  if (!r.ok) failures.push(`${label}: ${why(r)}`);
+  if (r.ok) return;
+  failures.push(`${label}: ${why(r)}`);
+  // Only the forge's own refusal of the request — a 4xx — says it will not land. A timeout, a
+  // killed process, a closed connection or a 5xx from a proxy leaves it free to land yet.
+  if (r.timedOut || r.code === null || !/\bHTTP 4\d\d\b/.test(r.err)) unanswered = true;
 };
 try {
   if (forge === 'gh') {
@@ -265,7 +286,7 @@ if (answer.missing.length === 0 && answer.standing.length === 0 && answer.lost.l
   if (failures.length) answer.reason = text(`landed, though the forge answered: ${failures.join('; ')}`);
 } else if (!changed && !unanswered && failures.length) {
   answer.wrote = false;
-  answer.reason = text(failures.length ? `refused: ${failures.join('; ')}` : 'nothing landed');
+  answer.reason = text(`refused: ${failures.join('; ')}`);
 } else {
   answer.wrote = null;
   answer.reason = text(`${unanswered && !changed ? 'a write went unanswered and may land yet'

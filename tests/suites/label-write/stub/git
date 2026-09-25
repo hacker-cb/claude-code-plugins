@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# The checkout's remotes, from the envelope: which hosts a probe's answer may name.
+env=${STUB_ENVELOPE:-}
+if [ "$1 $2" = "remote -v" ]; then
+  r=$(jq -r '.remotes // "origin\thttps://forge.example/team/app.git (fetch)\nupstream\tgit@lab.example:team/app.git (fetch)"' "$env")
+  printf '%b\n' "$r"; exit 0
+fi
+echo "unplanned git call: $*" >&2; exit 1

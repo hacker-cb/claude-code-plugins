@@ -30,7 +30,8 @@ routes to is [`../../references/slice-completion.md`](../../references/slice-com
 
 Autonomous, without asking: renaming the branch, rebasing onto base, pushing (with
 `--force-with-lease`, never plain `--force`), opening the PR, setting its labels and those of the
-issues it closes (`label-lifecycle.md`), committing and pushing fixes, replying to Copilot and the one request of its own
+issues it closes ([`../../references/label-lifecycle.md`](../../references/label-lifecycle.md)),
+committing and pushing fixes, replying to Copilot and the one request of its own
 [`references/copilot-request.md`](references/copilot-request.md) allows, reading state, and
 parking the run on a platform outage — each narrated in a line as you go.
 
@@ -119,7 +120,7 @@ An open PR for this branch is not recreated — skip to the loop. Otherwise crea
 for review**, never draft ([`references/copilot.md`](references/copilot.md) says what a draft
 costs), titled in `branch-naming.md`'s shape, its body per
 [`../../references/merge-message.md`](../../references/merge-message.md), and carrying the labels
-[`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) gives it:
+`label-lifecycle.md` gives it:
 
 ```bash
 # Title, body and label names are files the agent wrote — data, never pasted into this line.

@@ -26,9 +26,9 @@ node "<plugin root>/scripts/label-write.mjs" --number <n> --kind <issue|request>
   [--add <file>] [--remove <file>] [--repo <path of another repository>]
 ```
 
-`wrote` true is done; false wrote nothing — `reason` says whether nothing was needed, a name was
-`unknown`, or the forge refused, as an account that may not label is refused; null is a write that
-did not read back as meant, `missing`, `standing` and `lost` naming what differs, and is a stop.
+`wrote` true is done; false wrote nothing, `reason` saying why — among them a name `unknown` to the
+set, and a refusal, as an account that may not label is refused; null is a write that did not read
+back as meant, `missing`, `standing` and `lost` naming what differs, and is a stop.
 
 ## Filing and splitting
 
@@ -72,12 +72,13 @@ the report names the labels for someone who can.
 **An issue a change settled** — one threaded in or named by the user, never one the body's keywords
 alone name — takes that change's reading in place of its forecast: a leaf its kind of work and
 outcome; a parent no outcome, and its children's dominant kind, read again. A leaf's reading is the
-request's labels where it settled that issue alone and carries them, a role the request cannot carry
-— a kind of work run as a native type — read from its diff; otherwise the part of the diff that
-settled it, read as a request's are above, split by the session that did the work. The kind of work
-goes into the mechanism the repository runs it in, a native type included. An issue in another
-repository is aligned against that repository's own set, a role it has no vocabulary for left and
-named. Where the session cannot tell, the issue keeps what it carried and the report says so.
+request's labels where it settled that issue alone and the account could set them, a role the
+request cannot carry (a kind of work run as a native type) read from its diff; otherwise the part of
+the diff that settled it, read as a request's are above, split by the session that did the work. The
+kind of work goes into the mechanism the repository runs it in, a native type included. An issue in
+another repository is aligned against that repository's own set, a role it has no vocabulary for
+left and named. Where the session cannot tell, the issue keeps what it carried and the report says
+so.
 
 **Any close** takes the parked reason off and keeps the priority; an issue closed with no change
 behind it — not planned, a duplicate — keeps everything else.
@@ -97,7 +98,7 @@ aligns nothing.
 
 ## Where the forge falls short
 
-- **Without a change-request driver** — GitLab's today — a request takes its labels at open
+- **Without a change-request driver for its forge**, a request takes its labels at open
   ([`completion-backends.md`](completion-backends.md)), and nothing re-derives them or aligns its
   issues at close.
 - **A server without hierarchy** tells no parent from a leaf: every issue there is read as a leaf,
