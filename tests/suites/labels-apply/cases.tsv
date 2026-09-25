@@ -1,0 +1,9 @@
+# fixture	args	want	expect	note
+gh-full	--repo-dir .	0	"applied": true|BEFORE:PATCH repos/team/app/labels/scope%3Aweb {"new_name":"scope:ui"}<<POST repos/team/app/labels {|BEFORE:POST repos/team/app/labels {<<PATCH repos/team/app/labels/scope%3Aapi|BEFORE:PATCH repos/team/app/labels/scope%3Aapi<<issues/1/labels|BEFORE:issues/2/labels {"labels":["scope:ui"]}<<DELETE repos/team/app/labels/old-scope|"issue 1":["scope:ui","type:chore"]	renames, creates, edits, relabels and deletes in that order, a row's names read under the plan's renames
+gl-full	--repo-dir .	0	"applied": true|BEFORE:PUT projects/team%2Fapp/labels/3 {"new_name":"scope:ui"}<<POST projects/team%2Fapp/labels {|"color":"#fbca04"|{"add_labels":"type:chore","remove_labels":"old-scope"}|DELETE projects/team%2Fapp/labels/4|NOT:"old-scope"]	GitLab edits and deletes a label by its id, takes a colour #-led, and its lists as a JSON body
+gh-landed	--repo-dir .	0	"applied": true|"step": "create type:chore"	a create the forge refused after it landed is read back and taken as done, never sent again
+gh-refused	--repo-dir .	0	"applied": false|"stopped": "rename scope:web: not renamed|NOT:POST repos/team/app/labels	a write that did not land stops the run before anything that stands on it
+gh-moved	--repo-dir .	0	"applied": true|its labels moved since the snapshot|NOT:issues/1/labels	a carrier whose labels moved since the snapshot is skipped, never written over
+gh-journal	--repo-dir .	0	"applied": true|NOT:DELETE repos/team/app/labels/old-scope	a step the journal holds done is not run again
+gh-resume	--repo-dir .	0	BEFORE:"stopped": "relabel issue 1<<== run 2|BEFORE:== run 2<<"applied": true	a run stopped part way resumes over its journal and finishes
+gh-held	--repo-dir .	0	"applied": true|"outcome": "skipped"|still held by 1|NOT:DELETE repos/team/app/labels/old-scope	a label something still holds, read live, is not deleted

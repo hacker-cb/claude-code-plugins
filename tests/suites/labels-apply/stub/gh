@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# A forge keeping its labels in $STUB_STATE: { set: [{name, id, color, description}], carriers:
+# {"issue 1": [names], "request 2": [names]}, fail: [{method, match, landed}], log: [] }. A `fail`
+# entry is spent by the first write whose method and endpoint it matches: it answers HTTP 422, the
+# write landing first where `landed` says so. GitHub reads names without regard to case.
+me=${STUB_AS:-$(basename "$0")}
+st=${STUB_STATE:?}
+[ -n "${STUB_MARKER_FILE:-}" ] && : > "$STUB_MARKER_FILE"
+put() { jq "$@" "$st" > "$st.tmp" && mv "$st.tmp" "$st"; }
+if [ "$me" = gh ] && [ "$1 $2" = "repo view" ]; then
+  echo '{"url":"https://forge.example/team/app","nameWithOwner":"team/app"}'; exit 0
+fi
+[ "$1" = api ] || { echo "unplanned $me call: $*" >&2; exit 1; }
+shift
+method=GET endpoint="" input="" label="" prev=""
+for a in "$@"; do
+  case "$prev" in --method) method=$a ;; --input) input=$a ;; -f) case "$a" in label=*) label=${a#label=} ;; esac ;; esac
+  case "$a" in repos/*|projects/*|graphql) endpoint=$a ;; esac
+  prev=$a
+done
+if [ "$me" = glab ] && { [ "$endpoint" = "projects/:fullpath" ] || [ "$endpoint" = "projects/team%2Fapp" ]; }; then
+  echo '{"web_url":"https://lab.example/team/app","path_with_namespace":"team/app"}'; exit 0
+fi
+dec() { local s=${1//+/ }; printf '%b' "${s//%/\\x}"; }
+fold() { if [ "$me" = gh ]; then printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; else printf '%s' "$1"; fi; }
+ci=$([ "$me" = gh ] && echo true || echo false)
+# jq: does a name match another, by this forge's rule
+M='def same($a; $b): if $ci then ($a|ascii_downcase) == ($b|ascii_downcase) else $a == $b end;'
+body() { [ -n "$input" ] && cat "$input" || echo null; }
+
+if [ "$method" != GET ]; then
+  put --arg e "$method $endpoint" --argjson b "$(body)" '.log += [$e + (if $b == null then "" else " " + ($b|tojson) end)]'
+  f=$(jq -c --arg m "$method" --arg e "$endpoint" 'first((.fail // []) | to_entries[] | select(.value as $f | $f.method == $m and ($e | contains($f.match)))) // empty' "$st")
+  if [ -n "$f" ]; then
+    put --argjson k "$(jq '.key' <<<"$f")" 'del(.fail[$k])'
+    [ "$(jq -r '.value.landed' <<<"$f")" = true ] || { echo "$me: Unprocessable Entity (HTTP 422)" >&2; exit 1; }
+    landed_fail=1
+  fi
+fi
+finish() { if [ -n "${landed_fail:-}" ]; then echo "$me: Unprocessable Entity (HTTP 422)" >&2; exit 1; fi; exit 0; }
+
+case "$me $method $endpoint" in
+  "gh GET graphql")
+    jq -c --arg l "$label" --argjson ci "$ci" "$M"'
+      if any(.set[]; same(.name; $l)) then
+        [.carriers | to_entries[] | select(any(.value[]; same(.; $l))) | .key | split(" ")[0]] as $k
+        | {data: {repository: {label: {issues: {totalCount: ($k | map(select(. == "issue")) | length)},
+            pullRequests: {totalCount: ($k | map(select(. == "request")) | length)}}}}}
+      else {data: {repository: {label: null}}} end' "$st" ;;
+  "gh GET repos/team/app/labels?"*)
+    jq -c '[.set[] | {name, id, color, description}]' "$st" ;;
+  "glab GET projects/team%2Fapp/labels?"*)
+    jq -c '[.set[] | {name, id, color: ("#" + .color), description, is_project_label: true}]' "$st" ;;
+  "gh POST repos/team/app/labels"|"glab POST projects/team%2Fapp/labels")
+    jq -e --argjson b "$(body)" --argjson ci "$ci" "$M"'any(.set[]; same(.name; $b.name))' "$st" >/dev/null \
+      && { echo "$me: Validation Failed (HTTP 422)" >&2; exit 1; }
+    put --argjson b "$(body)" '.set += [{name: $b.name, id: ((.set | map(.id) | max // 0) + 1), color: ($b.color | ltrimstr("#")), description: $b.description}]'
+    finish ;;
+  "gh PATCH repos/team/app/labels/"*|"glab PUT projects/team%2Fapp/labels/"*|"gh DELETE repos/team/app/labels/"*|"glab DELETE projects/team%2Fapp/labels/"*)
+    key=$(dec "${endpoint##*/}")
+    if [ "$me" = gh ]; then sel='same(.name; $k)'; else sel='(.id | tostring) == $k'; fi
+    jq -e --arg k "$key" --argjson ci "$ci" "$M"'any(.set[]; '"$sel"')' "$st" >/dev/null || { echo "$me: Not Found (HTTP 404)" >&2; exit 1; }
+    old=$(jq -r --arg k "$key" --argjson ci "$ci" "$M"'first(.set[] | select('"$sel"')) | .name' "$st")
+    if [ "$method" = DELETE ]; then
+      put --arg o "$old" '.set |= map(select(.name != $o)) | .carriers |= map_values(map(select(. != $o)))'
+    else
+      put --arg o "$old" --argjson b "$(body)" '
+        ($b.new_name // $o) as $n
+        | .set |= map(if .name == $o then .name = $n
+            | (if $b.color then .color = ($b.color | ltrimstr("#")) else . end)
+            | (if $b | has("description") then .description = $b.description else . end) else . end)
+        | .carriers |= map_values(map(if . == $o then $n else . end))'
+    fi
+    finish ;;
+  "gh GET repos/team/app/issues/"*)
+    n=${endpoint##*/}
+    jq -c --arg n "$n" 'if .carriers["issue " + $n] then {labels: [.carriers["issue " + $n][] | {name: .}]}
+      elif .carriers["request " + $n] then {labels: [.carriers["request " + $n][] | {name: .}], pull_request: {}}
+      else error("none") end' "$st" 2>/dev/null || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; } ;;
+  "gh DELETE repos/team/app/issues/"*"/labels/"*)
+    rest=${endpoint#repos/team/app/issues/}; n=${rest%%/*}; name=$(dec "${endpoint##*/}")
+    k=$(jq -r --arg n "$n" 'if .carriers["issue " + $n] then "issue " + $n else "request " + $n end' "$st")
+    put --arg k "$k" --arg l "$name" --argjson ci "$ci" "$M"'.carriers[$k] |= map(select(same(.; $l) | not))'
+    finish ;;
+  "gh POST repos/team/app/issues/"*"/labels")
+    rest=${endpoint#repos/team/app/issues/}; n=${rest%%/*}
+    k=$(jq -r --arg n "$n" 'if .carriers["issue " + $n] then "issue " + $n else "request " + $n end' "$st")
+    put --arg k "$k" --argjson b "$(body)" '.carriers[$k] += [$b.labels[] | . as $l | select(true)] | .carriers[$k] |= unique'
+    finish ;;
+  "glab GET projects/team%2Fapp/issues/"*|"glab GET projects/team%2Fapp/merge_requests/"*)
+    kind=$([[ $endpoint == */issues/* ]] && echo issue || echo request); n=${endpoint##*/}
+    jq -c --arg k "$kind $n" 'if .carriers[$k] then {labels: .carriers[$k]} else error("none") end' "$st" 2>/dev/null \
+      || { echo "glab: 404 Not Found" >&2; exit 1; } ;;
+  "glab PUT projects/team%2Fapp/issues/"*|"glab PUT projects/team%2Fapp/merge_requests/"*)
+    kind=$([[ $endpoint == */issues/* ]] && echo issue || echo request); n=${endpoint##*/}
+    put --arg k "$kind $n" --argjson b "$(body)" '
+      (($b.remove_labels // "") | split(",")) as $r | (($b.add_labels // "") | split(",") | map(select(. != ""))) as $a
+      | .carriers[$k] |= ((map(select(. as $x | $r | index($x) | not)) + $a) | unique)'
+    finish ;;
+  "glab GET projects/team%2Fapp/issues?"*|"glab GET projects/team%2Fapp/merge_requests?"*)
+    kind=$([[ $endpoint == */issues\?* ]] && echo issue || echo request)
+    q=${endpoint#*labels=}; name=$(dec "${q%%&*}")
+    jq -c --arg kind "$kind" --arg l "$name" '[.carriers | to_entries[] | select((.key | startswith($kind + " ")) and (.value | index($l)))
+      | {iid: (.key | split(" ")[1] | tonumber)}]' "$st" ;;
+  *) echo "unplanned $me api call: $method $endpoint" >&2; exit 1 ;;
+esac

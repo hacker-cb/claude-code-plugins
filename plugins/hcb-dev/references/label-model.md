@@ -1,10 +1,12 @@
 # The model set of label families
 
 Read wherever a label set is proposed — a repository with none, or one lacking a role the work
-needs — and wherever a label is renamed or deleted. It owns the families this plugin proposes,
-how they are spelled, where their values come from, and how a label leaves a set. What each role
-means, and how a set already there is read, is [`classification.md`](classification.md)'s; when
-each label is written is [`label-lifecycle.md`](label-lifecycle.md)'s.
+needs — and wherever a label is renamed or deleted. A rework of the whole set, and the relabelling
+that comes with it, runs through `hcb-dev:label-taxonomy`. It owns the families this plugin
+proposes, how they are spelled, where their values come from, and how a label leaves a set. What
+each role means, and how a set already there is read, is
+[`classification.md`](classification.md)'s; when each label is written is
+[`label-lifecycle.md`](label-lifecycle.md)'s.
 
 ## The families
 

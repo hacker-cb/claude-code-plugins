@@ -9,8 +9,8 @@ description: >-
   already covers it; when the user asks whether an issue is still current — still
   true of the code ("#42 ещё актуален?"); when the user asks what to pick up next —
   though a survey of the whole backlog is `hcb-dev:backlog-survey`; and when a
-  discussion lands on a topic whose earlier decisions may sit in an issue. GitHub
-  and GitLab alike. Not for implementing an issue
+  discussion lands on a topic whose earlier decisions may sit in an issue. Not for
+  the whole label set (`hcb-dev:label-taxonomy`), not for implementing an issue
   (`hcb-dev:implementation-workflow`), not for completing finished work
   (`hcb-dev:shipping-workflow`), and not a review of a diff
   (`hcb-dev:multi-review`) — each of those calls this skill where it needs the

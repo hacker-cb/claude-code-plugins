@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // labels.mjs — read a repository's label set and every carrier of it, and check a proposed set and
-// a relabelling plan against what was read. Prints JSON. It reads and checks; writing a label onto a
-// carrier is `scripts/label-write.mjs`'s.
+// a relabelling plan against what was read, apply the plan, and verify it. Prints JSON. A label put on
+// or taken off a carrier goes through `scripts/label-write.mjs`.
 //
 // usage:
 //   node labels.mjs snapshot --out <file> [--forge gh|glab] [--host <host>] [--repo <path>] [--repo-dir <path>]
 //   node labels.mjs check-set --snapshot <file> --plan <file>
 //   node labels.mjs check-roles --snapshot <file> --roles <file> [--plan <file>] [--rows <dir> --population issues|requests|all]
 //   node labels.mjs verify --snapshot <file> --plan <file>
+//   node labels.mjs apply --snapshot <file> --plan <file> --journal <file> [--repo-dir <path>]
 //
 // `snapshot` writes the set, the default branch, and every carrier with its labels to --out —
 // issues (GitLab: every work item), change requests, and discussions where GitHub keeps them; an
@@ -28,15 +29,25 @@
 // GitLab only those, every work item having a type by being one); `parentLabel` the label that marks
 // a parent where the server carries no hierarchy.
 //
+// `apply` writes a plan `check-set` passes, onto the repository its snapshot read: renames, then
+// creates, then edits, then each relabel row, then deletions. Every write is read back, and a step
+// that did not land as planned stops the run; each step is recorded in --journal, and a run over the
+// same journal skips what is done. A carrier whose labels moved since the snapshot is skipped, and
+// a label something still holds is not deleted. It answers `applied` (true once every step is done
+// or skipped), `stopped` (the step and why), `steps`, `problems` (check-set's, where it refused).
+//
 // Exit: 0 whenever an answer is printed; 2 called wrong.
 
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { appendFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   dirOk, hostOk, labelNameOk, parsePages, projectPathOk, repoOk, resolveRepository, runner, sameLabel, text, why, writeAll,
 } from '../../../scripts/lib/forge.mjs';
 
-const usage = 'usage: node labels.mjs <snapshot|check-set|check-roles|verify> [flags] — see the header of this file';
+const usage = 'usage: node labels.mjs <snapshot|check-set|check-roles|verify|apply> [flags] — see the header of this file';
 const die = (msg) => { writeAll(2, `labels: ${msg}\n${usage}\n`); process.exit(2); };
 
 const SPEC = {
@@ -44,6 +55,7 @@ const SPEC = {
   'check-set': ['--snapshot', '--plan'],
   'check-roles': ['--snapshot', '--roles', '--plan', '--rows', '--population'],
   verify: ['--snapshot', '--plan'],
+  apply: ['--snapshot', '--plan', '--journal', '--repo-dir'],
 };
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd || !Object.hasOwn(SPEC, cmd)) die(`the first word is one of ${Object.keys(SPEC).join(', ')}`);
@@ -336,6 +348,10 @@ const afterPlan = (snap, plan) => {
 function checkSet() {
   const snap = loadSnapshot();
   const plan = loadPlan(true, snap.forge);
+  const problems = setProblems(snap, plan);
+  out({ ok: problems.length === 0, forge: snap.forge, problems });
+}
+function setProblems(snap, plan) {
   const same = sameLabel(snap.forge);
   const problems = [];
   const flag = (op, name, problem) => problems.push({ op, name, problem });
@@ -413,7 +429,7 @@ function checkSet() {
     const where = r.kind === 'issue' ? snap.issues : snap.requests;
     if (!where.some((c) => c.number === r.number)) flag('relabel', `${r.kind} ${r.number}`, `no such carrier in the snapshot${!snap.complete ? ', which read short' : ''}`);
   }
-  out({ ok: problems.length === 0, forge: snap.forge, problems });
+  return problems;
 }
 
 // ---------------------------------------------------------------- check-roles
@@ -539,4 +555,191 @@ function verify() {
   out({ ok: complete && mismatches.length === 0, forge: snap.forge, complete, mismatches });
 }
 
-({ snapshot, 'check-set': checkSet, 'check-roles': checkRoles, verify })[cmd]();
+// ---------------------------------------------------------------- apply
+function apply() {
+  const snap = loadSnapshot();
+  const plan = loadPlan(true, snap.forge);
+  const journal = opts['--journal'];
+  if (!journal) die('apply takes --journal <file>');
+  const dir = opts['--repo-dir'] ?? process.cwd();
+  if (!dirOk(dir)) die(`--repo-dir '${dir}' is not a directory`);
+  const { forge } = snap;
+  const answer = { applied: false, forge, stopped: null, steps: [], problems: [] };
+  const problems = setProblems(snap, plan);
+  if (problems.length) out({ ...answer, problems, stopped: 'check-set refuses the plan' });
+
+  // The repository the snapshot read, asked again: a write goes nowhere else.
+  const resolved = resolveRepository({ dir, forge, host: snap.host, repo: snap.path });
+  if (resolved.reason) out({ ...answer, stopped: text(resolved.reason) });
+  if (resolved.host !== snap.host || resolved.path !== snap.path) out({ ...answer, stopped: `this checkout answers for ${resolved.host}/${resolved.path}, not the snapshot's` });
+  const { host, path } = resolved;
+  const enc = encodeURIComponent(path);
+  const cli = runner(dir, forge);
+  const same = sameLabel(forge);
+  const rename = renamer(plan, same);
+
+  // What earlier runs over this journal finished: the last word on each step.
+  const done = new Set();
+  if (existsSync(journal)) {
+    for (const line of readFileSync(journal, 'utf8').split('\n')) {
+      let e = null;
+      try { e = JSON.parse(line); } catch { continue; }
+      if (typeof e?.step === 'string') { if (e.outcome === 'done') done.add(e.step); else done.delete(e.step); }
+    }
+  }
+  const log = (step, outcome, detail = null) => {
+    try { appendFileSync(journal, `${JSON.stringify({ step, outcome, detail, at: new Date().toISOString() })}\n`); } catch {
+      out({ ...answer, stopped: `${step}: could not write the journal ${journal}` });
+    }
+    answer.steps.push({ step, outcome, detail });
+  };
+  const stop = (step, detail) => { log(step, 'failed', detail); out({ ...answer, stopped: text(`${step}: ${detail}`) }); };
+
+  const tmp = mkdtempSync(join(tmpdir(), 'labels-apply-'));
+  process.on('exit', () => rmSync(tmp, { recursive: true, force: true }));
+  let files = 0;
+  const file = (value) => { const f = join(tmp, `b${files += 1}.json`); writeFileSync(f, JSON.stringify(value)); return f; };
+  // A body goes as a JSON file, never as fields: a name is data the forge handed over.
+  const send = (method, endpoint, body) => cli(['api', '--hostname', host, '--method', method, endpoint,
+    ...(body ? ['-H', 'Content-Type: application/json', '--input', file(body)] : [])], 60000);
+  // A name of dots stays a name: unencoded, `.` and `..` are path steps a server resolves away.
+  const seg = (n) => encodeURIComponent(n).replace(/\./g, '%2E');
+  const colour = (c) => (forge === 'glab' ? `#${c}` : c);
+
+  // The set as it stands, read whole: what a write left is read here, never from its answer.
+  const readSet = (step) => {
+    const r = cli(['api', '--hostname', host, '--paginate', forge === 'gh' ? `repos/${path}/labels?per_page=100`
+      : `projects/${enc}/labels?per_page=100&include_ancestor_groups=true`], 120000);
+    const pages = r.ok ? parsePages(r.out) : null;
+    if (!pages || pages.some((p) => !Array.isArray(p))) return stop(step, `could not read the label set: ${r.ok ? 'not a list' : why(r)}`);
+    return pages.flat().filter((l) => typeof l?.name === 'string').map((l) => ({
+      name: l.name, id: l.id ?? null, color: typeof l.color === 'string' ? l.color.replace(/^#/, '').toLowerCase() : null,
+      description: l.description || '',
+    }));
+  };
+  const exact = (set, n) => set.find((l) => l.name === n);
+  const planned = (l, c) => l && (c.color === undefined || l.color === c.color.toLowerCase())
+    && (c.description === undefined || l.description === (c.description ?? ''));
+  const idOf = (n) => snap.set.find((l) => same(l.name, n))?.id;
+
+  // 1. Renames, before anything takes the new names.
+  for (const e of plan.edit.filter((x) => x.newName !== undefined)) {
+    const step = `rename ${e.name}`;
+    if (done.has(step)) continue;
+    const gone = (set) => (same(e.name, e.newName) ? !exact(set, e.name) : !set.some((l) => same(l.name, e.name)));
+    let set = readSet(step);
+    if (!(exact(set, e.newName) && gone(set))) {
+      const r = forge === 'gh' ? send('PATCH', `repos/${path}/labels/${seg(e.name)}`, { new_name: e.newName })
+        : send('PUT', `projects/${enc}/labels/${idOf(e.name)}`, { new_name: e.newName });
+      set = readSet(step);
+      if (!(exact(set, e.newName) && gone(set))) stop(step, `not renamed${r.ok ? '' : `: ${why(r)}`}`);
+    }
+    log(step, 'done');
+  }
+  // 2. Creates — once: a label standing under the name is either the plan's or someone else's.
+  for (const c of plan.create) {
+    const step = `create ${c.name}`;
+    if (done.has(step)) continue;
+    let set = readSet(step);
+    if (!exact(set, c.name)) {
+      const r = send('POST', forge === 'gh' ? `repos/${path}/labels` : `projects/${enc}/labels`,
+        { name: c.name, color: colour(c.color), description: c.description ?? '' });
+      set = readSet(step);
+      if (!exact(set, c.name)) stop(step, `not created${r.ok ? '' : `: ${why(r)}`}`);
+    }
+    if (!planned(exact(set, c.name), c)) stop(step, 'a label stands under this name, not as planned');
+    log(step, 'done');
+  }
+  // 3. Colour and description, on the name each label carries now.
+  for (const e of plan.edit.filter((x) => x.color !== undefined || x.description !== undefined)) {
+    const step = `edit ${e.name}`;
+    if (done.has(step)) continue;
+    const name = e.newName ?? e.name;
+    let set = readSet(step);
+    const now = set.find((l) => same(l.name, name));
+    if (!now) stop(step, `${name} is not in the set`);
+    if (!planned(now, e)) {
+      const body = {
+        ...(e.color !== undefined ? { color: colour(e.color) } : {}),
+        ...(e.description !== undefined ? { description: e.description ?? '' } : {}),
+      };
+      const r = forge === 'gh' ? send('PATCH', `repos/${path}/labels/${seg(now.name)}`, body)
+        : send('PUT', `projects/${enc}/labels/${now.id ?? idOf(e.name)}`, body);
+      set = readSet(step);
+      if (!planned(set.find((l) => same(l.name, name)), e)) stop(step, `not edited as planned${r.ok ? '' : `: ${why(r)}`}`);
+    }
+    log(step, 'done');
+  }
+  // 4. Relabel rows, each on a carrier still as the snapshot read it.
+  const writer = fileURLToPath(new URL('../../../scripts/label-write.mjs', import.meta.url));
+  const carrierPath = (kind, n) => (forge === 'gh' ? `repos/${path}/issues/${n}`
+    : `projects/${enc}/${kind === 'issue' ? 'issues' : 'merge_requests'}/${n}`);
+  const labelsNow = (step, kind, n) => {
+    const r = cli(['api', '--hostname', host, carrierPath(kind, n)], 60000);
+    let v = null;
+    try { v = JSON.parse(r.out); } catch { /* read below */ }
+    if (!r.ok || !Array.isArray(v?.labels)) return stop(step, `could not read it: ${r.ok ? 'no labels in the answer' : why(r)}`);
+    return v.labels.map((l) => (typeof l === 'string' ? l : l?.name)).filter((l) => typeof l === 'string');
+  };
+  const sameSet = (a, b) => a.length === b.length && a.every((x) => b.some((y) => same(x, y)));
+  for (const r of plan.relabel) {
+    const step = `relabel ${r.kind} ${r.number}`;
+    if (done.has(step)) continue;
+    const add = (r.add ?? []).map(rename);
+    const remove = (r.remove ?? []).map(rename);
+    const now = labelsNow(step, r.kind, r.number);
+    const meant = (list) => add.every((n) => list.some((l) => same(l, n))) && !remove.some((n) => list.some((l) => same(l, n)));
+    if (meant(now)) { log(step, 'done', 'already as planned'); continue; }
+    const read = (r.kind === 'issue' ? snap.issues : snap.requests).find((c) => c.number === r.number);
+    if (!read || !sameSet(now, read.labels.map(rename))) { log(step, 'skipped', `its labels moved since the snapshot: ${now.join(', ')}`); continue; }
+    const w = spawnSync(process.execPath, [writer, '--number', String(r.number), '--kind', r.kind, '--forge', forge,
+      '--host', host, '--repo', path, '--repo-dir', dir, ...(add.length ? ['--add', file(add)] : []),
+      ...(remove.length ? ['--remove', file(remove)] : [])], { encoding: 'utf8', timeout: 300000 });
+    let v = null;
+    try { v = JSON.parse(w.stdout); } catch { /* read below */ }
+    if (v?.wrote !== true && !meant(labelsNow(step, r.kind, r.number))) {
+      stop(step, v ? `label-write: ${v.reason ?? `wrote ${v.wrote}`}` : `label-write answered nothing: ${(w.stderr || '').trim().split('\n').pop()}`);
+    }
+    log(step, 'done');
+  }
+  // 5. Deletions last, and only of a label nothing holds now.
+  for (const d of plan.delete) {
+    const step = `delete ${d}`;
+    if (done.has(step)) continue;
+    let held;
+    if (forge === 'gh') {
+      const [owner, name] = path.split('/');
+      const q = 'query($owner:String!,$name:String!,$label:String!){repository(owner:$owner,name:$name){label(name:$label){'
+        + 'issues(states:[OPEN,CLOSED]){totalCount} pullRequests(states:[OPEN,CLOSED,MERGED]){totalCount}}}}';
+      const g = cli(['api', 'graphql', '--hostname', host, '-f', `query=${q}`, '-f', `owner=${owner}`, '-f', `name=${name}`, '-f', `label=${d}`], 60000);
+      let v = null;
+      try { v = JSON.parse(g.out); } catch { /* read below */ }
+      const label = v?.data?.repository?.label;
+      if (label === null && v?.data?.repository) held = 0;
+      else if (Number.isInteger(label?.issues?.totalCount) && Number.isInteger(label?.pullRequests?.totalCount)) held = label.issues.totalCount + label.pullRequests.totalCount;
+      else stop(step, `could not read who holds it: ${g.ok ? 'no count in the answer' : why(g)}`);
+    } else {
+      // GitLab refuses a comma in a label name, so the name is the whole of this filter.
+      held = 0;
+      for (const kind of ['issues', 'merge_requests']) {
+        const g = cli(['api', '--hostname', host, `projects/${enc}/${kind}?labels=${encodeURIComponent(d)}&scope=all&state=all&per_page=1`], 60000);
+        let v = null;
+        try { v = JSON.parse(g.out); } catch { /* read below */ }
+        if (!g.ok || !Array.isArray(v)) stop(step, `could not read who holds it: ${g.ok ? 'not a list' : why(g)}`);
+        held += v.length;
+      }
+    }
+    if (held > 0) { log(step, 'skipped', `still held by ${held}`); continue; }
+    let set = readSet(step);
+    const l = set.find((x) => same(x.name, d));
+    if (l) {
+      const r = send('DELETE', forge === 'gh' ? `repos/${path}/labels/${seg(l.name)}` : `projects/${enc}/labels/${l.id ?? idOf(d)}`);
+      set = readSet(step);
+      if (set.some((x) => same(x.name, d))) stop(step, `not deleted${r.ok ? '' : `: ${why(r)}`}`);
+    }
+    log(step, 'done');
+  }
+  out({ ...answer, applied: true });
+}
+
+({ snapshot, 'check-set': checkSet, 'check-roles': checkRoles, verify, apply })[cmd]();

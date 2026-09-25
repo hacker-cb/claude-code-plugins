@@ -30,6 +30,7 @@ tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one 
                                                            request ─▶ github-pr-workflow ─▶ (merge)
 
 issue-tracking ────────────────────────── the backlog — at intake, in the report, after a merge
+label-taxonomy ────────────────────────── the whole label set reworked: read, classified, approved twice, applied
 findings-pass ─────────────────────────── a run's end, or a round's: every finding verified, ruled, one table
 dependency-versions ─ seeding-gitignore ─ run alongside, whenever the work touches them
 sync-base ─────────────────────────────── the base moved: take it, read what it brought — never a push
@@ -90,6 +91,15 @@ form: you paste every one of them yourself.
   that waits on another carries the forge's own dependency link — or, where the forge has none, a
   `Blocked by` line — per `references/issue-links.md`. Called by
   `implementation-workflow` at intake and in its report, and by `github-pr-workflow` after a merge.
+- **`label-taxonomy`** — `/hcb-dev:label-taxonomy`
+  A repository's whole label set set up or reworked in one run: every label and every carrier
+  read by
+  [`skills/label-taxonomy/scripts/labels.mjs`](skills/label-taxonomy/scripts/labels.mjs), a set
+  proposed from `references/label-model.md` and approved as a file, every carrier classified in
+  batches with the doubtful ones read twice, the exact plan checked and approved, then renames,
+  creates, edits, relabels and deletions written in that order — each read back, recorded in a
+  journal a later run resumes from — and verified against a fresh read. Labelling one issue or one
+  change request as it is filed or closed stays `issue-tracking`'s.
 - **`findings-pass`** — `/hcb-dev:findings-pass`
   The pass that rules a run's findings cold and together, once the work is done: every
   candidate collected — this session's own, ones handed over from another session, a master's

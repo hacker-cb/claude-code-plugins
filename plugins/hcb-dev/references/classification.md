@@ -4,6 +4,7 @@ Read by anything that classifies an issue or a change request against what the r
 defines: the families as **roles** in three layers, how many of each a carrier takes, and how
 each role's set is read. The roles travel between repositories; every literal is read from the
 repository at hand, the model set [`label-model.md`](label-model.md) proposes included.
+Setting up or reworking the whole set is `hcb-dev:label-taxonomy`'s.
 
 ## The roles
 

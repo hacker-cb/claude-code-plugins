@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+if [ "$1 $2" = "remote -v" ]; then
+  printf 'origin\thttps://forge.example/team/app.git (fetch)\nupstream\tgit@lab.example:team/app.git (fetch)\n'; exit 0
+fi
+echo "unplanned git call: $*" >&2; exit 1
