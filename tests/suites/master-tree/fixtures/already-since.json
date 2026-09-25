@@ -1,0 +1,12 @@
+{
+  "git_dir": "tests/suites/master-tree/trees/linked/gitdir",
+  "common_dir": "tests/suites/master-tree/trees/linked/common",
+  "head": "f1x7222222222222222222222222222222222222",
+  "branch": "",
+  "refs": {
+    "refs/remotes/origin/dev": "f1x7222222222222222222222222222222222222"
+  },
+  "status": "",
+  "own_log": "",
+  "since": "f1x7222222222222222222222222222222222222"
+}

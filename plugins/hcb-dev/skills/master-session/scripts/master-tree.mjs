@@ -9,14 +9,16 @@
 // and clearing that is the user's. With --since it also names what the base took after
 // that commit, which is how a master learns of a landing nobody reported.
 //
-// Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>] [--move]
-//          [--repo-dir <path>]
+// Usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>]
+//          [--landings-base <branch>] [--move] [--repo-dir <path>]
 //
 //   --ref       the commit to stand on: the base's remote-tracking ref, or the local
 //               parent where the epic completes locally
 //   --contains  a ref --ref must already hold — the remote copy, where --ref is a local
 //               parent that must not lag it
 //   --since     the base's commit the master has taken landings up to
+//   --landings-base  the base's branch as the forge names it: what landed is sorted into
+//               change requests by asking the forge — without it, every commit alone
 //
 // Exit 0 either way: `"read": true` with the verdict, or `"read": false` with a
 // `reason`. Exit 2 only for a call this script cannot act on at all.
@@ -28,13 +30,15 @@ import { fileURLToPath } from 'node:url';
 import { dirOk, refNameOk, runner, writeAll } from '../../../scripts/lib/forge.mjs';
 
 const OWNERS = fileURLToPath(new URL('../../../scripts/worktree-owners.mjs', import.meta.url));
-const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>] [--move]'
-  + ' [--repo-dir <path>]\n';
+const LANDINGS = fileURLToPath(new URL('./landings.mjs', import.meta.url));
+const USAGE = 'usage: node master-tree.mjs --ref <ref> [--contains <ref>] [--since <commit>]'
+  + ' [--landings-base <branch>] [--move] [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `master-tree: ${m}\n${USAGE}`); process.exit(2); };
 
 const argv = process.argv.slice(2);
-const opts = { ref: null, contains: null, since: null, move: false, repoDir: null };
-const FLAGS = { '--ref': 'ref', '--contains': 'contains', '--since': 'since', '--repo-dir': 'repoDir' };
+const opts = { ref: null, contains: null, since: null, landingsBase: null, move: false, repoDir: null };
+const FLAGS = { '--ref': 'ref', '--contains': 'contains', '--since': 'since', '--landings-base': 'landingsBase',
+  '--repo-dir': 'repoDir' };
 for (let i = 0; i < argv.length; i += 1) {
   if (argv[i] === '--move') { opts.move = true; continue; }
   // Own keys only: `constructor` or `__proto__` would otherwise read as a flag.
@@ -49,8 +53,8 @@ for (let i = 0; i < argv.length; i += 1) {
 // goes near a URL or a shell — every value is one argv word.
 if (!opts.ref) die('--ref is required — the commit the tree is to stand on');
 if (!refNameOk(opts.ref)) die(`--ref '${opts.ref}' is not a ref this can read`);
-for (const f of ['contains', 'since']) {
-  if (opts[f] !== null && !refNameOk(opts[f])) die(`--${f} '${opts[f]}' is not a ref this can read`);
+for (const [f, flag] of [['contains', 'contains'], ['since', 'since'], ['landingsBase', 'landings-base']]) {
+  if (opts[f] !== null && !refNameOk(opts[f])) die(`--${flag} '${opts[f]}' is not a ref this can read`);
 }
 // A directory, proved here: passed on as `cwd` it would come back as a call that failed
 // with nothing on stderr, which reads as a checkout that would not answer.
@@ -96,6 +100,8 @@ const answer = {
   // What the base took after `since`: its first-parent commits, newest first. null where
   // --since was not given, or `since` says why it could not be told.
   landed: null, landedCount: null,
+  // Those commits as landings — `landings.mjs`'s answer whole, asked only where some landed.
+  landings: null,
   atRef: null,
   blockers: [],
   movable: false,
@@ -229,6 +235,17 @@ if (answer.since) {
     const unread = span('landed', ['--first-parent'], [`${sn.sha}..${tip}`, '--']);
     if (unread) sn.reason = `could not list what the base took after ${opts.since} (${unread})`;
     else sn.to = tip;
+  }
+}
+// Which change request each landed commit belongs to is the forge's to say.
+if (answer.since?.to && answer.landedCount > 0) {
+  const l = spawnSync(process.execPath, [LANDINGS, '--since', answer.since.sha, '--to', answer.since.to,
+    '--base', opts.landingsBase || opts.ref, ...(opts.landingsBase ? [] : ['--no-forge']),
+    ...(opts.repoDir ? ['--repo-dir', opts.repoDir] : [])],
+  { cwd, encoding: 'utf8', timeout: 600000, maxBuffer: 32 * 1024 * 1024 });
+  try { answer.landings = JSON.parse(l.stdout); } catch { answer.landings = null; }
+  if (!answer.landings || typeof answer.landings !== 'object') {
+    answer.landings = { read: false, reason: (l.stderr || '').trim() || (l.error ? l.error.code : 'no answer') };
   }
 }
 
