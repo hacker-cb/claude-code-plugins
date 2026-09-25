@@ -1,0 +1,1 @@
+{"create": [], "edit": [], "delete": [], "relabel": [{"kind": "issue", "number": 2, "add": ["type:bug"], "remove": []}, {"kind": "issue", "number": 2, "add": [], "remove": ["scope:api"]}]}

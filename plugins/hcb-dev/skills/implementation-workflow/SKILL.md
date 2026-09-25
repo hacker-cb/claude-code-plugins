@@ -53,11 +53,11 @@ contract is [`../../references/slice-completion.md`](../../references/slice-comp
   shared feature branch.
 - **The lower bound (Tier 0).** Trivial work — one slice, no architectural decisions, a couple of
   files — skips the gate and this whole orchestration: make the edit and hand it to
-  `hcb-dev:shipping-workflow`. A verdict of anything but `current` is never trivial, whatever edit
-  it implies: it carries a fork, and a fork is the gate. Skipping the gate skips the **asking**,
-  never the **threading** — settlements the invocation carried travel on exactly as they arrived,
-  what none carried `slice-completion.md`'s ladders settle downstream, and nothing was approved
-  here, so no approval is what those ladders read.
+  `hcb-dev:shipping-workflow`. A verdict of anything but `current`, or a parked reason still on the
+  issue, is never trivial, whatever edit it implies: it carries a fork, and a fork is the gate.
+  Skipping the gate skips the **asking**, never the **threading** — settlements the invocation
+  carried travel on exactly as they arrived, what none carried `slice-completion.md`'s ladders
+  settle downstream, and nothing was approved here, so no approval is what those ladders read.
 
 ## Phase 1 — The planning gate
 
@@ -78,12 +78,12 @@ Settle, in one gate:
 
 - **What a non-`current` verdict changes** — the fork the rest of the plan is built on, settled
   first, the slicing shown as what the recommended answer makes (`issue-currency.md`); another
-  answer re-draws the layout it invalidates before the gate closes. `hcb-dev:issue-tracking`
-  writes to the tracker on the answer, never ahead of it.
+  answer re-draws the layout it invalidates before the gate closes. `hcb-dev:issue-tracking` writes
+  on the answer, never ahead of it; a parked reason it takes off is named (`label-lifecycle.md`).
 - **Slice breakdown + branch layout** — a shared feature branch only for more than one slice; a
   single slice's parent is the base. Both names come from
-  [`../../references/branch-naming.md`](../../references/branch-naming.md), which owns the
-  layout: show them, don't ask about them.
+  [`../../references/branch-naming.md`](../../references/branch-naming.md), which owns the layout:
+  show them, don't ask about them.
 - **Architectural / implementation forks** — the choices the code cannot answer.
 - **Completion mode** — `local` or `request` (default `request` where the user is silent and
   phrasing does not decide).
@@ -107,8 +107,8 @@ Settle, in one gate:
 For anything multi-slice, **persist the plan and the captured authorizations** so a long autonomous
 run survives context compaction: slice progress on the native task list, and the plan — mode, merge
 authorization, strategy, Phase 0's read point, each slice's cut point as it is cut — in a durable
-plan-doc named and placed per `session-naming.md`. Where this session titled itself at
-intake, the approved scope is what that title settles on (`session-naming.md`'s second step).
+plan-doc named and placed per `session-naming.md`. Where this session titled itself at intake, the
+approved scope is what that title settles on (`session-naming.md`'s second step).
 
 ## Phase 2 — Autonomous execution
 
@@ -135,11 +135,11 @@ Per slice, **in order** — slices stack and depend on each other:
 
 **Autonomy is "no routine questions", not "never pauses".** The downstream skills' own gates are
 honored, not waived: an **actionable** coverage gap; a local merge into the **default** branch, or
-one that cannot be resolved as non-default; fix rounds ending with findings still open; CI that
-will not go green within the driver's budget; a Critical or Important finding needing a product
-decision; a genuinely-ambiguous merge strategy the gate did not settle; a git operation that
-would lose work on a shared branch; a genuinely-**unforeseen** architectural fork. Front-loading
-the gate keeps these rare.
+one that cannot be resolved as non-default; fix rounds ending with findings still open; CI that will
+not go green within the driver's budget; a Critical or Important finding needing a product decision;
+a genuinely-ambiguous merge strategy the gate did not settle; a git operation that would lose work
+on a shared branch; a genuinely-**unforeseen** architectural fork. Front-loading the gate keeps
+these rare.
 
 On a slice **failure** — tests won't pass, a blocking finding, a conflict needing a real decision
 — **stop**, do **not** auto-revert the slices already completed, report the partial state, and
@@ -190,7 +190,7 @@ through `hcb-dev:status`, invoked through the Skill tool; a title this session g
 |---|---|
 | [`../../references/invariants.md`](../../references/invariants.md) | once, before the first read of anything a tool, a forge or another session answers |
 | [`../../references/slice-completion.md`](../../references/slice-completion.md) | at Phase 0's Tier 0 call, and before Phase 2's first cut |
-| [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) | before Phase 1 |
+| [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md), [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) | before Phase 1 |
 | [`../../references/issue-currency.md`](../../references/issue-currency.md) | at Phase 0, before anything is built on an issue |
 | [`../../references/base-resolution.md`](../../references/base-resolution.md) | before Phase 0's refresh and Phase 2's cut |
 | [`../../references/branch-naming.md`](../../references/branch-naming.md) | before Phase 1's layout and Phase 2's cut |

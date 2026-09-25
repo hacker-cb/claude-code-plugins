@@ -1,0 +1,8 @@
+{
+  "probe_gh": "yes",
+  "set": "[{\"name\":\"scope:api\"},{\"name\":\"type:bug\"},{\"name\":\"type:feature\"},{\"name\":\".\"},{\"name\":\"type:old\",\"archived_at\":\"2026-01-01T00:00:00Z\"}]",
+  "labels": [
+    "type:bug"
+  ],
+  "write_fail": "delete"
+}

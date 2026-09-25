@@ -1,0 +1,5 @@
+{
+  "probe_glab": "yes",
+  "set": "[{\"name\":\"priority::high\"},{\"name\":\"priority::low\"}]",
+  "labels": []
+}

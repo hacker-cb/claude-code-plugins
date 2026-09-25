@@ -29,7 +29,8 @@ related link is what it hangs by there — and a parent the token cannot see by 
 [`forge-behaviour.md`](forge-behaviour.md) names for it — since setting a parent moves an issue off
 the one it has without a word. An issue under a parent outside the epic stays there and rides the
 wave's table instead; one no wave has taken yet stays under the epic. Read the edges back once
-they are written.
+they are written. An issue a wave takes loses its parked reason where the approved plan names it,
+hung or not ([`label-lifecycle.md`](label-lifecycle.md)).
 
 ```bash
 # From the epic's own checkout: the epic and its waves live there, the issue maybe elsewhere.

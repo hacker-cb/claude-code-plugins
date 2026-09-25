@@ -1,0 +1,24 @@
+# fixture	args	want	expect	note
+gh-full	--repo-dir .	0	"applied": true|BEFORE:PATCH repos/team/app/labels/scope%3Aweb {"new_name":"scope:ui"}<<POST repos/team/app/labels {|BEFORE:POST repos/team/app/labels {<<PATCH repos/team/app/labels/scope%3Aapi|BEFORE:PATCH repos/team/app/labels/scope%3Aapi<<issues/1/labels|BEFORE:issues/2/labels {"labels":["scope:ui"]}<<DELETE repos/team/app/labels/old-scope|"issue 1":["scope:ui","type:chore"]	renames, creates, edits, relabels and deletes in that order, a row's names read under the plan's renames
+gl-full	--repo-dir .	0	"applied": true|BEFORE:PUT projects/team%2Fapp/labels/3 {"new_name":"scope:ui"}<<POST projects/team%2Fapp/labels {|"color":"#fbca04"|{"add_labels":"type:chore","remove_labels":"old-scope"}|DELETE projects/team%2Fapp/labels/4|NOT:"old-scope"]	GitLab edits and deletes a label by its id, takes a colour #-led, and its lists as a JSON body
+gh-landed	--repo-dir .	0	"applied": true|"step": "create type:chore"	a create the forge refused after it landed is read back and taken as done, never sent again
+gh-refused	--repo-dir .	0	"applied": false|"stopped": "rename scope:web: not renamed|NOT:POST repos/team/app/labels	a write that did not land stops the run before anything that stands on it
+gh-moved	--repo-dir .	0	"applied": true|its labels moved since the snapshot|NOT:issues/1/labels	a carrier whose labels moved since the snapshot is skipped, never written over
+gh-journal	--repo-dir .	0	"applied": true|NOT:DELETE repos/team/app/labels/old-scope	a step the journal holds done is not run again
+gh-resume	--repo-dir .	0	BEFORE:"stopped": "relabel issue 1<<== run 2|BEFORE:== run 2<<"applied": true|"issue 1":["scope:ui","type:chore"]	a run stopped part way through a row resumes over its journal and finishes it, the half its own write left not read as moved
+gh-held	--repo-dir .	0	"applied": true|"outcome": "skipped"|still held by 1|NOT:DELETE repos/team/app/labels/old-scope	a label something still holds, read live, is not deleted
+gh-foreign	--repo-dir .	0	holds another plan's run|NOT:PATCH repos	a journal of another plan's run is refused, never read as this one's
+gh-discussion	--repo-dir .	0	"outcome": "skipped"|still held by 1|NOT:DELETE repos/team/app/labels/old-scope	a discussion still holding a label keeps it from deletion
+gh-gqlerr	--repo-dir .	0	"stopped": "delete old-scope: could not read who holds it|NOT:DELETE repos/team/app/labels/old-scope	an answer with errors is not a count of none
+gh-lost	--repo-dir .	0	"stopped": "relabel issue 1: label-write|lost scope:ui	a write that took off a label nobody asked to is a stop, though what was asked landed
+gh-gone	--repo-dir .	0	"applied": true|it is gone since the snapshot	a carrier gone since the snapshot is skipped, never a stop the next run meets again
+gh-lost-resume	--repo-dir .	0	BEFORE:== run 2<<a stopped write left it without scope:ui|NOT:"applied": true	a label a stopped write lost is still lost on the next run: the row is not taken as done
+gh-started	--repo-dir .	0	"applied": true|"issue 1":["scope:ui","type:chore"]	a row whose write started and never answered resumes from the half it left
+gh-skipped	--repo-dir .	0	"applied": true|NOT:issues/2/labels	a step the journal holds skipped stays skipped
+gh-disc-short	--repo-dir .	0	"stopped": "delete old-scope: could not read the discussions whole|NOT:DELETE repos/team/app/labels/old-scope	discussions read short are no count of none
+gl-rest-hidden	--repo-dir .	0	"applied": true|the REST API does not reach|NOT:it is gone since the snapshot|NOT:issues/1 {	a work item REST does not reach, which the project still lists, is skipped for a hand to label — never read as gone, never a stop for the rest
+gl-gone	--repo-dir .	0	"applied": true|it is gone since the snapshot	a GitLab request the project no longer lists is gone, and skipped
+gh-race	--repo-dir .	0	"stopped": "relabel issue 1: label-write: the carrier does not hold the labels --expect names|NOT:POST repos/team/app/issues/1/labels	a carrier another hand moved between the check and the write is refused by the writer, never written over
+gh-race-resume	--repo-dir .	0	BEFORE:== run 2<<its labels moved since the snapshot|NOT:POST repos/team/app/issues/1/labels	a row the writer refused before sending anything is not resumed as half-written: the next run finds it moved
+gh-lost-noadd	--repo-dir .	0	"stopped": "relabel issue 1: a stopped write left it without scope:ui|NOT:"applied": true	a label a stopped write lost stops the row again, before or after what was asked landed
+gl-rest-502	--repo-dir .	0	"stopped": "relabel issue 1: could not read it|NOT:the REST API does not reach	a REST failure that is not a not-found is a stop, never a carrier skipped
