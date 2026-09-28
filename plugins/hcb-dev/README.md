@@ -264,7 +264,9 @@ the plan stages them.
   `references/session-naming.md`, file the umbrella where none exists, hang the
   epic's own issues under it so the forge counts what is done, label it `epic`
   and file its sessions into one sidebar group per `references/epic-structure.md`,
-  open the epic's ledger on it), draw the split per `references/wave-planning.md` and
+  open the epic's ledger on it), put every fork the plan will stand on to you first,
+  write each answer into the issues it changes, then draw the split per
+  `references/wave-planning.md` on those bodies and
   get the user's word on the table — the epic's merge authority settled with
   it, and each wave's own issue filed on it, labelled `wave`, with a ledger of its own
   and the wave's issues hung under it per `references/wave-issue.md` — launch
@@ -331,7 +333,8 @@ the plan stages them.
   report that precedes the build, the status milestones and the return
   protocol. Pins one base for the batches hung together and again at each step
   of a staged wave, reports held
-  batches instead of hanging them, withdraws chips the plan obsoleted, and falls
+  batches instead of hanging them — a batch standing on a fork of yours still open
+  or not yet written into its issue among them —, withdraws chips the plan obsoleted, and falls
   back to pasteable fenced orders where chips are unavailable. The click stays
   with you; how many batches stand clickable at once is the plan's launch
   order. The launch reaches you as a wave report, led by whatever the preflight

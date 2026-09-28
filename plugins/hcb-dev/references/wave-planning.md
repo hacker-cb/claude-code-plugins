@@ -62,8 +62,10 @@ there.
 - Order the issues inside it, and say what to take first and why — the
   reproduced defect before the design question, the unblocked vertex before
   the dependents, the slice that waits on no answer before the ones that do.
-- Name the design forks up front, each with its addressee — the worker, the
-  master, the user — so the planning gate downstream never rediscovers them.
+- Name the design forks up front, each with its addressee — the worker or the
+  master — so the planning gate downstream never rediscovers them. A fork the
+  user must settle is none of the order's: it holds every batch standing on it
+  (*Gating the waves*), and the answer reaches the batch as the body it reads.
 - An investigation is a batch like any other when its deliverable is recorded
   tracker state or a verdict; say so in the order's deliverable slot.
 
@@ -89,8 +91,10 @@ there.
   wave is pinned and hung once its predecessor's landing is cleared, not at the
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
-  blocker, an issue whose body was ruled `needs rewrite`; what holds it and the
-  condition that releases it are written beside it.
+  blocker, an issue whose body was ruled `needs rewrite`, a fork the user must
+  settle that one of its issues stands on, still open or answered and not yet
+  written into the body it changes; what holds it and the condition that
+  releases it are written beside it.
 
 ## What a verdict past `current` does to a batch
 
@@ -115,5 +119,8 @@ order, file zone, what it shares with whom and through which seam, its wave,
 gate and launch order — plus, for every batch planned beside another, what
 clears the pair on each axis that could have separated them. What was
 deliberately left out goes up with it (blocked batches with conditions, work
-that belongs to no wave), the forks only the user can settle, and every issue whose parked
+that belongs to no wave, the issues of a fork the user deferred), the decisions
+it was drawn on, each linked to the body it was written into — a table drawn
+while such forks are still open, as a survey's proposal is, names each against
+the batches it holds instead —, and every issue whose parked
 reason the approval takes off ([`label-lifecycle.md`](label-lifecycle.md)).

@@ -17,35 +17,31 @@ description: >-
 
 # Wave refresh
 
-What can start right now, recomputed against the tree rather than against the
-plan drawn when the wave opened. The layout it produces is
-[`../../references/wave-planning.md`](../../references/wave-planning.md)'s, each
-issue's verdict is
-[`../../references/issue-currency.md`](../../references/issue-currency.md)'s,
-what the user approves goes out through `hcb-dev:wave-dispatch`, and the role
-around it is `hcb-dev:master-session`.
+What can start right now, recomputed against the tree rather than against the plan drawn when the
+wave opened. The layout it produces is
+[`../../references/wave-planning.md`](../../references/wave-planning.md)'s, each issue's verdict is
+[`../../references/issue-currency.md`](../../references/issue-currency.md)'s, what the user approves
+goes out through `hcb-dev:wave-dispatch`, and the role around it is `hcb-dev:master-session`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
-**Differential by construction.** This pass reads a delta and the ground the
-running batches hold. What it needs to exist is a recorded point to diff from —
-the ladder below says which. A slice with none is surveyed rather than refreshed
-(`hcb-dev:backlog-survey`); say so instead of reading the backlog whole under
-this skill's name.
+**Differential by construction.** This pass reads a delta and the ground the running batches hold.
+What it needs to exist is a recorded point to diff from — the ladder below says which. A slice with
+none is surveyed rather than refreshed (`hcb-dev:backlog-survey`); say so instead of reading the
+backlog whole under this skill's name.
 
 ## What the ask carries
 
-The **capacity** — how many batches the user can start — and the **slice**:
-the epic, the milestone, everything open. Where the ask names neither, the slice
-is the epic this session coordinates, and the capacity is what the report
-concludes rather than a number handed in.
+The **capacity** — how many batches the user can start — and the **slice**: the epic, the milestone,
+everything open. Where the ask names neither, the slice is the epic this session coordinates, and
+the capacity is what the report concludes rather than a number handed in.
 
 ## The base
 
 Resolve and refresh it per
-[`../../references/base-resolution.md`](../../references/base-resolution.md) —
-where the epic completes in `local` mode, the local parent holding its remote
-copy — and pin it as `<remote>/<branch>@<sha>` — `<branch>@<sha>` for a local parent — beside the moment the tracker is read at:
-together they are what this pass verified on, and what the next one diffs from.
+[`../../references/base-resolution.md`](../../references/base-resolution.md) — where the epic
+completes in `local` mode, the local parent holding its remote copy — and pin it as
+`<remote>/<branch>@<sha>` — `<branch>@<sha>` for a local parent — beside the moment the tracker is
+read at: together they are what this pass verified on, and what the next one diffs from.
 
 **Every read of this pass goes through that ref, never through a working tree** —
 the ground below, the delta, and every coordinate a verdict rests on alike.
@@ -120,7 +116,9 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
    records for it, with the coordinate it stood on; one the section does not
    carry is read now, and what is re-read is written back there. The report says
    which verdicts this pass read and which it carried. What each verdict past
-   `current` does to the batch is `wave-planning.md`'s.
+   `current` does to the batch is `wave-planning.md`'s — and so is what a fork
+   the user must settle does to it: a candidate standing on one still open, or
+   answered and not yet written into its body, is held however it reads.
 2. **Ground.** From those coordinates, never from the paths a body happens to
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
@@ -164,9 +162,12 @@ free, against how many were asked for — is what the first line says happened.
   the ground it holds.
 - **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
   what clears each one against the occupied ground, and what holds the ones held.
-- **`## Needs your word`** — the tracker edits the candidates stand on, each named as the
-  condition that releases its batch, the word the layout launches on, and — where the slice ran
-  out rather than the work — the capacity outside it, as a choice of its own.
+- **`## Needs your word`** — first the forks the candidates stand on, in one block, then the
+  tracker edits, each named as the condition that releases what it holds; the word the layout
+  launches on; and — where the slice ran out rather than the work — the capacity outside it, as a
+  choice of its own. Where a fork stands open, the report stops at the forks: `## The plan` names
+  the candidates each holds and draws no layout, no launch word is asked, and once the answers are
+  written (`hcb-dev:master-session`) this pass re-rules what they moved as a tracker delta.
 
 ## After the report
 
@@ -184,7 +185,7 @@ free, against how many were asked for — is what the first line says happened.
 - **The layout is launched on the user's word, and only then** — the capacity in
   the ask is not that word. What they approve goes to `hcb-dev:wave-dispatch`,
   one chip per batch; the click that starts each one is the second gate and
-  stays theirs, and a batch held by a tracker edit is reported, never hung.
+  stays theirs, and a batch held by a tracker edit or a fork is reported, never hung.
 
 ## Reference files
 

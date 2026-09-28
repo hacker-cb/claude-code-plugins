@@ -22,7 +22,10 @@ a fork, not a mechanic.
 
 **Front-load, then run.** Ask everything *foreseeable* at the planning gate — all
 at once, alongside the slice and branch layout — so the autonomous run afterwards
-has no routine questions left. A genuinely **unforeseen** architectural fork that
+has no routine questions left. Where the layout itself turns on the answers — an
+epic split into waves of parallel batches — the forks go up first, on their own,
+and the layout is drawn once the answers are written where the work will read
+them (`hcb-dev:master-session`). A genuinely **unforeseen** architectural fork that
 surfaces mid-run still stops the run: pausing to ask beats guessing on something
 irreversible. But it should be *rare* — its frequency is a measure of how well the
 analysis was done, not a normal event. Everything the analysis could have
