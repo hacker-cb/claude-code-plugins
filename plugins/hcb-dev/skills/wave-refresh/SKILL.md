@@ -116,9 +116,8 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
    records for it, with the coordinate it stood on; one the section does not
    carry is read now, and what is re-read is written back there. The report says
    which verdicts this pass read and which it carried. What each verdict past
-   `current` does to the batch is `wave-planning.md`'s — and so is what a fork
-   the user must settle does to it: a candidate standing on one still open, or
-   answered and not yet written into its body, is held however it reads.
+   `current` does to the batch is `wave-planning.md`'s, and so is what a fork the
+   user must settle does to it, read from the epic ledger's expectations and decisions.
 2. **Ground.** From those coordinates, never from the paths a body happens to
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
@@ -165,7 +164,7 @@ free, against how many were asked for — is what the first line says happened.
 - **`## Needs your word`** — first the forks the candidates stand on, in one block, then the
   tracker edits, each named as the condition that releases what it holds; the word the layout
   launches on; and — where the slice ran out rather than the work — the capacity outside it, as a
-  choice of its own. Where a fork stands open, the report stops at the forks: `## The plan` names
+  choice of its own. Where a fork stands open or unwritten, the report stops at the forks: `## The plan` names
   the candidates each holds and draws no layout, no launch word is asked, and once the answers are
   written (`hcb-dev:master-session`) this pass re-rules what they moved as a tracker delta.
 

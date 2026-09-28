@@ -92,8 +92,8 @@ there.
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
   blocker, an issue whose body was ruled `needs rewrite`, a fork the user must
-  settle that one of its issues stands on, still open or answered and not yet
-  written into the body it changes; what holds it and the condition that
+  settle that one of its issues stands on, still open, deferred, or answered and
+  not yet written into the body it changes; what holds it and the condition that
   releases it are written beside it.
 
 ## What a verdict past `current` does to a batch

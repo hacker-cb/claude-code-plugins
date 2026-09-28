@@ -52,13 +52,11 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   says otherwise holds its batch exactly as the blocker above does — **not
   hung**, reported with that rewrite as the condition that releases it. Nothing
   else releases it, a verdict carried in the order included.
-- **Check the forks each batch stands on** — every fork the user must settle
-  that one of its issues depends on — the open ones as the plan and the epic
-  ledger's expectations name them, the answered ones as its decisions do — read
-  against the bodies that call returned: one still open, or answered and not yet written
-  into the body it changes, holds its batch exactly as the blocker above does —
-  **not hung**, reported with the answer or its write as the condition releasing
-  it. No order carries such a fork as a decision point for the batch to wait on.
+- **Check the forks each batch stands on** — the user's forks its issues depend
+  on, the open ones as the plan and the epic ledger's expectations name them,
+  the answered and the deferred as its decisions do, read against the bodies that
+  call returned. One that holds its batch by `wave-planning.md` holds it as the
+  blocker above does — **not hung**, reported with what releases it.
 - **Check the round that cleared this wave's gate is closed** — returns accepted,
   candidates ruled, and the tracker writes this wave stands on executed or deferred
   by the user's word (`hcb-dev:master-session`). An epic's first wave, and ground a
