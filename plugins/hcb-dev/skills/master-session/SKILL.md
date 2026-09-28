@@ -58,15 +58,16 @@ Three steps, in order, none begun before the one above it has ended — its inpu
 
 1. **Every fork first.** Each fork `architecture-decisions.md` routes to the user that an issue of
    any wave the plan will draw stands on — every wave's, not the next one's alone — goes up in one
-   ask block, recommendation first, with no wave table beside it: the answers redraw the batches.
-   Research a recommendation needs happens here — a subagent, or an investigation batch delivering
-   that recommendation — with no build batch launched beside it. A wave the user leaves
-   conditional stays out of the plan, its forks with it.
+   ask block, recommendation first, with no wave table beside it. Research a recommendation needs
+   runs before it goes up: a subagent here, or, too big for one, a wave of investigation batches of
+   its own, planned and approved as any wave is, none of them building on that fork. A wave the
+   user leaves conditional stays out of the plan, its forks with it.
 2. **Every answer written where a batch reads it**, on the word that gave it
    (`hcb-dev:issue-tracking`): each issue body it changes rewritten to it, the parked reason it
    settles taken off ([`../../references/label-lifecycle.md`](../../references/label-lifecycle.md)),
-   its entry in the epic ledger's decisions — the tracker, not this conversation, being the source
-   of truth. A fork the user defers takes its issues out of every wave until answered and written.
+   its entry in the epic ledger's decisions; the answer is read back from the tracker thereafter,
+   never from this conversation. A fork the user defers takes its issues out of every wave until
+   answered and written.
 3. **The split, drawn on the written bodies** per `wave-planning.md`, its closing table handed to
    the user. A fork surfacing later — in a round's findings, in a batch's question — takes the same
    steps before any chip standing on it goes up.
@@ -74,9 +75,9 @@ Three steps, in order, none begun before the one above it has ended — its inpu
 **The preconditions the table carries go up with it** — a batch standing on an issue the survey
 ruled `needs rewrite` ([`../../references/issue-currency.md`](../../references/issue-currency.md))
 is planned and held, and the rewrite releasing it is a tracker edit like any other:
-`hcb-dev:issue-tracking`, on that same word. The launch waits for their word on the table; the
-click that starts each chip is a second, separate gate — approval of the plan is not permission to
-hang chips for gated waves early.
+`hcb-dev:issue-tracking`, on that same word — save a rewrite that settles a fork, which is steps
+1–2's. The launch waits for their word on the table; the click that starts each chip is a second,
+separate gate — approval of the plan is not permission to hang chips for gated waves early.
 
 **The epic's merge authority is settled with that same word**, once, before the first chip goes
 up — `on-green` recommended first
@@ -117,7 +118,7 @@ verdicts, decisions, constraints and what the user owes, the epic's.
 | a **survey** of the slice handed over | record its reading whole before anything is drawn from it — the pin, the moment it read the tracker at, the ground it covered, and its verdicts for what the verdicts section holds, never one part without the rest — and only where it covered this slice whole, stands on a base no older than the reading the ledger already carries, and read the tracker later than it; a reading failing any of the three leaves that reading standing and is reported rather than recorded. Then the pass below | the reading, whole |
 | a landing **freed ground**, its checks outcome recorded as read — an unread one is not that, and the row above holds that ground until it is read —, a **tracker edit** executed — one the pass below reads in its tracker half, whether or not the plan was waiting on it and whether or not the issue was in the slice when it was made — or the user asks what else can run beside what is running, what blocks, or what to take next | recompute, never recall (`hcb-dev:wave-refresh`): it reads the delta from the point it resolves rather than the backlog again, and what it frees goes back to Launching behind the user's word on its layout; a running batch the landed change reached — its zone, a check it answers to, a premise of its order — hears it as an amendment (`session-comms.md`) | what that pass writes |
 | the user asks this session for a **change** — a document, a fix, the tail of a batch whose session ended | hand it on, never built here (`master-tree.md`): a one-batch row through `hcb-dev:wave-dispatch` where it touches the epic's ground, an order through `hcb-dev:session-dispatch` where it does not | the row, or the journal |
-| the **plan** is drawn or redrawn, or a **wave** opens or closes | a draw or a redraw takes Planning's three steps in their order; advance the epic's human half too — the wave table in its body, not only the ledgers; an issue entering the epic or a wave is hung under it, and a wave opens with its issue and closes with it, once its round has closed (`wave-issue.md`) | the epic's header; the wave's; what a redraw moved |
+| the **plan** is drawn or redrawn, or a **wave** opens or closes | advance the epic's human half too — the wave table in its body, not only the ledgers; an issue entering the epic or a wave is hung under it, and a wave opens with its issue and closes with it, once its round has closed (`wave-issue.md`) | the epic's header; the wave's; what a redraw moved |
 | a **lesson** one batch paid for | tell the batches it can still bite, the moment it is learned; one about the forge or the plugin goes where `epic-structure.md` sends it | journal |
 | the **plugin moved** under this session | it moved under its batches too: refresh here first (`hcb-dev:session-plugin-refresh`) and bring the epic's labels up (`epic-structure.md`), then send every batch still engaged the word that theirs moved as well — each is running under the copy it loaded, and a batch never told goes on building against text this session has already replaced. What that refresh changes for a batch already building travels as an amendment (`session-comms.md`), not as a new order | the header's version |
 

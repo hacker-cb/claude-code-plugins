@@ -7,8 +7,7 @@ description: >-
   chips or launch the waves ("повесь чипы", "запусти волны/батчи в сессиях",
   "раздай работу по сессиям"), and when a hung chip goes stale and needs
   re-issuing or withdrawing. Preflight pins the base and checks what holds each
-  batch — an environment blocker, an issue body a survey ruled `needs rewrite`,
-  a fork of the user's still open or not yet written into its issue; a held batch is reported with the condition that releases it, never hung. The coordinating role around it is `hcb-dev:master-session`; the
+  batch; a held batch is reported with the condition that releases it, never hung. The coordinating role around it is `hcb-dev:master-session`; the
   receiving side of every order it writes is `hcb-dev:wave-worker`. For one
   ad-hoc order pasted by hand use `hcb-dev:session-dispatch`; for work already
   finished that another session receives, `hcb-dev:session-handoff`.
@@ -54,8 +53,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   hung**, reported with that rewrite as the condition that releases it. Nothing
   else releases it, a verdict carried in the order included.
 - **Check the forks each batch stands on** — every fork the user must settle
-  that one of its issues depends on, as the plan and the epic ledger's decisions
-  name them, read against the bodies that call returned: one still open, or answered and not yet written
+  that one of its issues depends on — the open ones as the plan and the epic
+  ledger's expectations name them, the answered ones as its decisions do — read
+  against the bodies that call returned: one still open, or answered and not yet written
   into the body it changes, holds its batch exactly as the blocker above does —
   **not hung**, reported with the answer or its write as the condition releasing
   it. No order carries such a fork as a decision point for the batch to wait on.
