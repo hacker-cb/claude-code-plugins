@@ -98,6 +98,7 @@ behind it — not planned, a duplicate — keeps everything else.
 | a change request's labels, at open and re-derived | opening the request: they are part of it |
 | an issue's labels at close | the close — the merge authorization where a keyword closes it, the go-ahead where it is closed explicitly |
 | a parked reason taken off | the answer that settled it and named it — a fork's, or the one that took the work |
+| a parked reason put on at a deferral | the word that deferred the fork: the reason the set gives a pending decision |
 
 Nothing else here is written without its own answer (`hcb-dev:issue-tracking`). Each write above
 stands in the report's `## Without your word` with what undoes it

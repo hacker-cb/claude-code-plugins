@@ -118,5 +118,5 @@ gate and launch order — plus, for every batch planned beside another, what
 clears the pair on each axis that could have separated them. What was
 deliberately left out goes up with it (blocked batches with conditions, work
 that belongs to no wave), the decisions it was drawn on, each linked to the body it was
-written into, and every issue whose parked
+written into or, where it wrote none, named, and every issue whose parked
 reason the approval takes off ([`label-lifecycle.md`](label-lifecycle.md)).

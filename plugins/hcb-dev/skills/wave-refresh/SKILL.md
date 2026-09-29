@@ -162,11 +162,12 @@ free, against how many were asked for — is what the first line says happened.
   in the slice, and every disagreement the three ground sources showed.
 - **`## Where it stands`** — the batches running, as the catalogue's rows have them, each with
   the ground it holds.
-- **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
-  what clears each one against the occupied ground, and what holds the ones held.
-- **`## Needs your word`** — the forks the candidates stand on first, in one block, then the
-  tracker edits they stand on, each named as the condition that releases its batch, the word the layout launches on, and — where the slice ran
-  out rather than the work — the capacity outside it, as a choice of its own.
+- **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus what
+  clears each one against the occupied ground, and what holds the ones held; one on a fork of the
+  user's still open is named with it, laid out once `hcb-dev:master-session` has the answer written.
+- **`## Needs your word`** — first those forks, then the tracker edits the candidates stand on, each
+  named as the condition that releases its batch, the word the layout launches on, and — where the
+  slice ran out rather than the work — the capacity outside it, as a choice of its own.
 
 ## After the report
 
