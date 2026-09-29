@@ -52,7 +52,7 @@ it — never on the taking alone. The answer that takes it off names it:
   issue, in the same write that brings the issue's body to the answer, before any plan is drawn on
   it; any other, the wave plan's table names, and the master takes it off on the word that approved
   the plan, whether or not the forge hangs the issue ([`wave-issue.md`](wave-issue.md)); an
-  answer that drops the work takes nothing off, and the close it implies is asked for on its own;
+  answer that defers or drops the work takes nothing off, and a close it implies is asked on its own;
 - **a batch** writes none: its master did.
 
 An open blocker stays: an edge ([`issue-links.md`](issue-links.md)), or where the forge carries

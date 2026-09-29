@@ -4,7 +4,8 @@ description: >-
   Recompute what parallel work can safely start right now: pin the base and the
   moment the tracker was read, measure the ground the running batches hold, take
   the delta since the last reading, rule what clears it, and say how many
-  batches are actually free — then hand what the user approves to the launcher.
+  batches are actually free, or stop at the user's open forks — then hand what
+  the user approves to the launcher.
   Use when a coordinating session is asked "что ещё можно взять параллельно",
   "что блокирует", "что делать дальше", "какая следующая волна", "освежи и
   спланируй заново", or is handed a capacity ("до N батчей"); and after a
@@ -106,8 +107,9 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
 
 ## Ruling the candidates
 
-Where the epic ledger's expectations or decisions hold a fork of the user's open or unwritten, the
-verdicts below are ruled and nothing past them: the report stops at the forks.
+Where a fork of the user's stands open or answered and unwritten (`wave-planning.md`) — in the epic
+ledger's expectations or decisions, or found by the verdicts below — nothing past the verdicts is
+ruled, and the report stops at the forks.
 
 1. **Verdict.** `issue-currency.md` — it is what establishes the coordinates
    the work actually stands on, and a body naming a path the tree moved past is
@@ -164,9 +166,8 @@ free, against how many were asked for — is what the first line says happened.
 - **`## Needs your word`** — first the forks the candidates stand on, in one block, then the
   tracker edits, each named as the condition that releases what it holds; the word the layout
   launches on; and — where the slice ran out rather than the work — the capacity outside it, as a
-  choice of its own. Where a fork stands open or unwritten, the report stops at the forks: `## The plan` names
-  the candidates each holds and draws no layout, no launch word is asked, and once the answers are
-  written (`hcb-dev:master-session`) this pass re-rules what they moved as a tracker delta.
+  choice of its own. A report that stopped at the forks draws no layout and asks no launch word,
+  and once the answers are written (`hcb-dev:master-session`) this pass re-rules what they moved.
 
 ## After the report
 

@@ -85,8 +85,8 @@ whether deleting it changes what anyone does next.
    on, and the pin and tracker moment it was read at. A survey's reading opens it; every capacity
    refresh writes back what it re-read and reads the rest from here rather than re-deriving them
    (`hcb-dev:wave-refresh`). A line leaves when its issue does.
-3. **decisions** — every fork settled or deferred, one entry each: the question, the answer or `deferred`,
-   who and when, each issue it changes marked `written` once its body carries it, the case's link — never the case.
+3. **decisions** — every fork settled, one entry each: the question, the answer, `deferred` or `dropped`,
+   who and when, each issue an answer changes marked `written` once its body carries it, the case's link — never the case.
 4. **constraints** — what no batch may violate while the epic runs: a change request that must not
    merge, a foreign stash, a pinned version — never a workflow's own policy (`order-anatomy.md`). A
    return whose claims touch one of these is checked against it before either is believed. One entry

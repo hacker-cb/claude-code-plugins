@@ -91,10 +91,11 @@ there.
   wave is pinned and hung once its predecessor's landing is cleared, not at the
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
-  blocker, an issue whose body was ruled `needs rewrite`, an issue a deferred fork
-  left out of the layout — and no batch is launched while any fork the user must
-  settle stands open, or answered and not yet written into the body it changes,
-  whether the batch stands on it or not; what holds each and the condition that
+  blocker, an issue whose body was ruled `needs rewrite`, an issue a deferred or
+  dropped fork left out of the layout — and no batch is launched while any fork
+  the user must settle stands open, or answered and not yet written into the body
+  it changes, whether the batch stands on it or not; a deferred or dropped one
+  holds nothing but its own issues. What holds each and the condition that
   releases it are written beside it.
 
 ## What a verdict past `current` does to a batch

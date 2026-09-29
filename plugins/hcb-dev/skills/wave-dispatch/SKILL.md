@@ -53,8 +53,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   hung**, reported with that rewrite as the condition that releases it. Nothing
   else releases it, a verdict carried in the order included.
 - **Check the user's forks** — the open ones as the plan and the epic ledger's
-  expectations name them, the answered and the deferred as its decisions do, read
-  against the bodies that call returned. Whatever of them holds a batch by
+  expectations name them, the settled ones as its decisions do, each answered one
+  read against the bodies of every issue it changes, whichever wave holds them.
+  Whatever of them holds a batch by
   `wave-planning.md` holds it as the blocker above does — **not hung**, reported
   with what releases it.
 - **Check the round that cleared this wave's gate is closed** — returns accepted,
