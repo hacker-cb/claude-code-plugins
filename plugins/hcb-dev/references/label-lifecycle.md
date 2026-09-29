@@ -49,9 +49,10 @@ it — never on the taking alone. The answer that takes it off names it:
 - **a build** — the planning gate of `hcb-dev:implementation-workflow` names each issue whose
   parked reason comes off, and its approval is the write;
 - **a wave** — one a user's fork settles comes off in the write that brings the issue's body to
-  its answer, on the word that gave it (`hcb-dev:master-session`); any other, the wave plan's table
-  names, and the master takes it off on the word that approved the plan, whether or not the forge
-  hangs the issue ([`wave-issue.md`](wave-issue.md));
+  its answer, on the word that gave it, and a deferral parks the issues it leaves, on its own word
+  (`hcb-dev:master-session`); any other, the wave plan's table names, and the master takes it off
+  on the word that approved the plan, whether or not the forge hangs the issue
+  ([`wave-issue.md`](wave-issue.md));
 - **a batch** writes none: its master did.
 
 An open blocker stays: an edge ([`issue-links.md`](issue-links.md)), or where the forge carries

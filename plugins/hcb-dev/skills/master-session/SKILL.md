@@ -58,21 +58,21 @@ survey of the slice exists yet, from `hcb-dev:wave-refresh` for a plan redrawn m
 1. **The forks.** Every fork
    [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) routes
    to the user that the plan's issues stand on — every wave's, not the next one's alone — goes up
-   before any wave table, naming its issues, the body edits its answer writes and the parked reasons
-   it takes off, and stands in the epic ledger's expectations until written. The research its
-   recommendation needs runs first, in subagents as `master-tree.md` runs them — reading, measuring,
-   or a throwaway prototype landing nothing.
+   before any wave table and into the epic ledger's expectations, naming its issues, the body edits
+   its answer writes and the parked reasons it takes off. The research its recommendation needs runs
+   first, all of it at once, in subagents as `master-tree.md` runs them — reading, measuring, or a
+   throwaway prototype landing nothing.
 2. **The answers, written where a batch reads them**, on the word that gave each
    (`hcb-dev:issue-tracking`): the body edits its ask named, the decision in the epic ledger, the
    parked reasons off per
    [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) — one tracker edit
-   for the loop, the expectation met only once it is done. A deferred fork is entered as deferred
-   and parks its issues, or leaves them parked; an answer dropping the work asks for their close.
+   for the loop, the expectation met once it is done. A deferred fork's issues stay parked and out
+   of the plan; an answer dropping the work asks for their close.
 3. **The split**, per `wave-planning.md` on the written bodies, its closing table to the user.
 
-A fork surfacing later — in a round's findings, in a batch's question — takes the same steps, and a
-running batch standing on it hears it as an amendment holding that work, its merge included
-(`session-comms.md`).
+A fork surfacing later — in a round's findings, in a batch's question — takes the same steps before
+any plan or chip standing on it; a running batch standing on it hears an amendment holding that
+work, its merge included, and then the one carrying the written answer (`session-comms.md`).
 
 **The preconditions the table carries go up with it** — a batch standing on an issue the survey
 ruled `needs rewrite` ([`../../references/issue-currency.md`](../../references/issue-currency.md))
@@ -172,14 +172,14 @@ assumed dead — and a `chipped` row with no session goes to the user as `wave-l
 ## Closing the epic
 
 Verify the epic against its ledgers — every wave closed, every batch ended, released, withdrawn or
-failed alike, with whatever any of them left standing accounted for; every issue
-at the end state the ledger now records for it; every mandate met — then report
-to the user as the final report, the run here being the epic and the batch
-sessions it is done with among what that report leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never run — naming its reach honestly: worktrees the host leased to other
-sessions it reports rather than removes, and each batch session's own residue
-is that session's to sweep. Write the ledger's closing line, then close the epic
-per `epic-structure.md` — its closing comment, and the issue's close and the session
-group's deletion both put to the user.
+failed alike, with whatever any of them left standing accounted for; every issue at the end state
+the ledger now records for it; every deferred fork put back to the user; every mandate met — then
+report to the user as the final report, the run here being the epic and the batch sessions it is
+done with among what that report leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never
+run — naming its reach honestly: worktrees the host leased to other sessions it reports rather than
+removes, and each batch session's own residue is that session's to sweep. Write the ledger's closing
+line, then close the epic per `epic-structure.md` — its closing comment, and the issue's close and
+the session group's deletion both put to the user.
 
 ## Reference files
 

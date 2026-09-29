@@ -91,11 +91,8 @@ there.
   wave is pinned and hung once its predecessor's landing is cleared, not at the
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
-  blocker, an issue whose body was ruled `needs rewrite`, an issue still parked
-  once the plan's approval has taken off what it names
-  ([`label-lifecycle.md`](label-lifecycle.md)), or one a fork of the user's names
-  that the epic ledger's expectations hold open or its decisions record as
-  deferred; what holds it and the condition that releases it are written beside it.
+  blocker, an issue whose body was ruled `needs rewrite`; what holds it and the
+  condition that releases it are written beside it.
 
 ## What a verdict past `current` does to a batch
 
@@ -122,4 +119,4 @@ clears the pair on each axis that could have separated them. What was
 deliberately left out goes up with it (blocked batches with conditions, work
 that belongs to no wave), the decisions it was drawn on, each linked to the body it was
 written into, and every issue whose parked
-reason the approval takes off (`label-lifecycle.md`).
+reason the approval takes off ([`label-lifecycle.md`](label-lifecycle.md)).

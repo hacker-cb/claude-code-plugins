@@ -333,8 +333,7 @@ the plan stages them.
   report that precedes the build, the status milestones and the return
   protocol. Pins one base for the batches hung together and again at each step
   of a staged wave, reports held
-  batches instead of hanging them — a batch whose issue is still parked, or stands on
-  a fork of yours still open, among them —, withdraws chips the plan obsoleted, and falls
+  batches instead of hanging them, withdraws chips the plan obsoleted, and falls
   back to pasteable fenced orders where chips are unavailable. The click stays
   with you; how many batches stand clickable at once is the plan's launch
   order. The launch reaches you as a wave report, led by whatever the preflight
