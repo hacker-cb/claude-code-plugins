@@ -67,14 +67,12 @@ disagreement is itself a finding:
   which may reach past the zone an order drew, and which a request no batch row
   claims holds just as much.
 
-Every disagreement goes to the user — a request reaching past its zone, a row
-past `chipped` and short of `accepted` with no session, `blocked` after it included, a
-session with no row. A `chipped` row with no session goes to the user as
-`wave-ledger.md` reads it, with the chip's age. Until one is settled the ground is read
-the **safer** way rather than the wider or the narrower: a zone read two ways is
-occupied to the union of both, and a session whose zone no source gives holds
-**everything a candidate would touch**, since an unknown zone is unbounded and
-not empty.
+Every disagreement goes to the user — a request reaching past its zone, a row past `chipped` and
+short of `accepted` with no session, `blocked` after it included, a session with no row. A `chipped`
+row with no session goes to the user as `wave-ledger.md` reads it, with the chip's age. Until one is
+settled the ground is read the **safer** way rather than the wider or the narrower: a zone read two
+ways is occupied to the union of both, and a session whose zone no source gives holds **everything a
+candidate would touch**, since an unknown zone is unbounded and not empty.
 
 ## The delta since the last reading
 
@@ -108,6 +106,9 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
 
 ## Ruling the candidates
 
+Where the epic ledger's expectations or decisions hold a fork of the user's open or unwritten, the
+verdicts below are ruled and nothing past them: the report stops at the forks.
+
 1. **Verdict.** `issue-currency.md` — it is what establishes the coordinates
    the work actually stands on, and a body naming a path the tree moved past is
    exactly what it catches. It is re-derived where the delta reaches: a candidate
@@ -116,8 +117,7 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
    records for it, with the coordinate it stood on; one the section does not
    carry is read now, and what is re-read is written back there. The report says
    which verdicts this pass read and which it carried. What each verdict past
-   `current` does to the batch is `wave-planning.md`'s, and so is what a fork the
-   user must settle does to it, read from the epic ledger's expectations and decisions.
+   `current` does to the batch is `wave-planning.md`'s.
 2. **Ground.** From those coordinates, never from the paths a body happens to
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
