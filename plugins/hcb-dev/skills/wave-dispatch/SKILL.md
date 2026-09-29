@@ -7,7 +7,8 @@ description: >-
   chips or launch the waves ("повесь чипы", "запусти волны/батчи в сессиях",
   "раздай работу по сессиям"), and when a hung chip goes stale and needs
   re-issuing or withdrawing. Preflight pins the base and checks what holds each
-  batch; a held batch is reported with the condition that releases it, never hung. The coordinating role around it is `hcb-dev:master-session`; the
+  batch — an environment blocker, an issue body a survey ruled `needs rewrite`;
+  a held batch is reported with the condition that releases it, never hung. The coordinating role around it is `hcb-dev:master-session`; the
   receiving side of every order it writes is `hcb-dev:wave-worker`. For one
   ad-hoc order pasted by hand use `hcb-dev:session-dispatch`; for work already
   finished that another session receives, `hcb-dev:session-handoff`.
@@ -52,12 +53,10 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   says otherwise holds its batch exactly as the blocker above does — **not
   hung**, reported with that rewrite as the condition that releases it. Nothing
   else releases it, a verdict carried in the order included.
-- **Check the user's forks** — the open ones as the plan and the epic ledger's
-  expectations name them, the settled ones as its decisions do, each answered one
-  read against the bodies of every issue it changes, whichever wave holds them.
-  Whatever of them holds a batch by
-  `wave-planning.md` holds it as the blocker above does — **not hung**, reported
-  with what releases it.
+- **Check the forks each batch stands on** — an issue that call shows still
+  parked, or one a fork of the user's names that the epic ledger's expectations
+  still hold open, holds its batch by `wave-planning.md` exactly as the blocker
+  above does — **not hung**, reported with the answer as what releases it.
 - **Check the round that cleared this wave's gate is closed** — returns accepted,
   candidates ruled, and the tracker writes this wave stands on executed or deferred
   by the user's word (`hcb-dev:master-session`). An epic's first wave, and ground a
@@ -135,9 +134,8 @@ be read whole rather than to point.
   `dismiss_task` first, since a chip left hanging is clickable while the delta
   from its pin is still being verified; then re-issue on a fresh pin, and the row
   carrying it names that pin.
-- **A chip a fork now holds is withdrawn** — one not yet clicked, where a fork of
-  the user's was raised after it was hung (`wave-planning.md`): `dismiss_task`
-  first, the row held with that fork as what releases it, re-issued once written.
+- **A chip a new fork holds is withdrawn** — one not yet clicked whose issue a
+  fork raised since names: `dismiss_task` first, re-issued once the answer is written.
 - **A batch whose start report never arrives is unreached**, whatever its chip
   says — check on it rather than assuming the name made contact.
 

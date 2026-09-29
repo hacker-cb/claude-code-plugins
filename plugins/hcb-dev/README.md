@@ -317,9 +317,7 @@ the plan stages them.
   `references/issue-currency.md`, where each verdict leaves its batch and how
   the survivors pair per `references/wave-planning.md`. Reports the capacity
   that is actually free against the capacity you asked for, and names what holds
-  every batch that is missing rather than filling the number; where a fork of
-  yours stands open or unwritten, it stops at the forks and draws no layout until
-  their answers are written. Differential where
+  every batch that is missing rather than filling the number. Differential where
   `backlog-survey` is exhaustive: use the survey where nothing records a point
   to diff from. Writes the pass to the ledger, then hands what you approve to
   `wave-dispatch` — the capacity you named is a ceiling, not the word that
@@ -335,8 +333,8 @@ the plan stages them.
   report that precedes the build, the status milestones and the return
   protocol. Pins one base for the batches hung together and again at each step
   of a staged wave, reports held
-  batches instead of hanging them — every batch while a fork of yours stands open
-  or not yet written into its issues among them —, withdraws chips the plan obsoleted, and falls
+  batches instead of hanging them — a batch whose issue is still parked, or stands on
+  a fork of yours still open, among them —, withdraws chips the plan obsoleted, and falls
   back to pasteable fenced orders where chips are unavailable. The click stays
   with you; how many batches stand clickable at once is the plan's launch
   order. The launch reaches you as a wave report, led by whatever the preflight

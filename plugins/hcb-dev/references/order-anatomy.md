@@ -59,8 +59,7 @@ a receiver told only what is known treats the rest as known.
 - **The decision points** — which forks the receiver settles alone and
   narrates, and which come back — each with its addressee: the user, or the
   session that wrote the order
-  ([`architecture-decisions.md`](architecture-decisions.md)) — in a wave order
-  the second alone ([`wave-planning.md`](wave-planning.md)).
+  ([`architecture-decisions.md`](architecture-decisions.md)).
 - **The negative constraint** — the envelope's, plus any workaround
   deliberately left in place elsewhere. A workflow's own policy is never one —
   which reviews a driver waits for or asks for, how its findings close: the

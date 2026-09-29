@@ -64,8 +64,8 @@ there.
   the dependents, the slice that waits on no answer before the ones that do.
 - Name the design forks up front, each with its addressee — the worker or the
   master — so the planning gate downstream never rediscovers them. A fork the
-  user must settle is none of the order's: it holds every batch standing on it
-  (*Gating the waves*), and the answer reaches the batch as the body it reads.
+  user must settle is answered and written before the plan
+  (`hcb-dev:master-session`), and no order carries it.
 - An investigation is a batch like any other when its deliverable is recorded
   tracker state or a verdict; say so in the order's deliverable slot.
 
@@ -91,12 +91,10 @@ there.
   wave is pinned and hung once its predecessor's landing is cleared, not at the
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
-  blocker, an issue whose body was ruled `needs rewrite`, an issue a deferred or
-  dropped fork left out of the layout — and no batch is launched while any fork
-  the user must settle stands open, or answered and not yet written into the body
-  it changes, whether the batch stands on it or not; a deferred or dropped one
-  holds nothing but its own issues. What holds each and the condition that
-  releases it are written beside it.
+  blocker, an issue whose body was ruled `needs rewrite`, an issue still parked
+  ([`label-lifecycle.md`](label-lifecycle.md)) or named by a fork of the user's
+  the epic ledger's expectations still hold open; what holds it and the
+  condition that releases it are written beside it.
 
 ## What a verdict past `current` does to a batch
 
@@ -121,6 +119,6 @@ order, file zone, what it shares with whom and through which seam, its wave,
 gate and launch order — plus, for every batch planned beside another, what
 clears the pair on each axis that could have separated them. What was
 deliberately left out goes up with it (blocked batches with conditions, work
-that belongs to no wave, the issues of a fork the user deferred), the decisions
-it was drawn on, each linked to the body it was written into, and every issue whose parked
+that belongs to no wave), the decisions it was drawn on, each linked to the body it was
+written into, and every issue whose parked
 reason the approval takes off ([`label-lifecycle.md`](label-lifecycle.md)).

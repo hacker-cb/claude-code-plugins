@@ -4,8 +4,7 @@ description: >-
   Recompute what parallel work can safely start right now: pin the base and the
   moment the tracker was read, measure the ground the running batches hold, take
   the delta since the last reading, rule what clears it, and say how many
-  batches are actually free, or stop at the user's open forks — then hand what
-  the user approves to the launcher.
+  batches are actually free — then hand what the user approves to the launcher.
   Use when a coordinating session is asked "что ещё можно взять параллельно",
   "что блокирует", "что делать дальше", "какая следующая волна", "освежи и
   спланируй заново", or is handed a capacity ("до N батчей"); and after a
@@ -18,31 +17,35 @@ description: >-
 
 # Wave refresh
 
-What can start right now, recomputed against the tree rather than against the plan drawn when the
-wave opened. The layout it produces is
-[`../../references/wave-planning.md`](../../references/wave-planning.md)'s, each issue's verdict is
-[`../../references/issue-currency.md`](../../references/issue-currency.md)'s, what the user approves
-goes out through `hcb-dev:wave-dispatch`, and the role around it is `hcb-dev:master-session`.
+What can start right now, recomputed against the tree rather than against the
+plan drawn when the wave opened. The layout it produces is
+[`../../references/wave-planning.md`](../../references/wave-planning.md)'s, each
+issue's verdict is
+[`../../references/issue-currency.md`](../../references/issue-currency.md)'s,
+what the user approves goes out through `hcb-dev:wave-dispatch`, and the role
+around it is `hcb-dev:master-session`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
-**Differential by construction.** This pass reads a delta and the ground the running batches hold.
-What it needs to exist is a recorded point to diff from — the ladder below says which. A slice with
-none is surveyed rather than refreshed (`hcb-dev:backlog-survey`); say so instead of reading the
-backlog whole under this skill's name.
+**Differential by construction.** This pass reads a delta and the ground the
+running batches hold. What it needs to exist is a recorded point to diff from —
+the ladder below says which. A slice with none is surveyed rather than refreshed
+(`hcb-dev:backlog-survey`); say so instead of reading the backlog whole under
+this skill's name.
 
 ## What the ask carries
 
-The **capacity** — how many batches the user can start — and the **slice**: the epic, the milestone,
-everything open. Where the ask names neither, the slice is the epic this session coordinates, and
-the capacity is what the report concludes rather than a number handed in.
+The **capacity** — how many batches the user can start — and the **slice**:
+the epic, the milestone, everything open. Where the ask names neither, the slice
+is the epic this session coordinates, and the capacity is what the report
+concludes rather than a number handed in.
 
 ## The base
 
 Resolve and refresh it per
-[`../../references/base-resolution.md`](../../references/base-resolution.md) — where the epic
-completes in `local` mode, the local parent holding its remote copy — and pin it as
-`<remote>/<branch>@<sha>` — `<branch>@<sha>` for a local parent — beside the moment the tracker is
-read at: together they are what this pass verified on, and what the next one diffs from.
+[`../../references/base-resolution.md`](../../references/base-resolution.md) —
+where the epic completes in `local` mode, the local parent holding its remote
+copy — and pin it as `<remote>/<branch>@<sha>` — `<branch>@<sha>` for a local parent — beside the moment the tracker is read at:
+together they are what this pass verified on, and what the next one diffs from.
 
 **Every read of this pass goes through that ref, never through a working tree** —
 the ground below, the delta, and every coordinate a verdict rests on alike.
@@ -68,12 +71,14 @@ disagreement is itself a finding:
   which may reach past the zone an order drew, and which a request no batch row
   claims holds just as much.
 
-Every disagreement goes to the user — a request reaching past its zone, a row past `chipped` and
-short of `accepted` with no session, `blocked` after it included, a session with no row. A `chipped`
-row with no session goes to the user as `wave-ledger.md` reads it, with the chip's age. Until one is
-settled the ground is read the **safer** way rather than the wider or the narrower: a zone read two
-ways is occupied to the union of both, and a session whose zone no source gives holds **everything a
-candidate would touch**, since an unknown zone is unbounded and not empty.
+Every disagreement goes to the user — a request reaching past its zone, a row
+past `chipped` and short of `accepted` with no session, `blocked` after it included, a
+session with no row. A `chipped` row with no session goes to the user as
+`wave-ledger.md` reads it, with the chip's age. Until one is settled the ground is read
+the **safer** way rather than the wider or the narrower: a zone read two ways is
+occupied to the union of both, and a session whose zone no source gives holds
+**everything a candidate would touch**, since an unknown zone is unbounded and
+not empty.
 
 ## The delta since the last reading
 
@@ -107,10 +112,6 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
 
 ## Ruling the candidates
 
-Where a fork of the user's stands open or answered and unwritten (`wave-planning.md`) — in the epic
-ledger's expectations or decisions, or found by the verdicts below — nothing past the verdicts is
-ruled, and the report stops at the forks.
-
 1. **Verdict.** `issue-currency.md` — it is what establishes the coordinates
    the work actually stands on, and a body naming a path the tree moved past is
    exactly what it catches. It is re-derived where the delta reaches: a candidate
@@ -119,7 +120,8 @@ ruled, and the report stops at the forks.
    records for it, with the coordinate it stood on; one the section does not
    carry is read now, and what is re-read is written back there. The report says
    which verdicts this pass read and which it carried. What each verdict past
-   `current` does to the batch is `wave-planning.md`'s.
+   `current` does to the batch is `wave-planning.md`'s, and so is what a parked
+   reason still standing, or a fork of the user's still open, does to it.
 2. **Ground.** From those coordinates, never from the paths a body happens to
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
@@ -163,11 +165,9 @@ free, against how many were asked for — is what the first line says happened.
   the ground it holds.
 - **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
   what clears each one against the occupied ground, and what holds the ones held.
-- **`## Needs your word`** — first the forks the candidates stand on, in one block, then the
-  tracker edits, each named as the condition that releases what it holds; the word the layout
-  launches on; and — where the slice ran out rather than the work — the capacity outside it, as a
-  choice of its own. A report that stopped at the forks draws no layout and asks no launch word,
-  and once the answers are written (`hcb-dev:master-session`) this pass re-rules what they moved.
+- **`## Needs your word`** — the forks the candidates stand on first, in one block, then the
+  tracker edits they stand on, each named as the condition that releases its batch, the word the layout launches on, and — where the slice ran
+  out rather than the work — the capacity outside it, as a choice of its own.
 
 ## After the report
 
@@ -178,14 +178,14 @@ free, against how many were asked for — is what the first line says happened.
   a pass whose reading names no moment writes the graph beside the moment the
   header already carried and says that one was not read here, rather than
   leaving the slot to be read as this pass's — every verdict this pass read into
-  its verdicts section, the layout it produced, what it ruled about the
-  sources that disagreed, and every fork it raised, into the expectations.
+  its verdicts section, the layout it produced, and what it ruled about the
+  sources that disagreed.
 - **Tracker edits execute on the user's word**, item by item through
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
 - **The layout is launched on the user's word, and only then** — the capacity in
   the ask is not that word. What they approve goes to `hcb-dev:wave-dispatch`,
   one chip per batch; the click that starts each one is the second gate and
-  stays theirs, and a batch held by a tracker edit or a fork is reported, never hung.
+  stays theirs, and a batch held by a tracker edit is reported, never hung.
 
 ## Reference files
 
