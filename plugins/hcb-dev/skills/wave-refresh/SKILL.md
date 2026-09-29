@@ -120,8 +120,7 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
    records for it, with the coordinate it stood on; one the section does not
    carry is read now, and what is re-read is written back there. The report says
    which verdicts this pass read and which it carried. What each verdict past
-   `current` does to the batch is `wave-planning.md`'s, and so is what a parked
-   reason still standing, or a fork of the user's still open, does to it.
+   `current` does to the batch is `wave-planning.md`'s, as is what a park or a fork does.
 2. **Ground.** From those coordinates, never from the paths a body happens to
    name — one cited as an example is not ground. A candidate colliding with
    occupied ground is not free this round: `wave-planning.md` places it behind
@@ -163,11 +162,12 @@ free, against how many were asked for — is what the first line says happened.
   in the slice, and every disagreement the three ground sources showed.
 - **`## Where it stands`** — the batches running, as the catalogue's rows have them, each with
   the ground it holds.
-- **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus
-  what clears each one against the occupied ground, and what holds the ones held.
-- **`## Needs your word`** — the forks the candidates stand on first, in one block, then the
-  tracker edits they stand on, each named as the condition that releases its batch, the word the layout launches on, and — where the slice ran
-  out rather than the work — the capacity outside it, as a choice of its own.
+- **`## The plan`** — the candidates in the columns of `wave-planning.md`'s closing table, plus what
+  clears each one against the occupied ground and what holds the held, a fork's laid out nowhere.
+- **`## Needs your word`** — the forks the candidates stand on first, in one block, then the tracker
+  edits they stand on, each named as the condition that releases its batch; the word the layout
+  launches on; and — where the slice ran out rather than the work — the capacity outside it, as a
+  choice of its own.
 
 ## After the report
 

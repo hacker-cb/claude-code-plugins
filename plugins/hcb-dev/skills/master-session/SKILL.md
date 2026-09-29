@@ -58,15 +58,16 @@ survey of the slice exists yet, from `hcb-dev:wave-refresh` for a plan redrawn m
 1. **The forks.** Every fork
    [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) routes
    to the user that the plan's issues stand on — every wave's, not the next one's alone — goes up
-   before any wave table, naming its issues and the body edits its answer writes, and stands in the
-   epic ledger's expectations until written. The research its recommendation needs runs first, in
-   subagents as `master-tree.md` runs them — reading, measuring, or a throwaway prototype landing
-   nothing.
+   before any wave table, naming its issues, the body edits its answer writes and the parked reasons
+   it takes off, and stands in the epic ledger's expectations until written. The research its
+   recommendation needs runs first, in subagents as `master-tree.md` runs them — reading, measuring,
+   or a throwaway prototype landing nothing.
 2. **The answers, written where a batch reads them**, on the word that gave each
-   (`hcb-dev:issue-tracking`): the body edits its ask named, the decision in the epic ledger, and —
-   per [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) — the parked
-   reason it settles off, the expectation met only then. A deferred fork parks its issues, or leaves
-   them parked; an answer dropping the work asks for their close.
+   (`hcb-dev:issue-tracking`): the body edits its ask named, the decision in the epic ledger, the
+   parked reasons off per
+   [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) — one tracker edit
+   for the loop, the expectation met only once it is done. A deferred fork is entered as deferred
+   and parks its issues, or leaves them parked; an answer dropping the work asks for their close.
 3. **The split**, per `wave-planning.md` on the written bodies, its closing table to the user.
 
 A fork surfacing later — in a round's findings, in a batch's question — takes the same steps, and a

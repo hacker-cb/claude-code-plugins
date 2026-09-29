@@ -55,8 +55,9 @@ and addresses its receiver per [`../../references/session-comms.md`](../../refer
   else releases it, a verdict carried in the order included.
 - **Check the forks each batch stands on** — an issue that call shows still
   parked, or one a fork of the user's names that the epic ledger's expectations
-  still hold open, holds its batch by `wave-planning.md` exactly as the blocker
-  above does — **not hung**, reported with the answer as what releases it.
+  hold open or its decisions record as deferred, holds its batch by
+  `wave-planning.md` exactly as the blocker above does — **not hung**, reported
+  with the answer as what releases it.
 - **Check the round that cleared this wave's gate is closed** — returns accepted,
   candidates ruled, and the tracker writes this wave stands on executed or deferred
   by the user's word (`hcb-dev:master-session`). An epic's first wave, and ground a
@@ -135,7 +136,8 @@ be read whole rather than to point.
   from its pin is still being verified; then re-issue on a fresh pin, and the row
   carrying it names that pin.
 - **A chip a new fork holds is withdrawn** — one not yet clicked whose issue a
-  fork raised since names: `dismiss_task` first, re-issued once the answer is written.
+  fork raised since names: `dismiss_task` first, its batch back to the plan once the
+  answer is written (`hcb-dev:master-session`).
 - **A batch whose start report never arrives is unreached**, whatever its chip
   says — check on it rather than assuming the name made contact.
 
