@@ -66,7 +66,6 @@ authority or a stop above it leaves open and carries to the user what belongs
 to a person — settled here too, both halves. The merge is yours to take when it
 comes; narrowing what you were given is yours too, widening it never.
 Decide yourself: <forks>. Agree with the master BEFORE building: <forks>.
-Through the master to the user: <forks>.
 
 Done means: <the terminal deliverable>
 

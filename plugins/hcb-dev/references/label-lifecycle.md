@@ -48,8 +48,11 @@ it — never on the taking alone. The answer that takes it off names it:
 
 - **a build** — the planning gate of `hcb-dev:implementation-workflow` names each issue whose
   parked reason comes off, and its approval is the write;
-- **a wave** — the wave plan's table names them, and the master takes each off on the word that
-  approved the plan, whether or not the forge hangs the issue ([`wave-issue.md`](wave-issue.md));
+- **a wave** — one a user's fork settles comes off in the write that brings the issue's body to
+  its answer, on the word that gave it, and a deferral parks the issues it leaves, on its own word
+  (`hcb-dev:master-session`); any other, the wave plan's table names, and the master takes it off
+  on the word that approved the plan, whether or not the forge hangs the issue
+  ([`wave-issue.md`](wave-issue.md));
 - **a batch** writes none: its master did.
 
 An open blocker stays: an edge ([`issue-links.md`](issue-links.md)), or where the forge carries
@@ -94,7 +97,8 @@ behind it — not planned, a duplicate — keeps everything else.
 |---|---|
 | a change request's labels, at open and re-derived | opening the request: they are part of it |
 | an issue's labels at close | the close — the merge authorization where a keyword closes it, the go-ahead where it is closed explicitly |
-| a parked reason taken off | the answer that took the work and named it |
+| a parked reason taken off | the answer that settled it and named it — a fork's, or the one that took the work |
+| a parked reason put on at a deferral | the word that deferred the fork: the reason the set gives a pending decision |
 
 Nothing else here is written without its own answer (`hcb-dev:issue-tracking`). Each write above
 stands in the report's `## Without your word` with what undoes it

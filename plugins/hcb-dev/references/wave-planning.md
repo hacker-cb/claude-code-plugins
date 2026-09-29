@@ -62,8 +62,10 @@ there.
 - Order the issues inside it, and say what to take first and why — the
   reproduced defect before the design question, the unblocked vertex before
   the dependents, the slice that waits on no answer before the ones that do.
-- Name the design forks up front, each with its addressee — the worker, the
-  master, the user — so the planning gate downstream never rediscovers them.
+- Name the design forks up front, each with its addressee — the worker or the
+  master — so the planning gate downstream never rediscovers them. A fork the
+  user must settle is answered and written before the plan
+  (`hcb-dev:master-session`), and no order carries it.
 - An investigation is a batch like any other when its deliverable is recorded
   tracker state or a verdict; say so in the order's deliverable slot.
 
@@ -115,5 +117,6 @@ order, file zone, what it shares with whom and through which seam, its wave,
 gate and launch order — plus, for every batch planned beside another, what
 clears the pair on each axis that could have separated them. What was
 deliberately left out goes up with it (blocked batches with conditions, work
-that belongs to no wave), the forks only the user can settle, and every issue whose parked
+that belongs to no wave), the decisions it was drawn on, each linked to the body it was
+written into or, where it wrote none, named, and every issue whose parked
 reason the approval takes off ([`label-lifecycle.md`](label-lifecycle.md)).

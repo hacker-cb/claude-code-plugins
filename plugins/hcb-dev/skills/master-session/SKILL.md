@@ -16,16 +16,12 @@ description: >-
 
 # Master session
 
-The role: one session that holds the whole epic while others build its parts.
-Its state lives in the wave ledgers
-([`../../references/wave-ledger.md`](../../references/wave-ledger.md)), its
-plan follows
-[`../../references/wave-planning.md`](../../references/wave-planning.md), it
-reaches its batches per
-[`../../references/session-comms.md`](../../references/session-comms.md), and
-it accepts their returns per
-[`../../references/order-return.md`](../../references/order-return.md), and its own tree
-stands on the base per [`references/master-tree.md`](references/master-tree.md).
+The role: one session that holds the whole epic while others build its parts. Its state lives in the
+wave ledgers ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)), its plan
+follows [`../../references/wave-planning.md`](../../references/wave-planning.md), it reaches its
+batches per [`../../references/session-comms.md`](../../references/session-comms.md), and it accepts
+their returns per [`../../references/order-return.md`](../../references/order-return.md), and its
+own tree stands on the base per [`references/master-tree.md`](references/master-tree.md).
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Assuming the role
@@ -56,35 +52,44 @@ stands on the base per [`references/master-tree.md`](references/master-tree.md).
 
 ## Planning
 
-Draw the split per `wave-planning.md` — where no survey of the slice exists
-yet, `hcb-dev:backlog-survey` produces its input first, and a plan redrawn
-mid-epic starts from `hcb-dev:wave-refresh` rather than from a second survey —
-and hand the user its closing table. **The preconditions that table carries go
-up with it** — a batch
-standing on an issue the survey ruled `needs rewrite`
-([`../../references/issue-currency.md`](../../references/issue-currency.md)) is
-planned and held, and the rewrite releasing it is a tracker edit like any other:
-`hcb-dev:issue-tracking`, on that same word. The launch waits for their word on
-the table; the click that
-starts each chip is a second, separate gate — approval of the plan is not
-permission to hang chips for gated waves early.
+Three steps, each ended before the next begins — the input from `hcb-dev:backlog-survey` where no
+survey of the slice exists yet, from `hcb-dev:wave-refresh` for a plan redrawn mid-epic:
 
-**The epic's merge authority is settled with that same word**, once, before the
-first chip goes up — `on-green` recommended first
-([`../../references/slice-completion.md`](../../references/slice-completion.md)),
-since every gate guarding that merge has run by the time it is reached. It is
-written to the ledger before anything is hung and narrowed per batch where the
-plan fixes a landing order (*An authority narrows on the way down and never
-widens*).
+1. **The forks.** Every fork
+   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) routes
+   to the user that the plan's issues stand on — every wave's, not the next one's alone — goes up
+   before any wave table and into the epic ledger's expectations, naming its issues, the body edits
+   its answer writes and the parked reasons it takes off. The research its recommendation needs runs
+   first, all of it at once, in subagents as `master-tree.md` runs them — reading, measuring, or a
+   throwaway prototype landing nothing.
+2. **The answers, written where a batch reads them**, on the word that gave each
+   (`hcb-dev:issue-tracking`), as one tracker edit for the loop: the body edits its ask named, the
+   decision in the epic ledger, the parked reasons
+   [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) takes off — the
+   expectation met once it is done. A deferred fork is entered as deferred, its issues parked and
+   out of the plan; an answer dropping the work asks for their close.
+3. **The split**, per `wave-planning.md` on the written bodies, its closing table to the user.
 
-**Each wave's issue is filed on the word that approves its plan**, with its
-ledger opened and its issues hung under it, before its first chip
-(`wave-issue.md`).
+A fork surfacing later — in a round's findings, in a batch's question — takes the same steps before
+any plan or chip standing on it; a running batch standing on it hears an amendment holding that work,
+an `on-green` authority narrowed to `queued`, then the one with the written answer.
 
-A fork too heavy for the plan — a design question whose answer rewrites the
-work — is a batch of its own: it leads the table and launches with the first
-wave, and the dependent batches are planned behind its gate. The tracker is the
-source of truth for the answer, not this session's conversation.
+**The preconditions the table carries go up with it** — a batch standing on an issue the survey
+ruled `needs rewrite` ([`../../references/issue-currency.md`](../../references/issue-currency.md))
+is planned and held, and the rewrite releasing it is a tracker edit like any other:
+`hcb-dev:issue-tracking`, on that same word. The launch waits for their word on the table; the click
+that starts each chip is a second, separate gate — approval of the plan is not permission to hang
+chips for gated waves early.
+
+**The epic's merge authority is settled with that same word**, once, before the first chip goes up —
+`on-green` recommended first
+([`../../references/slice-completion.md`](../../references/slice-completion.md)), since every gate
+guarding that merge has run by the time it is reached. It is written to the ledger before anything
+is hung and narrowed per batch where the plan fixes a landing order (*An authority narrows on the
+way down and never widens*).
+
+**Each wave's issue is filed on the word that approves its plan**, with its ledger opened and its
+issues hung under it, before its first chip (`wave-issue.md`).
 
 ## Launching
 
@@ -113,7 +118,7 @@ verdicts, decisions, constraints and what the user owes, the epic's.
 | a batch reports **ready**, in whichever words its order gave it for the mode it runs in (`hcb-dev:wave-dispatch`) | take it into the queue — its seam with every other batch holding a head measured, not assumed (`wave-planning.md`) — and give the go where the slot is already free. The merge is never this session's to take, whatever the queue says: the batch takes it, and everything its own completion owes behind it. A batch holding an `ask` reaches the user through this session, its recommendation first, and the answer travels back down as that batch's go. Where the epic stands at `ask` and the plan fixes a landing order, the order is held here: a later batch's question waits until the earlier one has landed, rather than reaching the user beside it | merge queue and gates |
 | a **landing** — by its batch, by another session, or by the user — as the event's move names it (`master-tree.md`), whoever reported it or none did | speak the queue to the batches it moves: the go to the batch whose slot it freed, BEHIND — with the seam owing a rebase — to the batch it displaced; a queue whose go never reaches its batch is a deadlock, not an order. Check the landing against the gates, and the checks on the landing itself with them — read here where nothing reports them, by the read the change-request driver makes after its own merge and waited out as it waits — `covered` owes no wait, and an empty answer taken at once is not that read: one nobody has read them for is unread rather than clean, and until it is read neither its gate nor the ground it freed moves. Nothing reporting over such a landing is an answer, and so is a base that runs no checks at all once that read has reached it — neither is that case. Reading it is not clearing it: what the read says is judged against the gates like anything else, and a red row or a wait that ran out holds the gate exactly as an unread one does. A wave whose gate just cleared goes back to Launching once the round that cleared it is closed — the returns of the batches whose landings cleared it accepted, their candidates ruled, and the tracker writes **on which the wave stands** — a body a batch must read, an issue entering or leaving the slice — executed or deferred by the user's word, the rest riding the expectations without holding the wave; the launch is put to the user in that round's wave report, never at the landing. A landing that opens the next step of a staged wave already running goes back there under that step's own gate. A landing that happened without this session's go still reaches its batch before anything else is sent | the landing with whoever took it, what its tail left standing, and what its checks said; the queue and the gates |
 | a **survey** of the slice handed over | record its reading whole before anything is drawn from it — the pin, the moment it read the tracker at, the ground it covered, and its verdicts for what the verdicts section holds, never one part without the rest — and only where it covered this slice whole, stands on a base no older than the reading the ledger already carries, and read the tracker later than it; a reading failing any of the three leaves that reading standing and is reported rather than recorded. Then the pass below | the reading, whole |
-| a landing **freed ground**, its checks outcome recorded as read — an unread one is not that, and the row above holds that ground until it is read —, a **tracker edit** executed — one the pass below reads in its tracker half, whether or not the plan was waiting on it and whether or not the issue was in the slice when it was made — or the user asks what else can run beside what is running, what blocks, or what to take next | recompute, never recall (`hcb-dev:wave-refresh`): it reads the delta from the point it resolves rather than the backlog again, and what it frees goes back to Launching behind the user's word on its layout; a running batch the landed change reached — its zone, a check it answers to, a premise of its order — hears it as an amendment (`session-comms.md`) | what that pass writes |
+| a landing **freed ground**, its checks outcome recorded as read — an unread one is not that, and the row above holds that ground until it is read —, a **tracker edit** executed — one the pass below reads in its tracker half, whether or not the plan was waiting on it and whether or not the issue was in the slice when it was made — or the user asks what else can run beside what is running, what blocks, or what to take next | recompute, never recall (`hcb-dev:wave-refresh`): it reads the delta from the point it resolves rather than the backlog again, and what it frees goes back to Launching behind the user's word on its layout — through Planning first where it stands on a fork of the user's; a running batch the landed change reached — its zone, a check it answers to, a premise of its order — hears it as an amendment (`session-comms.md`) | what that pass writes |
 | the user asks this session for a **change** — a document, a fix, the tail of a batch whose session ended | hand it on, never built here (`master-tree.md`): a one-batch row through `hcb-dev:wave-dispatch` where it touches the epic's ground, an order through `hcb-dev:session-dispatch` where it does not | the row, or the journal |
 | the **plan** is drawn or redrawn, or a **wave** opens or closes | advance the epic's human half too — the wave table in its body, not only the ledgers; an issue entering the epic or a wave is hung under it, and a wave opens with its issue and closes with it, once its round has closed (`wave-issue.md`) | the epic's header; the wave's; what a redraw moved |
 | a **lesson** one batch paid for | tell the batches it can still bite, the moment it is learned; one about the forge or the plugin goes where `epic-structure.md` sends it | journal |
@@ -149,35 +154,32 @@ that confirmation goes out, so no later report prints it again.
 
 ## After a restart or compaction
 
-The ledgers first — the title names the epic, the epic holds its ledger, and
-`wave-issue.md` says which waves' ledgers follow it.
-What it records as the master's name is this session's own, in
-`session-naming.md`'s shape: wear that before anything is sent, since the
-batches' orders address it; an epic in an older shape takes its labels now
-(`epic-structure.md`), and a ledger in format 1 its rebuild at the point
-[`../../references/epic-migration.md`](../../references/epic-migration.md) names. Then read back what this session actually answers
-to: where the host would not give that name — it handed back a variant, or a new
-session took over the role — what answers wins, the ledger header is corrected
-to it before anything else is sent, and the batches hear it as the change
-`session-comms.md` has them announce. Then this session's tree, per `master-tree.md`,
-before any code is read — what it names as landed since the ledger's mark is taken as the
-loop takes a landing. Then the live
-registry, then a re-introduction to
-every batch still engaged, carrying what first contact carries: the name this
-session answers to, the standing plan, and a status request. Expectations the ledger lists and the registry cannot
-see are chased by the comms ladder, not assumed dead — and a `chipped` row with no session goes to the user as `wave-ledger.md` reads it.
+The ledgers first — the title names the epic, the epic holds its ledger, and `wave-issue.md` says
+which waves' ledgers follow it. What it records as the master's name is this session's own, in
+`session-naming.md`'s shape: wear that before anything is sent, since the batches' orders address
+it; an epic in an older shape takes its labels now (`epic-structure.md`), and a ledger in format 1
+its rebuild at the point [`../../references/epic-migration.md`](../../references/epic-migration.md)
+names. Then read back what this session actually answers to: where the host would not give that name
+— it handed back a variant, or a new session took over the role — what answers wins, the ledger
+header is corrected to it before anything else is sent, and the batches hear it as the change
+`session-comms.md` has them announce. Then this session's tree, per `master-tree.md`, before any
+code is read — what it names as landed since the ledger's mark is taken as the loop takes a landing.
+Then the live registry, then a re-introduction to every batch still engaged, carrying what first
+contact carries: the name this session answers to, the standing plan, and a status request.
+Expectations the ledger lists and the registry cannot see are chased by the comms ladder, not
+assumed dead — and a `chipped` row with no session goes to the user as `wave-ledger.md` reads it.
 
 ## Closing the epic
 
 Verify the epic against its ledgers — every wave closed, every batch ended, released, withdrawn or
-failed alike, with whatever any of them left standing accounted for; every issue
-at the end state the ledger now records for it; every mandate met — then report
-to the user as the final report, the run here being the epic and the batch
-sessions it is done with among what that report leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never run — naming its reach honestly: worktrees the host leased to other
-sessions it reports rather than removes, and each batch session's own residue
-is that session's to sweep. Write the ledger's closing line, then close the epic
-per `epic-structure.md` — its closing comment, and the issue's close and the session
-group's deletion both put to the user.
+failed alike, with whatever any of them left standing accounted for; every issue at the end state
+the ledger now records for it; every deferred fork put back to the user; every mandate met — then
+report to the user as the final report, the run here being the epic and the batch sessions it is
+done with among what that report leaves. Offer `/hcb-dev:git-cleanup` for the residue — offer, never
+run — naming its reach honestly: worktrees the host leased to other sessions it reports rather than
+removes, and each batch session's own residue is that session's to sweep. Write the ledger's closing
+line, then close the epic per `epic-structure.md` — its closing comment, and the issue's close and
+the session group's deletion both put to the user.
 
 ## Reference files
 
