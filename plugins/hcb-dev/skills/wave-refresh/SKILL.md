@@ -166,8 +166,8 @@ free, against how many were asked for — is what the first line says happened.
   clears each one against the occupied ground, and what holds the ones held; one on a fork of the
   user's still open is named with it, laid out once `hcb-dev:master-session` has the answer written.
 - **`## Needs your word`** — first those forks, then the tracker edits the candidates stand on, each
-  named as the condition that releases its batch, the word the layout launches on, and — where the
-  slice ran out rather than the work — the capacity outside it, as a choice of its own.
+  named as the condition that releases its batch; the word the layout launches on, asked only once no
+  fork is open; and, where the slice ran out rather than the work, the capacity outside it, as a choice of its own.
 
 ## After the report
 
