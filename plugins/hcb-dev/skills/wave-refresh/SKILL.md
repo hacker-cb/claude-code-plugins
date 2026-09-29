@@ -177,8 +177,8 @@ free, against how many were asked for — is what the first line says happened.
   a pass whose reading names no moment writes the graph beside the moment the
   header already carried and says that one was not read here, rather than
   leaving the slot to be read as this pass's — every verdict this pass read into
-  its verdicts section, the layout it produced, and what it ruled about the
-  sources that disagreed.
+  its verdicts section, the layout it produced, what it ruled about the
+  sources that disagreed, and every fork it raised, into the expectations.
 - **Tracker edits execute on the user's word**, item by item through
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
 - **The layout is launched on the user's word, and only then** — the capacity in

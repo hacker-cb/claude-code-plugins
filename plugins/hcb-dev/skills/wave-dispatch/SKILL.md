@@ -134,6 +134,9 @@ be read whole rather than to point.
   `dismiss_task` first, since a chip left hanging is clickable while the delta
   from its pin is still being verified; then re-issue on a fresh pin, and the row
   carrying it names that pin.
+- **A chip a fork now holds is withdrawn** — one not yet clicked whose batch
+  stands on a fork raised after it was hung (`wave-planning.md`): `dismiss_task`
+  first, the row held with that fork as what releases it, re-issued once written.
 - **A batch whose start report never arrives is unreached**, whatever its chip
   says — check on it rather than assuming the name made contact.
 
