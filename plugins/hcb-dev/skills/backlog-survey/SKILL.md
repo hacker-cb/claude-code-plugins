@@ -129,8 +129,8 @@ priority orders them.
 every pair carrying what that file's axes say of it — what clears the ones placed side by side,
 what separates the ones kept apart — and the gates the dependencies imply. What a verdict past
 `current` does to a batch is `wave-planning.md`'s, written where that batch stands; a `stale`
-issue's closure is then the hygiene plan's to propose. What a builder reads is the tracker's
-body, never this report.
+issue's closure is then the hygiene plan's to propose, and a fork of the user's a candidate
+stands on is named against it. What a builder reads is the tracker's body, never this report.
 
 **`## Needs your word`** — one recommendation for what to take next, with its rationale and the cut
 to start with, the declared priorities of what it names among its reasons where they weigh;

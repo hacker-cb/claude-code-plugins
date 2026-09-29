@@ -91,9 +91,10 @@ there.
   wave is pinned and hung once its predecessor's landing is cleared, not at the
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
-  blocker, an issue whose body was ruled `needs rewrite`, a fork the user must
-  settle that one of its issues stands on, still open or answered and not yet
-  written into the body it changes; what holds it and the condition that
+  blocker, an issue whose body was ruled `needs rewrite`, an issue a deferred fork
+  left out of the layout — and no batch is launched while any fork the user must
+  settle stands open, or answered and not yet written into the body it changes,
+  whether the batch stands on it or not; what holds each and the condition that
   releases it are written beside it.
 
 ## What a verdict past `current` does to a batch
@@ -120,7 +121,5 @@ gate and launch order — plus, for every batch planned beside another, what
 clears the pair on each axis that could have separated them. What was
 deliberately left out goes up with it (blocked batches with conditions, work
 that belongs to no wave, the issues of a fork the user deferred), the decisions
-it was drawn on, each linked to the body it was written into — a table drawn
-while such forks are still open, as a survey's proposal is, names each against
-the batches it holds instead —, and every issue whose parked
+it was drawn on, each linked to the body it was written into, and every issue whose parked
 reason the approval takes off ([`label-lifecycle.md`](label-lifecycle.md)).

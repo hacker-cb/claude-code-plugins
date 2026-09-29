@@ -28,59 +28,58 @@ own tree stands on the base per [`references/master-tree.md`](references/master-
 
 1. **Title first**: the shape and its timing are
    [`../../references/session-naming.md`](../../references/session-naming.md)'s.
-2. **The epic**: settle the tracker before writing anything to it — whether the
-   repository has one is established against the forge
-   ([`../../references/forge-docs.md`](../../references/forge-docs.md) names the field),
-   never inferred from how the epic looks; without one the role does not begin, and what was established
-   goes to the user in those words. With one, the ledger hangs on an umbrella issue, so where none exists
-   yet it is filed now (`hcb-dev:issue-tracking`) — on the assignment's own
-   authorization where the assignment named the epic, and on the user's word
-   where it named none, which is the first thing this role asks for rather
-   than something it decides. A slice of the backlog needs one exactly as a
-   named epic does. **Every issue the epic runs on hangs under it** until a wave
-   takes it — the ones there now on that same word, the ones filed later as they
-   are filed — per [`../../references/wave-issue.md`](../../references/wave-issue.md).
-3. **The epic's ledger**: open it per `wave-ledger.md`, on the epic, before anything
-   else is decided; from here on, every event lands in it before the
-   conversation moves on. Its header carries the plugin version this role
-   reconciled against, which starts as the one it is running, resolved rather
-   than recalled (`hcb-dev:session-plugin-refresh`).
-4. **Its shape**: per
-   [`../../references/epic-structure.md`](../../references/epic-structure.md), the group's
-   name going into the ledger header.
+2. **The epic**: settle the tracker before writing anything to it — whether the repository has one
+   is established against the forge
+   ([`../../references/forge-docs.md`](../../references/forge-docs.md) names the field), never
+   inferred from how the epic looks; without one the role does not begin, and what was established
+   goes to the user in those words. With one, the ledger hangs on an umbrella issue, so where none
+   exists yet it is filed now (`hcb-dev:issue-tracking`) — on the assignment's own authorization
+   where the assignment named the epic, and on the user's word where it named none, which is the
+   first thing this role asks for rather than something it decides. A slice of the backlog needs one
+   exactly as a named epic does. **Every issue the epic runs on hangs under it** until a wave takes
+   it — the ones there now on that same word, the ones filed later as they are filed — per
+   [`../../references/wave-issue.md`](../../references/wave-issue.md).
+3. **The epic's ledger**: open it per `wave-ledger.md`, on the epic, before anything else is
+   decided; from here on, every event lands in it before the conversation moves on. Its header
+   carries the plugin version this role reconciled against, which starts as the one it is running,
+   resolved rather than recalled (`hcb-dev:session-plugin-refresh`).
+4. **Its shape**: per [`../../references/epic-structure.md`](../../references/epic-structure.md),
+   the group's name going into the ledger header.
 5. **Its tree**: on the base per `master-tree.md`, before the first code is read.
 
 ## Planning
 
-Three steps, in order, none begun before the one above it has ended — its input from
-`hcb-dev:backlog-survey` where no survey of the slice exists yet, and from
-`hcb-dev:wave-refresh` for a plan redrawn mid-epic rather than from a second survey:
+Three steps, each answer written as it comes and no split drawn before every fork is — input from
+`hcb-dev:backlog-survey` where no survey of the slice exists yet, and from `hcb-dev:wave-refresh`
+for a plan redrawn mid-epic rather than from a second survey:
 
 1. **Every fork first.** Each fork
-   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)
-   routes to the user that an issue of any wave the plan will draw stands on — every wave's, not
-   the next one's alone — goes up with no wave table beside it, each naming the issues it stands on
-   and the body edits its answer writes; the ones whose recommendations are ready go up together.
-   Research a recommendation needs runs before it goes up: in subagents that read, or, where it
-   takes a prototype or a measurement, in an order through `hcb-dev:session-dispatch` that lands
-   nothing and returns the recommendation. A wave the user leaves conditional stays out of the plan.
+   [`../../references/architecture-decisions.md`](../../references/architecture-decisions.md) routes
+   to the user that an issue of any wave the plan will draw stands on — every wave's, not the next
+   one's alone — goes up with no wave table beside it, each naming the issues it stands on and the
+   body edits its answer writes; the ones whose recommendations are ready go up together. Research a
+   recommendation needs runs before it goes up: in subagents — reading, or running a probe or a
+   measurement as `master-tree.md` runs one — or, where it takes building a prototype, in an order
+   through `hcb-dev:session-dispatch`, invoked through the Skill tool, that lands nothing and
+   returns the recommendation. A wave the user leaves conditional stays out of the plan.
 2. **Every answer written where a batch reads it**, on the word that gave it
    (`hcb-dev:issue-tracking`): the body edits its ask named, the parked labels
    [`../../references/label-lifecycle.md`](../../references/label-lifecycle.md) says it takes off,
-   its entry in the epic ledger's decisions — read back from the tracker thereafter, never from
-   this conversation. A fork the user defers, or leaves in a conditional wave, is entered as deferred.
+   its entry in the epic ledger's decisions — read back from the tracker thereafter, never from this
+   conversation. A fork the user defers, or leaves in a conditional wave, is entered as deferred.
 3. **The split, drawn on the written bodies** per `wave-planning.md`, its closing table handed to
    the user. A fork surfacing later — in a round's findings, a batch's question, a refresh — enters
-   the ledger's expectations and takes the same steps: until its answer is written no plan is drawn
-   and no chip hung, a hung chip standing on it is withdrawn (`hcb-dev:wave-dispatch`), and a
-   running batch standing on it hears it as an amendment holding that work and its merge.
+   the ledger's expectations and takes the same steps: until its answer is written no plan is drawn,
+   every chip not yet clicked is withdrawn (`hcb-dev:wave-dispatch`), and a running batch standing
+   on it is held on that work and its merge by an amendment, the one carrying the written answer
+   releasing it.
 
 **The preconditions the table carries go up with it** — a batch standing on an issue the survey
 ruled `needs rewrite` ([`../../references/issue-currency.md`](../../references/issue-currency.md))
 is planned and held, and the rewrite releasing it is a tracker edit like any other:
-`hcb-dev:issue-tracking`, on that same word — save a rewrite that settles a fork, which is steps
-1–2's. The launch waits for their word on the table; the click that starts each chip is a second,
-separate gate — approval of the plan is not permission to hang chips for gated waves early.
+`hcb-dev:issue-tracking`, on that same word. The launch waits for their word on the table; the
+click that starts each chip is a second, separate gate — approval of the plan is not permission to
+hang chips for gated waves early.
 
 **The epic's merge authority is settled with that same word**, once, before the first chip goes
 up — `on-green` recommended first
