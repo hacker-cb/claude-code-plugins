@@ -1,0 +1,36 @@
+{
+  "home": "both",
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/profiles/main",
+          "is_source": true
+        },
+        "рабочий": {
+          "cli": "claude",
+          "path": "~/profiles/рабочий"
+        },
+        "cx": {
+          "cli": "codex",
+          "path": "~/profiles/cx"
+        }
+      }
+    },
+    "limits": {
+      "main": {
+        "status": {
+          "fiveHourPct": 10,
+          "weeklyPct": 10
+        }
+      },
+      "рабочий": {
+        "status": {
+          "fiveHourPct": 20,
+          "weeklyPct": 20
+        }
+      }
+    }
+  }
+}

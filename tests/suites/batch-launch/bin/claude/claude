@@ -1,0 +1,4 @@
+#!/bin/sh
+# Found on the login PATH; a probe never runs it.
+echo "stub claude: a probe runs no claude: $*" >&2
+exit 64

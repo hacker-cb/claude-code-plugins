@@ -1,0 +1,32 @@
+{
+  "home": "both",
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/profiles/main",
+          "is_source": true
+        },
+        "gw": {
+          "cli": "claude",
+          "path": "~/profiles/gw"
+        }
+      }
+    },
+    "limits": {
+      "main": {
+        "status": {
+          "fiveHourPct": 10,
+          "weeklyPct": 10
+        }
+      },
+      "gw": {
+        "status": null
+      }
+    },
+    "classify": {
+      "gw": "api"
+    }
+  }
+}

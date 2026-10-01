@@ -1,0 +1,37 @@
+{
+  "home": "both",
+  "agterm": {
+    "windows": [
+      {
+        "id": "example-id-0000000a"
+      },
+      {
+        "id": "example-id-0000000b"
+      }
+    ],
+    "trees": {
+      "example-id-0000000a": [
+        {
+          "id": "example-id-000000f1",
+          "sessions": [
+            {
+              "id": "example-id-00000009",
+              "cwd": "/elsewhere"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/profiles/main",
+          "is_source": true
+        }
+      }
+    }
+  }
+}
