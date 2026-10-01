@@ -15,11 +15,10 @@
 // Exit 0 whenever an answer is printed, `"read": false` with a `reason` included. Exit 2
 // only for a call this script cannot act on at all.
 
-import { readFileSync, realpathSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { availableParallelism, cpus, loadavg } from 'node:os';
 import { text, writeAll } from './lib/forge.mjs';
-import { agterm, aimuxCore, loginEnv, loginShell, onPath } from './lib/launch-env.mjs';
+import { agterm, aimuxCore, aimuxRun, loginEnv, loginShell, onPath, real } from './lib/launch-env.mjs';
 
 const USAGE = 'usage: node batch-launch.mjs probe [<settings>] [--limits [--held <profile>=<n>,...]]\n';
 const die = (m) => { writeAll(2, `batch-launch: ${m}\n${USAGE}`); process.exit(2); };
@@ -38,6 +37,7 @@ for (let i = 0; i < argv.length; i += 1) {
   if (argv[i + 1] === undefined) die(`${a} needs a value`);
   opts[a] = argv[i += 1];
 }
+if (opts['--held'] !== undefined && !opts['--limits']) die('--held is read only with --limits');
 
 // --- the settings
 // The plugin's own manifest holds the defaults and the bounds, so this script carries no
@@ -53,8 +53,12 @@ const declared = (manifest && manifest.userConfig) || {};
 // so that literal, and an empty value, both mean "not set".
 const unset = (v) => v === undefined || v === '' || /^\$\{user_config\.[A-Za-z_][A-Za-z0-9_]*\}$/.test(v);
 
-const MODEL = /^[A-Za-z0-9][A-Za-z0-9._[\]-]*$/;
-const PROFILE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// What travels on to `claude --model` as one quoted word: an alias, an id, a provider's
+// `region.vendor.model:version`, a Vertex `model@date`, a Bedrock ARN.
+const MODEL = /^[A-Za-z0-9][A-Za-z0-9._:/@[\]-]*$/;
+// aimux names a profile however the user did; what cannot pass is what this splits on —
+// a comma, an `=` — and what cannot travel as one quoted word.
+const profileOk = (p) => p !== '' && !/[,='"\\\s\u0000-\u001f\u007f]/.test(p);
 
 function setting(key, word, config) {
   const spec = declared[key] || {};
@@ -83,7 +87,7 @@ function percent(key, config) {
 function profileList(config) {
   const s = setting('batch_profiles', undefined, config);
   const names = s.value === null ? [] : String(s.value).split(',').map((p) => p.trim()).filter(Boolean);
-  const bad = names.find((p) => !PROFILE.test(p));
+  const bad = names.find((p) => !profileOk(p));
   if (bad) die(`batch_profiles names '${bad}', which is not a profile name`);
   return { value: names.length ? names : null, from: s.from };
 }
@@ -96,15 +100,13 @@ const settings = {
   ceiling7d: percent('batch_ceiling_7d', opts['--ceiling-7d']),
 };
 
-const held = {};
-if (opts['--held'] !== undefined) {
-  for (const pair of opts['--held'].split(',').filter(Boolean)) {
-    const m = /^([^=]+)=([0-9]+)$/.exec(pair.trim());
-    if (!m || !PROFILE.test(m[1])) die(`--held '${pair}' is not <profile>=<count>`);
-    held[m[1]] = Number(m[2]);
-  }
+// A map, never an object: a profile may be called `constructor`.
+const held = new Map();
+for (const pair of (opts['--held'] || '').split(',').filter(Boolean)) {
+  const m = /^(.+)=([0-9]+)$/.exec(pair.trim());
+  if (!m || !profileOk(m[1])) die(`--held '${pair}' is not <profile>=<count>`);
+  held.set(m[1], (held.get(m[1]) || 0) + Number(m[2]));
 }
-if (opts['--held'] !== undefined && !opts['--limits']) die('--held is read only with --limits');
 
 // --- the answer
 const answer = {
@@ -137,16 +139,34 @@ const LOAD_PER_CORE = 2.5;
     holds: cores ? avg5 > cores * LOAD_PER_CORE : null };
 }
 
+// --- the login shell, and what its PATH holds
+let login = null;
+{
+  const sh = loginShell();
+  Object.assign(answer.shell, { path: sh.path, from: sh.from, account: sh.account });
+  const env = loginEnv(sh.path);
+  answer.shell.read = env.read;
+  answer.shell.why = env.reason;
+  if (env.read) {
+    login = env.env;
+    answer.claude = onPath('claude', login.PATH);
+    answer.aimux.path = onPath('aimux', login.PATH);
+  }
+}
+
 // --- agterm: this session in its tree
 {
   const socket = process.env.AGTERM_SOCKET || null;
   const self = process.env.AGTERM_SESSION_ID || null;
   answer.agterm.socket = socket;
   answer.agterm.session = self;
+  const cli = onPath('agtermctl', process.env.PATH) || (login && onPath('agtermctl', login.PATH));
   if (!socket || !self) {
     answer.agterm.why = 'this session runs outside agterm — no agterm socket or session id in its environment';
+  } else if (!cli) {
+    answer.agterm.why = 'agtermctl is on neither this session\'s PATH nor the login shell\'s';
   } else {
-    const ag = agterm(socket);
+    const ag = agterm(cli, socket);
     const v = ag.version();
     if (!v.ok) answer.agterm.why = `agtermctl version: ${v.why}`;
     else {
@@ -160,21 +180,6 @@ const LOAD_PER_CORE = 2.5;
         answer.agterm.workspace = found.workspace;
       }
     }
-  }
-}
-
-// --- the login shell, and what its PATH holds
-let login = null;
-{
-  const sh = loginShell();
-  Object.assign(answer.shell, { path: sh.path, from: sh.from, account: sh.account });
-  const env = loginEnv(sh.path);
-  answer.shell.read = env.read;
-  answer.shell.why = env.reason;
-  if (env.read) {
-    login = env.env;
-    answer.claude = onPath('claude', login.PATH);
-    answer.aimux.path = onPath('aimux', login.PATH);
   }
 }
 
@@ -194,21 +199,23 @@ if (answer.aimux.path) {
     if (config) {
       core = a.core;
       answer.aimux.core = true;
-      const realOf = (p) => { try { return realpathSync(p); } catch { return p; } };
       // Which profile this session itself runs under: aimux leaves CLAUDE_CONFIG_DIR unset
       // for its source profile and points it at the profile's directory otherwise.
-      const mine = process.env.CLAUDE_CONFIG_DIR ? realOf(process.env.CLAUDE_CONFIG_DIR) : null;
+      const mine = process.env.CLAUDE_CONFIG_DIR ? real(process.env.CLAUDE_CONFIG_DIR, process.env.CLAUDE_CONFIG_DIR) : null;
+      const others = [];
       for (const [name, p] of Object.entries(config.profiles)) {
-        if (!p || (p.cli ?? 'claude') !== 'claude') continue;
-        const dir = typeof p.path === 'string' ? core.expandHome(p.path) : null;
+        if (!p) continue;
+        if ((p.cli ?? 'claude') !== 'claude') { others.push(name); continue; }
+        const dir = typeof p.path === 'string' && p.path !== '' ? core.expandHome(p.path) : null;
         const source = p.is_source === true;
-        const self = mine ? (dir !== null && realOf(dir) === mine) : source;
+        const self = mine ? (dir !== null && real(dir, dir) === mine) : source;
         if (self) answer.aimux.self = name;
         answer.aimux.profiles.push({ profile: name, source, configDir: dir, self,
           allowed: settings.profiles.value === null || settings.profiles.value.includes(name) });
       }
       for (const p of settings.profiles.value || []) {
-        if (!answer.aimux.profiles.some((q) => q.profile === p)) answer.notes.push(`batch_profiles names '${p}', which aimux does not know`);
+        if (others.includes(p)) answer.notes.push(`batch_profiles names '${p}', which is not a Claude profile`);
+        else if (!answer.aimux.profiles.some((q) => q.profile === p)) answer.notes.push(`batch_profiles names '${p}', which aimux does not know`);
       }
       if (!answer.aimux.profiles.length) answer.aimux.why = 'aimux knows no Claude profile';
     }
@@ -218,9 +225,9 @@ if (answer.aimux.path) {
 // --- limits, warmed where the login only needs refreshing
 const pct = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 async function readLimits(name, dir) {
-  const p = config.profiles[name];
+  if (!dir) return { read: false, why: 'aimux gives this profile no directory' };
   let got;
-  try { got = await core.fetchRateLimits(p, dir, { timeoutMs: 8000 }); } catch (e) {
+  try { got = await core.fetchRateLimits(config.profiles[name], dir, { timeoutMs: 8000 }); } catch (e) {
     return { read: false, why: `the limits probe threw (${text(e.message)})` };
   }
   if (!got || typeof got !== 'object') return { read: false, why: 'the limits probe answered no shape aimux documents' };
@@ -230,16 +237,54 @@ async function readLimits(name, dir) {
     if (five === null && week === null) return { read: false, why: 'no window was reported' };
     return { read: true, five, week };
   }
-  if (got.error === 'auth') return { read: false, auth: true, why: 'its login did not answer' };
-  return { read: false, why: got.error ? `the limits probe says '${text(String(got.error))}'` : 'the limits probe answered nothing' };
+  // `auth` is a login that did not answer; nothing at all is a profile aimux found no
+  // login for. Either is the login's question, which `auth status` answers.
+  if (got.error === 'auth' || got.error === undefined) {
+    return { read: false, login: true, why: got.error ? 'its login did not answer' : 'aimux found no login for it' };
+  }
+  return { read: false, why: `the limits probe says '${text(String(got.error))}'` };
 }
-// aimux runs `claude` under the profile it is handed; the environment is the login
-// shell's, which is the one the batch would start from, so `claude` resolves as it will.
-function aimuxRun(args, timeout) {
-  const r = spawnSync(process.execPath, [realpathSync(answer.aimux.path), 'run', ...args], {
-    env: login, encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return { ok: r.status === 0, code: r.status, out: r.stdout || '', timedOut: Boolean(r.error && r.error.code === 'ETIMEDOUT') };
+
+async function profileRow(q) {
+  const row = { profile: q.profile, allowed: q.allowed, fiveHourPct: null, weeklyPct: null, eligible: null,
+    login: null, warmed: false, held: (held.get(q.profile) || 0) + (q.self ? 1 : 0), score: null, why: null };
+  let lim = await readLimits(q.profile, q.configDir);
+  if (!lim.read && lim.login) {
+    // Free first: `auth status` answers whether the profile is logged in at all.
+    const st = await aimuxRun(answer.aimux.path, login, [q.profile, 'auth', 'status', '--json'], 60000);
+    answer.ran.push(`aimux run ${q.profile} auth status --json`);
+    let doc = null;
+    try { doc = JSON.parse(st.out); } catch { doc = null; }
+    if (doc && typeof doc.loggedIn === 'boolean') row.login = doc.loggedIn ? 'ok' : 'needed';
+    if (row.login === 'ok') {
+      lim = await readLimits(q.profile, q.configDir);
+      if (!lim.read && lim.login) {
+        // One request at the cheapest model, nothing kept: it exists only to make the
+        // CLI refresh an expired login, which the limits probe cannot do itself.
+        const w = await aimuxRun(answer.aimux.path, login, [q.profile, '-m', 'haiku', '--', '.', '-p',
+          '--safe-mode', '--no-session-persistence', '--tools', ''], 120000);
+        answer.ran.push(`aimux run ${q.profile} -m haiku -- . -p --safe-mode --no-session-persistence --tools ""`);
+        row.warmed = w.ok;
+        if (w.ok) lim = await readLimits(q.profile, q.configDir);
+        else lim = { read: false, why: `the warm-up ${w.why}` };
+      }
+    }
+  }
+  if (lim.read) {
+    row.fiveHourPct = lim.five;
+    row.weeklyPct = lim.week;
+    const c5 = settings.ceiling5h.value;
+    const c7 = settings.ceiling7d.value;
+    const over = (lim.five !== null && lim.five >= c5) || (lim.week !== null && lim.week >= c7);
+    row.eligible = !over;
+    if (over) row.why = 'a window stands at or above its ceiling';
+    else {
+      const room = Math.min(...[lim.five === null ? null : c5 - lim.five, lim.week === null ? null : c7 - lim.week]
+        .filter((v) => v !== null));
+      row.score = Math.round((room / (row.held + 1)) * 100) / 100;
+    }
+  } else row.why = row.login === 'needed' ? 'not logged in — the user logs in under this profile' : lim.why;
+  return row;
 }
 
 if (opts['--limits']) {
@@ -247,72 +292,35 @@ if (opts['--limits']) {
     profiles: [], pick: { profile: null, why: null } };
   if (!core) answer.limits.reason = answer.aimux.why || 'aimux could not be read';
   else {
-    for (const q of answer.aimux.profiles.filter((x) => x.allowed)) {
-      const row = { profile: q.profile, fiveHourPct: null, weeklyPct: null, eligible: null, login: null,
-        warmed: false, held: (held[q.profile] || 0) + (q.self ? 1 : 0), score: null, why: null };
-      let lim = await readLimits(q.profile, q.configDir);
-      if (!lim.read && lim.auth) {
-        // Free first: `auth status` answers whether the profile is logged in at all.
-        const st = aimuxRun([q.profile, 'auth', 'status', '--json'], 60000);
-        answer.ran.push(`aimux run ${q.profile} auth status --json`);
-        let doc = null;
-        try { doc = JSON.parse(st.out); } catch { doc = null; }
-        if (!doc || typeof doc.loggedIn !== 'boolean') row.login = null;
-        else row.login = doc.loggedIn ? 'ok' : 'needed';
-        if (row.login === 'ok') {
-          lim = await readLimits(q.profile, q.configDir);
-          if (!lim.read && lim.auth) {
-            // One request at the cheapest model, nothing kept: it exists only to make the
-            // CLI refresh an expired login, which the limits probe cannot do itself.
-            const w = aimuxRun([q.profile, '-m', 'haiku', '--', '.', '-p', '--safe-mode',
-              '--no-session-persistence', '--tools', ''], 120000);
-            answer.ran.push(`aimux run ${q.profile} -m haiku -- . -p --safe-mode --no-session-persistence --tools ""`);
-            row.warmed = w.ok;
-            if (!w.ok) row.why = w.timedOut ? 'the warm-up timed out' : `the warm-up exited ${w.code}`;
-            lim = await readLimits(q.profile, q.configDir);
-          }
-        }
-      }
-      if (lim.read) {
-        row.fiveHourPct = lim.five;
-        row.weeklyPct = lim.week;
-        const c5 = settings.ceiling5h.value;
-        const c7 = settings.ceiling7d.value;
-        const over = (lim.five !== null && lim.five >= c5) || (lim.week !== null && lim.week >= c7);
-        row.eligible = !over;
-        if (over) row.why = 'a window stands at or above its ceiling';
-        else {
-          const room = Math.min(...[lim.five === null ? null : c5 - lim.five, lim.week === null ? null : c7 - lim.week]
-            .filter((v) => v !== null));
-          row.score = Math.round((room / (row.held + 1)) * 100) / 100;
-        }
-      } else if (!row.why) {
-        row.why = row.login === 'needed' ? 'not logged in — the user logs in under this profile' : lim.why;
-      }
-      answer.limits.profiles.push(row);
-    }
+    // This session's own profile is read even where batches may not use it: a plain
+    // `claude` started from here runs under it.
+    const read = answer.aimux.profiles.filter((q) => q.allowed || q.self);
+    answer.limits.profiles = await Promise.all(read.map(profileRow));
     answer.limits.read = true;
     // The most room per batch already on it; a tie goes to the profile carrying fewer,
-    // then to aimux's own order. A profile whose limits did not read is never picked.
-    const ranked = answer.limits.profiles.filter((r) => r.eligible === true)
-      .map((r, i) => ({ r, i })).sort((a, b) => (b.r.score - a.r.score) || (a.r.held - b.r.held) || (a.i - b.i));
-    if (ranked.length) answer.limits.pick = { profile: ranked[0].r.profile, why: 'the most room per batch it carries' };
-    else answer.limits.pick = { profile: null, why: 'no allowed profile has read limits below its ceilings' };
+    // then to aimux's own order, which a stable sort keeps. A profile whose limits did
+    // not read is never picked.
+    const ranked = answer.limits.profiles.filter((r) => r.allowed && r.eligible === true)
+      .sort((a, b) => (b.score - a.score) || (a.held - b.held));
+    answer.limits.pick = ranked.length ? { profile: ranked[0].profile, why: 'the most room per batch it carries' }
+      : { profile: null, why: 'no allowed profile has read limits below its ceilings' };
   }
 }
 
-// --- the modes, best first
+// --- the modes, best first; a mode answers where nothing stands against it
 const terminal = answer.agterm.answers;
-answer.modes.push({ mode: 'agterm-aimux',
-  answers: terminal && answer.aimux.core && answer.aimux.profiles.some((p) => p.allowed)
-    && (!answer.limits || answer.limits.pick.profile !== null),
-  why: !terminal ? answer.agterm.why
+const own = answer.limits && answer.limits.profiles.find((r) => r.profile === answer.aimux.self);
+const mode = (name, why) => answer.modes.push({ mode: name, answers: why === null, why });
+mode('agterm-aimux', !terminal ? answer.agterm.why
+  : answer.claude === null ? (answer.shell.read ? 'claude is not on the login shell\'s PATH' : answer.shell.why)
     : !answer.aimux.core ? answer.aimux.why
-      : !answer.aimux.profiles.some((p) => p.allowed) ? 'no aimux profile is allowed for batches'
-        : answer.limits && answer.limits.pick.profile === null ? answer.limits.pick.why : null });
-answer.modes.push({ mode: 'agterm', answers: terminal && answer.claude !== null,
-  why: !terminal ? answer.agterm.why
-    : answer.claude === null ? (answer.shell.read ? 'claude is not on the login shell\'s PATH' : answer.shell.why) : null });
+      : !answer.aimux.profiles.length ? answer.aimux.why
+        : !answer.aimux.profiles.some((p) => p.allowed) ? 'no aimux profile is allowed for batches'
+        : answer.limits && answer.limits.pick.profile === null ? answer.limits.pick.why : null);
+mode('agterm', !terminal ? answer.agterm.why
+  : answer.claude === null ? (answer.shell.read ? 'claude is not on the login shell\'s PATH' : answer.shell.why)
+    : own && own.eligible === false ? 'this session\'s own profile, which a plain claude runs under, stands at its ceiling'
+      : null);
 const first = answer.modes.find((m) => m.answers);
 answer.mode = first ? first.mode : null;
 

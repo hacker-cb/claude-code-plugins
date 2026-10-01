@@ -3,7 +3,8 @@
 #
 # The case's words are batch-launch.mjs's arguments. Around them the driver builds what the
 # script reads from outside itself: a HOME copied from homes/<the envelope's `home`>, whose
-# login/path the stub login shell exports as PATH (`@root` there is this repository), and
+# login/path the stub login shell exports as PATH (`@root` there is this repository, `@node`
+# a directory holding only the suite's node), and
 # whose aimux.json — the envelope's `aimux` — the fake aimux package answers from; SHELL is
 # that stub shell. The envelope's `agterm` is the agtermctl stub's. A case refused before
 # anything runs names `-` and gets an empty home.
@@ -23,7 +24,13 @@ if [ -n "${STUB_ENVELOPE:-}" ]; then
   jq '.aimux // {}' "$STUB_ENVELOPE" > "$home/aimux.json" || exit 125
 fi
 if [ -f "$home/login/path" ]; then
-  sed "s#@root#$root#g" "$home/login/path" > "$tmp/path" && mv "$tmp/path" "$home/login/path" || exit 125
+  # `@node`: a directory holding the suite's node and nothing else — what puts `node` on a
+  # login PATH for the fake aimux's shebang, without the real claude and aimux that sit
+  # beside node in an nvm or Homebrew directory.
+  node_dir="$tmp/node"
+  mkdir -p "$node_dir" && ln -s "$(command -v node)" "$node_dir/node" || exit 125
+  sed -e "s#@root#$root#g" -e "s#@node#$node_dir#g" "$home/login/path" > "$tmp/path" \
+    && mv "$tmp/path" "$home/login/path" || exit 125
 fi
 export HOME="$home" SHELL="$here/stub/login-sh"
 node "$root/plugins/hcb-dev/scripts/batch-launch.mjs" "$@" > "$tmp/out" 2> "$tmp/err"

@@ -581,17 +581,15 @@ md_link_targets() {
       done
 }
 
-# The first by-path reference a skill reaches, following relative links transitively,
-# that carries the slot named in $2 — or nothing.
-reached_slot() {
+# Every by-path reference a skill reaches, following relative links transitively — read
+# once per skill, for whichever slots the checks below look for.
+reached_refs() {
   local seen=$1 queue=$1 cur t
   while [ -n "$queue" ]; do
     cur=${queue%%$'\n'*}
     if [ "$cur" = "$queue" ]; then queue=""; else queue=${queue#*$'\n'}; fi
     [ -f "$cur" ] || continue
-    case "$cur" in
-      */references/*.md) grep -qF -- "$2" "$cur" 2>/dev/null && { printf '%s\n' "$cur"; return; } ;;
-    esac
+    case "$cur" in */references/*.md) printf '%s\n' "$cur" ;; esac
     while IFS= read -r t; do
       [ -n "$t" ] || continue
       case "$t" in plugins/*) ;; *) continue ;; esac
@@ -602,9 +600,32 @@ reached_slot() {
   done
 }
 
+# The first reached reference naming the slot in $2, or nothing.
+first_naming() {
+  local r
+  while IFS= read -r r; do
+    [ -n "$r" ] && grep -qF -- "$2" "$r" 2>/dev/null && { printf '%s\n' "$r"; return; }
+  done <<< "$1"
+}
+
 while IFS= read -r skill; do
   [ -n "$skill" ] || continue
-  reached=$(reached_slot "$skill" '<plugin root>')
+  refs=$(reached_refs "$skill")
+  # The settings line binds `<launch settings>` exactly as the Paths line binds `<plugin
+  # root>`: present where a skill reaches a by-path file naming the slot, absent elsewhere.
+  # A line counts only where it carries settings at all — a heading spelled the same binds
+  # nothing.
+  sreached=$(first_naming "$refs" '<launch settings>')
+  sbound=$(grep -c '^\*\*Launch settings\*\*.*\${user_config\.' "$skill" 2>/dev/null || true)
+  [ -n "$sbound" ] || sbound=0
+  if [ -n "$sreached" ] && [ "$sbound" -eq 0 ]; then
+    err "$(basename "$(dirname "$skill")"): reaches $sreached, which names '<launch settings>', and carries no settings line"
+  elif [ -z "$sreached" ] && [ "$sbound" -gt 0 ]; then
+    err "$(basename "$(dirname "$skill")"): carries the settings line and reaches no file that names '<launch settings>'"
+  elif [ "$sbound" -gt 1 ]; then
+    err "$(basename "$(dirname "$skill")"): the settings line stands $sbound times — one is the contract"
+  fi
+  reached=$(first_naming "$refs" '<plugin root>')
   bound=$(grep -cxF "$binding_line" "$skill" 2>/dev/null || true)
   [ -n "$bound" ] || bound=0
   if [ -n "$reached" ] && [ "$bound" -eq 0 ]; then
@@ -645,6 +666,9 @@ for plugin_dir in plugins/*/; do
     quoted=$(grep -oE "'$uc_re'" "$f" | wc -l | tr -d ' ')
     [ "$all" = "$quoted" ] \
       || err "$f: every \${user_config.KEY} stands single-quoted, as one word — $((all - quoted)) do not"
+    # Single quotes inside double ones are characters, not quoting: the literal reaches bash.
+    grep -qE "\"'$uc_re|$uc_re'\"" "$f" \
+      && err "$f: a single-quoted \${user_config.KEY} sits inside double quotes, where bash still substitutes it"
     while IFS= read -r key; do
       [ -n "$key" ] || continue
       kind=$(jq -r --arg k "$key" 'if (.userConfig // {}) | has($k) then (if .userConfig[$k].sensitive == true then "sensitive" else "ok" end) else "missing" end' "$manifest" 2>/dev/null)
@@ -662,21 +686,6 @@ for plugin_dir in plugins/*/; do
     || err "$plugin_dir: $distinct different lines carry \${user_config.…} — one settings line is the contract"
 done
 
-# The settings line binds `<launch settings>` exactly as the Paths line binds `<plugin
-# root>`: present where a skill reaches a by-path file naming the slot, absent elsewhere.
-while IFS= read -r skill; do
-  [ -n "$skill" ] || continue
-  reached=$(reached_slot "$skill" '<launch settings>')
-  bound=$(grep -c '^\*\*Launch settings\*\*' "$skill" 2>/dev/null || true)
-  [ -n "$bound" ] || bound=0
-  if [ -n "$reached" ] && [ "$bound" -eq 0 ]; then
-    err "$(basename "$(dirname "$skill")"): reaches $reached, which names '<launch settings>', and carries no settings line"
-  elif [ -z "$reached" ] && [ "$bound" -gt 0 ]; then
-    err "$(basename "$(dirname "$skill")"): carries the settings line and reaches no file that names '<launch settings>'"
-  elif [ "$bound" -gt 1 ]; then
-    err "$(basename "$(dirname "$skill")"): the settings line stands $bound times — one is the contract"
-  fi
-done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
 
 # --- the size gate ----------------------------------------------------------
 # What a skill costs a session is what it loads, and prose grows one paragraph at a

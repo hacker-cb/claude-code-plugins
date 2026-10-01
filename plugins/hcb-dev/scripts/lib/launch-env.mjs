@@ -7,12 +7,15 @@
 // that was not the user's, a PATH copied from this session instead of built by a login,
 // a workspace id taken from a variable that had gone stale.
 
-import { spawnSync } from 'node:child_process';
-import { accessSync, constants, readFileSync, realpathSync, statSync } from 'node:fs';
-import { userInfo } from 'node:os';
-import { delimiter, dirname, join, resolve } from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { accessSync, constants, mkdtempSync, readFileSync, realpathSync, rmSync, statSync } from 'node:fs';
+import { tmpdir, userInfo } from 'node:os';
+import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { runner, text } from './forge.mjs';
+import { runner, text, why } from './forge.mjs';
+
+// Two spellings of one path are one place; `fallback` is what an unresolvable one reads as.
+export const real = (p, fallback = null) => { try { return realpathSync(p); } catch { return fallback; } };
 
 // --- the login shell
 
@@ -25,10 +28,11 @@ export function loginShell() {
   return { path: env || account, from: env ? 'SHELL' : account ? 'account' : null, account };
 }
 
-// What a login shell started from nothing exports. agterm starts a `--command` with the
-// GUI's environment, where PATH holds the system directories alone, and the profile
-// files are what bring Homebrew, nvm and the rest — so the reading starts from that
-// minimum rather than from this session's environment, which already carries them.
+// What a login shell started from nothing exports — the invocation a launched batch is
+// started with, so what this finds is what the batch will. agterm starts a `--command`
+// with the GUI's environment, where PATH holds the system directories alone, and the
+// profile files are what bring Homebrew, nvm and the rest — so the reading starts from
+// that minimum rather than from this session's environment, which already carries them.
 const BASE_PATH = '/usr/bin:/bin:/usr/sbin:/sbin';
 const MARK = '__HCB_LOGIN_ENV__';
 
@@ -47,7 +51,8 @@ export function loginEnv(shell, timeout = 30000) {
   if (r.error) return { read: false, env: null, reason: `the login shell did not run (${r.error.code || r.error.message})` };
   if (r.status !== 0) {
     const line = (r.stderr || '').trim().split(/\n/).pop() || 'no detail';
-    return { read: false, env: null, reason: `the login shell exited ${r.status} (${text(line)})` };
+    const how = r.status === null ? `was killed by ${r.signal || 'a signal'}` : `exited ${r.status}`;
+    return { read: false, env: null, reason: `the login shell ${how} (${text(line)})` };
   }
   const at = (r.stdout || '').indexOf(`${MARK}\n`);
   if (at < 0) return { read: false, env: null, reason: 'the login shell printed no environment' };
@@ -62,14 +67,14 @@ export function loginEnv(shell, timeout = 30000) {
 
 // --- programs on a PATH
 
-const real = (p) => { try { return realpathSync(p); } catch { return null; } };
-
 // Walked here rather than asked of the shell: `command -v` answers a function's name for
-// a function, and aimux installs one under its own name.
+// a function, and aimux installs one under its own name. Absolute entries only — an empty
+// or relative one names whatever directory a process stands in, which is no place a batch
+// started elsewhere finds anything.
 export function onPath(name, path) {
   for (const dir of (path || '').split(delimiter)) {
-    if (!dir) continue;
-    const candidate = join(resolve(dir), name);
+    if (!dir || !isAbsolute(dir)) continue;
+    const candidate = join(dir, name);
     try {
       if (!statSync(candidate).isFile()) continue;
       accessSync(candidate, constants.X_OK);
@@ -79,13 +84,13 @@ export function onPath(name, path) {
   return null;
 }
 
-// --- aimux's own reading
+// --- aimux
 
 // Found by the executable rather than by the package's npm name: the `package.json`
 // whose `bin` points at it is the package, and its `exports["./core"]` is the entry
 // aimux publishes for this. A missing function, a throw, an import that fails — each is
 // "aimux could not be read", never "aimux has no subscriptions".
-const NEEDED = ['loadConfig', 'fetchRateLimits', 'rateLimitProfiles', 'expandHome'];
+const NEEDED = ['loadConfig', 'fetchRateLimits', 'expandHome'];
 
 const binTargets = (pkg, root) => {
   const bin = typeof pkg.bin === 'string' ? { [pkg.name || '']: pkg.bin }
@@ -100,15 +105,13 @@ const coreEntry = (pkg) => {
 };
 
 export async function aimuxCore(bin) {
-  const answer = { read: false, root: null, version: null, entry: null, core: null, reason: null };
+  const answer = { read: false, version: null, core: null, reason: null };
   const target = bin ? real(bin) : null;
   if (!target) { answer.reason = 'no aimux executable'; return answer; }
-  answer.entry = target;
   for (let dir = dirname(target), i = 0; i < 8; i += 1, dir = dirname(dir)) {
     let pkg;
     try { pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')); } catch { pkg = null; }
     if (pkg && binTargets(pkg, dir).includes(target)) {
-      answer.root = dir;
       answer.version = typeof pkg.version === 'string' ? text(pkg.version) : null;
       const entry = coreEntry(pkg);
       if (!entry) { answer.reason = 'the aimux package publishes no ./core entry'; return answer; }
@@ -129,14 +132,48 @@ export async function aimuxCore(bin) {
   return answer;
 }
 
+// `aimux run <args>` as a batch would meet it: the executable itself, in the login
+// shell's environment, so its shebang finds the login PATH's node and `claude`. In a
+// directory of its own: aimux records the last profile run in each directory, and the
+// directory this session stands in is the user's. Its own process group, because a
+// timeout has to stop the `claude` aimux started as well as aimux.
+export function aimuxRun(bin, env, args, timeout) {
+  return new Promise((done) => {
+    let cwd;
+    try { cwd = mkdtempSync(join(tmpdir(), 'hcb-aimux-')); } catch (e) {
+      done({ ok: false, code: null, out: '', why: `no directory to run it in (${e.code || e.message})` });
+      return;
+    }
+    const end = (r) => { try { rmSync(cwd, { recursive: true, force: true }); } catch { /* left behind */ } done(r); };
+    let child;
+    try {
+      child = spawn(bin, ['run', ...args], { env, cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (e) { end({ ok: false, code: null, out: '', why: `did not start (${e.code || e.message})` }); return; }
+    let out = '';
+    child.stdout.on('data', (d) => { if (out.length < 1024 * 1024) out += d; });
+    child.stderr.resume();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already gone */ }
+    }, timeout);
+    child.on('error', (e) => { clearTimeout(timer); end({ ok: false, code: null, out, why: `did not start (${e.code || e.message})` }); });
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      end({ ok: code === 0, code, out,
+        why: timedOut ? 'timed out' : code === 0 ? null : signal ? `was killed by ${signal}` : `exited ${code}` });
+    });
+  });
+}
+
 // --- agterm
 
 // `agtermctl` never reads `AGTERM_SOCKET` itself, so every call names it.
-export function agterm(socket) {
-  const run = runner(process.cwd(), 'agtermctl');
+export function agterm(cli, socket) {
+  const run = runner(process.cwd(), cli);
   const call = (args) => {
     const r = run([...args, '--json', '--socket', socket], 30000);
-    if (!r.ok) return { ok: false, why: r.timedOut ? 'timed out' : r.line() };
+    if (!r.ok) return { ok: false, why: why(r) };
     let doc;
     try { doc = JSON.parse(r.out); } catch { return { ok: false, why: 'did not answer JSON' }; }
     if (!doc || doc.ok !== true) return { ok: false, why: text(doc && doc.error && (doc.error.message || doc.error)) || 'answered not ok' };
