@@ -463,8 +463,8 @@ name stands for.
   and on which side. The local half and the published half fail separately and are
   answered separately; it reads and judges, and deletes nothing.
 - [`scripts/branch-publish.mjs`](scripts/branch-publish.mjs) — the name a branch ships
-  under, put on the remote, and the names it used to carry taken off it. **One of the three scripts
-  here that act**, because the order of the three is the hazard: a rename is refused
+  under, put on the remote, and the names it used to carry taken off it. **One of the four scripts
+  here that act**, because the order of its three steps is the hazard: a rename is refused
   where a request pins the name, the publish is unconditional, and a name comes off the
   remote only after the new one is up. What each push did is read off the remote rather
   than its exit status, so a push nobody waited out is reported as unsettled, never as
@@ -502,14 +502,20 @@ name stands for.
   path; the rules it serves are `references/verification.md` and `references/review-pipeline.md`.
 
 - [`scripts/batch-launch.mjs`](scripts/batch-launch.mjs) — whether a master session can
-  start a batch session itself, and with what. `probe` reads what answers from the session,
-  never what its environment variables claim: agterm, by finding this session in the tree
-  of each of its windows; the user's login shell and the PATH it builds, which is where a
-  launched batch finds `claude` and `aimux`; aimux's own reading of its subscriptions,
-  through the `./core` entry it publishes, warming a profile whose login expired and
-  ranking the rest by room per batch already on them; and the machine's load. The
-  model, the effort and the limits a batch runs at come from the plugin's settings,
-  which it reads unsaved as the manifest's defaults.
+  start a batch session itself, and then starting it. `probe` reads what answers from the
+  session, never what its environment variables claim: agterm, by finding this session in
+  the tree of each of its windows; the user's login shell and the PATH it builds, which is
+  where a launched batch finds `claude` and `aimux`; aimux's own reading of its
+  subscriptions, through the `./core` entry it publishes, warming a profile whose login
+  expired and ranking the rest by room per batch already on them; and the machine's load.
+  `launch` cuts the batch's worktree detached at the pin, carries the repository's trust
+  into the profile the batch runs under — only ever trust this session's configuration
+  already gives — and opens an agterm session after this one, unselected, with the order as
+  its first prompt and a session id chosen here. `check` says whether that session is alive
+  and whether a subscription limit stopped it, `relaunch` resumes one `check` found gone,
+  and `close` ends one standing in the batch's worktree. The model, the effort and the
+  limits come from the plugin's settings, read unsaved as the manifest's defaults. **The
+  fourth that acts.**
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
@@ -594,6 +600,11 @@ saying something else. Each file opens by saying what it owns.
 - [`references/wave-ledger.md`](references/wave-ledger.md) — the master's durable
   state: the epic's ledger and each wave's. Read on every event they record, and first
   after any restart.
+- [`references/batch-launch.md`](references/batch-launch.md) — how a master session
+  starts its batches: the way a batch goes out — a terminal session it starts itself, a
+  chip, a pasted order — the model, effort and subscription it runs at, pacing and the
+  canary, and the commands that start, check, resume and close a batch's session. Read
+  wherever a batch goes out, comes back after a restart, or ends.
 - [`references/wave-issue.md`](references/wave-issue.md) — a wave's issue: filed on the
   word that approves its plan, the work hung under it, counted, closed. Read whenever a wave
   opens, takes an issue or closes.

@@ -1,20 +1,43 @@
 #!/usr/bin/env bash
-# Stands in for agtermctl: `version`, `window list` and one window's `tree`, answered from
-# the envelope's `agterm` — `down` for a socket that does not answer, `windows` for the
-# window list, `trees.<window>` for each window's workspaces. A window with no tree there
-# answers an error, as a window that could not be read does.
+# Stands in for agtermctl, answered from the envelope's `agterm`: `down` for a socket that
+# does not answer, `windows` for the window list, `trees.<window>` for each window's
+# workspaces — a window with no tree there answers an error, as one that could not be read
+# does. `session new` keeps its arguments beside the marker (`.agterm-new`) and runs its
+# `--command` there and then — unless `hold`, a session that never gets past its first
+# screen — answering `new_id`; `session close` keeps its arguments (`.agterm-close`) and
+# takes the session out of every tree read after it.
 set -u
 touch "${STUB_MARKER_FILE:-/dev/null}"
-if [ "$(jq -r '.agterm.down // false' "$STUB_ENVELOPE")" = true ]; then
+env_json="$STUB_ENVELOPE"
+if [ "$(jq -r '.agterm.down // false' "$env_json")" = true ]; then
   echo "agtermctl: could not connect to the control socket" >&2; exit 1
 fi
+closed="$HOME/.agterm-closed"
 case "${1:-} ${2:-}" in
   "version --json") echo '{"ok":true,"result":{"app":{"version":"0.0.0"}}}' ;;
-  "window list") jq -c '{ok: true, result: {windows: .agterm.windows}}' "$STUB_ENVELOPE" ;;
+  "window list") jq -c '{ok: true, result: {windows: .agterm.windows}}' "$env_json" ;;
   "tree --window")
-    if [ "$(jq --arg w "${3:-}" '.agterm.trees | has($w)' "$STUB_ENVELOPE")" != true ]; then
+    if [ "$(jq --arg w "${3:-}" '.agterm.trees | has($w)' "$env_json")" != true ]; then
       echo "agtermctl: window ${3:-} could not be read" >&2; exit 1
     fi
-    jq -c --arg w "$3" '{ok: true, result: {tree: {workspaces: .agterm.trees[$w]}}}' "$STUB_ENVELOPE" ;;
+    gone='[]'
+    if [ -f "$closed" ]; then gone=$(jq -Rsc 'split("\n") | map(select(. != ""))' "$closed"); fi
+    jq -c --arg w "$3" --argjson gone "$gone" \
+      '{ok: true, result: {tree: {workspaces: (.agterm.trees[$w] | map(.sessions |= map(select(.id as $i | ($gone | any(.[]; . == $i)) | not))))}}}' "$env_json" ;;
+  "session new")
+    printf '%s\n' "$@" >> "$STUB_MARKER_FILE.agterm-new"
+    cmd=""; prev=""
+    for a in "$@"; do [ "$prev" = --command ] && cmd=$a; prev=$a; done
+    if [ "$(jq -r '.agterm.hold // false' "$env_json")" != true ]; then
+      # agterm's tokenizer reads quotes as a shell does and nothing else.
+      eval "set -- $cmd"; "$@" >/dev/null 2>&1
+    fi
+    jq -c '{ok: true, result: {id: (.agterm.new_id // "example-id-0000000c")}}' "$env_json" ;;
+  "session close")
+    printf '%s\n' "$@" >> "$STUB_MARKER_FILE.agterm-close"
+    t=""; prev=""
+    for a in "$@"; do [ "$prev" = --target ] && t=$a; prev=$a; done
+    printf '%s\n' "$t" >> "$closed"
+    echo '{"ok":true,"result":{"affected":1}}' ;;
   *) echo "stub agtermctl: unexpected invocation: $*" >&2; exit 64 ;;
 esac

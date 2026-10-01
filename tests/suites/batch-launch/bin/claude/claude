@@ -1,4 +1,14 @@
 #!/bin/sh
-# Found on the login PATH; a probe never runs it.
-echo "stub claude: a probe runs no claude: $*" >&2
-exit 64
+# A plain claude as a launch starts it: its arguments go to $HOME/launch-argv and a line to
+# the session's transcript under its configuration. A probe never runs it, and nothing else
+# should.
+set -u
+id=""; prev=""
+for a in "$@"; do
+  case "$prev" in --session-id|--resume) id=$a ;; esac
+  prev=$a
+done
+if [ -z "$id" ]; then echo "stub claude: unexpected invocation: $*" >&2; exit 64; fi
+node -e 'console.log(JSON.stringify({cwd: process.cwd(), config: process.env.CLAUDE_CONFIG_DIR || null, argv: process.argv.slice(1)}))' -- "$@" > "$HOME/launch-argv"
+dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/-repo"
+mkdir -p "$dir" && echo '{"type":"user"}' >> "$dir/$id.jsonl"
