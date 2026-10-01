@@ -32,8 +32,9 @@ if [ -f "$home/login/path" ]; then
   node_dir="$tmp/node"
   mkdir -p "$node_dir" && ln -s "$(command -v node)" "$node_dir/node" || exit 125
   path=$(cat "$home/login/path") || exit 125
-  path=${path//@root/$root}
-  printf '%s\n' "${path//@node/$node_dir}" > "$home/login/path" || exit 125
+  # Quoted replacements: unquoted, bash 5.2 reads a `&` in either path as the match.
+  path=${path//@root/"$root"}
+  printf '%s\n' "${path//@node/"$node_dir"}" > "$home/login/path" || exit 125
 fi
 export HOME="$home" SHELL="$here/stub/login-sh"
 args=()

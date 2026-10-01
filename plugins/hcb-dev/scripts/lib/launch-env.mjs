@@ -106,14 +106,18 @@ const pick = (e) => (typeof e === 'string' ? e
   : e && typeof e === 'object' && !Array.isArray(e) ? pick(e.import ?? e.node ?? e.default) : null);
 const coreEntry = (pkg) => pick(pkg.exports && typeof pkg.exports === 'object' ? pkg.exports['./core'] : null);
 
-// What the executable needs before it runs at all: the interpreter its `#!/usr/bin/env`
-// line names, looked for on the PATH it will run with.
+// What the executable needs before it runs at all: the interpreter its `#!` line names —
+// through `env`, looked for on the PATH it will run with; by path, that file.
 export function interpreterOn(bin, path) {
   let head = '';
   try { head = readFileSync(real(bin, bin), 'utf8').slice(0, 200).split('\n')[0]; } catch { return { read: false, name: null, found: null }; }
-  const m = /^#!\s*\S*\/env\s+(?:-S\s+)?([^\s]+)/.exec(head);
-  if (!m) return { read: true, name: null, found: true };
-  return { read: true, name: m[1], found: onPath(m[1], path) !== null };
+  const env = /^#!\s*\S*\/env\s+(?:-S\s+)?([^\s]+)/.exec(head);
+  if (env) return { read: true, name: env[1], found: onPath(env[1], path) !== null };
+  const abs = /^#!\s*(\/[^\s]+)/.exec(head);
+  if (!abs) return { read: true, name: null, found: true };
+  let found = false;
+  try { found = statSync(abs[1]).isFile(); accessSync(abs[1], constants.X_OK); } catch { found = false; }
+  return { read: true, name: abs[1], found };
 }
 
 export async function aimuxCore(bin) {

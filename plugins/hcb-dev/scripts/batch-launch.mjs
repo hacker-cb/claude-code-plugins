@@ -60,7 +60,8 @@ const unset = (v) => v === undefined || v === '' || /^\$\{user_config\.[A-Za-z_]
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._:/@[\]-]*$/;
 // aimux names a profile however the user did; what cannot pass is what this splits on —
 // a comma, an `=` — what trimming would change, and what cannot travel as one quoted word.
-const profileOk = (p) => p !== '' && p === p.trim() && !/[,='"\\\u0000-\u001f\u007f]/.test(p);
+// A leading `-` too: aimux would read the name as one of its own flags.
+const profileOk = (p) => p !== '' && p === p.trim() && !p.startsWith('-') && !/[,='"\\\u0000-\u001f\u007f]/.test(p);
 
 function setting(key, word, config) {
   const spec = declared[key] || {};
@@ -208,7 +209,8 @@ if (answer.aimux.path) {
       for (const [name, p] of Object.entries(config.profiles)) {
         if (!p) continue;
         if ((p.cli ?? 'claude') !== 'claude') { others.push(name); continue; }
-        const dir = typeof p.path === 'string' && p.path !== '' ? core.expandHome(p.path) : null;
+        let dir = null;
+        try { dir = typeof p.path === 'string' && p.path !== '' ? core.expandHome(p.path) : null; } catch { dir = null; }
         const source = p.is_source === true;
         const self = mine ? (dir !== null && real(dir, dir) === mine) : source;
         if (self) answer.aimux.self = name;
@@ -256,8 +258,8 @@ async function readLimits(name, dir) {
     let kind = null;
     try { kind = typeof core.classifyProfile === 'function' ? core.classifyProfile(config.profiles[name], dir) : null; } catch { kind = null; }
     if (kind === 'none') return { read: false, login: true, why: 'aimux found no login for it' };
-    return { read: false, why: kind === 'api' ? 'an API-key profile — it has no subscription windows'
-      : 'aimux reports no limits for it' };
+    if (kind === 'api') return { read: false, api: true, why: 'an API-key profile — no subscription window applies to it' };
+    return { read: false, why: 'aimux reports no limits for it' };
   }
   return { read: false, why: `the limits probe says '${text(String(got.error))}'` };
 }
@@ -294,6 +296,10 @@ async function profileRow(q) {
         .filter((v) => v !== null));
       row.score = Math.round((room / (row.held + 1)) * 100) / 100;
     }
+  } else if (lim.api) {
+    // No window to stand at a ceiling: it takes a batch, ranked after every profile with room.
+    row.eligible = true;
+    row.why = lim.why;
   } else row.why = row.login === 'needed' ? 'not logged in — the user logs in under this profile' : lim.why;
   return row;
 }
@@ -303,16 +309,15 @@ if (opts['--limits']) {
     profiles: [], pick: { profile: null, why: null } };
   if (!core) answer.limits.reason = answer.aimux.why || 'aimux could not be read';
   else {
-    // This session's own profile is read even where batches may not use it: a plain
-    // `claude` started from here runs under it.
-    const read = answer.aimux.profiles.filter((q) => q.allowed || q.self);
+    const read = answer.aimux.profiles.filter((q) => q.allowed);
     answer.limits.profiles = await Promise.all(read.map(profileRow));
     answer.limits.read = true;
-    // The most room per batch already on it; a tie goes to the profile carrying fewer,
-    // then to aimux's own order, which a stable sort keeps. A profile whose limits did
-    // not read is never picked.
+    // The most room per batch already on it; a profile with no window to measure comes
+    // after every one with room; a tie goes to the profile carrying fewer, then to aimux's
+    // own order, which a stable sort keeps. A profile whose limits did not read is never
+    // picked.
     const ranked = answer.limits.profiles.filter((r) => r.allowed && r.eligible === true)
-      .sort((a, b) => (b.score - a.score) || (a.held - b.held));
+      .sort((a, b) => ((a.score === null) - (b.score === null)) || ((b.score ?? 0) - (a.score ?? 0)) || (a.held - b.held));
     answer.limits.pick = ranked.length ? { profile: ranked[0].profile, why: 'the most room per batch it carries' }
       : { profile: null, why: 'no allowed profile has read limits below its ceilings' };
   }
@@ -322,8 +327,10 @@ if (opts['--limits']) {
 const terminal = answer.agterm.answers;
 // What both terminal modes need: this session's own place in agterm, and claude on the
 // login PATH — aimux starts claude from there too.
+const claudeStarts = answer.claude ? interpreterOn(answer.claude, login && login.PATH) : null;
 const runnable = !terminal ? answer.agterm.why
-  : answer.claude === null ? (answer.shell.read ? 'claude is not on the login shell\'s PATH' : answer.shell.why) : null;
+  : answer.claude === null ? (answer.shell.read ? 'claude is not on the login shell\'s PATH' : answer.shell.why)
+    : claudeStarts && claudeStarts.found === false ? `claude's interpreter, ${claudeStarts.name}, is not on the login shell's PATH` : null;
 const aimuxStarts = answer.aimux.path ? interpreterOn(answer.aimux.path, login && login.PATH) : null;
 const mode = (name, why) => answer.modes.push({ mode: name, answers: why === null, why });
 mode('agterm-aimux', runnable
@@ -336,8 +343,12 @@ mode('agterm-aimux', runnable
 // on batches and its limits hold the plain mode as they hold the aimux one.
 const own = answer.aimux.profiles.find((p) => p.self);
 const ownRow = answer.limits && own ? answer.limits.profiles.find((r) => r.profile === own.profile) : null;
+// Limits asked for while aimux stands on the login PATH unread: this session's own profile
+// cannot be checked, and an unchecked profile takes no batch.
+const ownUnread = answer.limits && answer.aimux.path && !answer.aimux.core;
 mode('agterm', runnable
-  ?? (own && !own.allowed ? 'this session\'s own profile, which a plain claude runs under, is not allowed for batches'
+  ?? (ownUnread ? `this session's own profile, which a plain claude runs under, cannot be checked: ${answer.aimux.why}`
+    : own && !own.allowed ? 'this session\'s own profile, which a plain claude runs under, is not allowed for batches'
     : ownRow && ownRow.eligible !== true ? `this session's own profile, which a plain claude runs under, ${ownRow.eligible === false ? 'stands at its ceiling' : `could not be read: ${ownRow.why}`}`
       : null));
 const first = answer.modes.find((m) => m.answers);

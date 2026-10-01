@@ -616,7 +616,7 @@ while IFS= read -r skill; do
   # A line counts only where it carries settings at all — a heading spelled the same binds
   # nothing.
   sreached=$(first_naming "$refs" '<launch settings>')
-  sbound=$(grep -c '^\*\*Launch settings\*\*.*\${user_config\.' "$skill" 2>/dev/null || true)
+  sbound=$(grep '^\*\*Launch settings\*\*' "$skill" 2>/dev/null | grep -cF '${user_config.' || true)
   [ -n "$sbound" ] || sbound=0
   if [ -n "$sreached" ] && [ "$sbound" -eq 0 ]; then
     err "$(basename "$(dirname "$skill")"): reaches $sreached, which names '<launch settings>', and carries no settings line"
