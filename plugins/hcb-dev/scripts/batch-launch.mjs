@@ -107,8 +107,9 @@ const settings = {
 const held = new Map();
 for (const pair of (opts['--held'] || '').split(',').map((x) => x.trim()).filter(Boolean)) {
   const m = /^(.+)=([0-9]+)$/.exec(pair);
-  if (!m || !profileOk(m[1])) die(`--held '${pair}' is not <profile>=<count>`);
-  held.set(m[1], (held.get(m[1]) || 0) + Number(m[2]));
+  const total = m ? (held.get(m[1]) || 0) + Number(m[2]) : NaN;
+  if (!m || !profileOk(m[1]) || !Number.isSafeInteger(total)) die(`--held '${pair}' is not <profile>=<count>`);
+  held.set(m[1], total);
 }
 
 // --- the answer
@@ -273,7 +274,8 @@ async function profileRow(q) {
     const st = await aimuxRun(answer.aimux.path, login, [q.profile, 'auth', 'status', '--json'], 60000, answer.ran);
     let doc = null;
     try { doc = JSON.parse(st.out); } catch { doc = null; }
-    if (doc && typeof doc.loggedIn === 'boolean') row.login = doc.loggedIn ? 'ok' : 'needed';
+    // Only a status that exited cleanly is believed: a failed one is the login unread.
+    if (st.ok && doc && typeof doc.loggedIn === 'boolean') row.login = doc.loggedIn ? 'ok' : 'needed';
     if (row.login === 'ok') {
       // One request at the cheapest model, nothing kept: it exists only to make the CLI
       // refresh an expired login, which neither the limits probe nor `auth status` does.
@@ -348,6 +350,7 @@ const ownRow = answer.limits && own ? answer.limits.profiles.find((r) => r.profi
 const ownUnread = answer.limits && answer.aimux.path && !answer.aimux.core;
 mode('agterm', runnable
   ?? (ownUnread ? `this session's own profile, which a plain claude runs under, cannot be checked: ${answer.aimux.why}`
+    : answer.limits && answer.aimux.core && !own ? 'this session runs under a configuration no aimux profile names, so its limits cannot be checked'
     : own && !own.allowed ? 'this session\'s own profile, which a plain claude runs under, is not allowed for batches'
     : ownRow && ownRow.eligible !== true ? `this session's own profile, which a plain claude runs under, ${ownRow.eligible === false ? 'stands at its ceiling' : `could not be read: ${ownRow.why}`}`
       : null));
