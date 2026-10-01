@@ -1,0 +1,17 @@
+{
+  "home": "both",
+  "agterm": {
+    "down": true
+  },
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/profiles/main",
+          "is_source": true
+        }
+      }
+    }
+  }
+}

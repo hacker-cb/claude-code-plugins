@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Stands in for agtermctl: `version`, `window list` and one window's `tree`, answered from
+# the envelope's `agterm` — `down` for a socket that does not answer, `windows` for the
+# window list, `trees.<window>` for each window's workspaces. A window with no tree there
+# answers an error, as a window that could not be read does.
+set -u
+touch "${STUB_MARKER_FILE:-/dev/null}"
+if [ "$(jq -r '.agterm.down // false' "$STUB_ENVELOPE")" = true ]; then
+  echo "agtermctl: could not connect to the control socket" >&2; exit 1
+fi
+case "${1:-} ${2:-}" in
+  "version --json") echo '{"ok":true,"result":{"app":{"version":"0.0.0"}}}' ;;
+  "window list") jq -c '{ok: true, result: {windows: .agterm.windows}}' "$STUB_ENVELOPE" ;;
+  "tree --window")
+    if [ "$(jq --arg w "${3:-}" '.agterm.trees | has($w)' "$STUB_ENVELOPE")" != true ]; then
+      echo "agtermctl: window ${3:-} could not be read" >&2; exit 1
+    fi
+    jq -c --arg w "$3" '{ok: true, result: {tree: {workspaces: .agterm.trees[$w]}}}' "$STUB_ENVELOPE" ;;
+  *) echo "stub agtermctl: unexpected invocation: $*" >&2; exit 64 ;;
+esac

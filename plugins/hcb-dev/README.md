@@ -501,6 +501,16 @@ name stands for.
   and `result` builds the answer no model writes. Addressed by a short round id, never by a
   path; the rules it serves are `references/verification.md` and `references/review-pipeline.md`.
 
+- [`scripts/batch-launch.mjs`](scripts/batch-launch.mjs) — whether a master session can
+  start a batch session itself, and with what. `probe` reads what answers from the session,
+  never what its environment variables claim: agterm, by finding this session in the tree
+  of each of its windows; the user's login shell and the PATH it builds, which is where a
+  launched batch finds `claude` and `aimux`; aimux's own reading of its subscriptions,
+  through the `./core` entry it publishes, warming a profile whose login expired and
+  ranking the rest by room per batch already on them; and the machine's load. The
+  model, the effort and the limits a batch runs at come from the plugin's settings,
+  which it reads unsaved as the manifest's defaults.
+
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
 

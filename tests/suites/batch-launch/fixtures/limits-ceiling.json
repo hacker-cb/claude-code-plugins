@@ -1,0 +1,42 @@
+{
+  "home": "both",
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/profiles/main",
+          "is_source": true
+        },
+        "p": {
+          "cli": "claude",
+          "path": "~/profiles/p"
+        },
+        "p2": {
+          "cli": "claude",
+          "path": "~/profiles/p2"
+        }
+      }
+    },
+    "limits": {
+      "main": {
+        "status": {
+          "fiveHourPct": 80,
+          "weeklyPct": 10
+        }
+      },
+      "p": {
+        "status": {
+          "fiveHourPct": 79,
+          "weeklyPct": 89
+        }
+      },
+      "p2": {
+        "status": {
+          "fiveHourPct": 10,
+          "weeklyPct": 90
+        }
+      }
+    }
+  }
+}

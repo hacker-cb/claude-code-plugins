@@ -1,0 +1,35 @@
+{
+  "home": "both",
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/profiles/main",
+          "is_source": true
+        },
+        "p": {
+          "cli": "claude",
+          "path": "~/profiles/p"
+        }
+      }
+    },
+    "limits": {
+      "main": {
+        "status": {
+          "fiveHourPct": 10,
+          "weeklyPct": 20
+        }
+      },
+      "p": {
+        "status": null,
+        "error": "auth"
+      }
+    },
+    "auth": {
+      "p": {
+        "loggedIn": false
+      }
+    }
+  }
+}
