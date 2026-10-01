@@ -8,7 +8,7 @@
 // it, changes the one key, and replaces the file whole, so a session of that configuration
 // writing at the same moment loses nothing and never reads half a file.
 
-import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync,
+import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync,
   renameSync, rmdirSync, unlinkSync, writeSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -19,8 +19,11 @@ const real = (p) => resolved(p, p);
 
 // The global config file of a configuration: `$CLAUDE_CONFIG_DIR/.claude.json` where that
 // directory is set, `~/.claude.json` where it is not — aimux leaves it unset for its
-// source profile and sets it for every other one.
+// source profile and sets it for every other one. A legacy `.config.json` in the
+// configuration's directory is the one Claude Code reads wherever it stands.
 export function configFile(configDir) {
+  const legacy = join(configDir || join(homedir(), '.claude'), '.config.json');
+  if (existsSync(legacy)) return legacy;
   return configDir ? join(configDir, '.claude.json') : join(homedir(), '.claude.json');
 }
 
