@@ -16,6 +16,8 @@ import { runner, text, why } from './forge.mjs';
 
 // Two spellings of one path are one place; `fallback` is what an unresolvable one reads as.
 export const real = (p, fallback = null) => { try { return realpathSync(p); } catch { return fallback; } };
+// A wait that holds this process and nothing else.
+export const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 // --- the login shell
 
@@ -209,6 +211,38 @@ export function agterm(cli, socket) {
     return { ok: true, result: doc.result };
   };
   const same = (a, b) => typeof a === 'string' && typeof b === 'string' && a.toUpperCase() === b.toUpperCase();
+  const where = (match, preferred) => {
+    const list = call(['window', 'list']);
+    if (!list.ok) return { read: false, why: `window list: ${list.why}` };
+    const ids = (list.result && Array.isArray(list.result.windows) ? list.result.windows : [])
+      .map((w) => w && w.id).filter((w) => typeof w === 'string');
+    const order = [...ids.filter((w) => same(w, preferred)), ...ids.filter((w) => !same(w, preferred))];
+    let unread = 0;
+    for (const w of order) {
+      const tree = call(['tree', '--window', w]);
+      if (!tree.ok) { unread += 1; continue; }
+      const spaces = tree.result && tree.result.tree && Array.isArray(tree.result.tree.workspaces)
+        ? tree.result.tree.workspaces : [];
+      for (const ws of spaces) {
+        for (const s of Array.isArray(ws && ws.sessions) ? ws.sessions : []) {
+          if (s && match(s)) {
+            return { read: true, found: true, window: w, workspace: ws.id || null,
+              session: { id: s.id, cwd: typeof s.cwd === 'string' ? s.cwd : null,
+                status: typeof s.status === 'string' ? s.status : null,
+                // A program in the foreground, or a bare shell holding the pane.
+                program: Array.isArray(s.foreground) && s.foreground.length > 0,
+                shell: typeof s.foregroundShell === 'string',
+                // Another pane beside the main one: closing the session closes it too.
+                split: s.hasSplit === true,
+                // A question agterm holds open for the user, whatever the agent's status says.
+                asking: Boolean(s.ask) } };
+          }
+        }
+      }
+    }
+    // A window whose tree did not answer may hold it: absent from what was read is not absent.
+    return unread ? { read: false, why: `${unread} window tree(s) did not answer` } : { read: true, found: false };
+  };
   return {
     call,
     version: () => {
@@ -219,32 +253,11 @@ export function agterm(cli, socket) {
     // shell was told about first and in every other window after — that variable is
     // fixed at spawn and goes stale when the session is moved. Only the session asked
     // for is looked at; nothing else in the tree is read.
-    find: (id, preferred) => {
-      const list = call(['window', 'list']);
-      if (!list.ok) return { read: false, why: `window list: ${list.why}` };
-      const ids = (list.result && Array.isArray(list.result.windows) ? list.result.windows : [])
-        .map((w) => w && w.id).filter((w) => typeof w === 'string');
-      const order = [...ids.filter((w) => same(w, preferred)), ...ids.filter((w) => !same(w, preferred))];
-      let unread = 0;
-      for (const w of order) {
-        const tree = call(['tree', '--window', w]);
-        if (!tree.ok) { unread += 1; continue; }
-        const spaces = tree.result && tree.result.tree && Array.isArray(tree.result.tree.workspaces)
-          ? tree.result.tree.workspaces : [];
-        for (const ws of spaces) {
-          for (const s of Array.isArray(ws && ws.sessions) ? ws.sessions : []) {
-            if (s && same(s.id, id)) {
-              return { read: true, found: true, window: w, workspace: ws.id || null,
-                session: { id: s.id, cwd: typeof s.cwd === 'string' ? s.cwd : null,
-                  status: typeof s.status === 'string' ? s.status : null } };
-            }
-          }
-        }
-      }
-      // A window whose tree did not answer may hold it: absent from what was read is
-      // not absent.
-      return unread ? { read: false, why: `${unread} window tree(s) did not answer` }
-        : { read: true, found: false };
+    find: (id, preferred) => where((s) => same(s.id, id), preferred),
+    // The session standing in a directory — what a launch whose answer got lost looks for.
+    findIn: (dir, preferred) => {
+      const want = real(dir, dir);
+      return where((s) => typeof s.cwd === 'string' && real(s.cwd, s.cwd) === want, preferred);
     },
   };
 }
