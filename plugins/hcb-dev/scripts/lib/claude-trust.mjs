@@ -8,13 +8,14 @@
 // it, changes the one key, and replaces the file whole, so a session of that configuration
 // writing at the same moment loses nothing and never reads half a file.
 
-import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync,
+import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync,
   renameSync, rmdirSync, unlinkSync, writeSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { real as resolved, sleep } from './launch-env.mjs';
 
-const real = (p) => { try { return realpathSync(p); } catch { return p; } };
+const real = (p) => resolved(p, p);
 
 // The global config file of a configuration: `$CLAUDE_CONFIG_DIR/.claude.json` where that
 // directory is set, `~/.claude.json` where it is not — aimux leaves it unset for its
@@ -44,7 +45,6 @@ function trustedKey(doc, root) {
 }
 
 const LOCK_WAIT_MS = 5000;
-const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 // `state`: `held` (already trusted there), `shared` (one file for both), `wrote` (carried
 // over), or a refusal — `absent-in-source`, `unread`, `no-config`, `linked`, `locked`.
@@ -95,7 +95,13 @@ export function mirrorTrust({ from, into, root, dryRun = false }) {
     doc.projects[answer.key] = { ...(entry && typeof entry === 'object' ? entry : {}), hasTrustDialogAccepted: true };
     tmp = `${into}.tmp.${process.pid}.${randomBytes(4).toString('hex')}`;
     const fd = openSync(tmp, 'wx', 0o600);
-    try { writeSync(fd, `${JSON.stringify(doc, null, 2)}\n`); fsyncSync(fd); } finally { closeSync(fd); }
+    // Every byte, however many calls it takes: a short write renamed over the file would
+    // replace the user's configuration with half of it.
+    try {
+      const buf = Buffer.from(`${JSON.stringify(doc, null, 2)}\n`, 'utf8');
+      for (let off = 0; off < buf.length;) off += writeSync(fd, buf, off, buf.length - off);
+      fsyncSync(fd);
+    } finally { closeSync(fd); }
     renameSync(tmp, into);
     tmp = null;
   } catch (e) {

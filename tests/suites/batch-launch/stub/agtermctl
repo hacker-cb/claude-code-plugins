@@ -4,7 +4,7 @@
 # workspaces — a window with no tree there answers an error, as one that could not be read
 # does. `session new` keeps its arguments beside the marker (`.agterm-new`) and runs its
 # `--command` there and then — unless `hold`, a session that never gets past its first
-# screen — answering `new_id`; `session close` keeps its arguments (`.agterm-close`) and
+# screen — answering `new_id`, or failing outright where `new_fails`; `session close` keeps its arguments (`.agterm-close`) and
 # takes the session out of every tree read after it.
 set -u
 touch "${STUB_MARKER_FILE:-/dev/null}"
@@ -26,6 +26,9 @@ case "${1:-} ${2:-}" in
       '{ok: true, result: {tree: {workspaces: (.agterm.trees[$w] | map(.sessions |= map(select(.id as $i | ($gone | any(.[]; . == $i)) | not))))}}}' "$env_json" ;;
   "session new")
     printf '%s\n' "$@" >> "$STUB_MARKER_FILE.agterm-new"
+    if [ "$(jq -r '.agterm.new_fails // false' "$env_json")" = true ]; then
+      echo "agtermctl: the control socket closed before answering" >&2; exit 1
+    fi
     cmd=""; prev=""
     for a in "$@"; do [ "$prev" = --command ] && cmd=$a; prev=$a; done
     if [ "$(jq -r '.agterm.hold // false' "$env_json")" != true ]; then

@@ -25,11 +25,14 @@
 # A word's %20 is a space and %25 a % — a manifest splits its words on whitespace.
 #
 # The answer is printed compacted to one line, after whatever went to stderr, with HOME
-# written `@home`, the repository's commit `@pin`, and every session id `@uuid`.
+# written `@home`, the repository's commit `@pin`, the cases' fixed session id `@fixed-session`,
+# and every other session id `@uuid`.
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/batch-launch-suite.XXXXXX") || exit 125
+# One spelling of it: a TMPDIR ending in `/` doubles the slash, and the masks below match text.
+tmp=$(cd "$tmp" && pwd) || exit 125
 holder=""
 trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; rm -rf "$tmp"' EXIT
 home="$tmp/home"
@@ -70,7 +73,7 @@ run_in="$PWD"
 pin=""
 if [ -n "$envelope" ] && [ "$(jq -r '.repo // false' "$envelope")" = true ]; then
   repo="$home/repo"
-  { git init -q "$repo" && git -C "$repo" -c user.name=suite -c user.email=suite@example.invalid \
+  { git init -q "$repo" && git -C "$repo" -c user.name=suite -c user.email=suite@example.invalid -c commit.gpgsign=false \
       commit -q --allow-empty -m one; } || exit 125
   pin=$(git -C "$repo" rev-parse HEAD) || exit 125
   run_in="$repo"
@@ -112,6 +115,7 @@ mask() {
   local real_home
   real_home=$(cd "$home" && pwd -P)
   sed -e "s#$real_home#@home#g" -e "s#$home#@home#g" ${pin:+-e "s#$pin#@pin#g"} \
+    -e 's#11111111-2222-4333-8444-555555555555#@fixed-session#g' \
     -e 's#[0-9a-f]\{8\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}#@uuid#g'
 }
 mask < "$tmp/err"
