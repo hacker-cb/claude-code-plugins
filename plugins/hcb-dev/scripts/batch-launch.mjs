@@ -15,7 +15,7 @@
 //        node batch-launch.mjs launch --batch <epic>/<id> --pin <sha> --mode agterm|agterm-aimux
 //             [<settings>] [--profile <name>] [--held ...] [--wait <s>] [--dry-run]  < the order
 //        node batch-launch.mjs check --batch <epic>/<id> --session <uuid> [--agterm <id>]
-//        node batch-launch.mjs relaunch --batch <epic>/<id> --session <uuid> --title <title>
+//        node batch-launch.mjs relaunch --batch <epic>/<id> --session <uuid> --agterm <id> --title <title>
 //             --mode agterm|agterm-aimux [<settings>] [--profile <name>] [--wait <s>]  < the nudge
 //        node batch-launch.mjs close --batch <epic>/<id> --agterm <id> [--dry-run]
 //   <settings>: --model-config <v> --effort-config <v> --profiles <v> --ceiling-5h <v>
@@ -25,11 +25,11 @@
 // Exit 0 whenever an answer is printed, `"read": false` with a `reason` included. Exit 2
 // only for a call this script cannot act on at all.
 
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runner, text, worktrees, writeAll } from './lib/forge.mjs';
 import { agterm, aimuxCore, aimuxRun, interpreterOn, loginEnv, loginShell, onPath, real, sleep } from './lib/launch-env.mjs';
@@ -466,7 +466,10 @@ const q = (v) => `'${String(v).replace(/'/g, `'\\''`)}'`;
 // would read as more than one path.
 const commandSafe = (v) => typeof v === 'string' && v !== '' && !/['"$`\\\n\r]/.test(v);
 const git = runner(process.cwd(), 'git');
-const ownDir = () => process.env.CLAUDE_CONFIG_DIR || join(os.homedir(), '.claude');
+// Absolute, since the batch starts in another directory than this session stands in.
+const ownDir = () => (process.env.CLAUDE_CONFIG_DIR ? resolve(process.env.CLAUDE_CONFIG_DIR) : join(os.homedir(), '.claude'));
+const defaultDir = () => join(os.homedir(), '.claude');
+const sameDir = (a, b) => real(a, a) === real(b, b);
 const configDirs = () => [...new Set([ownDir(), ...answer.aimux.profiles.map((p) => p.configDir).filter(Boolean)])];
 
 // The repository's main tree, its worktrees, and the batch's own place among them.
@@ -492,8 +495,15 @@ function occupancy(path) {
     if (seen.has(reg)) continue;
     seen.add(reg);
     // A configuration no session has ever run under keeps no registry, and has no session
-    // to register; this session's own is read whatever stands there.
-    if (dir !== ownDir() && !existsSync(reg)) continue;
+    // to register; this session's own is read whatever stands there. A registry that cannot
+    // be looked at is unread, not absent.
+    if (dir !== ownDir()) {
+      try { lstatSync(reg); } catch (e) {
+        if (e.code === 'ENOENT') continue;
+        unread = `the session registry under ${dir} could not be looked at (${e.code})`;
+        continue;
+      }
+    }
     const r = spawnSync(process.execPath, [script], { encoding: 'utf8', timeout: 60000, maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, CLAUDE_CONFIG_DIR: dir } });
     let doc = null;
@@ -543,13 +553,13 @@ function placement(out) {
 // Reads what the way needs, then whether it answers. A profile the user named outranks the
 // settings' list and the limits' pick; the aimux way still has to be able to run at all.
 async function settleWay(dryRun) {
+  // Nothing is read for a way that cannot run at all.
+  if (runnable) return runnable;
+  const self = answer.aimux.profiles.find((p) => p.self);
   if (call.mode === 'agterm-aimux') {
-    const self = answer.aimux.profiles.find((p) => p.self);
-    await computeLimits(call.profile ? new Set([call.profile, ...(self ? [self.profile] : [])]) : null, !dryRun);
-  } else {
-    const self = answer.aimux.profiles.find((p) => p.self);
-    if (answer.aimux.path) await computeLimits(new Set(self ? [self.profile] : []), !dryRun);
-  }
+    if (aimuxBlock) return aimuxBlock;
+    await computeLimits(call.profile ? new Set([call.profile]) : null, !dryRun);
+  } else if (answer.aimux.path) await computeLimits(new Set(self ? [self.profile] : []), !dryRun);
   evaluateModes();
   if (call.mode === 'agterm-aimux' && call.profile) return runnable ?? aimuxBlock;
   const m = answer.modes.find((x) => x.mode === call.mode);
@@ -558,8 +568,10 @@ async function settleWay(dryRun) {
 
 function trust(out, prof, root, dryRun) {
   if (call.mode !== 'agterm-aimux' || prof.self) return true;
-  out.trust = mirrorTrust({ from: configFile(process.env.CLAUDE_CONFIG_DIR || null),
-    into: configFile(prof.source ? null : prof.configDir), root, dryRun });
+  // The file the batch's claude will read: aimux's source profile runs with no
+  // CLAUDE_CONFIG_DIR where its directory is the default, and the launch sets one where not.
+  out.trust = mirrorTrust({ from: configFile(process.env.CLAUDE_CONFIG_DIR ? ownDir() : null),
+    into: configFile(prof.source && sameDir(prof.configDir, defaultDir()) ? null : prof.configDir), root, dryRun });
   const ok = ['held', 'shared', 'would-write'].includes(out.trust.state) || (out.trust.state === 'wrote' && out.trust.wrote === true);
   if (!ok) out.reason = `the profile does not trust the repository, and that trust was not carried over: ${out.trust.why || out.trust.state}`;
   return ok;
@@ -577,7 +589,7 @@ function launchFile(dir, wt, place, session, resume, profile) {
   // directory where that is not the default, since aimux sets none for it.
   if (call.mode === 'agterm') {
     lines.push(process.env.CLAUDE_CONFIG_DIR ? `CLAUDE_CONFIG_DIR=${q(place.configDir)}; export CLAUDE_CONFIG_DIR` : 'unset CLAUDE_CONFIG_DIR');
-  } else if (place.prof.source && real(place.configDir, place.configDir) !== real(join(os.homedir(), '.claude'), join(os.homedir(), '.claude'))) {
+  } else if (place.prof.source && !sameDir(place.configDir, defaultDir())) {
     lines.push(`CLAUDE_CONFIG_DIR=${q(place.configDir)}; export CLAUDE_CONFIG_DIR`);
   }
   const tail = [resume ? '--resume' : '--session-id', q(session), '--model', q(settings.model.value),
@@ -697,6 +709,7 @@ function inspect(out) {
   const tree = batchTree();
   if (tree.why) { out.reason = tree.why; return null; }
   const { wt, known } = tree;
+  out.root = tree.root;
   out.worktree = { path: wt, exists: existsSync(wt), registered: Boolean(known) && !known.prunable };
   const who = occupancy(wt);
   out.live = who.occupied;
@@ -715,14 +728,15 @@ function inspect(out) {
       const f = agterm(agtermCli, answer.agterm.socket).find(call.agterm, answer.agterm.window);
       out.agterm = f.read ? { read: true, present: f.found, session: call.agterm, window: f.found ? f.window : null,
         cwd: f.found ? f.session.cwd : null, status: f.found ? f.session.status : null,
-        // A session agterm restored as a bare shell: its claude is gone, its place stays.
+        // A session agterm restored as a bare shell: its claude is gone, its place stays —
+        // for `close` to clear before anything starts there again.
         idle: f.found ? (!f.session.program && f.session.shell) : null } : { read: false, why: f.why };
     }
   }
   // Absence only where every reading answered: an unread registry or tree is not a
   // session gone, and resuming one still running puts two processes on one transcript.
   out.relaunchable = out.live === false && out.transcript.found && out.worktree.exists && out.worktree.registered
-    && (!call.agterm || (out.agterm.read === true && (out.agterm.present === false || out.agterm.idle === true)));
+    && (!call.agterm || (out.agterm.read === true && out.agterm.present === false));
   return wt;
 }
 
@@ -747,14 +761,7 @@ async function relaunch() {
   if (refused) { out.reason = `${call.mode} does not answer: ${refused}`; done(out); }
   const place = placement(out);
   if (place.why) { out.reason = place.why; done(out); }
-  if (!trust(out, place.prof, batchTree().root, false)) done(out);
-  if (seen.agterm && seen.agterm.idle) {
-    // The bare shell agterm left in the batch's place goes before the session that resumes.
-    const ag = agterm(agtermCli, answer.agterm.socket);
-    const c = ag.call(['session', 'close', '--target', call.agterm, '--window', seen.agterm.window]);
-    out.ran.push(`agtermctl session close --target ${call.agterm} --window ${seen.agterm.window}`);
-    if (!c.ok) { out.reason = `the idle session in the batch's place did not close: ${c.why}`; done(out); }
-  }
+  if (!trust(out, place.prof, seen.root, false)) done(out);
   open(out, wt, place, call.session, true, seen.transcript);
   if (out.agterm) out.record = record(out, wt);
   out.read = true;
@@ -777,6 +784,7 @@ async function close() {
   // Closing somebody else's session is worse than leaving this one open.
   if (!f.session.cwd || real(f.session.cwd, f.session.cwd) !== real(wt, wt)) { out.reason = `the session stands in ${f.session.cwd || 'no directory agterm names'}, not in the batch's worktree`; done(out); }
   if (f.session.status === 'blocked') { out.reason = 'the session is waiting on the user'; done(out); }
+  if (f.session.split) { out.reason = 'the session holds a second pane, which closing it would close too'; done(out); }
   if (out.dryRun) { out.read = true; done(out); }
   const r = ag.call(['session', 'close', '--target', call.agterm, '--window', f.window]);
   out.ran.push(`agtermctl session close --target ${call.agterm} --window ${f.window}`);

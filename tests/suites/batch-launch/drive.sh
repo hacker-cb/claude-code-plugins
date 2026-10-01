@@ -42,7 +42,8 @@ rm -f "${STUB_MARKER_FILE:?the runner sets STUB_MARKER_FILE}".agterm-*
 envelope=""
 if [ -n "${STUB_ENVELOPE:-}" ]; then
   envelope="$tmp/envelope.json"
-  sed "s#@home#$home#g" "$STUB_ENVELOPE" > "$envelope" || exit 125
+  raw=$(cat "$STUB_ENVELOPE") || exit 125
+  printf '%s\n' "${raw//@home/"$home"}" > "$envelope" || exit 125
   name=$(jq -r '.home // empty' "$envelope") || exit 125
   if [ -n "$name" ]; then cp -R "$here/homes/$name/." "$home/" || exit 125; fi
   jq '.aimux // {}' "$envelope" > "$home/aimux.json" || exit 125
@@ -55,7 +56,10 @@ if [ -n "${STUB_ENVELOPE:-}" ]; then
     [ -n "$link" ] || continue
     mkdir -p "$home/$(dirname "$link")" && ln -s "$(jq -r --arg l "$link" '.links[$l]' "$envelope")" "$home/$link" || exit 125
   done < <(jq -r '.links // {} | keys[]' "$envelope")
-  for d in $(jq -r '.dirs // [] | .[]' "$envelope"); do mkdir -p "$home/$d" || exit 125; done
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    mkdir -p "$home/$d" || exit 125
+  done < <(jq -r '.dirs // [] | .[]' "$envelope")
 fi
 if [ -f "$home/login/path" ]; then
   # `@node`: a directory holding the suite's node and nothing else — what puts `node` on a
@@ -69,19 +73,21 @@ if [ -f "$home/login/path" ]; then
   printf '%s\n' "${path//@node/"$node_dir"}" > "$home/login/path" || exit 125
 fi
 
+# The repository below is built under the case's own HOME, with no hook of the machine's.
+export HOME="$home" GIT_CONFIG_NOSYSTEM=1
 run_in="$PWD"
 pin=""
 if [ -n "$envelope" ] && [ "$(jq -r '.repo // false' "$envelope")" = true ]; then
   repo="$home/repo"
-  { git init -q "$repo" && git -C "$repo" -c user.name=suite -c user.email=suite@example.invalid -c commit.gpgsign=false \
-      commit -q --allow-empty -m one; } || exit 125
+  { git init -q "$repo" && git -C "$repo" -c core.hooksPath=/dev/null -c user.name=suite \
+      -c user.email=suite@example.invalid -c commit.gpgsign=false commit -q --allow-empty -m one; } || exit 125
   pin=$(git -C "$repo" rev-parse HEAD) || exit 125
   run_in="$repo"
   slug=$(jq -r '.slug // "t1-x1"' "$envelope")
   case "${PREWT:-}" in
     '') ;;
     clean|dirty)
-      git -C "$repo" worktree add -q --detach "$repo/.claude/worktrees/$slug" HEAD || exit 125
+      git -C "$repo" -c core.hooksPath=/dev/null worktree add -q --detach "$repo/.claude/worktrees/$slug" HEAD || exit 125
       if [ "$PREWT" = dirty ]; then echo x > "$repo/.claude/worktrees/$slug/stray"; fi ;;
     *) echo "drive: PREWT is clean or dirty, not '$PREWT'" >&2; exit 125 ;;
   esac

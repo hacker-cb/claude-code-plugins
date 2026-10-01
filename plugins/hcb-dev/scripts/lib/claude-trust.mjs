@@ -77,8 +77,12 @@ export function mirrorTrust({ from, into, root, dryRun = false }) {
 
   const lock = `${into}.lock`;
   const deadline = Date.now() + LOCK_WAIT_MS;
+  // The lock this run made, by its inode: Claude Code takes an old enough lock for stale and
+  // replaces it, and a write under a lock no longer ours would undo what its holder wrote.
+  let ours = null;
+  const stillOurs = () => { try { return lstatSync(lock).ino === ours; } catch { return false; } };
   for (;;) {
-    try { mkdirSync(lock); break; } catch (e) {
+    try { mkdirSync(lock); ours = lstatSync(lock).ino; break; } catch (e) {
       if (e.code !== 'EEXIST') { answer.state = 'unread'; answer.why = `the lock could not be taken (${e.code})`; return answer; }
       // Never removed: a lock another process holds, stale or not, is not this one's.
       if (Date.now() > deadline) { answer.state = 'locked'; answer.why = `${lock} stayed held`; return answer; }
@@ -94,6 +98,7 @@ export function mirrorTrust({ from, into, root, dryRun = false }) {
     const entry = doc.projects[answer.key];
     doc.projects[answer.key] = { ...(entry && typeof entry === 'object' ? entry : {}), hasTrustDialogAccepted: true };
     tmp = `${into}.tmp.${process.pid}.${randomBytes(4).toString('hex')}`;
+    if (!stillOurs()) { answer.state = 'locked'; answer.why = 'the lock was taken over before the write'; return answer; }
     const fd = openSync(tmp, 'wx', 0o600);
     // Every byte, however many calls it takes: a short write renamed over the file would
     // replace the user's configuration with half of it.
@@ -102,6 +107,7 @@ export function mirrorTrust({ from, into, root, dryRun = false }) {
       for (let off = 0; off < buf.length;) off += writeSync(fd, buf, off, buf.length - off);
       fsyncSync(fd);
     } finally { closeSync(fd); }
+    if (!stillOurs()) { answer.state = 'locked'; answer.why = 'the lock was taken over before the write'; return answer; }
     renameSync(tmp, into);
     tmp = null;
   } catch (e) {
@@ -110,7 +116,7 @@ export function mirrorTrust({ from, into, root, dryRun = false }) {
     return answer;
   } finally {
     if (tmp) { try { unlinkSync(tmp); } catch { /* gone */ } }
-    try { rmdirSync(lock); } catch { /* gone */ }
+    if (stillOurs()) { try { rmdirSync(lock); } catch { /* gone */ } }
   }
   const back = readJson(into);
   answer.state = 'wrote';

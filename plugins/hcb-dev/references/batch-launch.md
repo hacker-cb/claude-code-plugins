@@ -72,7 +72,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 | `started` | `true` the session wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled |
 | `profile` | the profile and `from`: the user's `word` or the `spread`; `notes` says where a word overrode a ceiling |
 | `worktree` | cut detached at the pin under the repository's `.claude/worktrees/<epic>-<id>`, or a clean idle one there `reused` |
-| `trust` | the trust this session's configuration gives the repository, carried to the profile: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, by running `aimux run <profile>` once in the repository |
+| `trust` | the trust this session's configuration gives the repository, carried to the profile: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
 | `record` | what goes into the batch's ledger row, whole |
 
 ## While it runs, and after a restart
@@ -84,9 +84,9 @@ node "<plugin root>/scripts/batch-launch.mjs" check --batch <epic>/<id> --sessio
 `live` is `true` while a session stands in the batch's worktree under any configuration
 here, `null` where a registry did not read. `stalled` names the subscription window a session
 stopped on and when it resets: say so to the user, with the batch and the reset time.
-`agterm.idle` is a session agterm restored as a bare shell — its place kept, its claude gone.
-`relaunchable` is `true` only where every reading answered and nothing but such a shell holds
-the batch.
+`agterm.idle` is a session agterm restored as a bare shell — its place kept, its claude gone:
+`close` it first, then check again. `relaunchable` is `true` only where every reading
+answered and nothing holds the batch.
 
 A row from `launched` to `building`, or `blocked` from one of them, whose session is gone
 after a restart is resumed — on `relaunchable` alone, never on a session merely not seen:
@@ -96,9 +96,9 @@ node "<plugin root>/scripts/batch-launch.mjs" relaunch --batch <epic>/<id> --ses
   --title "<its title>" --mode agterm|agterm-aimux [--profile <name>] <launch settings> < <the nudge's file>
 ```
 
-The way and the profile are the record's; onto aimux the profile is always named — the
-recorded one, or another where the user's word or the recorded one's ceiling moves it. A bare
-shell in the batch's place is closed before the resumed session opens.
+The way, the profile, the model and the effort are the record's — the last two passed as
+`--model` and `--effort`; onto aimux the profile is always named, the recorded one or another
+where the user's word or the recorded one's ceiling moves it.
 
 The nudge, one paragraph in the epic's language: the batch's title in backticks, that its
 session was restored after a restart, the name of the master it reports to, and to go on
@@ -116,6 +116,6 @@ node "<plugin root>/scripts/batch-launch.mjs" close --batch <epic>/<id> --agterm
 ```
 
 `closed` reads the tree again. It refuses a session standing anywhere but the batch's
-worktree, and one waiting on the user. For a chip, the session is archived instead, where
+worktree, one waiting on the user, and one holding a second pane. For a chip, the session is archived instead, where
 the host offers `archive_session`. The transcript and the worktree stay. Without that word,
 closing stays an ask in the report.

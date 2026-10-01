@@ -231,7 +231,9 @@ export function agterm(cli, socket) {
                 status: typeof s.status === 'string' ? s.status : null,
                 // A program in the foreground, or a bare shell holding the pane.
                 program: Array.isArray(s.foreground) && s.foreground.length > 0,
-                shell: typeof s.foregroundShell === 'string' } };
+                shell: typeof s.foregroundShell === 'string',
+                // Another pane beside the main one: closing the session closes it too.
+                split: s.hasSplit === true } };
           }
         }
       }
@@ -251,6 +253,9 @@ export function agterm(cli, socket) {
     // for is looked at; nothing else in the tree is read.
     find: (id, preferred) => where((s) => same(s.id, id), preferred),
     // The session standing in a directory — what a launch whose answer got lost looks for.
-    findIn: (dir, preferred) => where((s) => typeof s.cwd === 'string' && real(s.cwd, s.cwd) === real(dir, dir), preferred),
+    findIn: (dir, preferred) => {
+      const want = real(dir, dir);
+      return where((s) => typeof s.cwd === 'string' && real(s.cwd, s.cwd) === want, preferred);
+    },
   };
 }
