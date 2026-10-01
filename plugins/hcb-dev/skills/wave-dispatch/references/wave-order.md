@@ -37,8 +37,8 @@ the end of this order goes out first, and building starts once it has.
 Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. <By way — launched: the master cut it for you, detached at
 the base pin below, at <its path>; verify you stand in it before the first write,
-and cut no other<, where this batch stacks on batch `<epic>/<id>`: your branch in it
-starts from the branch that batch is building on, cut before you read anything>. Chip or paste: verify you are in a worktree of your own before
+and cut no other<, where this batch stacks on batch `<epic>/<id>`: in it, create your
+own branch from the branch that batch has published, before you read anything>. Chip or paste: verify you are in a worktree of your own before
 the first write; where you are not, cut your own worktree from <the base | the
 branch batch `<epic>/<id>` is building on, where this batch stacks on it>.> <Or:
 no checkout is touched.>

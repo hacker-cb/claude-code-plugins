@@ -109,7 +109,7 @@ One way per batch, as the preflight settled it:
   of its own, which the order has the receiver verify; **prompt** the wave order.
   The click is the user's, and its timing with it — say so in the launch report.
 - **By hand**, where neither answers: the same order as a fenced block, one per
-  batch, the delivery form of `session-prompts.md`.
+  batch, the delivery form of `session-prompts.md` — its row `chipped`, as a chip's is.
 
 ## The wave order
 

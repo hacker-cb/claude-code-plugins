@@ -102,11 +102,11 @@ whether deleting it changes what anyone does next.
    (`<remote>/<branch>@<sha>`); the user's word on how this wave goes out, where one stands; and when last updated.
 2. **batches** — one row each: id, topic, the issues and where each now stands, the order's ask and
    terminal deliverable in its own words (the acceptance contract — a return is judged against this
-   row, not against recall), the file zone its order drew, the order's base pin, how it went out — its chip, or the launch's record — the session's
+   row, not against recall), the file zone its order drew, the order's base pin, how it went out — a chip, a block to paste, or the launch's record — the session's
    name, state, result coordinates. A batch runs `planned → chipped | launched → started → confirmed → building
    → completed(<mode> — request merged, merged locally, tracker state delivered, verdict delivered)
    → accepted`, standing at `blocked(<condition>)` for as long as something holds it; a state is
-   advanced, never skipped silently; a `chipped` row with no session is a click the user owes, never a session lost or a batch failed; a `launched` one is this session's to `check`, and a session closed after acceptance is a journal line. It **ends** in one of three, and the three carry equal weight:
+   advanced, never skipped silently; `chipped` is a batch handed to the user to start, by chip or by paste, and such a row with no session is a start the user owes, never a session lost or a batch failed; a `launched` one is this session's to `check`, and a session closed after acceptance is a journal line. It **ends** in one of three, and the three carry equal weight:
    - `released` — acceptance passed, the work landed, the batch was let go;
    - `withdrawn(<reason>)` — called off, from wherever it stood;
    - `failed(<what stands>)` — it did not come off, from wherever it stood; what stands is named.

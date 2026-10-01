@@ -7,7 +7,7 @@ fills the slots belongs to the skill that produces the prompt.
 ## Three carriers, one envelope
 
 A prompt crosses as a paste block the user carries by hand, as the starting prompt
-of a session a chip or a launch started, or as a message sent between live sessions. Everything
+of a session started by a chip or a launch, or as a message sent between live sessions. Everything
 here holds for all three: **the text is the whole channel, and what is not written
 in it does not arrive.** Which carrier moves a given prompt is chosen where the
 prompt is produced.
