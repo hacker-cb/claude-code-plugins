@@ -8,9 +8,9 @@
           "path": "~/profiles/main",
           "is_source": true
         },
-        "p": {
+        "work account": {
           "cli": "claude",
-          "path": "~/profiles/p"
+          "path": "~/profiles/work"
         }
       }
     },
@@ -18,20 +18,15 @@
       "main": {
         "status": {
           "fiveHourPct": 10,
-          "weeklyPct": 20
+          "weeklyPct": 10
         }
       },
-      "p": {
-        "status": null
+      "work account": {
+        "status": {
+          "fiveHourPct": 30,
+          "weeklyPct": 30
+        }
       }
-    },
-    "auth": {
-      "p": {
-        "loggedIn": false
-      }
-    },
-    "classify": {
-      "p": "none"
     }
   }
 }

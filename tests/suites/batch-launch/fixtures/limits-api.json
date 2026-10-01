@@ -8,9 +8,9 @@
           "path": "~/profiles/main",
           "is_source": true
         },
-        "p": {
+        "gw": {
           "cli": "claude",
-          "path": "~/profiles/p"
+          "path": "~/profiles/gw"
         }
       }
     },
@@ -18,20 +18,15 @@
       "main": {
         "status": {
           "fiveHourPct": 10,
-          "weeklyPct": 20
+          "weeklyPct": 10
         }
       },
-      "p": {
+      "gw": {
         "status": null
       }
     },
-    "auth": {
-      "p": {
-        "loggedIn": false
-      }
-    },
     "classify": {
-      "p": "none"
+      "gw": "api"
     }
   }
 }

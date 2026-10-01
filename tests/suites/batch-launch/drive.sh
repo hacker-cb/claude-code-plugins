@@ -9,6 +9,8 @@
 # that stub shell. The envelope's `agterm` is the agtermctl stub's. A case refused before
 # anything runs names `-` and gets an empty home.
 #
+# A word's %20 is a space and %25 a % — a manifest splits its words on whitespace.
+#
 # The answer is printed compacted to one line, after whatever went to stderr, so a case's
 # fragments can name a field and its value together.
 set -u
@@ -29,11 +31,14 @@ if [ -f "$home/login/path" ]; then
   # beside node in an nvm or Homebrew directory.
   node_dir="$tmp/node"
   mkdir -p "$node_dir" && ln -s "$(command -v node)" "$node_dir/node" || exit 125
-  sed -e "s#@root#$root#g" -e "s#@node#$node_dir#g" "$home/login/path" > "$tmp/path" \
-    && mv "$tmp/path" "$home/login/path" || exit 125
+  path=$(cat "$home/login/path") || exit 125
+  path=${path//@root/$root}
+  printf '%s\n' "${path//@node/$node_dir}" > "$home/login/path" || exit 125
 fi
 export HOME="$home" SHELL="$here/stub/login-sh"
-node "$root/plugins/hcb-dev/scripts/batch-launch.mjs" "$@" > "$tmp/out" 2> "$tmp/err"
+args=()
+for word in "$@"; do word=${word//%20/ }; args+=("${word//%25/%}"); done
+node "$root/plugins/hcb-dev/scripts/batch-launch.mjs" ${args[@]+"${args[@]}"} > "$tmp/out" 2> "$tmp/err"
 code=$?
 cat "$tmp/err"
 if [ "$code" = 0 ] && jq -c . "$tmp/out" 2>/dev/null; then :; else cat "$tmp/out"; fi

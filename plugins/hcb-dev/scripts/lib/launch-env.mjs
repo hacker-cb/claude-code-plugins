@@ -8,7 +8,7 @@
 // a workspace id taken from a variable that had gone stale.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { accessSync, constants, mkdtempSync, readFileSync, realpathSync, rmSync, statSync } from 'node:fs';
+import { accessSync, constants, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync } from 'node:fs';
 import { tmpdir, userInfo } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -48,6 +48,7 @@ export function loginEnv(shell, timeout = 30000) {
   const r = spawnSync(shell, ['-l', '-c', `printf '%s\\n' ${MARK}; exec /usr/bin/env -0`], {
     env, encoding: 'utf8', timeout, maxBuffer: 8 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'],
   });
+  if (r.error && r.error.code === 'ETIMEDOUT') return { read: false, env: null, reason: `the login shell did not finish in ${timeout / 1000} s` };
   if (r.error) return { read: false, env: null, reason: `the login shell did not run (${r.error.code || r.error.message})` };
   if (r.status !== 0) {
     const line = (r.stderr || '').trim().split(/\n/).pop() || 'no detail';
@@ -62,6 +63,9 @@ export function loginEnv(shell, timeout = 30000) {
     if (eq > 0) out[pair.slice(0, eq)] = pair.slice(eq + 1);
   }
   if (!out.PATH) return { read: false, env: null, reason: 'the login shell exported no PATH' };
+  // Where the login stood, not where a program started from it will: carried on, they name
+  // this session's directory to a process running somewhere else.
+  for (const k of ['PWD', 'OLDPWD', 'SHLVL', '_']) delete out[k];
   return { read: true, env: out, reason: null };
 }
 
@@ -97,12 +101,20 @@ const binTargets = (pkg, root) => {
     : (pkg.bin && typeof pkg.bin === 'object' ? pkg.bin : {});
   return Object.values(bin).filter((v) => typeof v === 'string').map((v) => real(join(root, v)));
 };
-const coreEntry = (pkg) => {
-  const e = pkg.exports && typeof pkg.exports === 'object' ? pkg.exports['./core'] : null;
-  if (typeof e === 'string') return e;
-  if (e && typeof e === 'object') return e.import || e.default || null;
-  return null;
-};
+// An `exports` entry is a path, or conditions over paths, nested as deep as a package likes.
+const pick = (e) => (typeof e === 'string' ? e
+  : e && typeof e === 'object' && !Array.isArray(e) ? pick(e.import ?? e.node ?? e.default) : null);
+const coreEntry = (pkg) => pick(pkg.exports && typeof pkg.exports === 'object' ? pkg.exports['./core'] : null);
+
+// What the executable needs before it runs at all: the interpreter its `#!/usr/bin/env`
+// line names, looked for on the PATH it will run with.
+export function interpreterOn(bin, path) {
+  let head = '';
+  try { head = readFileSync(real(bin, bin), 'utf8').slice(0, 200).split('\n')[0]; } catch { return { read: false, name: null, found: null }; }
+  const m = /^#!\s*\S*\/env\s+(?:-S\s+)?([^\s]+)/.exec(head);
+  if (!m) return { read: true, name: null, found: true };
+  return { read: true, name: m[1], found: onPath(m[1], path) !== null };
+}
 
 export async function aimuxCore(bin) {
   const answer = { read: false, version: null, core: null, reason: null };
@@ -137,14 +149,27 @@ export async function aimuxCore(bin) {
 // directory of its own: aimux records the last profile run in each directory, and the
 // directory this session stands in is the user's. Its own process group, because a
 // timeout has to stop the `claude` aimux started as well as aimux.
-export function aimuxRun(bin, env, args, timeout) {
+// One fixed directory, so aimux's history gains a single entry for it rather than one per
+// run; a directory of the same name somebody else made is not used.
+function runDir() {
+  const dir = join(tmpdir(), 'hcb-aimux-run');
+  try {
+    mkdirSync(dir, { mode: 0o700 });
+  } catch (e) { if (e.code !== 'EEXIST') return { dir: null, why: e.code || e.message }; }
+  try {
+    const st = lstatSync(dir);
+    if (st.isDirectory() && !st.isSymbolicLink() && (typeof process.getuid !== 'function' || st.uid === process.getuid())) return { dir, temp: false };
+  } catch { /* fall through */ }
+  try { return { dir: mkdtempSync(join(tmpdir(), 'hcb-aimux-')), temp: true }; } catch (e) { return { dir: null, why: e.code || e.message }; }
+}
+
+export function aimuxRun(bin, env, args, timeout, ran) {
+  if (ran) ran.push(`aimux run ${args.map((a) => (a === '' ? '""' : a)).join(' ')}`);
   return new Promise((done) => {
-    let cwd;
-    try { cwd = mkdtempSync(join(tmpdir(), 'hcb-aimux-')); } catch (e) {
-      done({ ok: false, code: null, out: '', why: `no directory to run it in (${e.code || e.message})` });
-      return;
-    }
-    const end = (r) => { try { rmSync(cwd, { recursive: true, force: true }); } catch { /* left behind */ } done(r); };
+    const where = runDir();
+    if (!where.dir) { done({ ok: false, code: null, out: '', why: `no directory to run it in (${where.why})` }); return; }
+    const cwd = where.dir;
+    const end = (r) => { if (where.temp) { try { rmSync(cwd, { recursive: true, force: true }); } catch { /* left behind */ } } done(r); };
     let child;
     try {
       child = spawn(bin, ['run', ...args], { env, cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -160,7 +185,7 @@ export function aimuxRun(bin, env, args, timeout) {
     child.on('error', (e) => { clearTimeout(timer); end({ ok: false, code: null, out, why: `did not start (${e.code || e.message})` }); });
     child.on('close', (code, signal) => {
       clearTimeout(timer);
-      end({ ok: code === 0, code, out,
+      end({ ok: code === 0 && !timedOut, code, out,
         why: timedOut ? 'timed out' : code === 0 ? null : signal ? `was killed by ${signal}` : `exited ${code}` });
     });
   });

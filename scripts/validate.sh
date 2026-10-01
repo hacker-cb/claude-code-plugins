@@ -666,9 +666,10 @@ for plugin_dir in plugins/*/; do
     quoted=$(grep -oE "'$uc_re'" "$f" | wc -l | tr -d ' ')
     [ "$all" = "$quoted" ] \
       || err "$f: every \${user_config.KEY} stands single-quoted, as one word — $((all - quoted)) do not"
-    # Single quotes inside double ones are characters, not quoting: the literal reaches bash.
-    grep -qE "\"'$uc_re|$uc_re'\"" "$f" \
-      && err "$f: a single-quoted \${user_config.KEY} sits inside double quotes, where bash still substitutes it"
+    # Single quotes inside double ones are characters, not quoting, and the literal reaches
+    # bash — so a line carrying a setting carries no double quote at all.
+    grep -F '${user_config.' "$f" | grep -qF '"' \
+      && err "$f: a line carrying \${user_config.KEY} holds a double quote — inside one, bash still substitutes the literal"
     while IFS= read -r key; do
       [ -n "$key" ] || continue
       kind=$(jq -r --arg k "$key" 'if (.userConfig // {}) | has($k) then (if .userConfig[$k].sensitive == true then "sensitive" else "ok" end) else "missing" end' "$manifest" 2>/dev/null)
