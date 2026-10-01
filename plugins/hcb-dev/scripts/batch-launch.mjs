@@ -808,6 +808,8 @@ async function close() {
   if (tree.why) { out.reason = tree.why; done(out); }
   const { wt } = tree;
   out.worktree = wt;
+  // A directory git no longer lists is no batch's: whatever stands in it is not this one.
+  if (!tree.known) { out.reason = 'git registers no worktree at the batch\'s path'; done(out); }
   const ag = agterm(agtermCli, answer.agterm.socket);
   const f = ag.find(call.agterm, answer.agterm.window);
   if (!f.read) { out.reason = `where the session stands is unread: ${f.why}`; done(out); }

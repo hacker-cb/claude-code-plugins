@@ -119,6 +119,6 @@ node "<plugin root>/scripts/batch-launch.mjs" close --batch <epic>/<id> --agterm
 ```
 
 `closed` reads the tree again. It refuses a session standing anywhere but the batch's
-worktree, one waiting on the user, and one holding a second pane. For a chip, the session is archived instead, where
+worktree — one git still registers — one waiting on the user, and one holding a second pane. For a chip, the session is archived instead, where
 the host offers `archive_session`. The transcript and the worktree stay. Without that word,
 closing stays an ask in the report.
