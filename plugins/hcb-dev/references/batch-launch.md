@@ -82,7 +82,8 @@ node "<plugin root>/scripts/batch-launch.mjs" check --batch <epic>/<id> --sessio
 ```
 
 `live` is `true` while a session stands in the batch's worktree under any configuration
-here, `null` where a registry did not read. `stalled` names the subscription window a session
+here, `null` where a registry did not read; `running` is `true` where any process carries the
+session — resumed in another terminal or directory. `stalled` names the subscription window a session
 stopped on and when it resets: say so to the user, with the batch and the reset time.
 `agterm.idle` is a session agterm restored as a bare shell — its place kept, its claude gone:
 `close` it first, then check again. `relaunchable` is `true` only where every reading

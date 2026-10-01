@@ -1,5 +1,7 @@
 {
   "home": "both",
+  "repo": true,
+  "registry": true,
   "agterm": {
     "windows": [
       {
@@ -27,7 +29,15 @@
           "sessions": [
             {
               "id": "example-id-00000001",
-              "cwd": "/repo"
+              "cwd": "@home/repo"
+            },
+            {
+              "id": "example-id-0000000c",
+              "cwd": "@home/repo/.claude/worktrees/t1-x1",
+              "status": "completed",
+              "ask": {
+                "id": "example-id-000000a1"
+              }
             }
           ]
         }
@@ -50,8 +60,10 @@
     },
     "limits": {
       "main": {
-        "status": null,
-        "error": "auth"
+        "status": {
+          "fiveHourPct": 50,
+          "weeklyPct": 50
+        }
       },
       "p": {
         "status": {
@@ -59,10 +71,23 @@
           "weeklyPct": 10
         }
       }
+    }
+  },
+  "files": {
+    ".claude.json": {
+      "projects": {
+        "@home/repo": {
+          "hasTrustDialogAccepted": true,
+          "allowedTools": []
+        }
+      }
     },
-    "auth": {
-      "main": {
-        "loggedIn": false
+    "profiles/p/.claude.json": {
+      "hasCompletedOnboarding": true,
+      "projects": {
+        "/elsewhere": {
+          "hasTrustDialogAccepted": true
+        }
       }
     }
   }

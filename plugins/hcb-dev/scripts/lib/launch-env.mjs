@@ -233,7 +233,9 @@ export function agterm(cli, socket) {
                 program: Array.isArray(s.foreground) && s.foreground.length > 0,
                 shell: typeof s.foregroundShell === 'string',
                 // Another pane beside the main one: closing the session closes it too.
-                split: s.hasSplit === true } };
+                split: s.hasSplit === true,
+                // A question agterm holds open for the user, whatever the agent's status says.
+                asking: Boolean(s.ask) } };
           }
         }
       }

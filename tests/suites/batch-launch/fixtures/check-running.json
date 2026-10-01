@@ -1,5 +1,7 @@
 {
   "home": "both",
+  "repo": true,
+  "registry": true,
   "agterm": {
     "windows": [
       {
@@ -27,7 +29,7 @@
           "sessions": [
             {
               "id": "example-id-00000001",
-              "cwd": "/repo"
+              "cwd": "@home/repo"
             }
           ]
         }
@@ -50,8 +52,10 @@
     },
     "limits": {
       "main": {
-        "status": null,
-        "error": "auth"
+        "status": {
+          "fiveHourPct": 50,
+          "weeklyPct": 50
+        }
       },
       "p": {
         "status": {
@@ -59,11 +63,26 @@
           "weeklyPct": 10
         }
       }
-    },
-    "auth": {
-      "main": {
-        "loggedIn": false
-      }
     }
-  }
+  },
+  "files": {
+    ".claude.json": {
+      "projects": {
+        "@home/repo": {
+          "hasTrustDialogAccepted": true,
+          "allowedTools": []
+        }
+      }
+    },
+    "profiles/p/.claude.json": {
+      "hasCompletedOnboarding": true,
+      "projects": {
+        "/elsewhere": {
+          "hasTrustDialogAccepted": true
+        }
+      }
+    },
+    "profiles/p/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n"
+  },
+  "running": "11111111-2222-4333-8444-555555555555"
 }

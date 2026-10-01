@@ -11,6 +11,8 @@
 #                 directory the script runs in; `@pin` in an argument is its commit
 #   .claude/sessions/  where it says `registry: true`: a live-session registry, empty —
 #                 or holding one live session standing in the directory `occupy` names
+#   running       a process elsewhere carrying the session id it names in its arguments
+#   dirs          directories made once the repository stands
 #   files         the envelope's `files`: each path under HOME written with its content, a
 #                 JSON value as JSON
 # SHELL is the stub login shell, and the envelope's `agterm` is the agtermctl stub's.
@@ -34,7 +36,7 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/batch-launch-suite.XXXXXX") || exit 125
 # One spelling of it: a TMPDIR ending in `/` doubles the slash, and the masks below match text.
 tmp=$(cd "$tmp" && pwd) || exit 125
 holder=""
-trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; rm -rf "$tmp"' EXIT
+trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; rm -rf "$tmp"' EXIT
 home="$tmp/home"
 mkdir -p "$home/login" || exit 125
 # What a stub kept beside the marker belongs to the case that made it, not to the next.
@@ -56,10 +58,6 @@ if [ -n "${STUB_ENVELOPE:-}" ]; then
     [ -n "$link" ] || continue
     mkdir -p "$home/$(dirname "$link")" && ln -s "$(jq -r --arg l "$link" '.links[$l]' "$envelope")" "$home/$link" || exit 125
   done < <(jq -r '.links // {} | keys[]' "$envelope")
-  while IFS= read -r d; do
-    [ -n "$d" ] || continue
-    mkdir -p "$home/$d" || exit 125
-  done < <(jq -r '.dirs // [] | .[]' "$envelope")
 fi
 if [ -f "$home/login/path" ]; then
   # `@node`: a directory holding the suite's node and nothing else — what puts `node` on a
@@ -91,6 +89,19 @@ if [ -n "$envelope" ] && [ "$(jq -r '.repo // false' "$envelope")" = true ]; the
       if [ "$PREWT" = dirty ]; then echo x > "$repo/.claude/worktrees/$slug/stray"; fi ;;
     *) echo "drive: PREWT is clean or dirty, not '$PREWT'" >&2; exit 125 ;;
   esac
+fi
+# `dirs`, once the repository and its worktree stand: a directory inside one of them too.
+if [ -n "$envelope" ]; then
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    mkdir -p "$home/$d" || exit 125
+  done < <(jq -r '.dirs // [] | .[]' "$envelope")
+fi
+# `running`: a process somewhere else carrying that session, as a resume in another
+# terminal does.
+runner_pid=""
+if [ -n "$envelope" ] && [ -n "$(jq -r '.running // empty' "$envelope")" ]; then
+  node -e 'setTimeout(() => {}, 300000)' -- --resume "$(jq -r '.running' "$envelope")" & runner_pid=$!
 fi
 if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ]; then
   mkdir -p "$home/.claude/sessions" || exit 125

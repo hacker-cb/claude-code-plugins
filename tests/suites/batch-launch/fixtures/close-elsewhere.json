@@ -45,7 +45,7 @@
       "profiles": {
         "main": {
           "cli": "claude",
-          "path": "~/profiles/main",
+          "path": "~/.claude",
           "is_source": true
         },
         "p": {

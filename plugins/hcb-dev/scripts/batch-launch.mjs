@@ -29,7 +29,7 @@ import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runner, text, worktrees, writeAll } from './lib/forge.mjs';
 import { agterm, aimuxCore, aimuxRun, interpreterOn, loginEnv, loginShell, onPath, real, sleep } from './lib/launch-env.mjs';
@@ -169,6 +169,8 @@ if (sub === 'launch' || sub === 'relaunch') {
   if (input.trim() === '') die(`the ${sub === 'launch' ? 'order' : 'nudge'} comes on stdin, and none came`);
   // First after `--`, where nothing reads it as a flag — but `claude` would.
   if (input.startsWith('-')) die('the text on stdin starts with `-`, which claude would read as a flag');
+  // A lone lowercase word is what claude and aimux read as a subcommand of theirs.
+  if (/^\s*[a-z][a-z0-9-]*\s*$/.test(input)) die('the text on stdin is one bare word, which claude would read as a subcommand');
   call.text = input;
 }
 if (sub === 'launch') {
@@ -302,7 +304,16 @@ if (answer.aimux.path) {
         const source = p.is_source === true;
         // The source profile runs where Claude Code keeps its configuration by default.
         if (dir === null && source) dir = join(os.homedir(), '.claude');
-        const self = mine ? (dir !== null && real(dir, dir) === mine) : source;
+        // aimux reads a relative path from whatever directory it runs in — the batch's, not
+        // this one — so such a profile has no directory this session can answer for.
+        if (dir !== null && !isAbsolute(dir)) {
+          answer.notes.push(`aimux gives '${name}' the relative path ${text(dir)}, which it would read from the batch's directory`);
+          dir = null;
+        }
+        // This session runs under the source profile only where both stand in the default place.
+        const home = join(os.homedir(), '.claude');
+        const self = mine ? (dir !== null && real(dir, dir) === mine)
+          : source && dir !== null && real(dir, dir) === real(home, home);
         if (self) answer.aimux.self = name;
         answer.aimux.profiles.push({ profile: name, source, configDir: dir, self,
           allowed: settings.profiles.value === null || settings.profiles.value.includes(name) });
@@ -324,7 +335,7 @@ const pct = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 // aimux bounds its own request; this bounds aimux, whose promise is not this script's to trust.
 const PROBE_MS = 8000;
 async function readLimits(name, dir) {
-  if (!dir) return { read: false, why: 'aimux gives this profile no directory' };
+  if (!dir) return { read: false, why: 'aimux gives this profile no directory this session can answer for' };
   let got;
   let timer;
   try {
@@ -517,6 +528,15 @@ function occupancy(path) {
   return occupied ? { occupied: true, why: null } : unread ? { occupied: null, why: unread } : { occupied: false, why: null };
 }
 
+// Whether a process carries the session anywhere — resumed in another terminal, another
+// directory, under another profile: the process table names it in its arguments.
+function running(session) {
+  const r = spawnSync('ps', ['axww', '-o', 'args='], { encoding: 'utf8', timeout: 10000, maxBuffer: 32 * 1024 * 1024 });
+  if (r.status !== 0) return null;
+  const marks = [`--resume ${session}`, `--session-id ${session}`, `--resume=${session}`, `--session-id=${session}`, `-r ${session}`];
+  return (r.stdout || '').split('\n').some((line) => marks.some((m) => line.includes(m)));
+}
+
 // A session's transcript, wherever a configuration keeps its projects; its size and time,
 // so that a resumed session writing to it shows.
 function findTranscript(session, dirs) {
@@ -541,6 +561,7 @@ function placement(out) {
   const name = call.profile ?? (answer.limits && answer.limits.pick.profile);
   const prof = answer.aimux.profiles.find((p) => p.profile === name);
   if (!prof) return { why: name ? `aimux knows no Claude profile '${name}'` : answer.limits.pick.why };
+  if (!prof.configDir) return { why: `aimux gives '${name}' no directory this session can answer for` };
   out.profile = { value: name, from: call.profile ? 'word' : 'spread', configDir: prof.configDir,
     why: call.profile ? null : answer.limits.pick.why };
   const row = answer.limits && answer.limits.profiles.find((r) => r.profile === name);
@@ -561,7 +582,7 @@ async function settleWay(dryRun) {
     await computeLimits(call.profile ? new Set([call.profile]) : null, !dryRun);
   } else if (answer.aimux.path) await computeLimits(new Set(self ? [self.profile] : []), !dryRun);
   evaluateModes();
-  if (call.mode === 'agterm-aimux' && call.profile) return runnable ?? aimuxBlock;
+  if (call.mode === 'agterm-aimux' && call.profile) return null;
   const m = answer.modes.find((x) => x.mode === call.mode);
   return m.answers ? null : m.why;
 }
@@ -625,12 +646,17 @@ function open(out, wt, place, session, resume, before) {
   }
   out.launchDir = dir;
   const ag = agterm(agtermCli, answer.agterm.socket);
+  // What already stood in the worktree, so a lost answer is never read off a session older
+  // than this launch.
+  const already = ag.findIn(wt, answer.agterm.window);
   const made = ag.call(['session', 'new', '--after', answer.agterm.session, '--no-select', '--wait',
     '--cwd', wt, '--name', call.title, '--command', `'${shell}' -l -c 'exec /bin/sh "${file}"'`]);
   out.ran.push(`agtermctl session new --after ${answer.agterm.session} --no-select --wait --cwd ${wt} --name <title> --command '<login shell>' -l -c 'exec /bin/sh "<launch file>"'`);
   if (!made.ok) {
     // An answer lost on the way is no session refused: the tree says whether one opened.
-    const look = ag.findIn(wt, answer.agterm.window);
+    const old = already.read && already.found ? already.session.id : null;
+    let look = ag.findIn(wt, answer.agterm.window);
+    if (look.read && look.found && old && look.session.id === old) look = { read: true, found: false };
     if (look.read && !look.found) {
       try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ }
       out.reason = `agterm opened no session: ${made.why}`;
@@ -643,9 +669,12 @@ function open(out, wt, place, session, resume, before) {
   }
   out.agterm = { session: text(made.result && made.result.id) || null, window: answer.agterm.window, wrote: Boolean(made.result && made.result.id) };
   out.started = null;
-  const moved = (t) => t && (!before || t.size !== before.size || t.lastWrite !== before.lastWrite);
+  const moved = (t) => t && (!before || t.path !== before.path || t.size !== before.size || t.lastWrite !== before.lastWrite);
+  // The profile's own first, then every configuration here: a resume under another profile
+  // writes wherever that one keeps its projects.
+  const dirs = [place.configDir, ...configDirs().filter((d) => d !== place.configDir)];
   for (let i = 0; i <= call.wait; i += 1) {
-    const t = findTranscript(session, [place.configDir]);
+    const t = findTranscript(session, dirs);
     if (moved(t)) { out.transcript = t; out.started = true; break; }
     if (i < call.wait) sleep(1000);
   }
@@ -678,7 +707,8 @@ async function launch() {
     const who = occupancy(wt);
     if (!known.detached || !head.ok || head.out !== call.pin || !dirty.ok || dirty.out !== '' || who.occupied !== false) {
       out.reason = `${wt} is a worktree already, and not one to reuse: ${!known.detached ? 'it has a branch checked out'
-        : head.out !== call.pin ? 'it stands off the pin' : dirty.out !== '' ? 'it holds changes' : who.why || 'a session is in it'}`;
+        : !head.ok || !dirty.ok ? `git did not read it (${head.ok ? dirty.line() : head.line()})`
+          : head.out !== call.pin ? 'it stands off the pin' : dirty.out !== '' ? 'it holds changes' : who.why || 'a session is in it'}`;
       done(out);
     }
     out.worktree.reused = true;
@@ -714,6 +744,7 @@ function inspect(out) {
   const who = occupancy(wt);
   out.live = who.occupied;
   if (who.why) out.notes.push(who.why);
+  out.running = running(call.session);
   const t = findTranscript(call.session, configDirs());
   out.transcript = t ? { found: true, ...t } : { found: false, path: null, size: null, lastWrite: null };
   if (t && answer.aimux.core) {
@@ -735,13 +766,13 @@ function inspect(out) {
   }
   // Absence only where every reading answered: an unread registry or tree is not a
   // session gone, and resuming one still running puts two processes on one transcript.
-  out.relaunchable = out.live === false && out.transcript.found && out.worktree.exists && out.worktree.registered
+  out.relaunchable = out.live === false && out.running === false && out.transcript.found && out.worktree.exists && out.worktree.registered
     && (!call.agterm || (out.agterm.read === true && out.agterm.present === false));
   return wt;
 }
 
 async function check() {
-  const out = { read: false, batch: call.batch, session: call.session, live: null, worktree: null, transcript: null,
+  const out = { read: false, batch: call.batch, session: call.session, live: null, running: null, worktree: null, transcript: null,
     stalled: null, agterm: null, relaunchable: false, reason: null, notes: answer.notes };
   inspect(out);
   out.read = out.reason === null;
@@ -753,7 +784,7 @@ async function relaunch() {
     model: settings.model, effort: settings.effort, session: call.session, check: null, trust: null, agterm: null,
     transcript: null, launchDir: null, record: null, ran: answer.ran, reason: null, notes: answer.notes };
   if (answer.load.holds) { out.reason = `the machine's load holds the start: ${answer.load.avg5} over five minutes on ${answer.load.cores} cores`; done(out); }
-  const seen = { live: null, worktree: null, transcript: null, stalled: null, agterm: null, relaunchable: false, reason: null, notes: [] };
+  const seen = { live: null, running: null, worktree: null, transcript: null, stalled: null, agterm: null, relaunchable: false, reason: null, notes: [] };
   const wt = inspect(seen);
   out.check = seen;
   if (!wt || !seen.relaunchable) { out.reason = seen.reason || 'check does not find it relaunchable — something may still hold it, or a reading did not answer'; done(out); }
@@ -782,7 +813,10 @@ async function close() {
   if (!f.found) { out.reason = 'agterm\'s tree holds no such session'; out.read = true; done(out); }
   out.session = f.session;
   // Closing somebody else's session is worse than leaving this one open.
-  if (!f.session.cwd || real(f.session.cwd, f.session.cwd) !== real(wt, wt)) { out.reason = `the session stands in ${f.session.cwd || 'no directory agterm names'}, not in the batch's worktree`; done(out); }
+  const at = f.session.cwd ? real(f.session.cwd, f.session.cwd) : null;
+  const tree_ = real(wt, wt);
+  if (!at || (at !== tree_ && !at.startsWith(tree_ + sep))) { out.reason = `the session stands in ${f.session.cwd || 'no directory agterm names'}, not in the batch's worktree`; done(out); }
+  if (f.session.asking) { out.reason = 'the session holds a question open for the user'; done(out); }
   if (f.session.status === 'blocked') { out.reason = 'the session is waiting on the user'; done(out); }
   if (f.session.split) { out.reason = 'the session holds a second pane, which closing it would close too'; done(out); }
   if (out.dryRun) { out.read = true; done(out); }
