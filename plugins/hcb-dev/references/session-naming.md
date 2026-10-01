@@ -1,8 +1,8 @@
 # Naming a session, an epic and a batch
 
 Read by whatever titles a session — another's or its own — coins a batch id, or
-writes one of those names where it is matched on later: a chip, an order, a ledger
-row, a worktree.
+writes one of those names where it is matched on later: a chip, a launch, an order, a
+ledger row, a worktree.
 
 The rule everything below serves: **the address leads, and it does not change.** A
 title is an address — sessions resolve each other by it across restarts
@@ -58,8 +58,8 @@ digit, which collides with the wave number and with the issue numbers beside it.
 A batch is addressed by `<epic>/<id>`, never the letter alone: the letter repeats
 in every other epic.
 
-- **Assigned once at planning, never re-assigned.** A batch that moves wave, gets
-  re-chipped or restarts keeps its letter.
+- **Assigned once at planning, never re-assigned.** A batch that moves wave, goes
+  out again or restarts keeps its letter.
 - **Never re-used inside the epic.** A withdrawn or failed batch takes its letter
   with it.
 
@@ -88,9 +88,9 @@ the epic's.
 ## The issue tail
 
 The batch's issues in the order its `Work:` slot takes them, all of them, so a list
-of sessions shows the composition without opening the ledger. No issue, no tail. A
-chip re-issued before its click carries the composition the batch now has; a batch
-already running keeps the title it started with.
+of sessions shows the composition without opening the ledger. No issue, no tail. A chip
+re-issued before its click, or a launch made again before its session started, carries the
+composition the batch now has; a batch already running keeps the title it started with.
 
 **The tail is never matched on** — sessions resolve each other by `<epic>/<id>`
 alone — which is what makes it safe to shorten or drop under a cap.
@@ -115,7 +115,7 @@ with the second step; a session that was doing something else renames itself her
 assignment being the authorization, and renames only itself. **When the ledger is in hand** —
 opened here, or read after a restart — it carries both halves, and where it already records a
 title, that string is the address every order already out is carrying: wear it as recorded. The
-final title stands **before the first chip, order or message leaves**.
+final title stands **before the first batch, order or message leaves**.
 
 **A session running its own work** — a build, a completion, a survey — wears the standalone
 shape: **on intake**, with whatever is in hand (the task numbers, else the nickname, and the
@@ -130,10 +130,10 @@ stands there stays.
 
 ## Where these names travel
 
-- **The chip's title is what the batch session is asked to wear.** Later messages
-  match on it until the receiver's start report says what it answers to — the two
-  part company where a host hands back a variant (`session-comms.md`).
-- **A worktree a session cuts for itself leads with its title's identifier** —
+- **The title a batch goes out under is what its session is asked to wear** — a launch starts
+  it under that title. Later messages match on it until the receiver's start report says what
+  it answers to — the two part company where a host hands back a variant (`session-comms.md`).
+- **A worktree a session cuts for itself, or its launcher for it, leads with its title's id** —
   `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number would
   otherwise prefix every batch's name. A hyphen where the title has a slash, and
   one for each comma between numbers, the space after it going into the same hyphen

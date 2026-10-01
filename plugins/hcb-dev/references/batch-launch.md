@@ -53,7 +53,9 @@ ledgers' rows. `probe` without `--limits` sends no request and is what a status 
 Launches go one at a time: the next only once the one before it answered `started`, and
 none while `load.holds`. **The first launch after any change of way or profile is a
 canary**: launch one batch, wait for its start report, check it against the launch record
-— the title, the worktree, the model and effort, the profile — and only then the rest.
+— the title, the worktree, the model and effort, the profile by the `configDir` `probe` gives it
+in `aimux.profiles[]`, a model the record names by alias matching what it resolves to — and only
+then the rest.
 The ledger's header records which way and profile have cleared their canary.
 
 ## Launching

@@ -38,7 +38,7 @@ session-dispatch ─▶ (another session works) ─▶ session-handoff ─▶ (b
 backlog-survey ─▶ (tiers · critical path · parallel lanes · what to take next)
                ├─▶ master-session (the layout, once the hygiene it proposed ran)
                └─▶ implementation-workflow (one batch, with nothing holding it)
-master-session ─▶ wave-dispatch ─▶ (chips → sessions: wave-worker
+master-session ─▶ wave-dispatch ─▶ (launched · chipped · pasted → sessions: wave-worker
                                     + implementation-workflow) ─▶ returns ─▶ accepted by the master
                └─▶ wave-refresh ─▶ (occupied ground · delta · free capacity) ─▶ back to wave-dispatch
 status ────────────────────────────────── "where do we stand" — any role, read-only, writes nothing
@@ -267,7 +267,8 @@ the plan stages them.
   open the epic's ledger on it), put every fork the plan will stand on to you first,
   write each answer into the issues it changes, then draw the split per
   `references/wave-planning.md` on those bodies and
-  get the user's word on the table — the epic's merge authority settled with
+  get the user's word on the table — the epic's merge authority, the way its
+  batches go out and whether it closes the sessions it accepted settled with
   it, and each wave's own issue filed on it, labelled `wave`, with a ledger of its own
   and the wave's issues hung under it per `references/wave-issue.md` — launch
   through `wave-dispatch`, then run the
@@ -285,7 +286,8 @@ the plan stages them.
   session recovers from a restart — and the final report at the end — each ending in the block that carries everything waiting on
   you, where anything does, while an event that changes nothing for you gets a
   line instead of a report.
-  Recovers after a restart from the ledger before the live registry. It does not
+  Recovers after a restart from the ledger before the live registry, resuming a
+  batch it launched whose session is gone. It does not
   build batches itself, and hands a change you ask of it to a session that does.
   Its own tree stands detached on the base and moves onto the newest tip first in
   every event, which is how it learns of a landing nobody reported; it
@@ -325,23 +327,28 @@ the plan stages them.
   graph lives between passes, is
   [`skills/wave-refresh/references/delta.md`](skills/wave-refresh/references/delta.md).
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
-  One chip per batch — title per `references/session-naming.md` (the launched
+  Sends each batch out the way this session can: started by the master itself
+  in a terminal session of its own beside it — in agterm, under an aimux profile
+  with room where aimux answers, at the configured model and effort, paced by
+  load and opened by a canary (`references/batch-launch.md`) — as a chip where
+  the host offers one, or as a pasteable fenced order. Title per
+  `references/session-naming.md` (the launched
   session is asked to wear it; what later messages match on is what its start
   report says it answers to), the
   wave order as the prompt: the slots of `references/order-anatomy.md` plus this
   batch's boundaries, fork routing, the master's own coordinates, the start
   report that precedes the build, the status milestones and the return
-  protocol. Pins one base for the batches hung together and again at each step
+  protocol. Pins one base for the batches sent out together and again at each step
   of a staged wave, reports held
-  batches instead of hanging them, withdraws chips the plan obsoleted, and falls
-  back to pasteable fenced orders where chips are unavailable. The click stays
-  with you; how many batches stand clickable at once is the plan's launch
-  order. The launch reaches you as a wave report, led by whatever the preflight
+  batches instead of sending them out, and withdraws chips the plan obsoleted.
+  A chip's click stays with you, a launch follows your word on the wave; how
+  many batches go out at once is the plan's launch order. The launch reaches you as a wave report, led by whatever the preflight
   had to correct in the layout you approved.
 - **`wave-worker`** — `/hcb-dev:wave-worker`
   The receiving side, governing the engagement around the build: wear the title
   the order's first line carries, re-verify the order's premises before anything
-  rests on them, report the scope it found to the master before the first write,
+  rests on them, report the scope it found — and the model, effort and
+  configuration it runs at — to the master before the first write,
   route "agree first" forks there before building, push statuses with their
   coordinates at the named milestones, finish a landing even where
   another session took it, and close with the return —
@@ -356,7 +363,8 @@ the plan stages them.
   wave, or a run and its slices on its own — and, given an epic number, that
   epic's state from any session at all, since the ledger lives on the epic; given
   none, the epics open across every owner you reach.
-  Where you ask a master where things stand, this is what answers. Reads the
+  Where you ask a master where things stand, this is what answers, the way its
+  batches would go out now beside the one the ledger records. Reads the
   ledger, the live registry, the change requests and the tree; writes
   nothing anywhere, and names a source it could not read as unread instead of
   printing it empty. The other roles route their "where do we stand"
@@ -677,6 +685,23 @@ convention; a `gitlab-mr-workflow` twin can be added later. Until it exists,
 request-mode completion on GitLab uses the mirrored `glab` fallback in
 [`references/slice-completion.md`](references/slice-completion.md).
 
+## Configuration
+
+Five settings shape how a master session starts its batches, set in `/config`
+or with `claude plugin configure hcb-dev@hacker-cb-plugins`; an update asks for
+none of them, and one left unset runs on its default:
+
+| setting | default | what it sets |
+|---|---|---|
+| `batch_model` | `opus[1m]` | the model a batch session starts on |
+| `batch_effort` | `high` | its effort: `low`, `medium`, `high`, `xhigh` or `max` |
+| `batch_profiles` | every profile | the aimux profiles batches may run under, comma-separated |
+| `batch_ceiling_5h` | `80` | a profile at or above this share of its 5-hour window takes no new batch |
+| `batch_ceiling_7d` | `90` | the same for its weekly window |
+
+Your word in the conversation overrides any of them — for the epic, a wave or
+one batch.
+
 ## Requirements
 
 **`git` and `jq` are the shared tools** — `git` in every skill but
@@ -760,7 +785,7 @@ Per skill, on top of those:
 - **`wave-refresh`**: `git` against the resolved base — every fact it rules on
   is read from that ref, not from a working tree — plus the forge CLI and `jq`
   for the tracker's delta and the open change requests' files, and the live
-  registry for who is still running. It hangs nothing itself; `wave-dispatch`
+  registry for who is still running. It sends nothing out itself; `wave-dispatch`
   does that.
 - **`master-session`**, **`wave-dispatch`** and **`wave-worker`**: Claude
   Code's own cross-session tools — the chip tool for launching
@@ -769,7 +794,9 @@ Per skill, on top of those:
   name; each degrades along its own ladder where a tool is absent
   (fenced orders instead of chips, a line to the user instead of messages) —
   while a decision stands at its coordinate on the forge whichever of them
-  carries the pointer to it. The master additionally uses
+  carries the pointer to it. A master that starts its batches itself runs inside
+  agterm (`agtermctl` on the PATH its login shell builds, beside `claude` and
+  `node`); aimux, where installed there, spreads them across its profiles. The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
   lives in one, and a repository without a tracker cannot hold the role at all.
   All sides need this plugin installed — the orders name `wave-worker` and

@@ -61,7 +61,7 @@ disagreement is itself a finding:
 
 - **the batch rows of each open wave's ledger**
   ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — the
-  file zone of each batch from `chipped` until its landing is cleared against
+  file zone of each batch from `chipped` or `launched` until its landing is cleared against
   its checks, as the queue records, or until its end where it lands nothing;
 - **the live registry**
   ([`../../references/session-comms.md`](../../references/session-comms.md)) — who
@@ -72,9 +72,9 @@ disagreement is itself a finding:
   claims holds just as much.
 
 Every disagreement goes to the user — a request reaching past its zone, a row
-past `chipped` and short of `accepted` with no session, `blocked` after it included, a
-session with no row. A `chipped` row with no session goes to the user as
-`wave-ledger.md` reads it, with the chip's age. Until one is settled the ground is read
+past `chipped` or `launched` and short of `accepted` with no session, `blocked` after it
+included, a session with no row. A `chipped` row with no session goes to the user as
+`wave-ledger.md` reads it, with the chip's age; a `launched` one is `hcb-dev:wave-dispatch`'s to check. Until one is settled the ground is read
 the **safer** way rather than the wider or the narrower: a zone read two ways is
 occupied to the union of both, and a session whose zone no source gives holds
 **everything a candidate would touch**, since an unknown zone is unbounded and
@@ -126,7 +126,7 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
    occupied ground is not free this round: `wave-planning.md` places it behind
    whatever holds that ground, and the report names the batch it waits on.
 3. **The three axes.** `wave-planning.md`, each survivor against every batch
-   holding ground, `chipped` ones included — the seams, edges and blind form its
+   holding ground, `chipped` and `launched` ones included — the seams, edges and blind form its
    order and issues name, read from its ledger row, not its file zone alone —,
    against every open request no row claims, and against every other survivor.
 4. **The placed candidates, on this pass's own reading.** Nothing is launched on
@@ -184,8 +184,8 @@ free, against how many were asked for — is what the first line says happened.
   `hcb-dev:issue-tracking`; a refresh does not edit bodies on its own.
 - **The layout is launched on the user's word, and only then** — the capacity in
   the ask is not that word. What they approve goes to `hcb-dev:wave-dispatch`,
-  one chip per batch; the click that starts each one is the second gate and
-  stays theirs, and a batch held by a tracker edit is reported, never hung.
+  each batch going out the way the epic's launch line records — a chip's click
+  stays the user's second gate — and a batch held by a tracker edit is reported, never sent out.
 
 ## Reference files
 

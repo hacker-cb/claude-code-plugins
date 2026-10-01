@@ -7,7 +7,7 @@ fills the slots belongs to the skill that produces the prompt.
 ## Three carriers, one envelope
 
 A prompt crosses as a paste block the user carries by hand, as the starting prompt
-of a chip-spawned session, or as a message sent between live sessions. Everything
+of a session a chip or a launch started, or as a message sent between live sessions. Everything
 here holds for all three: **the text is the whole channel, and what is not written
 in it does not arrive.** Which carrier moves a given prompt is chosen where the
 prompt is produced.
@@ -46,7 +46,7 @@ than being dropped — a missing line reads as an omission.
 A pasteable prompt is emitted whole, inside a fenced block of plain text, never
 paraphrased into prose around it. What is addressed to this session instead of to
 the reader — what it now waits on, what it offers to do next — goes after the
-closing fence, and may name the prompt's tag. A chip carries the same text as the
+closing fence, and may name the prompt's tag. A chip or a launch carries the same text as the
 new session's first prompt; a message carries it as the message body, its first
 line self-contained because the recipient's human previews only that line.
 

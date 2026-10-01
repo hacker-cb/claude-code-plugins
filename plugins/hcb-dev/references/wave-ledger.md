@@ -35,10 +35,10 @@ node "<plugin root>/scripts/ledger.mjs" --issue <n> [--repo <owner/name>] [--for
 | `archives[]` | one row per `<!-- wave-journal-<n> -->` comment, with its own size |
 | `index.listed` / `.missing` / `.unlisted` | what the ledger says it archived, against what the issue carries |
 | `format` | the stored ledger's format against the one written now, and its `kind` — `epic`, `wave`, or `null` where its sections make it neither |
-| `lint[]` | with `--check`: what the text says is wrong with its shape — its first line, sections, budget, entries too long, struck or broken up by headings. Advisory: nothing in it holds a chip |
+| `lint[]` | with `--check`: what the text says is wrong with its shape — its first line, sections, budget, entries too long, struck or broken up by headings. Advisory: nothing in it holds a batch back |
 | `write.fits` / `.headroom` / `.budget` | whether the body handed in fits under the cap and by how many bytes, and the budget it is kept under — sizes in `bytes`, `chars` / `utf16` only beside them |
 | `write.wrote` / `.moved` / `.ran` / `.archived` / `.account` | with `--write` or `--append-archive`: `true` once every write read back as meant; `false` where the run refused before writing anything — a fault standing, a body not in the shape; `null` where a write did not read back — **unsettled**: read the issue before writing again, and a journal line standing in an archive and in the ledger both leaves the body; each act taken; each archive written; the archive holding the account |
-| `faults[]` | every one of the above that has to be repaired before the next chip goes up |
+| `faults[]` | every one of the above that has to be repaired before the next batch goes out |
 | `reason` | why nothing could be answered or written — a feed that did not read, a `404` saying the issue is not there (or not visible to this token), **both forges answering for this repository** (which `--forge` settles), a body not opening with the marker, or a ledger over the cap with its journal out |
 
 `--dump <path>` puts the stored ledger in a file to edit; `--write --body-file` puts it back, never
@@ -51,7 +51,7 @@ it lists that no comment carries, which leaves the index once the body handed in
 **One issue, one ledger.** The marker is an HTML comment, free for anyone to write and invisible in
 either UI, so each marked comment travels with whose it is: a lone foreign one says so instead of
 passing as this session's state, and two publish **no** coordinate whoever wrote them — a tie-break
-would drop the older ledger. An archive nothing indexes is the same fault, repaired before the chip.
+would drop the older ledger. An archive nothing indexes is the same fault, repaired before the next batch goes out.
 
 ## Archiving
 
@@ -76,7 +76,7 @@ whether deleting it changes what anyone does next.
    its own and that graph's digest (`hcb-dev:wave-refresh` owns both) and the ground it covered:
    what the next refresh takes its delta from, since an issue closes without a commit and a link
    moves without either; a lesser reading does not take the slot; the base commit the master has taken landings up to, read and moved as `hcb-dev:master-session` says; the epic's merge authority as the
-   user settled it ([`slice-completion.md`](slice-completion.md)); the plugin version this role last
+   user settled it ([`slice-completion.md`](slice-completion.md)); the launch as it was settled — the way batches go out and whose word set it, the profile, the model and effort with where each came from, each way and profile whose canary cleared, and whether this session closes finished batches; the plugin version this role last
    reconciled against, which is what a later **plugin** refresh diffs from and not necessarily what
    the session is running — it starts as the running version and `hcb-dev:session-plugin-refresh`
    moves it; the session group (`epic-structure.md`); and when last updated.
@@ -98,15 +98,15 @@ whether deleting it changes what anyone does next.
 6. **journal**, below.
 
 **A wave's**, in this order:
-1. **header** — the wave, its issue and the epic's; the base pin its live step was hung on
-   (`<remote>/<branch>@<sha>`); and when last updated.
+1. **header** — the wave, its issue and the epic's; the base pin its live step went out on
+   (`<remote>/<branch>@<sha>`); the user's word on how this wave goes out, where one stands; and when last updated.
 2. **batches** — one row each: id, topic, the issues and where each now stands, the order's ask and
    terminal deliverable in its own words (the acceptance contract — a return is judged against this
-   row, not against recall), the file zone its order drew, the order's base pin, chip, the session's
-   name, state, result coordinates. A batch runs `planned → chipped → started → confirmed → building
+   row, not against recall), the file zone its order drew, the order's base pin, how it went out — its chip, or the launch's record — the session's
+   name, state, result coordinates. A batch runs `planned → chipped | launched → started → confirmed → building
    → completed(<mode> — request merged, merged locally, tracker state delivered, verdict delivered)
    → accepted`, standing at `blocked(<condition>)` for as long as something holds it; a state is
-   advanced, never skipped silently; a `chipped` row with no session is a click the user owes, never a session lost or a batch failed. It **ends** in one of three, and the three carry equal weight:
+   advanced, never skipped silently; a `chipped` row with no session is a click the user owes, never a session lost or a batch failed; a `launched` one is this session's to `check`, and a session closed after acceptance is a journal line. It **ends** in one of three, and the three carry equal weight:
    - `released` — acceptance passed, the work landed, the batch was let go;
    - `withdrawn(<reason>)` — called off, from wherever it stood;
    - `failed(<what stands>)` — it did not come off, from wherever it stood; what stands is named.
@@ -141,7 +141,7 @@ archive, in their markers, which `--write` keeps.
 
 ## Discipline
 
-- **Write on every event** — a chip hung, a batch confirmed, a fork settled, a return accepted, a
+- **Write on every event** — a batch sent out, a batch confirmed, a fork settled, a return accepted, a
   constraint discovered — before the conversation moves on.
 - **Read them first after any restart or compaction** — the epic's, then each open wave's
   (`wave-issue.md` says which) — before the live registry is even listed: the
