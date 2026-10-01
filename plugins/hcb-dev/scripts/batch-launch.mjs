@@ -136,13 +136,14 @@ for (const pair of (opts['--held'] || '').split(',').map((x) => x.trim()).filter
 }
 
 // --- what launch, check, relaunch and close are handed, checked before anything runs
-const BATCH = /^([A-Za-z0-9][A-Za-z0-9._-]*)\/([A-Za-z0-9][A-Za-z0-9._-]*)$/;
+// No `-` inside either part: the worktree joins the two with one, and `a-b/c` would meet `a/b-c` there.
+const BATCH = /^([A-Za-z0-9][A-Za-z0-9._]*)\/([A-Za-z0-9][A-Za-z0-9._]*)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const call = { batch: null, slug: null, pin: null, mode: null, session: null, agterm: null, title: null,
   text: null, wait: 90, profile: null };
 if (sub !== 'probe') {
   const b = BATCH.exec(opts['--batch'] || '');
-  if (!b) die('--batch is <epic>/<id>, each part letters, digits, `.`, `_` or `-`');
+  if (!b) die('--batch is <epic>/<id>, each part letters, digits, `.` or `_`');
   call.batch = opts['--batch'];
   // The worktree a session cuts for itself leads with its batch's identifier; this one too.
   call.slug = `${b[1]}-${b[2]}`;
