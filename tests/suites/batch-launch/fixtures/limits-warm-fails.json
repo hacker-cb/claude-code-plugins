@@ -1,0 +1,46 @@
+{
+  "home": "both",
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/.claude",
+          "is_source": true
+        },
+        "p": {
+          "cli": "claude",
+          "path": "~/profiles/p"
+        }
+      }
+    },
+    "limits": {
+      "main": {
+        "status": {
+          "fiveHourPct": 10,
+          "weeklyPct": 20
+        }
+      },
+      "p": {
+        "status": null,
+        "error": "auth"
+      }
+    },
+    "auth": {
+      "p": {
+        "loggedIn": true
+      }
+    },
+    "after_warm": {
+      "p": {
+        "status": {
+          "fiveHourPct": 0,
+          "weeklyPct": 0
+        }
+      }
+    },
+    "warm_exit": {
+      "p": 3
+    }
+  }
+}

@@ -8,8 +8,8 @@ description: >-
   new session, hands fixes or a build out to run elsewhere, or writes one
   standalone order outside any wave. For work already FINISHED that another session only has to receive, use
   `hcb-dev:session-handoff` — the discriminator is whether the work is done.
-  For a batch fanned out of a coordinating session — by chip or pasted wave
-  order — use `hcb-dev:wave-dispatch`. A question is never dispatched — a
+  For a batch fanned out of a coordinating session — launched in a terminal, by
+  chip or as a pasted wave order — use `hcb-dev:wave-dispatch`. A question is never dispatched — a
   subagent or a workflow answers it here, where an order is work another session
   does.
 ---

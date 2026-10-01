@@ -1,8 +1,8 @@
 ---
 name: wave-worker
 description: >-
-  The receiving side of a wave order: this session was started — from a chip or
-  a pasted block — with a batch dispatched by a master session ("Batch … from
+  The receiving side of a wave order: this session was started — from a chip, a
+  pasted block, or a launch by its master — with a batch dispatched by a master session ("Batch … from
   its master session", "волна/батч из мастер-сессии", "act per
   hcb-dev:wave-worker"). Governs the engagement around the build, not the build
   itself — verifying the order, reporting the scope it found before it builds,
@@ -39,12 +39,12 @@ holds, and what it stops is named in the return as the gap it is.
    composed there already. Set exactly that string, and take the step without first
    establishing what this session wears: re-setting a title already worn changes
    nothing, and what a channel answers is evidence about the address, never about
-   the title (`session-comms.md`). Where the host offers sidebar groups, file this
-   session into the group the order's `Session group:` names — itself, never another.
+   the title (`session-comms.md`). Where the order carries a `Session group:` and the host offers sidebar groups, file
+   this session into that group — itself, never another.
 2. **Stand where the order says.** Verify this session is in a worktree of its
-   own, not the shared main checkout — and cut one where it is not — before
-   the first write; the order's `Start:` gate holds whether or not a chip
-   carried it here.
+   own, not the shared main checkout — and cut one where it is not, unless the
+   order says its master cut it: then that one, and no other — before the first
+   write; the order's `Start:` gate holds however this session was started.
 3. **Read the whole batch through before building any of it, and not before the
    order's `Start:` gate is open** — the order, the two ledgers it names, its issues on
    the forge in full with their comments, all of them in one call (the form
@@ -58,7 +58,10 @@ holds, and what it stops is named in the return as the gap it is.
    from what a neighbour's looks like; what the work turned out to be — the files
    and issues it touches, what taking it involves, the order it will be taken in;
    and everything that came back different from the order — a boundary wrong from
-   here, a premise that fell, a fork nobody foresaw. Where the master's address had
+   here, a premise that fell, a fork nobody foresaw; and what it runs at — its worktree, model,
+   effort `${CLAUDE_EFFORT}`, session `${CLAUDE_SESSION_ID}`, the version
+   `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` carries, and the directory
+   `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` expands to in its shell. Where the master's address had
    to be guessed, open with the challenge line (`session-comms.md`). Building starts
    once that report is **sent**, no answer awaited; only what a reported divergence
    touches waits for one.

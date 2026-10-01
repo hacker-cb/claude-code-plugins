@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Stands in for the user's login shell, started the way batch-launch.mjs starts it:
+# `-l -c <command>`. A login reads the account's profile; this one reads $HOME/login —
+# `path` becomes PATH, `noise` is what a chatty profile prints first, and `exit` makes the
+# login fail with that status.
+set -u
+if [ "${1:-}" != -l ] || [ "${2:-}" != -c ] || [ $# -ne 3 ]; then
+  echo "stub login-sh: unexpected invocation: $*" >&2; exit 64
+fi
+: > "$HOME/.login-ran"
+if [ -f "$HOME/login/exit" ]; then echo "stub login-sh: profile failed" >&2; exit "$(cat "$HOME/login/exit")"; fi
+if [ -f "$HOME/login/noise" ]; then cat "$HOME/login/noise"; fi
+PATH=$(cat "$HOME/login/path")
+export PATH
+exec /bin/bash -c "$3"

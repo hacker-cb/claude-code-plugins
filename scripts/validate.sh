@@ -581,17 +581,15 @@ md_link_targets() {
       done
 }
 
-while IFS= read -r skill; do
-  [ -n "$skill" ] || continue
-  seen=$skill; queue=$skill; reached=""
+# Every by-path reference a skill reaches, following relative links transitively — read
+# once per skill, for whichever slots the checks below look for.
+reached_refs() {
+  local seen=$1 queue=$1 cur t
   while [ -n "$queue" ]; do
     cur=${queue%%$'\n'*}
     if [ "$cur" = "$queue" ]; then queue=""; else queue=${queue#*$'\n'}; fi
     [ -f "$cur" ] || continue
-    case "$cur" in
-      */references/*.md)
-        [ -z "$reached" ] && grep -qF '<plugin root>' "$cur" 2>/dev/null && reached=$cur ;;
-    esac
+    case "$cur" in */references/*.md) printf '%s\n' "$cur" ;; esac
     while IFS= read -r t; do
       [ -n "$t" ] || continue
       case "$t" in plugins/*) ;; *) continue ;; esac
@@ -600,6 +598,34 @@ while IFS= read -r skill; do
       queue=${queue:+$queue$'\n'}$t
     done < <(md_link_targets "$cur")
   done
+}
+
+# The first reached reference naming the slot in $2, or nothing.
+first_naming() {
+  local r
+  while IFS= read -r r; do
+    [ -n "$r" ] && grep -qF -- "$2" "$r" 2>/dev/null && { printf '%s\n' "$r"; return; }
+  done <<< "$1"
+}
+
+while IFS= read -r skill; do
+  [ -n "$skill" ] || continue
+  refs=$(reached_refs "$skill")
+  # The settings line binds `<launch settings>` exactly as the Paths line binds `<plugin
+  # root>`: present where a skill reaches a by-path file naming the slot, absent elsewhere.
+  # A line counts only where it carries settings at all — a heading spelled the same binds
+  # nothing.
+  sreached=$(first_naming "$refs" '<launch settings>')
+  sbound=$(grep '^\*\*Launch settings\*\*' "$skill" 2>/dev/null | grep -cF '${user_config.' || true)
+  [ -n "$sbound" ] || sbound=0
+  if [ -n "$sreached" ] && [ "$sbound" -eq 0 ]; then
+    err "$(basename "$(dirname "$skill")"): reaches $sreached, which names '<launch settings>', and carries no settings line"
+  elif [ -z "$sreached" ] && [ "$sbound" -gt 0 ]; then
+    err "$(basename "$(dirname "$skill")"): carries the settings line and reaches no file that names '<launch settings>'"
+  elif [ "$sbound" -gt 1 ]; then
+    err "$(basename "$(dirname "$skill")"): the settings line stands $sbound times — one is the contract"
+  fi
+  reached=$(first_naming "$refs" '<plugin root>')
   bound=$(grep -cxF "$binding_line" "$skill" 2>/dev/null || true)
   [ -n "$bound" ] || bound=0
   if [ -n "$reached" ] && [ "$bound" -eq 0 ]; then
@@ -610,6 +636,57 @@ while IFS= read -r skill; do
     err "$(basename "$(dirname "$skill")"): the binding line stands $bound times — one is the contract"
   fi
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
+
+# --- plugin settings in substituted content -----------------------------------
+# Claude Code substitutes `${user_config.KEY}` in a SKILL.md, an agent or a command file
+# only once the user has saved a value; until then the literal stays in the text, the
+# declared default notwithstanding. So a value travels as one single-quoted word, which a
+# script can recognise as unset — inside double quotes the literal is a bash "bad
+# substitution" — every KEY is declared in its plugin's `userConfig`, a sensitive one
+# never appears (skill text gets a refusal in its place), and a file read by path, where
+# nothing is substituted, carries none.
+uc_re='\$\{user_config\.[A-Za-z_][A-Za-z0-9_]*\}'
+
+while IFS= read -r md; do
+  [ -n "$md" ] || continue
+  case "$md" in plugins/*) ;; *) continue ;; esac
+  case "$md" in */SKILL.md|*/agents/*.md|*/commands/*.md|*/README.md) continue ;; esac
+  grep -qF '${user_config.' "$md" 2>/dev/null \
+    && err "$md: '\${user_config.…}' reaches Claude as literal text here — only skill, agent and command files are substituted"
+done < <(md_files)
+
+for plugin_dir in plugins/*/; do
+  plugin_dir=${plugin_dir%/}
+  manifest="$plugin_dir/.claude-plugin/plugin.json"
+  lines=""
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    grep -qF '${user_config.' "$f" 2>/dev/null || continue
+    all=$(grep -oF '${user_config.' "$f" | wc -l | tr -d ' ')
+    quoted=$(grep -oE "'$uc_re'" "$f" | wc -l | tr -d ' ')
+    [ "$all" = "$quoted" ] \
+      || err "$f: every \${user_config.KEY} stands single-quoted, as one word — $((all - quoted)) do not"
+    # Single quotes inside double ones are characters, not quoting, and the literal reaches
+    # bash — so a line carrying a setting carries no double quote at all.
+    grep -F '${user_config.' "$f" | grep -qF '"' \
+      && err "$f: a line carrying \${user_config.KEY} holds a double quote — inside one, bash still substitutes the literal"
+    while IFS= read -r key; do
+      [ -n "$key" ] || continue
+      kind=$(jq -r --arg k "$key" 'if (.userConfig // {}) | has($k) then (if .userConfig[$k].sensitive == true then "sensitive" else "ok" end) else "missing" end' "$manifest" 2>/dev/null)
+      case "$kind" in
+        ok) ;;
+        sensitive) err "$f: '$key' is sensitive — skill and agent text receive a refusal in its place" ;;
+        *) err "$f: '$key' is not declared in $manifest's userConfig" ;;
+      esac
+    done < <(grep -oE "$uc_re" "$f" | sed -E 's/^\$\{user_config\.//; s/\}$//' | sort -u)
+    lines="$lines"$'\n'"$(grep -F '${user_config.' "$f")"
+  done < <(find "$plugin_dir" -type f \( -path '*/skills/*/SKILL.md' -o -path '*/agents/*.md' \
+    -o -path '*/commands/*.md' \) 2>/dev/null | sort)
+  distinct=$(printf '%s\n' "$lines" | grep -v '^$' | sort -u | wc -l | tr -d ' ')
+  [ "$distinct" -le 1 ] \
+    || err "$plugin_dir: $distinct different lines carry \${user_config.…} — one settings line is the contract"
+done
+
 
 # --- the size gate ----------------------------------------------------------
 # What a skill costs a session is what it loads, and prose grows one paragraph at a

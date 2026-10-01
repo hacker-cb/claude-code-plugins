@@ -1,0 +1,37 @@
+{
+  "home": "bare",
+  "agterm": {
+    "windows": [
+      {
+        "id": "example-id-0000000a"
+      },
+      {
+        "id": "example-id-0000000b"
+      }
+    ],
+    "trees": {
+      "example-id-0000000a": [
+        {
+          "id": "example-id-000000f1",
+          "sessions": [
+            {
+              "id": "example-id-00000009",
+              "cwd": "/elsewhere"
+            }
+          ]
+        }
+      ],
+      "example-id-0000000b": [
+        {
+          "id": "example-id-000000f2",
+          "sessions": [
+            {
+              "id": "example-id-00000001",
+              "cwd": "/repo"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -104,4 +104,7 @@ review round runs in this session: a review a return says was skipped is the reo
 The move is the only write to HEAD, the index, the working tree or the stash: nothing here
 checks files out of another revision or back out of the index (`git checkout <ref> -- <paths>`,
 `git checkout -- <path>`, `git restore`), stashes, resets, cleans, pulls, adds a worktree or
-commits — what goes wrong goes to the user, with what stands.
+commits — what goes wrong goes to the user, with what stands. The one worktree added from here is
+a batch's, cut detached at the pin by the launcher
+([`../../../references/batch-launch.md`](../../../references/batch-launch.md)) and never entered
+afterwards.

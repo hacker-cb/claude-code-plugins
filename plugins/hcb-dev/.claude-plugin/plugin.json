@@ -1,7 +1,7 @@
 {
   "name": "hcb-dev",
   "description": "Personal developer baseline — a connected pipeline from a task or an issue to reviewed, completed work: slicing and building behind one planning gate, local review in one round with every source — Claude's angles, security angles and a Codex pass — its findings checked by an independent verifier and each source's coverage reported, completion by mode (a local merge into the parent, or a change request), the forge's issue tracker and its label set, handing work across sessions, surveying a backlog slice against the code, fanning an epic out to parallel sessions in waves, saying where the work stands in whichever role a session holds, keeping a branch current with a base that moved and reading what it brought, and git cleanup.",
-  "version": "2.22.0",
+  "version": "2.23.0",
   "author": {
     "name": "hacker-cb",
     "email": "pavel@sokolov.me"
@@ -29,5 +29,47 @@
     "workflow",
     "github",
     "gitlab"
-  ]
+  ],
+  "userConfig": {
+    "batch_model": {
+      "type": "string",
+      "title": "Batch model",
+      "description": "The model a master session starts its batch sessions on, as `claude --model` takes it — an alias or a full model id.",
+      "default": "opus[1m]"
+    },
+    "batch_effort": {
+      "type": "string",
+      "title": "Batch effort",
+      "description": "The effort level a master session starts its batch sessions at.",
+      "options": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default": "high"
+    },
+    "batch_profiles": {
+      "type": "string",
+      "title": "Batch aimux profiles",
+      "description": "The aimux profiles batch sessions may run under, comma-separated. Empty means every Claude profile aimux knows."
+    },
+    "batch_ceiling_5h": {
+      "type": "number",
+      "title": "Batch 5-hour ceiling, %",
+      "description": "An aimux profile whose 5-hour window is used at or above this percentage takes no new batch.",
+      "min": 1,
+      "max": 100,
+      "default": 80
+    },
+    "batch_ceiling_7d": {
+      "type": "number",
+      "title": "Batch weekly ceiling, %",
+      "description": "An aimux profile whose weekly window is used at or above this percentage takes no new batch.",
+      "min": 1,
+      "max": 100,
+      "default": 90
+    }
+  }
 }
