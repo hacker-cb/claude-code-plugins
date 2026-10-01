@@ -9,7 +9,7 @@ the labels and markers every epic's issue carries are [`epic-structure.md`](epic
 
 **On the word that approves the wave's plan**, and on that word alone — the role's authorization
 covers its own structure as it covers the umbrella — the master files one issue for the wave
-(`hcb-dev:issue-tracking`), before the first chip goes up:
+(`hcb-dev:issue-tracking`), before its first batch goes out:
 
 - **title** `Wave <k> of epic #<epic>: <topic>`, in the tracker's language;
 - **label** `wave`, read, created and applied as `epic-structure.md` says;

@@ -6,8 +6,9 @@ vocabulary and the split method; launching what it produces is
 
 ## Vocabulary
 
-A **batch** is one session's worth of work — one chip, one worktree, one
-return. A **wave** is the set of batches its **gate** — the merges or decisions
+A **batch** is one session's worth of work — one session, one worktree, one
+return. It **goes out** when its session is started or offered: launched by the master, or a
+chip hung or a block handed over for the user to start. A **wave** is the set of batches its **gate** — the merges or decisions
 it waits on — releases: launched together, or one at a time where the plan
 stages them. A wave of one is an ordinary
 outcome: what earns a second batch its place beside the first is the three axes
@@ -83,12 +84,12 @@ there.
   being one of the choices across a seam whose base does not require branches
   current with it: nothing at merge time reads the seam's two sides together, so
   the displaced batch owes its rebase before its own merge, not after.
-- **The launch order inside a wave is part of it too**: every chip at once, or
-  staged — one chip, the next hung on the landing of the one before it, once
+- **The launch order inside a wave is part of it too**: every batch at once, or
+  staged — one batch, the next going out on the landing of the one before it, once
   that landing is cleared against its checks. Staged
   is what a wave takes wherever its batches cleared the axes only through a
   split the plan had to draw: a seam divided per file. Each step of a staged
-  wave is pinned and hung once its predecessor's landing is cleared, not at the
+  wave is pinned and sent out once its predecessor's landing is cleared, not at the
   wave's open.
 - A batch is planned but not launched while anything holds it — an environment
   blocker, an issue whose body was ruled `needs rewrite`; what holds it and the

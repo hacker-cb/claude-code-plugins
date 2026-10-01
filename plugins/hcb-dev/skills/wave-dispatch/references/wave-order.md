@@ -1,8 +1,9 @@
 # The wave order — the text a batch session is started with
 
-Written by `hcb-dev:wave-dispatch`, one per batch, and carried either as a chip's
-prompt or as a fenced block the user pastes
-([`../../../references/session-prompts.md`](../../../references/session-prompts.md)).
+Written by `hcb-dev:wave-dispatch`, one per batch, and carried as the first prompt of a
+session the master launched, as a chip's prompt, or as a fenced block the user pastes
+([`../../../references/session-prompts.md`](../../../references/session-prompts.md)). The
+slots marked *by way* differ with the carrier; every other slot is the same in all three.
 
 Every slot is
 [`../../../references/order-anatomy.md`](../../../references/order-anatomy.md)'s;
@@ -21,9 +22,10 @@ session —
 you did not do this work; this is your task: <the ask, in one line>. Act per
 hcb-dev:wave-worker. The name in backticks above is this session's title: wear
 it verbatim, whatever any channel shows this session as.
-Session group: <the epic's group, as the epic's ledger records it>. Where this host
-offers sidebar groups, file this session into it (`list_groups`, then
-`move_sessions` with `self`) — no other session, and no group of your own.
+<By way — chip or paste, where the epic's ledger records a group other than `none`:
+Session group: <that group>. Where this host offers sidebar groups, file this session into it
+(`list_groups`, then `move_sessions` with `self`) — no other session, and no group
+of your own. Otherwise: no line.>
 
 Work: <the issues, in order — what to take first and why>
 What is settled: <facts with coordinates, each with how it was verified>
@@ -33,10 +35,13 @@ Start: <now | after <gate> — do not begin before it; it holds the reading
 below as much as the building>. Once it is open, the start report described at
 the end of this order goes out first, and building starts once it has.
 Where to work: your own worktree, and only it — the main checkout is shared
-with other sessions. Verify you are in a worktree of your own before the first
-write; where you are not, cut your own worktree from <the base | the branch
-batch `<epic>/<id>` is building on, where this batch stacks on it>. <Or: no
-checkout is touched.>
+with other sessions. <By way — launched: the master cut it for you, detached at
+the base pin below, at <its path>; verify you stand in it before the first write,
+and cut no other<, where this batch stacks on batch `<epic>/<id>`: in it, create your
+own branch from the branch that batch has published, before you read anything>. Chip or paste: verify you are in a worktree of your own before
+the first write; where you are not, cut your own worktree from <the base | the
+branch batch `<epic>/<id>` is building on, where this batch stacks on it>.> <Or:
+no checkout is touched.>
 Base pin: <remote>/<branch>@<sha> | <branch>@<sha> — the commit these facts were verified on.
 The delta from the pin to the tip you read these facts against is the list to
 re-verify, before anything of yours rests on them. Do not build on the pin.
@@ -86,7 +91,8 @@ the work turned out to be. The name you answer to, the scope you now read as
 yours — the files and the issues it touches, and what taking it involves — the
 order you will take it in, and everything that came back different from this
 order: a boundary wrong from where you stand, a premise that fell, a fork nobody
-foresaw. Then build: you do not wait for an answer to the report itself, and
+foresaw; and what this session runs at — the worktree it stands in, its session id,
+model and effort, the plugin version it loaded and the configuration directory it runs under. Then build: you do not wait for an answer to the report itself, and
 nothing of yours rests on a divergence in it until the master answers that.
 Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
@@ -120,6 +126,7 @@ anything added later edited into that same comment and never copied onto this
 batch's issues; a short notice to the master.
 Filing the follow-up issues your return proposes is authorized once the master
 confirms them. Your session
-is not free until the master accepts.
+is not free until the master accepts — and once it accepts, the master may close
+it: leave nothing running past your return.
 ```
 

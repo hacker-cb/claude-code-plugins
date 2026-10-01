@@ -106,7 +106,7 @@ glab issue close "$N"
 
 Where the host offers sidebar groups — the desktop app's Code tab — an epic's sessions share one,
 named `<owner>/<repository> #<epic> — <topic>`, and the ledger header
-records that name:
+records that name — or `none` where the host offers no groups, and nothing is looked for:
 
 - **The master** lists the groups, takes the one of exactly that name where it stands, creates
   it where it does not, and files itself into it (`list_groups`, `create_group`,
@@ -119,7 +119,7 @@ records that name:
 ## An epic in an older shape
 
 A master holding an epic without the `epic` label, or whose ledger header records no session
-group — on assuming the role, after a restart, or once the plugin moved under it — brings it up
+group, not even `none` — on assuming the role, after a restart, or once the plugin moved under it — brings it up
 there and then: the labels as above, and the group, its name going into the header. A ledger in
 format 1 is rebuilt later, at the point [`epic-migration.md`](epic-migration.md) names.
 

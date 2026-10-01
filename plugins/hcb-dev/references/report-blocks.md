@@ -33,9 +33,9 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
   in the ask block as well.
 - **`Where it stands`, while an epic runs** — a row per batch: id, issues, state in the ledger's
   vocabulary ([`wave-ledger.md`](wave-ledger.md)), and what it waits on — nothing, its slot, the
-  reader's approval, the reader's click with the chip's age and the pin it stands on, another
-  batch, or the condition holding it back: a blocker, a body to rewrite, a tracker write. The
-  next wave is the last row, ⚪, waiting on the gate it opens on.
+  reader's approval, the reader's click with the chip's age and the pin it stands on, a launch held
+  by load or a canary, another batch, or the condition holding it back: a blocker, a body to
+  rewrite, a tracker write. The next wave is the last row, ⚪, waiting on the gate it opens on.
 - **`Where it stands`, once a run is done** — a row per slice: what it did, how it completed
   (merged locally into `<parent>`, or the change-request URL and whether it merged), what the
   checks on that merge showed (`base_checks`), and its state — done, partial or skipped. An epic
@@ -60,7 +60,7 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
 | occasion | blocks, in order |
 |---|---|
 | a wave report, while an epic runs | What happened · Where it stands · Findings, where a round closed · Needs your word |
-| a correction before the first chip of a wave | Without your word, alone |
+| a correction before a wave's first batch goes out | Without your word, alone |
 | the final report, once a run is done | Where it stands · Review coverage · Findings · Issues · What it leaves · Needs your word |
 | a capacity pass over a running epic | What moved · Where it stands · The plan · Needs your word |
 | a survey of a slice of the backlog | The picture · Where it stands · The plan · Needs your word |
