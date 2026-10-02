@@ -25,8 +25,10 @@
 # `@home` anywhere in the envelope is that HOME.
 #
 # Words that are the driver's, put in the environment by the runner:
-#   PREWT=clean|dirty|host   the batch's worktree stands before the case, at the pin —
-#                       dirty holding a change, host on the branch `--worktree` would cut
+#   PREWT=clean|dirty|host|host-commit|host-nested   the batch's worktree stands before the
+#                       case, at the pin — dirty holding a change, host on the branch
+#                       `--worktree` would cut, host-commit with a commit of its own there,
+#                       host-nested with another worktree inside it
 #   ORDER=<name>        orders/<name>.md is the script's stdin
 #   SHOW=<a,b>          after the answer, what the stubs kept: agterm-new, agterm-close,
 #                       launch-argv, worktrees, trust-<profile>, launch-dirs
@@ -91,12 +93,19 @@ if [ -n "$envelope" ] && [ "$(jq -r '.repo // false' "$envelope")" = true ]; the
   slug=$(jq -r '.slug // "t1-x1"' "$envelope")
   case "${PREWT:-}" in
     '') ;;
-    host)
-      git -C "$repo" -c core.hooksPath=/dev/null worktree add -q -b "worktree-$slug" "$repo/.claude/worktrees/$slug" HEAD || exit 125 ;;
+    host|host-commit|host-nested)
+      git -C "$repo" -c core.hooksPath=/dev/null worktree add -q -b "worktree-$slug" "$repo/.claude/worktrees/$slug" HEAD || exit 125
+      if [ "$PREWT" = host-commit ]; then
+        git -C "$repo/.claude/worktrees/$slug" -c core.hooksPath=/dev/null -c user.name=suite \
+          -c user.email=suite@example.invalid -c commit.gpgsign=false commit -q --allow-empty -m mine || exit 125
+      fi
+      if [ "$PREWT" = host-nested ]; then
+        git -C "$repo" -c core.hooksPath=/dev/null worktree add -q --detach "$repo/.claude/worktrees/$slug/nested" HEAD || exit 125
+      fi ;;
     clean|dirty)
       git -C "$repo" -c core.hooksPath=/dev/null worktree add -q --detach "$repo/.claude/worktrees/$slug" HEAD || exit 125
       if [ "$PREWT" = dirty ]; then echo x > "$repo/.claude/worktrees/$slug/stray"; fi ;;
-    *) echo "drive: PREWT is clean, dirty or host, not '$PREWT'" >&2; exit 125 ;;
+    *) echo "drive: PREWT is clean, dirty, host, host-commit or host-nested, not '$PREWT'" >&2; exit 125 ;;
   esac
 fi
 if [ -n "$envelope" ] && [ -n "$pin" ]; then

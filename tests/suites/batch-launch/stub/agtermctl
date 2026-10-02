@@ -5,7 +5,7 @@
 # does. `session new` keeps its arguments beside the marker (`.agterm-new`) and runs its
 # `--command` there and then — unless `hold`, a session that never gets past its first
 # screen — answering `new_id`, or failing outright where `new_fails`; `lands` is the session it
-# makes, in window example-id-0000000b, answer or no — its `foreground` `@command` being the
+# makes — one, or a list of them — in window example-id-0000000b, answer or no — its `foreground` `@command` being the
 # words of the `--command` it was handed; `session close` keeps its arguments (`.agterm-close`) and
 # takes the session out of every tree read after it.
 set -u
@@ -37,7 +37,8 @@ case "${1:-} ${2:-}" in
     # `lands`: the session agterm made, in window example-id-0000000b, whatever it answered.
     # NUL-separated: the words carry `-l` and `-c`, which jq would read as its own flags.
     words=$(eval "set -- $cmd"; printf '%s\0' "$@" | jq -Rsc 'split("\u0000") | .[:-1]')
-    jq -ce --argjson words "$words" '.agterm.lands // empty | if .foreground == "@command" then .foreground = $words else . end' \
+    jq -ce --argjson words "$words" '.agterm.lands // empty | if type == "array" then .[] else . end
+      | if .foreground == "@command" then .foreground = $words else . end' \
       "$env_json" >> "$HOME/.agterm-landed" 2>/dev/null || true
     if [ "$(jq -r '.agterm.new_fails // false' "$env_json")" = true ]; then
       echo "agtermctl: the control socket closed before answering" >&2; exit 1

@@ -489,7 +489,7 @@ function batchTree() {
   const primary = listed.trees.find((t) => t.isPrimary);
   if (!primary) return { why: 'git listed no main working tree' };
   const wt = join(primary.path, '.claude', 'worktrees', call.slug);
-  return { root: primary.path, wt, known: listed.trees.find((t) => real(t.path, t.path) === real(wt, wt)) || null, why: null };
+  return { root: primary.path, wt, trees: listed.trees, known: listed.trees.find((t) => real(t.path, t.path) === real(wt, wt)) || null, why: null };
 }
 
 // Who stands in a worktree, from the one reader of the session registry this plugin has —
@@ -697,10 +697,10 @@ function open(out, at, place, session, resume, before) {
   }
   out.launchDir = dir;
   const ag = agterm(agtermCli, answer.agterm.socket);
-  // The sessions under this launch's title where it is opened, before it is: a lost answer
-  // is never read off one of them.
-  const titledAt = (s) => s.name === call.title && s.cwd !== null && sameDir(s.cwd, at);
-  const prior = ag.filter(titledAt, answer.agterm.window);
+  // The sessions standing where this one is opened, before it is: a lost answer is never
+  // read off one of them.
+  const placed = (s) => s.cwd !== null && sameDir(s.cwd, at);
+  const prior = ag.filter(placed, answer.agterm.window);
   const made = ag.call(['session', 'new', '--after', answer.agterm.session, '--no-select', '--wait',
     '--cwd', at, '--name', call.title, '--command', `'${shell}' -l -c 'exec /bin/sh "${file}"'`]);
   out.ran.push(`agtermctl session new --after ${answer.agterm.session} --no-select --wait --cwd ${at} --name <title> --command '<login shell>' -l -c 'exec /bin/sh "<launch file>"'`);
@@ -708,16 +708,17 @@ function open(out, at, place, session, resume, before) {
     // An answer lost on the way is no session refused: the tree says whether one opened. It
     // is the one running this launch — the launch file in its arguments, the session id once
     // claude runs. While the login shell is still in its profile it carries neither, and may
-    // show as a bare shell: then it is the one session under this launch's title, where it
-    // was opened, that was not there before — agterm's directory for a session is that one,
-    // never where its claude went. A title alone settles nothing where a reading was partial,
-    // nor where two such stand.
+    // show as a bare shell under any title its profile set: then it is the one session
+    // standing where this one was opened that was not there before — under this launch's
+    // title where several are. agterm's directory for a session is the one it was opened in,
+    // never where its claude went. A reading in part settles nothing past the launch's own.
     const carried = (s) => s.argv.some((w) => w.includes(file)) || carriesArgv(s.argv, session);
     const older = new Set(prior.hits.map((e) => e.session.id));
-    const look = ag.filter((s) => carried(s) || (titledAt(s) && !older.has(s.id)), answer.agterm.window);
+    const look = ag.filter((s) => carried(s) || (placed(s) && !older.has(s.id)), answer.agterm.window);
     const strong = look.hits.filter((e) => carried(e.session));
-    const weak = prior.read && look.read ? look.hits.filter((e) => !carried(e.session)) : [];
-    const hit = strong.length ? strong[0] : weak.length === 1 ? weak[0] : null;
+    const fresh = prior.read && look.read ? look.hits.filter((e) => !carried(e.session)) : [];
+    const titled = fresh.filter((e) => e.session.name === call.title);
+    const hit = strong.length ? strong[0] : fresh.length === 1 ? fresh[0] : titled.length === 1 ? titled[0] : null;
     if (prior.read && look.read && !look.hits.length) {
       try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ }
       out.reason = `agterm opened no session: ${made.why}`;
@@ -726,7 +727,7 @@ function open(out, at, place, session, resume, before) {
     out.agterm = { session: hit ? hit.session.id : null, window: hit ? hit.window : null, wrote: null };
     out.started = null;
     out.reason = `agterm's answer did not read (${made.why}), and ${hit ? 'a session this launch opened stands in its tree'
-      : weak.length > 1 ? 'several new sessions under this launch\'s title stand where it was opened'
+      : fresh.length > 1 ? 'several new sessions stand where it was opened'
         : `the tree did not read whole: ${look.why || prior.why}`} — read it before anything else is launched`;
     return;
   }
@@ -758,31 +759,38 @@ async function launch() {
   if (answer.load.holds) { out.reason = `the machine's load holds the launch: ${answer.load.avg5} over five minutes on ${answer.load.cores} cores`; done(out); }
   const tree = batchTree();
   if (tree.why) { out.reason = tree.why; done(out); }
-  const { root, wt, known } = tree;
+  const { root, wt } = tree;
   out.worktree = { path: wt, confirmed: null };
   // Claude Code makes the worktree as the session starts, on the branch `worktree-<name>`,
   // cut with `-B` — over whatever branch of that name stands. What stands at the path or
   // under the name is a batch launched before, or what one left; so is a claude of this
   // repository still starting one. Each is checked and relaunched, never launched over.
   const branch = `worktree-${call.slug}`;
-  const over = ' — a batch launched before is checked and relaunched, never launched over';
-  const stands = existsSync(wt);
-  if (known && (known.prunable || !stands)) { out.reason = `git lists ${wt} as a worktree whose directory is gone — prune it first`; done(out); }
-  if (known) { out.reason = `${wt} stands already, a worktree${over}`; done(out); }
-  if (stands) { out.reason = `${wt} stands already, a directory git does not list as a worktree${over}`; done(out); }
   if (!refNameOk(branch)) { out.reason = `${branch} is no name git takes for a branch: the batch's identifier cannot name its worktree`; done(out); }
   // Claude Code's own bound on a worktree's name.
   if (call.slug.length > 64) { out.reason = `${call.slug} is longer than the 64 characters Claude Code takes for a worktree's name`; done(out); }
-  const heads = git(['for-each-ref', '--format=%(refname)', `refs/heads/${branch}`]);
-  if (!heads.ok) { out.reason = `whether a branch ${branch} stands did not read (${heads.line()})`; done(out); }
-  if (heads.out !== '') { out.reason = `a branch ${branch} stands already, which --worktree would cut again over its commits${over}`; done(out); }
-  const starting = processes([word('--worktree', call.slug)]);
-  if (starting === null) { out.reason = 'the process table did not read, so whether a claude is making this worktree already is unknown'; done(out); }
-  // Another repository's batch may carry the same name: a process counts where it stands
-  // where this one's would — at the root it starts in, or in the worktree it makes — or
-  // where its directory could not be read.
-  const here = [...starting].filter((p) => { const d = cwdOf(p); return d === null || sameDir(d, root) || within(real(d, d), real(wt, wt)); });
-  if (here.length) { out.reason = `a claude making ${wt} runs already (pid ${here.join(', ')})${over}`; done(out); }
+  // Read again just before the session opens: the way can take a while to settle.
+  const standing = () => {
+    const over = ' — a batch launched before is checked and relaunched, never launched over';
+    const listed = batchTree();
+    if (listed.why) return listed.why;
+    const there = existsSync(wt);
+    if (listed.known && (listed.known.prunable || !there)) return `git lists ${wt} as a worktree whose directory is gone — prune it first`;
+    if (listed.known) return `${wt} stands already, a worktree${over}`;
+    if (there) return `${wt} stands already, a directory git does not list as a worktree${over}`;
+    const heads = git(['for-each-ref', '--format=%(refname)', `refs/heads/${branch}`]);
+    if (!heads.ok) return `whether a branch ${branch} stands did not read (${heads.line()})`;
+    if (heads.out !== '') return `a branch ${branch} stands already, which --worktree would cut again over its commits${over}`;
+    const starting = processes([word('--worktree', call.slug), word('-w', call.slug)]);
+    if (starting === null) return 'the process table did not read, so whether a claude is making this worktree already is unknown';
+    // Another repository's batch may carry the same name: a process counts where it stands
+    // where this one's would — at the root it starts in, or in the worktree it makes — or
+    // where its directory could not be read.
+    const here = [...starting].filter((p) => { const d = cwdOf(p); return d === null || sameDir(d, root) || within(real(d, d), real(wt, wt)); });
+    return here.length ? `a claude making ${wt} runs already (pid ${here.join(', ')})${over}` : null;
+  };
+  const stands = standing();
+  if (stands) { out.reason = stands; done(out); }
   const refused = await settleWay(out.dryRun);
   out.limits = answer.limits;
   if (refused) { out.reason = `${call.mode} does not answer: ${refused}`; done(out); }
@@ -791,6 +799,8 @@ async function launch() {
   if (!trust(out, place.prof, root, out.dryRun)) done(out);
   out.session = randomUUID();
   if (out.dryRun) { out.read = true; done(out); }
+  const still = standing();
+  if (still) { out.reason = still; done(out); }
   open(out, root, place, out.session, false, null);
   if (out.started === true) {
     // Where the session's claude stands, by the registry: a `WorktreeCreate` hook can put the
@@ -853,9 +863,12 @@ function inspect(out) {
     const g = runner(wt, 'git');
     const head = g(['symbolic-ref', '-q', 'HEAD']);
     const dirty = g(['status', '--porcelain']);
-    const own = g(['rev-list', '--count', 'HEAD', '--not', `--exclude=refs/heads/worktree-${call.slug}`, '--branches', '--remotes']);
+    // `--exclude` before `--branches` takes the name without `refs/heads/`.
+    const own = g(['rev-list', '--count', 'HEAD', '--not', `--exclude=worktree-${call.slug}`, '--branches', '--remotes']);
+    // A worktree nested inside it goes with it on removal, whatever stands in that one.
+    const nested = tree.trees.some((t) => t.path !== known.path && within(real(t.path, t.path), real(wt, wt)));
     out.leftover = !dirty.ok || !own.ok || (!head.ok && head.code !== 1) ? null
-      : head.out === `refs/heads/worktree-${call.slug}` && dirty.out === '' && own.out === '0';
+      : head.out === `refs/heads/worktree-${call.slug}` && dirty.out === '' && own.out === '0' && !nested;
   }
   return wt;
 }
