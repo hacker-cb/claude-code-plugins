@@ -51,8 +51,7 @@ ledgers' rows. `probe` without `--limits` sends no request and is what a status 
 ## Pacing
 
 Launches go one at a time: the next only once the one before it answered `started`, and
-none while `load.holds`. A batch is never launched twice at once — nothing in the script
-holds a second launch back while the first is still starting. **The first launch after any change of way or profile is a
+none while `load.holds`. A batch is never launched twice at once. **The first launch after any change of way or profile is a
 canary**: launch one batch, wait for its start report, check it against the launch record
 — the title, the worktree, the model and effort, the profile by the `configDir` `probe` gives it
 in `aimux.profiles[]`, a model the record names by alias matching what it resolves to — and only
@@ -74,7 +73,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 |---|---|
 | `started` | `true` the session wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled |
 | `profile` | the profile and `from`: the user's `word` or the `spread`; `notes` says where a word overrode a ceiling |
-| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts (`by: host`): the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` names it, and the user settles it before anything rests on the batch — and `null` where no live claude answered. The launch stops on what stands already — a worktree or directory at the path, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree: a batch launched before is checked and relaunched, never launched over — and on an `<epic>-<id>` that names no branch or runs past 64 characters |
+| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts: the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` names it, and the user settles it before anything rests on the batch — and `null` where no live claude answered. The launch stops on what stands already — a worktree or directory at the path, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree: a batch launched before is checked and relaunched, never launched over — and on an `<epic>-<id>` that names no branch, or is longer than Claude Code takes for a worktree's name |
 | `trust` | the trust this session's configuration gives the repository, carried to the profile: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
 | `record` | what goes into the batch's ledger row, whole |
 
@@ -92,9 +91,10 @@ stopped on and when it resets: say so to the user, with the batch and the reset 
 `close` it first, then check again — and `null` where agterm could not read what runs in the
 session, a pane held open after claude exited among it: closing that one is the user's.
 `relaunchable` is `true` only where every reading answered and nothing holds the batch.
-`leftover` is the same with no transcript: what a start that never reached its first prompt
-left — removing its worktree and the branch `worktree-<epic>-<id>` is the user's, and then
-the batch launches again.
+`leftover` is `true` where nothing holds the batch, no transcript stands, and its worktree is as
+Claude Code made it — clean, on `worktree-<epic>-<id>`, no commit of its own: what a start that
+never reached its first prompt left. Removing that worktree and its branch is the user's, and
+then the batch launches again.
 
 A row from `launched` to `building`, or `blocked` from one of them, whose session is gone
 after a restart is resumed — on `relaunchable` alone, never on a session merely not seen:

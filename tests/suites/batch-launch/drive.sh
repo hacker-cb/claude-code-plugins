@@ -25,8 +25,8 @@
 # `@home` anywhere in the envelope is that HOME.
 #
 # Words that are the driver's, put in the environment by the runner:
-#   PREWT=clean|dirty   the batch's worktree stands before the case, at the pin — dirty
-#                       holding a change
+#   PREWT=clean|dirty|host   the batch's worktree stands before the case, at the pin —
+#                       dirty holding a change, host on the branch `--worktree` would cut
 #   ORDER=<name>        orders/<name>.md is the script's stdin
 #   SHOW=<a,b>          after the answer, what the stubs kept: agterm-new, agterm-close,
 #                       launch-argv, worktrees, trust-<profile>, launch-dirs
@@ -36,13 +36,14 @@
 # written `@home`, the repository's commit `@pin`, the cases' fixed session id `@fixed-session`,
 # and every other session id `@uuid`.
 set -u
+sealed_dirs=()
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/batch-launch-suite.XXXXXX") || exit 125
 # One spelling of it: a TMPDIR ending in `/` doubles the slash, and the masks below match text.
 tmp=$(cd "$tmp" && pwd) || exit 125
 holder=""
-trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; [ -n "${sealed_dirs:-}" ] && chmod -R u+rwx $sealed_dirs 2>/dev/null; rm -rf "$tmp"' EXIT
+trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; [ "${#sealed_dirs[@]}" -gt 0 ] && chmod -R u+rwx "${sealed_dirs[@]}" 2>/dev/null; rm -rf "$tmp"' EXIT
 home="$tmp/home"
 mkdir -p "$home/login" || exit 125
 # What a stub kept beside the marker belongs to the case that made it, not to the next.
@@ -90,10 +91,12 @@ if [ -n "$envelope" ] && [ "$(jq -r '.repo // false' "$envelope")" = true ]; the
   slug=$(jq -r '.slug // "t1-x1"' "$envelope")
   case "${PREWT:-}" in
     '') ;;
+    host)
+      git -C "$repo" -c core.hooksPath=/dev/null worktree add -q -b "worktree-$slug" "$repo/.claude/worktrees/$slug" HEAD || exit 125 ;;
     clean|dirty)
       git -C "$repo" -c core.hooksPath=/dev/null worktree add -q --detach "$repo/.claude/worktrees/$slug" HEAD || exit 125
       if [ "$PREWT" = dirty ]; then echo x > "$repo/.claude/worktrees/$slug/stray"; fi ;;
-    *) echo "drive: PREWT is clean or dirty, not '$PREWT'" >&2; exit 125 ;;
+    *) echo "drive: PREWT is clean, dirty or host, not '$PREWT'" >&2; exit 125 ;;
   esac
 fi
 if [ -n "$envelope" ] && [ -n "$pin" ]; then
@@ -138,12 +141,11 @@ if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ];
   fi
 fi
 
-sealed_dirs=""
 if [ -n "$envelope" ]; then
   while IFS= read -r d; do
     [ -n "$d" ] || continue
     chmod 000 "$home/$d" || exit 125
-    sealed_dirs="$sealed_dirs $home/$d"
+    sealed_dirs+=("$home/$d")
   done < <(jq -r '.sealed // [] | .[]' "$envelope")
 fi
 

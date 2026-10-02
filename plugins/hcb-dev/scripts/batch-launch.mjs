@@ -527,7 +527,7 @@ function occupancy(path) {
     // A record whose liveness could not be told proves nobody is there.
     for (const s of w.sessions || []) if (s && s.live === true && Number.isInteger(s.pid)) pids.add(s.pid);
   }
-  return { occupied: occupied ? true : unread ? null : false, pids, why: occupied ? null : unread };
+  return { occupied: occupied ? true : unread ? null : false, pids, why: unread };
 }
 
 // The session a process carries: the id the launch chose, which no other process is
@@ -567,7 +567,8 @@ function standsIn(session, wt) {
   if (!pids.size) return { at: null, why: 'no process carries the session id' };
   const who = occupancy(wt);
   if ([...pids].some((p) => who.pids.has(p))) return { at: true, why: null };
-  return who.occupied === null ? { at: null, why: who.why } : { at: false, why: null };
+  // Not among the registries read, where one did not read: unknown, never no.
+  return who.why ? { at: null, why: who.why } : { at: false, why: null };
 }
 
 // A process's working directory: `/proc` where there is one, `lsof` asked of that one
@@ -696,23 +697,28 @@ function open(out, at, place, session, resume, before) {
   }
   out.launchDir = dir;
   const ag = agterm(agtermCli, answer.agterm.socket);
+  // The sessions under this launch's title where it is opened, before it is: a lost answer
+  // is never read off one of them.
+  const titledAt = (s) => s.name === call.title && s.cwd !== null && sameDir(s.cwd, at);
+  const prior = ag.filter(titledAt, answer.agterm.window);
   const made = ag.call(['session', 'new', '--after', answer.agterm.session, '--no-select', '--wait',
     '--cwd', at, '--name', call.title, '--command', `'${shell}' -l -c 'exec /bin/sh "${file}"'`]);
   out.ran.push(`agtermctl session new --after ${answer.agterm.session} --no-select --wait --cwd ${at} --name <title> --command '<login shell>' -l -c 'exec /bin/sh "<launch file>"'`);
   if (!made.ok) {
     // An answer lost on the way is no session refused: the tree says whether one opened. It
-    // is the one running this launch — the launch file in its arguments while the login
-    // shell runs it, the session id once claude does. While the login shell is still in its
-    // profile it carries neither: then it is the one session under this launch's title,
-    // running something, where it was opened — agterm's directory for a session is that one,
-    // never where its claude went; a bare shell left there by an earlier start runs nothing.
-    // Two such, or a tree that did not read whole, settle nothing.
+    // is the one running this launch — the launch file in its arguments, the session id once
+    // claude runs. While the login shell is still in its profile it carries neither, and may
+    // show as a bare shell: then it is the one session under this launch's title, where it
+    // was opened, that was not there before — agterm's directory for a session is that one,
+    // never where its claude went. A title alone settles nothing where a reading was partial,
+    // nor where two such stand.
     const carried = (s) => s.argv.some((w) => w.includes(file)) || carriesArgv(s.argv, session);
-    const titled = (s) => s.program && s.name === call.title && s.cwd !== null && sameDir(s.cwd, at);
-    const look = ag.filter((s) => carried(s) || titled(s), answer.agterm.window);
+    const older = new Set(prior.hits.map((e) => e.session.id));
+    const look = ag.filter((s) => carried(s) || (titledAt(s) && !older.has(s.id)), answer.agterm.window);
     const strong = look.hits.filter((e) => carried(e.session));
-    const hit = strong.length ? strong[0] : look.hits.length === 1 ? look.hits[0] : null;
-    if (!hit && look.read && !look.hits.length) {
+    const weak = prior.read && look.read ? look.hits.filter((e) => !carried(e.session)) : [];
+    const hit = strong.length ? strong[0] : weak.length === 1 ? weak[0] : null;
+    if (prior.read && look.read && !look.hits.length) {
       try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ }
       out.reason = `agterm opened no session: ${made.why}`;
       return;
@@ -720,8 +726,8 @@ function open(out, at, place, session, resume, before) {
     out.agterm = { session: hit ? hit.session.id : null, window: hit ? hit.window : null, wrote: null };
     out.started = null;
     out.reason = `agterm's answer did not read (${made.why}), and ${hit ? 'a session this launch opened stands in its tree'
-      : look.hits.length > 1 ? 'several sessions under this launch\'s title stand where it was opened'
-        : `the tree did not read whole: ${look.why}`} — read it before anything else is launched`;
+      : weak.length > 1 ? 'several new sessions under this launch\'s title stand where it was opened'
+        : `the tree did not read whole: ${look.why || prior.why}`} — read it before anything else is launched`;
     return;
   }
   out.agterm = { session: text(made.result && made.result.id) || null, window: answer.agterm.window, wrote: Boolean(made.result && made.result.id) };
@@ -753,7 +759,7 @@ async function launch() {
   const tree = batchTree();
   if (tree.why) { out.reason = tree.why; done(out); }
   const { root, wt, known } = tree;
-  out.worktree = { path: wt, by: 'host', confirmed: null };
+  out.worktree = { path: wt, confirmed: null };
   // Claude Code makes the worktree as the session starts, on the branch `worktree-<name>`,
   // cut with `-B` — over whatever branch of that name stands. What stands at the path or
   // under the name is a batch launched before, or what one left; so is a claude of this
@@ -770,11 +776,12 @@ async function launch() {
   const heads = git(['for-each-ref', '--format=%(refname)', `refs/heads/${branch}`]);
   if (!heads.ok) { out.reason = `whether a branch ${branch} stands did not read (${heads.line()})`; done(out); }
   if (heads.out !== '') { out.reason = `a branch ${branch} stands already, which --worktree would cut again over its commits${over}`; done(out); }
-  const starting = processes([word('--worktree', call.slug), word('-w', call.slug)]);
+  const starting = processes([word('--worktree', call.slug)]);
   if (starting === null) { out.reason = 'the process table did not read, so whether a claude is making this worktree already is unknown'; done(out); }
-  // Another repository's batch may carry the same name: a process counts where it stands in
-  // this one, or where its directory could not be read.
-  const here = [...starting].filter((p) => { const d = cwdOf(p); return d === null || within(real(d, d), real(root, root)); });
+  // Another repository's batch may carry the same name: a process counts where it stands
+  // where this one's would — at the root it starts in, or in the worktree it makes — or
+  // where its directory could not be read.
+  const here = [...starting].filter((p) => { const d = cwdOf(p); return d === null || sameDir(d, root) || within(real(d, d), real(wt, wt)); });
   if (here.length) { out.reason = `a claude making ${wt} runs already (pid ${here.join(', ')})${over}`; done(out); }
   const refused = await settleWay(out.dryRun);
   out.limits = answer.limits;
@@ -795,6 +802,10 @@ async function launch() {
   out.read = true;
   done(out);
 }
+
+// What `inspect` fills in, before it has read anything.
+const inspected = () => ({ live: null, running: null, worktree: null, transcript: null, stalled: null, agterm: null,
+  relaunchable: false, leftover: false, reason: null });
 
 function inspect(out) {
   const tree = batchTree();
@@ -834,15 +845,23 @@ function inspect(out) {
   const gone = out.live === false && out.running === false && out.worktree.exists && out.worktree.registered
     && (!call.agterm || (out.agterm.read === true && out.agterm.present === false));
   out.relaunchable = gone && out.transcript.found === true;
-  // A worktree nobody stands in, for a session that never wrote a word: what a start that
-  // never reached its first prompt left.
-  out.leftover = gone && out.transcript.found === false;
+  // A worktree nobody stands in, for a session that never wrote a word, as Claude Code made
+  // it — clean, on its own branch, holding no commit no other branch has: what a start that
+  // never reached its first prompt left. `null` where git did not answer.
+  out.leftover = false;
+  if (gone && out.transcript.found === false) {
+    const g = runner(wt, 'git');
+    const head = g(['symbolic-ref', '-q', 'HEAD']);
+    const dirty = g(['status', '--porcelain']);
+    const own = g(['rev-list', '--count', 'HEAD', '--not', `--exclude=refs/heads/worktree-${call.slug}`, '--branches', '--remotes']);
+    out.leftover = !dirty.ok || !own.ok || (!head.ok && head.code !== 1) ? null
+      : head.out === `refs/heads/worktree-${call.slug}` && dirty.out === '' && own.out === '0';
+  }
   return wt;
 }
 
 async function check() {
-  const out = { read: false, batch: call.batch, session: call.session, live: null, running: null, worktree: null, transcript: null,
-    stalled: null, agterm: null, relaunchable: false, leftover: false, reason: null, notes: answer.notes };
+  const out = { read: false, batch: call.batch, session: call.session, ...inspected(), notes: answer.notes };
   inspect(out);
   out.read = out.reason === null;
   done(out);
@@ -853,7 +872,7 @@ async function relaunch() {
     model: settings.model, effort: settings.effort, session: call.session, check: null, trust: null, agterm: null,
     transcript: null, launchDir: null, record: null, ran: answer.ran, reason: null, notes: answer.notes };
   if (answer.load.holds) { out.reason = `the machine's load holds the start: ${answer.load.avg5} over five minutes on ${answer.load.cores} cores`; done(out); }
-  const seen = { live: null, running: null, worktree: null, transcript: null, stalled: null, agterm: null, relaunchable: false, leftover: false, reason: null, notes: [] };
+  const seen = { ...inspected(), notes: [] };
   const wt = inspect(seen);
   out.check = seen;
   if (!wt || !seen.relaunchable) { out.reason = seen.reason || 'check does not find it relaunchable — something may still hold it, or a reading did not answer'; done(out); }
@@ -889,8 +908,9 @@ async function close() {
   // batch's worktree, where a relaunch opens it, or the repository's root, where every
   // launch opens one — there under a name whose address is this batch's.
   const at = f.session.cwd ? real(f.session.cwd, f.session.cwd) : null;
-  const address = new RegExp(`(^|[^A-Za-z0-9._/-])${call.batch.replace(/[.]/g, '\\.')} — `);
-  const rootShell = !f.session.program && f.session.shell && at === real(tree.root, tree.root) && address.test(name || '');
+  // The address leads a title, behind nothing but the status mark a host puts first.
+  const address = new RegExp(`^[^\\p{L}\\p{N}]*${call.batch.replace(/[.]/g, '\\.')} — `, 'u');
+  const rootShell = !f.session.program && f.session.shell && at !== null && sameDir(at, tree.root) && address.test(name || '');
   // A directory git no longer lists is no batch's: whatever stands in it is not this one.
   if (!known && !rootShell) { out.reason = 'git registers no worktree at the batch\'s path'; done(out); }
   if (f.session.asking) { out.reason = 'the session holds a question open for the user'; done(out); }
