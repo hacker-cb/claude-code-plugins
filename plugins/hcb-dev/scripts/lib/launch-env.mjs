@@ -227,12 +227,12 @@ export function agterm(cli, socket) {
         ? tree.result.tree.workspaces : [];
       for (const ws of spaces) {
         for (const s of Array.isArray(ws && ws.sessions) ? ws.sessions : []) {
-          if (s && visit({ window: w, workspace: ws.id || null, session: view(s) })) return { read: true, stopped: true };
+          if (s && visit({ window: w, workspace: ws.id || null, session: view(s) })) return { read: true };
         }
       }
     }
     // A window whose tree did not answer may hold it: absent from what was read is not absent.
-    return unread ? { read: false, why: `${unread} window tree(s) did not answer` } : { read: true, stopped: false };
+    return unread ? { read: false, why: `${unread} window tree(s) did not answer` } : { read: true };
   };
   return {
     call,

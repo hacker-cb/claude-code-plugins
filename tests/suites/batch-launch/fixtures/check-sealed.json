@@ -81,7 +81,10 @@
           "hasTrustDialogAccepted": true
         }
       }
-    }
+    },
+    "profiles/p/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n"
   },
-  "reserved": "dead"
+  "sealed": [
+    "profiles/p/projects"
+  ]
 }

@@ -26,13 +26,13 @@
 // Exit 0 whenever an answer is printed, `"read": false` with a `reason` included. Exit 2
 // only for a call this script cannot act on at all.
 
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runner, text, within, worktrees, writeAll } from './lib/forge.mjs';
+import { refNameOk, runner, text, within, worktrees, writeAll } from './lib/forge.mjs';
 import { agterm, aimuxCore, aimuxRun, interpreterOn, loginEnv, loginShell, onPath, real, sleep } from './lib/launch-env.mjs';
 import { configFile, mirrorTrust } from './lib/claude-trust.mjs';
 
@@ -524,7 +524,8 @@ function occupancy(path) {
     if (!w) continue;
     if (w.occupied === true) occupied = true;
     else if (w.occupied === null) unread = `the session registry under ${dir} did not read`;
-    for (const s of w.sessions || []) if (Number.isInteger(s && s.pid)) pids.add(s.pid);
+    // A record whose liveness could not be told proves nobody is there.
+    for (const s of w.sessions || []) if (s && s.live === true && Number.isInteger(s.pid)) pids.add(s.pid);
   }
   return { occupied: occupied ? true : unread ? null : false, pids, why: occupied ? null : unread };
 }
@@ -578,47 +579,25 @@ function cwdOf(pid) {
   return n ? n.slice(1) : null;
 }
 
-// One launch of a batch at a time, across every session of this repository: a directory
-// made in git's own directory, which `mkdir` makes for one caller only, holding the pid
-// that made it. One left by a process that is gone is taken over.
-function reserve() {
-  const common = git(['rev-parse', '--git-common-dir']);
-  if (!common.ok) return { why: `git's directory did not read (${common.line()})` };
-  const dir = join(resolve(process.cwd(), common.out), 'hcb-batch-launch');
-  const lock = join(dir, call.slug);
-  for (let i = 0; i < 2; i += 1) {
-    try {
-      mkdirSync(dir, { recursive: true });
-      mkdirSync(lock);
-      writeFileSync(join(lock, 'pid'), `${process.pid}\n`);
-      process.on('exit', () => { try { rmSync(lock, { recursive: true, force: true }); } catch { /* left */ } });
-      return { why: null };
-    } catch (e) {
-      if (e.code !== 'EEXIST') return { why: `the launch could not be reserved (${e.code || e.message})` };
-      let pid = NaN;
-      try { pid = Number(readFileSync(join(lock, 'pid'), 'utf8').trim()); } catch { /* being written */ }
-      let alive = true;
-      if (Number.isInteger(pid) && pid > 0) { try { process.kill(pid, 0); } catch (k) { alive = k.code === 'EPERM'; } }
-      if (alive) return { why: `a launch of this batch is under way${Number.isInteger(pid) ? ` (pid ${pid})` : ''}` };
-      try { rmSync(lock, { recursive: true, force: true }); } catch { /* the next pass says */ }
-    }
-  }
-  return { why: 'a launch of this batch left its reservation, and it would not clear' };
-}
-
 // A session's transcript, wherever a configuration keeps its projects; its size and time,
 // so that a resumed session writing to it shows.
 function findTranscript(session, dirs) {
+  let unread = null;
   for (const dir of dirs) {
     if (!dir) continue;
     let projects;
-    try { projects = readdirSync(join(dir, 'projects')); } catch { continue; }
+    try { projects = readdirSync(join(dir, 'projects')); } catch (e) {
+      if (e.code !== 'ENOENT') unread = `${join(dir, 'projects')} did not read (${e.code})`;
+      continue;
+    }
     for (const p of projects) {
       const f = join(dir, 'projects', p, `${session}.jsonl`);
-      try { const st = statSync(f); return { path: f, size: st.size, lastWrite: st.mtime.toISOString() }; } catch { /* not here */ }
+      try { const st = statSync(f); return { path: f, size: st.size, lastWrite: st.mtime.toISOString() }; } catch (e) {
+        if (e.code !== 'ENOENT' && e.code !== 'ENOTDIR') unread = `${f} did not read (${e.code})`;
+      }
     }
   }
-  return null;
+  return unread ? { unread } : null;
 }
 
 // The profile the batch goes on, and the configuration it runs under.
@@ -724,14 +703,16 @@ function open(out, at, place, session, resume, before) {
     // An answer lost on the way is no session refused: the tree says whether one opened. It
     // is the one running this launch — the launch file in its arguments while the login
     // shell runs it, the session id once claude does. While the login shell is still in its
-    // profile it carries neither: then it is the one session under this launch's title
-    // standing where it was opened — agterm's directory for a session is that one, never
-    // where its claude went. Two such, or a tree that did not read whole, settle nothing.
-    const strong = ag.filter((s) => s.argv.some((w) => w.includes(file)) || carriesArgv(s.argv, session), answer.agterm.window);
-    const named = strong.hits.length ? null
-      : ag.filter((s) => s.name === call.title && s.cwd !== null && sameDir(s.cwd, at), answer.agterm.window);
-    const hit = strong.hits.length ? strong.hits[0] : named.hits.length === 1 ? named.hits[0] : null;
-    if (!hit && strong.read && named.read && !named.hits.length) {
+    // profile it carries neither: then it is the one session under this launch's title,
+    // running something, where it was opened — agterm's directory for a session is that one,
+    // never where its claude went; a bare shell left there by an earlier start runs nothing.
+    // Two such, or a tree that did not read whole, settle nothing.
+    const carried = (s) => s.argv.some((w) => w.includes(file)) || carriesArgv(s.argv, session);
+    const titled = (s) => s.program && s.name === call.title && s.cwd !== null && sameDir(s.cwd, at);
+    const look = ag.filter((s) => carried(s) || titled(s), answer.agterm.window);
+    const strong = look.hits.filter((e) => carried(e.session));
+    const hit = strong.length ? strong[0] : look.hits.length === 1 ? look.hits[0] : null;
+    if (!hit && look.read && !look.hits.length) {
       try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ }
       out.reason = `agterm opened no session: ${made.why}`;
       return;
@@ -739,8 +720,8 @@ function open(out, at, place, session, resume, before) {
     out.agterm = { session: hit ? hit.session.id : null, window: hit ? hit.window : null, wrote: null };
     out.started = null;
     out.reason = `agterm's answer did not read (${made.why}), and ${hit ? 'a session this launch opened stands in its tree'
-      : named && named.hits.length > 1 ? 'several sessions under this launch\'s title stand where it was opened'
-        : `the tree did not read whole: ${strong.why || named.why}`} — read it before anything else is launched`;
+      : look.hits.length > 1 ? 'several sessions under this launch\'s title stand where it was opened'
+        : `the tree did not read whole: ${look.why}`} — read it before anything else is launched`;
     return;
   }
   out.agterm = { session: text(made.result && made.result.id) || null, window: answer.agterm.window, wrote: Boolean(made.result && made.result.id) };
@@ -751,7 +732,7 @@ function open(out, at, place, session, resume, before) {
   const dirs = [place.configDir, ...configDirs().filter((d) => d !== place.configDir)];
   for (let i = 0; i <= call.wait; i += 1) {
     const t = findTranscript(session, dirs);
-    if (moved(t)) { out.transcript = t; out.started = true; break; }
+    if (t && !t.unread && moved(t)) { out.transcript = t; out.started = true; break; }
     if (i < call.wait) sleep(1000);
   }
   if (out.started === true) {
@@ -783,7 +764,9 @@ async function launch() {
   if (known && (known.prunable || !stands)) { out.reason = `git lists ${wt} as a worktree whose directory is gone — prune it first`; done(out); }
   if (known) { out.reason = `${wt} stands already, a worktree${over}`; done(out); }
   if (stands) { out.reason = `${wt} stands already, a directory git does not list as a worktree${over}`; done(out); }
-  if (!git(['check-ref-format', `refs/heads/${branch}`]).ok) { out.reason = `${branch} is no name git takes for a branch: the batch's identifier cannot name its worktree`; done(out); }
+  if (!refNameOk(branch)) { out.reason = `${branch} is no name git takes for a branch: the batch's identifier cannot name its worktree`; done(out); }
+  // Claude Code's own bound on a worktree's name.
+  if (call.slug.length > 64) { out.reason = `${call.slug} is longer than the 64 characters Claude Code takes for a worktree's name`; done(out); }
   const heads = git(['for-each-ref', '--format=%(refname)', `refs/heads/${branch}`]);
   if (!heads.ok) { out.reason = `whether a branch ${branch} stands did not read (${heads.line()})`; done(out); }
   if (heads.out !== '') { out.reason = `a branch ${branch} stands already, which --worktree would cut again over its commits${over}`; done(out); }
@@ -793,10 +776,6 @@ async function launch() {
   // this one, or where its directory could not be read.
   const here = [...starting].filter((p) => { const d = cwdOf(p); return d === null || within(real(d, d), real(root, root)); });
   if (here.length) { out.reason = `a claude making ${wt} runs already (pid ${here.join(', ')})${over}`; done(out); }
-  if (!out.dryRun) {
-    const held = reserve();
-    if (held.why) { out.reason = held.why; done(out); }
-  }
   const refused = await settleWay(out.dryRun);
   out.limits = answer.limits;
   if (refused) { out.reason = `${call.mode} does not answer: ${refused}`; done(out); }
@@ -827,8 +806,11 @@ function inspect(out) {
   out.live = who.occupied;
   if (who.why) out.notes.push(who.why);
   out.running = running(call.session);
-  const t = findTranscript(call.session, configDirs());
-  out.transcript = t ? { found: true, ...t } : { found: false, path: null, size: null, lastWrite: null };
+  const found = findTranscript(call.session, configDirs());
+  const t = found && !found.unread ? found : null;
+  // Not found where a projects directory would not read is unknown, not absent.
+  out.transcript = t ? { found: true, ...t } : { found: found ? null : false, path: null, size: null, lastWrite: null };
+  if (found && found.unread) out.notes.push(found.unread);
   if (t && answer.aimux.core) {
     const hit = (() => { try { return core.sessionQuotaHit ? core.sessionQuotaHit(t.path) : undefined; } catch { return undefined; } })();
     out.stalled = hit === undefined ? 'unread' : hit === null ? null : { window: text(hit.rateLimitType) || null,
@@ -851,10 +833,10 @@ function inspect(out) {
   // session gone, and resuming one still running puts two processes on one transcript.
   const gone = out.live === false && out.running === false && out.worktree.exists && out.worktree.registered
     && (!call.agterm || (out.agterm.read === true && out.agterm.present === false));
-  out.relaunchable = gone && out.transcript.found;
+  out.relaunchable = gone && out.transcript.found === true;
   // A worktree nobody stands in, for a session that never wrote a word: what a start that
   // never reached its first prompt left.
-  out.leftover = gone && !out.transcript.found;
+  out.leftover = gone && out.transcript.found === false;
   return wt;
 }
 

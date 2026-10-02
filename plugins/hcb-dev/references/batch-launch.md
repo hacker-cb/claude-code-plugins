@@ -51,7 +51,8 @@ ledgers' rows. `probe` without `--limits` sends no request and is what a status 
 ## Pacing
 
 Launches go one at a time: the next only once the one before it answered `started`, and
-none while `load.holds`. **The first launch after any change of way or profile is a
+none while `load.holds`. A batch is never launched twice at once — nothing in the script
+holds a second launch back while the first is still starting. **The first launch after any change of way or profile is a
 canary**: launch one batch, wait for its start report, check it against the launch record
 — the title, the worktree, the model and effort, the profile by the `configDir` `probe` gives it
 in `aimux.profiles[]`, a model the record names by alias matching what it resolves to — and only
@@ -73,7 +74,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 |---|---|
 | `started` | `true` the session wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled |
 | `profile` | the profile and `from`: the user's `word` or the `spread`; `notes` says where a word overrode a ceiling |
-| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts (`by: host`): the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` then says so, `check`, `relaunch` and `close` reading the batch at that path alone: the user settles it — and `null` where no live claude answered. What stands already stops the launch — a worktree or directory at the path, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree, another launch of the batch under way: a batch launched before is checked and relaunched, never launched over |
+| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts (`by: host`): the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` names it, and the user settles it before anything rests on the batch — and `null` where no live claude answered. The launch stops on what stands already — a worktree or directory at the path, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree: a batch launched before is checked and relaunched, never launched over — and on an `<epic>-<id>` that names no branch or runs past 64 characters |
 | `trust` | the trust this session's configuration gives the repository, carried to the profile: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
 | `record` | what goes into the batch's ledger row, whole |
 

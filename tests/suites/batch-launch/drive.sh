@@ -16,8 +16,8 @@
 #   holding       a process whose arguments are these words, standing in the repository —
 #                 or in `holding_in`, a directory under HOME, where the envelope names one
 #   branches      local branches made in the repository, at its one commit
-#   reserved      `live` or `dead`: a launch of batch t1/x1 reserved in git's directory by a
-#                 process still running, or by one gone
+#   running_domain  the `pidDomain` that process's registry record names, where given
+#   sealed        directories under HOME made unreadable once everything stands
 #   dirs          directories made once the repository stands
 #   files         the envelope's `files`: each path under HOME written with its content, a
 #                 JSON value as JSON
@@ -42,7 +42,7 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/batch-launch-suite.XXXXXX") || exit 125
 # One spelling of it: a TMPDIR ending in `/` doubles the slash, and the masks below match text.
 tmp=$(cd "$tmp" && pwd) || exit 125
 holder=""
-trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; [ -n "${reserver:-}" ] && kill "$reserver" 2>/dev/null; rm -rf "$tmp"' EXIT
+trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; [ -n "${sealed_dirs:-}" ] && chmod -R u+rwx $sealed_dirs 2>/dev/null; rm -rf "$tmp"' EXIT
 home="$tmp/home"
 mkdir -p "$home/login" || exit 125
 # What a stub kept beside the marker belongs to the case that made it, not to the next.
@@ -102,15 +102,6 @@ if [ -n "$envelope" ] && [ -n "$pin" ]; then
     git -C "$repo" branch "$b" || exit 125
   done < <(jq -r '.branches // [] | .[]' "$envelope")
 fi
-reserver=""
-case "$( [ -n "$envelope" ] && jq -r '.reserved // empty' "$envelope")" in
-  '') ;;
-  live) sleep 300 & reserver=$!
-    mkdir -p "$repo/.git/hcb-batch-launch/t1-x1" && echo "$reserver" > "$repo/.git/hcb-batch-launch/t1-x1/pid" || exit 125 ;;
-  dead) sh -c 'exit 0' & gone=$!; wait "$gone"
-    mkdir -p "$repo/.git/hcb-batch-launch/t1-x1" && echo "$gone" > "$repo/.git/hcb-batch-launch/t1-x1/pid" || exit 125 ;;
-  *) echo "drive: reserved is live or dead" >&2; exit 125 ;;
-esac
 # `dirs`, once the repository and its worktree stand: a directory inside one of them too.
 if [ -n "$envelope" ]; then
   while IFS= read -r d; do
@@ -141,8 +132,19 @@ if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ];
   fi
   running_in=$(jq -r '.running_in // empty' "$envelope")
   if [ -n "$running_in" ] && [ -n "$runner_pid" ]; then
-    printf '{"pid":%s,"cwd":"%s","startedAt":1}\n' "$runner_pid" "$running_in" > "$home/.claude/sessions/$runner_pid.json" || exit 125
+    jq -nc --argjson pid "$runner_pid" --arg cwd "$running_in" --arg domain "$(jq -r '.running_domain // empty' "$envelope")" \
+      '{pid: $pid, cwd: $cwd, startedAt: 1} + (if $domain == "" then {} else {pidDomain: $domain} end)' \
+      > "$home/.claude/sessions/$runner_pid.json" || exit 125
   fi
+fi
+
+sealed_dirs=""
+if [ -n "$envelope" ]; then
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    chmod 000 "$home/$d" || exit 125
+    sealed_dirs="$sealed_dirs $home/$d"
+  done < <(jq -r '.sealed // [] | .[]' "$envelope")
 fi
 
 # The stubs read the envelope with HOME written in; the script's temporary directories land
