@@ -39,11 +39,11 @@
     "lands": {
       "id": "example-id-0000000d",
       "cwd": "@home/repo",
+      "name": "zsh",
       "foreground": [
         "path_helper",
         "-s"
-      ],
-      "name": "t1/x1 — проба запуска"
+      ]
     }
   },
   "aimux": {

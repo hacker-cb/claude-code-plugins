@@ -73,7 +73,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 |---|---|
 | `started` | `true` the session wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled |
 | `profile` | the profile and `from`: the user's `word` or the `spread`; `notes` says where a word overrode a ceiling |
-| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts (`by: host`): the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `check` and `close` read the batch at that path alone, so say so to the user — and `null` where no live claude answered. What stands already stops the launch — a worktree or directory at the path, a branch `worktree-<epic>-<id>`, a claude still making that worktree: a batch launched before is checked and relaunched, never launched over |
+| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts (`by: host`): the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` then says so, `check`, `relaunch` and `close` reading the batch at that path alone: the user settles it — and `null` where no live claude answered. What stands already stops the launch — a worktree or directory at the path, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree, another launch of the batch under way: a batch launched before is checked and relaunched, never launched over |
 | `trust` | the trust this session's configuration gives the repository, carried to the profile: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
 | `record` | what goes into the batch's ledger row, whole |
 
@@ -87,11 +87,13 @@ node "<plugin root>/scripts/batch-launch.mjs" check --batch <epic>/<id> --sessio
 here, `null` where a registry did not read; `running` is `true` where any process carries the
 session — resumed in another terminal or directory. `stalled` names the subscription window a session
 stopped on and when it resets: say so to the user, with the batch and the reset time.
-`agterm.idle` is a session running nothing — a bare shell agterm restored, or the pane held
-open after claude exited — its place kept, its claude gone: `close` it first, then check again.
-A worktree standing where nothing runs and no transcript was written is what a start that
-never reached its first prompt left: removing it is the user's, and the batch launches again. `relaunchable` is `true` only where every reading
-answered and nothing holds the batch.
+`agterm.idle` is `true` for a bare shell agterm restored — its place kept, its claude gone:
+`close` it first, then check again — and `null` where agterm could not read what runs in the
+session, a pane held open after claude exited among it: closing that one is the user's.
+`relaunchable` is `true` only where every reading answered and nothing holds the batch.
+`leftover` is the same with no transcript: what a start that never reached its first prompt
+left — removing its worktree and the branch `worktree-<epic>-<id>` is the user's, and then
+the batch launches again.
 
 A row from `launched` to `building`, or `blocked` from one of them, whose session is gone
 after a restart is resumed — on `relaunchable` alone, never on a session merely not seen:
@@ -122,8 +124,8 @@ node "<plugin root>/scripts/batch-launch.mjs" close --batch <epic>/<id> --sessio
 
 `closed` reads the tree again. It refuses a session running anything whose arguments do not
 carry the batch's session id, or whose claude stands anywhere but the batch's worktree — one git
-still registers; one running nothing that stands anywhere but that worktree or, under a name
-carrying the batch's address, the repository's root; one waiting on the user; and one holding
-a second pane. For a chip, the session is archived instead, where
+still registers; a bare shell standing anywhere but that worktree or, under a name carrying
+the batch's address, the repository's root; one whose running program agterm could not read;
+one waiting on the user; and one holding a second pane. For a chip, the session is archived instead, where
 the host offers `archive_session`. The transcript and the worktree stay. Without that word,
 closing stays an ask in the report.

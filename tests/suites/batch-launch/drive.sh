@@ -13,8 +13,11 @@
 #                 or holding one live session standing in the directory `occupy` names
 #   running       a process elsewhere carrying the session id it names in its arguments —
 #                 registered as standing in `running_in` where the envelope names one
-#   holding       a process elsewhere whose arguments are these words
+#   holding       a process whose arguments are these words, standing in the repository —
+#                 or in `holding_in`, a directory under HOME, where the envelope names one
 #   branches      local branches made in the repository, at its one commit
+#   reserved      `live` or `dead`: a launch of batch t1/x1 reserved in git's directory by a
+#                 process still running, or by one gone
 #   dirs          directories made once the repository stands
 #   files         the envelope's `files`: each path under HOME written with its content, a
 #                 JSON value as JSON
@@ -39,7 +42,7 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/batch-launch-suite.XXXXXX") || exit 125
 # One spelling of it: a TMPDIR ending in `/` doubles the slash, and the masks below match text.
 tmp=$(cd "$tmp" && pwd) || exit 125
 holder=""
-trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; rm -rf "$tmp"' EXIT
+trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; [ -n "${reserver:-}" ] && kill "$reserver" 2>/dev/null; rm -rf "$tmp"' EXIT
 home="$tmp/home"
 mkdir -p "$home/login" || exit 125
 # What a stub kept beside the marker belongs to the case that made it, not to the next.
@@ -99,6 +102,15 @@ if [ -n "$envelope" ] && [ -n "$pin" ]; then
     git -C "$repo" branch "$b" || exit 125
   done < <(jq -r '.branches // [] | .[]' "$envelope")
 fi
+reserver=""
+case "$( [ -n "$envelope" ] && jq -r '.reserved // empty' "$envelope")" in
+  '') ;;
+  live) sleep 300 & reserver=$!
+    mkdir -p "$repo/.git/hcb-batch-launch/t1-x1" && echo "$reserver" > "$repo/.git/hcb-batch-launch/t1-x1/pid" || exit 125 ;;
+  dead) sh -c 'exit 0' & gone=$!; wait "$gone"
+    mkdir -p "$repo/.git/hcb-batch-launch/t1-x1" && echo "$gone" > "$repo/.git/hcb-batch-launch/t1-x1/pid" || exit 125 ;;
+  *) echo "drive: reserved is live or dead" >&2; exit 125 ;;
+esac
 # `dirs`, once the repository and its worktree stand: a directory inside one of them too.
 if [ -n "$envelope" ]; then
   while IFS= read -r d; do
@@ -116,7 +128,9 @@ holding_pid=""
 if [ -n "$envelope" ] && [ "$(jq '.holding // [] | length' "$envelope")" -gt 0 ]; then
   words=()
   while IFS= read -r w; do words+=("$w"); done < <(jq -r '.holding[]' "$envelope")
-  node -e 'setTimeout(() => {}, 300000)' -- "${words[@]}" & holding_pid=$!
+  in_dir=$(jq -r '.holding_in // empty' "$envelope")
+  if [ -n "$in_dir" ]; then in_dir="$home/$in_dir"; mkdir -p "$in_dir" || exit 125; else in_dir="$run_in"; fi
+  (cd "$in_dir" && exec node -e 'setTimeout(() => {}, 300000)' -- "${words[@]}") & holding_pid=$!
 fi
 if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ]; then
   mkdir -p "$home/.claude/sessions" || exit 125

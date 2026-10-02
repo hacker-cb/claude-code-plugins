@@ -211,7 +211,9 @@ export function agterm(cli, socket) {
     return { ok: true, result: doc.result };
   };
   const same = (a, b) => typeof a === 'string' && typeof b === 'string' && a.toUpperCase() === b.toUpperCase();
-  const where = (match, preferred) => {
+  // Every session in every window, the window named first taken first; `visit` returning
+  // true stops the walk there.
+  const walk = (visit, preferred) => {
     const list = call(['window', 'list']);
     if (!list.ok) return { read: false, why: `window list: ${list.why}` };
     const ids = (list.result && Array.isArray(list.result.windows) ? list.result.windows : [])
@@ -225,13 +227,12 @@ export function agterm(cli, socket) {
         ? tree.result.tree.workspaces : [];
       for (const ws of spaces) {
         for (const s of Array.isArray(ws && ws.sessions) ? ws.sessions : []) {
-          const v = s && view(s);
-          if (v && match(v)) return { read: true, found: true, window: w, workspace: ws.id || null, session: v };
+          if (s && visit({ window: w, workspace: ws.id || null, session: view(s) })) return { read: true, stopped: true };
         }
       }
     }
     // A window whose tree did not answer may hold it: absent from what was read is not absent.
-    return unread ? { read: false, why: `${unread} window tree(s) did not answer` } : { read: true, found: false };
+    return unread ? { read: false, why: `${unread} window tree(s) did not answer` } : { read: true, stopped: false };
   };
   return {
     call,
@@ -243,14 +244,17 @@ export function agterm(cli, socket) {
     // shell was told about first and in every other window after — that variable is
     // fixed at spawn and goes stale when the session is moved. Only the session asked
     // for is handed back; nothing else in the tree leaves this function.
-    find: (id, preferred) => where((s) => same(s.id, id), preferred),
-    // The first session `test` passes — what a launch whose answer got lost looks for.
-    findBy: (test, preferred) => where(test, preferred),
-    // Every session's id, in every window: what stood before a session was opened.
-    ids: (preferred) => {
-      const seen = new Set();
-      const r = where((s) => { seen.add(String(s.id).toUpperCase()); return false; }, preferred);
-      return r.read ? { read: true, ids: seen } : { read: false, why: r.why };
+    find: (id, preferred) => {
+      let hit = null;
+      const r = walk((e) => { if (same(e.session.id, id)) hit = e; return hit !== null; }, preferred);
+      return hit ? { read: true, found: true, ...hit } : r.read ? { read: true, found: false } : { read: false, why: r.why };
+    },
+    // Every session `test` passes, with whether every window answered — what a launch whose
+    // answer got lost looks through.
+    filter: (test, preferred) => {
+      const hits = [];
+      const r = walk((e) => { if (test(e.session)) hits.push(e); return false; }, preferred);
+      return { read: r.read, why: r.why || null, hits };
     },
   };
 }
@@ -262,8 +266,9 @@ function view(s) {
     cwd: typeof s.cwd === 'string' ? s.cwd : null,
     name: typeof s.name === 'string' ? s.name : null,
     status: typeof s.status === 'string' ? s.status : null,
-    // The foreground program's arguments, word by word; empty for a bare shell holding the
-    // pane, and for a pane held open after its command exited, which has no shell either.
+    // The foreground program's arguments, word by word; empty for a bare shell at its
+    // prompt. With no shell named either, what runs there could not be read — a setuid
+    // program, or a pane held open after its command exited: unknown, never idle.
     argv,
     program: argv.length > 0,
     shell: typeof s.foregroundShell === 'string',

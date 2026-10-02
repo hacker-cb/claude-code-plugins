@@ -34,16 +34,6 @@
           ]
         }
       ]
-    },
-    "new_fails": true,
-    "lands": {
-      "id": "example-id-0000000d",
-      "cwd": "@home/repo",
-      "foreground": [
-        "path_helper",
-        "-s"
-      ],
-      "name": "t1/x1 — проба запуска"
     }
   },
   "aimux": {
@@ -92,5 +82,6 @@
         }
       }
     }
-  }
+  },
+  "reserved": "dead"
 }

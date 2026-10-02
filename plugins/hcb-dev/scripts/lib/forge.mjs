@@ -209,8 +209,6 @@ export const coord = (v) => {
 //
 // `null` where the listing could not be read at all. An empty ARRAY would say this
 // repository has no worktrees, which is never true of one that answered.
-// `within`: a path is the directory or stands under it, both already resolved.
-export const within = (child, parent) => child === parent || child.startsWith(parent + sep);
 export function worktrees(git) {
   let list = git(['worktree', 'list', '--porcelain', '-z']);
   let records;
@@ -247,6 +245,10 @@ export function worktrees(git) {
   push();
   return { trees, error: null };
 }
+
+// A path is the directory or stands under it — the two already resolved, as git and the
+// session registry spell them differently.
+export const within = (child, parent) => child === parent || child.startsWith(parent + sep);
 
 // The requests that carry a commit, asked of either forge — mirrored, because the same
 // question has two answers and neither forge is assumed. The repository goes in the PATH:
