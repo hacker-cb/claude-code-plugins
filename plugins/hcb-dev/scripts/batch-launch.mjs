@@ -774,10 +774,15 @@ async function launch() {
     const over = ' — a batch launched before is checked and relaunched, never launched over';
     const listed = batchTree();
     if (listed.why) return listed.why;
-    const there = existsSync(wt);
+    // The path itself, a link included: one pointing nowhere still stands there.
+    let there;
+    try { lstatSync(wt); there = true; } catch (e) {
+      if (e.code !== 'ENOENT') return `${wt} could not be looked at (${e.code}), so whether something stands there is unknown`;
+      there = false;
+    }
     if (listed.known && (listed.known.prunable || !there)) return `git lists ${wt} as a worktree whose directory is gone — prune it first`;
     if (listed.known) return `${wt} stands already, a worktree${over}`;
-    if (there) return `${wt} stands already, a directory git does not list as a worktree${over}`;
+    if (there) return `${wt} stands already, something git does not list as a worktree${over}`;
     const heads = git(['for-each-ref', '--format=%(refname)', `refs/heads/${branch}`]);
     if (!heads.ok) return `whether a branch ${branch} stands did not read (${heads.line()})`;
     if (heads.out !== '') return `a branch ${branch} stands already, which --worktree would cut again over its commits${over}`;
