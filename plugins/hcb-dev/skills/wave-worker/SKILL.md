@@ -43,7 +43,7 @@ holds, and what it stops is named in the return as the gap it is.
    this session into that group — itself, never another.
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and where it is not, have Claude Code make
-   one (`EnterWorktree`) and stand in it, unless the order says Claude Code made it
+   one for this session and stand in it, unless the order says Claude Code made it
    as this session started: then that one, and no other — before the first write;
    the order's `Start:` gate holds however this session was started.
 3. **Read the whole batch through before building any of it, and not before the

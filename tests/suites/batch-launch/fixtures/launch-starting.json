@@ -30,12 +30,6 @@
             {
               "id": "example-id-00000001",
               "cwd": "@home/repo"
-            },
-            {
-              "id": "example-id-0000000c",
-              "cwd": "@home/repo",
-              "foregroundShell": "bash",
-              "name": "✳ t1/x1 — проба запуска"
             }
           ]
         }
@@ -88,5 +82,9 @@
         }
       }
     }
-  }
+  },
+  "holding": [
+    "--worktree",
+    "t1-x1"
+  ]
 }

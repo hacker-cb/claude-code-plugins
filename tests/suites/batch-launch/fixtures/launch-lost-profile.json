@@ -30,15 +30,18 @@
             {
               "id": "example-id-00000001",
               "cwd": "@home/repo"
-            },
-            {
-              "id": "example-id-0000000c",
-              "cwd": "@home/repo",
-              "foregroundShell": "bash",
-              "name": "✳ t1/x1 — проба запуска"
             }
           ]
         }
+      ]
+    },
+    "new_fails": true,
+    "lands": {
+      "id": "example-id-0000000d",
+      "cwd": "@home/repo",
+      "foreground": [
+        "path_helper",
+        "-s"
       ]
     }
   },

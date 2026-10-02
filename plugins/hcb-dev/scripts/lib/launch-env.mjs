@@ -225,22 +225,8 @@ export function agterm(cli, socket) {
         ? tree.result.tree.workspaces : [];
       for (const ws of spaces) {
         for (const s of Array.isArray(ws && ws.sessions) ? ws.sessions : []) {
-          if (s && match(s)) {
-            return { read: true, found: true, window: w, workspace: ws.id || null,
-              // `cwd` is the directory agterm opened the session in; it does not follow a
-              // program that moves elsewhere.
-              session: { id: s.id, cwd: typeof s.cwd === 'string' ? s.cwd : null,
-                status: typeof s.status === 'string' ? s.status : null,
-                // A program in the foreground, or a bare shell holding the pane.
-                program: Array.isArray(s.foreground) && s.foreground.length > 0,
-                // The foreground program's command line, its words joined by spaces.
-                command: commandOf(s),
-                shell: typeof s.foregroundShell === 'string',
-                // Another pane beside the main one: closing the session closes it too.
-                split: s.hasSplit === true,
-                // A question agterm holds open for the user, whatever the agent's status says.
-                asking: Boolean(s.ask) } };
-          }
+          const v = s && view(s);
+          if (v && match(v)) return { read: true, found: true, window: w, workspace: ws.id || null, session: v };
         }
       }
     }
@@ -256,12 +242,33 @@ export function agterm(cli, socket) {
     // `tree` answers one window at a time, so a session is looked for in the window its
     // shell was told about first and in every other window after — that variable is
     // fixed at spawn and goes stale when the session is moved. Only the session asked
-    // for is looked at; nothing else in the tree is read.
+    // for is handed back; nothing else in the tree leaves this function.
     find: (id, preferred) => where((s) => same(s.id, id), preferred),
-    // The session whose command line passes `test` — what a launch whose answer got lost
-    // looks for.
-    findCommand: (test, preferred) => where((s) => { const c = commandOf(s); return c !== null && test(c); }, preferred),
+    // The first session `test` passes — what a launch whose answer got lost looks for.
+    findBy: (test, preferred) => where(test, preferred),
+    // Every session's id, in every window: what stood before a session was opened.
+    ids: (preferred) => {
+      const seen = new Set();
+      const r = where((s) => { seen.add(String(s.id).toUpperCase()); return false; }, preferred);
+      return r.read ? { read: true, ids: seen } : { read: false, why: r.why };
+    },
   };
 }
-const commandOf = (s) => (Array.isArray(s.foreground) && s.foreground.length > 0
-  ? s.foreground.filter((w) => typeof w === 'string').join(' ') : null);
+// One session of agterm's tree, as much of it as the callers read.
+function view(s) {
+  const argv = Array.isArray(s.foreground) ? s.foreground.filter((w) => typeof w === 'string') : [];
+  return { id: s.id,
+    // The directory agterm opened the session in; it does not follow a program that moves.
+    cwd: typeof s.cwd === 'string' ? s.cwd : null,
+    name: typeof s.name === 'string' ? s.name : null,
+    status: typeof s.status === 'string' ? s.status : null,
+    // The foreground program's arguments, word by word; empty for a bare shell holding the
+    // pane, and for a pane held open after its command exited, which has no shell either.
+    argv,
+    program: argv.length > 0,
+    shell: typeof s.foregroundShell === 'string',
+    // Another pane beside the main one: closing the session closes it too.
+    split: s.hasSplit === true,
+    // A question agterm holds open for the user, whatever the agent's status says.
+    asking: Boolean(s.ask) };
+}

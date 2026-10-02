@@ -7,6 +7,7 @@
 // truncates, the page that is not a list, the guard that refuses `main`.
 
 import { statSync, writeSync } from 'node:fs';
+import { sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 // `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit`
@@ -208,6 +209,8 @@ export const coord = (v) => {
 //
 // `null` where the listing could not be read at all. An empty ARRAY would say this
 // repository has no worktrees, which is never true of one that answered.
+// `within`: a path is the directory or stands under it, both already resolved.
+export const within = (child, parent) => child === parent || child.startsWith(parent + sep);
 export function worktrees(git) {
   let list = git(['worktree', 'list', '--porcelain', '-z']);
   let records;

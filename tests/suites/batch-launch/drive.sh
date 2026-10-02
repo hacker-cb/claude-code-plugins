@@ -13,6 +13,8 @@
 #                 or holding one live session standing in the directory `occupy` names
 #   running       a process elsewhere carrying the session id it names in its arguments —
 #                 registered as standing in `running_in` where the envelope names one
+#   holding       a process elsewhere whose arguments are these words
+#   branches      local branches made in the repository, at its one commit
 #   dirs          directories made once the repository stands
 #   files         the envelope's `files`: each path under HOME written with its content, a
 #                 JSON value as JSON
@@ -37,7 +39,7 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/batch-launch-suite.XXXXXX") || exit 125
 # One spelling of it: a TMPDIR ending in `/` doubles the slash, and the masks below match text.
 tmp=$(cd "$tmp" && pwd) || exit 125
 holder=""
-trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; rm -rf "$tmp"' EXIT
+trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; rm -rf "$tmp"' EXIT
 home="$tmp/home"
 mkdir -p "$home/login" || exit 125
 # What a stub kept beside the marker belongs to the case that made it, not to the next.
@@ -91,6 +93,12 @@ if [ -n "$envelope" ] && [ "$(jq -r '.repo // false' "$envelope")" = true ]; the
     *) echo "drive: PREWT is clean or dirty, not '$PREWT'" >&2; exit 125 ;;
   esac
 fi
+if [ -n "$envelope" ] && [ -n "$pin" ]; then
+  while IFS= read -r b; do
+    [ -n "$b" ] || continue
+    git -C "$repo" branch "$b" || exit 125
+  done < <(jq -r '.branches // [] | .[]' "$envelope")
+fi
 # `dirs`, once the repository and its worktree stand: a directory inside one of them too.
 if [ -n "$envelope" ]; then
   while IFS= read -r d; do
@@ -103,6 +111,12 @@ fi
 runner_pid=""
 if [ -n "$envelope" ] && [ -n "$(jq -r '.running // empty' "$envelope")" ]; then
   node -e 'setTimeout(() => {}, 300000)' -- --resume "$(jq -r '.running' "$envelope")" & runner_pid=$!
+fi
+holding_pid=""
+if [ -n "$envelope" ] && [ "$(jq '.holding // [] | length' "$envelope")" -gt 0 ]; then
+  words=()
+  while IFS= read -r w; do words+=("$w"); done < <(jq -r '.holding[]' "$envelope")
+  node -e 'setTimeout(() => {}, 300000)' -- "${words[@]}" & holding_pid=$!
 fi
 if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ]; then
   mkdir -p "$home/.claude/sessions" || exit 125

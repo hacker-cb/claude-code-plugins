@@ -34,8 +34,7 @@
             {
               "id": "example-id-0000000c",
               "cwd": "@home/repo",
-              "foregroundShell": "bash",
-              "name": "✳ t1/x1 — проба запуска"
+              "foregroundShell": "bash"
             }
           ]
         }

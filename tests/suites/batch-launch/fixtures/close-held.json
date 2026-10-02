@@ -33,9 +33,7 @@
             },
             {
               "id": "example-id-0000000c",
-              "cwd": "@home/repo",
-              "foregroundShell": "bash",
-              "name": "✳ t1/x1 — проба запуска"
+              "cwd": "@home/repo/.claude/worktrees/t1-x1"
             }
           ]
         }
@@ -87,6 +85,7 @@
           "hasTrustDialogAccepted": true
         }
       }
-    }
+    },
+    "profiles/p/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n"
   }
 }

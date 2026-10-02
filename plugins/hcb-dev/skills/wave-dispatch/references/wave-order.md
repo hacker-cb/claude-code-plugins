@@ -38,7 +38,7 @@ Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. <By way — launched: Claude Code made it as this session
 started, at <its path>; verify you stand in it before the first write, and make
 no other. Chip or paste: verify you are in a worktree of your own before the first
-write; where you are not, have Claude Code make one (`EnterWorktree`) and stand in
+write; where you are not, have Claude Code make one for this session and stand in
 it. Either way the worktree stands on whatever Claude Code cut it from, which is
 nothing you build on: your branch is cut from <the base | the branch batch
 `<epic>/<id>` has published, where this batch stacks on it — before you read

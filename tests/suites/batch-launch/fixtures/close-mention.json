@@ -34,8 +34,13 @@
             {
               "id": "example-id-0000000c",
               "cwd": "@home/repo",
-              "foregroundShell": "bash",
-              "name": "✳ t1/x1 — проба запуска"
+              "status": "completed",
+              "foreground": [
+                "claude",
+                "объясни, что делает --resume 11111111-2222-4333-8444-555555555555",
+                "--session-id",
+                "22222222-2222-4333-8444-555555555555"
+              ]
             }
           ]
         }
@@ -88,5 +93,7 @@
         }
       }
     }
-  }
+  },
+  "running": "11111111-2222-4333-8444-555555555555",
+  "running_in": "@home/repo/.claude/worktrees/t1-x1"
 }
