@@ -516,12 +516,13 @@ name stands for.
   where a launched batch finds `claude` and `aimux`; aimux's own reading of its
   subscriptions, through the `./core` entry it publishes, warming a profile whose login
   expired and ranking the rest by room per batch already on them; and the machine's load.
-  `launch` cuts the batch's worktree detached at the pin, carries the repository's trust
-  into the profile the batch runs under — only ever trust this session's configuration
-  already gives — and opens an agterm session after this one, unselected, with the order as
-  its first prompt and a session id chosen here. `check` says whether that session is alive
-  and whether a subscription limit stopped it, `relaunch` resumes one `check` found gone,
-  and `close` ends one standing in the batch's worktree. The model, the effort and the
+  `launch` carries the repository's trust into the profile the batch runs under — only ever
+  trust this session's configuration already gives — and opens an agterm session after this
+  one, unselected, starting claude at the repository's root with `--worktree`, so Claude Code
+  makes the batch's worktree itself, with the order as its first prompt and a session id
+  chosen here. `check` says whether that session is alive and whether a subscription limit
+  stopped it, `relaunch` resumes one `check` found gone, and `close` ends one whose command
+  line carries that session id and whose claude stands in the batch's worktree. The model, the effort and the
   limits come from the plugin's settings, read unsaved as the manifest's defaults. **The
   fourth that acts.**
 

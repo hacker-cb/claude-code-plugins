@@ -11,7 +11,8 @@
 #                 directory the script runs in; `@pin` in an argument is its commit
 #   .claude/sessions/  where it says `registry: true`: a live-session registry, empty —
 #                 or holding one live session standing in the directory `occupy` names
-#   running       a process elsewhere carrying the session id it names in its arguments
+#   running       a process elsewhere carrying the session id it names in its arguments —
+#                 registered as standing in `running_in` where the envelope names one
 #   dirs          directories made once the repository stands
 #   files         the envelope's `files`: each path under HOME written with its content, a
 #                 JSON value as JSON
@@ -109,6 +110,10 @@ if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ];
   if [ -n "$occupy" ]; then
     sleep 300 & holder=$!
     printf '{"pid":%s,"cwd":"%s","startedAt":1}\n' "$holder" "$occupy" > "$home/.claude/sessions/$holder.json" || exit 125
+  fi
+  running_in=$(jq -r '.running_in // empty' "$envelope")
+  if [ -n "$running_in" ] && [ -n "$runner_pid" ]; then
+    printf '{"pid":%s,"cwd":"%s","startedAt":1}\n' "$runner_pid" "$running_in" > "$home/.claude/sessions/$runner_pid.json" || exit 125
   fi
 fi
 

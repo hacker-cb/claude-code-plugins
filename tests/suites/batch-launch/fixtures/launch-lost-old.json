@@ -33,8 +33,16 @@
             },
             {
               "id": "example-id-0000000e",
-              "cwd": "@home/repo/.claude/worktrees/t1-x1",
-              "foregroundShell": "bash"
+              "cwd": "@home/repo",
+              "foreground": [
+                "claude",
+                "--worktree",
+                "t1-x1",
+                "--session-id",
+                "22222222-2222-4333-8444-555555555555",
+                "-n",
+                "t1/x1 — проба запуска"
+              ]
             }
           ]
         }

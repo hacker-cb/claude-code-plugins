@@ -133,7 +133,7 @@ stands there stays.
 - **The title a batch goes out under is what its session is asked to wear** — a launch starts
   it under that title. Later messages match on it until the receiver's start report says what
   it answers to — the two part company where a host hands back a variant (`session-comms.md`).
-- **A worktree a session cuts for itself, or its launcher for it, leads with its title's id** —
+- **A worktree a session names for itself, or its launcher names for it, leads with its title's id** —
   `<epic>-<id>` for a batch, `<epic>-master` for a master, whose bare number would
   otherwise prefix every batch's name. A hyphen where the title has a slash, and
   one for each comma between numbers, the space after it going into the same hyphen

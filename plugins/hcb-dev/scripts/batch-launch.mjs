@@ -6,18 +6,19 @@
 // directly or through aimux — what the batch would run at, and, asked for limits, which
 // aimux profile has room for it. It decides nothing about chips or a pasted order: those
 // are the host's tools and the user's hands, and the agent knows its own tools.
-// `launch` starts one batch in its own agterm session, beside this one: a worktree cut
-// detached at the pin, the order as the session's first prompt, a session id chosen here.
+// `launch` starts one batch in its own agterm session, beside this one: claude started at
+// the repository's root with `--worktree`, so Claude Code makes the batch's worktree itself,
+// the order as the session's first prompt, a session id chosen here.
 // `check` says whether that session is alive and whether a subscription limit stopped it;
 // `relaunch` resumes one `check` found gone; `close` ends one whose work was accepted.
 //
 // Usage: node batch-launch.mjs probe [<settings>] [--limits [--held <profile>=<n>,...]]
-//        node batch-launch.mjs launch --batch <epic>/<id> --pin <sha> --mode agterm|agterm-aimux
+//        node batch-launch.mjs launch --batch <epic>/<id> --mode agterm|agterm-aimux
 //             [<settings>] [--profile <name>] [--held ...] [--wait <s>] [--dry-run]  < the order
 //        node batch-launch.mjs check --batch <epic>/<id> --session <uuid> [--agterm <id>]
 //        node batch-launch.mjs relaunch --batch <epic>/<id> --session <uuid> --agterm <id> --title <title>
 //             --mode agterm|agterm-aimux [<settings>] [--profile <name>] [--wait <s>]  < the nudge
-//        node batch-launch.mjs close --batch <epic>/<id> --agterm <id> [--dry-run]
+//        node batch-launch.mjs close --batch <epic>/<id> --session <uuid> --agterm <id> [--dry-run]
 //   <settings>: --model-config <v> --effort-config <v> --profiles <v> --ceiling-5h <v>
 //               --ceiling-7d <v>  (the plugin's settings line), --model <m> --effort <e>
 //               (the user's word)
@@ -43,10 +44,10 @@ const [sub, ...argv] = process.argv.slice(2);
 const SETTINGS = ['--model-config', '--effort-config', '--profiles', '--ceiling-5h', '--ceiling-7d', '--model', '--effort'];
 const FLAGS = {
   probe: { valued: [...SETTINGS, '--held'], boolean: ['--limits'] },
-  launch: { valued: [...SETTINGS, '--held', '--batch', '--pin', '--mode', '--profile', '--wait'], boolean: ['--dry-run'] },
+  launch: { valued: [...SETTINGS, '--held', '--batch', '--mode', '--profile', '--wait'], boolean: ['--dry-run'] },
   check: { valued: ['--batch', '--session', '--agterm'], boolean: [] },
   relaunch: { valued: [...SETTINGS, '--batch', '--session', '--agterm', '--title', '--mode', '--profile', '--wait'], boolean: [] },
-  close: { valued: ['--batch', '--agterm'], boolean: ['--dry-run'] },
+  close: { valued: ['--batch', '--session', '--agterm'], boolean: ['--dry-run'] },
 };
 if (!FLAGS[sub]) die(sub ? `unknown subcommand '${sub}'` : 'a subcommand is required');
 const VALUED = new Set(FLAGS[sub].valued);
@@ -139,18 +140,15 @@ for (const pair of (opts['--held'] || '').split(',').map((x) => x.trim()).filter
 // No `-` inside either part: the worktree joins the two with one, and `a-b/c` would meet `a/b-c` there.
 const BATCH = /^([A-Za-z0-9][A-Za-z0-9._]*)\/([A-Za-z0-9][A-Za-z0-9._]*)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const call = { batch: null, slug: null, pin: null, mode: null, session: null, agterm: null, title: null,
+const call = { batch: null, slug: null, mode: null, session: null, agterm: null, title: null,
   text: null, wait: 90, profile: null };
 if (sub !== 'probe') {
   const b = BATCH.exec(opts['--batch'] || '');
   if (!b) die('--batch is <epic>/<id>, each part letters, digits, `.` or `_`');
   call.batch = opts['--batch'];
-  // The worktree a session cuts for itself leads with its batch's identifier; this one too.
+  // The name the launch hands `--worktree`, and so the worktree's directory under
+  // `.claude/worktrees/`: a batch's worktree leads with its batch's identifier.
   call.slug = `${b[1]}-${b[2]}`;
-}
-if (sub === 'launch') {
-  if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(opts['--pin'] || '')) die('--pin is the full commit id the order was verified on');
-  call.pin = opts['--pin'];
 }
 if (sub === 'launch' || sub === 'relaunch') {
   if (!['agterm', 'agterm-aimux'].includes(opts['--mode'])) die('--mode is agterm or agterm-aimux');
@@ -185,7 +183,7 @@ if (sub === 'relaunch') {
   if (!(opts['--title'] || '').startsWith(`${call.batch} — `)) die(`--title is the batch's title, \`${call.batch} — <topic>\``);
   call.title = opts['--title'];
 }
-if (sub === 'check' || sub === 'relaunch') {
+if (sub === 'check' || sub === 'relaunch' || sub === 'close') {
   if (!UUID.test(opts['--session'] || '')) die('--session is the session id the launch recorded');
   call.session = opts['--session'];
 }
@@ -496,10 +494,11 @@ function batchTree() {
 
 // Who stands in a worktree, from the one reader of the session registry this plugin has —
 // asked of every registry a configuration here keeps, since a batch under another aimux
-// profile registers under that profile's.
+// profile registers under that profile's. `pids` are the live sessions it found there.
 function occupancy(path) {
   const script = fileURLToPath(new URL('./worktree-owners.mjs', import.meta.url));
   const seen = new Set();
+  const pids = new Set();
   let occupied = false;
   let unread = null;
   for (const dir of configDirs()) {
@@ -525,18 +524,30 @@ function occupancy(path) {
     if (!w) continue;
     if (w.occupied === true) occupied = true;
     else if (w.occupied === null) unread = `the session registry under ${dir} did not read`;
+    for (const s of w.sessions || []) if (Number.isInteger(s && s.pid)) pids.add(s.pid);
   }
-  return occupied ? { occupied: true, why: null } : unread ? { occupied: null, why: unread } : { occupied: false, why: null };
+  return occupied ? { occupied: true, pids, why: null } : unread ? { occupied: null, pids, why: unread } : { occupied: false, pids, why: null };
 }
 
-// Whether a process carries the session anywhere — resumed in another terminal, another
-// directory, under another profile: the process table names it in its arguments.
-function running(session) {
-  const r = spawnSync('ps', ['axww', '-o', 'args='], { encoding: 'utf8', timeout: 10000, maxBuffer: 32 * 1024 * 1024 });
+// A command line carrying the session: the id the launch chose, which no other process is
+// handed. The arguments a process started with are what to match — the registry's own
+// `sessionId` moves to a new conversation's on `/clear`, while the process stays the batch's.
+const carries = (line, session) => [`--resume ${session}`, `--session-id ${session}`, `--resume=${session}`,
+  `--session-id=${session}`, `-r ${session}`].some((m) => line.includes(m));
+
+// The processes carrying the session anywhere — resumed in another terminal, another
+// directory, under another profile: the process table names it in their arguments.
+function carriers(session) {
+  const r = spawnSync('ps', ['axww', '-o', 'pid=,args='], { encoding: 'utf8', timeout: 10000, maxBuffer: 32 * 1024 * 1024 });
   if (r.status !== 0) return null;
-  const marks = [`--resume ${session}`, `--session-id ${session}`, `--resume=${session}`, `--session-id=${session}`, `-r ${session}`];
-  return (r.stdout || '').split('\n').some((line) => marks.some((m) => line.includes(m)));
+  const pids = new Set();
+  for (const line of (r.stdout || '').split('\n')) {
+    const m = /^\s*([0-9]+)\s(.*)$/.exec(line);
+    if (m && carries(m[2], session)) pids.add(Number(m[1]));
+  }
+  return pids;
 }
+const running = (session) => { const p = carriers(session); return p === null ? null : p.size > 0; };
 
 // A session's transcript, wherever a configuration keeps its projects; its size and time,
 // so that a resumed session writing to it shows.
@@ -601,11 +612,13 @@ function trust(out, prof, root, dryRun) {
 
 // The launch file: plain sh whatever the login shell is, every value one quoted word, the
 // text first after `--` so a continuation aimux makes onto another profile drops it rather
-// than sending it twice.
-function launchFile(dir, wt, place, session, resume, profile) {
+// than sending it twice. A launch starts at the repository's root and has Claude Code make
+// the worktree (`--worktree`); a resume starts inside the worktree it had, which Claude Code
+// re-enters from there.
+function launchFile(dir, at, place, session, resume, profile) {
   const textFile = join(dir, resume ? 'nudge.md' : 'order.md');
   writeFileSync(textFile, call.text, { mode: 0o600 });
-  const lines = ['#!/bin/sh', `# ${call.title.replace(/[^\x20-\x7e]/g, '?')} — written by batch-launch.mjs`, `cd ${q(wt)} || exit 1`];
+  const lines = ['#!/bin/sh', `# ${call.title.replace(/[^\x20-\x7e]/g, '?')} — written by batch-launch.mjs`, `cd ${q(at)} || exit 1`];
   // The configuration it runs under, said rather than inherited from whatever agterm's own
   // environment carries: this session's for a plain claude; for aimux's source profile, its
   // directory where that is not the default, since aimux sets none for it.
@@ -614,8 +627,8 @@ function launchFile(dir, wt, place, session, resume, profile) {
   } else if (place.prof.source && !sameDir(place.configDir, defaultDir())) {
     lines.push(`CLAUDE_CONFIG_DIR=${q(place.configDir)}; export CLAUDE_CONFIG_DIR`);
   }
-  const tail = [resume ? '--resume' : '--session-id', q(session), '--model', q(settings.model.value),
-    '--effort', q(settings.effort.value), '-n', q(call.title)].join(' ');
+  const tail = [...(resume ? ['--resume', q(session)] : ['--worktree', q(call.slug), '--session-id', q(session)]),
+    '--model', q(settings.model.value), '--effort', q(settings.effort.value), '-n', q(call.title)].join(' ');
   const text = `"$(cat ${q(textFile)})"`;
   lines.push(call.mode === 'agterm-aimux'
     ? `exec ${q(answer.aimux.path)} run ${q(profile)} -- ${text} ${tail}`
@@ -628,12 +641,12 @@ function launchFile(dir, wt, place, session, resume, profile) {
 // Opens the session beside this one and waits for its transcript to be written: a session
 // past every dialog that could hold it has written one, and a resumed one writes to the
 // transcript it had.
-function open(out, wt, place, session, resume, before) {
+function open(out, at, place, session, resume, before) {
   let dir = null;
   let file;
   try {
     dir = mkdtempSync(join(os.tmpdir(), 'hcb-batch-'));
-    file = launchFile(dir, wt, place, session, resume, out.profile.value);
+    file = launchFile(dir, at, place, session, resume, out.profile.value);
   } catch (e) {
     if (dir) { try { rmSync(dir, { recursive: true, force: true }); } catch { /* left */ } }
     out.reason = `the launch file could not be written (${e.code || e.message})`;
@@ -647,17 +660,15 @@ function open(out, wt, place, session, resume, before) {
   }
   out.launchDir = dir;
   const ag = agterm(agtermCli, answer.agterm.socket);
-  // What already stood in the worktree, so a lost answer is never read off a session older
-  // than this launch.
-  const already = ag.findIn(wt, answer.agterm.window);
   const made = ag.call(['session', 'new', '--after', answer.agterm.session, '--no-select', '--wait',
-    '--cwd', wt, '--name', call.title, '--command', `'${shell}' -l -c 'exec /bin/sh "${file}"'`]);
-  out.ran.push(`agtermctl session new --after ${answer.agterm.session} --no-select --wait --cwd ${wt} --name <title> --command '<login shell>' -l -c 'exec /bin/sh "<launch file>"'`);
+    '--cwd', at, '--name', call.title, '--command', `'${shell}' -l -c 'exec /bin/sh "${file}"'`]);
+  out.ran.push(`agtermctl session new --after ${answer.agterm.session} --no-select --wait --cwd ${at} --name <title> --command '<login shell>' -l -c 'exec /bin/sh "<launch file>"'`);
   if (!made.ok) {
-    // An answer lost on the way is no session refused: the tree says whether one opened.
-    const old = already.read && already.found ? already.session.id : null;
-    let look = ag.findIn(wt, answer.agterm.window);
-    if (look.read && look.found && old && look.session.id === old) look = { read: true, found: false };
+    // An answer lost on the way is no session refused: the tree says whether one opened. It
+    // is told by its command line — the launch file while the login shell runs it, the
+    // session id once claude does, neither of which any older session carries. agterm's
+    // directory for a session is the one it was opened in, never where its claude went.
+    const look = ag.findCommand((c) => c.includes(file) || carries(c, session), answer.agterm.window);
     if (look.read && !look.found) {
       try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ }
       out.reason = `agterm opened no session: ${made.why}`;
@@ -665,7 +676,7 @@ function open(out, wt, place, session, resume, before) {
     }
     out.agterm = { session: look.found ? look.session.id : null, window: look.found ? look.window : null, wrote: null };
     out.started = null;
-    out.reason = `agterm's answer did not read (${made.why}), and ${look.read ? 'a session stands in the worktree' : `the tree did not read either: ${look.why}`} — read it before anything else is launched`;
+    out.reason = `agterm's answer did not read (${made.why}), and ${look.read ? 'a session running this launch stands in its tree' : `the tree did not read either: ${look.why}`} — read it before anything else is launched`;
     return;
   }
   out.agterm = { session: text(made.result && made.result.id) || null, window: answer.agterm.window, wrote: Boolean(made.result && made.result.id) };
@@ -685,7 +696,7 @@ function open(out, wt, place, session, resume, before) {
 }
 
 const record = (out, wt) => ({ mode: call.mode, profile: out.profile.value, session: out.session,
-  agterm: out.agterm && out.agterm.session, window: out.agterm && out.agterm.window, worktree: wt, worktreeBy: 'master',
+  agterm: out.agterm && out.agterm.session, window: out.agterm && out.agterm.window, worktree: wt,
   model: settings.model.value, effort: settings.effort.value, at: new Date().toISOString() });
 
 async function launch() {
@@ -697,23 +708,15 @@ async function launch() {
   const tree = batchTree();
   if (tree.why) { out.reason = tree.why; done(out); }
   const { root, wt, known } = tree;
-  out.worktree = { path: wt, at: call.pin, created: false, reused: false };
-  if (!git(['cat-file', '-e', `${call.pin}^{commit}`]).ok) { out.reason = `the pin ${call.pin} is no commit this repository holds — fetch first`; done(out); }
-  if (known) {
-    // Reused only as a fresh one would be: detached at the pin, clean, nobody in it.
-    if (known.prunable || !existsSync(wt)) { out.reason = `git lists ${wt} as a worktree whose directory is gone — prune it first`; done(out); }
-    const g = runner(wt, 'git');
-    const head = g(['rev-parse', 'HEAD']);
-    const dirty = g(['status', '--porcelain']);
-    const who = occupancy(wt);
-    if (!known.detached || !head.ok || head.out !== call.pin || !dirty.ok || dirty.out !== '' || who.occupied !== false) {
-      out.reason = `${wt} is a worktree already, and not one to reuse: ${!known.detached ? 'it has a branch checked out'
-        : !head.ok || !dirty.ok ? `git did not read it (${head.ok ? dirty.line() : head.line()})`
-          : head.out !== call.pin ? 'it stands off the pin' : dirty.out !== '' ? 'it holds changes' : who.why || 'a session is in it'}`;
-      done(out);
-    }
-    out.worktree.reused = true;
-  } else if (existsSync(wt)) { out.reason = `${wt} exists and git does not list it as a worktree`; done(out); }
+  // Claude Code makes the worktree as the session starts, so its path is free beforehand:
+  // what stands there is a session launched for this batch before — checked and relaunched,
+  // never launched over — or what one left.
+  out.worktree = { path: wt, by: 'host' };
+  if (known && (known.prunable || !existsSync(wt))) { out.reason = `git lists ${wt} as a worktree whose directory is gone — prune it first`; done(out); }
+  if (known || existsSync(wt)) {
+    out.reason = `${wt} stands already, ${known ? 'a worktree' : 'a directory git does not list as a worktree'} — a batch launched before is checked and relaunched, never launched over`;
+    done(out);
+  }
   const refused = await settleWay(out.dryRun);
   out.limits = answer.limits;
   if (refused) { out.reason = `${call.mode} does not answer: ${refused}`; done(out); }
@@ -722,15 +725,7 @@ async function launch() {
   if (!trust(out, place.prof, root, out.dryRun)) done(out);
   out.session = randomUUID();
   if (out.dryRun) { out.read = true; done(out); }
-  if (!out.worktree.reused) {
-    // Hooks off: the master writes nothing through a hook of the repository's.
-    const add = git(['-c', 'core.hooksPath=/dev/null', 'worktree', 'add', '--detach', wt, call.pin]);
-    out.ran.push(`git worktree add --detach ${wt} ${call.pin}`);
-    const head = runner(wt, 'git')(['rev-parse', 'HEAD']);
-    if (!add.ok || !head.ok || head.out !== call.pin) { out.reason = `the worktree was not cut at the pin: ${add.ok ? head.line() : add.line()}`; done(out); }
-    out.worktree.created = true;
-  }
-  open(out, wt, place, out.session, false, null);
+  open(out, root, place, out.session, false, null);
   if (out.agterm) out.record = record(out, wt);
   out.read = true;
   done(out);
@@ -801,8 +796,8 @@ async function relaunch() {
 }
 
 async function close() {
-  const out = { read: false, closed: false, dryRun: Boolean(opts['--dry-run']), batch: call.batch, agterm: call.agterm,
-    worktree: null, session: null, ran: [], reason: null };
+  const out = { read: false, closed: false, dryRun: Boolean(opts['--dry-run']), batch: call.batch, session: call.session,
+    agterm: call.agterm, worktree: null, seen: null, ran: [], reason: null };
   if (!answer.agterm.answers) { out.reason = `agterm does not answer from here: ${answer.agterm.why}`; done(out); }
   const tree = batchTree();
   if (tree.why) { out.reason = tree.why; done(out); }
@@ -814,14 +809,37 @@ async function close() {
   const f = ag.find(call.agterm, answer.agterm.window);
   if (!f.read) { out.reason = `where the session stands is unread: ${f.why}`; done(out); }
   if (!f.found) { out.reason = 'agterm\'s tree holds no such session'; out.read = true; done(out); }
-  out.session = f.session;
-  // Closing somebody else's session is worse than leaving this one open.
-  const at = f.session.cwd ? real(f.session.cwd, f.session.cwd) : null;
-  const tree_ = real(wt, wt);
-  if (!at || (at !== tree_ && !at.startsWith(tree_ + sep))) { out.reason = `the session stands in ${f.session.cwd || 'no directory agterm names'}, not in the batch's worktree`; done(out); }
+  // The command line carries the order's text: it is matched here and never printed.
+  const { command, ...seen } = f.session;
+  out.seen = seen;
   if (f.session.asking) { out.reason = 'the session holds a question open for the user'; done(out); }
   if (f.session.status === 'blocked') { out.reason = 'the session is waiting on the user'; done(out); }
   if (f.session.split) { out.reason = 'the session holds a second pane, which closing it would close too'; done(out); }
+  // Closing somebody else's session is worse than leaving this one open. A program running
+  // there is the batch's where its command line carries the batch's session id, and its
+  // claude — the process carrying that id — stands in the batch's worktree by the registry.
+  // agterm's own directory for the session is the one it was opened in, not where claude went.
+  const tree_ = real(wt, wt);
+  const within = (d) => { const r = d ? real(d, d) : null; return Boolean(r) && (r === tree_ || r.startsWith(tree_ + sep)); };
+  if (f.session.program) {
+    if (!carries(command || '', call.session)) { out.reason = 'the session runs something that does not carry the batch\'s session id'; done(out); }
+    const pids = carriers(call.session);
+    const who = occupancy(wt);
+    if (pids === null) { out.reason = 'the process table did not read, so where the batch\'s claude stands is unread'; done(out); }
+    if (![...pids].some((p) => who.pids.has(p))) {
+      out.reason = who.occupied === null ? `where the batch's claude stands is unread: ${who.why}` : 'the batch\'s claude does not stand in the batch\'s worktree';
+      done(out);
+    }
+  } else if (f.session.shell) {
+    // A bare shell where the batch's claude ran: nothing in it carries an id, so its place
+    // says whose it is — the repository's root a launch opens a session in, or the worktree
+    // a relaunch does.
+    const r = f.session.cwd ? real(f.session.cwd, f.session.cwd) : null;
+    if (!(r && r === real(tree.root, tree.root)) && !within(f.session.cwd)) {
+      out.reason = `the bare shell stands in ${f.session.cwd || 'no directory agterm names'}, neither the repository's root nor the batch's worktree`;
+      done(out);
+    }
+  } else { out.reason = 'agterm names neither a program nor a shell running in the session'; done(out); }
   if (out.dryRun) { out.read = true; done(out); }
   const r = ag.call(['session', 'close', '--target', call.agterm, '--window', f.window]);
   out.ran.push(`agtermctl session close --target ${call.agterm} --window ${f.window}`);

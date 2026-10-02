@@ -99,8 +99,8 @@ how a batch goes out is [`../../references/batch-launch.md`](../../references/ba
 
 One way per batch, as the preflight settled it:
 
-- **In a terminal session of this session's own** — `launch` per `batch-launch.md`,
-  `--pin` the pin's full commit id. Its `record` goes into the batch's row before anything else is sent.
+- **In a terminal session of this session's own** — `launch` per `batch-launch.md`. Its
+  `record` goes into the batch's row before anything else is sent.
 - **As a chip**, through the host's chip tool (`spawn_task`): **title** the batch
   shape of [`../../references/session-naming.md`](../../references/session-naming.md)
   under the titling tool's cap, the order's first line carrying the same string;

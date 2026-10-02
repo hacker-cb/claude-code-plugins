@@ -40,7 +40,7 @@
                 "--worktree",
                 "t1-x1",
                 "--session-id",
-                "11111111-2222-4333-8444-555555555555",
+                "22222222-2222-4333-8444-555555555555",
                 "-n",
                 "t1/x1 — проба запуска"
               ]
@@ -97,9 +97,6 @@
       }
     }
   },
-  "dirs": [
-    "repo/.claude/worktrees/t1-x1/src"
-  ],
   "running": "11111111-2222-4333-8444-555555555555",
-  "running_in": "@home/repo/.claude/worktrees/t1-x1/src"
+  "running_in": "@home/repo/.claude/worktrees/t1-x1"
 }

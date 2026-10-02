@@ -33,7 +33,16 @@
             },
             {
               "id": "example-id-0000000c",
-              "cwd": "/elsewhere"
+              "cwd": "@home/repo",
+              "foreground": [
+                "claude",
+                "--worktree",
+                "t1-x1",
+                "--session-id",
+                "11111111-2222-4333-8444-555555555555",
+                "-n",
+                "t1/x1 — проба запуска"
+              ]
             }
           ]
         }
@@ -86,5 +95,7 @@
         }
       }
     }
-  }
+  },
+  "running": "11111111-2222-4333-8444-555555555555",
+  "running_in": "@home/repo"
 }

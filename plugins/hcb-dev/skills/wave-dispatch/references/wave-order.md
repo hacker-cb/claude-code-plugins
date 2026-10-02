@@ -35,13 +35,14 @@ Start: <now | after <gate> — do not begin before it; it holds the reading
 below as much as the building>. Once it is open, the start report described at
 the end of this order goes out first, and building starts once it has.
 Where to work: your own worktree, and only it — the main checkout is shared
-with other sessions. <By way — launched: the master cut it for you, detached at
-the base pin below, at <its path>; verify you stand in it before the first write,
-and cut no other<, where this batch stacks on batch `<epic>/<id>`: in it, create your
-own branch from the branch that batch has published, before you read anything>. Chip or paste: verify you are in a worktree of your own before
-the first write; where you are not, cut your own worktree from <the base | the
-branch batch `<epic>/<id>` is building on, where this batch stacks on it>.> <Or:
-no checkout is touched.>
+with other sessions. <By way — launched: Claude Code made it as this session
+started, at <its path>; verify you stand in it before the first write, and make
+no other. Chip or paste: verify you are in a worktree of your own before the first
+write; where you are not, have Claude Code make one (`EnterWorktree`) and stand in
+it. Either way the worktree stands on whatever Claude Code cut it from, which is
+nothing you build on: your branch is cut from <the base | the branch batch
+`<epic>/<id>` has published, where this batch stacks on it — before you read
+anything>.> <Or: no checkout is touched.>
 Base pin: <remote>/<branch>@<sha> | <branch>@<sha> — the commit these facts were verified on.
 The delta from the pin to the tip you read these facts against is the list to
 re-verify, before anything of yours rests on them. Do not build on the pin.

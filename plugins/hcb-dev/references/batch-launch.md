@@ -61,7 +61,7 @@ The ledger's header records which way and profile have cleared their canary.
 ## Launching
 
 ```text
-node "<plugin root>/scripts/batch-launch.mjs" launch --batch <epic>/<id> --pin <sha> \
+node "<plugin root>/scripts/batch-launch.mjs" launch --batch <epic>/<id> \
   --mode agterm|agterm-aimux <launch settings> [--profile <name>] [--held <profile>=<n>,...] \
   [--dry-run] < <the order's file>
 ```
@@ -73,7 +73,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 |---|---|
 | `started` | `true` the session wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled |
 | `profile` | the profile and `from`: the user's `word` or the `spread`; `notes` says where a word overrode a ceiling |
-| `worktree` | cut detached at the pin under the repository's `.claude/worktrees/<epic>-<id>`, or a clean idle one there `reused` |
+| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts (`by: host`): the session starts at the repository's root and is handed `--worktree <epic>-<id>`. Anything already standing at that path stops the launch — a batch launched before is checked and relaunched, never launched over |
 | `trust` | the trust this session's configuration gives the repository, carried to the profile: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
 | `record` | what goes into the batch's ledger row, whole |
 
@@ -115,10 +115,12 @@ a batch's session is closed once its row reaches `accepted`, unless the user ask
 it or it waits on the user:
 
 ```text
-node "<plugin root>/scripts/batch-launch.mjs" close --batch <epic>/<id> --agterm <id>
+node "<plugin root>/scripts/batch-launch.mjs" close --batch <epic>/<id> --session <uuid> --agterm <id>
 ```
 
-`closed` reads the tree again. It refuses a session standing anywhere but the batch's
-worktree — one git still registers — one waiting on the user, and one holding a second pane. For a chip, the session is archived instead, where
+`closed` reads the tree again. It refuses a session running anything that does not carry the
+batch's session id, or whose claude stands anywhere but the batch's worktree — one git still
+registers; a bare shell standing anywhere but the repository's root or that worktree; one
+waiting on the user; and one holding a second pane. For a chip, the session is archived instead, where
 the host offers `archive_session`. The transcript and the worktree stay. Without that word,
 closing stays an ask in the report.

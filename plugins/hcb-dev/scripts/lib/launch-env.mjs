@@ -227,10 +227,14 @@ export function agterm(cli, socket) {
         for (const s of Array.isArray(ws && ws.sessions) ? ws.sessions : []) {
           if (s && match(s)) {
             return { read: true, found: true, window: w, workspace: ws.id || null,
+              // `cwd` is the directory agterm opened the session in; it does not follow a
+              // program that moves elsewhere.
               session: { id: s.id, cwd: typeof s.cwd === 'string' ? s.cwd : null,
                 status: typeof s.status === 'string' ? s.status : null,
                 // A program in the foreground, or a bare shell holding the pane.
                 program: Array.isArray(s.foreground) && s.foreground.length > 0,
+                // The foreground program's command line, its words joined by spaces.
+                command: commandOf(s),
                 shell: typeof s.foregroundShell === 'string',
                 // Another pane beside the main one: closing the session closes it too.
                 split: s.hasSplit === true,
@@ -254,10 +258,10 @@ export function agterm(cli, socket) {
     // fixed at spawn and goes stale when the session is moved. Only the session asked
     // for is looked at; nothing else in the tree is read.
     find: (id, preferred) => where((s) => same(s.id, id), preferred),
-    // The session standing in a directory — what a launch whose answer got lost looks for.
-    findIn: (dir, preferred) => {
-      const want = real(dir, dir);
-      return where((s) => typeof s.cwd === 'string' && real(s.cwd, s.cwd) === want, preferred);
-    },
+    // The session whose command line passes `test` — what a launch whose answer got lost
+    // looks for.
+    findCommand: (test, preferred) => where((s) => { const c = commandOf(s); return c !== null && test(c); }, preferred),
   };
 }
+const commandOf = (s) => (Array.isArray(s.foreground) && s.foreground.length > 0
+  ? s.foreground.filter((w) => typeof w === 'string').join(' ') : null);
