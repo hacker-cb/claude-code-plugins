@@ -38,7 +38,8 @@
     "new_fails": true,
     "lands": {
       "id": "example-id-0000000d",
-      "cwd": "@home/repo/.claude/worktrees/t1-x1"
+      "cwd": "@home/repo",
+      "foreground": "@command"
     }
   },
   "aimux": {

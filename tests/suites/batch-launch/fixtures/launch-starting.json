@@ -30,20 +30,6 @@
             {
               "id": "example-id-00000001",
               "cwd": "@home/repo"
-            },
-            {
-              "id": "example-id-0000000c",
-              "cwd": "@home/repo",
-              "status": "completed",
-              "foreground": [
-                "claude",
-                "--worktree",
-                "t1-x1",
-                "--session-id",
-                "11111111-2222-4333-8444-555555555555",
-                "-n",
-                "t1/x1 — проба запуска"
-              ]
             }
           ]
         }
@@ -97,9 +83,8 @@
       }
     }
   },
-  "dirs": [
-    "repo/.claude/worktrees/t1-x1/src"
-  ],
-  "running": "11111111-2222-4333-8444-555555555555",
-  "running_in": "@home/repo/.claude/worktrees/t1-x1/src"
+  "holding": [
+    "--worktree",
+    "t1-x1"
+  ]
 }

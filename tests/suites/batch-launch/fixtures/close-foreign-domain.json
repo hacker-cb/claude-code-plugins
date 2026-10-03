@@ -97,9 +97,7 @@
       }
     }
   },
-  "dirs": [
-    "repo/.claude/worktrees/t1-x1/src"
-  ],
   "running": "11111111-2222-4333-8444-555555555555",
-  "running_in": "@home/repo/.claude/worktrees/t1-x1/src"
+  "running_in": "@home/repo/.claude/worktrees/t1-x1",
+  "running_domain": "win32"
 }

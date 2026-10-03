@@ -22,7 +22,9 @@ forge call. Publishing is the escalation offer below, and only by consent.
   parent checked out in another worktree makes `git switch` refuse outright.
   `git worktree list --porcelain` names the directory holding it, and `git -C <that dir> merge`
   lands the slice without moving anyone's HEAD. Only where no worktree holds it do you switch,
-  merge, and switch back.
+  merge, and switch back. Where this session stands isolated in a worktree Claude Code made
+  and `parent` is checked out in the main checkout, the merge is the addressee's to run:
+  stop, with the command.
 - **Merge strategy** — the gate's shown default: `--no-ff`, so the slice stays a visible,
   revertible boundary and a later whole-feature request keeps its slices reviewable. `ff` only
   where the caller asked and the history is linear; `squash` where the caller wants one commit,

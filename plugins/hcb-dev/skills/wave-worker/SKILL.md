@@ -42,9 +42,10 @@ holds, and what it stops is named in the return as the gap it is.
    the title (`session-comms.md`). Where the order carries a `Session group:` and the host offers sidebar groups, file
    this session into that group — itself, never another.
 2. **Stand where the order says.** Verify this session is in a worktree of its
-   own, not the shared main checkout — and cut one where it is not, unless the
-   order says its master cut it: then that one, and no other — before the first
-   write; the order's `Start:` gate holds however this session was started.
+   own, not the shared main checkout — and where it is not, have Claude Code make
+   one for this session and stand in it, unless the order says Claude Code made it
+   as this session started: then that one, and no other — before the first write;
+   the order's `Start:` gate holds however this session was started.
 3. **Read the whole batch through before building any of it, and not before the
    order's `Start:` gate is open** — the order, the two ledgers it names, its issues on
    the forge in full with their comments, all of them in one call (the form

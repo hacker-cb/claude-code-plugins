@@ -18,7 +18,7 @@ import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, sep } from 'node:path';
-import { dirOk, runner, text, worktrees, writeAll } from './lib/forge.mjs';
+import { dirOk, runner, text, within, worktrees, writeAll } from './lib/forge.mjs';
 
 const USAGE = 'usage: node worktree-owners.mjs [--repo-dir <path>]\n';
 const die = (m) => { writeAll(2, `worktree-owners: ${m}\n${USAGE}`); process.exit(2); };
@@ -62,10 +62,6 @@ const refuse = (reason) => { answer.reason = reason; finish(); };
 // Two spellings of one path are not two places: `/tmp` is a symlink to `/private/tmp` on
 // macOS, and a session's `cwd` need not be spelled the way git spells its worktree.
 const real = (p) => { try { return realpathSync(p); } catch { return p; } };
-// The worktree is the ancestor, never the descendant: a session that stepped into a
-// subdirectory is still working in it, and the reverse reading would put a session in
-// every worktree above it.
-const within = (child, parent) => child === parent || child.startsWith(parent + sep);
 
 // --- the live-session registry
 // `CLAUDE_CONFIG_DIR` is a real environment variable the user may set, and this reads
@@ -192,6 +188,9 @@ answer.worktrees = listed.trees.map((w) => ({ ...w,
 // their sessions in the main tree too, which then reads as occupied by people who are
 // nowhere near it.
 const paths = answer.worktrees.map((w) => real(w.path));
+// The worktree is the ancestor, never the descendant: a session that stepped into a
+// subdirectory is still working in it, and the reverse reading would put a session in
+// every worktree above it.
 const innermost = (s) => {
   let best = -1;
   for (let i = 0; i < paths.length; i += 1) {

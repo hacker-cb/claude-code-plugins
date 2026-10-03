@@ -11,7 +11,13 @@
 #                 directory the script runs in; `@pin` in an argument is its commit
 #   .claude/sessions/  where it says `registry: true`: a live-session registry, empty —
 #                 or holding one live session standing in the directory `occupy` names
-#   running       a process elsewhere carrying the session id it names in its arguments
+#   running       a process elsewhere carrying the session id it names in its arguments —
+#                 registered as standing in `running_in` where the envelope names one
+#   holding       a process whose arguments are these words, standing in the repository —
+#                 or in `holding_in`, a directory under HOME, where the envelope names one
+#   branches      local branches made in the repository, at its one commit
+#   running_domain  the `pidDomain` that process's registry record names, where given
+#   sealed        directories under HOME made unreadable once everything stands
 #   dirs          directories made once the repository stands
 #   files         the envelope's `files`: each path under HOME written with its content, a
 #                 JSON value as JSON
@@ -19,8 +25,10 @@
 # `@home` anywhere in the envelope is that HOME.
 #
 # Words that are the driver's, put in the environment by the runner:
-#   PREWT=clean|dirty   the batch's worktree stands before the case, at the pin — dirty
-#                       holding a change
+#   PREWT=clean|dirty|host|host-commit|host-nested   the batch's worktree stands before the
+#                       case, at the pin — dirty holding a change, host on the branch
+#                       `--worktree` would cut, host-commit with a commit of its own there,
+#                       host-nested with another worktree inside it
 #   ORDER=<name>        orders/<name>.md is the script's stdin
 #   SHOW=<a,b>          after the answer, what the stubs kept: agterm-new, agterm-close,
 #                       launch-argv, worktrees, trust-<profile>, launch-dirs
@@ -30,13 +38,14 @@
 # written `@home`, the repository's commit `@pin`, the cases' fixed session id `@fixed-session`,
 # and every other session id `@uuid`.
 set -u
+sealed_dirs=()
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/batch-launch-suite.XXXXXX") || exit 125
 # One spelling of it: a TMPDIR ending in `/` doubles the slash, and the masks below match text.
 tmp=$(cd "$tmp" && pwd) || exit 125
 holder=""
-trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; rm -rf "$tmp"' EXIT
+trap '[ -n "$holder" ] && kill "$holder" 2>/dev/null; [ -n "${runner_pid:-}" ] && kill "$runner_pid" 2>/dev/null; [ -n "${holding_pid:-}" ] && kill "$holding_pid" 2>/dev/null; [ "${#sealed_dirs[@]}" -gt 0 ] && chmod -R u+rwx "${sealed_dirs[@]}" 2>/dev/null; rm -rf "$tmp"' EXIT
 home="$tmp/home"
 mkdir -p "$home/login" || exit 125
 # What a stub kept beside the marker belongs to the case that made it, not to the next.
@@ -84,11 +93,26 @@ if [ -n "$envelope" ] && [ "$(jq -r '.repo // false' "$envelope")" = true ]; the
   slug=$(jq -r '.slug // "t1-x1"' "$envelope")
   case "${PREWT:-}" in
     '') ;;
+    host|host-commit|host-nested)
+      git -C "$repo" -c core.hooksPath=/dev/null worktree add -q -b "worktree-$slug" "$repo/.claude/worktrees/$slug" HEAD || exit 125
+      if [ "$PREWT" = host-commit ]; then
+        git -C "$repo/.claude/worktrees/$slug" -c core.hooksPath=/dev/null -c user.name=suite \
+          -c user.email=suite@example.invalid -c commit.gpgsign=false commit -q --allow-empty -m mine || exit 125
+      fi
+      if [ "$PREWT" = host-nested ]; then
+        git -C "$repo" -c core.hooksPath=/dev/null worktree add -q --detach "$repo/.claude/worktrees/$slug/nested" HEAD || exit 125
+      fi ;;
     clean|dirty)
       git -C "$repo" -c core.hooksPath=/dev/null worktree add -q --detach "$repo/.claude/worktrees/$slug" HEAD || exit 125
       if [ "$PREWT" = dirty ]; then echo x > "$repo/.claude/worktrees/$slug/stray"; fi ;;
-    *) echo "drive: PREWT is clean or dirty, not '$PREWT'" >&2; exit 125 ;;
+    *) echo "drive: PREWT is clean, dirty, host, host-commit or host-nested, not '$PREWT'" >&2; exit 125 ;;
   esac
+fi
+if [ -n "$envelope" ] && [ -n "$pin" ]; then
+  while IFS= read -r b; do
+    [ -n "$b" ] || continue
+    git -C "$repo" branch "$b" || exit 125
+  done < <(jq -r '.branches // [] | .[]' "$envelope")
 fi
 # `dirs`, once the repository and its worktree stand: a directory inside one of them too.
 if [ -n "$envelope" ]; then
@@ -103,6 +127,14 @@ runner_pid=""
 if [ -n "$envelope" ] && [ -n "$(jq -r '.running // empty' "$envelope")" ]; then
   node -e 'setTimeout(() => {}, 300000)' -- --resume "$(jq -r '.running' "$envelope")" & runner_pid=$!
 fi
+holding_pid=""
+if [ -n "$envelope" ] && [ "$(jq '.holding // [] | length' "$envelope")" -gt 0 ]; then
+  words=()
+  while IFS= read -r w; do words+=("$w"); done < <(jq -r '.holding[]' "$envelope")
+  in_dir=$(jq -r '.holding_in // empty' "$envelope")
+  if [ -n "$in_dir" ]; then in_dir="$home/$in_dir"; mkdir -p "$in_dir" || exit 125; else in_dir="$run_in"; fi
+  (cd "$in_dir" && exec node -e 'setTimeout(() => {}, 300000)' -- "${words[@]}") & holding_pid=$!
+fi
 if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ]; then
   mkdir -p "$home/.claude/sessions" || exit 125
   occupy=$(jq -r '.occupy // empty' "$envelope")
@@ -110,6 +142,20 @@ if [ -n "$envelope" ] && [ "$(jq -r '.registry // false' "$envelope")" = true ];
     sleep 300 & holder=$!
     printf '{"pid":%s,"cwd":"%s","startedAt":1}\n' "$holder" "$occupy" > "$home/.claude/sessions/$holder.json" || exit 125
   fi
+  running_in=$(jq -r '.running_in // empty' "$envelope")
+  if [ -n "$running_in" ] && [ -n "$runner_pid" ]; then
+    jq -nc --argjson pid "$runner_pid" --arg cwd "$running_in" --arg domain "$(jq -r '.running_domain // empty' "$envelope")" \
+      '{pid: $pid, cwd: $cwd, startedAt: 1} + (if $domain == "" then {} else {pidDomain: $domain} end)' \
+      > "$home/.claude/sessions/$runner_pid.json" || exit 125
+  fi
+fi
+
+if [ -n "$envelope" ]; then
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    chmod 000 "$home/$d" || exit 125
+    sealed_dirs+=("$home/$d")
+  done < <(jq -r '.sealed // [] | .[]' "$envelope")
 fi
 
 # The stubs read the envelope with HOME written in; the script's temporary directories land

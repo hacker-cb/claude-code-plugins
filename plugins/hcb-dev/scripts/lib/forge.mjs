@@ -7,6 +7,7 @@
 // truncates, the page that is not a list, the guard that refuses `main`.
 
 import { statSync, writeSync } from 'node:fs';
+import { sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 // `process.stdout.write` hands bytes to a pipe ASYNCHRONOUSLY, and `process.exit`
@@ -244,6 +245,10 @@ export function worktrees(git) {
   push();
   return { trees, error: null };
 }
+
+// A path is the directory or stands under it — the two already resolved, as git and the
+// session registry spell them differently.
+export const within = (child, parent) => child === parent || child.startsWith(parent + sep);
 
 // The requests that carry a commit, asked of either forge — mirrored, because the same
 // question has two answers and neither forge is assumed. The repository goes in the PATH:

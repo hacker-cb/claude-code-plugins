@@ -33,17 +33,7 @@
             },
             {
               "id": "example-id-0000000c",
-              "cwd": "@home/repo",
-              "status": "completed",
-              "foreground": [
-                "claude",
-                "--worktree",
-                "t1-x1",
-                "--session-id",
-                "11111111-2222-4333-8444-555555555555",
-                "-n",
-                "t1/x1 — проба запуска"
-              ]
+              "cwd": "@home/repo/.claude/worktrees/t1-x1"
             }
           ]
         }
@@ -95,11 +85,7 @@
           "hasTrustDialogAccepted": true
         }
       }
-    }
-  },
-  "dirs": [
-    "repo/.claude/worktrees/t1-x1/src"
-  ],
-  "running": "11111111-2222-4333-8444-555555555555",
-  "running_in": "@home/repo/.claude/worktrees/t1-x1/src"
+    },
+    "profiles/p/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n"
+  }
 }

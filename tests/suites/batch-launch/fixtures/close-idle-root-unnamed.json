@@ -30,6 +30,11 @@
             {
               "id": "example-id-00000001",
               "cwd": "@home/repo"
+            },
+            {
+              "id": "example-id-0000000c",
+              "cwd": "@home/repo",
+              "foregroundShell": "bash"
             }
           ]
         }
@@ -82,6 +87,5 @@
         }
       }
     }
-  },
-  "occupy": "@home/repo/.claude/worktrees/t1-x1"
+  }
 }

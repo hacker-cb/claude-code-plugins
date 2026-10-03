@@ -37,12 +37,9 @@
               "status": "completed",
               "foreground": [
                 "claude",
-                "--worktree",
-                "t1-x1",
+                "объясни, что делает --resume 11111111-2222-4333-8444-555555555555",
                 "--session-id",
-                "11111111-2222-4333-8444-555555555555",
-                "-n",
-                "t1/x1 — проба запуска"
+                "22222222-2222-4333-8444-555555555555"
               ]
             }
           ]
@@ -97,9 +94,6 @@
       }
     }
   },
-  "dirs": [
-    "repo/.claude/worktrees/t1-x1/src"
-  ],
   "running": "11111111-2222-4333-8444-555555555555",
-  "running_in": "@home/repo/.claude/worktrees/t1-x1/src"
+  "running_in": "@home/repo/.claude/worktrees/t1-x1"
 }
