@@ -1,0 +1,90 @@
+{
+  "home": "both",
+  "repo": true,
+  "registry": true,
+  "agterm": {
+    "windows": [
+      {
+        "id": "example-id-0000000a"
+      },
+      {
+        "id": "example-id-0000000b"
+      }
+    ],
+    "trees": {
+      "example-id-0000000a": [
+        {
+          "id": "example-id-000000f1",
+          "sessions": [
+            {
+              "id": "example-id-00000009",
+              "cwd": "/elsewhere"
+            }
+          ]
+        }
+      ],
+      "example-id-0000000b": [
+        {
+          "id": "example-id-000000f2",
+          "sessions": [
+            {
+              "id": "example-id-00000001",
+              "cwd": "@home/repo"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "aimux": {
+    "config": {
+      "profiles": {
+        "main": {
+          "cli": "claude",
+          "path": "~/.claude",
+          "is_source": true
+        },
+        "p": {
+          "cli": "claude",
+          "path": "~/profiles/p"
+        }
+      }
+    },
+    "limits": {
+      "main": {
+        "status": {
+          "fiveHourPct": 50,
+          "weeklyPct": 50
+        }
+      },
+      "p": {
+        "status": {
+          "fiveHourPct": 10,
+          "weeklyPct": 10
+        }
+      }
+    }
+  },
+  "files": {
+    ".claude.json": {
+      "projects": {
+        "@home/repo": {
+          "hasTrustDialogAccepted": true,
+          "allowedTools": []
+        }
+      }
+    },
+    "profiles/p/.claude.json": {
+      "hasCompletedOnboarding": true,
+      "projects": {
+        "/elsewhere": {
+          "hasTrustDialogAccepted": true
+        }
+      }
+    },
+    ".claude/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n"
+  },
+  "links": {
+    "profiles/p/projects": "@home/.claude/projects"
+  }
+}
