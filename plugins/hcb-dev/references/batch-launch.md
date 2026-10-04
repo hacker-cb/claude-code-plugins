@@ -71,7 +71,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 
 | field | what it settles |
 |---|---|
-| `started` | `true` the session wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled |
+| `started` | `true` the session read its launch file and wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled; the launch file it has not read stays in `launchDir` |
 | `profile` | the profile and `from`: the user's `word` or the `spread`; `notes` says where a word overrode a ceiling |
 | `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts: the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` names it, and the user settles it before anything rests on the batch — and `null` where no live claude answered. The launch stops on what stands already — anything at the path, a link pointing nowhere included, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree: a batch launched before is checked and relaunched, never launched over — and on an `<epic>-<id>` that names no branch, or is longer than Claude Code takes for a worktree's name |
 | `trust` | the trust this session's configuration gives the repository, carried to the profile: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
@@ -106,7 +106,9 @@ node "<plugin root>/scripts/batch-launch.mjs" relaunch --batch <epic>/<id> --ses
 
 The way, the profile, the model and the effort are the record's — the last two passed as
 `--model` and `--effort`; onto aimux the profile is always named, the recorded one or another
-where the user's word or the recorded one's ceiling moves it.
+where the user's word or the recorded one's ceiling moves it — among the profiles `check`'s
+`transcript.resumableUnder` names. A relaunch refused for a profile that cannot see the transcript
+goes to the user with its `reason`.
 
 The nudge, one paragraph in the epic's language: the batch's title in backticks, that its
 session was restored after a restart, the name of the master it reports to, and to go on

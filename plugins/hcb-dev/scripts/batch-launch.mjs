@@ -580,26 +580,49 @@ function cwdOf(pid) {
   return n ? n.slice(1) : null;
 }
 
-// A session's transcript, wherever a configuration keeps its projects; its size and time,
-// so that a resumed session writing to it shows.
-function findTranscript(session, dirs) {
-  let unread = null;
+// Every copy of a session's transcript, wherever a configuration keeps its projects; each
+// one's size and time, so that a resumed session writing to it shows. A copy is one file
+// however many paths lead to it — aimux links every profile's `projects` to one shared
+// directory, where the same file answers under each profile's path — so files and
+// directories are told apart by where they resolve, never by how they are spelled. `via`
+// is every configuration that reaches the copy, whichever link — the whole `projects`, one
+// project's directory, the file itself — leads there: the ones whose claude can resume it.
+function transcripts(session, dirs) {
+  const roots = new Map();
   for (const dir of dirs) {
     if (!dir) continue;
+    const root = join(dir, 'projects');
+    const key = real(root, root);
+    if (roots.has(key)) roots.get(key).under.push(dir);
+    else roots.set(key, { root, under: [dir] });
+  }
+  const files = new Map();
+  let unread = null;
+  for (const { root, under } of roots.values()) {
     let projects;
-    try { projects = readdirSync(join(dir, 'projects')); } catch (e) {
-      if (e.code !== 'ENOENT') unread = `${join(dir, 'projects')} did not read (${e.code})`;
+    try { projects = readdirSync(root); } catch (e) {
+      if (e.code !== 'ENOENT') unread = `${root} did not read (${e.code})`;
       continue;
     }
     for (const p of projects) {
-      const f = join(dir, 'projects', p, `${session}.jsonl`);
-      try { const st = statSync(f); return { path: f, size: st.size, lastWrite: st.mtime.toISOString() }; } catch (e) {
+      const f = join(root, p, `${session}.jsonl`);
+      try {
+        const st = statSync(f);
+        const id = real(f, f);
+        const had = files.get(id);
+        if (had) { for (const d of under) had.via.add(d); continue; }
+        files.set(id, { path: f, real: id, size: st.size, mtimeMs: st.mtimeMs, via: new Set(under) });
+      } catch (e) {
         if (e.code !== 'ENOENT' && e.code !== 'ENOTDIR') unread = `${f} did not read (${e.code})`;
       }
     }
   }
-  return unread ? { unread } : null;
+  return { copies: [...files.values()], unread };
 }
+// The copy the session wrote last: copies kept apart, one per configuration, go stale where
+// the session moved on under another.
+const latest = (copies) => copies.reduce((a, c) => (a && a.mtimeMs >= c.mtimeMs ? a : c), null);
+const shown = (c) => ({ path: c.path, size: c.size, lastWrite: new Date(c.mtimeMs).toISOString() });
 
 // The profile the batch goes on, and the configuration it runs under.
 function placement(out) {
@@ -666,7 +689,10 @@ function launchFile(dir, at, place, session, resume, profile) {
   }
   const tail = [...(resume ? ['--resume', q(session)] : ['--worktree', q(call.slug), '--session-id', q(session)]),
     '--model', q(settings.model.value), '--effort', q(settings.effort.value), '-n', q(call.title)].join(' ');
-  const text = `"$(cat ${q(textFile)})"`;
+  // The file removes its own directory once it has read the text, and nothing else removes
+  // it while the session starts: a launch file gone before the shell reached it starts nothing.
+  lines.push(`t=$(cat ${q(textFile)}) || exit 1`, `rm -rf ${q(dir)}`);
+  const text = '"$t"';
   lines.push(call.mode === 'agterm-aimux'
     ? `exec ${q(answer.aimux.path)} run ${q(profile)} -- ${text} ${tail}`
     : `exec ${q(answer.claude)} ${text} ${tail}`);
@@ -678,7 +704,7 @@ function launchFile(dir, at, place, session, resume, profile) {
 // Opens the session beside this one and waits for its transcript to be written: a session
 // past every dialog that could hold it has written one, and a resumed one writes to the
 // transcript it had.
-function open(out, at, place, session, resume, before) {
+function open(out, at, place, session, resume) {
   let dir = null;
   let file;
   try {
@@ -701,6 +727,11 @@ function open(out, at, place, session, resume, before) {
   // read off one of them.
   const placed = (s) => s.cwd !== null && sameDir(s.cwd, at);
   const prior = ag.filter(placed, answer.agterm.window);
+  // The transcript as it stands just before the session opens — every configuration here,
+  // since a resume under another profile writes wherever that one keeps its projects.
+  const dirs = configDirs();
+  const snapshot = transcripts(session, dirs);
+  const before = new Map(snapshot.copies.map((c) => [c.real, c]));
   const made = ag.call(['session', 'new', '--after', answer.agterm.session, '--no-select', '--wait',
     '--cwd', at, '--name', call.title, '--command', `'${shell}' -l -c 'exec /bin/sh "${file}"'`]);
   out.ran.push(`agtermctl session new --after ${answer.agterm.session} --no-select --wait --cwd ${at} --name <title> --command '<login shell>' -l -c 'exec /bin/sh "<launch file>"'`);
@@ -733,18 +764,21 @@ function open(out, at, place, session, resume, before) {
   }
   out.agterm = { session: text(made.result && made.result.id) || null, window: answer.agterm.window, wrote: Boolean(made.result && made.result.id) };
   out.started = null;
-  const moved = (t) => t && (!before || t.path !== before.path || t.size !== before.size || t.lastWrite !== before.lastWrite);
-  // The profile's own first, then every configuration here: a resume under another profile
-  // writes wherever that one keeps its projects.
-  const dirs = [place.configDir, ...configDirs().filter((d) => d !== place.configDir)];
+  // A copy the snapshot did not hold is new only where the snapshot read whole — or where the
+  // session id is a launch's own, which nothing wrote before.
+  const moved = (c) => {
+    const b = before.get(c.real);
+    return b ? b.size !== c.size || b.mtimeMs !== c.mtimeMs : !resume || !snapshot.unread;
+  };
+  // Started takes both: a transcript written since, and the launch file read — its directory
+  // gone. Another process writing the same transcript proves nothing about this one.
   for (let i = 0; i <= call.wait; i += 1) {
-    const t = findTranscript(session, dirs);
-    if (t && !t.unread && moved(t)) { out.transcript = t; out.started = true; break; }
+    const t = transcripts(session, dirs).copies.find(moved);
+    if (t && !existsSync(dir)) { out.transcript = shown(t); out.started = true; break; }
     if (i < call.wait) sleep(1000);
   }
-  if (out.started === true) {
-    try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left for the reader */ }
-  } else out.reason = `no transcript written within ${call.wait} s — read the session's screen (agtermctl session text) for what holds it`;
+  if (!existsSync(dir)) out.launchDir = null;
+  if (out.started !== true) out.reason = `no transcript written within ${call.wait} s — read the session's screen (agtermctl session text) for what holds it`;
 }
 
 const record = (out, wt) => ({ mode: call.mode, profile: out.profile.value, session: out.session,
@@ -806,7 +840,7 @@ async function launch() {
   if (out.dryRun) { out.read = true; done(out); }
   const still = standing();
   if (still) { out.reason = still; done(out); }
-  open(out, root, place, out.session, false, null);
+  open(out, root, place, out.session, false);
   if (out.started === true) {
     // Where the session's claude stands, by the registry: a `WorktreeCreate` hook can put the
     // worktree elsewhere, where `check`, `relaunch` and `close` do not follow it.
@@ -832,11 +866,15 @@ function inspect(out) {
   out.live = who.occupied;
   if (who.why) out.notes.push(who.why);
   out.running = running(call.session);
-  const found = findTranscript(call.session, configDirs());
-  const t = found && !found.unread ? found : null;
-  // Not found where a projects directory would not read is unknown, not absent.
-  out.transcript = t ? { found: true, ...t } : { found: found ? null : false, path: null, size: null, lastWrite: null };
-  if (found && found.unread) out.notes.push(found.unread);
+  const found = transcripts(call.session, configDirs());
+  // Where a projects directory would not read, the latest copy may be the one it holds: the
+  // transcript is unknown, found or not.
+  const t = found.unread ? null : latest(found.copies);
+  out.transcript = t ? { found: true, ...shown(t) } : { found: found.unread ? null : false, path: null, size: null, lastWrite: null };
+  // The aimux profiles whose claude reaches that copy — the ones a relaunch can resume it under.
+  out.transcript.resumableUnder = t && answer.aimux.core
+    ? answer.aimux.profiles.filter((p) => p.configDir && t.via.has(p.configDir)).map((p) => p.profile) : null;
+  if (found.unread) out.notes.push(found.unread);
   if (t && answer.aimux.core) {
     const hit = (() => { try { return core.sessionQuotaHit ? core.sessionQuotaHit(t.path) : undefined; } catch { return undefined; } })();
     out.stalled = hit === undefined ? 'unread' : hit === null ? null : { window: text(hit.rateLimitType) || null,
@@ -898,8 +936,21 @@ async function relaunch() {
   if (refused) { out.reason = `${call.mode} does not answer: ${refused}`; done(out); }
   const place = placement(out);
   if (place.why) { out.reason = place.why; done(out); }
+  // `claude --resume` looks only where its own configuration keeps its projects: one that
+  // does not reach the copy the session wrote last would find no session, or a stale one.
+  const found = transcripts(call.session, configDirs());
+  const last = latest(found.copies);
+  if (!(last && last.via.has(place.configDir))) {
+    const who = out.profile.value ? `'${out.profile.value}'` : 'this session\'s configuration';
+    const holders = last ? answer.aimux.profiles.filter((p) => p.configDir && last.via.has(p.configDir)).map((p) => `'${p.profile}'`) : [];
+    // A projects directory that did not read may be the one holding it: unknown, not unseen.
+    out.reason = found.unread ? `whether ${who} reaches the session's transcript is unread: ${found.unread}`
+      : `${who} cannot see the session's transcript — its projects directory is not the one holding it`
+        + `${holders.length ? `; ${holders.join(', ')} can` : ''}. Resume where the transcript is, or share the projects directory across profiles (aimux migrate share-projects)`;
+    done(out);
+  }
   if (!trust(out, place.prof, seen.root, false)) done(out);
-  open(out, wt, place, call.session, true, seen.transcript);
+  open(out, wt, place, call.session, true);
   if (out.agterm) out.record = record(out, wt);
   out.read = true;
   done(out);
