@@ -106,10 +106,9 @@ node "<plugin root>/scripts/batch-launch.mjs" relaunch --batch <epic>/<id> --ses
 
 The way, the profile, the model and the effort are the record's — the last two passed as
 `--model` and `--effort`; onto aimux the profile is always named, the recorded one or another
-where the user's word or the recorded one's ceiling moves it. A profile whose `projects` is not
-the directory holding the transcript cannot resume it, and the relaunch refuses it, its `reason`
-naming the profiles that can: resume under one of those, or put the choice to the user —
-`aimux migrate share-projects` shares the directory across profiles.
+where the user's word or the recorded one's ceiling moves it — among the profiles `check`'s
+`transcript.resumableUnder` names. A relaunch refused for a profile that cannot see the transcript
+goes to the user with its `reason`.
 
 The nudge, one paragraph in the epic's language: the batch's title in backticks, that its
 session was restored after a restart, the name of the master it reports to, and to go on
