@@ -867,8 +867,9 @@ function inspect(out) {
   if (who.why) out.notes.push(who.why);
   out.running = running(call.session);
   const found = transcripts(call.session, configDirs());
-  const t = latest(found.copies);
-  // Not found where a projects directory would not read is unknown, not absent.
+  // Where a projects directory would not read, the latest copy may be the one it holds: the
+  // transcript is unknown, found or not.
+  const t = found.unread ? null : latest(found.copies);
   out.transcript = t ? { found: true, ...shown(t) } : { found: found.unread ? null : false, path: null, size: null, lastWrite: null };
   // The aimux profiles whose claude reaches that copy — the ones a relaunch can resume it under.
   out.transcript.resumableUnder = t && answer.aimux.core
