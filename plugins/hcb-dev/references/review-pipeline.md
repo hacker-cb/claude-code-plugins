@@ -28,7 +28,7 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
 2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
-   the rung; `security`, one per security angle; `codex`, one pass of the Codex CLI at the rung's
+   the rung; `security`, one agent, opened only where the caller asked for it; `codex`, one pass of the Codex CLI at the rung's
    level for it — a narrowing, `--narrow "<a path, or a focus>"`, where the caller gave one, and a
    Codex model or level the caller named, as `--codex-model` and `--codex-effort`. First, since
    `init` fixes the snapshot: an untracked file `git ls-files --others --exclude-standard` names
@@ -59,8 +59,8 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
 
 The conductor plans the round, starts Codex as a background process and one
 `hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups
-what was handed in, has every group it can afford checked by `hcb-dev:findings:verifier`, runs
-the sweep where the rung has one, and builds the result. **A conductor launched on a round
+what was handed in, has every `Critical` and `Important` group it can afford checked by
+`hcb-dev:findings:verifier`, and builds the result. **A conductor launched on a round
 already under way resumes it**, starting only what the store still lacks.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
@@ -85,8 +85,7 @@ node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 
 ## The rung
 
-`high` buys breadth — more angles, more candidates per angle, Codex a level higher, a larger budget
-of checks, and a sweep for what the first pass missed. An entry weighing risk takes `high` where
+`high` buys breadth — more angles, more candidates per angle, and Codex a level higher. An entry weighing risk takes `high` where
 the change reaches past itself (public interface, shared helper, config, schema, wire format),
 cannot be walked back (it writes, migrates, publishes, or persists a format someone else reads),
 meets input whose shape you do not control, has nothing else checking it, removes a guard, an error
@@ -145,6 +144,6 @@ read as `verification.md`'s *Reading the result* reads it; a finding's `found_by
 source that reported it, and Codex's row names the model and level it ran at. Report it as
 `## Review coverage` from `coverage` — a row per source the round was opened with, with the
 round's base, its file count, its rung and its `time_s`, then a last row, `round`, from `timing`:
-`wall_s` its time, `checks <check_s> · sweep <sweep_s>` its result — and `## Findings` laid out
+`wall_s` its time, `checks <check_s>` its result — and `## Findings` laid out
 by `findings-table.md`, `verified by verifier` where any check ran. A finding's text is its
 finder's, in the round's language: pass it on as written.

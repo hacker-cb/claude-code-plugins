@@ -6,7 +6,7 @@
       "side": "head",
       "summary": "The menu line is written in Latin-1.",
       "failure_scenario": "a reader decoding it as UTF-8 sees a replacement character",
-      "severity": "Minor",
+      "severity": "Important",
       "category": "correctness"
     }
   ]
