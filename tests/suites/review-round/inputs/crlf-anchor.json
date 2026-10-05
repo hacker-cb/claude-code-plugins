@@ -6,7 +6,7 @@
       "side": "head",
       "summary": "The file ends its lines with CRLF.",
       "failure_scenario": "a reader splitting on LF keeps a CR at the end of every line",
-      "severity": "Minor",
+      "severity": "Important",
       "category": "correctness"
     }
   ]

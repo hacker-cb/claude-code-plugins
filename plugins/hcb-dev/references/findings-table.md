@@ -19,10 +19,9 @@ section as on its own:
 `<n>` counts the rows, and so do the verdicts beside it — a mechanism once, under the verdict its
 row carries; the refuted are counted beside them and are not rows. `<what ran>` is `verifier` where
 the shared checker ([`verification.md`](verification.md)) ran, a verdict it let stand counting under
-its own name. Where no check ran over any of them the header says `verified by none`, and every row
-reads `not measured — none ran`. A run
-with nothing to show still writes the line, `0 after dedup` — a missing table reads as an
-omission.
+its own name. Where no check ran over any of them the header says `verified by none`, and each row
+reads `not measured` with its own reason. A run with nothing to show still writes the line,
+`0 after dedup` — a missing table reads as an omission.
 
 ## The table
 
@@ -74,7 +73,7 @@ A table of `0 after dedup` has no footer.
 |---|---|
 | `confirmed @<sha>` | a check that never saw the finder's argument reproduced the mechanism at that revision — `+wt` after the sha where something it read differs from that commit, edited or never committed |
 | `unproven @<sha>` | checked there, and neither shown nor ruled out — its block says what would settle it |
-| `not measured — <why>` | no check ran over it: `batch` (a batch's finding its own review did not check — its master verifies it), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `depth` (the round ran without agents, so nothing checked it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
+| `not measured — <why>` | no check ran over it: `batch` (a batch's finding its own review did not check — its master verifies it), `unreachable` (no tree this session can read carries the coordinate), `budget` (the pass stopped short of it), `minor` (a review round checks `Critical` and `Important` only), `depth` (the round ran without agents, so nothing checked it), `base` (the tree to read it on did not resolve at all, resolved stale, gone or otherwise not current, or shares no history with the claim), `failed` (the check itself was refused, unavailable, or never answered), or `none ran` |
 
 A mechanism's cell carries the least verdict among its instances — `unproven` where any instance
 is — and its block carries each instance's own. A verdict let stand rather than made again keeps

@@ -30,7 +30,7 @@ import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, readlink
 import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { refNameOk, runner, text, within, worktrees, writeAll } from './lib/forge.mjs';
 import { agterm, aimuxCore, aimuxRun, interpreterOn, loginEnv, loginShell, onPath, real, sleep } from './lib/launch-env.mjs';
@@ -41,7 +41,7 @@ const die = (m) => { writeAll(2, `batch-launch: ${m}\n${USAGE}`); process.exit(2
 
 // --- the call
 const [sub, ...argv] = process.argv.slice(2);
-const SETTINGS = ['--model-config', '--effort-config', '--profiles', '--ceiling-5h', '--ceiling-7d', '--model', '--effort'];
+const SETTINGS = ['--model-config', '--effort-config', '--profiles', '--ceiling-5h', '--ceiling-7d', '--batches-max', '--model', '--effort'];
 const FLAGS = {
   probe: { valued: [...SETTINGS, '--held'], boolean: ['--limits'] },
   launch: { valued: [...SETTINGS, '--held', '--batch', '--mode', '--profile', '--wait'], boolean: ['--dry-run'] },
@@ -111,6 +111,15 @@ function percent(key, config) {
   if (!Number.isFinite(n) || n < lo || n > hi) die(`${key} '${s.value}' (${s.from}) is not a number from ${lo} to ${hi}`);
   return { value: n, from: s.from };
 }
+function whole(key, config) {
+  const s = setting(key, undefined, config);
+  if (s.value === null) return { value: null, from: s.from };
+  const n = Number(s.value);
+  const lo = Number.isFinite(s.spec.min) ? s.spec.min : 1;
+  const hi = Number.isFinite(s.spec.max) ? s.spec.max : Infinity;
+  if (!Number.isInteger(n) || n < lo || n > hi) die(`${key} '${s.value}' (${s.from}) is not a whole number from ${lo} to ${hi}`);
+  return { value: n, from: s.from };
+}
 function profileList(config) {
   const s = setting('batch_profiles', undefined, config);
   const names = s.value === null ? [] : String(s.value).split(',').map((p) => p.trim()).filter(Boolean);
@@ -125,6 +134,7 @@ const settings = {
   profiles: profileList(opts['--profiles']),
   ceiling5h: percent('batch_ceiling_5h', opts['--ceiling-5h']),
   ceiling7d: percent('batch_ceiling_7d', opts['--ceiling-7d']),
+  batchesMax: whole('batches_max', opts['--batches-max']),
 };
 
 // A map, never an object: a profile may be called `constructor`.
@@ -464,7 +474,6 @@ function evaluateModes() {
 }
 evaluateModes();
 
-if (sub === 'probe') { answer.read = true; finish(); }
 
 
 // --- launch, check, relaunch, close
@@ -480,7 +489,44 @@ const git = runner(process.cwd(), 'git');
 const ownDir = () => (process.env.CLAUDE_CONFIG_DIR ? resolve(process.env.CLAUDE_CONFIG_DIR) : join(os.homedir(), '.claude'));
 const defaultDir = () => join(os.homedir(), '.claude');
 const sameDir = (a, b) => real(a, a) === real(b, b);
-const configDirs = () => [...new Set([ownDir(), ...answer.aimux.profiles.map((p) => p.configDir).filter(Boolean)])];
+const configDirs = () => [...new Set([ownDir(), defaultDir(), ...answer.aimux.profiles.map((p) => p.configDir).filter(Boolean)])];
+
+// The sessions running in the repository's worktrees now — a batch's, whichever way it was
+// launched, or anyone's: each is a session beside this one — counted under every configuration
+// here, the worktree this session stands in aside. `running` is null, with `why`, where a
+// registry did not read: a count taken from part of them would let a launch past the limit.
+function liveBatches() {
+  const max = settings.batchesMax.value;
+  const listed = worktrees(git);
+  if (listed.trees === null) return { max, running: null, live: [], why: `the worktree list did not read (${listed.error})` };
+  const primary = listed.trees.find((t) => t.isPrimary);
+  if (!primary) return { max, running: null, live: [], why: 'git listed no main working tree' };
+  const home = join(primary.path, '.claude', 'worktrees');
+  const under = real(home, home);
+  const top = git(['rev-parse', '--show-toplevel']);
+  const self = top.ok ? real(top.out, top.out) : null;
+  const seen = owners();
+  const live = [];
+  let why = null;
+  for (const t of listed.trees) {
+    const at = real(t.path, t.path);
+    if (dirname(at) !== under || at === self) continue;
+    const who = occupancy(t.path, seen);
+    if (who.occupied === true) live.push(basename(at));
+    else if (who.occupied === null) why = who.why || `whether a session stands in ${basename(at)} did not read`;
+  }
+  return { max, running: why ? null : live.length, live, why };
+}
+
+// Whether one more session has room now; null where it has, the reason where not.
+function full(out) {
+  out.batches = liveBatches();
+  if (out.batches.running === null) return `how many sessions run in this repository's worktrees did not read: ${out.batches.why}`;
+  if (out.batches.running < out.batches.max) return null;
+  return `${out.batches.running} session(s) run in this repository's worktrees already (${out.batches.live.join(', ')}), and batches_max is ${out.batches.max}`;
+}
+
+if (sub === 'probe') { answer.batches = liveBatches(); answer.read = true; finish(); }
 
 // The repository's main tree, its worktrees, and the batch's own place among them.
 function batchTree() {
@@ -492,14 +538,14 @@ function batchTree() {
   return { root: primary.path, wt, trees: listed.trees, known: listed.trees.find((t) => real(t.path, t.path) === real(wt, wt)) || null, why: null };
 }
 
-// Who stands in a worktree, from the one reader of the session registry this plugin has —
-// asked of every registry a configuration here keeps, since a batch under another aimux
-// profile registers under that profile's. `pids` are the live sessions it found there.
-function occupancy(path) {
+// Who stands in each worktree of the repository, from the one reader of the session registry
+// this plugin has — asked once of every registry a configuration here keeps, since a batch
+// under another aimux profile registers under that profile's. Keyed by a worktree's real path;
+// `unread` is a registry that did not read, which leaves every worktree unknown.
+function owners() {
   const script = fileURLToPath(new URL('./worktree-owners.mjs', import.meta.url));
   const seen = new Set();
-  const pids = new Set();
-  let occupied = false;
+  const byPath = new Map();
   let unread = null;
   for (const dir of configDirs()) {
     const reg = real(join(dir, 'sessions'), join(dir, 'sessions'));
@@ -520,14 +566,24 @@ function occupancy(path) {
     let doc = null;
     try { doc = JSON.parse(r.stdout || ''); } catch { doc = null; }
     if (!doc || doc.read !== true) { unread = (doc && doc.reason) || 'worktree-owners did not answer'; continue; }
-    const w = (doc.worktrees || []).find((t) => real(t.path, t.path) === real(path, path));
-    if (!w) continue;
-    if (w.occupied === true) occupied = true;
-    else if (w.occupied === null) unread = `the session registry under ${dir} did not read`;
-    // A record whose liveness could not be told proves nobody is there.
-    for (const s of w.sessions || []) if (s && s.live === true && Number.isInteger(s.pid)) pids.add(s.pid);
+    for (const w of doc.worktrees || []) {
+      const key = real(w.path, w.path);
+      const e = byPath.get(key) || { occupied: false, unknown: null, pids: new Set() };
+      if (w.occupied === true) e.occupied = true;
+      else if (w.occupied === null) e.unknown = `the session registry under ${dir} did not read`;
+      // A record whose liveness could not be told proves nobody is there.
+      for (const r of w.sessions || []) if (r && r.live === true && Number.isInteger(r.pid)) e.pids.add(r.pid);
+      byPath.set(key, e);
+    }
   }
-  return { occupied: occupied ? true : unread ? null : false, pids, why: unread };
+  return { byPath, unread };
+}
+
+// Who stands in one worktree, read off `owners()`. `pids` are the live sessions found there.
+function occupancy(path, seen = owners()) {
+  const e = seen.byPath.get(real(path, path));
+  const why = seen.unread || e?.unknown || null;
+  return { occupied: e?.occupied ? true : why ? null : false, pids: e?.pids ?? new Set(), why };
 }
 
 // The session a process carries: the id the launch chose, which no other process is
@@ -791,6 +847,9 @@ async function launch() {
     worktree: null, trust: null, agterm: null, transcript: null, launchDir: null, record: null,
     load: answer.load, limits: null, ran: answer.ran, reason: null, notes: answer.notes };
   if (answer.load.holds) { out.reason = `the machine's load holds the launch: ${answer.load.avg5} over five minutes on ${answer.load.cores} cores`; done(out); }
+  // No more sessions in the repository's worktrees than batches_max, however each was started.
+  const crowded = full(out);
+  if (crowded) { out.reason = crowded; done(out); }
   const tree = batchTree();
   if (tree.why) { out.reason = tree.why; done(out); }
   const { root, wt } = tree;
@@ -838,7 +897,7 @@ async function launch() {
   if (!trust(out, place.prof, root, out.dryRun)) done(out);
   out.session = randomUUID();
   if (out.dryRun) { out.read = true; done(out); }
-  const still = standing();
+  const still = standing() || full(out);
   if (still) { out.reason = still; done(out); }
   open(out, root, place, out.session, false);
   if (out.started === true) {
@@ -928,6 +987,9 @@ async function relaunch() {
     model: settings.model, effort: settings.effort, session: call.session, check: null, trust: null, agterm: null,
     transcript: null, launchDir: null, record: null, ran: answer.ran, reason: null, notes: answer.notes };
   if (answer.load.holds) { out.reason = `the machine's load holds the start: ${answer.load.avg5} over five minutes on ${answer.load.cores} cores`; done(out); }
+  // A resumed session takes the room a new one would: the one it replaces is gone.
+  const crowded = full(out);
+  if (crowded) { out.reason = crowded; done(out); }
   const seen = { ...inspected(), notes: [] };
   const wt = inspect(seen);
   out.check = seen;
@@ -950,6 +1012,8 @@ async function relaunch() {
     done(out);
   }
   if (!trust(out, place.prof, seen.root, false)) done(out);
+  const late = full(out);
+  if (late) { out.reason = late; done(out); }
   open(out, wt, place, call.session, true);
   if (out.agterm) out.record = record(out, wt);
   out.read = true;

@@ -32,8 +32,9 @@ on, the steps are the ones below.
 
 - **One `add` per carrier** — a review's result, a batch's return, a handed-over table — each claim
   in the candidate shape, and each carrier under a task name of its own: `--source` gives the
-  default, `--task` another, and a second `add` under a name already taken is refused. A finding that already carries a verdict hands it over whole, in its
-  `verdict` field, so it can stand without a new check.
+  default, `--task` another; a second `add` under a name already taken adds to it, never replaces
+  it. A finding that already carries a verdict hands it over whole, in its `verdict` field, so it
+  can stand without a new check.
 - **The tree a pass reads is the caller's to name.** A coordinate that tree does not carry is kept
   and marked unreachable: unread, never refuted, and it reaches the result as
   `not measured — unreachable`.
@@ -58,12 +59,14 @@ second `queue` drops the verdicts — both start the checks over.
 
 ## Launching the checks
 
-`queue` orders the groups — every `Critical` first — and says which the budget cut. Then:
+`queue` orders the groups — every `Critical` first — and says which the budget cut. A review
+round queues the `Critical` and `Important` ones and leaves a `Minor` unchecked, as
+`not measured — minor`; a pass queues every group it holds. Then:
 
 - **One `hcb-dev:findings:verifier` per queued group**, handed `round <id>, unit <U>` and nothing
   else — the checker takes the claim from the store, where who found it, how sure they were and how
-  severe they called it are withheld. Up to ten launches in one message; where the Agent tool offers
-  `run_in_background`, pass `false`.
+  severe they called it are withheld. Four at a time — up to four launches in one message, the
+  next once those return; where the Agent tool offers `run_in_background`, pass `false`.
 - **Then wait with `wait --for verdicts`** — one blocking call per window, given the Bash tool's
   ten-minute maximum as its timeout, since the window outlasts the tool's own default. Repeat it
   until it says complete or its `since_start_s` reaches the ceiling [`review-runs.md`](review-runs.md)
@@ -113,5 +116,5 @@ What the budget cut reaches the result as `not measured — budget`.
 
 `result` builds `result.json` from the store — no model writes it: the findings ranked by severity,
 each `confirmed`, `unproven` or `not measured` with its reason, the refuted apart, and the warnings.
-Its reasons are the ones `findings-table.md` names — `budget`, `unreachable`, `failed`, `depth`, `none ran` —
+Its reasons are the ones `findings-table.md` names — `budget`, `minor`, `unreachable`, `failed`, `depth`, `none ran` —
 and a finding whose verdict was reused says so.

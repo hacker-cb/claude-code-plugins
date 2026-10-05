@@ -6,7 +6,7 @@
       "side": "head",
       "summary": "The quoted twin echoes a line nobody reads.",
       "failure_scenario": "running it prints a message the caller discards",
-      "severity": "Minor",
+      "severity": "Important",
       "category": "simplification"
     }
   ]

@@ -23,8 +23,8 @@ whole pipeline rather than disconnected commands:
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
                                            │
               (or finished work) ──────────┴─▶ shipping-workflow ─▶ multi-review ─▶ one review round:
-                                                     │                              Claude's angles · security angles
-                                                     │                              · a Codex pass · one verifier
+                                                     │                              Claude's angles · a Codex pass
+                                                     │                              · one verifier (Critical/Important)
                                                      └─▶ complete by mode:
                                                            local   ─▶ git merge into parent  (then offer a PR/MR)
                                                            request ─▶ github-pr-workflow ─▶ (merge)
@@ -152,15 +152,15 @@ form: you paste every one of them yourself.
 - **`codex-review`** — `/hcb-dev:codex-review`
   One review round over a range and at a rung the caller fixes (`medium` or
   `high`), its one source a read-only pass of the Codex CLI at the level the rung
-  sets, every candidate then checked by the plugin's verifier — a known range in,
-  verified findings and a coverage record back. Review-only. The round's shape is
+  sets, every Critical and Important candidate then checked by the plugin's verifier —
+  a known range in, verified findings and a coverage record back. Review-only. The round's shape is
   [`references/review-pipeline.md`](references/review-pipeline.md).
 - **`claude-review`** — `/hcb-dev:claude-review`
   The same round with Claude's own finders as its source: one finder agent per
   angle of the rung. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  One round over one change with every source at once — Claude's angles, the
-  security angles and the Codex pass — at the rung the change's risk sets, the
+  One round over one change with every source at once — Claude's angles and the
+  Codex pass, the security angle where the caller asks for it — at the rung the change's risk sets, the
   findings a caller noticed on the way checked beside the round's own, then a
   report of the findings, of what each source actually covered (the coverage
   gate most of the skill exists to keep honest) and of how long each source and
@@ -172,8 +172,9 @@ form: you paste every one of them yourself.
   Take one finished, verified slice to completion: normalize the branch name,
   refresh the base, commit, land the branch on the refreshed parent — before the
   review, so a conflict resolution falls inside the coverage gate rather than
-  after it — hand off to `multi-review`, apply the fixes (reviewing them again
-  where they reach past what was already read), check coverage, then complete
+  after it — hand off to `multi-review` for its one round, apply the fixes (a fix
+  reaching past its finding read once more by Codex, at most once a slice), check
+  coverage, then complete
   **by mode** — merged locally into its parent branch, or an open change request
   (handed to a PR/MR driver below). Steps 0–6 are identical
   in both modes; the mode is read only at the last step. Entered on its own, it
@@ -184,8 +185,8 @@ form: you paste every one of them yourself.
   auto-generated branch and retire what it was published under, rebase onto base,
   open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
-  clean — a fix reaching past its finding goes back through `multi-review` before
-  it is pushed, and Copilot is asked for a review only when the PR itself turned —
+  clean — a fix reaching past its finding is read by Codex before it is pushed,
+  within the slice's one such reading, and Copilot is asked for a review only when the PR itself turned —
   then merge on the authority it was handed — `ask` by default, so it
   stops at ready and asks — monitor, watch the base's own checks on the merge
   commit unless it carries the tree of a head whose own checks are green, and report.
@@ -414,7 +415,7 @@ checked before anything reads it.
 - [`agents/review/reviewer.md`](agents/review/reviewer.md) — `hcb-dev:review:reviewer`, the
   review conductor: handed a round id, it plans the round's tasks from the angle catalog
   ([`data/review-angles.json`](data/review-angles.json)) — the angles of each source the round
-  was opened with: Claude's, the security ones, the Codex pass — launches a finder per angle
+  was opened with: Claude's, the Codex pass, the security one where asked — launches a finder per angle
   and the Codex pass as a process, groups what they hand in, has each group checked, and builds
   the result. Launched by `claude-review`, `codex-review` and `multi-review`.
 - [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of
@@ -559,6 +560,9 @@ saying something else. Each file opens by saying what it owns.
   round's shape: the store it keeps, its rungs, who runs what, what each agent's
   outcome becomes, and the coverage and the time it reports. Read by whatever
   opens a round.
+- [`references/agent-concurrency.md`](references/agent-concurrency.md) — how
+  many subagents a skill runs side by side, and what Claude Code bounds on its
+  own. Read wherever work fans out to subagents.
 - [`references/verification.md`](references/verification.md) — the one checker:
   how a candidate reaches it, and when a verdict it made stands. Read by whatever
   has findings checked.
@@ -667,8 +671,8 @@ saying something else. Each file opens by saying what it owns.
   that rather than listed as rows. Read wherever findings are
   shown — a review's report, a run's report, a wave report, a batch's return.
 - [`references/fix-reading.md`](references/fix-reading.md) — what reads a fix
-  made after a review: which fix goes back through `multi-review` before it is
-  pushed, and when those rounds end — on what they find and what they covered.
+  made after a review: which fix goes back to a reviewer — Codex, once a slice —
+  before it is pushed, and what the session reads itself.
   Read wherever review fixes are made, before a change request opens and after.
 - [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
   endpoint or a concept name gets resolved on either forge. Read before writing an
@@ -688,7 +692,7 @@ request-mode completion on GitLab uses the mirrored `glab` fallback in
 
 ## Configuration
 
-Five settings shape how a master session starts its batches, set in `/config`
+Six settings shape how a master session starts its batches, set in `/config`
 or with `claude plugin configure hcb-dev@hacker-cb-plugins`; an update asks for
 none of them, and one left unset runs on its default:
 
@@ -699,9 +703,18 @@ none of them, and one left unset runs on its default:
 | `batch_profiles` | every profile | the aimux profiles batches may run under, comma-separated |
 | `batch_ceiling_5h` | `80` | a profile at or above this share of its 5-hour window takes no new batch |
 | `batch_ceiling_7d` | `90` | the same for its weekly window |
+| `batches_max` | `4` | how many sessions run in one repository's worktrees at once, batches and any other; a launch past it waits |
 
 Your word in the conversation overrides any of them — for the epic, a wave or
 one batch.
+
+Inside one session Claude Code bounds subagents itself —
+`CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY` (10 by default) for how many run in
+parallel, `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20) for how many may stand at
+once ([environment variables](https://code.claude.com/docs/en/env-vars)) — and
+nothing bounds the sessions beside it: across them, `batches_max` is the bound.
+The plugin's own skills run four subagents at once at most
+(`references/agent-concurrency.md`).
 
 ## Requirements
 
@@ -766,8 +779,8 @@ Per skill, on top of those:
   checked. The finders and the verifier run as subagents, so their reading spends
   their own context rather than the calling session's.
 - **`multi-review`**: what `claude-review` and `codex-review` need — a source that
-  cannot run records its own loss in the round, a row of the report rather than a
-  stop.
+  cannot run records its own loss in the round, a row of the report — a stop only
+  where no source covered the change.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
   skill when one is installed (`github-pr-workflow` here), otherwise the forge CLI
   directly. Nothing in it is GitHub-only.

@@ -42,7 +42,9 @@ re-check the deliverable at its coordinates: in the tracker and the history
 where the work landed there, and for findings alone by re-reading or re-running
 the sources they cite at the revision the return names — never in the prose
 alone. For those, a landing since that revision is not a gap in the return; the
-verdict is re-checked against it before anything rests on it. A reviewer the
+verdict is re-checked against it before anything rests on it. A gap the coverage
+gate let through — a source short of a task while another covered the change
+whole — is the return's `uncovered`, read and not reopened. A reviewer the
 return says did not run on work it should have covered is not a note to file:
 reopen, naming it, and have the review run before acceptance — where the work
 already merged, over the landed range, with the commit before the landing handed

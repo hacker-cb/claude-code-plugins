@@ -1,8 +1,8 @@
 ---
 name: multi-review
 description: >-
-  Review the current change with every source hcb-dev's review round has — Claude, security and
-  Codex — and report the findings and what each source actually covered. Use when the user asks
+  Review the current change with hcb-dev's review round — Claude's finders and Codex, and security
+  where the caller asks for it — and report the findings and what each source actually covered. Use when the user asks
   for a review of the change ("прогони ревью", "review this", "second opinion on this diff"), and
   before finished work is completed — merged locally or handed to a change request — unless
   `hcb-dev:shipping-workflow` is already driving that handoff and calls this itself. Report-only:
@@ -12,8 +12,8 @@ description: >-
 
 # Multi-review
 
-One review round over one change, opened with every source — Claude's finders, the security
-angles, the Codex pass — and one write-up: the findings, and a row per source saying what it
+One review round over one change, opened with every source — Claude's finders and the Codex
+pass, the security angle added on the caller's word — and one write-up: the findings, and a row per source saying what it
 covered. Report-only: never fix what comes back, hand findings and coverage to the caller. Read
 [`../../references/invariants.md`](../../references/invariants.md) first — every count, every
 empty answer and every source that did not report is read by it.
@@ -44,9 +44,10 @@ word off the ladder is not a rung at all.
 
 ## 2. Sources
 
-The round is opened with every source — `claude`, `security`, `codex` — save one the caller's
-word leaves out, whose row is `n/a` with the caller's words as its reason. Nothing else earns a
-skip: cost is paid in the rung, and a narrowing reaches every source alike. A source that cannot
+Every source means `claude` and `codex`; `security` joins them only where the caller asks for
+it. A source the caller's word leaves out has its row `n/a`, with the caller's words as its
+reason. Nothing else earns a skip: cost is paid in the rung, and a narrowing reaches every
+source alike. A source that cannot
 run — the Codex CLI missing, a model's limit on every model tried — records its own loss in the
 round, and its row says so.
 

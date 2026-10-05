@@ -41,8 +41,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" plan --round "$ROUND"
 ```
 
 `tasks` are what to launch: a task of kind `finder` is an agent, one of kind `codex` a
-process. `sweep` is the finder to launch after the checks where the rung has one, `budget` how
-many groups get checked.
+process. `budget` is how many groups get checked.
 
 ## 2. Launch every task — in one message
 
@@ -123,21 +122,16 @@ ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" queue --round "$ROUND"
 ```
 
-`queue` is what to check, every `Critical` first. With `stop` true the `Critical` groups
-alone outrun the budget: check none, go to *The result*, and it says so. Otherwise launch
-one `hcb-dev:findings:verifier` per group in `queue`, prompted `round <id>, unit <group>`
-and with nothing else, up to ten in one message, `run_in_background: false` where offered;
-one stopped by a model's limit is launched again on another model. Then wait the same way
-as in step 3, with `--for verdicts`: it waits for the groups the latest `queue` queued. A
-group still without a verdict at the end stays unchecked; the result says so.
+`queue` is what to check — the `Critical` and `Important` groups, every `Critical` first; a
+`Minor` stays unchecked, and the result says so. With `stop` true the `Critical` groups alone
+outrun the budget: check none, go to *The result*, and it says so. Otherwise launch one
+`hcb-dev:findings:verifier` per group in `queue`, prompted `round <id>, unit <group>` and with
+nothing else, four at a time — up to four in one message, the next once those return —
+`run_in_background: false` where offered; one stopped by a model's limit is launched again on
+another model. Then wait the same way as in step 3, with `--for verdicts`. A group still
+without a verdict at the end stays unchecked; the result says so.
 
-## 6. Sweep — only where the plan has one
-
-Launch one `hcb-dev:review:finder` prompted `round <id>, task sweep`, and wait with
-`wait --for tasks --expect sweep`. Then `merge --task sweep`, group only what the sweep handed
-in with `units --append`, `queue --append`, and check the new groups as in step 5.
-
-## 7. The result
+## 6. The result
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -153,8 +147,8 @@ Plan with `--depth`, and start the Codex pass as in step 2 where the plan has on
 every finder task of the plan yourself, one after another: its brief, the change and the code
 as the brief says, and your candidates handed in as below. Wait for the Codex task as in step
 3, group what was handed in as in step 4, run `queue` — it checks nothing here, and lets a
-verdict a candidate carried stand — and build the result: no checks, no sweep, and the result
-says nothing was checked.
+verdict a candidate carried stand — and build the result: no checks, and the result says
+nothing was checked.
 
 A task's brief, then a file of the change by its `n`, and the code that file had before it:
 

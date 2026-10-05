@@ -113,10 +113,10 @@ behind where the base dismisses stale reviews.
 
 **What reads the fix** is
 [`../../../references/fix-reading.md`](../../../references/fix-reading.md)'s question, and Copilot
-is never its answer: a fix that file sends to a reviewer goes through `hcb-dev:multi-review`
-before the push, whatever review `copilot-state.mjs` shows coming. Its findings are this loop's as
-Copilot's are — rated on the same ladder, fixed before the exit — and the round goes in the
-report with its coverage.
+is never its answer: a fix that file sends to a reviewer is read there before the push, whatever
+review `copilot-state.mjs` shows coming, out of the one such reading the slice has. Its findings
+are this loop's as Copilot's are — rated on the same ladder, fixed before the exit — and the
+reading goes in the report with its coverage.
 
 **Every Copilot comment gets a reply**, fixed or skipped — what changed and where, or the reason
 it is out of scope or not a defect — and once it reads back as posted, the thread is resolved,

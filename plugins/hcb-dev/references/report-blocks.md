@@ -126,9 +126,8 @@ Answer by number; "go" takes every recommendation.
 | slice | source | covered | effort | time | result |
 |---|---|---|---|---|---|
 | `export/csv` | `claude` | `<base>`, 4 files | high | 6 min 10 s | 🟢 no findings |
-| `export/csv` | `security` | `<base>`, 4 files | high | 4 min 2 s | 🟢 no findings |
 | `export/csv` | `codex` | `<base>`, 4 files | xhigh | 11 min 40 s | 🟢 no findings |
-| `export/csv` | `round` | — | — | 14 min 20 s | sweep 2 min 5 s |
+| `export/csv` | `round` | — | — | 14 min 20 s | checks 0 s |
 
 ## Findings
 **Findings — 0 after dedup · verified by none · confirmed 0 · unproven 0 · not measured 0 · refuted 0, dropped**

@@ -83,7 +83,9 @@ other than the base runs isolated, as below.
 
 Anything that runs the project's code or tools — tests, linters, a build, a generator, a probe,
 a mutation — runs in a subagent launched with worktree isolation (`claude-worktrees.md`), on the
-base as on any other ref. One subagent per question, handed the sha: it notes where it stands
+base as on any other ref, paced as
+[`../../../references/agent-concurrency.md`](../../../references/agent-concurrency.md) says. One
+subagent per question, handed the sha: it notes where it stands
 (`git branch --show-current`, or `git rev-parse HEAD` where that is empty), switches its
 worktree to the sha (`git switch --detach <sha>`)
 and confirms `git rev-parse HEAD`, prepares what the run needs, runs, puts the worktree back

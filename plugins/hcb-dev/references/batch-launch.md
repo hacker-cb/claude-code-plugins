@@ -39,8 +39,9 @@ node "<plugin root>/scripts/batch-launch.mjs" probe <launch settings> [--limits 
 | `mode` / `modes[]` | the terminal way that answers first, and for each its `why` where it does not |
 | `agterm` | this session's socket, window and workspace — found by its id, whatever window it moved to |
 | `shell` / `claude` / `aimux` | the login shell, and where `claude` and `aimux` sit on the PATH it builds |
-| `settings` | model, effort, profiles and ceilings, each with `from`: the user's `word`, the saved `config`, or the manifest's `default` |
+| `settings` | model, effort, profiles, ceilings and `batchesMax`, each with `from`: the user's `word`, the saved `config`, or the manifest's `default` |
 | `load.holds` | the machine is busy enough that the next launch waits |
+| `batches` | `running` — the worktrees of this repository a live session stands in, a batch's or anyone's, under a configuration this session knows (its own, the default, aimux's profiles), `live` naming them — against `max`, the `batches_max` setting; `running` is `null`, with `why`, where a registry did not read |
 | `limits.profiles[]` | per allowed profile: both windows, `eligible`, `login` — `needed` is the user's to log into — `warmed`, `held`, `score` |
 | `limits.pick` | the profile the next batch goes on: the most room per batch it already carries |
 | `ran[]` | every aimux run it made — `auth status`, and a warm-up for a login that only needed refreshing |
@@ -51,7 +52,9 @@ ledgers' rows. `probe` without `--limits` sends no request and is what a status 
 ## Pacing
 
 Launches go one at a time: the next only once the one before it answered `started`, and
-none while `load.holds`. A batch is never launched twice at once. **The first launch after any change of way or profile is a
+none while `load.holds` or while `batches.running` stands at `batches.max` — `launch` and
+`relaunch` refuse then, and a chip hung or an order pasted waits for the same room. A batch is
+never launched twice at once. **The first launch after any change of way or profile is a
 canary**: launch one batch, wait for its start report, check it against the launch record
 — the title, the worktree, the model and effort, the profile by the `configDir` `probe` gives it
 in `aimux.profiles[]`, a model the record names by alias matching what it resolves to — and only

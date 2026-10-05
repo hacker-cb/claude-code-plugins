@@ -8,7 +8,7 @@ description: >-
 tools: Read, Grep, Glob, Bash, Write
 model: opus
 effort: medium
-maxTurns: 40
+maxTurns: 60
 omitClaudeMd: true
 ---
 
@@ -28,9 +28,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
 `scope` is the change: its base, its files — each numbered `n`, with the lines it adds and
-removes — and any narrowing the caller asked for. `read` says how to reach each side of it. A
-`rules` list, where the brief has one, is the rule files to read; a `listed` one is what an
-earlier pass already found.
+removes — and any narrowing the caller asked for. `read` says how to reach each side of it.
 
 ## 2. Read the change, then the code around it
 
@@ -39,7 +37,11 @@ ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND"
 ```
 
-For a large change, read it a file at a time instead, by the file's `n`:
+For a large change, read it a file at a time instead, by the file's `n` — first the files where
+the change alters what runs or what an agent is told to do, the ones that only describe or hold
+data last. Keep the last few of your turns for handing in: a finder stopped by its turn limit
+before it handed in leaves nothing, so where the change outlasts your turns, stop reading in
+time, hand in what you found and record the rest as unread (step 4):
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -72,7 +74,7 @@ Any other path you put into a command yourself goes in single-quoted, a quote in
 written `'\''`, and after `--`.
 
 **Only read.** Never run the code under review, its build, its tests or its scripts, and
-never write a file: the one thing you write is your answer, through `add`. Git only in its
+never write a file but your answer, to the path `inbox` prints. Git only in its
 reading forms — `show`, `log`, `grep`, `blame`, `diff`.
 
 Stay on the change: the lines it adds, removes or rewrites, the functions they sit in, and
@@ -126,18 +128,18 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --sou
 
 With nothing to report, hand in `{"candidates": []}`: an empty answer is an answer, and
 none at all reads as a finder that failed. A refused submission names what is wrong and
-leaves the file where it was: read it, write it fixed, hand it in again. An accepted hand-in
-is added to, never replaced: where one went in short of all you found, the next carries only
-what it left out. A candidate anchored where the change has nothing is dropped and named in
-the answer: that is a line you did not read, so leave it dropped.
+leaves the file where it was: read it, write it fixed, hand it in again. A candidate anchored
+where the change has nothing is dropped and named in the answer: that is a line you did not
+read, so leave it dropped.
 
-Where a read you needed was refused — a permission denied, a command blocked — hand in what you
-have, then record that you read less than the change:
+Where a read you needed was refused — a permission denied, a command blocked — or you stopped
+short of the change, hand in what you have, then record that you read less than the change,
+naming what you did not read:
 
 ```bash
 ROUND="<the round id from your prompt>"
 TASK="<the task id from your prompt>"
-NOTE='<what was refused, in plain words — no quote marks, no dollar signs, no backticks>'
+NOTE='<what was refused or left unread, in plain words — no quote marks, no dollar signs, no backticks>'
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" status --round "$ROUND" --task "$TASK" --state partial --note "$NOTE"
 ```
 
