@@ -41,7 +41,7 @@ node "<plugin root>/scripts/batch-launch.mjs" probe <launch settings> [--limits 
 | `shell` / `claude` / `aimux` | the login shell, and where `claude` and `aimux` sit on the PATH it builds |
 | `settings` | model, effort, profiles, ceilings and `batchesMax`, each with `from`: the user's `word`, the saved `config`, or the manifest's `default` |
 | `load.holds` | the machine is busy enough that the next launch waits |
-| `batches` | `running` — the worktrees of this repository a live session stands in, a batch's or anyone's, `live` naming them — against `max`, the `batches_max` setting; `running` is `null`, with `why`, where a registry did not read |
+| `batches` | `running` — the worktrees of this repository a live session stands in, a batch's or anyone's, under a configuration this session knows (its own, the default, aimux's profiles), `live` naming them — against `max`, the `batches_max` setting; `running` is `null`, with `why`, where a registry did not read |
 | `limits.profiles[]` | per allowed profile: both windows, `eligible`, `login` — `needed` is the user's to log into — `warmed`, `held`, `score` |
 | `limits.pick` | the profile the next batch goes on: the most room per batch it already carries |
 | `ran[]` | every aimux run it made — `auth status`, and a warm-up for a login that only needed refreshing |

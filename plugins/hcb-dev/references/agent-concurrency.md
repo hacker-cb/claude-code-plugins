@@ -1,8 +1,9 @@
 # How many agents run at once
 
-Read by every skill that fans work out to subagents. It owns how many of them run side by side;
-a review round paces its own launches, and how many batch sessions run is decided where they are
-launched.
+Read by every skill that fans work out to subagents. It owns how many of them run side by side.
+Two launches keep a bound of their own and are not paced by it: a review round's, whose finders
+the angle catalog numbers and whose conductor paces its checks, and the batch sessions, bounded
+where they are launched.
 
 **At most four subagents at once.** Work split across subagents — readers over a slice, a second
 blind reading, research for open decisions, runs in isolated worktrees — goes out four in one
