@@ -703,7 +703,7 @@ none of them, and one left unset runs on its default:
 | `batch_profiles` | every profile | the aimux profiles batches may run under, comma-separated |
 | `batch_ceiling_5h` | `80` | a profile at or above this share of its 5-hour window takes no new batch |
 | `batch_ceiling_7d` | `90` | the same for its weekly window |
-| `batches_max` | `4` | how many batch sessions of one repository run at once; a launch past it waits |
+| `batches_max` | `4` | how many sessions run in one repository's worktrees at once, batches and any other; a launch past it waits |
 
 Your word in the conversation overrides any of them — for the epic, a wave or
 one batch.

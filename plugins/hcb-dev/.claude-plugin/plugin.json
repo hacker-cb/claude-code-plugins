@@ -74,7 +74,7 @@
     "batches_max": {
       "type": "number",
       "title": "Batches at once",
-      "description": "How many batch sessions of one repository a master session runs at the same time; a launch past it waits for one to end.",
+      "description": "How many sessions may run in one repository's worktrees at the same time — batches and any other; a master session's launch past it waits for one to end.",
       "min": 1,
       "max": 32,
       "default": 4

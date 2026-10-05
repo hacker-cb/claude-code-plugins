@@ -80,8 +80,8 @@ altogether (`wave`), `nativeKind` and
 the server carries no hierarchy — the format is in the script's header.
 
 Split the carriers in scope into batches small enough that each is read whole, and give each to a
-subagent, four at once at most
-([`../../references/agent-concurrency.md`](../../references/agent-concurrency.md)), with:
+subagent, paced as
+[`../../references/agent-concurrency.md`](../../references/agent-concurrency.md) says, with:
 `set.md`, `roles.json`, its own list of numbers, and the one file it writes, `rows/<batch>.jsonl`
 — never another. Each carrier gets one row, `{"kind", "number", "add", "remove", "why", "sure"}`,
 `add` and `remove` its change from what it carries now, empty where it stays. What it reads:
