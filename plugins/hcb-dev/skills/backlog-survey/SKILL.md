@@ -47,7 +47,8 @@ under "What is read":
   "what a slice read costs the reader"). **Bytes pick the mechanics, not the
   count of issues**: the numbers this session can hold deep beside its own work
   it reads itself, one call for all of them; past that, they fan out to parallel
-  reader subagents, each handed numbers weighed by their comment count (`c` on
+  reader subagents — four at once at most
+  ([`../../references/agent-concurrency.md`](../../references/agent-concurrency.md)) — each handed numbers weighed by their comment count (`c` on
   the wide line) rather than an equal share, the verdict reference by path, the
   plugin root `${CLAUDE_PLUGIN_ROOT}` its command resolves against — a reader
   session binds none of its own — and the one priority scale resolved below,

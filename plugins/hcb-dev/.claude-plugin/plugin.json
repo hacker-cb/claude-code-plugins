@@ -70,6 +70,14 @@
       "min": 1,
       "max": 100,
       "default": 90
+    },
+    "batches_max": {
+      "type": "number",
+      "title": "Batches at once",
+      "description": "How many batch sessions of one repository a master session runs at the same time; a launch past it waits for one to end.",
+      "min": 1,
+      "max": 32,
+      "default": 4
     }
   }
 }

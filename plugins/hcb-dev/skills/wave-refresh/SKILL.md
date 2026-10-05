@@ -136,9 +136,9 @@ coordinate moved, whose defect is gone — takes its verdict into the layout by
    same way. Repeat until every placed candidate carries a verdict read on this
    pass; each round reads at least one, so it ends.
 
-A slice small enough to read here is read here; one that is not fans out to
-reader subagents, each handed a sub-slice and this pin, with every conclusion
-ruled back in this session.
+A slice small enough to read here is read here; one that is not fans out to reader subagents, four
+at once at most ([`../../references/agent-concurrency.md`](../../references/agent-concurrency.md)),
+each handed a sub-slice and this pin, with every conclusion ruled back in this session.
 
 ## Capacity is reported, never reached
 

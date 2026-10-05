@@ -27,7 +27,7 @@ writes obeys [`../../references/session-prompts.md`](../../references/session-pr
 settles every slot of [`../../references/order-anatomy.md`](../../references/order-anatomy.md),
 and addresses its receiver per [`../../references/session-comms.md`](../../references/session-comms.md);
 how a batch goes out is [`../../references/batch-launch.md`](../../references/batch-launch.md)'s.
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}'`.
+**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Preflight — before any batch goes out

@@ -30,7 +30,7 @@ import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, readlink
 import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { refNameOk, runner, text, within, worktrees, writeAll } from './lib/forge.mjs';
 import { agterm, aimuxCore, aimuxRun, interpreterOn, loginEnv, loginShell, onPath, real, sleep } from './lib/launch-env.mjs';
@@ -41,7 +41,7 @@ const die = (m) => { writeAll(2, `batch-launch: ${m}\n${USAGE}`); process.exit(2
 
 // --- the call
 const [sub, ...argv] = process.argv.slice(2);
-const SETTINGS = ['--model-config', '--effort-config', '--profiles', '--ceiling-5h', '--ceiling-7d', '--model', '--effort'];
+const SETTINGS = ['--model-config', '--effort-config', '--profiles', '--ceiling-5h', '--ceiling-7d', '--batches-max', '--model', '--effort'];
 const FLAGS = {
   probe: { valued: [...SETTINGS, '--held'], boolean: ['--limits'] },
   launch: { valued: [...SETTINGS, '--held', '--batch', '--mode', '--profile', '--wait'], boolean: ['--dry-run'] },
@@ -111,6 +111,15 @@ function percent(key, config) {
   if (!Number.isFinite(n) || n < lo || n > hi) die(`${key} '${s.value}' (${s.from}) is not a number from ${lo} to ${hi}`);
   return { value: n, from: s.from };
 }
+function whole(key, config) {
+  const s = setting(key, undefined, config);
+  if (s.value === null) return { value: null, from: s.from };
+  const n = Number(s.value);
+  const lo = Number.isFinite(s.spec.min) ? s.spec.min : 1;
+  const hi = Number.isFinite(s.spec.max) ? s.spec.max : Infinity;
+  if (!Number.isInteger(n) || n < lo || n > hi) die(`${key} '${s.value}' (${s.from}) is not a whole number from ${lo} to ${hi}`);
+  return { value: n, from: s.from };
+}
 function profileList(config) {
   const s = setting('batch_profiles', undefined, config);
   const names = s.value === null ? [] : String(s.value).split(',').map((p) => p.trim()).filter(Boolean);
@@ -125,6 +134,7 @@ const settings = {
   profiles: profileList(opts['--profiles']),
   ceiling5h: percent('batch_ceiling_5h', opts['--ceiling-5h']),
   ceiling7d: percent('batch_ceiling_7d', opts['--ceiling-7d']),
+  batchesMax: whole('batches_max', opts['--batches-max']),
 };
 
 // A map, never an object: a profile may be called `constructor`.
@@ -139,6 +149,8 @@ for (const pair of (opts['--held'] || '').split(',').map((x) => x.trim()).filter
 // --- what launch, check, relaunch and close are handed, checked before anything runs
 // No `-` inside either part: the worktree joins the two with one, and `a-b/c` would meet `a/b-c` there.
 const BATCH = /^([A-Za-z0-9][A-Za-z0-9._]*)\/([A-Za-z0-9][A-Za-z0-9._]*)$/;
+// The worktree a batch runs in, named for it: `<epic>-<id>`, one `-` between the two.
+const BATCH_DIR = /^[A-Za-z0-9][A-Za-z0-9._]*-[A-Za-z0-9][A-Za-z0-9._]*$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const call = { batch: null, slug: null, mode: null, session: null, agterm: null, title: null,
   text: null, wait: 90, profile: null };
@@ -464,7 +476,6 @@ function evaluateModes() {
 }
 evaluateModes();
 
-if (sub === 'probe') { answer.read = true; finish(); }
 
 
 // --- launch, check, relaunch, close
@@ -481,6 +492,34 @@ const ownDir = () => (process.env.CLAUDE_CONFIG_DIR ? resolve(process.env.CLAUDE
 const defaultDir = () => join(os.homedir(), '.claude');
 const sameDir = (a, b) => real(a, a) === real(b, b);
 const configDirs = () => [...new Set([ownDir(), ...answer.aimux.profiles.map((p) => p.configDir).filter(Boolean)])];
+
+// The batches running now: a worktree under the repository's `.claude/worktrees/` named as a
+// batch's, with a live session standing in it under any configuration here — the worktree this
+// session stands in aside. `running` is null, with `why`, where a reading did not answer: a
+// count taken from part of the registries would let a launch past the limit.
+function liveBatches() {
+  const max = settings.batchesMax.value;
+  const listed = worktrees(git);
+  if (listed.trees === null) return { max, running: null, live: [], why: `the worktree list did not read (${listed.error})` };
+  const primary = listed.trees.find((t) => t.isPrimary);
+  if (!primary) return { max, running: null, live: [], why: 'git listed no main working tree' };
+  const home = join(primary.path, '.claude', 'worktrees');
+  const under = real(home, home);
+  const top = git(['rev-parse', '--show-toplevel']);
+  const self = top.ok ? real(top.out, top.out) : null;
+  const live = [];
+  let why = null;
+  for (const t of listed.trees) {
+    const at = real(t.path, t.path);
+    if (dirname(at) !== under || !BATCH_DIR.test(basename(at)) || at === self) continue;
+    const who = occupancy(t.path);
+    if (who.occupied === true) live.push(basename(at));
+    else if (who.occupied === null) why = who.why || `whether a session stands in ${basename(at)} did not read`;
+  }
+  return { max, running: why ? null : live.length, live, why };
+}
+
+if (sub === 'probe') { answer.batches = liveBatches(); answer.read = true; finish(); }
 
 // The repository's main tree, its worktrees, and the batch's own place among them.
 function batchTree() {
@@ -791,6 +830,11 @@ async function launch() {
     worktree: null, trust: null, agterm: null, transcript: null, launchDir: null, record: null,
     load: answer.load, limits: null, ran: answer.ran, reason: null, notes: answer.notes };
   if (answer.load.holds) { out.reason = `the machine's load holds the launch: ${answer.load.avg5} over five minutes on ${answer.load.cores} cores`; done(out); }
+  // As many batches as batches_max run at once, whichever way each was launched; a relaunch
+  // replaces one that is gone, and is never held by it.
+  out.batches = liveBatches();
+  if (out.batches.running === null) { out.reason = `how many batches run now did not read: ${out.batches.why}`; done(out); }
+  if (out.batches.running >= out.batches.max) { out.reason = `${out.batches.running} batch(es) run already (${out.batches.live.join(', ')}), and batches_max is ${out.batches.max}`; done(out); }
   const tree = batchTree();
   if (tree.why) { out.reason = tree.why; done(out); }
   const { root, wt } = tree;
