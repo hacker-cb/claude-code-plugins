@@ -25,7 +25,7 @@ tracker, no message to another session — and marks nothing answered, which wou
 report is [`../../references/report-format.md`](../../references/report-format.md)'s grammar, in
 the occasion [`../../references/report-blocks.md`](../../references/report-blocks.md) lists for a
 status. Read [`../../references/invariants.md`](../../references/invariants.md) first.
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}'`.
+**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Which role, and which subject

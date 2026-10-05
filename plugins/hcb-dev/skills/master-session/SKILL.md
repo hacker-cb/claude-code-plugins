@@ -23,7 +23,7 @@ wave ledgers ([`../../references/wave-ledger.md`](../../references/wave-ledger.m
 [`../../references/session-comms.md`](../../references/session-comms.md), accepts their returns per
 [`../../references/order-return.md`](../../references/order-return.md), and its own tree stands on
 the base per [`references/master-tree.md`](references/master-tree.md).
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}'`.
+**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Assuming the role
@@ -60,8 +60,8 @@ survey of the slice exists yet, from `hcb-dev:wave-refresh` for a plan redrawn m
    to the user that the plan's issues stand on — every wave's, not the next one's alone — goes up
    before any wave table and into the epic ledger's expectations, naming its issues, the body edits
    its answer writes and the parked reasons it takes off. The research its recommendation needs runs
-   first, all of it at once, in subagents as `master-tree.md` runs them — reading, measuring, or a
-   throwaway prototype landing nothing.
+   first, in subagents as `master-tree.md` runs them — reading, measuring, or a throwaway prototype
+   landing nothing.
 2. **The answers, written where a batch reads them**, on the word that gave each
    (`hcb-dev:issue-tracking`), as one tracker edit for the loop: the body edits its ask named, the
    decision in the epic ledger, the parked reasons

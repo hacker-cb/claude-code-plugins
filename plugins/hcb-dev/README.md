@@ -560,6 +560,9 @@ saying something else. Each file opens by saying what it owns.
   round's shape: the store it keeps, its rungs, who runs what, what each agent's
   outcome becomes, and the coverage and the time it reports. Read by whatever
   opens a round.
+- [`references/agent-concurrency.md`](references/agent-concurrency.md) — how
+  many subagents a skill runs side by side, and what Claude Code bounds on its
+  own. Read wherever work fans out to subagents.
 - [`references/verification.md`](references/verification.md) — the one checker:
   how a candidate reaches it, and when a verdict it made stands. Read by whatever
   has findings checked.
@@ -689,7 +692,7 @@ request-mode completion on GitLab uses the mirrored `glab` fallback in
 
 ## Configuration
 
-Five settings shape how a master session starts its batches, set in `/config`
+Six settings shape how a master session starts its batches, set in `/config`
 or with `claude plugin configure hcb-dev@hacker-cb-plugins`; an update asks for
 none of them, and one left unset runs on its default:
 
@@ -700,9 +703,18 @@ none of them, and one left unset runs on its default:
 | `batch_profiles` | every profile | the aimux profiles batches may run under, comma-separated |
 | `batch_ceiling_5h` | `80` | a profile at or above this share of its 5-hour window takes no new batch |
 | `batch_ceiling_7d` | `90` | the same for its weekly window |
+| `batches_max` | `4` | how many sessions run in one repository's worktrees at once, batches and any other; a launch past it waits |
 
 Your word in the conversation overrides any of them — for the epic, a wave or
 one batch.
+
+Inside one session Claude Code bounds subagents itself —
+`CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY` (10 by default) for how many run in
+parallel, `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20) for how many may stand at
+once ([environment variables](https://code.claude.com/docs/en/env-vars)) — and
+nothing bounds the sessions beside it: across them, `batches_max` is the bound.
+The plugin's own skills run four subagents at once at most
+(`references/agent-concurrency.md`).
 
 ## Requirements
 
