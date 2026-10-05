@@ -17,20 +17,22 @@
 //   node review-round.mjs brief   --round <id> --task <task>
 //   node review-round.mjs diff    --round <id> [--number <n>]
 //   node review-round.mjs show    --round <id> (--number <n> | --unit <unit>)
-//   node review-round.mjs add     --round <id> --source <source> [--task <task>] [--file <json>]
+//   node review-round.mjs add     --round <id> --source <source> [--task <task>] [--file <json> | --inbox]
+//   node review-round.mjs inbox   --round <id> (--task <task> | --unit <unit> | --units)
 //   node review-round.mjs codex   --round <id> [--timeout-s <n>]
 //   node review-round.mjs status  --round <id> --task <task> [--state partial|unavailable]
 //                                 [--model <model>] [--note <text>]
 //   node review-round.mjs merge   --round <id> [--task <task>]
-//   node review-round.mjs units   --round <id> [--append] [--file <json>]
+//   node review-round.mjs units   --round <id> [--append] [--file <json> | --inbox]
 //   node review-round.mjs queue   --round <id> [--append] [--budget <n>]
 //   node review-round.mjs task    --round <id> --unit <unit>
-//   node review-round.mjs verdict --round <id> --unit <unit> [--file <json>]
+//   node review-round.mjs verdict --round <id> --unit <unit> [--file <json> | --inbox]
 //   node review-round.mjs wait    --round <id> --for tasks|verdicts [--expect <list>] [--timeout-s <n>]
 //                                 (verdicts: the groups the latest queue call queued, unless named)
 //   node review-round.mjs result  --round <id>
 //
-// The JSON `add`, `units` and `verdict` take arrives on stdin, or from `--file`. `diff`
+// The JSON `add`, `units` and `verdict` take arrives on stdin, from `--file`, or with `--inbox`
+// from the file `inbox` named for that submission, which is read once and removed. `diff`
 // prints the change as git wrote it and `show` a file as one side holds it, byte for byte,
 // their refusals going to stderr; everything else prints JSON.
 // Exit: 0 answered; 1 a submission refused, the errors saying what to fix; 2 called
@@ -68,14 +70,15 @@ const SPEC = {
   brief: ['--round', '--task'],
   diff: ['--round', '--number'],
   show: ['--round', '--number', '--unit'],
-  add: ['--round', '--source', '--task', '--file'],
+  add: ['--round', '--source', '--task', '--file', '--inbox'],
+  inbox: ['--round', '--task', '--unit', '--units'],
   codex: ['--round', '--timeout-s'],
   status: ['--round', '--task', '--state', '--model', '--note'],
   merge: ['--round', '--task'],
-  units: ['--round', '--file', '--append'],
+  units: ['--round', '--file', '--inbox', '--append'],
   queue: ['--round', '--budget', '--append'],
   task: ['--round', '--unit'],
-  verdict: ['--round', '--unit', '--file'],
+  verdict: ['--round', '--unit', '--file', '--inbox'],
   wait: ['--round', '--for', '--expect', '--timeout-s'],
   result: ['--round'],
 };
@@ -83,7 +86,7 @@ const USAGE = `usage: node review-round.mjs <${Object.keys(SPEC).join('|')}> [fl
 const [cmd, ...argv] = process.argv.slice(2);
 if (!cmd || !SPEC[cmd]) die(cmd ? `unknown subcommand '${cmd}'` : 'a subcommand is required');
 // A switch is answered by being there, and takes no value.
-const SWITCHES = new Set(['--depth', '--append']);
+const SWITCHES = new Set(['--depth', '--append', '--inbox', '--units']);
 const opts = {};
 for (let i = 0; i < argv.length; i += 1) {
   if (!SPEC[cmd].includes(argv[i])) die(`${cmd} takes no argument '${argv[i]}'`);
@@ -95,6 +98,7 @@ for (let i = 0; i < argv.length; i += 1) {
   opts[argv[i]] = argv[i + 1];
   i += 1;
 }
+if (opts['--inbox'] && opts['--file']) die('a submission comes from --file or from --inbox, not both');
 
 // Short ids, never paths, travel between the session and the agents: a model copying a
 // long temp path shortens it, and a shortened path is a relative one that lands inside
@@ -227,14 +231,42 @@ function checkoutOf(round) {
   return repo;
 }
 
-function submission() {
+// Where a submission written to a file waits to be handed in: inside the round, named for
+// what it answers — so the agent passes back no path, and a path it copied short cannot put
+// the file anywhere this reads.
+const inboxOf = (round, name) => path.join(round.dir, 'inbox', `${name}.json`);
+
+// A file to write a submission into, for an agent whose shell will not carry JSON on stdin:
+// it writes there with its own tool, then hands in with `--inbox`. Nothing stands at the path
+// it is given, since a write tool may refuse to replace a file it has not read.
+function inbox() {
+  const round = openRound();
+  const named = [opts['--task'], opts['--unit'], opts['--units']].filter((v) => v !== undefined);
+  if (named.length !== 1) die('inbox names one submission: --task <task>, --unit <unit> or --units');
+  if (opts['--task'] !== undefined && !TASK_ID.test(opts['--task'])) die(`--task '${opts['--task']}' is not a task id: lowercase letters, digits and "-"`);
+  if (opts['--unit'] !== undefined && !UNIT_ID.test(opts['--unit'])) die('--unit is a group id such as U3');
+  const name = opts['--units'] ? 'units' : opts['--unit'] ? `unit-${opts['--unit']}` : `task-${opts['--task']}`;
+  const file = inboxOf(round, name);
+  try {
+    mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+    rmSync(file, { force: true });
+  } catch (e) { cannot(`the inbox of round ${round.id} could not be made ready: ${e.message}`); }
+  answer({ read: true, path: file });
+}
+
+function submission(round, name) {
+  const file = opts['--inbox'] ? inboxOf(round, name) : opts['--file'];
   let raw;
   try {
-    raw = opts['--file'] ? readFileSync(opts['--file'], 'utf8') : readFileSync(0, 'utf8');
+    raw = file ? readFileSync(file, 'utf8') : readFileSync(0, 'utf8');
   } catch (e) {
-    refuse([{ at: '', message: `the submission could not be read: ${e.message}` }]);
+    refuse([{ at: '', message: opts['--inbox'] && e.code === 'ENOENT'
+      ? 'nothing waits in the inbox — run inbox for this submission, write the JSON to the path it prints, then hand it in'
+      : `the submission could not be read: ${e.message}` }]);
   }
-  if (!raw.trim()) refuse([{ at: '', message: 'the submission is empty — pass the JSON on stdin or with --file' }]);
+  // Read once: a submission handed in again is written again, to a path nothing stands at.
+  if (opts['--inbox']) rmSync(file, { force: true });
+  if (!raw.trim()) refuse([{ at: '', message: 'the submission is empty — pass the JSON on stdin, with --file, or with --inbox' }]);
   try {
     return JSON.parse(raw);
   } catch (e) {
@@ -899,7 +931,8 @@ function brief() {
       head: 'the working tree as it stands — read the files directly',
       base: 'the subcommand show --number <n> — a file of the change as it was before it',
     },
-    submit: `review-round.mjs add --round ${round.id} --source ${t.source} --task ${id}`,
+    inbox: `review-round.mjs inbox --round ${round.id} --task ${id}`,
+    submit: `review-round.mjs add --round ${round.id} --source ${t.source} --task ${id} --inbox`,
   };
   if (spec.reads === 'rules') out.rules = ruleFiles(checkoutOf(round), req.files);
   if (spec.reads === 'listed') out.listed = listed(round);
@@ -1004,8 +1037,8 @@ function add() {
   if (round.req.mode === 'round' && passSources().has(source)) {
     refuse([{ at: '', message: `source '${source}' is the Codex pass — it hands in through the codex subcommand, never through add` }], { task });
   }
-  const value = submission();
-  answer({ accepted: true, task, source, ...store(round, task, source, value, planned) });
+  const value = submission(round, `task-${task}`);
+  answer({ accepted: true, task, source, ...store(round, task, source, value, planned, { append: true }) });
 }
 
 // Whether the round still takes an answer from this task, and the plan's entry for it.
@@ -1035,11 +1068,6 @@ function admits(round, task, source) {
   if (existsSync(path.join(round.dir, 'result.json'))) {
     refuse([{ at: '', message: `round ${round.id} has its result — this submission came too late to be stored` }], { task });
   }
-  // One task, one submission: a second under the same name would replace the first, and
-  // the candidates it carried would leave the round without anybody having dropped them.
-  if (existsSync(path.join(round.dir, 'sources', `${task}.json`))) {
-    refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
-  }
   return planned;
 }
 
@@ -1047,24 +1075,44 @@ function admits(round, task, source) {
 // tree the round reads, then the submission and the task's status — both claimed, never
 // written over. `extra` rides into the status: the model and level an engine ran at, the
 // notes it earned on the way in, and each way it says it covered less than the change.
+// With `extra.append` — `add`'s — a task's later submission adds to its earlier one instead:
+// an agent whose first hand-in carried part of what it found, a command refused on the way or
+// a hand-in split up, loses nothing by handing in the rest. A candidate already held, the
+// same anchor and summary, is not stored twice, and the plan's limit counts the two together.
+// The notes the store writes from the anchors themselves, recounted on every hand-in.
+const MISSED_ALL = 'every anchor this source gave misses the snapshot — it reviewed something other than this change';
+const DROPPED = ' candidate(s) anchored outside the snapshot were dropped';
 function store(round, task, source, value, planned, extra = {}, repo = checkoutOf(round)) {
   const errors = validate(load, 'candidates.json', null, value);
   if (errors.length) refuse(errors, { task });
-  if (planned && value.candidates.length > planned.limit) {
-    refuse([{ at: '/candidates', message: `holds ${value.candidates.length}, and task '${task}' takes at most ${planned.limit} — hand in the ${planned.limit} most severe` }], { task });
+  const file = path.join(round.dir, 'sources', `${task}.json`);
+  let prior = null;
+  if (extra.append && existsSync(file)) {
+    try { prior = readJson(file); } catch (e) { cannot(`task '${task}''s earlier submission did not read: ${e.message}`); }
   }
-  const kept = [];
-  const rejected = [];
-  const unreachable = [];
   // A path written from the checkout's root, or with a `./` in it, is the same file under
   // its plain relative name, whoever wrote it. And a finding a planned task hands in carries
   // no verdict of its own finder's: only a check that never saw its argument stands.
   const named = (c) => {
-    const file = path.isAbsolute(c.file) && inside(c.file, repo.top) ? path.relative(repo.top, c.file) : path.posix.normalize(c.file);
+    const f = path.isAbsolute(c.file) && inside(c.file, repo.top) ? path.relative(repo.top, c.file) : path.posix.normalize(c.file);
     const { verdict, ...rest } = c;
-    return { ...(planned ? rest : c), file: relOk(file) ? file : c.file };
+    return { ...(planned ? rest : c), file: relOk(f) ? f : c.file };
   };
-  value.candidates.map(named).forEach((c, i) => {
+  const key = (c) => JSON.stringify([c.file, c.line, c.side, c.summary]);
+  const held = new Set((prior ? prior.candidates : []).map(key));
+  const incoming = value.candidates.map(named);
+  const repeated = incoming.filter((c) => held.has(key(c))).length;
+  const before = prior ? prior.candidates.length : 0;
+  if (planned && before + incoming.length - repeated > planned.limit) {
+    refuse([{ at: '/candidates', message: prior
+      ? `brings task '${task}' to ${before + incoming.length - repeated}, and it takes at most ${planned.limit} — hand in no more than ${Math.max(planned.limit - before, 0)} beyond the ${before} it holds`
+      : `holds ${value.candidates.length}, and task '${task}' takes at most ${planned.limit} — hand in the ${planned.limit} most severe` }], { task });
+  }
+  const kept = [];
+  const rejected = [];
+  const unreachable = [];
+  incoming.forEach((c, i) => {
+    if (held.has(key(c))) return;
     const at = readAt(repo, round.req, c.file, c.side);
     const reason = at.missing
       || (c.line > lineCount(at.text) ? `${c.file} has ${lineCount(at.text)} line(s) on the ${c.side} side, and the anchor is line ${c.line}` : null);
@@ -1072,35 +1120,52 @@ function store(round, task, source, value, planned, extra = {}, repo = checkoutO
     // other tree, and it leaves. A carrier's, and any in a pass, is only one this round
     // cannot read: it stays, marked, neither verified nor refuted here.
     if (reason && reviews(round.req, source)) { rejected.push({ index: i, file: c.file, line: c.line, reason }); return; }
-    const stored = { id: `${task}.${kept.length + 1}`, source, ...c };
+    const stored = { id: `${task}.${before + kept.length + 1}`, source, ...c };
     if (reason) { stored.unreachable = reason; unreachable.push({ id: stored.id, reason }); }
     kept.push(stored);
   });
+  const allKept = [...(prior ? prior.candidates : []), ...kept];
+  // A dropped anchor handed in again is the same drop.
+  const gone = (r) => JSON.stringify([r.file, r.line, r.reason]);
+  const was = new Set((prior ? prior.rejected : []).map(gone));
+  const allRejected = [...(prior ? prior.rejected : []), ...rejected.filter((r) => !was.has(gone(r)))];
   const notes = [...(extra.notes || [])];
   let state = 'covered';
-  if (rejected.length && !kept.length) {
+  if (allRejected.length && !allKept.length) {
     state = 'partial';
-    notes.push('every anchor this source gave misses the snapshot — it reviewed something other than this change');
-  } else if (rejected.length) {
-    notes.push(`run-warning: ${rejected.length} candidate(s) anchored outside the snapshot were dropped`);
+    notes.push(MISSED_ALL);
+  } else if (allRejected.length) {
+    notes.push(`run-warning: ${allRejected.length}${DROPPED}`);
   }
   if (extra.less?.length) {
     state = 'partial';
     notes.push(...extra.less);
   }
-  const claimed = claimJson(path.join(round.dir, 'sources', `${task}.json`), {
-    task, source, submitted_at: new Date().toISOString(), candidates: kept, rejected,
-  });
-  if (!claimed) {
-    refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
+  if (prior) {
+    writeJson(file, { ...prior, candidates: allKept, rejected: allRejected, added_at: [...(prior.added_at || []), new Date().toISOString()] });
+    // The status moves with the answer, never above it: a loss the conductor recorded stands.
+    const had = statusOf(round.dir, task) || { task, source, state, notes: [] };
+    writeJson(path.join(round.dir, 'sources', `${task}.status.json`), {
+      ...had, state: worse(had.state, state), candidates: allKept.length, rejected: allRejected.length,
+      notes: [...new Set([...(had.notes || []).filter((n) => n !== MISSED_ALL && !(n.startsWith('run-warning: ') && n.endsWith(DROPPED))), ...notes])],
+    });
+  } else {
+    const claimed = claimJson(file, {
+      task, source, submitted_at: new Date().toISOString(), candidates: kept, rejected,
+    });
+    if (!claimed) {
+      refuse([{ at: '', message: extra.append
+        ? `task '${task}' took another submission while this one was checked — hand this one in again`
+        : `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
+    }
+    // Claimed, not written over: a loss the conductor recorded while this ran stands.
+    claimJson(path.join(round.dir, 'sources', `${task}.status.json`), {
+      task, source, state, candidates: kept.length, rejected: rejected.length, notes,
+      ...(extra.model ? { model: extra.model } : {}), ...(extra.effort ? { effort: extra.effort } : {}),
+      at: new Date().toISOString(),
+    });
   }
-  // Claimed, not written over: a loss the conductor recorded while this ran stands.
-  claimJson(path.join(round.dir, 'sources', `${task}.status.json`), {
-    task, source, state, candidates: kept.length, rejected: rejected.length, notes,
-    ...(extra.model ? { model: extra.model } : {}), ...(extra.effort ? { effort: extra.effort } : {}),
-    at: new Date().toISOString(),
-  });
-  return { stored: kept.length, rejected, unreachable, state, notes };
+  return { stored: kept.length, ...(prior ? { held: allKept.length, repeated } : {}), rejected, unreachable, state: prior ? worse(statusOf(round.dir, task).state, state) : state, notes };
 }
 
 // --------------------------------------------------------------------------------- codex
@@ -1443,7 +1508,7 @@ function units() {
   if (append && !existsSync(uf)) cannot(`round ${round.id} has no groups to add to — run units without --append first`);
   const prior = append ? readJson(uf).units : [];
   const taken = new Set(prior.flatMap((u) => u.members));
-  const value = submission();
+  const value = submission(round, 'units');
   const candidates = merged(round).candidates.filter((c) => !taken.has(c.id));
   const byId = new Map(candidates.map((c) => [c.id, c]));
   const reachable = candidates.filter((c) => !c.unreachable).map((c) => c.id);
@@ -1630,7 +1695,8 @@ function task() {
     category: u.category,
     read_with: readWith,
     language: round.req.language,
-    submit: `review-round.mjs verdict --round ${round.id} --unit ${u.unit}`,
+    inbox: `review-round.mjs inbox --round ${round.id} --unit ${u.unit}`,
+    submit: `review-round.mjs verdict --round ${round.id} --unit ${u.unit} --inbox`,
   });
 }
 
@@ -1638,7 +1704,7 @@ function task() {
 function verdict() {
   const round = openRound();
   const u = queued(round, opts['--unit']);
-  const value = submission();
+  const value = submission(round, `unit-${u.unit}`);
   const errors = validate(load, 'verdict.json', null, value);
   if (errors.length) refuse(errors, { unit: u.unit });
   const repo = checkoutOf(round);
@@ -1973,4 +2039,4 @@ function result() {
 // Exit 1 says a submission was refused and invites sending it again; a store file that
 // cannot be read is not that, so whatever escapes leaves as exit 3 with an answer.
 process.on('uncaughtException', (e) => cannot(`${cmd} could not be answered: ${e.message}`));
-({ init, plan, brief, diff, show, add, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();
+({ init, plan, brief, diff, show, add, inbox, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();

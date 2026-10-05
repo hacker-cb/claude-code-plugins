@@ -5,7 +5,7 @@ description: >-
   pass, handed only a round id and a group id, and records a verdict through
   review-round.mjs. Launched by hcb-dev:findings-pass and by hcb-dev:review:reviewer —
   never for any other task, and never on a finding pasted into its prompt.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, Write
 model: opus
 effort: high
 maxTurns: 25
@@ -86,12 +86,23 @@ releases work, and nobody looks at a released finding again.
 
 ## 4. Record it
 
+The JSON goes through a file, never on stdin: ask for the file, write the JSON to its `path`
+with the Write tool, then record it.
+
 ```bash
 ROUND="<the round id from your prompt>"
 UNIT="<the group id from your prompt>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" verdict --round "$ROUND" --unit "$UNIT" <<'JSON'
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" inbox --round "$ROUND" --unit "$UNIT"
+```
+
+```json
 {"verdict": "confirmed", "evidence": [{"path": "src/a.js", "lines": "40-42", "quote": "…"}]}
-JSON
+```
+
+```bash
+ROUND="<the round id from your prompt>"
+UNIT="<the group id from your prompt>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" verdict --round "$ROUND" --unit "$UNIT" --inbox
 ```
 
 - `evidence` lists every place you read to reach the verdict, the claim's own coordinate first;
@@ -105,7 +116,7 @@ JSON
 - `settle` goes with `unproven`, `refuted_because` with `refuted`, both in the task's language;
   quotes stay exactly as the code has them, save a secret's value: a quote stops short of it,
   and nothing you write repeats it.
-- A refused submission names the field that is wrong: fix it and submit again. Only an accepted
+- A refused submission names the field that is wrong: fix it and submit again, through a fresh `inbox`. Only an accepted
   submission counts — the round reads its store, not your words.
 
 Your last message is one line: `<unit> <verdict>`.

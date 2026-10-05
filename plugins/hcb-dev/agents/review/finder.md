@@ -5,7 +5,7 @@ description: >-
   handed only a round id and a task id, and hands them in through review-round.mjs.
   Launched by hcb-dev:review:reviewer — never for any other task, and never on a diff or
   a finding pasted into its prompt.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, Write
 model: opus
 effort: medium
 maxTurns: 40
@@ -100,22 +100,34 @@ into reports and trackers.
 
 ## 4. Hand them in
 
+The JSON goes through a file, never on stdin: ask for the file, write the JSON to its `path`
+with the Write tool, then hand it in.
+
 ```bash
 ROUND="<the round id from your prompt>"
 TASK="<the task id from your prompt>"
-SOURCE="<the brief's source>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --source "$SOURCE" --task "$TASK" <<'JSON'
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" inbox --round "$ROUND" --task "$TASK"
+```
+
+```json
 {"candidates": [
   {"file": "src/a.js", "line": 41, "side": "head",
    "summary": "…", "failure_scenario": "…",
    "severity": "Important", "category": "correctness"}
 ]}
-JSON
+```
+
+```bash
+ROUND="<the round id from your prompt>"
+TASK="<the task id from your prompt>"
+SOURCE="<the brief's source>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --source "$SOURCE" --task "$TASK" --inbox
 ```
 
 With nothing to report, hand in `{"candidates": []}`: an empty answer is an answer, and
 none at all reads as a finder that failed. A refused submission names what is wrong — fix
-it and hand it in again. A candidate anchored where the change has nothing is dropped and
+it and hand it in again, through a fresh `inbox`: the file is read once. A hand-in adds to
+what the task already holds, so a second one carries only what the first did not. A candidate anchored where the change has nothing is dropped and
 named in the answer: that is a line you did not read, so leave it dropped.
 
 Where a read you needed was refused — a permission denied, a command blocked — hand in what you

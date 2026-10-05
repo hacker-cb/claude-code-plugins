@@ -7,8 +7,8 @@ description: >-
   hcb-dev:findings:verifier, and builds the round's result. Launched by hcb-dev:claude-review,
   hcb-dev:codex-review and hcb-dev:multi-review with a round id alone — never for any other
   task.
-tools: Read, Grep, Glob, Bash, Agent, SendMessage
-disallowedTools: Write, Edit, NotebookEdit
+tools: Read, Grep, Glob, Bash, Write, Agent, SendMessage
+disallowedTools: Edit, NotebookEdit
 model: opus
 maxTurns: 80
 omitClaudeMd: true
@@ -102,15 +102,21 @@ The lead is the member whose failure scenario is the most concrete, and every ca
 in exactly one group — save one marked `unreachable`, a caller's finding the round cannot
 place, which stands alone and is left out.
 
+The grouping goes through a file, never on stdin — the one place you write: `inbox --units`
+prints its `path`, the Write tool writes the JSON there — `{"units": [{"members":
+["line-by-line.1", "call-tracing.2"], "lead": "call-tracing.2"}, …]}` — and `units --inbox`
+submits it. A refused grouping names what is wrong: fix it and submit it again, through a
+fresh `inbox`.
+
 ```bash
 ROUND="<the round id from your prompt>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" units --round "$ROUND" <<'JSON'
-{"units": [{"members": ["line-by-line.1", "call-tracing.2"], "lead": "call-tracing.2"},
-           {"members": ["reuse.1"], "lead": "reuse.1"}]}
-JSON
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" inbox --round "$ROUND" --units
 ```
 
-A refused grouping names what is wrong: fix it and submit it again.
+```bash
+ROUND="<the round id from your prompt>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" units --round "$ROUND" --inbox
+```
 
 ## 5. Check them
 
@@ -147,10 +153,10 @@ the caller reads the result from the store.
 
 Plan with `--depth`, and start the Codex pass as in step 2 where the plan has one. Then do
 every finder task of the plan yourself, one after another: its brief, the change and the code
-as the brief says, and your candidates handed in through `add` as the brief's `submit` names
-it. Wait for the Codex task as in step 3, group what was handed in as in step 4, run `queue`
-— it checks nothing here, and lets a verdict a candidate carried stand — and build the result:
-no checks, no sweep, and the result says nothing was checked.
+as the brief says, and your candidates handed in as below. Wait for the Codex task as in step
+3, group what was handed in as in step 4, run `queue` — it checks nothing here, and lets a
+verdict a candidate carried stand — and build the result: no checks, no sweep, and the result
+says nothing was checked.
 
 A task's brief, then a file of the change by its `n`, and the code that file had before it:
 
@@ -186,11 +192,9 @@ where the secret sits, never its value:
 | `severity` | `Critical`, `Important` or `Minor` |
 | `category` | `correctness`, `security`, `reuse`, `simplification`, `efficiency`, `altitude` or `project-rules` |
 
-```bash
-ROUND="<the round id from your prompt>"
-TASK="<the task>"; SOURCE="<the brief's source>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --source "$SOURCE" --task "$TASK" <<'JSON'
+They go in as the grouping does: the brief's `inbox`, the JSON written there, its `submit`.
+
+```json
 {"candidates": [{"file": "src/a.js", "line": 41, "side": "head", "summary": "…",
   "failure_scenario": "…", "severity": "Important", "category": "correctness"}]}
-JSON
 ```
