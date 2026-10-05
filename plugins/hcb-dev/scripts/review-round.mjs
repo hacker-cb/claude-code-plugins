@@ -17,20 +17,22 @@
 //   node review-round.mjs brief   --round <id> --task <task>
 //   node review-round.mjs diff    --round <id> [--number <n>]
 //   node review-round.mjs show    --round <id> (--number <n> | --unit <unit>)
-//   node review-round.mjs add     --round <id> --source <source> [--task <task>] [--file <json>]
+//   node review-round.mjs add     --round <id> --source <source> [--task <task>] [--file <json> | --inbox]
+//   node review-round.mjs inbox   --round <id> (--task <task> | --unit <unit> | --units)
 //   node review-round.mjs codex   --round <id> [--timeout-s <n>]
 //   node review-round.mjs status  --round <id> --task <task> [--state partial|unavailable]
 //                                 [--model <model>] [--note <text>]
 //   node review-round.mjs merge   --round <id> [--task <task>]
-//   node review-round.mjs units   --round <id> [--append] [--file <json>]
+//   node review-round.mjs units   --round <id> [--append] [--file <json> | --inbox]
 //   node review-round.mjs queue   --round <id> [--append] [--budget <n>]
 //   node review-round.mjs task    --round <id> --unit <unit>
-//   node review-round.mjs verdict --round <id> --unit <unit> [--file <json>]
+//   node review-round.mjs verdict --round <id> --unit <unit> [--file <json> | --inbox]
 //   node review-round.mjs wait    --round <id> --for tasks|verdicts [--expect <list>] [--timeout-s <n>]
 //                                 (verdicts: the groups the latest queue call queued, unless named)
 //   node review-round.mjs result  --round <id>
 //
-// The JSON `add`, `units` and `verdict` take arrives on stdin, or from `--file`. `diff`
+// The JSON `add`, `units` and `verdict` take arrives on stdin, from `--file`, or with `--inbox`
+// from the file `inbox` named for that submission, which is read once and removed. `diff`
 // prints the change as git wrote it and `show` a file as one side holds it, byte for byte,
 // their refusals going to stderr; everything else prints JSON.
 // Exit: 0 answered; 1 a submission refused, the errors saying what to fix; 2 called
@@ -68,14 +70,15 @@ const SPEC = {
   brief: ['--round', '--task'],
   diff: ['--round', '--number'],
   show: ['--round', '--number', '--unit'],
-  add: ['--round', '--source', '--task', '--file'],
+  add: ['--round', '--source', '--task', '--file', '--inbox'],
+  inbox: ['--round', '--task', '--unit', '--units'],
   codex: ['--round', '--timeout-s'],
   status: ['--round', '--task', '--state', '--model', '--note'],
   merge: ['--round', '--task'],
-  units: ['--round', '--file', '--append'],
+  units: ['--round', '--file', '--inbox', '--append'],
   queue: ['--round', '--budget', '--append'],
   task: ['--round', '--unit'],
-  verdict: ['--round', '--unit', '--file'],
+  verdict: ['--round', '--unit', '--file', '--inbox'],
   wait: ['--round', '--for', '--expect', '--timeout-s'],
   result: ['--round'],
 };
@@ -83,7 +86,7 @@ const USAGE = `usage: node review-round.mjs <${Object.keys(SPEC).join('|')}> [fl
 const [cmd, ...argv] = process.argv.slice(2);
 if (!cmd || !SPEC[cmd]) die(cmd ? `unknown subcommand '${cmd}'` : 'a subcommand is required');
 // A switch is answered by being there, and takes no value.
-const SWITCHES = new Set(['--depth', '--append']);
+const SWITCHES = new Set(['--depth', '--append', '--inbox', '--units']);
 const opts = {};
 for (let i = 0; i < argv.length; i += 1) {
   if (!SPEC[cmd].includes(argv[i])) die(`${cmd} takes no argument '${argv[i]}'`);
@@ -95,6 +98,7 @@ for (let i = 0; i < argv.length; i += 1) {
   opts[argv[i]] = argv[i + 1];
   i += 1;
 }
+if (opts['--inbox'] && opts['--file']) die('a submission comes from --file or from --inbox, not both');
 
 // Short ids, never paths, travel between the session and the agents: a model copying a
 // long temp path shortens it, and a shortened path is a relative one that lands inside
@@ -227,14 +231,50 @@ function checkoutOf(round) {
   return repo;
 }
 
-function submission() {
+// Where a submission written to a file waits to be handed in: inside the round, named for
+// what it answers — so the agent passes back no path, and a path it copied short cannot put
+// the file anywhere this reads. One name for each side: `inbox` prints it, `--inbox` reads it.
+const INBOX = { task: (t) => `task-${t}`, unit: (u) => `unit-${u}`, units: () => 'units' };
+const inboxOf = (round, name) => path.join(round.dir, 'inbox', `${name}.json`);
+
+// A file to write a submission into, for an agent whose shell will not carry JSON on stdin:
+// it writes there with its own tool, then hands in with `--inbox`. Nothing stands at the path
+// it is given, since a write tool may refuse to replace a file it has not read.
+function inbox() {
+  const round = openRound();
+  const named = [opts['--task'], opts['--unit'], opts['--units']].filter((v) => v !== undefined);
+  if (named.length !== 1) die('inbox names one submission: --task <task>, --unit <unit> or --units');
+  if (opts['--task'] !== undefined && !TASK_ID.test(opts['--task'])) die(`--task '${opts['--task']}' is not a task id: lowercase letters, digits and "-"`);
+  const name = opts['--units'] ? INBOX.units()
+    : opts['--unit'] !== undefined ? INBOX.unit(queued(round, opts['--unit']).unit) : INBOX.task(opts['--task']);
+  const file = inboxOf(round, name);
+  try {
+    mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+    rmSync(file, { force: true });
+  } catch (e) { cannot(`the inbox of round ${round.id} could not be made ready: ${e.message}`); }
+  answer({ read: true, path: file });
+}
+
+// The inbox file a submission came from, removed once it is stored: one refused stays, for
+// its writer to read, fix and hand in again.
+let fromInbox = null;
+const handedIn = (body) => {
+  if (fromInbox) rmSync(fromInbox, { force: true });
+  return answer(body);
+};
+
+function submission(round, name) {
+  const file = opts['--inbox'] ? inboxOf(round, name) : opts['--file'];
   let raw;
   try {
-    raw = opts['--file'] ? readFileSync(opts['--file'], 'utf8') : readFileSync(0, 'utf8');
+    raw = file ? readFileSync(file, 'utf8') : readFileSync(0, 'utf8');
   } catch (e) {
-    refuse([{ at: '', message: `the submission could not be read: ${e.message}` }]);
+    refuse([{ at: '', message: opts['--inbox'] && e.code === 'ENOENT'
+      ? 'nothing waits in the inbox — run inbox for this submission, write the JSON to the path it prints, then hand it in'
+      : `the submission could not be read: ${e.message}` }]);
   }
-  if (!raw.trim()) refuse([{ at: '', message: 'the submission is empty — pass the JSON on stdin or with --file' }]);
+  if (opts['--inbox']) fromInbox = file;
+  if (!raw.trim()) refuse([{ at: '', message: 'the submission is empty — pass the JSON on stdin, with --file, or with --inbox' }]);
   try {
     return JSON.parse(raw);
   } catch (e) {
@@ -899,7 +939,8 @@ function brief() {
       head: 'the working tree as it stands — read the files directly',
       base: 'the subcommand show --number <n> — a file of the change as it was before it',
     },
-    submit: `review-round.mjs add --round ${round.id} --source ${t.source} --task ${id}`,
+    inbox: `review-round.mjs inbox --round ${round.id} --task ${id}`,
+    submit: `review-round.mjs add --round ${round.id} --source ${t.source} --task ${id} --inbox`,
   };
   if (spec.reads === 'rules') out.rules = ruleFiles(checkoutOf(round), req.files);
   if (spec.reads === 'listed') out.listed = listed(round);
@@ -972,8 +1013,11 @@ function status() {
   if (state === undefined && model === undefined) die('status records a --state, a --model, or both');
   const note = opts['--note'];
   if (note !== undefined && [...note].length > 500) die('--note is a sentence or two, not a document');
-  const prior = statusOf(round.dir, id);
   const planned = plannedTasks(planOf(round)).find((x) => x.task === id);
+  // Under the lock a hand-in takes: one adding to the task rewrites this same status.
+  const release = TASK_ID.test(id) ? taskLock(round, id) : () => {};
+  process.on('exit', release);
+  const prior = statusOf(round.dir, id);
   if (!prior && !planned) cannot(`${id} is neither planned nor submitted in round ${round.id}`);
   // A model alone is a fact about an answer: before one, it would record a loss nobody meant.
   if (!prior && state === undefined) cannot(`${id} has not answered yet — record its model once it has`);
@@ -986,6 +1030,9 @@ function status() {
     // note says more about that end, and never moves it.
     at: base.at ?? new Date().toISOString(),
   };
+  // The loss itself, apart from the state: a later hand-in recounts the state and never
+  // rises above it.
+  if (state !== undefined) next.recorded = base.recorded ? worse(base.recorded, state) : state;
   if (model !== undefined) next.model = model;
   writeJson(path.join(round.dir, 'sources', `${id}.status.json`), next);
   answer({ accepted: true, task: id, source: next.source, state: next.state, model: next.model });
@@ -998,18 +1045,18 @@ function add() {
   if (!source || !SOURCE_ID.test(source)) die('--source is required: lowercase letters, digits, ":" and "-"');
   const task = opts['--task'] || source.replace(/:/g, '-');
   if (!TASK_ID.test(task)) die(`--task '${task}' is not a task id: lowercase letters, digits and "-"`);
-  const planned = admits(round, task, source);
+  const planned = admits(round, task, source, true);
   // In a round only the Codex pass hands in for Codex: anything else under its source
   // would be read as Codex's review of the change.
   if (round.req.mode === 'round' && passSources().has(source)) {
     refuse([{ at: '', message: `source '${source}' is the Codex pass — it hands in through the codex subcommand, never through add` }], { task });
   }
-  const value = submission();
-  answer({ accepted: true, task, source, ...store(round, task, source, value, planned) });
+  const value = submission(round, INBOX.task(task));
+  handedIn({ accepted: true, task, source, ...store(round, task, source, value, planned, { append: true }) });
 }
 
 // Whether the round still takes an answer from this task, and the plan's entry for it.
-function admits(round, task, source) {
+function admits(round, task, source, append = false) {
   const p = planOf(round);
   const planned = plannedTasks(p).find((x) => x.task === task);
   if (planned && planned.source !== source) {
@@ -1035,10 +1082,14 @@ function admits(round, task, source) {
   if (existsSync(path.join(round.dir, 'result.json'))) {
     refuse([{ at: '', message: `round ${round.id} has its result — this submission came too late to be stored` }], { task });
   }
-  // One task, one submission: a second under the same name would replace the first, and
-  // the candidates it carried would leave the round without anybody having dropped them.
-  if (existsSync(path.join(round.dir, 'sources', `${task}.json`))) {
-    refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
+  // One task, one submission — save through `add`, where a later one adds to it: the Codex
+  // pass asks this before it is paid for. Added to, it stays one source's.
+  const held = path.join(round.dir, 'sources', `${task}.json`);
+  if (existsSync(held)) {
+    if (!append) refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
+    let by = null;
+    try { by = readJson(held).source; } catch (e) { cannot(`the earlier submission of task '${task}' did not read: ${e.message}`); }
+    if (by !== source) refuse([{ at: '', message: `task '${task}' holds a submission of source '${by}' — hand this one in under a --task of its own` }], { task });
   }
   return planned;
 }
@@ -1047,60 +1098,137 @@ function admits(round, task, source) {
 // tree the round reads, then the submission and the task's status — both claimed, never
 // written over. `extra` rides into the status: the model and level an engine ran at, the
 // notes it earned on the way in, and each way it says it covered less than the change.
+// With `extra.append` — `add`'s — a task's later submission adds to its earlier one instead:
+// an agent whose first hand-in carried part of what it found, a command refused on the way,
+// loses nothing by handing in the rest. A candidate already held, every field the same, is
+// not stored twice, and the plan's limit counts every candidate the task handed in.
 function store(round, task, source, value, planned, extra = {}, repo = checkoutOf(round)) {
   const errors = validate(load, 'candidates.json', null, value);
   if (errors.length) refuse(errors, { task });
-  if (planned && value.candidates.length > planned.limit) {
-    refuse([{ at: '/candidates', message: `holds ${value.candidates.length}, and task '${task}' takes at most ${planned.limit} — hand in the ${planned.limit} most severe` }], { task });
+  const file = path.join(round.dir, 'sources', `${task}.json`);
+  // Two hand-ins of one task meeting would each add to the same earlier one, and the later
+  // write would drop what the other stored.
+  const release = extra.append ? taskLock(round, task) : () => {};
+  try {
+    return storeHeld(round, task, source, value, planned, extra, repo, file);
+  } finally { release(); }
+}
+
+// One task's hand-ins, one at a time: a lock its holder made, waited on for a few seconds and
+// taken over only from a holder whose process is gone.
+function taskLock(round, task) {
+  const lock = path.join(round.dir, 'sources', `${task}.lock`);
+  const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    if (claimJson(lock, { pid: process.pid })) break;
+    let held = null;
+    try { held = readJson(lock); } catch { held = null; }
+    if (held && Number.isInteger(held.pid) && !alive(held.pid)) { rmSync(lock, { force: true }); continue; }
+    if (Date.now() > deadline) refuse([{ at: '', message: `task '${task}' is taking another hand-in — hand this one in again` }], { task });
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
   }
-  const kept = [];
-  const rejected = [];
-  const unreachable = [];
+  return () => { try { if (readJson(lock).pid === process.pid) rmSync(lock, { force: true }); } catch { /* gone */ } };
+}
+
+// The notes the store writes from the anchors themselves, recounted on every hand-in.
+const MISSED_ALL = 'every anchor this source gave misses the snapshot — it reviewed something other than this change';
+const DROPPED = ' candidate(s) anchored outside the snapshot were dropped';
+const anchorNote = (n) => n === MISSED_ALL || (n.startsWith('run-warning: ') && n.endsWith(DROPPED));
+
+function storeHeld(round, task, source, value, planned, extra, repo, file) {
+  let prior = null;
+  if (extra.append && existsSync(file)) {
+    try { prior = readJson(file); } catch (e) { cannot(`the earlier submission of task '${task}' did not read: ${e.message}`); }
+  }
+  // Asked again under the lock: another source's first hand-in may have landed since.
+  if (prior && prior.source !== source) {
+    refuse([{ at: '', message: `task '${task}' holds a submission of source '${prior.source}' — hand this one in under a --task of its own` }], { task });
+  }
+  const priorKept = prior?.candidates ?? [];
+  const priorRejected = prior?.rejected ?? [];
   // A path written from the checkout's root, or with a `./` in it, is the same file under
   // its plain relative name, whoever wrote it. And a finding a planned task hands in carries
   // no verdict of its own finder's: only a check that never saw its argument stands.
   const named = (c) => {
-    const file = path.isAbsolute(c.file) && inside(c.file, repo.top) ? path.relative(repo.top, c.file) : path.posix.normalize(c.file);
+    const f = path.isAbsolute(c.file) && inside(c.file, repo.top) ? path.relative(repo.top, c.file) : path.posix.normalize(c.file);
     const { verdict, ...rest } = c;
-    return { ...(planned ? rest : c), file: relOk(file) ? file : c.file };
+    return { ...(planned ? rest : c), file: relOk(f) ? f : c.file };
   };
+  // Every field the submitter wrote, in one order: a candidate handed in again with its
+  // severity or its scenario changed is a candidate of its own, never dropped as a repeat.
+  const key = (c) => {
+    const { id, source: s, unreachable, ...own } = c;
+    return JSON.stringify(Object.keys(own).sort().map((k) => [k, own[k]]));
+  };
+  const seen = new Set(priorKept.map(key));
+  const fresh = [];
   value.candidates.map(named).forEach((c, i) => {
+    if (extra.append && seen.has(key(c))) return;
+    seen.add(key(c));
+    fresh.push({ c, i });
+  });
+  const repeated = value.candidates.length - fresh.length;
+  const total = priorKept.length + priorRejected.length + fresh.length;
+  if (planned && total > planned.limit) {
+    const before = priorKept.length + priorRejected.length;
+    refuse([{ at: '/candidates', message: prior
+      ? `brings task '${task}' to ${total}, and it takes at most ${planned.limit} — hand in no more than ${Math.max(planned.limit - before, 0)} beyond the ${before} it handed in`
+      : `holds ${value.candidates.length}, and task '${task}' takes at most ${planned.limit} — hand in the ${planned.limit} most severe` }], { task });
+  }
+  const kept = [];
+  const rejected = [];
+  const unreachable = [];
+  for (const { c, i } of fresh) {
     const at = readAt(repo, round.req, c.file, c.side);
     const reason = at.missing
       || (c.line > lineCount(at.text) ? `${c.file} has ${lineCount(at.text)} line(s) on the ${c.side} side, and the anchor is line ${c.line}` : null);
     // A reviewing source's coordinate the snapshot does not carry is a claim about some
     // other tree, and it leaves. A carrier's, and any in a pass, is only one this round
     // cannot read: it stays, marked, neither verified nor refuted here.
-    if (reason && reviews(round.req, source)) { rejected.push({ index: i, file: c.file, line: c.line, reason }); return; }
-    const stored = { id: `${task}.${kept.length + 1}`, source, ...c };
-    if (reason) { stored.unreachable = reason; unreachable.push({ id: stored.id, reason }); }
-    kept.push(stored);
-  });
+    if (reason && reviews(round.req, source)) { rejected.push({ index: i, file: c.file, line: c.line, reason }); continue; }
+    const kept1 = { id: `${task}.${priorKept.length + kept.length + 1}`, source, ...c };
+    if (reason) { kept1.unreachable = reason; unreachable.push({ id: kept1.id, reason }); }
+    kept.push(kept1);
+  }
+  const allKept = [...priorKept, ...kept];
+  const allRejected = [...priorRejected, ...rejected];
   const notes = [...(extra.notes || [])];
   let state = 'covered';
-  if (rejected.length && !kept.length) {
+  if (allRejected.length && !allKept.length) {
     state = 'partial';
-    notes.push('every anchor this source gave misses the snapshot — it reviewed something other than this change');
-  } else if (rejected.length) {
-    notes.push(`run-warning: ${rejected.length} candidate(s) anchored outside the snapshot were dropped`);
+    notes.push(MISSED_ALL);
+  } else if (allRejected.length) {
+    notes.push(`run-warning: ${allRejected.length}${DROPPED}`);
   }
   if (extra.less?.length) {
     state = 'partial';
     notes.push(...extra.less);
   }
-  const claimed = claimJson(path.join(round.dir, 'sources', `${task}.json`), {
-    task, source, submitted_at: new Date().toISOString(), candidates: kept, rejected,
-  });
-  if (!claimed) {
-    refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
+  if (prior) {
+    writeJson(file, { ...prior, candidates: allKept, rejected: allRejected, added_at: [...(prior.added_at || []), new Date().toISOString()] });
+    // The state the answers earn, recounted, never above a loss the conductor recorded.
+    const had = statusOf(round.dir, task) || { task, source, notes: [] };
+    state = had.recorded ? worse(had.recorded, state) : state;
+    writeJson(path.join(round.dir, 'sources', `${task}.status.json`), {
+      ...had, state, candidates: allKept.length, rejected: allRejected.length,
+      notes: [...new Set([...(had.notes || []).filter((n) => !anchorNote(n)), ...notes])],
+    });
+  } else {
+    const claimed = claimJson(file, {
+      task, source, submitted_at: new Date().toISOString(), candidates: kept, rejected,
+    });
+    if (!claimed) {
+      refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
+    }
+    // Claimed, not written over: a loss the conductor recorded while this ran stands.
+    claimJson(path.join(round.dir, 'sources', `${task}.status.json`), {
+      task, source, state, candidates: kept.length, rejected: rejected.length, notes,
+      ...(extra.model ? { model: extra.model } : {}), ...(extra.effort ? { effort: extra.effort } : {}),
+      at: new Date().toISOString(),
+    });
   }
-  // Claimed, not written over: a loss the conductor recorded while this ran stands.
-  claimJson(path.join(round.dir, 'sources', `${task}.status.json`), {
-    task, source, state, candidates: kept.length, rejected: rejected.length, notes,
-    ...(extra.model ? { model: extra.model } : {}), ...(extra.effort ? { effort: extra.effort } : {}),
-    at: new Date().toISOString(),
-  });
-  return { stored: kept.length, rejected, unreachable, state, notes };
+  return { stored: kept.length, ...(prior ? { held: allKept.length, repeated } : {}), rejected, unreachable, state, notes };
 }
 
 // --------------------------------------------------------------------------------- codex
@@ -1443,7 +1571,7 @@ function units() {
   if (append && !existsSync(uf)) cannot(`round ${round.id} has no groups to add to — run units without --append first`);
   const prior = append ? readJson(uf).units : [];
   const taken = new Set(prior.flatMap((u) => u.members));
-  const value = submission();
+  const value = submission(round, INBOX.units());
   const candidates = merged(round).candidates.filter((c) => !taken.has(c.id));
   const byId = new Map(candidates.map((c) => [c.id, c]));
   const reachable = candidates.filter((c) => !c.unreachable).map((c) => c.id);
@@ -1502,7 +1630,7 @@ function units() {
     rmSync(path.join(round.dir, 'queue.json'), { force: true });
     rmSync(path.join(round.dir, 'verdicts'), { recursive: true, force: true });
   }
-  answer({
+  handedIn({
     accepted: true,
     appended: append,
     units: built.map((u) => ({ unit: u.unit, lead: u.lead, members: u.members, severity: u.severity, found_by: u.found_by, unreachable: u.unreachable })),
@@ -1630,7 +1758,8 @@ function task() {
     category: u.category,
     read_with: readWith,
     language: round.req.language,
-    submit: `review-round.mjs verdict --round ${round.id} --unit ${u.unit}`,
+    inbox: `review-round.mjs inbox --round ${round.id} --unit ${u.unit}`,
+    submit: `review-round.mjs verdict --round ${round.id} --unit ${u.unit} --inbox`,
   });
 }
 
@@ -1638,7 +1767,7 @@ function task() {
 function verdict() {
   const round = openRound();
   const u = queued(round, opts['--unit']);
-  const value = submission();
+  const value = submission(round, INBOX.unit(u.unit));
   const errors = validate(load, 'verdict.json', null, value);
   if (errors.length) refuse(errors, { unit: u.unit });
   const repo = checkoutOf(round);
@@ -1684,7 +1813,7 @@ function verdict() {
   const check = validate(load, 'verdict.json', '/$defs/stored', stored);
   if (check.length) cannot(`the stored verdict does not fit its own schema: ${JSON.stringify(check)}`);
   writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), stored);
-  answer({ accepted: true, unit: u.unit, verdict: value.verdict });
+  handedIn({ accepted: true, unit: u.unit, verdict: value.verdict });
 }
 
 // ---------------------------------------------------------------------------------- wait
@@ -1778,7 +1907,8 @@ function result() {
   // A task began at its stamp, or with the plan where it handed in and left none; one that did
   // neither never ran. It ended when it handed in — a loss recorded after that rewrites its
   // status, not when it answered — or, where it never did, when its loss was recorded.
-  const endOf = (s) => (s ? when(handed.get(s.task)?.submitted_at) ?? when(s.at) : null);
+  // It ended with its last hand-in, where it handed in more than once.
+  const endOf = (s) => (s ? when(handed.get(s.task)?.added_at?.at(-1) ?? handed.get(s.task)?.submitted_at) ?? when(s.at) : null);
   const sweepTask = p?.sweep?.task ?? null;
   // Every task the plan launched or the store heard from, each read once.
   const ran = [...new Set([...plannedTasks(p).map((t) => t.task), ...answers.map((s) => s.task)])].map((task) => {
@@ -1973,4 +2103,4 @@ function result() {
 // Exit 1 says a submission was refused and invites sending it again; a store file that
 // cannot be read is not that, so whatever escapes leaves as exit 3 with an answer.
 process.on('uncaughtException', (e) => cannot(`${cmd} could not be answered: ${e.message}`));
-({ init, plan, brief, diff, show, add, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();
+({ init, plan, brief, diff, show, add, inbox, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();

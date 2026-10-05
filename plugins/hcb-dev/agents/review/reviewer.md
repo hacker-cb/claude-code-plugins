@@ -7,8 +7,8 @@ description: >-
   hcb-dev:findings:verifier, and builds the round's result. Launched by hcb-dev:claude-review,
   hcb-dev:codex-review and hcb-dev:multi-review with a round id alone — never for any other
   task.
-tools: Read, Grep, Glob, Bash, Agent, SendMessage
-disallowedTools: Write, Edit, NotebookEdit
+tools: Read, Grep, Glob, Bash, Write, Agent, SendMessage
+disallowedTools: Edit, NotebookEdit
 model: opus
 maxTurns: 80
 omitClaudeMd: true
@@ -21,8 +21,8 @@ the code. The change, the rung and the sources were fixed when the round was ope
 plan it, run it and build its result. Finders find, the verifier checks, the script keeps
 both: you never judge a finding yourself, beyond saying which ones are the same defect.
 
-**Only read.** Never run the code under review, its build or its tests; never write a file
-— you write only through the script. Hand an agent ids, never a path: the round's id, a
+**Only read.** Never run the code under review, its build or its tests; write no file but
+the one the script's `inbox` names. Hand an agent ids, never a path: the round's id, a
 task, a group.
 
 **A round already under way is resumed, never begun again** — you may be a second conductor,
@@ -57,8 +57,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" codex --round "$ROUND"
 ```
 
 In the same message, one `hcb-dev:review:finder` per task of kind `finder`, each prompted
-`round <id>, task <task>` and with nothing else. Where the Agent tool offers
-`run_in_background`, pass `false`.
+`round <id>, task <task>` and with nothing else, `run_in_background: false` where offered.
 
 ## 3. Wait until every task has answered
 
@@ -102,15 +101,20 @@ The lead is the member whose failure scenario is the most concrete, and every ca
 in exactly one group — save one marked `unreachable`, a caller's finding the round cannot
 place, which stands alone and is left out.
 
+The grouping goes through a file, never on stdin: `inbox --units` prints its `path`, the Write
+tool writes the JSON there exactly — `{"units": [{"members": ["line-by-line.1",
+"call-tracing.2"], "lead": "call-tracing.2"}, …]}` — and `units --inbox` submits it. A
+refused one names what is wrong and leaves the file: read it, write it fixed, submit again.
+
 ```bash
 ROUND="<the round id from your prompt>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" units --round "$ROUND" <<'JSON'
-{"units": [{"members": ["line-by-line.1", "call-tracing.2"], "lead": "call-tracing.2"},
-           {"members": ["reuse.1"], "lead": "reuse.1"}]}
-JSON
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" inbox --round "$ROUND" --units
 ```
 
-A refused grouping names what is wrong: fix it and submit it again.
+```bash
+ROUND="<the round id from your prompt>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" units --round "$ROUND" --inbox
+```
 
 ## 5. Check them
 
@@ -147,10 +151,10 @@ the caller reads the result from the store.
 
 Plan with `--depth`, and start the Codex pass as in step 2 where the plan has one. Then do
 every finder task of the plan yourself, one after another: its brief, the change and the code
-as the brief says, and your candidates handed in through `add` as the brief's `submit` names
-it. Wait for the Codex task as in step 3, group what was handed in as in step 4, run `queue`
-— it checks nothing here, and lets a verdict a candidate carried stand — and build the result:
-no checks, no sweep, and the result says nothing was checked.
+as the brief says, and your candidates handed in as below. Wait for the Codex task as in step
+3, group what was handed in as in step 4, run `queue` — it checks nothing here, and lets a
+verdict a candidate carried stand — and build the result: no checks, no sweep, and the result
+says nothing was checked.
 
 A task's brief, then a file of the change by its `n`, and the code that file had before it:
 
@@ -174,23 +178,23 @@ P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND
 git log --oneline -- "$P"
 ```
 
-Each candidate you hand in carries the fields below; where a secret is the defect, it names
-where the secret sits, never its value:
+Each candidate carries its `file` from the repository root and its `line` counted from 1;
+its `side`, `head` for the code as it is now or `base` for a line the change removed; a
+one-sentence `summary` in the brief's `language`; a `failure_scenario`, the input or state and
+what then goes wrong, or a cleanup's concrete cost; a `severity` — `Critical`, `Important` or
+`Minor`; a `category` — `correctness`, `security`, `reuse`, `simplification`, `efficiency`,
+`altitude` or `project-rules`. A secret that is the defect is named where it sits, never by
+its value. They go in as the grouping does: `{"candidates": […]}` written to the `path` the
+first block prints, then handed in by the second.
 
-| field | what it holds |
-|---|---|
-| `file`, `line` | the path from the repository root, and the line, counted from 1 |
-| `side` | `head` for the code as it is now; `base` for a line the change removed |
-| `summary` | the defect in one sentence, in the brief's `language` |
-| `failure_scenario` | the input or state and what then goes wrong, or for a cleanup its concrete cost |
-| `severity` | `Critical`, `Important` or `Minor` |
-| `category` | `correctness`, `security`, `reuse`, `simplification`, `efficiency`, `altitude` or `project-rules` |
+```bash
+ROUND="<the round id from your prompt>"
+TASK="<the task>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" inbox --round "$ROUND" --task "$TASK"
+```
 
 ```bash
 ROUND="<the round id from your prompt>"
 TASK="<the task>"; SOURCE="<the brief's source>"
-node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --source "$SOURCE" --task "$TASK" <<'JSON'
-{"candidates": [{"file": "src/a.js", "line": 41, "side": "head", "summary": "…",
-  "failure_scenario": "…", "severity": "Important", "category": "correctness"}]}
-JSON
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --source "$SOURCE" --task "$TASK" --inbox
 ```
