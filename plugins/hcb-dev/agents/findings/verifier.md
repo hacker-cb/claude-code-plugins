@@ -56,7 +56,7 @@ command only as `task` gave it, read in the same block, and after `--`, on the t
 names — a revision it names goes before the `--`:
 
 ```bash
-cd '<the task's checkout>' || exit 1
+cd '<checkout, from the task>' || exit 1
 ROUND="<the round id from your prompt>"
 UNIT="<the group id from your prompt>"
 P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" task --round "$ROUND" --unit "$UNIT" | jq -r .coordinate.file)"
