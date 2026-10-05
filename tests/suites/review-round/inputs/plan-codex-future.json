@@ -1,7 +1,7 @@
 {
   "rung": "medium",
   "depth": false,
-  "budget": 15,
+  "budget": 8,
   "tasks": [
     {
       "task": "codex",
@@ -11,6 +11,5 @@
       "limit": 12
     }
   ],
-  "sweep": null,
   "planned_at": "2100-01-01T00:00:00.000Z"
 }

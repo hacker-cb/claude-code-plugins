@@ -414,7 +414,17 @@ const angleOf = (c, id) => [c.tasks[id].text, c.source_notes?.[c.tasks[id].sourc
 const passSources = () => new Set(Object.values(catalog().tasks).filter((t) => t.kind === 'codex').map((t) => t.source));
 
 const planFile = (round) => path.join(round.dir, 'plan.json');
-const planOf = (round) => (existsSync(planFile(round)) ? readJson(planFile(round)) : null);
+// A plan an earlier version wrote — a sweep beside its tasks, or an angle the catalog no longer
+// keeps — names work no conductor of this one runs: such a round is opened again, never resumed.
+const planOf = (round) => {
+  if (!existsSync(planFile(round))) return null;
+  const p = readJson(planFile(round));
+  const { tasks } = catalog();
+  if (p.sweep !== undefined || p.tasks.some((t) => !Object.hasOwn(tasks, t.task))) {
+    cannot(`round ${round.id} was planned by an earlier version of this plugin — open a new round`);
+  }
+  return p;
+};
 const plannedTasks = (plan) => (plan ? plan.tasks : []);
 
 // When a task began: its first brief, or the Codex pass taking its lock — a brief read again
@@ -901,10 +911,8 @@ function brief() {
   // A brief read once the task handed in starts nothing: its time is already whole.
   if (!existsSync(path.join(round.dir, 'sources', `${id}.json`))) stampStart(round, id);
   const c = catalog();
-  // A plan written before the catalog dropped one of its tasks names an angle no longer kept.
-  if (!Object.hasOwn(c.tasks, id)) cannot(`${id} is no longer an angle of the catalog — open a new round`);
   const { req } = round;
-  const out = {
+  answer({
     round: round.id,
     task: id,
     source: t.source,
@@ -929,8 +937,7 @@ function brief() {
     },
     inbox: `review-round.mjs inbox --round ${round.id} --task ${id}`,
     submit: `review-round.mjs add --round ${round.id} --source ${t.source} --task ${id} --inbox`,
-  };
-  answer(out);
+  });
 }
 
 // ---------------------------------------------------------------------------------- diff
@@ -1647,6 +1654,7 @@ function queue() {
 
   const reused = [];
   const open = [];
+  const minor = [];
   const unreachable = [];
   for (const u of all) {
     if (u.unreachable) { unreachable.push(u.unit); continue; }
@@ -1661,12 +1669,11 @@ function queue() {
     if (standing) {
       writeJson(path.join(round.dir, 'verdicts', `${u.unit}.json`), { ...standing, unit: u.unit, reused: true });
       reused.push(u.unit);
-    } else open.push(u);
+    // A round checks what would hold a change back: a Minor goes to the report unchecked, once
+    // no carried verdict stood for it. A pass rules every finding it was handed.
+    } else if (round.req.mode === 'round' && u.severity === 'Minor') minor.push(u.unit);
+    else open.push(u);
   }
-  // A round checks what would hold a change back: a Minor goes to the report unchecked. A
-  // carried verdict on one still stands above; a pass rules every finding it was handed.
-  const minor = round.req.mode === 'round' ? open.filter((u) => u.severity === 'Minor').map((u) => u.unit) : [];
-  if (minor.length) open.splice(0, open.length, ...open.filter((u) => u.severity !== 'Minor'));
   // Of one weight, the round's own findings are checked before a caller's carried ones:
   // the budget is the change's first.
   const carriedOnly = (u) => u.found_by.every((x) => !reviews(round.req, x));
@@ -1694,7 +1701,6 @@ function queue() {
   // and the result times the checks by it.
   const q = { queue: order, reused, budget_cut: cut, minor, unreachable, calls: [{ at: new Date().toISOString(), units: order }] };
   writeJson(qf, q);
-  // The answer names what this call queued; the file holds the whole queue.
   answer({ read: true, round: round.id, queue: order, reused, budget_cut: cut, minor, unreachable, stop, reason, budget: Number.isFinite(budget) ? budget : null });
 }
 

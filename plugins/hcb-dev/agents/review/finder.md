@@ -39,8 +39,9 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND"
 
 For a large change, read it a file at a time instead, by the file's `n` — first the files where
 the change alters what runs or what an agent is told to do, the ones that only describe or hold
-data last — and hand in as you go (step 4), so a change larger than your turns still leaves
-what you found:
+data last. Keep the last few of your turns for handing in: a finder stopped by its turn limit
+before it handed in leaves nothing, so where the change outlasts your turns, stop reading in
+time, hand in what you found and record the rest as unread (step 4):
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -101,10 +102,8 @@ into reports and trackers.
 
 ## 4. Hand them in
 
-The JSON goes through a file, never on stdin: ask for the file once, write the JSON with the
-Write tool to its `path` exactly as printed, then hand it in. On a large change hand in as you
-go, each part once you have read it: an accepted hand-in removes the file, so the next part is
-written to the same `path`.
+The JSON goes through a file, never on stdin: ask for the file, write the JSON with the Write
+tool to its `path` exactly as printed, then hand it in — all you found in one hand-in.
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -129,18 +128,18 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --sou
 
 With nothing to report, hand in `{"candidates": []}`: an empty answer is an answer, and
 none at all reads as a finder that failed. A refused submission names what is wrong and
-leaves the file where it was: read it, write it fixed, hand it in again. What was accepted is
-added to, never replaced, so a later hand-in carries only what the earlier ones did not. A
-candidate anchored where the change has nothing is dropped and named in
-the answer: that is a line you did not read, so leave it dropped.
+leaves the file where it was: read it, write it fixed, hand it in again. A candidate anchored
+where the change has nothing is dropped and named in the answer: that is a line you did not
+read, so leave it dropped.
 
-Where a read you needed was refused — a permission denied, a command blocked — hand in what you
-have, then record that you read less than the change:
+Where a read you needed was refused — a permission denied, a command blocked — or you stopped
+short of the change, hand in what you have, then record that you read less than the change,
+naming what you did not read:
 
 ```bash
 ROUND="<the round id from your prompt>"
 TASK="<the task id from your prompt>"
-NOTE='<what was refused, in plain words — no quote marks, no dollar signs, no backticks>'
+NOTE='<what was refused or left unread, in plain words — no quote marks, no dollar signs, no backticks>'
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" status --round "$ROUND" --task "$TASK" --state partial --note "$NOTE"
 ```
 
