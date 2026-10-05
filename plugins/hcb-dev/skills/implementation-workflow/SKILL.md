@@ -93,8 +93,8 @@ Settle, in one gate:
   rather than asked: `on-green` by default in both modes, the addressee the user unless an order
   above named another, and approving the plan *is* that authorization. The default-branch merge
   stays separately gated in Phase 2.
-- **Coverage policy** — an **actionable** coverage gap stops the run, not waivable: a reviewer you
-  did not know would go missing is what the gate exists to catch.
+- **Coverage policy** — an **actionable** gap (`shipping-workflow`'s gate) stops the run, not
+  waivable; every other gap is reported and carried.
 
 **Gate weight scales by tier**, so the normal case stays light.
 
@@ -135,11 +135,11 @@ Per slice, **in order** — slices stack and depend on each other:
 
 **Autonomy is "no routine questions", not "never pauses".** The downstream skills' own gates are
 honored, not waived: an **actionable** coverage gap; a local merge into the **default** branch, or
-one that cannot be resolved as non-default; fix rounds ending with findings still open; CI that will
-not go green within the driver's budget; a Critical or Important finding needing a product decision;
-a genuinely-ambiguous merge strategy the gate did not settle; a git operation that would lose work
-on a shared branch; a genuinely-**unforeseen** architectural fork. Front-loading the gate keeps
-these rare.
+one that cannot be resolved as non-default; a `Critical` or `Important` finding still open after its
+fix; CI that will not go green within the driver's budget; a Critical or Important finding needing a
+product decision; a genuinely-ambiguous merge strategy the gate did not settle; a git operation that
+would lose work on a shared branch; a genuinely-**unforeseen** architectural fork. Front-loading the
+gate keeps these rare.
 
 On a slice **failure** — tests won't pass, a blocking finding, a conflict needing a real decision
 — **stop**, do **not** auto-revert the slices already completed, report the partial state, and

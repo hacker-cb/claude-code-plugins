@@ -38,8 +38,8 @@ outright: fall back there and a batch's question reaches its own user instead of
 running the epic.
 
 Completion is **not** handed a `coverage` signal — it runs only after the gate has passed, so it
-carries the gaps it completed past — the `n/a` rows the gate reported, and any the user let
-pass — into `uncovered`, and re-checks nothing.
+carries the gaps it completed past — every gap the gate reported without stopping on it, and any
+the user let pass — into `uncovered`, and re-checks nothing.
 
 **Outputs every backend returns**, for whatever reports the run:
 

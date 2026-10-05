@@ -45,12 +45,10 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    The second line is for candidates the caller already holds — noticed while working, carried
    from an earlier pass — each with its verdict where one was made.
 3. **Launch the conductor**, `hcb-dev:review:reviewer`, prompted `round <id>` alone —
-   `run_in_background: false` where the Agent tool offers it — and wait for it: a subagent
-   always reports its end. Where the call comes back at once, the conductor running in the
-   background, wait for its completion notice; the result is never read while it runs. A
-   conductor stopped by a model's limit is launched once more on another model the Agent tool
-   offers, and resumes the round. Asking for it is the entry's to do: a rule admitting subagents
-   only on a skill's ask is met by it.
+   `run_in_background: false` where offered — and wait for it, or for its completion notice where
+   the call comes back at once; the result is never read while it runs. One stopped by a model's
+   limit is launched once more on another model, and resumes the round. Asking for it is the
+   entry's to do: a rule admitting subagents only on a skill's ask is met by it.
 4. **Read the result** and report from it — *Reading the result* below. One that refuses — a
    conductor that stopped with candidates it never grouped — is finished by the entry: `merge`,
    each candidate no group holds grouped alone (`units`, or `units --append` where a grouping
@@ -60,17 +58,16 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
 The conductor plans the round, starts Codex as a background process and one
 `hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups
 what was handed in, has every `Critical` and `Important` group it can afford checked by
-`hcb-dev:findings:verifier`, and builds the result. **A conductor launched on a round
-already under way resumes it**, starting only what the store still lacks.
+`hcb-dev:findings:verifier`, and builds the result. **One launched on a round already under way
+resumes it**, starting only what the store still lacks.
 
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, a Bash
 call with `run_in_background: true`, where the plan has one; then each finder task's brief, the
-change and the code as the brief says — a file by its `n`, and a file's history by the path the
-brief gives it, read in the same block and passed after `--` — and the candidates handed in
-through `add`, a secret named where it sits and never by its value; then `wait` until the Codex
-task has answered, `merge`, `units`, `queue` — which checks nothing here, and lets a carried
-verdict stand — and `result`. Nothing is checked, and the result says so.
+change and the code as the brief says — a file's history by the path the brief gives it, passed
+after `--` — and its candidates handed in through `add`; then `wait` for the Codex task, `merge`,
+`units`, `queue` — which checks nothing here, a carried verdict standing — and `result`, which
+says nothing was checked.
 
 ```bash
 node "<plugin root>/scripts/review-round.mjs" plan --round "<round>" --depth
@@ -85,18 +82,18 @@ node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 
 ## The rung
 
-`high` buys breadth — more angles, more candidates per angle, and Codex a level higher. An entry weighing risk takes `high` where
-the change reaches past itself (public interface, shared helper, config, schema, wire format),
-cannot be walked back (it writes, migrates, publishes, or persists a format someone else reads),
-meets input whose shape you do not control, has nothing else checking it, removes a guard, an error
-path or a test, or touches paths the project marks sensitive; anything else, mechanics with no
-behaviour change among it, stays at `medium`. Size is a signal, never a threshold: ask what the
-change could conceal, not how big it is. The rung's angles and numbers are data in the plugin's
-angle catalog, read by `plan`, never chosen by the one running the round; Codex's model and its
-ladder come from Codex's own catalog. For more than `high` buys, or where a round reads thin for
-the ground the change covers, offer the user the built-in `/code-review` at `xhigh`, `max` or
-`ultra`, typed by them, with the range spelled out as `<base>...HEAD` and the narrowing where there
-is one; never launch it.
+`high` buys breadth — more angles, more candidates per angle, and Codex a level higher. An entry
+weighing risk takes `high` where the change reaches past itself (public interface, shared helper,
+config, schema, wire format), cannot be walked back (it writes, migrates, publishes, or persists a
+format someone else reads), meets input whose shape you do not control, has nothing else checking
+it, removes a guard, an error path or a test, or touches paths the project marks sensitive; anything
+else, mechanics with no behaviour change among it, stays at `medium`. Size is a signal, never a
+threshold: ask what the change could conceal, not how big it is. The rung's angles and numbers are
+data in the plugin's angle catalog, read by `plan`, never chosen by the one running the round;
+Codex's model and its ladder come from Codex's own catalog. For more than `high` buys, or where a
+round reads thin for the ground the change covers, offer the user the built-in `/code-review` at
+`xhigh`, `max` or `ultra`, typed by them, with the range spelled out as `<base>...HEAD` and the
+narrowing where there is one; never launch it.
 
 ## What an agent's outcome becomes
 
@@ -129,6 +126,10 @@ One row per source, as covered as its least covered task:
 | `unavailable` | 🔴 `UNAVAILABLE`, with the notice |
 | `nothing` | 🔴 `nothing to review` |
 | `n/a` | ⚪ `n/a`, with the caller's reason |
+
+**What a gap stops.** A round holds the work back only where no source it ran covered the change
+whole, or one the caller asked for by name did not. Any other gap — a finder out of turns while
+another source covered the whole change — still reads red and travels on as `uncovered`.
 
 Any other `coverage-warning:`, and a `run-warning:`, in the result's `warnings` is read as
 [`review-runs.md`](review-runs.md)'s *Reading it back* reads it.
