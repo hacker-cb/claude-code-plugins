@@ -1,43 +1,33 @@
 # What reads a fix
 
-Read wherever a fix is made after a review raised its finding — in the rounds before a change
-request opens, and in the loop driving one after. It owns which fix goes back to a reviewer and
-when those rounds end; how the finding it answers is rated and scoped is
+Read wherever a fix is made after a review raised its finding — after the round before a change
+request opens, and in the loop driving one after. It owns which fix goes back to a reviewer and how
+often a slice's may; how the finding it answers is rated and scoped is
 [`findings.md`](findings.md)'s, and the forge's own reviewer is its driver's.
 
-**Nothing still to come stands in for this reading.** A later review of the whole change is not a
-reading of the fix ([`forge-behaviour.md`](forge-behaviour.md)), and may not run at all: what this
-file sends to a reviewer goes there before the fix is pushed, whatever else is due to read the
-head.
+**The session reads every fix it makes**, against the finding it answers, before the fix is pushed
+or merged. Nothing still to come stands in for that reading: a later review of the whole change is
+not one ([`forge-behaviour.md`](forge-behaviour.md)), and may not run at all.
 
 ## Which fix a reviewer reads again
 
-- **A fix that stays inside the finding it answers** was covered by the pass that raised it.
-  Inside means it touches what the finding named and nothing the finding did not; a fix that has
-  to be argued inside is outside.
-- **A change with no behaviour in it** — a comment, prose that describes, wording, formatting —
-  earns no reviewer either. Each is still read against what it answers, and a rewritten comment
-  against the code it describes. Text something executes — a spec code is generated from, a
-  schema, a skill an agent follows — is behaviour, not prose.
-- **A fix that would meet the high-risk test** of [`review-pipeline.md`](review-pipeline.md)'s
-  *The rung*, **or answers more than its finding asked**, is code no reviewer has read: it goes
-  back through `hcb-dev:multi-review` on the change's own base, never one narrowed to the fixes.
-- **A borderline call goes to a reviewer.**
+- **A fix that stays inside the finding it answers** is covered by that reading. Inside means it
+  touches what the finding named and nothing the finding did not; a fix that has to be argued
+  inside is outside.
+- **A change with no behaviour in it** — a comment, prose that describes, wording, formatting — is
+  covered the same way, each read against what it answers. Text something executes — a spec code is
+  generated from, a schema, a skill an agent follows — is behaviour, not prose.
+- **A fix that answers more than its finding asked, or would meet the high-risk test** of
+  [`review-pipeline.md`](review-pipeline.md)'s *The rung*, goes back to a reviewer:
+  `hcb-dev:codex-review` on the change's own base.
+- **A conflict resolution past a trivial one** goes there every time: no reviewer ever read it.
 
-A `Minor` never opens a round on its own (`findings.md`); it rides one opened for something
-else, or it goes to the report. Commit each round's fixes naming the findings they close, so what
-the rounds spent and closed is readable off the branch rather than out of a session's memory.
+**One reading of fixes per slice**, whichever loop made them — the slice's own or a change
+request's. Past it the session's own reading is the last one: the report names the fixes no
+reviewer read again, and nothing stops for that. More only on the user's word.
 
-## When the rounds end
+A `Minor` never sends a fix to a reviewer (`findings.md`). Commit fixes naming the findings they
+close, so what was closed is readable off the branch rather than out of a session's memory.
 
-**On what they find, not on how many there were.** A round that turns up no new `Critical` or
-`Important` finding belonging to this change, save ones a check refuted, is the last one; so is a round whose finding lands
-where an earlier round already fixed something, which is the loop trading one break for another.
-Up to ~3 rounds otherwise — counted per series, each set of fixes that sends something to a
-reviewer opening one — then stop and ask. Running out is a stop and never a completion: never
-complete, never merge, and never re-rate a finding to get under the line. The rounds belong to
-the loop that opened them and spend its budget; no other loop's is drawn into them.
-
-**A round counts only as far as it covered.** One whose coverage report carries a gap other than
-`n/a` (`review-pipeline.md`, *The coverage it reports*) ends nothing, however clean its findings:
-it is a stop at whoever the loop answers to, with the gap named.
+**A reading counts only as far as it covered**, read as any round's
+([`review-pipeline.md`](review-pipeline.md), *The coverage it reports*).

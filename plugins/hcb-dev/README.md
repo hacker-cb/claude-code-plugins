@@ -172,8 +172,9 @@ form: you paste every one of them yourself.
   Take one finished, verified slice to completion: normalize the branch name,
   refresh the base, commit, land the branch on the refreshed parent — before the
   review, so a conflict resolution falls inside the coverage gate rather than
-  after it — hand off to `multi-review`, apply the fixes (reviewing them again
-  where they reach past what was already read), check coverage, then complete
+  after it — hand off to `multi-review` for its one round, apply the fixes (a fix
+  reaching past its finding read once more by Codex, at most once a slice), check
+  coverage, then complete
   **by mode** — merged locally into its parent branch, or an open change request
   (handed to a PR/MR driver below). Steps 0–6 are identical
   in both modes; the mode is read only at the last step. Entered on its own, it
@@ -184,8 +185,8 @@ form: you paste every one of them yourself.
   auto-generated branch and retire what it was published under, rebase onto base,
   open the PR ready-for-review, loop on
   CI + Copilot fixes until GitHub reports it mergeable *and* your own bar is
-  clean — a fix reaching past its finding goes back through `multi-review` before
-  it is pushed, and Copilot is asked for a review only when the PR itself turned —
+  clean — a fix reaching past its finding is read by Codex before it is pushed,
+  within the slice's one such reading, and Copilot is asked for a review only when the PR itself turned —
   then merge on the authority it was handed — `ask` by default, so it
   stops at ready and asks — monitor, watch the base's own checks on the merge
   commit unless it carries the tree of a head whose own checks are green, and report.
@@ -667,8 +668,8 @@ saying something else. Each file opens by saying what it owns.
   that rather than listed as rows. Read wherever findings are
   shown — a review's report, a run's report, a wave report, a batch's return.
 - [`references/fix-reading.md`](references/fix-reading.md) — what reads a fix
-  made after a review: which fix goes back through `multi-review` before it is
-  pushed, and when those rounds end — on what they find and what they covered.
+  made after a review: which fix goes back to a reviewer — Codex, once a slice —
+  before it is pushed, and what the session reads itself.
   Read wherever review fixes are made, before a change request opens and after.
 - [`references/forge-docs.md`](references/forge-docs.md) — where a flag, an
   endpoint or a concept name gets resolved on either forge. Read before writing an
@@ -766,8 +767,8 @@ Per skill, on top of those:
   checked. The finders and the verifier run as subagents, so their reading spends
   their own context rather than the calling session's.
 - **`multi-review`**: what `claude-review` and `codex-review` need — a source that
-  cannot run records its own loss in the round, a row of the report rather than a
-  stop.
+  cannot run records its own loss in the round, a row of the report — a stop only
+  where no source covered the change.
 - **`shipping-workflow`**: *some* way to open a change request — a PR/MR driver
   skill when one is installed (`github-pr-workflow` here), otherwise the forge CLI
   directly. Nothing in it is GitHub-only.

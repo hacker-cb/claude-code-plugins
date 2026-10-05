@@ -19,7 +19,7 @@ description: >-
 # Shipping workflow
 
 Read [`../../references/invariants.md`](../../references/invariants.md) first: the
-gate below, the fix rounds and the completion all turn on reading an answer for what
+gate below, the fixes and the completion all turn on reading an answer for what
 it says.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
@@ -114,7 +114,8 @@ of step 0 — per
    for a reviewer to find, and a rename it made is step 2's sweep over again, this time over
    `parent`'s range. A conflict needing a real decision is an architectural fork
    (`architecture-decisions.md`): stop and ask.
-4. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
+4. **Local review** — once a slice: one handed back by step 7 for a conflict keeps its round,
+   and the resolution goes to step 5's reading. Hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it — as step 3 left
    it — as the explicit base so the review covers *this* slice's range, not the cumulative feature
    diff. Standalone, `multi-review` resolves its own base. Hand it as well the
@@ -146,11 +147,10 @@ of step 0 — per
    there, then its own commit or the report.
 
    **Then put the fixes through
-   [`../../references/fix-reading.md`](../../references/fix-reading.md).** A fix it
-   sends back to a reviewer goes to step 4, handed the same base as the first
-   round, and comes back here with what it returns. Once the rounds end, step 7's
-   driver loops again against a reviewer of its own, on its own budget.
-6. **Check the coverage** — the gate below, over the last round there was.
+   [`../../references/fix-reading.md`](../../references/fix-reading.md)**: it says
+   which fix a reviewer reads again and how often a slice's may — never a second
+   full round. Step 7's driver reads the fixes its own loop makes by the same file.
+6. **Check the coverage** — the gate below, over the round and any reading after it.
 7. **Complete the slice by mode** — the contract is `slice-completion.md`'s and the mechanics
    are
    [`../../references/completion-backends.md`](../../references/completion-backends.md)'s. `local`
@@ -168,11 +168,12 @@ of step 0 — per
 
 ## The coverage gate
 
-The review reports what each source actually covered, the status already classified. One reaches
-you closed: `n/a`, a deliberate skip with a stated reason — say it out loud every time; it does
-not stop the ship. Everything else is an **actionable** gap.
+The review reports what each source actually covered, the status already classified. A gap is
+**actionable** only where [`../../references/review-pipeline.md`](../../references/review-pipeline.md)
+says it holds the work back (*What a gap stops*). Every other gap, `n/a` among them, is said out
+loud every time and carried as `uncovered`; it does not stop the ship.
 
-With no gaps, go straight to completion, no confirmation needed. **With an actionable gap, stop
+With no actionable gap, go straight to completion, no confirmation needed. **With an actionable gap, stop
 before completing**: a report ([`../../references/report-format.md`](../../references/report-format.md),
 [`../../references/report-blocks.md`](../../references/report-blocks.md)) whose
 `## Review coverage` names the gap and whose blocking ask passes on whatever the review says
@@ -181,8 +182,8 @@ silently missing is as unreviewed as a change request would be, the gate being m
 the danger is. Under `implementation-workflow`'s autonomous run this stop is one of its
 legitimate interrupts, not something the autonomy waives.
 
-Every stop this skill takes — this gate, fix rounds ending with findings still open, step 7's
-default-branch merge, several remotes with none preferred — carries your recommended option
+Every stop this skill takes — this gate, a `Critical` or `Important` finding still open after its
+fix, step 7's default-branch merge, several remotes with none preferred — carries your recommended option
 **first**
 ([`../../references/architecture-decisions.md`](../../references/architecture-decisions.md)).
 
