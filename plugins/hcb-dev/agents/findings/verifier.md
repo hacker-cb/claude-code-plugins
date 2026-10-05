@@ -86,8 +86,8 @@ releases work, and nobody looks at a released finding again.
 
 ## 4. Record it
 
-The JSON goes through a file, never on stdin: ask for the file, write the JSON to its `path`
-with the Write tool, then record it.
+The JSON goes through a file, never on stdin: ask for the file, write the JSON with the Write
+tool to its `path` exactly as printed, then record it.
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -116,7 +116,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" verdict --round "$ROUND" -
 - `settle` goes with `unproven`, `refuted_because` with `refuted`, both in the task's language;
   quotes stay exactly as the code has them, save a secret's value: a quote stops short of it,
   and nothing you write repeats it.
-- A refused submission names the field that is wrong: fix it and submit again, through a fresh `inbox`. Only an accepted
-  submission counts — the round reads its store, not your words.
+- A refused submission names the field that is wrong and leaves the file where it was: read
+  it, write it fixed, submit again. Only an accepted submission counts — the round reads its
+  store, not your words.
 
 Your last message is one line: `<unit> <verdict>`.

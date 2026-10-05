@@ -100,8 +100,8 @@ into reports and trackers.
 
 ## 4. Hand them in
 
-The JSON goes through a file, never on stdin: ask for the file, write the JSON to its `path`
-with the Write tool, then hand it in.
+The JSON goes through a file, never on stdin: ask for the file, write the JSON with the Write
+tool to its `path` exactly as printed, then hand it in — all you found in one hand-in.
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -125,10 +125,11 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --sou
 ```
 
 With nothing to report, hand in `{"candidates": []}`: an empty answer is an answer, and
-none at all reads as a finder that failed. A refused submission names what is wrong — fix
-it and hand it in again, through a fresh `inbox`: the file is read once. A hand-in adds to
-what the task already holds, so a second one carries only what the first did not. A candidate anchored where the change has nothing is dropped and
-named in the answer: that is a line you did not read, so leave it dropped.
+none at all reads as a finder that failed. A refused submission names what is wrong and
+leaves the file where it was: read it, write it fixed, hand it in again. One accepted already
+is added to, never replaced, so a second hand-in carries only what the first did not. A
+candidate anchored where the change has nothing is dropped and named in the answer: that is a
+line you did not read, so leave it dropped.
 
 Where a read you needed was refused — a permission denied, a command blocked — hand in what you
 have, then record that you read less than the change:

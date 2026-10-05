@@ -349,6 +349,14 @@ while IFS= read -r agent; do
       schema_terms "$label" "$agent" "$plugin_dir/schemas/candidates.json" \
         '.["$defs"].candidate.required[], .["$defs"].candidate.properties.side.enum[], .["$defs"].candidate.properties.severity.enum[], .["$defs"].candidate.properties.category.enum[]'
     fi
+    # An inbox is written with the Write tool: an agent asking for one without it has no way
+    # to hand anything in.
+    if grep -qx inbox <<< "$subs"; then
+      tools=$(echo "$fm" | sed -nE 's/^tools[[:space:]]*:[[:space:]]*//p' | tr ',' '\n' | tr -d ' ')
+      denied=$(echo "$fm" | sed -nE 's/^disallowedTools[[:space:]]*:[[:space:]]*//p' | tr ',' '\n' | tr -d ' ')
+      { grep -qx Write <<< "$tools" && ! grep -qx Write <<< "$denied"; } \
+        || err "$label: asks review-round.mjs for an inbox but cannot use the Write tool that fills it"
+    fi
   fi
   ok "$label"
 done < <(find plugins -type f -path '*/agents/*.md' 2>/dev/null | sort)
