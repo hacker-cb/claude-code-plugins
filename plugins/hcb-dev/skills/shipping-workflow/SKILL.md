@@ -114,7 +114,8 @@ of step 0 — per
    for a reviewer to find, and a rename it made is step 2's sweep over again, this time over
    `parent`'s range. A conflict needing a real decision is an architectural fork
    (`architecture-decisions.md`): stop and ask.
-4. **Local review** — hand off to the `hcb-dev:multi-review` skill. When a
+4. **Local review** — once a slice: one handed back by step 7 for a conflict keeps its round,
+   and the resolution goes to step 5's reading. Hand off to the `hcb-dev:multi-review` skill. When a
    `diff-base` was threaded in (an orchestrated slice), pass it — as step 3 left
    it — as the explicit base so the review covers *this* slice's range, not the cumulative feature
    diff. Standalone, `multi-review` resolves its own base. Hand it as well the
@@ -169,9 +170,8 @@ of step 0 — per
 
 The review reports what each source actually covered, the status already classified. A gap is
 **actionable** only where [`../../references/review-pipeline.md`](../../references/review-pipeline.md)
-says it holds the work back — no source covered the change whole, or one the caller asked for by
-name did not. Every other gap, `n/a` among them, is said out loud every time and carried as
-`uncovered`; it does not stop the ship.
+says it holds the work back (*What a gap stops*). Every other gap, `n/a` among them, is said out
+loud every time and carried as `uncovered`; it does not stop the ship.
 
 With no actionable gap, go straight to completion, no confirmation needed. **With an actionable gap, stop
 before completing**: a report ([`../../references/report-format.md`](../../references/report-format.md),

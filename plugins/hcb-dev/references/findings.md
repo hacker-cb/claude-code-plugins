@@ -96,11 +96,11 @@ them sees what the budget pushed out rather than a list already cut.
 master session, the user — a candidate is not decided in the response that found it: it waits with
 its proposed outcome for the pass reading the run's candidates together, against each other and
 against the tracker; absent such an authority, the run's own end is that pass. That pass is
-`hcb-dev:findings-pass`, and it **verifies before it rules**: every candidate but a `Minor`
-proposed **DROP** re-measured by a check that never saw the finder's argument, or carrying a
-verdict whose every file is unchanged ([`verification.md`](verification.md)); one noticed before
-the work's review round goes into it as `noticed`, and comes out with its verdict. **Fixing never
-waits for it**: **FIX** and **HAND OVER** are settled where the finding is found.
+`hcb-dev:findings-pass`, and it **verifies before it rules**: every candidate re-measured by a check
+that never saw the finder's argument, or carrying a verdict whose every file is unchanged
+([`verification.md`](verification.md)); one noticed before the work's review round goes into it as
+`noticed`, and comes out with its verdict. **Fixing never waits for it**:
+**FIX** and **HAND OVER** are settled where the finding is found.
 
 **The same finding twice.** A finding is identified by `(file, line)` **and** by mechanism:
 reviewers routinely anchor one root cause at different lines. One a run has already ruled on earns

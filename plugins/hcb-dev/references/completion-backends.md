@@ -35,8 +35,9 @@ forge call. Publishing is the escalation offer below, and only by consent.
   ([`architecture-decisions.md`](architecture-decisions.md)), so stop and ask rather than
   silently corrupting an earlier slice's work. Past trivial the resolution is code no reviewer
   has read and this backend does not review: abort the merge and hand back to
-  `shipping-workflow` step 3, which lands on this same parent; what that took is read as
-  [`fix-reading.md`](fix-reading.md) reads a fix past its finding. A conflict surviving that
+  `shipping-workflow` step 3, which lands on this same parent; the slice's review stands, and
+  what the resolution took is read as [`fix-reading.md`](fix-reading.md) reads a conflict
+  resolution, never by a new round. A conflict surviving that
   round trip is `parent` moving under the run, not a round to repeat: stop and ask.
 - **The default-branch hard-gate.** Merging into a **feature** branch is autonomous under an
   `on-green` and takes what anything stricter says. Merging into the **default branch** is not

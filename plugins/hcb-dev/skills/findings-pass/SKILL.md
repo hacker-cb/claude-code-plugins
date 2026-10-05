@@ -51,10 +51,8 @@ the severity its finder gave — and leave the finder's argument behind: it is n
 A candidate this run already ruled on is not one again (*The same finding twice*): its outcome
 stands, and where that outcome was a fix, the fix is what gets looked at.
 
-A `Minor` whose proposed outcome is **DROP** goes into the table unchecked, as
-`not measured — minor`: nothing acts on it, so nothing is spent checking it. Open a store for the
-pass on the tree the table above names and hand every other candidate of every carrier in, each
-claim in the candidate shape and a verdict it already carries riding along whole — the store
+Open a store for the pass on the tree the table above names and hand every carrier's candidates in,
+each claim in the candidate shape and a verdict it already carries riding along whole — the store
 and what each step answers are [`../../references/verification.md`](../../references/verification.md)'s:
 
 ```bash

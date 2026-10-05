@@ -19,12 +19,12 @@ not one ([`forge-behaviour.md`](forge-behaviour.md)), and may not run at all.
   generated from, a schema, a skill an agent follows — is behaviour, not prose.
 - **A fix that answers more than its finding asked, or would meet the high-risk test** of
   [`review-pipeline.md`](review-pipeline.md)'s *The rung*, goes back to a reviewer:
-  `hcb-dev:codex-review` on the change's own base, or `hcb-dev:claude-review` at `medium` where
-  Codex cannot run. A conflict resolution past a trivial one goes the same way.
+  `hcb-dev:codex-review` on the change's own base.
+- **A conflict resolution past a trivial one** goes there every time: no reviewer ever read it.
 
-**One such reading per slice**, whatever sent it there — the slice's own fixes, a change request's
-reviewer, a conflict. Past it the session's own reading is the last one: the report names the fixes
-no reviewer read again, and nothing stops for that. More only on the user's word.
+**One reading of fixes per slice**, whichever loop made them — the slice's own or a change
+request's. Past it the session's own reading is the last one: the report names the fixes no
+reviewer read again, and nothing stops for that. More only on the user's word.
 
 A `Minor` never sends a fix to a reviewer (`findings.md`). Commit fixes naming the findings they
 close, so what was closed is readable off the branch rather than out of a session's memory.
