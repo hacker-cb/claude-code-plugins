@@ -126,10 +126,10 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --sou
 
 With nothing to report, hand in `{"candidates": []}`: an empty answer is an answer, and
 none at all reads as a finder that failed. A refused submission names what is wrong and
-leaves the file where it was: read it, write it fixed, hand it in again. One accepted already
-is added to, never replaced, so a second hand-in carries only what the first did not. A
-candidate anchored where the change has nothing is dropped and named in the answer: that is a
-line you did not read, so leave it dropped.
+leaves the file where it was: read it, write it fixed, hand it in again. An accepted hand-in
+is added to, never replaced: where one went in short of all you found, the next carries only
+what it left out. A candidate anchored where the change has nothing is dropped and named in
+the answer: that is a line you did not read, so leave it dropped.
 
 Where a read you needed was refused — a permission denied, a command blocked — hand in what you
 have, then record that you read less than the change:

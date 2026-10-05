@@ -1013,8 +1013,11 @@ function status() {
   if (state === undefined && model === undefined) die('status records a --state, a --model, or both');
   const note = opts['--note'];
   if (note !== undefined && [...note].length > 500) die('--note is a sentence or two, not a document');
-  const prior = statusOf(round.dir, id);
   const planned = plannedTasks(planOf(round)).find((x) => x.task === id);
+  // Under the lock a hand-in takes: one adding to the task rewrites this same status.
+  const release = TASK_ID.test(id) ? taskLock(round, id) : () => {};
+  process.on('exit', release);
+  const prior = statusOf(round.dir, id);
   if (!prior && !planned) cannot(`${id} is neither planned nor submitted in round ${round.id}`);
   // A model alone is a fact about an answer: before one, it would record a loss nobody meant.
   if (!prior && state === undefined) cannot(`${id} has not answered yet — record its model once it has`);
@@ -1085,8 +1088,8 @@ function admits(round, task, source, append = false) {
   if (existsSync(held)) {
     if (!append) refuse([{ at: '', message: `task '${task}' already holds a submission — hand this carrier in under a --task of its own` }], { task });
     let by = null;
-    try { by = readJson(held).source; } catch (e) { cannot(`task '${task}''s earlier submission did not read: ${e.message}`); }
-    if (by !== source) refuse([{ at: '', message: `task '${task}' holds source '${by}''s submission — hand this one in under a --task of its own` }], { task });
+    try { by = readJson(held).source; } catch (e) { cannot(`the earlier submission of task '${task}' did not read: ${e.message}`); }
+    if (by !== source) refuse([{ at: '', message: `task '${task}' holds a submission of source '${by}' — hand this one in under a --task of its own` }], { task });
   }
   return planned;
 }
@@ -1136,7 +1139,11 @@ const anchorNote = (n) => n === MISSED_ALL || (n.startsWith('run-warning: ') && 
 function storeHeld(round, task, source, value, planned, extra, repo, file) {
   let prior = null;
   if (extra.append && existsSync(file)) {
-    try { prior = readJson(file); } catch (e) { cannot(`task '${task}''s earlier submission did not read: ${e.message}`); }
+    try { prior = readJson(file); } catch (e) { cannot(`the earlier submission of task '${task}' did not read: ${e.message}`); }
+  }
+  // Asked again under the lock: another source's first hand-in may have landed since.
+  if (prior && prior.source !== source) {
+    refuse([{ at: '', message: `task '${task}' holds a submission of source '${prior.source}' — hand this one in under a --task of its own` }], { task });
   }
   const priorKept = prior?.candidates ?? [];
   const priorRejected = prior?.rejected ?? [];
