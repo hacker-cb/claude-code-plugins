@@ -29,6 +29,9 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
 `scope` is the change: its base, its files — each numbered `n`, with the lines it adds and
 removes — and any narrowing the caller asked for. `read` says how to reach each side of it.
+`checkout` is where the code is, and your own directory may be another checkout — `elsewhere`
+says so where it is: every path you read is under `checkout`, and a shell command that reads
+the code starts with `cd` there, the path written as any path below is.
 
 ## 2. Read the change, then the code around it
 
@@ -49,9 +52,9 @@ N="<the file's n from the brief>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND" --number "$N"
 ```
 
-The code as it is now is the working tree: read it with Read, Grep and Glob. The code a file
-had before the change is `show`, for a file whose removed or rewritten lines you need to see
-in place:
+The code as it is now is the working tree under `checkout`: read it with Read, Grep and Glob.
+The code a file had before the change is `show`, for a file whose removed or rewritten lines
+you need to see in place:
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -59,15 +62,12 @@ N="<the file's n from the brief>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --number "$N"
 ```
 
-A file's history takes its path from the brief, read in the same block, and after `--`:
+A file's history is `log`, read in the round's checkout:
 
 ```bash
 ROUND="<the round id from your prompt>"
-TASK="<the task id from your prompt>"
 N="<the file's n from the brief>"
-P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --task "$TASK" \
-  | jq -r --argjson n "$N" '.scope.files[] | select(.n == $n) | .path')"
-git log --oneline -- "$P"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" log --round "$ROUND" --number "$N"
 ```
 
 Any other path you put into a command yourself goes in single-quoted, a quote inside it

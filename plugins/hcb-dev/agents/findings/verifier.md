@@ -26,6 +26,9 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" task --round "$ROUND" --un
 It answers with the `claim`, its `coordinate`, what would `show` it, its `category`, how to read
 the tree (`read_with`) and the `language` your verdict's prose is written in. That is all you get:
 who found the claim, how sure they were and how severe they called it stay out of the check.
+`checkout` is where the code is, and your own directory may be another checkout — `elsewhere`
+says so where it is: every path you read is under `checkout`, and a shell command that reads
+the code starts with `cd` there, the path written as any path below is.
 
 ## 2. Check it — by reading
 
@@ -39,14 +42,25 @@ UNIT="<the group id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --unit "$UNIT"
 ```
 
-Read and Grep take a path with no shell at all. The coordinate's own path goes into a command
-only as `task` gave it, read in the same block, and after `--`:
+The coordinate's history is `log`, read in the round's checkout up to the tree its side is read
+on:
 
 ```bash
 ROUND="<the round id from your prompt>"
 UNIT="<the group id from your prompt>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" log --round "$ROUND" --unit "$UNIT"
+```
+
+Read and Grep take a path with no shell at all. The coordinate's own path goes into any other
+command only as `task` gave it, read in the same block, and after `--`, on the tree `read_with`
+names — a revision it names goes before the `--`:
+
+```bash
+cd '<checkout, from the task>' || exit 1
+ROUND="<the round id from your prompt>"
+UNIT="<the group id from your prompt>"
 P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" task --round "$ROUND" --unit "$UNIT" | jq -r .coordinate.file)"
-git log --oneline -- "$P"
+git grep -n '<what you look for>' -- "$P"
 ```
 
 Any other path you put into a command yourself goes in single-quoted, a quote inside it written

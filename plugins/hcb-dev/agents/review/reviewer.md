@@ -150,7 +150,8 @@ as the brief says, and your candidates handed in as below. Wait for the Codex ta
 verdict a candidate carried stand — and build the result: no checks, and the result says
 nothing was checked.
 
-A task's brief, then a file of the change by its `n`, and the code that file had before it:
+A task's brief, then a file of the change by its `n`, the code that file had before it, and
+its history:
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -158,19 +159,12 @@ TASK="<the task>"; N="<a file's n from the brief>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --task "$TASK"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND" --number "$N"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --number "$N"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" log --round "$ROUND" --number "$N"
 ```
 
-A file's history takes its path from the brief, read in the same block, and after `--`; any
-other path you put into a command yourself goes in single-quoted, a quote inside it written
-`'\''`, and after `--`:
-
-```bash
-ROUND="<the round id from your prompt>"
-TASK="<the task>"; N="<a file's n from the brief>"
-P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --task "$TASK" \
-  | jq -r --argjson n "$N" '.scope.files[] | select(.n == $n) | .path')"
-git log --oneline -- "$P"
-```
+The code as it is now is under the brief's `checkout`, which may not be your own directory: read
+it there, a shell command that reads it starting with `cd` there. Any path you put into a
+command yourself goes in single-quoted, a quote inside it written `'\''`, and after `--`.
 
 Each candidate carries its `file` from the repository root and its `line` counted from 1;
 its `side`, `head` for the code as it is now or `base` for a line the change removed; a
