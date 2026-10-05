@@ -21,6 +21,11 @@
 #   @empty                 a word: the empty string, which a manifest cannot write
 #   @lit:<text>            a word: <text> with %20 read as a space and %25 as %, for a
 #                          path a manifest's word splitting would cut
+#   @elsewhere             a step: every later step runs from another git checkout, one
+#                          of its own — as an agent started in its session's directory
+#                          runs beside the checkout the round was opened in
+#   @gone                  a step: the scratch repository is moved away, so the checkout
+#                          the round was opened in no longer stands
 #   @show <name>           a step: prints what a stub kept beside its marker as <name> —
 #                          the codex stub's codex-stdin, codex-schema, codex-argv
 #   @stdout <step>         a step: that step with its stderr dropped — what a pipe reading
@@ -87,8 +92,8 @@ emit() {
   # Only where the case names a fixture: a case refused before git must not reach the stub.
   if [ -n "${STUB_ENVELOPE:-}" ]; then
     scratch
-    head7=$(git rev-parse --short=7 HEAD 2>/dev/null) && out=${out//$head7/@head7}
-    base7=$(git rev-parse --short=7 base 2>/dev/null) && out=${out//$base7/@base7}
+    head7=$(git -C "$repo" rev-parse --short=7 HEAD 2>/dev/null) && out=${out//$head7/@head7}
+    base7=$(git -C "$repo" rev-parse --short=7 base 2>/dev/null) && out=${out//$base7/@base7}
   fi
   if printf '%s' "$out" | jq -e . >/dev/null 2>&1; then printf '%s' "$out" | jq -c .; else printf '%s\n' "$out"; fi
   exit "$2"
@@ -109,6 +114,16 @@ for ((n = 0; n < count; n++)); do
   if [ "${words[0]}" = "@remove" ]; then
     scratch
     rm -r -- "$repo/${words[1]}" || { echo "drive: nothing to remove at ${words[1]}" >&2; exit 125; }
+    continue
+  fi
+  if [ "${words[0]}" = "@elsewhere" ]; then
+    scratch
+    mkdir "$tmp/elsewhere" && cd "$tmp/elsewhere" && export STUB_ELSEWHERE="$(pwd -P)" && git init -q || exit 125
+    continue
+  fi
+  if [ "${words[0]}" = "@gone" ]; then
+    scratch
+    mv "$repo" "$tmp/gone" || exit 125
     continue
   fi
   if [ "${words[0]}" = "@show" ]; then
@@ -140,7 +155,7 @@ for ((n = 0; n < count; n++)); do
         cp "$src" "$dst" || exit 125
         while IFS= read -r token; do
           scratch
-          blob=$(git hash-object -- "${token#@blob:}") || exit 125
+          blob=$(git -C "$repo" hash-object -- "${token#@blob:}") || exit 125
           sed -i.bak "s|$token\"|$blob\"|g" "$dst" && rm -f "$dst.bak"
         done < <(grep -o '@blob:[^"]*' "$dst" | sort -u)
         if grep -q '@top' "$dst"; then

@@ -26,6 +26,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" task --round "$ROUND" --un
 It answers with the `claim`, its `coordinate`, what would `show` it, its `category`, how to read
 the tree (`read_with`) and the `language` your verdict's prose is written in. That is all you get:
 who found the claim, how sure they were and how severe they called it stay out of the check.
+`checkout` is where the code is, and your own directory may be another checkout: every path
+you read is under it, and a shell command that reads the code starts with `cd` there.
 
 ## 2. Check it — by reading
 
@@ -43,6 +45,7 @@ Read and Grep take a path with no shell at all. The coordinate's own path goes i
 only as `task` gave it, read in the same block, and after `--`:
 
 ```bash
+cd '<the task's checkout>' || exit 1
 ROUND="<the round id from your prompt>"
 UNIT="<the group id from your prompt>"
 P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" task --round "$ROUND" --unit "$UNIT" | jq -r .coordinate.file)"

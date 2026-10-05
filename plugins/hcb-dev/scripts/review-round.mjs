@@ -200,7 +200,7 @@ const gitIn = (cwd) => (args, input, bytes = false) => {
   };
 };
 
-// The checkout under review.
+// The checkout this runs in — the one `init` opens a round for.
 function repository() {
   const top = gitIn(process.cwd())(['rev-parse', '--show-toplevel']);
   if (!top.ok) cannot('not inside a git working tree — there is no tree to review');
@@ -222,13 +222,18 @@ function openRound() {
 }
 
 // A round belongs to the checkout that opened it: its blobs and anchors describe that
-// tree, and read against another one they would describe a change nobody made.
+// tree, and read against another one they would describe a change nobody made. So every
+// step after `init` reads that checkout, wherever it is run from — an agent starts in its
+// session's directory, which may be another checkout of the same repository, or another
+// repository. Null where it no longer stands.
+function checkoutAt(round) {
+  const { top } = round.req;
+  const at = existsSync(top) ? gitIn(top)(['rev-parse', '--show-toplevel']) : null;
+  return at?.ok && real(at.out.trim()) === top ? { top, git: gitIn(top) } : null;
+}
+const goneCheckout = (round) => `round ${round.id} was opened for ${round.req.top}, which is no longer a git checkout — open a new round`;
 function checkoutOf(round) {
-  const repo = repository();
-  if (repo.top !== round.req.top) {
-    cannot(`round ${round.id} was opened for ${round.req.top}, and this runs in ${repo.top}`);
-  }
-  return repo;
+  return checkoutAt(round) ?? cannot(goneCheckout(round));
 }
 
 // Where a submission written to a file waits to be handed in: inside the round, named for
@@ -920,6 +925,8 @@ function brief() {
     angle: angleOf(c, id),
     category: t.category,
     limit: t.limit,
+    // Where the code is: the agent's own directory may be another checkout altogether.
+    checkout: req.top,
     scope: {
       base: req.base.ref,
       merge_base: req.base.merge_base,
@@ -932,7 +939,7 @@ function brief() {
     },
     read: {
       diff: 'the subcommand diff — the whole change, or one file of it with --number <n>',
-      head: 'the working tree as it stands — read the files directly',
+      head: 'the working tree as it stands — the files under checkout, read directly',
       base: 'the subcommand show --number <n> — a file of the change as it was before it',
     },
     inbox: `review-round.mjs inbox --round ${round.id} --task ${id}`,
@@ -986,8 +993,7 @@ function show() {
   if (round.req.mode !== 'round') die('show --number belongs to --mode round — a pass has no change to number');
   const f = nth(round);
   if (!f.blob_base) cannot(`${f.path} has no side before the change: it was added by it, or is not a file`);
-  // The merge base is fixed, so its side reads the same from wherever this runs.
-  print(readAt({ top: round.req.top, git: gitIn(round.req.top) }, round.req, f.from ?? f.path, 'base', true));
+  print(readAt(checkoutOf(round), round.req, f.from ?? f.path, 'base', true));
 }
 
 // -------------------------------------------------------------------------------- status
@@ -1332,7 +1338,6 @@ async function codex() {
   if (!planned) cannot(`round ${round.id}'s plan holds no codex task — open the round with codex among its --sources`);
   const { task, source } = planned;
   admits(round, task, source);
-  const repo = checkoutOf(round);
   const c = catalog();
   const settings = c.rungs[round.req.rung].codex;
   const asked = round.req.codex || {};
@@ -1374,6 +1379,9 @@ async function codex() {
   };
   // What a run printed, as a note carries it: its last lines, with nothing that ends a line.
   const tail = (printed, n) => printed.trim().split('\n').slice(-n).join(' ').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(-600);
+  // Run in the background, its answer read by nobody: a checkout gone since the round
+  // opened is the task's loss in the store, never a refusal its conductor waits out.
+  const repo = checkoutAt(round) ?? lose(goneCheckout(round));
 
   // Whatever stops the pass once it holds the task ends as the task's loss — never as a
   // silence the conductor would wait out its hour on.
@@ -1722,8 +1730,8 @@ function task() {
   const u = queued(round, opts['--unit']);
   const tree = treeOf(round.req, u.side);
   const readWith = tree.ref
-    ? `the coordinate through the subcommand show, any other file as git show '${tree.ref}:<path>' — this ${round.req.mode === 'round' ? 'base-side code is read at the merge base' : 'pass reads that commit'}, not the working tree`
-    : 'the working tree as it stands — read files directly';
+    ? `the coordinate through the subcommand show, any other file as git show '${tree.ref}:<path>' run in checkout — this ${round.req.mode === 'round' ? 'base-side code is read at the merge base' : 'pass reads that commit'}, not the working tree`
+    : 'the working tree as it stands — the files under checkout, read directly';
   answer({
     round: round.id,
     unit: u.unit,
@@ -1731,6 +1739,7 @@ function task() {
     coordinate: { file: u.file, line: u.line, side: u.side },
     show: u.failure_scenario,
     category: u.category,
+    checkout: round.req.top,
     read_with: readWith,
     language: round.req.language,
     inbox: `review-round.mjs inbox --round ${round.id} --unit ${u.unit}`,

@@ -81,4 +81,7 @@ if [ ! -e "$STUB_MARKER_FILE" ]; then
   done
   : > "$STUB_MARKER_FILE"
 fi
+# A step the driver runs from another checkout (@elsewhere) asks git there, as the real one
+# would be asked.
+case "$(pwd -P)/" in "${STUB_ELSEWHERE:-//}"/*) exec "$real" "$@" ;; esac
 cd "$repo" && exec "$real" "$@"

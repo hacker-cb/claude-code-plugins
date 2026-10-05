@@ -29,6 +29,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
 `scope` is the change: its base, its files — each numbered `n`, with the lines it adds and
 removes — and any narrowing the caller asked for. `read` says how to reach each side of it.
+`checkout` is where the code is, and your own directory may be another checkout: every path
+you read is under it, and a shell command that reads the code starts with `cd` there.
 
 ## 2. Read the change, then the code around it
 
@@ -49,9 +51,9 @@ N="<the file's n from the brief>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND" --number "$N"
 ```
 
-The code as it is now is the working tree: read it with Read, Grep and Glob. The code a file
-had before the change is `show`, for a file whose removed or rewritten lines you need to see
-in place:
+The code as it is now is the working tree under `checkout`: read it with Read, Grep and Glob.
+The code a file had before the change is `show`, for a file whose removed or rewritten lines
+you need to see in place:
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -62,6 +64,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --nu
 A file's history takes its path from the brief, read in the same block, and after `--`:
 
 ```bash
+cd '<the brief's checkout>' || exit 1
 ROUND="<the round id from your prompt>"
 TASK="<the task id from your prompt>"
 N="<the file's n from the brief>"
