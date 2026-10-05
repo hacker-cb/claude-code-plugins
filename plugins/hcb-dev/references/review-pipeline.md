@@ -64,9 +64,8 @@ resumes it**, starting only what the store still lacks.
 **Without agents.** Where the one that should launch agents has no Agent tool, it does the
 round's tasks itself instead, on a plan made with `--depth`: the Codex pass started first, a Bash
 call with `run_in_background: true`, where the plan has one; then each finder task's brief, the
-change and the code as the brief says — a file's history by the path the brief gives it, passed
-after `--` — and its candidates handed in through `add`; then `wait` for the Codex task, `merge`,
-`units`, `queue` — which checks nothing here, a carried verdict standing — and `result`, which
+change, the code under the brief's `checkout` and a file's history through `log`, and its
+candidates handed in through `add`; then `wait` for the Codex task, `merge`, `units`, `queue` — which checks nothing here, a carried verdict standing — and `result`, which
 says nothing was checked.
 
 ```bash
@@ -75,8 +74,7 @@ node "<plugin root>/scripts/review-round.mjs" codex --round "<round>"
 node "<plugin root>/scripts/review-round.mjs" brief --round "<round>" --task "<task>"
 node "<plugin root>/scripts/review-round.mjs" diff --round "<round>" --number "<n>"
 node "<plugin root>/scripts/review-round.mjs" show --round "<round>" --number "<n>"
-P="$(node "<plugin root>/scripts/review-round.mjs" brief --round "<round>" --task "<task>" | jq -r --argjson n "<n>" '.scope.files[] | select(.n == $n) | .path')"
-git log --oneline -- "$P"
+node "<plugin root>/scripts/review-round.mjs" log --round "<round>" --number "<n>"
 node "<plugin root>/scripts/review-round.mjs" wait --round "<round>" --for tasks
 ```
 

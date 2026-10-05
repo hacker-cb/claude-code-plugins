@@ -29,8 +29,9 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
 `scope` is the change: its base, its files — each numbered `n`, with the lines it adds and
 removes — and any narrowing the caller asked for. `read` says how to reach each side of it.
-`checkout` is where the code is, and your own directory may be another checkout: every path
-you read is under it, and a shell command that reads the code starts with `cd` there.
+`checkout` is where the code is, and your own directory may be another checkout — `elsewhere`
+says so where it is: every path you read is under `checkout`, and a shell command that reads
+the code starts with `cd` there, the path written as any path below is.
 
 ## 2. Read the change, then the code around it
 
@@ -61,16 +62,12 @@ N="<the file's n from the brief>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --number "$N"
 ```
 
-A file's history takes its path from the brief, read in the same block, and after `--`:
+A file's history is `log`, read in the round's checkout:
 
 ```bash
-cd '<the brief's checkout>' || exit 1
 ROUND="<the round id from your prompt>"
-TASK="<the task id from your prompt>"
 N="<the file's n from the brief>"
-P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --task "$TASK" \
-  | jq -r --argjson n "$N" '.scope.files[] | select(.n == $n) | .path')"
-git log --oneline -- "$P"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" log --round "$ROUND" --number "$N"
 ```
 
 Any other path you put into a command yourself goes in single-quoted, a quote inside it

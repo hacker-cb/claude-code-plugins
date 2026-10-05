@@ -118,7 +118,7 @@ for ((n = 0; n < count; n++)); do
   fi
   if [ "${words[0]}" = "@elsewhere" ]; then
     scratch
-    mkdir "$tmp/elsewhere" && cd "$tmp/elsewhere" && export STUB_ELSEWHERE="$(pwd -P)" && git init -q || exit 125
+    mkdir "$tmp/other-checkout" && cd "$tmp/other-checkout" && export STUB_ELSEWHERE="$(pwd -P)" && git init -q || exit 125
     continue
   fi
   if [ "${words[0]}" = "@gone" ]; then

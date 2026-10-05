@@ -17,6 +17,7 @@
 //   node review-round.mjs brief   --round <id> --task <task>
 //   node review-round.mjs diff    --round <id> [--number <n>]
 //   node review-round.mjs show    --round <id> (--number <n> | --unit <unit>)
+//   node review-round.mjs log     --round <id> (--number <n> | --unit <unit>)
 //   node review-round.mjs add     --round <id> --source <source> [--task <task>] [--file <json> | --inbox]
 //   node review-round.mjs inbox   --round <id> (--task <task> | --unit <unit> | --units)
 //   node review-round.mjs codex   --round <id> [--timeout-s <n>]
@@ -33,8 +34,8 @@
 //
 // The JSON `add`, `units` and `verdict` take arrives on stdin, from `--file`, or with `--inbox`
 // from the file `inbox` named for that submission, which is removed once it is stored. `diff`
-// prints the change as git wrote it and `show` a file as one side holds it, byte for byte,
-// their refusals going to stderr; everything else prints JSON.
+// prints the change as git wrote it, `show` a file as one side holds it, byte for byte, and
+// `log` a file's history, their refusals going to stderr; everything else prints JSON.
 // Exit: 0 answered; 1 a submission refused, the errors saying what to fix; 2 called
 // wrong; 3 the round or the repository could not be read.
 
@@ -56,9 +57,9 @@ const load = schemaDir(path.join(PLUGIN, 'schemas'));
 
 const die = (m) => { writeAll(2, `review-round: ${m}\n${USAGE}`); process.exit(2); };
 const answer = (obj, code = 0) => { writeAll(1, `${JSON.stringify(obj, null, 2)}\n`); process.exit(code); };
-// `diff` and `show` print a file: a refusal of theirs goes where a pipe does not pass it on as one.
+// `diff`, `show` and `log` print text: a refusal of theirs goes where a pipe does not pass it on as one.
 const cannot = (reason) => {
-  if (!['diff', 'show'].includes(cmd)) answer({ read: false, reason }, 3);
+  if (!['diff', 'show', 'log'].includes(cmd)) answer({ read: false, reason }, 3);
   writeAll(2, `${JSON.stringify({ read: false, reason }, null, 2)}\n`);
   process.exit(3);
 };
@@ -70,6 +71,7 @@ const SPEC = {
   brief: ['--round', '--task'],
   diff: ['--round', '--number'],
   show: ['--round', '--number', '--unit'],
+  log: ['--round', '--number', '--unit'],
   add: ['--round', '--source', '--task', '--file', '--inbox'],
   inbox: ['--round', '--task', '--unit', '--units'],
   codex: ['--round', '--timeout-s'],
@@ -234,6 +236,14 @@ function checkoutAt(round) {
 const goneCheckout = (round) => `round ${round.id} was opened for ${round.req.top}, which is no longer a git checkout — open a new round`;
 function checkoutOf(round) {
   return checkoutAt(round) ?? cannot(goneCheckout(round));
+}
+// Said to an agent whose own directory is not the round's checkout, where its reading
+// starts: what it reads from there is another tree, and nothing later tells it so.
+function elsewhere(round) {
+  const at = gitIn(process.cwd())(['rev-parse', '--show-toplevel']);
+  const here = at.ok ? real(at.out.trim()) : null;
+  if (here === round.req.top) return null;
+  return `this runs in ${here ?? 'no git checkout'}, not in the round's checkout — every file you read is under checkout`;
 }
 
 // Where a submission written to a file waits to be handed in: inside the round, named for
@@ -927,6 +937,7 @@ function brief() {
     limit: t.limit,
     // Where the code is: the agent's own directory may be another checkout altogether.
     checkout: req.top,
+    elsewhere: elsewhere(round),
     scope: {
       base: req.base.ref,
       merge_base: req.base.merge_base,
@@ -994,6 +1005,22 @@ function show() {
   const f = nth(round);
   if (!f.blob_base) cannot(`${f.path} has no side before the change: it was added by it, or is not a file`);
   print(readAt(checkoutOf(round), round.req, f.from ?? f.path, 'base', true));
+}
+
+// ----------------------------------------------------------------------------------- log
+// A file's history, read in the round's checkout: an agent's own directory may be another
+// checkout, and git run there answers for it. The n-th file of the change, or a group's
+// coordinate — like `show`, nothing here takes a path.
+function log() {
+  const byUnit = opts['--unit'] !== undefined;
+  if (byUnit === (opts['--number'] !== undefined)) die('log takes --number or --unit');
+  const round = openRound();
+  if (!byUnit && round.req.mode !== 'round') die('log --number belongs to --mode round — a pass has no change to number');
+  const file = byUnit ? queued(round, opts['--unit']).file : nth(round).path;
+  const r = checkoutOf(round).git(['log', '--oneline', '--', file]);
+  if (!r.ok) cannot(`git could not read the history of ${file}: ${r.err}`);
+  writeAll(1, r.out);
+  process.exit(0);
 }
 
 // -------------------------------------------------------------------------------- status
@@ -1740,6 +1767,7 @@ function task() {
     show: u.failure_scenario,
     category: u.category,
     checkout: round.req.top,
+    elsewhere: elsewhere(round),
     read_with: readWith,
     language: round.req.language,
     inbox: `review-round.mjs inbox --round ${round.id} --unit ${u.unit}`,
@@ -2083,4 +2111,4 @@ function result() {
 // Exit 1 says a submission was refused and invites sending it again; a store file that
 // cannot be read is not that, so whatever escapes leaves as exit 3 with an answer.
 process.on('uncaughtException', (e) => cannot(`${cmd} could not be answered: ${e.message}`));
-({ init, plan, brief, diff, show, add, inbox, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();
+({ init, plan, brief, diff, show, log, add, inbox, codex, status, merge, units, queue, task, verdict, wait, result })[cmd]();
