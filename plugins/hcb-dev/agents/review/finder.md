@@ -8,7 +8,7 @@ description: >-
 tools: Read, Grep, Glob, Bash, Write
 model: opus
 effort: medium
-maxTurns: 40
+maxTurns: 60
 omitClaudeMd: true
 ---
 
@@ -28,9 +28,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" brief --round "$ROUND" --t
 
 The brief's `angle` is what to look for and `limit` how many candidates you may hand in.
 `scope` is the change: its base, its files — each numbered `n`, with the lines it adds and
-removes — and any narrowing the caller asked for. `read` says how to reach each side of it. A
-`rules` list, where the brief has one, is the rule files to read; a `listed` one is what an
-earlier pass already found.
+removes — and any narrowing the caller asked for. `read` says how to reach each side of it.
 
 ## 2. Read the change, then the code around it
 
@@ -39,7 +37,10 @@ ROUND="<the round id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" diff --round "$ROUND"
 ```
 
-For a large change, read it a file at a time instead, by the file's `n`:
+For a large change, read it a file at a time instead, by the file's `n` — first the files where
+the change alters what runs or what an agent is told to do, the ones that only describe or hold
+data last — and hand in as you go (step 4), so a change larger than your turns still leaves
+what you found:
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -72,7 +73,7 @@ Any other path you put into a command yourself goes in single-quoted, a quote in
 written `'\''`, and after `--`.
 
 **Only read.** Never run the code under review, its build, its tests or its scripts, and
-never write a file: the one thing you write is your answer, through `add`. Git only in its
+never write a file but your answer, to the path `inbox` prints. Git only in its
 reading forms — `show`, `log`, `grep`, `blame`, `diff`.
 
 Stay on the change: the lines it adds, removes or rewrites, the functions they sit in, and
@@ -100,8 +101,10 @@ into reports and trackers.
 
 ## 4. Hand them in
 
-The JSON goes through a file, never on stdin: ask for the file, write the JSON with the Write
-tool to its `path` exactly as printed, then hand it in — all you found in one hand-in.
+The JSON goes through a file, never on stdin: ask for the file once, write the JSON with the
+Write tool to its `path` exactly as printed, then hand it in. On a large change hand in as you
+go, each part once you have read it: an accepted hand-in removes the file, so the next part is
+written to the same `path`.
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -126,9 +129,9 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" add --round "$ROUND" --sou
 
 With nothing to report, hand in `{"candidates": []}`: an empty answer is an answer, and
 none at all reads as a finder that failed. A refused submission names what is wrong and
-leaves the file where it was: read it, write it fixed, hand it in again. An accepted hand-in
-is added to, never replaced: where one went in short of all you found, the next carries only
-what it left out. A candidate anchored where the change has nothing is dropped and named in
+leaves the file where it was: read it, write it fixed, hand it in again. What was accepted is
+added to, never replaced, so a later hand-in carries only what the earlier ones did not. A
+candidate anchored where the change has nothing is dropped and named in
 the answer: that is a line you did not read, so leave it dropped.
 
 Where a read you needed was refused — a permission denied, a command blocked — hand in what you

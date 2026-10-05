@@ -6,7 +6,7 @@
       "side": "head",
       "summary": "hush swallows everything it is given.",
       "failure_scenario": "hush error prints nothing",
-      "severity": "Minor",
+      "severity": "Important",
       "category": "correctness"
     }
   ]

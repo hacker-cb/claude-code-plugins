@@ -23,8 +23,8 @@ whole pipeline rather than disconnected commands:
 tasks / issues ─▶ implementation-workflow ─┐  analysis · slices · one planning gate · report
                                            │
               (or finished work) ──────────┴─▶ shipping-workflow ─▶ multi-review ─▶ one review round:
-                                                     │                              Claude's angles · security angles
-                                                     │                              · a Codex pass · one verifier
+                                                     │                              Claude's angles · a Codex pass
+                                                     │                              · one verifier (Critical/Important)
                                                      └─▶ complete by mode:
                                                            local   ─▶ git merge into parent  (then offer a PR/MR)
                                                            request ─▶ github-pr-workflow ─▶ (merge)
@@ -152,15 +152,15 @@ form: you paste every one of them yourself.
 - **`codex-review`** — `/hcb-dev:codex-review`
   One review round over a range and at a rung the caller fixes (`medium` or
   `high`), its one source a read-only pass of the Codex CLI at the level the rung
-  sets, every candidate then checked by the plugin's verifier — a known range in,
-  verified findings and a coverage record back. Review-only. The round's shape is
+  sets, every Critical and Important candidate then checked by the plugin's verifier —
+  a known range in, verified findings and a coverage record back. Review-only. The round's shape is
   [`references/review-pipeline.md`](references/review-pipeline.md).
 - **`claude-review`** — `/hcb-dev:claude-review`
   The same round with Claude's own finders as its source: one finder agent per
   angle of the rung. Review-only.
 - **`multi-review`** — `/hcb-dev:multi-review`
-  One round over one change with every source at once — Claude's angles, the
-  security angles and the Codex pass — at the rung the change's risk sets, the
+  One round over one change with every source at once — Claude's angles and the
+  Codex pass, the security angle where the caller asks for it — at the rung the change's risk sets, the
   findings a caller noticed on the way checked beside the round's own, then a
   report of the findings, of what each source actually covered (the coverage
   gate most of the skill exists to keep honest) and of how long each source and
@@ -414,7 +414,7 @@ checked before anything reads it.
 - [`agents/review/reviewer.md`](agents/review/reviewer.md) — `hcb-dev:review:reviewer`, the
   review conductor: handed a round id, it plans the round's tasks from the angle catalog
   ([`data/review-angles.json`](data/review-angles.json)) — the angles of each source the round
-  was opened with: Claude's, the security ones, the Codex pass — launches a finder per angle
+  was opened with: Claude's, the Codex pass, the security one where asked — launches a finder per angle
   and the Codex pass as a process, groups what they hand in, has each group checked, and builds
   the result. Launched by `claude-review`, `codex-review` and `multi-review`.
 - [`agents/review/finder.md`](agents/review/finder.md) — `hcb-dev:review:finder`, one angle of

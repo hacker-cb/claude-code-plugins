@@ -15,7 +15,7 @@
       "side": "head",
       "summary": "The cleanup line removes a directory named by an optional argument.",
       "failure_scenario": "count=3, limit=5 prints over instead of ok",
-      "severity": "Minor",
+      "severity": "Important",
       "category": "correctness"
     }
   ]

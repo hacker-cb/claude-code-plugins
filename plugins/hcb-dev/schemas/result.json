@@ -55,13 +55,12 @@
     "timing": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["opened_at", "ended_at", "wall_s", "check_s", "sweep_s"],
+      "required": ["opened_at", "ended_at", "wall_s", "check_s"],
       "properties": {
         "opened_at": { "type": ["string", "null"] },
         "ended_at": { "type": ["string", "null"] },
         "wall_s": { "$ref": "#/$defs/seconds" },
-        "check_s": { "$ref": "#/$defs/seconds" },
-        "sweep_s": { "$ref": "#/$defs/seconds" }
+        "check_s": { "$ref": "#/$defs/seconds" }
       }
     },
     "finding": {
@@ -79,7 +78,7 @@
         "category": { "type": "string", "minLength": 1 },
         "found_by": { "type": "array", "minItems": 1, "items": { "type": "string" } },
         "verified": { "type": "string", "enum": ["confirmed", "unproven", "not measured"] },
-        "reason": { "type": "string", "enum": ["budget", "unreachable", "failed", "depth", "none ran"] },
+        "reason": { "type": "string", "enum": ["budget", "minor", "unreachable", "failed", "depth", "none ran"] },
         "snapshot": { "type": "string" },
         "evidence": { "type": "array", "items": { "$ref": "verdict.json#/$defs/evidenceStored" } },
         "settle": { "type": "string" },
