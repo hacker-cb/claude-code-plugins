@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "on": "base",
+      "write": {
+        "report1.txt": "an older report\n"
+      }
+    },
+    {
+      "branch": "feature",
+      "from": "base"
+    },
+    {
+      "on": "feature",
+      "write": {
+        "report[1].txt": "a report whose name a pathspec would read as a pattern\n"
+      }
+    }
+  ]
+}

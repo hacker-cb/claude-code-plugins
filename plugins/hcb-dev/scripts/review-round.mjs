@@ -1009,16 +1009,29 @@ function show() {
 
 // ----------------------------------------------------------------------------------- log
 // A file's history, read in the round's checkout: an agent's own directory may be another
-// checkout, and git run there answers for it. The n-th file of the change, or a group's
-// coordinate — like `show`, nothing here takes a path.
+// checkout, and git run there answers for it. The n-th file of the change, up to HEAD and
+// under its old name too where the change renamed it; or a group's coordinate, up to the
+// tree its side is read on. Like `show`, nothing here takes a path.
 function log() {
   const byUnit = opts['--unit'] !== undefined;
   if (byUnit === (opts['--number'] !== undefined)) die('log takes --number or --unit');
   const round = openRound();
-  if (!byUnit && round.req.mode !== 'round') die('log --number belongs to --mode round — a pass has no change to number');
-  const file = byUnit ? queued(round, opts['--unit']).file : nth(round).path;
-  const r = checkoutOf(round).git(['log', '--oneline', '--', file]);
-  if (!r.ok) cannot(`git could not read the history of ${file}: ${r.err}`);
+  let files;
+  let rev = 'HEAD';
+  if (byUnit) {
+    const u = queued(round, opts['--unit']);
+    const tree = treeOf(round.req, u.side);
+    if (tree.none) cannot(tree.none);
+    files = [u.file];
+    rev = tree.ref ?? rev;
+  } else {
+    if (round.req.mode !== 'round') die('log --number belongs to --mode round — a pass has no change to number');
+    const f = nth(round);
+    files = [...new Set([f.from, f.path].filter(Boolean))];
+  }
+  // A name is a name, never a pattern: `[1]` or `:(exclude)` in one would pick other files.
+  const r = checkoutOf(round).git(['--literal-pathspecs', 'log', '--oneline', rev, '--', ...files]);
+  if (!r.ok) cannot(`git could not read the history of ${files.join(', ')}: ${r.err}`);
   writeAll(1, r.out);
   process.exit(0);
 }

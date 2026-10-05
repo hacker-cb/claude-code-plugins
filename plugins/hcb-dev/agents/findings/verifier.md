@@ -42,7 +42,8 @@ UNIT="<the group id from your prompt>"
 node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" show --round "$ROUND" --unit "$UNIT"
 ```
 
-The coordinate's history is `log`, read in the round's checkout:
+The coordinate's history is `log`, read in the round's checkout up to the tree its side is read
+on:
 
 ```bash
 ROUND="<the round id from your prompt>"
@@ -51,14 +52,15 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" log --round "$ROUND" --uni
 ```
 
 Read and Grep take a path with no shell at all. The coordinate's own path goes into any other
-command only as `task` gave it, read in the same block, and after `--`:
+command only as `task` gave it, read in the same block, and after `--`, on the tree `read_with`
+names — a revision it names goes before the `--`:
 
 ```bash
 cd '<the task's checkout>' || exit 1
 ROUND="<the round id from your prompt>"
 UNIT="<the group id from your prompt>"
 P="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/review-round.mjs" task --round "$ROUND" --unit "$UNIT" | jq -r .coordinate.file)"
-git blame -- "$P"
+git grep -n '<what you look for>' -- "$P"
 ```
 
 Any other path you put into a command yourself goes in single-quoted, a quote inside it written
