@@ -341,11 +341,11 @@ while IFS= read -r agent; do
       | grep -oE 'review-round\.mjs"[[:space:]]+[a-z]+' | awk '{ print $NF }' | sort -u)
     [ -n "$subs" ] \
       || err "$label: names review-round.mjs, but never as 'review-round.mjs\" <subcommand>' — the form the schema check reads"
-    if printf '%s\n' "$subs" | grep -qx verdict; then
+    if grep -qx verdict <<< "$subs"; then
       schema_terms "$label" "$agent" "$plugin_dir/schemas/verdict.json" \
         '.["$defs"].verdictName.enum[], .["$defs"].submitted.required[], (.["$defs"].submitted.properties | keys[]), (.["$defs"].evidenceSubmitted.properties | keys[]), .["$defs"].evidenceSubmitted.properties.side.enum[]'
     fi
-    if printf '%s\n' "$subs" | grep -qx add; then
+    if grep -qx add <<< "$subs"; then
       schema_terms "$label" "$agent" "$plugin_dir/schemas/candidates.json" \
         '.["$defs"].candidate.required[], .["$defs"].candidate.properties.side.enum[], .["$defs"].candidate.properties.severity.enum[], .["$defs"].candidate.properties.category.enum[]'
     fi
@@ -506,8 +506,10 @@ while IFS= read -r md; do
     case "$m" in '${'*) continue ;; esac   # rule 3 already owns the placeholder form
     b=${m##*/}
     [ "$b" = "$(basename "$md")" ] && continue
-    printf '%s\n' "$ref_names" | grep -qxF -- "$b" || continue
-    printf '%s\n' "$linked" | grep -qxF -- "$b" \
+    # A here-string, not a pipe: `grep -q` stops at the first match, and under pipefail the
+    # writer it leaves behind dies of SIGPIPE — a match reported as a miss, now and then.
+    grep -qxF -- "$b" <<< "$ref_names" || continue
+    grep -qxF -- "$b" <<< "$linked" \
       || err "$md: '$m' is never linked in this file — link its first mention"
   done < <(printf '%s\n' "$body" | grep -o '`[^`]*\.md`' 2>/dev/null | tr -d '`' | sort -u)
 done < <(md_files)
@@ -593,7 +595,7 @@ reached_refs() {
     while IFS= read -r t; do
       [ -n "$t" ] || continue
       case "$t" in plugins/*) ;; *) continue ;; esac
-      printf '%s\n' "$seen" | grep -qxF -- "$t" && continue
+      grep -qxF -- "$t" <<< "$seen" && continue
       seen="$seen"$'\n'"$t"
       queue=${queue:+$queue$'\n'}$t
     done < <(md_link_targets "$cur")
