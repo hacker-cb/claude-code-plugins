@@ -22,7 +22,7 @@
 //   <settings>: --model-config <v> --effort-config <v> --batches-max <v>  (the plugin's
 //               settings line), --model <m> --effort <e>  (the user's word)
 //   <way>:      --launcher '<command>'  a command that starts claude, claude's own arguments
-//                                       after it
+//                                       after it; its words spaced, or a JSON array of them
 //               --env NAME=VALUE        exported before it starts, as often as needed;
 //                                       CLAUDE_CONFIG_DIR is the configuration it runs under
 //
@@ -120,14 +120,22 @@ const settings = {
 
 // --- the way: a launcher in claude's place, and the environment it starts in
 // Every launcher word travels as one quoted word, so what a quote, an expansion or a
-// control character would do to it in sh never applies — those are refused outright.
+// control character would do to it in sh never applies — those are refused outright. The
+// words come spaced, or as a JSON array where one of them holds a space.
 const WORD_OK = (w) => w !== '' && !/['"$`\\\u0000-\u001f\u007f]/.test(w);
 const way = { launcher: null, env: [], configDir: null };
 if (opts['--launcher'] !== undefined) {
-  const words = opts['--launcher'].trim().split(/\s+/).filter(Boolean);
+  const raw = opts['--launcher'].trim();
+  let words;
+  if (raw.startsWith('[')) {
+    try { words = JSON.parse(raw); } catch { words = null; }
+    if (!Array.isArray(words) || !words.every((w) => typeof w === 'string')) die('--launcher opening with `[` is a JSON array of words');
+  } else words = raw.split(/\s+/).filter(Boolean);
   if (!words.length) die('--launcher names no command');
   const bad = words.find((w) => !WORD_OK(w));
-  if (bad !== undefined) die(`--launcher word '${bad}' carries a quote, \`$\`, a backslash or a control character`);
+  if (bad !== undefined) die(`--launcher word '${text(bad)}' is empty, or carries a quote, \`$\`, a backslash or a control character`);
+  // `~/` is the user's home, which sh would not expand inside the quotes the word travels in.
+  if (words[0].startsWith('~/')) words[0] = join(os.homedir(), words[0].slice(2));
   way.launcher = words;
 }
 // A Map, never an object: a later `NAME=` replaces an earlier one, and `constructor` is a name.
@@ -136,8 +144,11 @@ for (const pair of opts['--env'] || []) {
   const m = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/s.exec(pair);
   if (!m) die(`--env '${text(pair)}' is not NAME=VALUE`);
   if (/[\u0000-\u001f\u007f]/.test(m[2])) die(`--env ${m[1]} carries a control character`);
+  if (m[1] === 't') die('--env t is the launch file\'s own variable, which carries the order');
   envs.set(m[1], m[2]);
 }
+// HOME moves where a configuration left unnamed stands, out of this script's sight.
+if (envs.has('HOME') && !envs.has('CLAUDE_CONFIG_DIR')) die('--env HOME moves the configuration the batch runs under: name that too, with --env CLAUDE_CONFIG_DIR');
 way.env = [...envs].map(([name, value]) => ({ name, value }));
 // CLAUDE_CONFIG_DIR is the configuration the batch runs under, which check, relaunch and
 // close read it back from; absolute, since the batch starts in another directory.
@@ -234,8 +245,11 @@ const LOAD_PER_CORE = 2.5;
     holds: cores ? avg5 > cores * LOAD_PER_CORE : null };
 }
 
-// --- the login shell, and what its PATH holds
+// --- the login shell, and what the PATH the batch starts with holds: the login shell's, or
+// the one the call exports in its place
 let login = null;
+let runPath = null;
+const pathName = envs.has('PATH') ? 'the PATH --env gives the batch' : 'the login shell\'s PATH';
 {
   const sh = loginShell();
   Object.assign(answer.shell, { path: sh.path, from: sh.from, account: sh.account });
@@ -244,12 +258,13 @@ let login = null;
   answer.shell.why = env.reason;
   if (env.read) {
     login = env.env;
-    answer.claude = onPath('claude', login.PATH);
+    runPath = envs.has('PATH') ? envs.get('PATH') : login.PATH;
+    answer.claude = onPath('claude', runPath);
   }
 }
 
-// --- the launcher: a path as given, a name where the login PATH finds it, and the
-// interpreter its `#!` line names
+// --- the launcher: a path as given, a name where that PATH finds it, and the interpreter
+// its `#!` line names
 if (answer.launcher) {
   const [head] = way.launcher;
   if (isAbsolute(head)) {
@@ -262,12 +277,12 @@ if (answer.launcher) {
   } else if (!login) {
     answer.launcher.why = answer.shell.why;
   } else {
-    answer.launcher.path = onPath(head, login.PATH);
-    if (!answer.launcher.path) answer.launcher.why = `the launcher ${head} is not on the login shell's PATH`;
+    answer.launcher.path = onPath(head, runPath);
+    if (!answer.launcher.path) answer.launcher.why = `the launcher ${head} is not on ${pathName}`;
   }
   if (answer.launcher.path) {
-    const starts = interpreterOn(answer.launcher.path, login && login.PATH);
-    if (starts.found === false) answer.launcher.why = `the launcher's interpreter, ${starts.name}, is not on the login shell's PATH`;
+    const starts = interpreterOn(answer.launcher.path, runPath);
+    if (starts.found === false) answer.launcher.why = `the launcher's interpreter, ${starts.name}, is not on ${pathName}`;
   }
 }
 
@@ -303,13 +318,14 @@ let agtermCli = null;
 }
 
 // --- the mode; it answers where nothing stands against it
-// What it needs: this session's own place in agterm, and claude on the login PATH — a
-// launcher starts claude from there too — and the launcher, where one is named.
-const claudeStarts = answer.claude ? interpreterOn(answer.claude, login && login.PATH) : null;
+// What it needs: this session's own place in agterm, and what starts the batch able to start
+// from the PATH it gets — the launcher where one is named, which reaches claude its own way;
+// claude otherwise.
+const claudeStarts = answer.claude ? interpreterOn(answer.claude, runPath) : null;
 const runnable = !answer.agterm.answers ? answer.agterm.why
-  : answer.claude === null ? (answer.shell.read ? 'claude is not on the login shell\'s PATH' : answer.shell.why)
-    : claudeStarts && claudeStarts.found === false ? `claude's interpreter, ${claudeStarts.name}, is not on the login shell's PATH`
-      : answer.launcher && answer.launcher.why ? answer.launcher.why : null;
+  : answer.launcher ? answer.launcher.why
+    : answer.claude === null ? (answer.shell.read ? `claude is not on ${pathName}` : answer.shell.why)
+      : claudeStarts && claudeStarts.found === false ? `claude's interpreter, ${claudeStarts.name}, is not on ${pathName}` : null;
 answer.modes = [{ mode: 'agterm', answers: runnable === null, why: runnable }];
 answer.mode = runnable === null ? 'agterm' : null;
 
@@ -353,7 +369,7 @@ function liveBatches() {
     if (who.occupied === true) live.push(basename(at));
     else if (who.occupied === null) why = who.why || `whether a session stands in ${basename(at)} did not read`;
   }
-  return { max, running: why ? null : live.length, live, why };
+  return { max, running: why ? null : live.length, live, configs: configDirs(), why };
 }
 
 // Whether one more session has room now; null where it has, the reason where not.
@@ -518,12 +534,6 @@ function transcripts(session, dirs) {
 const latest = (copies) => copies.reduce((a, c) => (a && a.mtimeMs >= c.mtimeMs ? a : c), null);
 const shown = (c) => ({ path: c.path, size: c.size, lastWrite: new Date(c.mtimeMs).toISOString() });
 
-// The configuration the batch runs under: the one the call names, this session's otherwise.
-function placement(out) {
-  out.configDir = answer.configDir;
-  return { configDir: answer.configDir };
-}
-
 // The trust this session's configuration gives the repository, carried into the one the
 // batch runs under where the call names another — by the file its claude will read: a
 // CLAUDE_CONFIG_DIR the launch exports is read as given, the default where none is set.
@@ -540,19 +550,20 @@ function trust(out, root, dryRun) {
 // text first after the command. A launch starts at the repository's root and has Claude
 // Code make the worktree (`--worktree`); a resume starts inside the worktree it had, which
 // Claude Code re-enters from there.
-function launchFile(dir, at, place, session, resume) {
+function launchFile(dir, at, session, resume) {
   const textFile = join(dir, resume ? 'nudge.md' : 'order.md');
   writeFileSync(textFile, call.text, { mode: 0o600 });
   const lines = ['#!/bin/sh', `# ${call.title.replace(/[^\x20-\x7e]/g, '?')} — written by batch-launch.mjs`, `cd ${q(at)} || exit 1`];
+  // The file removes its own directory once it has read the text, and nothing else removes
+  // it while the session starts: a launch file gone before the shell reached it starts nothing.
+  // Both before the call's variables, a PATH among them that would not find cat or rm.
+  lines.push(`t=$(cat ${q(textFile)}) || exit 1`, `rm -rf ${q(dir)}`);
   // The configuration it runs under, said rather than inherited from whatever agterm's own
   // environment carries: the one the call names, this session's otherwise.
-  lines.push(way.configDir || process.env.CLAUDE_CONFIG_DIR ? `CLAUDE_CONFIG_DIR=${q(place.configDir)}; export CLAUDE_CONFIG_DIR` : 'unset CLAUDE_CONFIG_DIR');
+  lines.push(way.configDir || process.env.CLAUDE_CONFIG_DIR ? `CLAUDE_CONFIG_DIR=${q(answer.configDir)}; export CLAUDE_CONFIG_DIR` : 'unset CLAUDE_CONFIG_DIR');
   for (const e of way.env) if (e.name !== 'CLAUDE_CONFIG_DIR') lines.push(`${e.name}=${q(e.value)}; export ${e.name}`);
   const tail = [...(resume ? ['--resume', q(session)] : ['--worktree', q(call.slug), '--session-id', q(session)]),
     '--model', q(settings.model.value), '--effort', q(settings.effort.value), '-n', q(call.title)].join(' ');
-  // The file removes its own directory once it has read the text, and nothing else removes
-  // it while the session starts: a launch file gone before the shell reached it starts nothing.
-  lines.push(`t=$(cat ${q(textFile)}) || exit 1`, `rm -rf ${q(dir)}`);
   const command = way.launcher ? [answer.launcher.path, ...way.launcher.slice(1)] : [answer.claude];
   lines.push(`exec ${command.map(q).join(' ')} "$t" ${tail}`);
   const file = join(dir, 'launch.sh');
@@ -563,12 +574,12 @@ function launchFile(dir, at, place, session, resume) {
 // Opens the session beside this one and waits for its transcript to be written: a session
 // past every dialog that could hold it has written one, and a resumed one writes to the
 // transcript it had.
-function open(out, at, place, session, resume) {
+function open(out, at, session, resume) {
   let dir = null;
   let file;
   try {
     dir = mkdtempSync(join(os.tmpdir(), 'hcb-batch-'));
-    file = launchFile(dir, at, place, session, resume);
+    file = launchFile(dir, at, session, resume);
   } catch (e) {
     if (dir) { try { rmSync(dir, { recursive: true, force: true }); } catch { /* left */ } }
     out.reason = `the launch file could not be written (${e.code || e.message})`;
@@ -637,13 +648,17 @@ function open(out, at, place, session, resume) {
     if (i < call.wait) sleep(1000);
   }
   if (!existsSync(dir)) out.launchDir = null;
-  if (out.started !== true) out.reason = `no transcript written within ${call.wait} s — read the session's screen (agtermctl session text) for what holds it`;
+  if (out.started !== true) out.reason = `no transcript written within ${call.wait} s under ${dirs.join(', ')} — read the session's screen (agtermctl session text) for what holds it`;
 }
 
-// The way travels as the flags a relaunch passes again: the launcher as one string, each
-// variable as `NAME=VALUE`.
-const record = (out, wt) => ({ mode: call.mode, launcher: way.launcher ? way.launcher.join(' ') : null,
-  env: way.env.map((e) => `${e.name}=${e.value}`), configDir: out.configDir, session: out.session,
+// The way travels as the flags a relaunch passes again: the launcher's words, each variable
+// as `NAME=VALUE` — this session's configuration among them where the launch file exported
+// it, so a session standing under another reads the batch where it runs.
+const recordEnv = () => {
+  const list = way.env.map((e) => `${e.name}=${e.value}`);
+  return way.configDir || !process.env.CLAUDE_CONFIG_DIR ? list : [`CLAUDE_CONFIG_DIR=${answer.configDir}`, ...list];
+};
+const record = (out, wt) => ({ mode: call.mode, launcher: way.launcher, env: recordEnv(), configDir: out.configDir, session: out.session,
   agterm: out.agterm && out.agterm.session, window: out.agterm && out.agterm.window, worktree: wt,
   model: settings.model.value, effort: settings.effort.value, at: new Date().toISOString() });
 
@@ -696,13 +711,13 @@ async function launch() {
   const stands = standing();
   if (stands) { out.reason = stands; done(out); }
   if (runnable) { out.reason = `${call.mode} does not answer: ${runnable}`; done(out); }
-  const place = placement(out);
+  out.configDir = answer.configDir;
   if (!trust(out, root, out.dryRun)) done(out);
   out.session = randomUUID();
   if (out.dryRun) { out.read = true; done(out); }
   const still = standing() || full(out);
   if (still) { out.reason = still; done(out); }
-  open(out, root, place, out.session, false);
+  open(out, root, out.session, false);
   if (out.started === true) {
     // Where the session's claude stands, by the registry: a `WorktreeCreate` hook can put the
     // worktree elsewhere, where `check`, `relaunch` and `close` do not follow it.
@@ -715,7 +730,7 @@ async function launch() {
 }
 
 // What `inspect` fills in, before it has read anything.
-const inspected = () => ({ live: null, running: null, worktree: null, transcript: null, agterm: null,
+const inspected = () => ({ live: null, running: null, worktree: null, transcript: null, configs: null, agterm: null,
   relaunchable: false, leftover: false, reason: null });
 
 function inspect(out) {
@@ -728,7 +743,10 @@ function inspect(out) {
   out.live = who.occupied;
   if (who.why) out.notes.push(who.why);
   out.running = running(call.session);
-  const found = transcripts(call.session, configDirs());
+  // The configurations read, a batch under any other unseen: a transcript not found under
+  // them is not found there alone.
+  out.configs = configDirs();
+  const found = transcripts(call.session, out.configs);
   // Where a projects directory would not read, the latest copy may be the one it holds: the
   // transcript is unknown, found or not.
   const t = found.unread ? null : latest(found.copies);
@@ -792,12 +810,12 @@ async function relaunch() {
   out.check = seen;
   if (!wt || !seen.relaunchable) { out.reason = seen.reason || 'check does not find it relaunchable — something may still hold it, or a reading did not answer'; done(out); }
   if (runnable) { out.reason = `${call.mode} does not answer: ${runnable}`; done(out); }
-  const place = placement(out);
+  out.configDir = answer.configDir;
   // `claude --resume` looks only where its own configuration keeps its projects: one that
   // does not reach the copy the session wrote last would find no session, or a stale one.
   const found = transcripts(call.session, configDirs());
   const last = latest(found.copies);
-  if (!(last && last.via.has(place.configDir))) {
+  if (!(last && last.via.has(out.configDir))) {
     const who = way.configDir ? `the configuration ${way.configDir}` : 'this session\'s configuration';
     const holders = last ? configDirs().filter((d) => last.via.has(d)) : [];
     // A projects directory that did not read may be the one holding it: unknown, not unseen.
@@ -809,7 +827,7 @@ async function relaunch() {
   if (!trust(out, seen.root, false)) done(out);
   const late = full(out);
   if (late) { out.reason = late; done(out); }
-  open(out, wt, place, call.session, true);
+  open(out, wt, call.session, true);
   if (out.agterm) out.record = record(out, wt);
   out.read = true;
   done(out);

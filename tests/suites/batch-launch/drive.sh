@@ -21,7 +21,7 @@
 #   files         the envelope's `files`: each path under HOME written with its content, a
 #                 JSON value as JSON
 # SHELL is the stub login shell, and the envelope's `agterm` is the agtermctl stub's.
-# `@home` anywhere in the envelope is that HOME.
+# `@home` anywhere in the envelope, or in a CLAUDE_CONFIG_DIR the case sets, is that HOME.
 #
 # Words that are the driver's, put in the environment by the runner:
 #   PREWT=clean|dirty|host|host-commit|host-nested   the batch's worktree stands before the
@@ -162,6 +162,7 @@ fi
 # in the case's own.
 mkdir -p "$tmp/tmpdir" || exit 125
 export HOME="$home" SHELL="$here/stub/login-sh" TMPDIR="$tmp/tmpdir"
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR//@home/"$home"}"; fi
 if [ -n "$envelope" ]; then export STUB_ENVELOPE="$envelope"; fi
 args=()
 for word in "$@"; do

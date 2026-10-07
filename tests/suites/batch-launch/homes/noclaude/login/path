@@ -1,1 +1,1 @@
-@node:/usr/bin:/bin
+@root/tests/suites/batch-launch/bin/wrap:@node:/usr/bin:/bin

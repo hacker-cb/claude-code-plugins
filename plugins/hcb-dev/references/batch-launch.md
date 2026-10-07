@@ -24,12 +24,15 @@ swapped for another: it goes to the user.
 **A launcher and an environment**, alone or together, change how the terminal way starts
 `claude`: the user's word names them, or the instructions this session runs under do — a
 project's `CLAUDE.md`, the user's own rules. `--launcher '<command>'` runs in `claude`'s place,
-`claude`'s own arguments after it; `--env NAME=VALUE`, as often as needed, is exported before
-it starts. `CLAUDE_CONFIG_DIR` among them is the configuration the batch runs under — the one
-`check`, `relaunch` and `close` read it back from, and the one the repository's trust is
-carried into — so a launcher that picks a configuration of its own is handed that same
-directory. No secret travels as `--env`: the record lands in the ledger. A key or a token is
-the launcher's or the login shell's to supply.
+`claude`'s own arguments after it — its words spaced, or a JSON array where one holds a space;
+`--env NAME=VALUE`, as often as needed, is exported before it starts, and a `PATH` among them is
+the one the launcher or `claude` is looked for on. `CLAUDE_CONFIG_DIR` among them is the
+configuration the batch runs under — the one `check`, `relaunch` and `close` read it back from,
+and the one the repository's trust is carried into — so a launcher that picks a configuration of
+its own is handed that same directory, and a `HOME` comes with it. No secret travels as `--env`:
+the record lands in the ledger. A key or a token is the launcher's or the login shell's to
+supply. A record naming a `profile` rather than a launcher is the user's to translate into one
+before it relaunches.
 
 **Model and effort** are the settings' unless the user's word names others, and travel to
 every way that can carry them: the terminal way takes them as flags; for a chip, set them on
@@ -51,7 +54,7 @@ node "<plugin root>/scripts/batch-launch.mjs" probe <launch settings> [--launche
 | `env` / `configDir` | the variables the call names, by name, and the configuration the batch runs under |
 | `settings` | model, effort and `batchesMax`, each with `from`: the user's `word`, the saved `config`, or the manifest's `default` |
 | `load.holds` | the machine is busy enough that the next launch waits |
-| `batches` | `running` — the worktrees of this repository a live session stands in, a batch's or anyone's, under a configuration this session knows (its own, the default, the batch's), `live` naming them — against `max`, the `batches_max` setting; `running` is `null`, with `why`, where a registry did not read |
+| `batches` | `running` — the worktrees of this repository a live session stands in, a batch's or anyone's, under the `configs` read (this session's own, the default, the call's), `live` naming them — against `max`, the `batches_max` setting; `running` is `null`, with `why`, where a registry did not read. A batch under another configuration is not counted: where the epic's batches run under several, its ledger's rows in flight hold a launch as well |
 
 ## Pacing
 
@@ -81,7 +84,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 | `configDir` | the configuration the batch runs under |
 | `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts: the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` names it, and the user settles it before anything rests on the batch — and `null` where no live claude answered. The launch stops on what stands already — anything at the path, a link pointing nowhere included, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree: a batch launched before is checked and relaunched, never launched over — and on an `<epic>-<id>` that names no branch, or is longer than Claude Code takes for a worktree's name |
 | `trust` | where `--env CLAUDE_CONFIG_DIR` names another configuration, the trust this session's gives the repository, carried there: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
-| `record` | what goes into the batch's ledger row, whole |
+| `record` | what goes into the batch's ledger row, whole — its `env` carrying this session's `CLAUDE_CONFIG_DIR` where the launch exported it |
 
 ## While it runs, and after a restart
 
@@ -90,11 +93,12 @@ node "<plugin root>/scripts/batch-launch.mjs" check --batch <epic>/<id> --sessio
 ```
 
 `check` and `close` take the record's `--env` too, so they read the configuration the batch
-runs under. `live` is `true` while a session stands in the batch's worktree under any
-configuration here, `null` where a registry did not read; `running` is `true` where any process
-carries the session — resumed in another terminal or directory. `transcript.under` names the
-configurations that reach the session's transcript. `agterm.idle` is `true` for a bare shell
-agterm restored — its place kept, its claude gone: `close` it first, then check again — and `null` where agterm could not read what runs in the
+runs under; `configs` names the ones read, and every reading below holds for them alone.
+`live` is `true` while a session stands in the batch's worktree under any of them, `null` where
+a registry did not read; `running` is `true` where any process carries the session — resumed
+in another terminal or directory. `transcript.under` names the configurations that reach the
+session's transcript. `agterm.idle` is `true` for a bare shell agterm restored — its place
+kept, its claude gone: `close` it first, then check again — and `null` where agterm could not read what runs in the
 session, a pane held open after claude exited among it: closing that one is the user's.
 `relaunchable` is `true` only where every reading answered and nothing holds the batch.
 `leftover` is `true` where nothing holds the batch, no transcript stands, and its worktree is as
@@ -111,11 +115,11 @@ node "<plugin root>/scripts/batch-launch.mjs" relaunch --batch <epic>/<id> --ses
   < <the nudge's file>
 ```
 
-The way, the launcher, the environment, the model and the effort are the record's — the last two
-passed as `--model` and `--effort`, each `env` entry as its own `--env` — unless the user's word
-moves them; a `CLAUDE_CONFIG_DIR` among them is one of those `check`'s `transcript.under` names. A
-relaunch refused for a configuration that cannot see the transcript goes to the user with its
-`reason`.
+The way, the launcher, the environment, the model and the effort are the record's — the last
+two passed as `--model` and `--effort`, the `launcher` as its JSON array, each `env` entry as
+its own `--env` — unless the user's word moves them; a `CLAUDE_CONFIG_DIR` among them is one
+of those `check`'s `transcript.under` names. A relaunch refused for a configuration that cannot
+see the transcript goes to the user with its `reason`.
 
 The nudge, one paragraph in the epic's language: the batch's title in backticks, that its
 session was restored after a restart, the name of the master it reports to, and to go on
