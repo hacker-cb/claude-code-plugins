@@ -23,7 +23,7 @@ wave ledgers ([`../../references/wave-ledger.md`](../../references/wave-ledger.m
 [`../../references/session-comms.md`](../../references/session-comms.md), accepts their returns per
 [`../../references/order-return.md`](../../references/order-return.md), and its own tree stands on
 the base per [`references/master-tree.md`](references/master-tree.md).
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}' --batches-max '${user_config.batches_max}'`.
+**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Assuming the role
@@ -85,7 +85,7 @@ separate gate — and approval of the plan sends no gated wave out early, by eit
 out — `on-green` recommended first
 ([`../../references/slice-completion.md`](../../references/slice-completion.md)), since every gate
 guarding that merge has run by the time it is reached — and **the launch with it**: the way `probe`
-answers, its model, effort and profiles, and whether this session closes accepted batches' sessions,
+answers, its model, effort, launcher and environment, and whether this session closes accepted batches' sessions,
 recommended where it starts them. Both reach the ledger before anything goes out, the authority
 narrowed per batch where the plan fixes a landing order (*An authority narrows on the way down*).
 

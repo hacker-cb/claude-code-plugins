@@ -1,5 +1,5 @@
 {
-  "home": "both",
+  "home": "broken",
   "agterm": {
     "windows": [
       {
@@ -32,38 +32,6 @@
           ]
         }
       ]
-    }
-  },
-  "aimux": {
-    "config": {
-      "profiles": {
-        "main": {
-          "cli": "claude",
-          "path": "~/.claude",
-          "is_source": true
-        },
-        "p": {
-          "cli": "claude",
-          "path": "~/profiles/p"
-        }
-      }
-    },
-    "limits": {
-      "main": {
-        "status": null,
-        "error": "auth"
-      },
-      "p": {
-        "status": {
-          "fiveHourPct": 10,
-          "weeklyPct": 10
-        }
-      }
-    },
-    "auth": {
-      "main": {
-        "loggedIn": false
-      }
     }
   }
 }

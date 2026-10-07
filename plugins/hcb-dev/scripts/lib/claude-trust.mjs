@@ -18,8 +18,7 @@ import { real as resolved, sleep } from './launch-env.mjs';
 const real = (p) => resolved(p, p);
 
 // The global config file of a configuration: `$CLAUDE_CONFIG_DIR/.claude.json` where that
-// directory is set, `~/.claude.json` where it is not — aimux leaves it unset for its
-// source profile and sets it for every other one. A legacy `.config.json` in the
+// directory is set, `~/.claude.json` where it is not. A legacy `.config.json` in the
 // configuration's directory is the one Claude Code reads wherever it stands.
 export function configFile(configDir) {
   const legacy = join(configDir || join(homedir(), '.claude'), '.config.json');
@@ -67,14 +66,14 @@ export function mirrorTrust({ from, into, root, dryRun = false }) {
   let st;
   try { st = lstatSync(into); } catch (e) {
     answer.state = e.code === 'ENOENT' ? 'no-config' : 'unread';
-    answer.why = e.code === 'ENOENT' ? 'the profile has no configuration file yet — it has never been run' : e.code;
+    answer.why = e.code === 'ENOENT' ? 'the target configuration has no configuration file yet — nothing has run under it' : e.code;
     return answer;
   }
   // A link is somebody's arrangement for sharing the file; writing through it changes
   // whatever it points at.
-  if (st.isSymbolicLink()) { answer.state = 'linked'; answer.why = 'the profile\'s configuration file is a link'; return answer; }
+  if (st.isSymbolicLink()) { answer.state = 'linked'; answer.why = 'the target configuration\'s file is a link'; return answer; }
   const dst = readJson(into);
-  if (!dst.ok) { answer.state = 'unread'; answer.why = `the profile's configuration did not read (${dst.why})`; return answer; }
+  if (!dst.ok) { answer.state = 'unread'; answer.why = `the target configuration did not read (${dst.why})`; return answer; }
   if (trustedKey(dst.doc, root)) { answer.state = 'held'; return answer; }
   if (dryRun) { answer.state = 'would-write'; return answer; }
 
@@ -95,7 +94,7 @@ export function mirrorTrust({ from, into, root, dryRun = false }) {
   let tmp = null;
   try {
     const now = readJson(into);
-    if (!now.ok) { answer.state = 'unread'; answer.why = `the profile's configuration did not read under the lock (${now.why})`; return answer; }
+    if (!now.ok) { answer.state = 'unread'; answer.why = `the target configuration did not read under the lock (${now.why})`; return answer; }
     const doc = now.doc;
     if (!doc.projects || typeof doc.projects !== 'object' || Array.isArray(doc.projects)) doc.projects = {};
     const entry = doc.projects[answer.key];

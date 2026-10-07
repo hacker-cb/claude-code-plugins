@@ -25,7 +25,7 @@ tracker, no message to another session — and marks nothing answered, which wou
 report is [`../../references/report-format.md`](../../references/report-format.md)'s grammar, in
 the occasion [`../../references/report-blocks.md`](../../references/report-blocks.md) lists for a
 status. Read [`../../references/invariants.md`](../../references/invariants.md) first.
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --profiles '${user_config.batch_profiles}' --ceiling-5h '${user_config.batch_ceiling_5h}' --ceiling-7d '${user_config.batch_ceiling_7d}' --batches-max '${user_config.batches_max}'`.
+**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Which role, and which subject
@@ -98,8 +98,8 @@ than by matching its marker again, read whole, as prose
 ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)): from the epic's, its waves,
 its launch line and the expectations the user owes; from each wave's read, its batch rows, the merge
 queue and the gates. A master runs the `probe` of
-[`../../references/batch-launch.md`](../../references/batch-launch.md) too, without `--limits`, where
-that line records a terminal way: a `mode` other than it stands in `## The picture`. Which waves an epic has —
+[`../../references/batch-launch.md`](../../references/batch-launch.md) too, with the launcher and
+environment that line records, where it records a terminal way: a `mode` other than it stands in `## The picture`. Which waves an epic has —
 `LISTED` filled from the header and the block run again where the answer is not `complete` or has no
 hierarchy — and its progress across them and the work no wave took, are
 [`../../references/wave-issue.md`](../../references/wave-issue.md)'s. Each change request the queue names

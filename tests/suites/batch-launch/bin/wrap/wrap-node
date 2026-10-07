@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+// A launcher that is a node script, only ever probed where no node stands on the login PATH.
+process.stderr.write('stub wrap-node: unexpected invocation\n');
+process.exit(64);

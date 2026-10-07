@@ -23,16 +23,5 @@
       ],
       "example-id-0000000b": []
     }
-  },
-  "aimux": {
-    "config": {
-      "profiles": {
-        "main": {
-          "cli": "claude",
-          "path": "~/.claude",
-          "is_source": true
-        }
-      }
-    }
   }
 }

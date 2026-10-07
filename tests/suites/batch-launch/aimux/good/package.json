@@ -1,5 +1,0 @@
-{
-  "version": "0.0.0-fixture",
-  "bin": { "aimux": "dist/cli.mjs" },
-  "exports": { "./core": "./dist/core.mjs" }
-}

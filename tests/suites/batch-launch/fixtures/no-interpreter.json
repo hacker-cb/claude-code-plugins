@@ -33,16 +33,5 @@
         }
       ]
     }
-  },
-  "aimux": {
-    "config": {
-      "profiles": {
-        "main": {
-          "cli": "claude",
-          "path": "~/.claude",
-          "is_source": true
-        }
-      }
-    }
   }
 }

@@ -1,0 +1,10 @@
+#!/bin/sh
+# A launcher as a batch-launch call names one: the words before `--` are its own, handed to
+# the claude it starts in SUITE_WRAPPED for that one to record; the rest are claude's.
+set -u
+own=""
+while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do own="${own:+$own }$1"; shift; done
+if [ "$#" -eq 0 ]; then echo "stub wrap: no -- among its arguments" >&2; exit 64; fi
+shift
+SUITE_WRAPPED=$own; export SUITE_WRAPPED
+exec claude "$@"
