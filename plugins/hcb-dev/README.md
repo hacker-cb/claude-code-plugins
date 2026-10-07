@@ -329,8 +329,8 @@ the plan stages them.
   [`skills/wave-refresh/references/delta.md`](skills/wave-refresh/references/delta.md).
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   Sends each batch out the way this session can: started by the master itself
-  in a terminal session of its own beside it — in agterm, under an aimux profile
-  with room where aimux answers, at the configured model and effort, paced by
+  in a terminal session of its own beside it — in agterm, through a launcher and
+  with environment variables where you name them, at the configured model and effort, paced by
   load and opened by a canary (`references/batch-launch.md`) — as a chip where
   the host offers one, or as a pasteable fenced order. Title per
   `references/session-naming.md` (the launched
@@ -514,17 +514,16 @@ name stands for.
   start a batch session itself, and then starting it. `probe` reads what answers from the
   session, never what its environment variables claim: agterm, by finding this session in
   the tree of each of its windows; the user's login shell and the PATH it builds, which is
-  where a launched batch finds `claude` and `aimux`; aimux's own reading of its
-  subscriptions, through the `./core` entry it publishes, warming a profile whose login
-  expired and ranking the rest by room per batch already on them; and the machine's load.
-  `launch` carries the repository's trust into the profile the batch runs under — only ever
-  trust this session's configuration already gives — and opens an agterm session after this
+  where a launched batch finds `claude` and a launcher named in its place; and the machine's
+  load. `launch` exports the environment the call names and, where its `CLAUDE_CONFIG_DIR` is
+  another configuration, carries the repository's trust into it — only ever trust this
+  session's configuration already gives — and opens an agterm session after this
   one, unselected, starting claude at the repository's root with `--worktree`, so Claude Code
   makes the batch's worktree itself, with the order as its first prompt and a session id
-  chosen here. `check` says whether that session is alive and whether a subscription limit
-  stopped it, `relaunch` resumes one `check` found gone, and `close` ends one whose command
+  chosen here. `check` says whether that session is alive, `relaunch` resumes one `check`
+  found gone, and `close` ends one whose command
   line carries that session id and whose claude stands in the batch's worktree. The model, the effort and the
-  limits come from the plugin's settings, read unsaved as the manifest's defaults. **The
+  batch limit come from the plugin's settings, read unsaved as the manifest's defaults. **The
   fourth that acts.**
 
 They refuse rather than guess, and a refusal says which question could not be answered —
@@ -615,7 +614,7 @@ saying something else. Each file opens by saying what it owns.
   after any restart.
 - [`references/batch-launch.md`](references/batch-launch.md) — how a master session
   starts its batches: the way a batch goes out — a terminal session it starts itself, a
-  chip, a pasted order — the model, effort and subscription it runs at, pacing and the
+  chip, a pasted order — the model, effort, launcher and environment it runs with, pacing and the
   canary, and the commands that start, check, resume and close a batch's session. Read
   wherever a batch goes out, comes back after a restart, or ends.
 - [`references/wave-issue.md`](references/wave-issue.md) — a wave's issue: filed on the
@@ -692,7 +691,7 @@ request-mode completion on GitLab uses the mirrored `glab` fallback in
 
 ## Configuration
 
-Six settings shape how a master session starts its batches, set in `/config`
+Three settings shape how a master session starts its batches, set in `/config`
 or with `claude plugin configure hcb-dev@hacker-cb-plugins`; an update asks for
 none of them, and one left unset runs on its default:
 
@@ -700,9 +699,6 @@ none of them, and one left unset runs on its default:
 |---|---|---|
 | `batch_model` | `opus[1m]` | the model a batch session starts on |
 | `batch_effort` | `high` | its effort: `low`, `medium`, `high`, `xhigh` or `max` |
-| `batch_profiles` | every profile | the aimux profiles batches may run under, comma-separated |
-| `batch_ceiling_5h` | `80` | a profile at or above this share of its 5-hour window takes no new batch |
-| `batch_ceiling_7d` | `90` | the same for its weekly window |
 | `batches_max` | `4` | how many sessions run in one repository's worktrees at once, batches and any other; a launch past it waits |
 
 Your word in the conversation overrides any of them — for the epic, a wave or
@@ -810,7 +806,7 @@ Per skill, on top of those:
   while a decision stands at its coordinate on the forge whichever of them
   carries the pointer to it. A master that starts its batches itself runs inside
   agterm (`agtermctl` on the PATH its login shell builds, beside `claude` and
-  `node`); aimux, where installed there, spreads them across its profiles. The master additionally uses
+  `node`), and through whatever launcher you name in `claude`'s place. The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
   lives in one, and a repository without a tracker cannot hold the role at all.
   All sides need this plugin installed — the orders name `wave-worker` and

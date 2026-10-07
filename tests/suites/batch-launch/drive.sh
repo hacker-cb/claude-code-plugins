@@ -6,7 +6,6 @@
 # envelope's `home`>:
 #   login/path    the PATH the stub login shell exports (`@root` there is this repository,
 #                 `@node` a directory holding only the suite's node)
-#   aimux.json    the envelope's `aimux`, which the fake aimux package answers from
 #   repo/         where the envelope says `repo: true`: a git repository of one commit, the
 #                 directory the script runs in; `@pin` in an argument is its commit
 #   .claude/sessions/  where it says `registry: true`: a live-session registry, empty —
@@ -31,8 +30,10 @@
 #                       host-nested with another worktree inside it
 #   ORDER=<name>        orders/<name>.md is the script's stdin
 #   SHOW=<a,b>          after the answer, what the stubs kept: agterm-new, agterm-close,
-#                       launch-argv, worktrees, trust-<profile>, launch-dirs
-# A word's %20 is a space and %25 a % — a manifest splits its words on whitespace.
+#                       launch-argv, worktrees, trust-<directory under profiles/>, launch-dirs
+# A word's %20 is a space, %3D an `=` and %25 a % — a manifest splits its words on whitespace,
+# and the runner takes a word shaped NAME=value for the environment. `@home` in a word is
+# the case's HOME.
 #
 # The answer is printed compacted to one line, after whatever went to stderr, with HOME
 # written `@home`, the repository's commit `@pin`, the cases' fixed session id `@fixed-session`,
@@ -57,7 +58,6 @@ if [ -n "${STUB_ENVELOPE:-}" ]; then
   printf '%s\n' "${raw//@home/"$home"}" > "$envelope" || exit 125
   name=$(jq -r '.home // empty' "$envelope") || exit 125
   if [ -n "$name" ]; then cp -R "$here/homes/$name/." "$home/" || exit 125; fi
-  jq '.aimux // {}' "$envelope" > "$home/aimux.json" || exit 125
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     mkdir -p "$home/$(dirname "$f")" || exit 125
@@ -70,8 +70,8 @@ if [ -n "${STUB_ENVELOPE:-}" ]; then
 fi
 if [ -f "$home/login/path" ]; then
   # `@node`: a directory holding the suite's node and nothing else — what puts `node` on a
-  # login PATH for the fake aimux's shebang, without the real claude and aimux that sit
-  # beside node in an nvm or Homebrew directory.
+  # login PATH for a stub's shebang, without the real claude that sits beside node in an
+  # nvm or Homebrew directory.
   node_dir="$tmp/node"
   mkdir -p "$node_dir" && ln -s "$(command -v node)" "$node_dir/node" || exit 125
   path=$(cat "$home/login/path") || exit 125
@@ -165,7 +165,8 @@ export HOME="$home" SHELL="$here/stub/login-sh" TMPDIR="$tmp/tmpdir"
 if [ -n "$envelope" ]; then export STUB_ENVELOPE="$envelope"; fi
 args=()
 for word in "$@"; do
-  word=${word//%20/ }; word=${word//%25/%}
+  word=${word//%20/ }; word=${word//%3D/=}; word=${word//%25/%}
+  word=${word//@home/"$home"}
   args+=("${word//@pin/$pin}")
 done
 input=/dev/null

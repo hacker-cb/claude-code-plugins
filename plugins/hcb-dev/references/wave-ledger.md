@@ -76,7 +76,7 @@ whether deleting it changes what anyone does next.
    its own and that graph's digest (`hcb-dev:wave-refresh` owns both) and the ground it covered:
    what the next refresh takes its delta from, since an issue closes without a commit and a link
    moves without either; a lesser reading does not take the slot; the base commit the master has taken landings up to, read and moved as `hcb-dev:master-session` says; the epic's merge authority as the
-   user settled it ([`slice-completion.md`](slice-completion.md)); the launch as it was settled — the way batches go out and whose word set it, the profile, the model and effort with where each came from, each way and profile whose canary cleared, and whether this session closes finished batches; the plugin version this role last
+   user settled it ([`slice-completion.md`](slice-completion.md)); the launch as it was settled — the way batches go out and whose word set it, the launcher and environment and where each came from, the model and effort with where each came from, each way, launcher and environment whose canary cleared, and whether this session closes finished batches; the plugin version this role last
    reconciled against, which is what a later **plugin** refresh diffs from and not necessarily what
    the session is running — it starts as the running version and `hcb-dev:session-plugin-refresh`
    moves it; the session group (`epic-structure.md`); and when last updated.

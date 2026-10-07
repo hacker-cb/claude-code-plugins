@@ -36,35 +36,6 @@
       ]
     }
   },
-  "aimux": {
-    "config": {
-      "profiles": {
-        "main": {
-          "cli": "claude",
-          "path": "~/.claude",
-          "is_source": true
-        },
-        "p": {
-          "cli": "claude",
-          "path": "~/profiles/p"
-        }
-      }
-    },
-    "limits": {
-      "main": {
-        "status": {
-          "fiveHourPct": 50,
-          "weeklyPct": 50
-        }
-      },
-      "p": {
-        "status": {
-          "fiveHourPct": 10,
-          "weeklyPct": 10
-        }
-      }
-    }
-  },
   "files": {
     ".claude.json": {
       "projects": {
@@ -74,14 +45,6 @@
         }
       }
     },
-    "profiles/p/.claude.json": {
-      "hasCompletedOnboarding": true,
-      "projects": {
-        "/elsewhere": {
-          "hasTrustDialogAccepted": true
-        }
-      }
-    },
-    "profiles/p/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n"
+    ".claude/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n"
   }
 }

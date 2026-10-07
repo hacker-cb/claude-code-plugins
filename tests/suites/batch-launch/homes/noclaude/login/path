@@ -1,1 +1,1 @@
-@root/tests/suites/batch-launch/bin/aimux-good:@node:/usr/bin:/bin
+@node:/usr/bin:/bin
