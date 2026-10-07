@@ -1,7 +1,5 @@
 {
-  "home": "both",
-  "repo": true,
-  "registry": true,
+  "home": "broken",
   "agterm": {
     "windows": [
       {
@@ -29,32 +27,11 @@
           "sessions": [
             {
               "id": "example-id-00000001",
-              "cwd": "@home/repo"
+              "cwd": "/repo"
             }
           ]
         }
       ]
     }
-  },
-  "files": {
-    ".claude.json": {
-      "projects": {
-        "@home/repo": {
-          "hasTrustDialogAccepted": true,
-          "allowedTools": []
-        }
-      }
-    },
-    ".claude/projects/-repo/11111111-2222-4333-8444-555555555555.jsonl": "{\"type\":\"user\"}\n",
-    "own/.claude.json": {
-      "projects": {
-        "@home/repo": {
-          "hasTrustDialogAccepted": true
-        }
-      }
-    }
-  },
-  "dirs": [
-    "own/sessions"
-  ]
+  }
 }

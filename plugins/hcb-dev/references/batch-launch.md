@@ -26,10 +26,11 @@ swapped for another: it goes to the user.
 project's `CLAUDE.md`, the user's own rules. `--launcher '<command>'` runs in `claude`'s place,
 `claude`'s own arguments after it — its words spaced, or a JSON array where one holds a space;
 `--env NAME=VALUE`, as often as needed, is exported before it starts, and a `PATH` among them is
-the one the launcher or `claude` is looked for on. `CLAUDE_CONFIG_DIR` among them is the
-configuration the batch runs under — the one `check`, `relaunch` and `close` read it back from,
-and the one the repository's trust is carried into — so a launcher that picks a configuration of
-its own is handed that same directory, and a `HOME` comes with it. No secret travels as `--env`:
+the one the launcher or `claude` is looked for on. `CLAUDE_CONFIG_DIR` among them, empty for
+the default with the variable unset, is the configuration the batch runs under — the one
+`check`, `relaunch` and `close` read it back from, and the one the repository's trust is
+carried into — so a launcher that picks a configuration of its own is handed that same
+directory, and a `HOME` comes with it. No secret travels as `--env`:
 the record lands in the ledger. A key or a token is the launcher's or the login shell's to
 supply. A record naming a `profile` rather than a launcher is the user's to translate into one
 before it relaunches.
@@ -84,7 +85,7 @@ The order arrives on stdin, its first line carrying the batch's title in backtic
 | `configDir` | the configuration the batch runs under |
 | `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts: the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` names it, and the user settles it before anything rests on the batch — and `null` where no live claude answered. The launch stops on what stands already — anything at the path, a link pointing nowhere included, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree: a batch launched before is checked and relaunched, never launched over — and on an `<epic>-<id>` that names no branch, or is longer than Claude Code takes for a worktree's name |
 | `trust` | where `--env CLAUDE_CONFIG_DIR` names another configuration, the trust this session's gives the repository, carried there: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
-| `record` | what goes into the batch's ledger row, whole — its `env` carrying this session's `CLAUDE_CONFIG_DIR` where the launch exported it |
+| `record` | what goes into the batch's ledger row, whole — its `env` naming `CLAUDE_CONFIG_DIR` first, empty where the launch left it unset |
 
 ## While it runs, and after a restart
 

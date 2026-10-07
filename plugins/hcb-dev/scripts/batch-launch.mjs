@@ -123,7 +123,7 @@ const settings = {
 // control character would do to it in sh never applies — those are refused outright. The
 // words come spaced, or as a JSON array where one of them holds a space.
 const WORD_OK = (w) => w !== '' && !/['"$`\\\u0000-\u001f\u007f]/.test(w);
-const way = { launcher: null, env: [], configDir: null };
+const way = { launcher: null, env: [], configNamed: false, configDir: null };
 if (opts['--launcher'] !== undefined) {
   const raw = opts['--launcher'].trim();
   let words;
@@ -147,16 +147,19 @@ for (const pair of opts['--env'] || []) {
   if (m[1] === 't') die('--env t is the launch file\'s own variable, which carries the order');
   envs.set(m[1], m[2]);
 }
-// HOME moves where a configuration left unnamed stands, out of this script's sight.
-if (envs.has('HOME') && !envs.has('CLAUDE_CONFIG_DIR')) die('--env HOME moves the configuration the batch runs under: name that too, with --env CLAUDE_CONFIG_DIR');
 way.env = [...envs].map(([name, value]) => ({ name, value }));
 // CLAUDE_CONFIG_DIR is the configuration the batch runs under, which check, relaunch and
-// close read it back from; absolute, since the batch starts in another directory.
+// close read it back from: absolute, since the batch starts in another directory, or empty
+// for the default one with the variable unset — which Claude Code reads apart from that same
+// directory named, its global file standing elsewhere.
 if (envs.has('CLAUDE_CONFIG_DIR')) {
   const d = envs.get('CLAUDE_CONFIG_DIR');
-  if (!isAbsolute(d)) die(`--env CLAUDE_CONFIG_DIR '${text(d)}' is not an absolute path`);
-  way.configDir = resolve(d);
+  if (d !== '' && !isAbsolute(d)) die(`--env CLAUDE_CONFIG_DIR '${text(d)}' is not an absolute path, nor empty for the default`);
+  way.configNamed = true;
+  way.configDir = d === '' ? null : resolve(d);
 }
+// HOME moves where a configuration left unnamed stands, out of this script's sight.
+if (envs.has('HOME') && !way.configDir) die('--env HOME moves the configuration the batch runs under: name that too, with --env CLAUDE_CONFIG_DIR');
 
 // --- what launch, check, relaunch and close are handed, checked before anything runs
 // No `-` inside either part: the worktree joins the two with one, and `a-b/c` would meet `a/b-c` there.
@@ -214,6 +217,8 @@ if (call.title && /[\u0000-\u001f\u007f]/.test(call.title)) die('the title carri
 // Absolute, since the batch starts in another directory than this session stands in.
 const ownDir = () => (process.env.CLAUDE_CONFIG_DIR ? resolve(process.env.CLAUDE_CONFIG_DIR) : join(os.homedir(), '.claude'));
 const defaultDir = () => join(os.homedir(), '.claude');
+// Whether the launch file exports CLAUDE_CONFIG_DIR, or leaves it unset for the default.
+const exportsConfig = way.configNamed ? way.configDir !== null : Boolean(process.env.CLAUDE_CONFIG_DIR);
 const answer = {
   read: false,
   mode: null,
@@ -224,7 +229,7 @@ const answer = {
   launcher: way.launcher ? { words: way.launcher, path: null, why: null } : null,
   // By name: the values travel once, in a launch's record, which a relaunch passes again.
   env: way.env.map((e) => e.name),
-  configDir: way.configDir || ownDir(),
+  configDir: way.configNamed ? way.configDir ?? defaultDir() : ownDir(),
   settings,
   load: null,
   reason: null,
@@ -321,11 +326,13 @@ let agtermCli = null;
 // What it needs: this session's own place in agterm, and what starts the batch able to start
 // from the PATH it gets — the launcher where one is named, which reaches claude its own way;
 // claude otherwise.
-const claudeStarts = answer.claude ? interpreterOn(answer.claude, runPath) : null;
+const claudeStarts = answer.claude && !answer.launcher ? interpreterOn(answer.claude, runPath) : null;
+// Every launch goes through the login shell, whatever starts after it.
 const runnable = !answer.agterm.answers ? answer.agterm.why
-  : answer.launcher ? answer.launcher.why
-    : answer.claude === null ? (answer.shell.read ? `claude is not on ${pathName}` : answer.shell.why)
-      : claudeStarts && claudeStarts.found === false ? `claude's interpreter, ${claudeStarts.name}, is not on ${pathName}` : null;
+  : !answer.shell.read ? answer.shell.why
+    : answer.launcher ? answer.launcher.why
+      : answer.claude === null ? `claude is not on ${pathName}`
+        : claudeStarts && claudeStarts.found === false ? `claude's interpreter, ${claudeStarts.name}, is not on ${pathName}` : null;
 answer.modes = [{ mode: 'agterm', answers: runnable === null, why: runnable }];
 answer.mode = runnable === null ? 'agterm' : null;
 
@@ -538,7 +545,7 @@ const shown = (c) => ({ path: c.path, size: c.size, lastWrite: new Date(c.mtimeM
 // batch runs under where the call names another — by the file its claude will read: a
 // CLAUDE_CONFIG_DIR the launch exports is read as given, the default where none is set.
 function trust(out, root, dryRun) {
-  if (!way.configDir) return true;
+  if (!way.configNamed) return true;
   out.trust = mirrorTrust({ from: configFile(process.env.CLAUDE_CONFIG_DIR ? ownDir() : null),
     into: configFile(way.configDir), root, dryRun });
   const ok = ['held', 'shared', 'would-write'].includes(out.trust.state) || (out.trust.state === 'wrote' && out.trust.wrote === true);
@@ -560,7 +567,7 @@ function launchFile(dir, at, session, resume) {
   lines.push(`t=$(cat ${q(textFile)}) || exit 1`, `rm -rf ${q(dir)}`);
   // The configuration it runs under, said rather than inherited from whatever agterm's own
   // environment carries: the one the call names, this session's otherwise.
-  lines.push(way.configDir || process.env.CLAUDE_CONFIG_DIR ? `CLAUDE_CONFIG_DIR=${q(answer.configDir)}; export CLAUDE_CONFIG_DIR` : 'unset CLAUDE_CONFIG_DIR');
+  lines.push(exportsConfig ? `CLAUDE_CONFIG_DIR=${q(answer.configDir)}; export CLAUDE_CONFIG_DIR` : 'unset CLAUDE_CONFIG_DIR');
   for (const e of way.env) if (e.name !== 'CLAUDE_CONFIG_DIR') lines.push(`${e.name}=${q(e.value)}; export ${e.name}`);
   const tail = [...(resume ? ['--resume', q(session)] : ['--worktree', q(call.slug), '--session-id', q(session)]),
     '--model', q(settings.model.value), '--effort', q(settings.effort.value), '-n', q(call.title)].join(' ');
@@ -652,12 +659,10 @@ function open(out, at, session, resume) {
 }
 
 // The way travels as the flags a relaunch passes again: the launcher's words, each variable
-// as `NAME=VALUE` — this session's configuration among them where the launch file exported
-// it, so a session standing under another reads the batch where it runs.
-const recordEnv = () => {
-  const list = way.env.map((e) => `${e.name}=${e.value}`);
-  return way.configDir || !process.env.CLAUDE_CONFIG_DIR ? list : [`CLAUDE_CONFIG_DIR=${answer.configDir}`, ...list];
-};
+// as `NAME=VALUE` — the configuration always first, empty where the launch file left it
+// unset, so a session standing under another resumes the batch where it ran.
+const recordEnv = () => [`CLAUDE_CONFIG_DIR=${exportsConfig ? answer.configDir : ''}`,
+  ...way.env.filter((e) => e.name !== 'CLAUDE_CONFIG_DIR').map((e) => `${e.name}=${e.value}`)];
 const record = (out, wt) => ({ mode: call.mode, launcher: way.launcher, env: recordEnv(), configDir: out.configDir, session: out.session,
   agterm: out.agterm && out.agterm.session, window: out.agterm && out.agterm.window, worktree: wt,
   model: settings.model.value, effort: settings.effort.value, at: new Date().toISOString() });
@@ -816,7 +821,7 @@ async function relaunch() {
   const found = transcripts(call.session, configDirs());
   const last = latest(found.copies);
   if (!(last && last.via.has(out.configDir))) {
-    const who = way.configDir ? `the configuration ${way.configDir}` : 'this session\'s configuration';
+    const who = way.configNamed ? `the configuration ${answer.configDir}` : 'this session\'s configuration';
     const holders = last ? configDirs().filter((d) => last.via.has(d)) : [];
     // A projects directory that did not read may be the one holding it: unknown, not unseen.
     out.reason = found.unread ? `whether ${who} reaches the session's transcript is unread: ${found.unread}`

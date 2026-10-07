@@ -8,7 +8,7 @@
 // a workspace id taken from a variable that had gone stale.
 
 import { spawnSync } from 'node:child_process';
-import { accessSync, constants, readFileSync, realpathSync, statSync } from 'node:fs';
+import { accessSync, closeSync, constants, openSync, readSync, realpathSync, statSync } from 'node:fs';
 import { userInfo } from 'node:os';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { runner, text, why } from './forge.mjs';
@@ -93,7 +93,13 @@ export function onPath(name, path) {
 // through `env`, looked for on the PATH it will run with; by path, that file.
 export function interpreterOn(bin, path) {
   let head = '';
-  try { head = readFileSync(real(bin, bin), 'utf8').slice(0, 200).split('\n')[0]; } catch { return { read: false, name: null, found: null }; }
+  // The first bytes alone: a native executable runs to hundreds of megabytes.
+  let fd = null;
+  try {
+    fd = openSync(real(bin, bin), 'r');
+    const buf = Buffer.alloc(200);
+    head = buf.toString('utf8', 0, readSync(fd, buf, 0, 200, 0)).split('\n')[0];
+  } catch { return { read: false, name: null, found: null }; } finally { if (fd !== null) closeSync(fd); }
   const env = /^#!\s*\S*\/env\s+(?:-S\s+)?([^\s]+)/.exec(head);
   if (env) return { read: true, name: env[1], found: onPath(env[1], path) !== null };
   const abs = /^#!\s*(\/[^\s]+)/.exec(head);
