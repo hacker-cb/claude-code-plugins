@@ -31,11 +31,12 @@
 #   ORDER=<name>        orders/<name>.md is the script's stdin
 #   PRETEXT=fixed|stale|stale-live|open  before the case, the batches' texts under HOME hold
 #                       an order for the fixed session id (fixed); that and an order 31 days
-#                       old (stale), its batch's transcript fresh (stale-live); or a nudge for
+#                       old (stale), its batch's transcript fresh under the configuration its
+#                       texts name (stale-live); or a nudge for
 #                       the fixed session, the directory open to others (open)
 #   SHOW=<a,b>          after the answer, what the stubs kept: agterm-new, agterm-close,
 #                       launch-argv, worktrees, trust-<directory under profiles/>, launch-dirs;
-#                       and the batches' texts: texts (how many files), batch-text (theirs)
+#                       and the batches' texts: texts (how many files), batch-text (the orders and nudges)
 # A word's %20 is a space, %3D an `=` and %25 a % — a manifest splits its words on whitespace,
 # and the runner takes a word shaped NAME=value for the environment. `@home` in a word is
 # the case's HOME.
@@ -172,15 +173,17 @@ case "${PRETEXT:-}" in
   '') ;;
   fixed) { mkdir -m 700 -p "$fixed" && chmod 700 "$texts" && echo 'an order' > "$fixed/order.md"; } || exit 125 ;;
   stale|stale-live)
+    # The old batch ran under a configuration of its own, which only its texts name.
+    old="$texts/22222222-2222-4333-8444-555555555555"
     if [ "$PRETEXT" = stale-live ]; then
-      { mkdir -p "$home/.claude/projects/-repo" \
-          && echo '{"type":"user"}' > "$home/.claude/projects/-repo/22222222-2222-4333-8444-555555555555.jsonl"; } || exit 125
+      { mkdir -p "$home/profiles/other/projects/-repo" \
+          && echo '{"type":"user"}' > "$home/profiles/other/projects/-repo/22222222-2222-4333-8444-555555555555.jsonl"; } || exit 125
     fi
-    { mkdir -m 700 -p "$fixed" "$texts/22222222-2222-4333-8444-555555555555" \
+    { mkdir -m 700 -p "$fixed" "$old" \
         && chmod 700 "$texts" && echo 'an order' > "$fixed/order.md" \
-        && echo 'an old order' > "$texts/22222222-2222-4333-8444-555555555555/order.md" \
+        && echo 'an old order' > "$old/order.md" && echo "$home/profiles/other" > "$old/config" \
         && node -e 'const t = Date.now() / 1000 - 31 * 86400; for (const p of process.argv.slice(1)) require("fs").utimesSync(p, t, t)' \
-             "$texts/22222222-2222-4333-8444-555555555555/order.md" "$texts/22222222-2222-4333-8444-555555555555"; } || exit 125 ;;
+             "$old/order.md" "$old/config" "$old"; } || exit 125 ;;
   open) { mkdir -p "$fixed" && chmod 777 "$texts" && echo 'a nudge' > "$fixed/nudge.md"; } || exit 125 ;;
   *) echo "drive: PRETEXT is fixed, stale, stale-live or open, not '$PRETEXT'" >&2; exit 125 ;;
 esac
@@ -217,7 +220,7 @@ for s in ${shows[@]+"${shows[@]}"}; do
     trust-*) printf '@%s: ' "$s"; jq -c '.' "$home/profiles/${s#trust-}/.claude.json" 2>/dev/null | mask; echo ;;
     launch-dirs) printf '@launch-dirs: '; ls -d "$TMPDIR"/hcb-batch-* 2>/dev/null | wc -l | tr -d ' '; echo ;;
     texts) printf '@texts: '; find "$texts" -type f 2>/dev/null | wc -l | tr -d ' '; echo ;;
-    batch-text) printf '@batch-text: '; find "$texts" -type f -exec cat {} + 2>/dev/null | tr '\n' ' ' | mask; echo ;;
+    batch-text) printf '@batch-text: '; find "$texts" -type f -name '*.md' -exec cat {} + 2>/dev/null | tr '\n' ' ' | mask; echo ;;
     *) echo "drive: SHOW names nothing called '$s'" >&2; exit 125 ;;
   esac
 done

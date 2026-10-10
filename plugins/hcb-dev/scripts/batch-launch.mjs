@@ -566,8 +566,9 @@ function textsRoot() {
   if ((st.mode & 0o077) !== 0) throw new Error(`${TEXTS} is open to others`);
 }
 // A batch's texts last as its transcript does; a launch clears the ones past that. A batch
-// still writing its transcript keeps its order however long ago it was launched, and one
-// whose transcript did not read whole keeps it too.
+// still writing its transcript keeps its order however long ago it was launched — looked for
+// under the configuration it runs under, which its texts name — and one whose transcript did
+// not read whole, or whose configuration they do not name, keeps it too.
 function pruneTexts() {
   const old = (ms) => Date.now() - ms > TEXT_DAYS * 86_400_000;
   for (const e of readdirSync(TEXTS, { withFileTypes: true })) {
@@ -576,7 +577,9 @@ function pruneTexts() {
     try {
       const times = [lstatSync(at).mtimeMs, ...readdirSync(at).map((n) => lstatSync(join(at, n)).mtimeMs)];
       if (!times.every(old)) continue;
-      const t = transcripts(e.name, configDirs());
+      const ran = readFileSync(join(at, 'config'), 'utf8').trim();
+      if (!isAbsolute(ran)) continue;
+      const t = transcripts(e.name, [...configDirs(), ran]);
       if (t.unread || t.copies.some((c) => !old(c.mtimeMs))) continue;
       rmSync(at, { recursive: true, force: true });
     } catch { /* left for a later launch */ }
@@ -604,6 +607,8 @@ function launchFile(dir, at, session, resume, wrote) {
   const textFile = join(texts, resume ? 'nudge.md' : 'order.md');
   writeFileSync(textFile, call.text, { mode: 0o600 });
   wrote.push(textFile);
+  // The configuration the batch runs under, for a later launch to find its transcript by.
+  writeFileSync(join(texts, 'config'), `${answer.configDir}\n`, { mode: 0o600 });
   const lines = ['#!/bin/sh', `# ${call.title.replace(/[^\x20-\x7e]/g, '?')} — written by batch-launch.mjs`, `cd ${q(at)} || exit 1`];
   // The file removes its own directory once it runs, and nothing else removes it while the
   // session starts: a launch file gone before the shell reached it starts nothing. Before
