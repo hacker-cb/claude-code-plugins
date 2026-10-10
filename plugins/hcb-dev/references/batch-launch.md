@@ -77,9 +77,10 @@ node "<plugin root>/scripts/batch-launch.mjs" launch --batch <epic>/<id> \
 ```
 
 The order arrives on stdin, its first line carrying the batch's title in backticks. The
-session gets it as a file of this user's alone, which its first prompt names and its
-`--add-dir` lets it read: no word of the order stands on its command line. A `--dry-run`
-answers everything the launch would do and writes nothing — the preview.
+session gets it as a file of this user's alone under `~/.claude/hcb-orders/`, which its first
+prompt names and its `--add-dir` lets it read: of the order, only the title stands on its
+command line. The file is kept as long as a transcript is, for a relaunch to send the session
+back to. A `--dry-run` answers everything the launch would do and writes nothing — the preview.
 
 | field | what it settles |
 |---|---|
@@ -145,6 +146,5 @@ carry the batch's session id, or whose claude stands anywhere but the batch's wo
 still registers; a bare shell standing anywhere but that worktree or, under a name carrying
 the batch's address, the repository's root; one whose running program agterm could not read;
 one waiting on the user; and one holding a second pane. For a chip, the session is archived instead, where
-the host offers `archive_session`. The transcript and the worktree stay; the order and the
-nudges go with the session. Without that word,
+the host offers `archive_session`. The transcript, the worktree and the order stay. Without that word,
 closing stays an ask in the report.

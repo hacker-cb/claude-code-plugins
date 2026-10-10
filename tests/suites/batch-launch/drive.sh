@@ -29,8 +29,9 @@
 #                       `--worktree` would cut, host-commit with a commit of its own there,
 #                       host-nested with another worktree inside it
 #   ORDER=<name>        orders/<name>.md is the script's stdin
-#   PRETEXT=fixed|open  before the case, the batches' texts directory under TMPDIR holds an
-#                       order for the fixed session id (fixed), or stands open to others (open)
+#   PRETEXT=fixed|stale|open  before the case, the batches' texts directory under HOME holds
+#                       an order for the fixed session id (fixed); that and an order 31 days
+#                       old (stale); or a nudge for it, the directory open to others (open)
 #   SHOW=<a,b>          after the answer, what the stubs kept: agterm-new, agterm-close,
 #                       launch-argv, worktrees, trust-<directory under profiles/>, launch-dirs;
 #                       and the batches' texts: texts (how many files), batch-text (theirs)
@@ -164,13 +165,19 @@ fi
 # The stubs read the envelope with HOME written in; the script's temporary directories land
 # in the case's own.
 mkdir -p "$tmp/tmpdir" || exit 125
-texts="$tmp/tmpdir/hcb-orders"
+texts="$home/.claude/hcb-orders"
+fixed="$texts/11111111-2222-4333-8444-555555555555"
 case "${PRETEXT:-}" in
   '') ;;
-  fixed) { mkdir -m 700 -p "$texts/11111111-2222-4333-8444-555555555555" \
-             && echo 'an order' > "$texts/11111111-2222-4333-8444-555555555555/order.md"; } || exit 125 ;;
-  open) { mkdir "$texts" && chmod 777 "$texts"; } || exit 125 ;;
-  *) echo "drive: PRETEXT is fixed or open, not '$PRETEXT'" >&2; exit 125 ;;
+  fixed) { mkdir -m 700 -p "$fixed" && chmod 700 "$texts" && echo 'an order' > "$fixed/order.md"; } || exit 125 ;;
+  stale)
+    { mkdir -m 700 -p "$fixed" "$texts/22222222-2222-4333-8444-555555555555" \
+        && chmod 700 "$texts" && echo 'an order' > "$fixed/order.md" \
+        && echo 'an old order' > "$texts/22222222-2222-4333-8444-555555555555/order.md" \
+        && node -e 'const t = Date.now() / 1000 - 31 * 86400; require("fs").utimesSync(process.argv[1], t, t)' \
+             "$texts/22222222-2222-4333-8444-555555555555"; } || exit 125 ;;
+  open) { mkdir -p "$fixed" && chmod 777 "$texts" && echo 'a nudge' > "$fixed/nudge.md"; } || exit 125 ;;
+  *) echo "drive: PRETEXT is fixed, stale or open, not '$PRETEXT'" >&2; exit 125 ;;
 esac
 export HOME="$home" SHELL="$here/stub/login-sh" TMPDIR="$tmp/tmpdir"
 if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR//@home/"$home"}"; fi

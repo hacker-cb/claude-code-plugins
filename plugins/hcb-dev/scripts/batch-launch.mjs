@@ -551,37 +551,58 @@ function trust(out, root, dryRun) {
 // Where a batch's text waits for it. The order, or a relaunch's nudge, reaches the session
 // as a file it reads, never on its command line: `ps` shows every process's arguments to
 // every user of the machine, and a `pkill -f` on a phrase the order quotes would end the
-// batch. One directory per session, under a parent of this user's alone; `close` removes it.
-const TEXTS = join(os.tmpdir(), 'hcb-orders');
+// batch. One directory per session, under the user's own Claude directory — pinned there,
+// since a relaunch from another session must find the order a restart did not take with it —
+// and kept as long as a transcript is.
+const TEXTS = join(os.homedir(), '.claude', 'hcb-orders');
+const TEXT_DAYS = 30;
 const textsOf = (session) => join(TEXTS, session);
 function textsRoot() {
+  mkdirSync(dirname(TEXTS), { recursive: true, mode: 0o700 });
   try { mkdirSync(TEXTS, { mode: 0o700 }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
   const st = lstatSync(TEXTS);
   if (st.isSymbolicLink() || !st.isDirectory()) throw new Error(`${TEXTS} is not a directory of its own`);
   if (typeof process.getuid === 'function' && st.uid !== process.getuid()) throw new Error(`${TEXTS} belongs to another user`);
   if ((st.mode & 0o077) !== 0) throw new Error(`${TEXTS} is open to others`);
 }
+// A batch's texts last as its transcript does; a launch clears the ones past that.
+function pruneTexts() {
+  for (const e of readdirSync(TEXTS, { withFileTypes: true })) {
+    if (!e.isDirectory() || !UUID.test(e.name)) continue;
+    const at = join(TEXTS, e.name);
+    try {
+      if (Date.now() - lstatSync(at).mtimeMs > TEXT_DAYS * 86_400_000) rmSync(at, { recursive: true, force: true });
+    } catch { /* left for a later launch */ }
+  }
+}
 // The first prompt: where the text is, and nothing of the text itself.
 const pointer = (file, resume) => (resume
-  ? `Your master session left you a message in the file ${file}: read it whole and act on it.`
-  : `Your order from your master session is the file ${file}: read it whole before anything else, and act on it as this session's first prompt.`);
+  ? `Your master session left you a message in the file \`${file}\`: read it whole and act on it.`
+  : `Your order from your master session is the file \`${file}\`: read it whole before anything else, and act on it as this session's first prompt.`);
 
 // The launch file: plain sh whatever the login shell is, every value one quoted word, the
 // prompt first after the command. A launch starts at the repository's root and has Claude
 // Code make the worktree (`--worktree`); a resume starts inside the worktree it had, which
 // Claude Code re-enters from there. The session reads its text from a directory it is
-// given (`--add-dir`), so the read asks nobody.
-function launchFile(dir, at, session, resume) {
+// given (`--add-dir`), so the read asks nobody. `wrote` collects what this call wrote of the
+// texts, for a launch that opens nothing to take back — never more than that.
+function launchFile(dir, at, session, resume, wrote) {
   textsRoot();
+  if (!resume) pruneTexts();
   const texts = textsOf(session);
-  try { mkdirSync(texts, { mode: 0o700 }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+  try {
+    mkdirSync(texts, { mode: 0o700 });
+    wrote.push(texts);
+  } catch (e) { if (e.code !== 'EEXIST') throw e; }
   const textFile = join(texts, resume ? 'nudge.md' : 'order.md');
   writeFileSync(textFile, call.text, { mode: 0o600 });
+  wrote.push(textFile);
   const lines = ['#!/bin/sh', `# ${call.title.replace(/[^\x20-\x7e]/g, '?')} — written by batch-launch.mjs`, `cd ${q(at)} || exit 1`];
   // The file removes its own directory once it runs, and nothing else removes it while the
   // session starts: a launch file gone before the shell reached it starts nothing. Before
-  // the call's variables, a PATH among them that would not find rm.
-  lines.push(`rm -rf ${q(dir)}`);
+  // the call's variables, a PATH among them that would not find rm. A text gone by then
+  // starts nothing either: a session pointed at no file would run with no order.
+  lines.push(`rm -rf ${q(dir)}`, `[ -r ${q(textFile)} ] || exit 1`);
   // The configuration it runs under, said rather than inherited from whatever agterm's own
   // environment carries: the one the call names, this session's otherwise.
   lines.push(exportsConfig ? `CLAUDE_CONFIG_DIR=${q(answer.configDir)}; export CLAUDE_CONFIG_DIR` : 'unset CLAUDE_CONFIG_DIR');
@@ -603,25 +624,24 @@ function launchFile(dir, at, session, resume) {
 function open(out, at, session, resume) {
   let dir = null;
   let file;
-  // A session that never opened reads nothing: its text goes — the whole directory of a
-  // launch, a resume's nudge alone.
-  const dropText = () => {
-    try { rmSync(resume ? join(textsOf(session), 'nudge.md') : textsOf(session), { recursive: true, force: true }); } catch { /* left */ }
+  const wrote = [];
+  // A session that never opened reads nothing: its launch file goes, and whatever this call
+  // wrote of its texts — the newest first, so a directory it made goes once emptied.
+  const abandon = (reason) => {
+    if (dir) { try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ } }
+    for (const p of wrote.reverse()) { try { rmSync(p, { recursive: true, force: true }); } catch { /* left */ } }
+    out.reason = reason;
   };
   try {
     dir = mkdtempSync(join(os.tmpdir(), 'hcb-batch-'));
-    file = launchFile(dir, at, session, resume);
+    file = launchFile(dir, at, session, resume, wrote);
   } catch (e) {
-    if (dir) { try { rmSync(dir, { recursive: true, force: true }); } catch { /* left */ } }
-    dropText();
-    out.reason = `the launch file could not be written (${e.code || e.message})`;
+    abandon(`the launch file could not be written (${e.code || e.message})`);
     return;
   }
   const shell = answer.shell.path;
   if (!commandSafe(shell) || !commandSafe(file)) {
-    try { rmSync(dir, { recursive: true, force: true }); } catch { /* left */ }
-    dropText();
-    out.reason = 'the login shell or the launch file sits on a path agterm\'s command line cannot carry';
+    abandon('the login shell or the launch file sits on a path agterm\'s command line cannot carry');
     return;
   }
   out.launchDir = dir;
@@ -654,9 +674,7 @@ function open(out, at, session, resume) {
     const titled = fresh.filter((e) => e.session.name === call.title);
     const hit = strong.length ? strong[0] : fresh.length === 1 ? fresh[0] : titled.length === 1 ? titled[0] : null;
     if (prior.read && look.read && !look.hits.length) {
-      try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ }
-      dropText();
-      out.reason = `agterm opened no session: ${made.why}`;
+      abandon(`agterm opened no session: ${made.why}`);
       return;
     }
     out.agterm = { session: hit ? hit.session.id : null, window: hit ? hit.window : null, wrote: null };
@@ -917,8 +935,6 @@ async function close() {
   if (!r.ok) { out.reason = `agterm did not close it: ${r.why}`; done(out); }
   const after = ag.find(call.agterm, f.window);
   out.closed = after.read ? !after.found : null;
-  // The batch's order and nudges go with it: nothing reads them once its session is closed.
-  if (out.closed) { try { rmSync(textsOf(call.session), { recursive: true, force: true }); } catch { /* left */ } }
   out.read = true;
   done(out);
 }
