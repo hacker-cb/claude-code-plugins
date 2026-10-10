@@ -46,8 +46,9 @@ than being dropped — a missing line reads as an omission.
 A pasteable prompt is emitted whole, inside a fenced block of plain text, never
 paraphrased into prose around it. What is addressed to this session instead of to
 the reader — what it now waits on, what it offers to do next — goes after the
-closing fence, and may name the prompt's tag. A chip or a launch carries the same text as the
-new session's first prompt; a message carries it as the message body, its first
+closing fence, and may name the prompt's tag. A chip carries the same text as the new
+session's first prompt, a launch as a file that first prompt names; a message carries it as
+the message body, its first
 line self-contained because the recipient's human previews only that line.
 
 A pasteable prompt's fence is three backticks; where the text inside carries a run

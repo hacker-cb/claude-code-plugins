@@ -1,7 +1,7 @@
 # The wave order — the text a batch session is started with
 
-Written by `hcb-dev:wave-dispatch`, one per batch, and carried as the first prompt of a
-session the master launched, as a chip's prompt, or as a fenced block the user pastes
+Written by `hcb-dev:wave-dispatch`, one per batch, and carried as a file the first prompt of a
+session the master launched names, as a chip's prompt, or as a fenced block the user pastes
 ([`../../../references/session-prompts.md`](../../../references/session-prompts.md)). The
 slots marked *by way* differ with the carrier; every other slot is the same in all three.
 

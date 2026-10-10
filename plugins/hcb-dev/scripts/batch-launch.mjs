@@ -7,7 +7,7 @@
 // those are the host's tools and the user's hands, and the agent knows its own tools.
 // `launch` starts one batch in its own agterm session, beside this one: claude started at
 // the repository's root with `--worktree`, so Claude Code makes the batch's worktree itself,
-// the order as the session's first prompt, a session id chosen here — through a launcher
+// the order in a file its first prompt names, a session id chosen here — through a launcher
 // and with environment variables where the call names them.
 // `check` says whether that session is alive; `relaunch` resumes one `check` found gone;
 // `close` ends one whose work was accepted.
@@ -29,7 +29,7 @@
 // Exit 0 whenever an answer is printed, `"read": false` with a `reason` included. Exit 2
 // only for a call this script cannot act on at all.
 
-import { accessSync, constants, existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -144,7 +144,6 @@ for (const pair of opts['--env'] || []) {
   const m = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/s.exec(pair);
   if (!m) die(`--env '${text(pair)}' is not NAME=VALUE`);
   if (/[\u0000-\u001f\u007f]/.test(m[2])) die(`--env ${m[1]} carries a control character`);
-  if (m[1] === 't') die('--env t is the launch file\'s own variable, which carries the order');
   envs.set(m[1], m[2]);
 }
 way.env = [...envs].map(([name, value]) => ({ name, value }));
@@ -186,10 +185,6 @@ if (sub === 'launch' || sub === 'relaunch') {
   let input = '';
   try { input = readFileSync(0, 'utf8'); } catch { input = ''; }
   if (input.trim() === '') die(`the ${sub === 'launch' ? 'order' : 'nudge'} comes on stdin, and none came`);
-  // First after `--`, where nothing reads it as a flag — but `claude` would.
-  if (input.startsWith('-')) die('the text on stdin starts with `-`, which claude would read as a flag');
-  // A lone lowercase word is what claude, or a launcher before it, reads as a subcommand.
-  if (/^\s*[a-z][a-z0-9-]*\s*$/.test(input)) die('the text on stdin is one bare word, which claude would read as a subcommand');
   call.text = input;
 }
 if (sub === 'launch') {
@@ -451,7 +446,7 @@ function occupancy(path, seen = owners()) {
 // handed. The arguments a process started with are what to match — the registry's own
 // `sessionId` moves to a new conversation's on `/clear`, while the process stays the batch's.
 const SESSION_FLAGS = ['--resume', '--session-id', '-r'];
-// Word by word, where the arguments come apart — agterm hands them so: an order's text
+// Word by word, where the arguments come apart — agterm hands them so: a prompt
 // that merely mentions the id is one word, and carries nothing. The same spellings `word`
 // matches in a `ps` line.
 const carriesArgv = (argv, session) => argv.some((w, i) => SESSION_FLAGS.some((f) => (w === f && argv[i + 1] === session)
@@ -553,26 +548,50 @@ function trust(out, root, dryRun) {
   return ok;
 }
 
+// Where a batch's text waits for it. The order, or a relaunch's nudge, reaches the session
+// as a file it reads, never on its command line: `ps` shows every process's arguments to
+// every user of the machine, and a `pkill -f` on a phrase the order quotes would end the
+// batch. One directory per session, under a parent of this user's alone; `close` removes it.
+const TEXTS = join(os.tmpdir(), 'hcb-orders');
+const textsOf = (session) => join(TEXTS, session);
+function textsRoot() {
+  try { mkdirSync(TEXTS, { mode: 0o700 }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+  const st = lstatSync(TEXTS);
+  if (st.isSymbolicLink() || !st.isDirectory()) throw new Error(`${TEXTS} is not a directory of its own`);
+  if (typeof process.getuid === 'function' && st.uid !== process.getuid()) throw new Error(`${TEXTS} belongs to another user`);
+  if ((st.mode & 0o077) !== 0) throw new Error(`${TEXTS} is open to others`);
+}
+// The first prompt: where the text is, and nothing of the text itself.
+const pointer = (file, resume) => (resume
+  ? `Your master session left you a message in the file ${file}: read it whole and act on it.`
+  : `Your order from your master session is the file ${file}: read it whole before anything else, and act on it as this session's first prompt.`);
+
 // The launch file: plain sh whatever the login shell is, every value one quoted word, the
-// text first after the command. A launch starts at the repository's root and has Claude
+// prompt first after the command. A launch starts at the repository's root and has Claude
 // Code make the worktree (`--worktree`); a resume starts inside the worktree it had, which
-// Claude Code re-enters from there.
+// Claude Code re-enters from there. The session reads its text from a directory it is
+// given (`--add-dir`), so the read asks nobody.
 function launchFile(dir, at, session, resume) {
-  const textFile = join(dir, resume ? 'nudge.md' : 'order.md');
+  textsRoot();
+  const texts = textsOf(session);
+  try { mkdirSync(texts, { mode: 0o700 }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+  const textFile = join(texts, resume ? 'nudge.md' : 'order.md');
   writeFileSync(textFile, call.text, { mode: 0o600 });
   const lines = ['#!/bin/sh', `# ${call.title.replace(/[^\x20-\x7e]/g, '?')} — written by batch-launch.mjs`, `cd ${q(at)} || exit 1`];
-  // The file removes its own directory once it has read the text, and nothing else removes
-  // it while the session starts: a launch file gone before the shell reached it starts nothing.
-  // Both before the call's variables, a PATH among them that would not find cat or rm.
-  lines.push(`t=$(cat ${q(textFile)}) || exit 1`, `rm -rf ${q(dir)}`);
+  // The file removes its own directory once it runs, and nothing else removes it while the
+  // session starts: a launch file gone before the shell reached it starts nothing. Before
+  // the call's variables, a PATH among them that would not find rm.
+  lines.push(`rm -rf ${q(dir)}`);
   // The configuration it runs under, said rather than inherited from whatever agterm's own
   // environment carries: the one the call names, this session's otherwise.
   lines.push(exportsConfig ? `CLAUDE_CONFIG_DIR=${q(answer.configDir)}; export CLAUDE_CONFIG_DIR` : 'unset CLAUDE_CONFIG_DIR');
   for (const e of way.env) if (e.name !== 'CLAUDE_CONFIG_DIR') lines.push(`${e.name}=${q(e.value)}; export ${e.name}`);
   const tail = [...(resume ? ['--resume', q(session)] : ['--worktree', q(call.slug), '--session-id', q(session)]),
-    '--model', q(settings.model.value), '--effort', q(settings.effort.value), '-n', q(call.title)].join(' ');
+    '--model', q(settings.model.value), '--effort', q(settings.effort.value), '-n', q(call.title),
+    // Last: it takes every word after it as one more directory.
+    '--add-dir', q(texts)].join(' ');
   const command = way.launcher ? [answer.launcher.path, ...way.launcher.slice(1)] : [answer.claude];
-  lines.push(`exec ${command.map(q).join(' ')} "$t" ${tail}`);
+  lines.push(`exec ${command.map(q).join(' ')} ${q(pointer(textFile, resume))} ${tail}`);
   const file = join(dir, 'launch.sh');
   writeFileSync(file, `${lines.join('\n')}\n`, { mode: 0o700 });
   return file;
@@ -584,17 +603,24 @@ function launchFile(dir, at, session, resume) {
 function open(out, at, session, resume) {
   let dir = null;
   let file;
+  // A session that never opened reads nothing: its text goes — the whole directory of a
+  // launch, a resume's nudge alone.
+  const dropText = () => {
+    try { rmSync(resume ? join(textsOf(session), 'nudge.md') : textsOf(session), { recursive: true, force: true }); } catch { /* left */ }
+  };
   try {
     dir = mkdtempSync(join(os.tmpdir(), 'hcb-batch-'));
     file = launchFile(dir, at, session, resume);
   } catch (e) {
     if (dir) { try { rmSync(dir, { recursive: true, force: true }); } catch { /* left */ } }
+    dropText();
     out.reason = `the launch file could not be written (${e.code || e.message})`;
     return;
   }
   const shell = answer.shell.path;
   if (!commandSafe(shell) || !commandSafe(file)) {
     try { rmSync(dir, { recursive: true, force: true }); } catch { /* left */ }
+    dropText();
     out.reason = 'the login shell or the launch file sits on a path agterm\'s command line cannot carry';
     return;
   }
@@ -629,6 +655,7 @@ function open(out, at, session, resume) {
     const hit = strong.length ? strong[0] : fresh.length === 1 ? fresh[0] : titled.length === 1 ? titled[0] : null;
     if (prior.read && look.read && !look.hits.length) {
       try { rmSync(dir, { recursive: true, force: true }); out.launchDir = null; } catch { /* left */ }
+      dropText();
       out.reason = `agterm opened no session: ${made.why}`;
       return;
     }
@@ -850,8 +877,8 @@ async function close() {
   const f = ag.find(call.agterm, answer.agterm.window);
   if (!f.read) { out.reason = `where the session stands is unread: ${f.why}`; done(out); }
   if (!f.found) { out.reason = 'agterm\'s tree holds no such session'; out.read = true; done(out); }
-  // The arguments carry the order's text, and the name is whatever the session titled
-  // itself: both are matched here and never printed.
+  // The arguments carry whatever prompt the program started with, and the name is whatever
+  // the session titled itself: both are matched here and never printed.
   const { argv, name, ...seen } = f.session;
   out.seen = seen;
   // Closing somebody else's session is worse than leaving this one open. A bare shell —
@@ -890,6 +917,8 @@ async function close() {
   if (!r.ok) { out.reason = `agterm did not close it: ${r.why}`; done(out); }
   const after = ag.find(call.agterm, f.window);
   out.closed = after.read ? !after.found : null;
+  // The batch's order and nudges go with it: nothing reads them once its session is closed.
+  if (out.closed) { try { rmSync(textsOf(call.session), { recursive: true, force: true }); } catch { /* left */ } }
   out.read = true;
   done(out);
 }

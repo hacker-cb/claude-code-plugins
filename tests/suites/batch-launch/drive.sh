@@ -29,8 +29,11 @@
 #                       `--worktree` would cut, host-commit with a commit of its own there,
 #                       host-nested with another worktree inside it
 #   ORDER=<name>        orders/<name>.md is the script's stdin
+#   PRETEXT=fixed|open  before the case, the batches' texts directory under TMPDIR holds an
+#                       order for the fixed session id (fixed), or stands open to others (open)
 #   SHOW=<a,b>          after the answer, what the stubs kept: agterm-new, agterm-close,
-#                       launch-argv, worktrees, trust-<directory under profiles/>, launch-dirs
+#                       launch-argv, worktrees, trust-<directory under profiles/>, launch-dirs;
+#                       and the batches' texts: texts (how many files), batch-text (theirs)
 # A word's %20 is a space, %3D an `=` and %25 a % — a manifest splits its words on whitespace,
 # and the runner takes a word shaped NAME=value for the environment. `@home` in a word is
 # the case's HOME.
@@ -161,6 +164,14 @@ fi
 # The stubs read the envelope with HOME written in; the script's temporary directories land
 # in the case's own.
 mkdir -p "$tmp/tmpdir" || exit 125
+texts="$tmp/tmpdir/hcb-orders"
+case "${PRETEXT:-}" in
+  '') ;;
+  fixed) { mkdir -m 700 -p "$texts/11111111-2222-4333-8444-555555555555" \
+             && echo 'an order' > "$texts/11111111-2222-4333-8444-555555555555/order.md"; } || exit 125 ;;
+  open) { mkdir "$texts" && chmod 777 "$texts"; } || exit 125 ;;
+  *) echo "drive: PRETEXT is fixed or open, not '$PRETEXT'" >&2; exit 125 ;;
+esac
 export HOME="$home" SHELL="$here/stub/login-sh" TMPDIR="$tmp/tmpdir"
 if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR//@home/"$home"}"; fi
 if [ -n "$envelope" ]; then export STUB_ENVELOPE="$envelope"; fi
@@ -193,6 +204,8 @@ for s in ${shows[@]+"${shows[@]}"}; do
     worktrees) printf '@worktrees: '; git -C "$home/repo" worktree list --porcelain 2>/dev/null | tr '\n' ' ' | mask; echo ;;
     trust-*) printf '@%s: ' "$s"; jq -c '.' "$home/profiles/${s#trust-}/.claude.json" 2>/dev/null | mask; echo ;;
     launch-dirs) printf '@launch-dirs: '; ls -d "$TMPDIR"/hcb-batch-* 2>/dev/null | wc -l | tr -d ' '; echo ;;
+    texts) printf '@texts: '; find "$texts" -type f 2>/dev/null | wc -l | tr -d ' '; echo ;;
+    batch-text) printf '@batch-text: '; find "$texts" -type f -exec cat {} + 2>/dev/null | tr '\n' ' ' | mask; echo ;;
     *) echo "drive: SHOW names nothing called '$s'" >&2; exit 125 ;;
   esac
 done
