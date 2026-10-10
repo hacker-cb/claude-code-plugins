@@ -565,13 +565,20 @@ function textsRoot() {
   if (typeof process.getuid === 'function' && st.uid !== process.getuid()) throw new Error(`${TEXTS} belongs to another user`);
   if ((st.mode & 0o077) !== 0) throw new Error(`${TEXTS} is open to others`);
 }
-// A batch's texts last as its transcript does; a launch clears the ones past that.
+// A batch's texts last as its transcript does; a launch clears the ones past that. A batch
+// still writing its transcript keeps its order however long ago it was launched, and one
+// whose transcript did not read whole keeps it too.
 function pruneTexts() {
+  const old = (ms) => Date.now() - ms > TEXT_DAYS * 86_400_000;
   for (const e of readdirSync(TEXTS, { withFileTypes: true })) {
     if (!e.isDirectory() || !UUID.test(e.name)) continue;
     const at = join(TEXTS, e.name);
     try {
-      if (Date.now() - lstatSync(at).mtimeMs > TEXT_DAYS * 86_400_000) rmSync(at, { recursive: true, force: true });
+      const times = [lstatSync(at).mtimeMs, ...readdirSync(at).map((n) => lstatSync(join(at, n)).mtimeMs)];
+      if (!times.every(old)) continue;
+      const t = transcripts(e.name, configDirs());
+      if (t.unread || t.copies.some((c) => !old(c.mtimeMs))) continue;
+      rmSync(at, { recursive: true, force: true });
     } catch { /* left for a later launch */ }
   }
 }
