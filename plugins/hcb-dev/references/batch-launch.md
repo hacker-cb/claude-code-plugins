@@ -76,8 +76,11 @@ node "<plugin root>/scripts/batch-launch.mjs" launch --batch <epic>/<id> \
   [--dry-run] < <the order's file>
 ```
 
-The order arrives on stdin, its first line carrying the batch's title in backticks. A
-`--dry-run` answers everything the launch would do and writes nothing — the preview.
+The order arrives on stdin, its first line carrying the batch's title in backticks. The
+session gets it as a file of this user's alone under `~/.claude/hcb-orders/`, which its first
+prompt names and its `--add-dir` lets it read: of the order, only the title stands on its
+command line. The file is kept as long as a transcript is, for a relaunch to send the session
+back to. A `--dry-run` answers everything the launch would do and writes nothing — the preview.
 
 | field | what it settles |
 |---|---|
@@ -125,7 +128,8 @@ see the transcript goes to the user with its `reason`.
 The nudge, one paragraph in the epic's language: the batch's title in backticks, that its
 session was restored after a restart, the name of the master it reports to, and to go on
 from where it stopped — reading its order, the ledgers and its own transcript before it
-acts. A resume is no change of way, so no canary.
+acts. It reaches the session as the order does, a file its first prompt names. A resume is
+no change of way, so no canary.
 
 ## Closing it
 
@@ -142,5 +146,5 @@ carry the batch's session id, or whose claude stands anywhere but the batch's wo
 still registers; a bare shell standing anywhere but that worktree or, under a name carrying
 the batch's address, the repository's root; one whose running program agterm could not read;
 one waiting on the user; and one holding a second pane. For a chip, the session is archived instead, where
-the host offers `archive_session`. The transcript and the worktree stay. Without that word,
+the host offers `archive_session`. The transcript, the worktree and the order stay. Without that word,
 closing stays an ask in the report.

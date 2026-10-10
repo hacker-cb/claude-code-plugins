@@ -519,8 +519,9 @@ name stands for.
   another configuration, carries the repository's trust into it — only ever trust this
   session's configuration already gives — and opens an agterm session after this
   one, unselected, starting claude at the repository's root with `--worktree`, so Claude Code
-  makes the batch's worktree itself, with the order as its first prompt and a session id
-  chosen here. `check` says whether that session is alive, `relaunch` resumes one `check`
+  makes the batch's worktree itself, with the order in a file of the user's alone under
+  `~/.claude/hcb-orders/` that its first prompt names — never on its command line, where `ps`
+  and `pkill -f` reach it — and a session id chosen here. `check` says whether that session is alive, `relaunch` resumes one `check`
   found gone, and `close` ends one whose command
   line carries that session id and whose claude stands in the batch's worktree. The model, the effort and the
   batch limit come from the plugin's settings, read unsaved as the manifest's defaults. **The
