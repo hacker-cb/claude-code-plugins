@@ -24,6 +24,8 @@
 #   @elsewhere             a step: every later step runs from another git checkout, one
 #                          of its own — as an agent started in its session's directory
 #                          runs beside the checkout the round was opened in
+#   @session <id>          a step: every later step runs in that Claude Code session, `-`
+#                          in none; a case starts in none, whatever session runs the suite
 #   @gone                  a step: the scratch repository is moved away, so the checkout
 #                          the round was opened in no longer stands
 #   @show <name>           a step: prints what a stub kept beside its marker as <name> —
@@ -42,6 +44,7 @@
 # `@head7` and `@base7`: a case cannot know either, and a snapshot is exactly what some of
 # them are about.
 set -u
+unset CLAUDE_CODE_SESSION_ID
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
 script="$root/plugins/hcb-dev/scripts/review-round.mjs"
@@ -119,6 +122,10 @@ for ((n = 0; n < count; n++)); do
   if [ "${words[0]}" = "@elsewhere" ]; then
     scratch
     mkdir "$tmp/other-checkout" && cd "$tmp/other-checkout" && export STUB_ELSEWHERE="$(pwd -P)" && git init -q || exit 125
+    continue
+  fi
+  if [ "${words[0]}" = "@session" ]; then
+    if [ "${words[1]:-}" = "-" ]; then unset CLAUDE_CODE_SESSION_ID; else export CLAUDE_CODE_SESSION_ID="${words[1]}"; fi
     continue
   fi
   if [ "${words[0]}" = "@gone" ]; then

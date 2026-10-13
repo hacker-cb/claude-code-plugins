@@ -79,6 +79,10 @@ says what was handed in:
 | it stopped on its turn limit | what it handed in stands; `status --state partial` |
 | it hit a model's limit | launch it again on another model the Agent tool's `model` offers; once that returns, `status --model <that model>` — never before, since the task must have answered; failing again: `status --state unavailable` |
 | the account's limit | `status --state unavailable`, the notice's words in the note |
+| still `pending` once `since_start_s` passes an hour | `status --state unavailable`, "no answer within an hour" in the note |
+
+`units` and `result` refuse while a task has neither handed in nor had its loss recorded, so
+every task leaves this step with one or the other.
 
 ```bash
 ROUND="<the round id from your prompt>"
