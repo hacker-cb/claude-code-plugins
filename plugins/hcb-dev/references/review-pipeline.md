@@ -51,9 +51,9 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    entry's to do: a rule admitting subagents only on a skill's ask is met by it.
 4. **Read the result** and report from it — *Reading the result* below. One that refuses — a
    conductor that stopped with candidates it never grouped, or tasks still running — the entry
-   finishes: `wait --for tasks --expect` the tasks named, again until they answer or
-   `since_start_s` passes an hour, `status --state unavailable` for each still pending, the stop
-   in the note; `merge`, each candidate no group holds grouped alone (`units`, or `units
+   finishes. Tasks a refusal names as running first: `wait --for tasks --expect` them, again
+   until they answer or `since_start_s` passes an hour, `status --state unavailable` for each
+   still pending, the stop in the note. Then `merge`, each candidate no group holds grouped alone (`units`, or `units
    --append` where a grouping exists), and `result` again. What was found reaches the report,
    checked no further, its source's row `partial` with that reason, whatever `coverage` says.
 
