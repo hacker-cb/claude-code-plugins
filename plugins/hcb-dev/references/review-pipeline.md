@@ -50,10 +50,12 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    limit is launched once more on another model, and resumes the round. Asking for it is the
    entry's to do: a rule admitting subagents only on a skill's ask is met by it.
 4. **Read the result** and report from it — *Reading the result* below. One that refuses — a
-   conductor that stopped with candidates it never grouped — is finished by the entry: `merge`,
-   each candidate no group holds grouped alone (`units`, or `units --append` where a grouping
-   exists), and `result` again. What was found reaches the report, checked no further, and its
-   source's row is reported `partial` with that reason, whatever `coverage` says.
+   conductor that stopped with candidates it never grouped, or with tasks still running — is
+   finished by the entry: `wait --for tasks`, then `status --state unavailable` for each task it
+   still lists, the conductor's stop in the note; `merge`, each candidate no group holds grouped
+   alone (`units`, or `units --append` where a grouping exists), and `result` again. What was
+   found reaches the report, checked no further, and its source's row is reported `partial` with
+   that reason, whatever `coverage` says.
 
 The conductor plans the round, starts Codex as a background process and one
 `hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups

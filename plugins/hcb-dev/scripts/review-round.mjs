@@ -220,7 +220,24 @@ function openRound() {
     cannot(`there is no round '${id}' under ${root} — pass the id init printed`);
   }
   checkRoot(root);
-  return { id, dir, req: readJson(path.join(dir, 'request.json')) };
+  const round = { id, dir, req: readJson(path.join(dir, 'request.json')) };
+  foreign(round);
+  return round;
+}
+
+// Every session's rounds share one store, so a round id copied from another project opens
+// as readily as one's own, and its steps would write into a round somebody else waits on.
+// A checkout holding the commit the round was opened on is the same repository, whichever
+// checkout it is; one without it is another project. Outside any checkout there is nothing
+// to tell by.
+function foreign(round) {
+  const here = gitIn(process.cwd());
+  const at = here(['rev-parse', '--show-toplevel']);
+  const top = at.ok ? real(at.out.trim()) : null;
+  const sha = round.req.head?.sha;
+  if (top === null || top === round.req.top || typeof sha !== 'string') return;
+  if (here(['rev-parse', '--verify', '-q', `${sha}^{commit}`]).ok) return;
+  cannot(`round ${round.id} reviews ${round.req.top}, another repository than ${top}, where this runs — pass the id your own init printed`);
 }
 
 // A round belongs to the checkout that opened it: its blobs and anchors describe that
@@ -1913,10 +1930,19 @@ function result() {
   if (ungrouped.length) {
     cannot(`round ${round.id} holds candidate(s) no group does (${ungrouped.join(', ')}) — they arrived while units ran; group again`);
   }
+  const p = planOf(round);
+  // A result closes the round to every later hand-in, so one built while a task still runs
+  // — a caller polling `result` beside the conductor — would turn that task's answer away.
+  // A task is done once it has a status: handed in, or its loss recorded.
+  const running = [...new Set([...plannedTasks(p).map((t) => t.task),
+    ...(existsSync(path.join(round.dir, 'started')) ? readdirSync(path.join(round.dir, 'started')).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)) : [])])]
+    .filter((t) => !existsSync(path.join(round.dir, 'sources', `${t}.status.json`)));
+  if (!existsSync(path.join(round.dir, 'result.json')) && running.length) {
+    cannot(`round ${round.id} has task(s) still running (${running.join(', ')}) — a result now would close the round to their answers; \`wait --for tasks\`, and record a task that will not answer with \`status --state unavailable\``);
+  }
   const q = existsSync(qf) ? readJson(qf) : null;
   const warnings = [...(req.warnings || [])];
 
-  const p = planOf(round);
   // Counts come from what each task handed in, states from its status: a loss recorded
   // beside a submission changes how covered the task is, not what it found.
   const answers = statuses(round.dir);

@@ -9,27 +9,6 @@
       "kind": "finder",
       "category": "correctness",
       "limit": 6
-    },
-    {
-      "task": "removed-behavior",
-      "source": "claude",
-      "kind": "finder",
-      "category": "correctness",
-      "limit": 6
-    },
-    {
-      "task": "call-tracing",
-      "source": "claude",
-      "kind": "finder",
-      "category": "correctness",
-      "limit": 6
-    },
-    {
-      "task": "altitude",
-      "source": "claude",
-      "kind": "finder",
-      "category": "altitude",
-      "limit": 6
     }
   ],
   "planned_at": "2100-01-01T00:00:00.000Z"

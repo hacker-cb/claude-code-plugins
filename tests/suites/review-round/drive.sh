@@ -21,9 +21,11 @@
 #   @empty                 a word: the empty string, which a manifest cannot write
 #   @lit:<text>            a word: <text> with %20 read as a space and %25 as %, for a
 #                          path a manifest's word splitting would cut
-#   @elsewhere             a step: every later step runs from another git checkout, one
-#                          of its own — as an agent started in its session's directory
-#                          runs beside the checkout the round was opened in
+#   @elsewhere             a step: every later step runs from another checkout of the same
+#                          repository, a worktree of its own — as an agent started in its
+#                          session's directory runs beside the checkout the round was opened in
+#   @foreign               a step: every later step runs from a checkout of another
+#                          repository, as a round id copied from another project is run
 #   @gone                  a step: the scratch repository is moved away, so the checkout
 #                          the round was opened in no longer stands
 #   @show <name>           a step: prints what a stub kept beside its marker as <name> —
@@ -118,7 +120,13 @@ for ((n = 0; n < count; n++)); do
   fi
   if [ "${words[0]}" = "@elsewhere" ]; then
     scratch
-    mkdir "$tmp/other-checkout" && cd "$tmp/other-checkout" && export STUB_ELSEWHERE="$(pwd -P)" && git init -q || exit 125
+    git -C "$repo" worktree add -q --detach "$tmp/other-checkout" && cd "$tmp/other-checkout" && export STUB_ELSEWHERE="$(pwd -P)" || exit 125
+    continue
+  fi
+  if [ "${words[0]}" = "@foreign" ]; then
+    scratch
+    mkdir "$tmp/other-project" && cd "$tmp/other-project" && export STUB_ELSEWHERE="$(pwd -P)" \
+      && git init -q && git -c user.name=x -c user.email=x@example.invalid commit -q --allow-empty -m other || exit 125
     continue
   fi
   if [ "${words[0]}" = "@gone" ]; then
