@@ -476,12 +476,9 @@ const startedOf = (dir, task) => {
 };
 // Grouping and the result each close the round to every later hand-in, so either taken while
 // a task still runs — a caller polling `result` beside the conductor — turns its answer away.
-// A task the plan launched or that stamped its start is done once it has a status: handed
-// in, or its loss recorded.
+// A task of the plan is done once it has a status: handed in, or its loss recorded.
 function stillRunning(round, what) {
-  const at = path.join(round.dir, 'started');
-  const begun = existsSync(at) ? readdirSync(at).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)) : [];
-  const running = [...new Set([...plannedTasks(planOf(round)).map((t) => t.task), ...begun])]
+  const running = plannedTasks(planOf(round)).map((t) => t.task)
     .filter((t) => !existsSync(path.join(round.dir, 'sources', `${t}.status.json`)));
   if (running.length) {
     cannot(`round ${round.id} has task(s) still running (${running.join(', ')}) — ${what} now would close the round to their answers; \`wait --for tasks\` until they answer, and record one that will not with \`status --state unavailable\``);
@@ -1894,6 +1891,12 @@ function wait() {
     if (!expected.length) expected = (plan?.tasks || []).map((t) => t.task);
     if (!expected.length) die('--for tasks needs --expect, the tasks launched, or a plan');
     for (const t of expected) if (!TASK_ID.test(t)) die(`--expect: '${t}' is not a task id`);
+    // A task a resumed round launched late counts from its own start, not the plan's: the
+    // latest start among those still out, so none is given up on before its time.
+    const starts = expected.filter((t) => !existsSync(path.join(round.dir, 'sources', `${t}.status.json`)))
+      .map((t) => startedOf(round.dir, t)).filter((t) => typeof t === 'string' && Number.isFinite(Date.parse(t)))
+      .sort((a, b) => Date.parse(a) - Date.parse(b));
+    if (starts.length) since = starts.at(-1);
   } else {
     const qf = path.join(round.dir, 'queue.json');
     if (!existsSync(qf)) cannot(`round ${round.id} has no queue yet — run queue first`);
