@@ -225,19 +225,18 @@ function openRound() {
   return round;
 }
 
-// Every session's rounds share one store, so a round id copied from another project opens
-// as readily as one's own, and its steps would write into a round somebody else waits on.
-// A checkout holding the commit the round was opened on is the same repository, whichever
-// checkout it is; one without it is another project. Outside any checkout there is nothing
-// to tell by.
+// Every session's rounds share one store, so a round id carried into another session opens
+// as readily as its own, and its steps would write into a round somebody else waits on.
+// Claude Code hands its session id to every tool process, its agents' and the background
+// Codex pass's included — the one mark a round's own steps share wherever they run. A side
+// without one, run outside Claude Code, has nothing to tell by.
+const SESSION_ID = /^[A-Za-z0-9_-]{1,128}$/;
+const sessionNow = () => (SESSION_ID.test(process.env.CLAUDE_CODE_SESSION_ID ?? '') ? process.env.CLAUDE_CODE_SESSION_ID : null);
 function foreign(round) {
-  const here = gitIn(process.cwd());
-  const at = here(['rev-parse', '--show-toplevel']);
-  const top = at.ok ? real(at.out.trim()) : null;
-  const sha = round.req.head?.sha;
-  if (top === null || top === round.req.top || typeof sha !== 'string') return;
-  if (here(['rev-parse', '--verify', '-q', `${sha}^{commit}`]).ok) return;
-  cannot(`round ${round.id} reviews ${round.req.top}, another repository than ${top}, where this runs — pass the id your own init printed`);
+  const owner = round.req.session;
+  const now = sessionNow();
+  if (typeof owner !== 'string' || now === null || owner === now) return;
+  cannot(`round ${round.id} was opened by another Claude Code session — pass the id your own init printed; a session cleared since it opened the round is another session too, and opens a new one`);
 }
 
 // A round belongs to the checkout that opened it: its blobs and anchors describe that
@@ -475,6 +474,19 @@ const callsOf = (q) => q?.calls ?? (q?.queue?.length ? [{ at: null, units: q.que
 const startedOf = (dir, task) => {
   try { return readJson(path.join(dir, 'started', `${task}.json`)).at ?? null; } catch { return null; }
 };
+// Grouping and the result each close the round to every later hand-in, so either taken while
+// a task still runs — a caller polling `result` beside the conductor — turns its answer away.
+// A task the plan launched or that stamped its start is done once it has a status: handed
+// in, or its loss recorded.
+function stillRunning(round, what) {
+  const at = path.join(round.dir, 'started');
+  const begun = existsSync(at) ? readdirSync(at).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)) : [];
+  const running = [...new Set([...plannedTasks(planOf(round)).map((t) => t.task), ...begun])]
+    .filter((t) => !existsSync(path.join(round.dir, 'sources', `${t}.status.json`)));
+  if (running.length) {
+    cannot(`round ${round.id} has task(s) still running (${running.join(', ')}) — ${what} now would close the round to their answers; \`wait --for tasks\` until they answer, and record one that will not with \`status --state unavailable\``);
+  }
+}
 
 // Which tree a side names. In a round, `head` is the working tree the diff was taken
 // from and `base` the merge base; in a pass there is one tree, the one the caller named.
@@ -803,7 +815,7 @@ function init() {
     mkdirSync(path.join(dir, 'sources'), { recursive: true, mode: 0o700 });
     writeFileSync(path.join(dir, 'change.diff'), diff.out);
     request = {
-      version: 1, round: id, mode, created_at: new Date().toISOString(), top: repo.top,
+      version: 1, round: id, mode, created_at: new Date().toISOString(), top: repo.top, session: sessionNow(),
       base: { ref: opts['--base'], merge_base: mergeBase }, head: { sha: headSha, dirty },
       snapshot, rung, sources, language, narrow, files, untracked: strays, warnings, notes,
       ...(codexModel || codexEffort ? { codex: { model: codexModel ?? null, effort: codexEffort ?? null } } : {}),
@@ -819,7 +831,7 @@ function init() {
     }
     mkdirSync(path.join(dir, 'sources'), { recursive: true, mode: 0o700 });
     request = {
-      version: 1, round: id, mode, created_at: new Date().toISOString(), top: repo.top,
+      version: 1, round: id, mode, created_at: new Date().toISOString(), top: repo.top, session: sessionNow(),
       tree, head: { sha: headSha, dirty }, snapshot: passSnapshot, language, warnings, notes,
     };
   }
@@ -1626,6 +1638,7 @@ function units() {
   const append = opts['--append'] === true;
   const uf = path.join(round.dir, 'units.json');
   if (append && !existsSync(uf)) cannot(`round ${round.id} has no groups to add to — run units without --append first`);
+  if (!existsSync(uf)) stillRunning(round, 'a grouping');
   const prior = append ? readJson(uf).units : [];
   const taken = new Set(prior.flatMap((u) => u.members));
   const value = submission(round, INBOX.units());
@@ -1919,6 +1932,9 @@ function result() {
   const { req } = round;
   const uf = path.join(round.dir, 'units.json');
   const qf = path.join(round.dir, 'queue.json');
+  // Asked before the store is read, so a task answering in between finds no result built
+  // from what came before it.
+  if (!existsSync(path.join(round.dir, 'result.json'))) stillRunning(round, 'a result');
   const { candidates, handed } = merged(round);
   // Candidates nobody grouped would leave an empty result that reads as a clean review.
   if (!existsSync(uf) && candidates.length) cannot(`round ${round.id} holds ${candidates.length} candidate(s) and no groups — run units first`);
@@ -1931,15 +1947,6 @@ function result() {
     cannot(`round ${round.id} holds candidate(s) no group does (${ungrouped.join(', ')}) — they arrived while units ran; group again`);
   }
   const p = planOf(round);
-  // A result closes the round to every later hand-in, so one built while a task still runs
-  // — a caller polling `result` beside the conductor — would turn that task's answer away.
-  // A task is done once it has a status: handed in, or its loss recorded.
-  const running = [...new Set([...plannedTasks(p).map((t) => t.task),
-    ...(existsSync(path.join(round.dir, 'started')) ? readdirSync(path.join(round.dir, 'started')).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)) : [])])]
-    .filter((t) => !existsSync(path.join(round.dir, 'sources', `${t}.status.json`)));
-  if (!existsSync(path.join(round.dir, 'result.json')) && running.length) {
-    cannot(`round ${round.id} has task(s) still running (${running.join(', ')}) — a result now would close the round to their answers; \`wait --for tasks\`, and record a task that will not answer with \`status --state unavailable\``);
-  }
   const q = existsSync(qf) ? readJson(qf) : null;
   const warnings = [...(req.warnings || [])];
 
