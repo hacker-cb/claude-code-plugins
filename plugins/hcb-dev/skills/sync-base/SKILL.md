@@ -22,6 +22,8 @@ reset. Read [`../../references/invariants.md`](../../references/invariants.md) f
 answer, the resolver's outcome and git's own exit are each read for what they say.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 A branch or base name reaches a command as data — read inside the block, or out of the answer
 step 3 keeps in the git directory — and never pasted into one: git allows `$`, quotes and
 backticks in a name, and pasted, any of them is shell.

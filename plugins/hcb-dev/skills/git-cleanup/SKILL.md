@@ -12,6 +12,8 @@ Branches and worktrees only. Untracked junk in the working tree is not this skil
 `.gitignore` is, and `seeding-gitignore` owns that.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## Step 1 — Ground truth
 
 ```bash

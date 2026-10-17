@@ -533,6 +533,12 @@ done < <(md_files)
 # Each check reads the RAW file rather than `prose()`: every violation this gate exists
 # for sits inside a fenced block, which `prose()` blanks.
 binding_line='**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.'
+# What reads a reference is the `Read` tool, and the skills say so because this file never
+# loads where the plugin runs. The plugin cache sits outside the workspace, and `sed` — the
+# stream *editor* auto mode reaches for to slice a file — is judged a write there, which
+# stops the run for the user's word, under a path pinned to the cached version: every
+# release asks again, in every project.
+reading_line='**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.'
 # One list, two patterns built from it: a name in only one of them is a name one check
 # stops and the other waves through.
 placeholder_names='CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_SKILL_DIR|CLAUDE_PROJECT_DIR|CLAUDE_SESSION_ID|CLAUDE_EFFORT'
@@ -645,7 +651,29 @@ while IFS= read -r skill; do
   elif [ "$bound" -gt 1 ]; then
     err "$(basename "$(dirname "$skill")"): the binding line stands $bound times — one is the contract"
   fi
+  # Every skill that reaches a reference says what reads it, whether or not that reference
+  # names the plugin root: the cost is the shell, not the slot.
+  rbound=$(grep -cxF "$reading_line" "$skill" 2>/dev/null || true)
+  [ -n "$rbound" ] || rbound=0
+  if [ -n "$refs" ] && [ "$rbound" -eq 0 ]; then
+    err "$(basename "$(dirname "$skill")"): reaches $(printf '%s' "$refs" | head -1) and does not say a reference is read with Read"
+  elif [ -z "$refs" ] && [ "$rbound" -gt 0 ]; then
+    err "$(basename "$(dirname "$skill")"): carries the reading line and reaches no reference"
+  elif [ "$rbound" -gt 1 ]; then
+    err "$(basename "$(dirname "$skill")"): the reading line stands $rbound times — one is the contract"
+  fi
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
+
+# The line instructs whoever loads a skill, and a skill is the only content that reads a
+# reference: an agent is never sent to one, and in a file read by path the line is one more
+# paragraph nobody acts on.
+while IFS= read -r md; do
+  [ -n "$md" ] || continue
+  case "$md" in plugins/*) ;; *) continue ;; esac
+  case "$md" in */skills/*/SKILL.md) continue ;; esac
+  grep -qxF "$reading_line" "$md" 2>/dev/null \
+    && err "$md: the reading line stands outside a SKILL.md — it instructs whoever loads a skill"
+done < <(md_files)
 
 # --- plugin settings in substituted content -----------------------------------
 # Claude Code substitutes `${user_config.KEY}` in a SKILL.md, an agent or a command file
@@ -710,7 +738,14 @@ done
 # where a measured fact goes INSTEAD of into a skill, so a ceiling on it would
 # lock the very layer the rest of this gate exists to feed. They grow by rows,
 # which a diff shows plainly.
-skill_ceiling=200
+#
+# The skill ceiling was 200 while a skill carried one contract line. The reading
+# line, and the blank before it, are two more every skill carries by contract
+# rather than by choice, so the number moved by exactly their cost — once, in one
+# place, for every file alike. A discount measured per file would be another:
+# a ceiling nobody could read off the constant, and one more patch here for every
+# contract line after this.
+skill_ceiling=202
 ref_ceiling=150
 while IFS= read -r f; do
   [ -n "$f" ] || continue
@@ -720,7 +755,7 @@ while IFS= read -r f; do
   # reports as a ceiling nobody crossed.
   [ -f "$f" ] || continue
   # `wc -l` counts NEWLINES, so a file whose final line is unterminated measures one short —
-  # a 201-line file passes a 200-line ceiling. `awk END{print NR}` counts records, which is
+  # a 203-line file passes the 202-line ceiling. `awk END{print NR}` counts records, which is
   # lines as anyone reading the file means them.
   n=$(awk 'END { print NR }' "$f")
   case "$f" in

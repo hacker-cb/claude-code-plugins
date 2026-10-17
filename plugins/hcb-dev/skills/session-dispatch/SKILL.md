@@ -24,6 +24,8 @@ skill fills them for the pasteable channel: the user carries the block, and the
 receiving session has nothing of its own in flight and no view of this one.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 Every order is work to execute — a build, or an investigation whose deliverable
 is recorded tracker state or a verdict. A question is answered here — by a
 subagent or a workflow — and never sent to another session, which costs a round

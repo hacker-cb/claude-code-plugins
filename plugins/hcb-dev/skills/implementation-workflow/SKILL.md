@@ -27,6 +27,8 @@ are identical either way. This skill elicits it once, at the gate, and threads i
 contract is [`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## Phase 0 — Analysis
 
 - **Intake, forge-neutrally.** A task is free text from the conversation, or an issue number, or a

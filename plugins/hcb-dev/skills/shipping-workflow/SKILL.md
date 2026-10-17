@@ -23,6 +23,8 @@ gate below, the fixes and the completion all turn on reading an answer for what
 it says.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 Finished work completes automatically. Do not ask for confirmation **about the steps below**;
 the coverage gate is the one exception in the shared front half, and local completion (step 7)
 adds its own, mode-specific: a stop before merging into the default branch, and the

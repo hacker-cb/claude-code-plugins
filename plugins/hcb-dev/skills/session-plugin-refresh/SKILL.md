@@ -20,6 +20,8 @@ current and settles what the difference costs. It works from any role: what
 changes with the role is where the version is pinned and who hears about it.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## The four versions
 
 ```bash
@@ -84,6 +86,9 @@ below covers.
 diff -ru <floor_root>/skills <read_root>/skills
 diff -ru <floor_root>/references <read_root>/references
 ```
+
+The diff is the comparison step: it says which files changed, and each one it
+names is then read below, with the Read tool, as the line above requires.
 
 `Only in <floor_root>` is its own finding: a file this session's memory points at
 that no longer exists under that name. With `floor=unknown` there is no diff, and

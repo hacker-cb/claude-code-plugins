@@ -21,6 +21,8 @@ The envelope every crossing prompt obeys is
 This skill fills it with what this session finished.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## Posture
 
 Whether an order preceded the work decides the first line and the closing steps.
@@ -145,8 +147,8 @@ Do this, in order:
 2. Read the changes yourself — start at <where>
 3. Re-read every issue and change request above in full, comments included —
    the issues in one call, per `${CLAUDE_PLUGIN_ROOT}/references/issue-currency.md`,
-   reading the plugin root it leaves as a slot as `${CLAUDE_PLUGIN_ROOT}` — the
-   discussion may have moved on, and what is there now outranks this. One
+   read with the Read tool, its plugin-root slot read as `${CLAUDE_PLUGIN_ROOT}` —
+   the discussion may have moved on, and what is there now outranks this. One
    marked deleted you confirm is still gone
 4. <answering an order — check the four answers above against what the order
    asked for>

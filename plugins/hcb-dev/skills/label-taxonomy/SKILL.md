@@ -24,6 +24,8 @@ when each label is written afterwards, [`../../references/label-lifecycle.md`](.
 Nothing is written to the forge before approval 2, and nothing the approvals did not name.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## The run's files
 
 One directory per run, under `$HOME/.claude/plans` written out literally, named

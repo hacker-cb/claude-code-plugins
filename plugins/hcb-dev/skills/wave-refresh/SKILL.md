@@ -26,6 +26,8 @@ what the user approves goes out through `hcb-dev:wave-dispatch`, and the role
 around it is `hcb-dev:master-session`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 **Differential by construction.** This pass reads a delta and the ground the
 running batches hold. What it needs to exist is a recorded point to diff from —
 the ladder below says which. A slice with none is surveyed rather than refreshed
