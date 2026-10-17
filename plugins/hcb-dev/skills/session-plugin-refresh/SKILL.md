@@ -87,6 +87,9 @@ diff -ru <floor_root>/skills <read_root>/skills
 diff -ru <floor_root>/references <read_root>/references
 ```
 
+These compare directories and read no reference's text, which is what the line
+above governs: every file the diff names is read below, with the Read tool.
+
 `Only in <floor_root>` is its own finding: a file this session's memory points at
 that no longer exists under that name. With `floor=unknown` there is no diff, and
 the reading below is what it always was — the report says the delta is missing

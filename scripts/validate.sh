@@ -664,8 +664,9 @@ while IFS= read -r skill; do
   fi
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
 
-# The line instructs the session that LOADS it, so it belongs in substituted content and
-# nowhere else: in a file read by path it is one more paragraph nobody acts on.
+# The line instructs whoever loads a skill, and a skill is the only content that reads a
+# reference: an agent is never sent to one, and in a file read by path the line is one more
+# paragraph nobody acts on.
 while IFS= read -r md; do
   [ -n "$md" ] || continue
   case "$md" in plugins/*) ;; *) continue ;; esac
@@ -737,7 +738,14 @@ done
 # where a measured fact goes INSTEAD of into a skill, so a ceiling on it would
 # lock the very layer the rest of this gate exists to feed. They grow by rows,
 # which a diff shows plainly.
-skill_ceiling=200
+#
+# The skill ceiling was 200 while a skill carried one contract line. The reading
+# line, and the blank before it, are two more every skill carries by contract
+# rather than by choice, so the number moved by exactly their cost — once, in one
+# place, for every file alike. A discount measured per file would be another:
+# a ceiling nobody could read off the constant, and one more patch here for every
+# contract line after this.
+skill_ceiling=202
 ref_ceiling=150
 while IFS= read -r f; do
   [ -n "$f" ] || continue
@@ -752,9 +760,6 @@ while IFS= read -r f; do
   n=$(awk 'END { print NR }' "$f")
   case "$f" in
     */SKILL.md)
-      # The reading line, and the blank before it, are two lines every skill carries by
-      # contract rather than by choice — so they do not spend its own budget.
-      grep -qxF "$reading_line" "$f" 2>/dev/null && n=$((n - 2))
       [ "$n" -le "$skill_ceiling" ] \
         || err "$f: $n lines, over the $skill_ceiling-line ceiling for a SKILL.md — move mechanics to a script, facts to references/forge-behaviour.md, or split by what a reader needs when" ;;
     */references/*.md)
