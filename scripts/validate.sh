@@ -533,6 +533,12 @@ done < <(md_files)
 # Each check reads the RAW file rather than `prose()`: every violation this gate exists
 # for sits inside a fenced block, which `prose()` blanks.
 binding_line='**Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.'
+# What reads a reference is the `Read` tool, and the skills say so because this file never
+# loads where the plugin runs. The plugin cache sits outside the workspace, and `sed` — the
+# stream *editor* auto mode reaches for to slice a file — is judged a write there, which
+# stops the run for the user's word, under a path pinned to the cached version: every
+# release asks again, in every project.
+reading_line='**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.'
 # One list, two patterns built from it: a name in only one of them is a name one check
 # stops and the other waves through.
 placeholder_names='CLAUDE_PLUGIN_ROOT|CLAUDE_PLUGIN_DATA|CLAUDE_SKILL_DIR|CLAUDE_PROJECT_DIR|CLAUDE_SESSION_ID|CLAUDE_EFFORT'
@@ -645,7 +651,28 @@ while IFS= read -r skill; do
   elif [ "$bound" -gt 1 ]; then
     err "$(basename "$(dirname "$skill")"): the binding line stands $bound times — one is the contract"
   fi
+  # Every skill that reaches a reference says what reads it, whether or not that reference
+  # names the plugin root: the cost is the shell, not the slot.
+  rbound=$(grep -cxF "$reading_line" "$skill" 2>/dev/null || true)
+  [ -n "$rbound" ] || rbound=0
+  if [ -n "$refs" ] && [ "$rbound" -eq 0 ]; then
+    err "$(basename "$(dirname "$skill")"): reaches $(printf '%s' "$refs" | head -1) and does not say a reference is read with Read"
+  elif [ -z "$refs" ] && [ "$rbound" -gt 0 ]; then
+    err "$(basename "$(dirname "$skill")"): carries the reading line and reaches no reference"
+  elif [ "$rbound" -gt 1 ]; then
+    err "$(basename "$(dirname "$skill")"): the reading line stands $rbound times — one is the contract"
+  fi
 done < <(find plugins -type f -path '*/skills/*/SKILL.md' 2>/dev/null | sort)
+
+# The line instructs the session that LOADS it, so it belongs in substituted content and
+# nowhere else: in a file read by path it is one more paragraph nobody acts on.
+while IFS= read -r md; do
+  [ -n "$md" ] || continue
+  case "$md" in plugins/*) ;; *) continue ;; esac
+  case "$md" in */skills/*/SKILL.md) continue ;; esac
+  grep -qxF "$reading_line" "$md" 2>/dev/null \
+    && err "$md: the reading line stands outside a SKILL.md — it instructs whoever loads a skill"
+done < <(md_files)
 
 # --- plugin settings in substituted content -----------------------------------
 # Claude Code substitutes `${user_config.KEY}` in a SKILL.md, an agent or a command file
@@ -725,6 +752,9 @@ while IFS= read -r f; do
   n=$(awk 'END { print NR }' "$f")
   case "$f" in
     */SKILL.md)
+      # The reading line, and the blank before it, are two lines every skill carries by
+      # contract rather than by choice — so they do not spend its own budget.
+      grep -qxF "$reading_line" "$f" 2>/dev/null && n=$((n - 2))
       [ "$n" -le "$skill_ceiling" ] \
         || err "$f: $n lines, over the $skill_ceiling-line ceiling for a SKILL.md — move mechanics to a script, facts to references/forge-behaviour.md, or split by what a reader needs when" ;;
     */references/*.md)

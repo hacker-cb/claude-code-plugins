@@ -26,6 +26,8 @@ PR, past the local review and its coverage gate. GitHub-specific by design; whic
 routes to is [`../../references/slice-completion.md`](../../references/slice-completion.md)'s.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## Autonomy model
 
 Autonomous, without asking: renaming the branch, rebasing onto base, pushing (with

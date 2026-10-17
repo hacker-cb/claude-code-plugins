@@ -31,6 +31,8 @@ needs*: the order is that ask). A project rule forbidding them outright still
 holds, and what it stops is named in the return as the gap it is.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## On arrival — before the named workflow starts
 
 1. **Be findable.** The title is the one the order's first line names — the batch

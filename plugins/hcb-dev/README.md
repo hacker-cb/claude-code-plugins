@@ -536,6 +536,10 @@ Guidance more than one skill needs is kept in one place rather than copied into
 each — copies drift, and a fix then lands in some of them while the rest go on
 saying something else. Each file opens by saying what it owns.
 
+Every skill that links one of these says once that it is read with the `Read` tool: they live in Claude
+Code's plugin cache, outside the workspace, where slicing one with `sed` is taken for a write and stops
+the run to ask the user.
+
 - [`references/invariants.md`](references/invariants.md) — how a signal is read,
   and what an authority permits. Fifteen rules that hold wherever a tool, a forge,
   a remote or another session answers: an empty result is not a negative one, an

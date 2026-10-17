@@ -15,6 +15,8 @@ description: >-
 
 # Dependency versions: resolve, never recall
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## How
 
 Use the package manager's "add" command and let it resolve `latest`. It writes

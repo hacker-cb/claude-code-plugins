@@ -22,6 +22,8 @@ description: >-
 
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## Scope, then scale
 
 Name the slice — a milestone, a label, everything open — and count it before

@@ -23,6 +23,8 @@ The backlog holds work you are **not** doing now. Detect the forge from the remo
 and what answers there, never from the hostname.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## What earns an issue
 
 - **Deferred work** — a defect, a follow-up, tech debt: consciously left for

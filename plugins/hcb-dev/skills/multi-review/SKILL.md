@@ -19,6 +19,8 @@ covered. Report-only: never fix what comes back, hand findings and coverage to t
 empty answer and every source that did not report is read by it.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## 1. Scope
 
 **Kind.** Default is the change itself; two variations come on request — narrowed (a path, or a

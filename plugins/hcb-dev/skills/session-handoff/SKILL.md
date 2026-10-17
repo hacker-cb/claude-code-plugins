@@ -21,6 +21,8 @@ The envelope every crossing prompt obeys is
 This skill fills it with what this session finished.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## Posture
 
 Whether an order preceded the work decides the first line and the closing steps.

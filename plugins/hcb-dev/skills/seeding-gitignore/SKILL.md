@@ -9,6 +9,8 @@ description: >-
 Two parts: a fixed baseline that every repo of this user carries, and
 language-specific patterns derived from the project itself.
 
+**References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
+
 ## Before a commit
 
 Look at what is about to be staged (`git status --short`). If it contains local
