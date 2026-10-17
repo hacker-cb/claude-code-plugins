@@ -755,7 +755,7 @@ while IFS= read -r f; do
   # reports as a ceiling nobody crossed.
   [ -f "$f" ] || continue
   # `wc -l` counts NEWLINES, so a file whose final line is unterminated measures one short —
-  # a 201-line file passes a 200-line ceiling. `awk END{print NR}` counts records, which is
+  # a 203-line file passes the 202-line ceiling. `awk END{print NR}` counts records, which is
   # lines as anyone reading the file means them.
   n=$(awk 'END { print NR }' "$f")
   case "$f" in

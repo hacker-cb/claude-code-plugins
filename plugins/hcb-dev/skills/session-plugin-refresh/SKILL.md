@@ -87,8 +87,8 @@ diff -ru <floor_root>/skills <read_root>/skills
 diff -ru <floor_root>/references <read_root>/references
 ```
 
-These compare directories and read no reference's text, which is what the line
-above governs: every file the diff names is read below, with the Read tool.
+The diff is the comparison step: it says which files changed, and each one it
+names is then read below, with the Read tool, as the line above requires.
 
 `Only in <floor_root>` is its own finding: a file this session's memory points at
 that no longer exists under that name. With `floor=unknown` there is no diff, and
