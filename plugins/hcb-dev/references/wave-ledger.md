@@ -76,7 +76,7 @@ whether deleting it changes what anyone does next.
    its own and that graph's digest (`hcb-dev:wave-refresh` owns both) and the ground it covered:
    what the next refresh takes its delta from, since an issue closes without a commit and a link
    moves without either; a lesser reading does not take the slot; the base commit the master has taken landings up to, read and moved as `hcb-dev:master-session` says; the epic's merge authority as the
-   user settled it ([`slice-completion.md`](slice-completion.md)); the launch as it was settled — the way batches go out and whose word set it, the launcher and environment and where each came from, the model and effort with where each came from, each way, launcher and environment whose canary cleared, and whether this session closes finished batches; the plugin version this role last
+   user settled it ([`slice-completion.md`](slice-completion.md)); the launch as it was settled — the way batches go out and whose word set it, any model, effort or profile the user named and what it covers, and whether accepted batches' sessions are archived or the user keeps them; the plugin version this role last
    reconciled against, which is what a later **plugin** refresh diffs from and not necessarily what
    the session is running — it starts as the running version and `hcb-dev:session-plugin-refresh`
    moves it; the session group (`epic-structure.md`); and when last updated.
@@ -106,7 +106,7 @@ whether deleting it changes what anyone does next.
    name, state, result coordinates. A batch runs `planned → chipped | launched → started → confirmed → building
    → completed(<mode> — request merged, merged locally, tracker state delivered, verdict delivered)
    → accepted`, standing at `blocked(<condition>)` for as long as something holds it; a state is
-   advanced, never skipped silently; `chipped` is a batch handed to the user to start, by chip or by paste, and such a row with no session is a start the user owes, never a session lost or a batch failed; a `launched` one is this session's to `check`, and a session closed after acceptance is a journal line. It **ends** in one of three, and the three carry equal weight:
+   advanced, never skipped silently; `chipped` is a batch handed to the user to start, by chip or by paste, and such a row with no session is a start the user owes, never a session lost or a batch failed; a `launched` one is this session's to read ([`batch-launch.md`](batch-launch.md)), and a session archived after acceptance is a journal line. It **ends** in one of three, and the three carry equal weight:
    - `released` — acceptance passed, the work landed, the batch was let go;
    - `withdrawn(<reason>)` — called off, from wherever it stood;
    - `failed(<what stands>)` — it did not come off, from wherever it stood; what stands is named.

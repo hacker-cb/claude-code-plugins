@@ -45,7 +45,7 @@ holds, and what it stops is named in the return as the gap it is.
    this session into that group — itself, never another.
 2. **Stand where the order says.** Verify this session is in a worktree of its
    own, not the shared main checkout — and where it is not, have Claude Code make
-   one for this session and stand in it, unless the order says Claude Code made it
+   one for this session and stand in it, unless the order says Helmhouse made it
    as this session started: then that one, and no other — before the first write;
    the order's `Start:` gate holds however this session was started.
 3. **Read the whole batch through before building any of it, and not before the
@@ -64,8 +64,10 @@ holds, and what it stops is named in the return as the gap it is.
    here, a premise that fell, a fork nobody foresaw; and what it runs at — its worktree, model,
    effort `${CLAUDE_EFFORT}`, session `${CLAUDE_SESSION_ID}`, the version
    `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` carries, and the directory
-   `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` expands to in its shell. Where the master's address had
-   to be guessed, open with the challenge line (`session-comms.md`). Building starts
+   `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` expands to in its shell — and under Helmhouse its id and
+   profile as `whoami` answers them. Where the order's `Master:` slot carries a Helmhouse id, a
+   `parentSessionId` other than it is said there, the parent `whoami` names being the one sent to.
+   Where the master's address had to be guessed, open with the challenge line (`session-comms.md`). Building starts
    once that report is **sent**, no answer awaited; only what a reported divergence
    touches waits for one.
 

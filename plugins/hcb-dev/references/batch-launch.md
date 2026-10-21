@@ -2,9 +2,12 @@
 
 Read by the session coordinating an epic, wherever a batch goes out, comes back after a
 restart, or ends. It owns the launch: the way a batch goes out, what it runs at and under,
-and the commands that start, check, resume and close it. What
-the order says differs by the way it went out, and that is
+and the calls that start, read, wake and archive it. What the order says differs by the way
+it went out, and that is
 [`../skills/wave-dispatch/references/wave-order.md`](../skills/wave-dispatch/references/wave-order.md)'s.
+How many batches run at once is not this plugin's to bound: Helmhouse bounds the sessions it
+starts, a chip or a pasted order starts when the user starts it, and a launch Helmhouse refuses goes
+to the user with its reason.
 
 ## The way a batch goes out
 
@@ -12,139 +15,92 @@ First that answers, in this order:
 
 | way | answers when | who starts it |
 |---|---|---|
-| `agterm` | `probe` says so: this session found in agterm's tree, `claude` — and the launcher, where one is named — able to start from the login shell | this session |
+| Helmhouse | this session holds `mcp__helmhouse__session_create` | this session |
 | chip | this session holds the host's chip tool | the user's click |
 | paste | always | the user, by hand |
 
-The user's word overrides the way, the launcher or the environment — for the epic, for one
-wave, or for one batch, the narrowest standing; each lands in the ledger it belongs to
-([`wave-ledger.md`](wave-ledger.md)). A way the word names that does not answer here is not
-swapped for another: it goes to the user.
+The user's word overrides the way — for the epic, for one wave, or for one batch, the narrowest
+standing; each lands in the ledger it belongs to ([`wave-ledger.md`](wave-ledger.md)). A way the
+word names that does not answer here is not swapped for another: it goes to the user.
 
-**A launcher and an environment**, alone or together, change how the terminal way starts
-`claude`: the user's word names them, or the instructions this session runs under do — a
-project's `CLAUDE.md`, the user's own rules. `--launcher '<command>'` runs in `claude`'s place,
-`claude`'s own arguments after it — its words spaced, or a JSON array where one holds a space;
-`--env NAME=VALUE`, as often as needed, is exported before it starts, and a `PATH` among them is
-the one the launcher or `claude` is looked for on. `CLAUDE_CONFIG_DIR` among them, empty for
-the default with the variable unset, is the configuration the batch runs under — the one
-`check`, `relaunch` and `close` read it back from, and the one the repository's trust is
-carried into — so a launcher that picks a configuration of its own is handed that same
-directory, and a `HOME` comes with it. No secret travels as `--env`:
-the record lands in the ledger. A key or a token is the launcher's or the login shell's to
-supply. A record naming a `profile` rather than a launcher is the user's to translate into one
-before it relaunches.
+**Model, effort and profile.** A batch Helmhouse starts runs on the model and effort this session
+runs on, under the profile `autoProfile` picks — the one with the most of its limits left among
+those this session may hand work to. The user's word names another model, effort or profile, for
+the epic, a wave or a batch, and it travels as `model`, `effort` or `profileId`. For a chip, a model
+or effort the word names is set on the batch's session once its start report names it, where the
+host offers `set_session_model` and `set_session_effort`. The start report says what the batch
+actually runs at either way — a profile that does not offer the model starts it on that profile's
+default — and a difference from the record goes to the user in a line.
 
-**Model and effort** are the settings' unless the user's word names others, and travel to
-every way that can carry them: the terminal way takes them as flags; for a chip, set them on
-the batch's session once its start report names it, where the host offers
-`set_session_model` and `set_session_effort`. The start report says what the batch actually
-runs at either way, and a difference goes to the user in a line.
+## Before a wave's first launch
 
-## Reading the ground
-
-```text
-node "<plugin root>/scripts/batch-launch.mjs" probe <launch settings> [--launcher '<command>'] [--env NAME=VALUE ...]
-```
+`whoami` and `profile_list`, both read-only — once before a wave's first launch, and again after a
+refusal:
 
 | field | what it settles |
 |---|---|
-| `mode` / `modes[]` | the terminal way where it answers, and its `why` where it does not |
-| `agterm` | this session's socket, window and workspace — found by its id, whatever window it moved to |
-| `shell` / `claude` / `launcher` | the login shell, where `claude` sits on the PATH it builds, and the launcher's `path` there or its `why` |
-| `env` / `configDir` | the variables the call names, by name, and the configuration the batch runs under |
-| `settings` | model, effort and `batchesMax`, each with `from`: the user's `word`, the saved `config`, or the manifest's `default` |
-| `load.holds` | the machine is busy enough that the next launch waits |
-| `batches` | `running` — the worktrees of this repository a live session stands in, a batch's or anyone's, under the `configs` read (this session's own, the default, the call's), `live` naming them — against `max`, the `batches_max` setting; `running` is `null`, with `why`, where a registry did not read. A batch under another configuration is not counted: where the epic's batches run under several, its ledger's rows in flight hold a launch as well |
+| `whoami.sessionId` | this session's Helmhouse id — what each order's `Master:` slot carries |
+| `whoami.limits`, `whoami.children` | the bounds the host puts on what this session starts, and how many of its children stand out of the archive now |
+| `profile_list.autoPick` | the profile a batch would start under now |
+| `profiles[].forChildren` | whether a batch may start under each profile here, and `why` not — `untrusted-folder` is the user's to give, by starting a session in this repository from Helmhouse under that profile |
 
-## Pacing
-
-Launches go one at a time: the next only once the one before it answered `started`, and
-none while `load.holds` or while `batches.running` stands at `batches.max` — `launch` and
-`relaunch` refuse then, and a chip hung or an order pasted waits for the same room. A batch is
-never launched twice at once. **The first launch after any change of way, launcher or
-environment is a canary**: launch one batch, wait for its start report, check it against the
-launch record — the title, the worktree, the model and effort, the configuration by its
-`configDir`, a model the record names by alias matching what it resolves to — and only then the
-rest. The ledger's header records which way, launcher and environment have cleared their canary.
+Both go into the launch report. Nothing read here holds a launch back.
 
 ## Launching
 
-```text
-node "<plugin root>/scripts/batch-launch.mjs" launch --batch <epic>/<id> \
-  --mode agterm <launch settings> [--launcher '<command>'] [--env NAME=VALUE ...] \
-  [--dry-run] < <the order's file>
-```
+`session_create`, one call per batch:
 
-The order arrives on stdin, its first line carrying the batch's title in backticks. The
-session gets it as a file of this user's alone under `~/.claude/hcb-orders/`, which its first
-prompt names and its `--add-dir` lets it read: of the order, only the title stands on its
-command line. The file is kept as long as a transcript is, for a relaunch to send the session
-back to. A `--dry-run` answers everything the launch would do and writes nothing — the preview.
-
-| field | what it settles |
+| field | value |
 |---|---|
-| `started` | `true` the session read its launch file and wrote its transcript; `false` nothing was opened — `reason` says what stopped it; `null` a session opened and wrote nothing yet — read its screen (`agtermctl session text --target <its id>`) for what holds it, and launch nothing more until it is settled; the launch file it has not read stays in `launchDir` |
-| `configDir` | the configuration the batch runs under |
-| `worktree` | the repository's `.claude/worktrees/<epic>-<id>`, which Claude Code makes as the session starts: the session starts at the repository's root and is handed `--worktree <epic>-<id>`. `confirmed` is `true` where the registry puts the session's claude there, `false` where it stands elsewhere — `reason` names it, and the user settles it before anything rests on the batch — and `null` where no live claude answered. The launch stops on what stands already — anything at the path, a link pointing nowhere included, a branch `worktree-<epic>-<id>`, a claude of this repository still making that worktree: a batch launched before is checked and relaunched, never launched over — and on an `<epic>-<id>` that names no branch, or is longer than Claude Code takes for a worktree's name |
-| `trust` | where `--env CLAUDE_CONFIG_DIR` names another configuration, the trust this session's gives the repository, carried there: `held`, `shared`, `wrote`; `absent-in-source` is the user's to give, under this session's own configuration — the one it is carried from |
-| `record` | what goes into the batch's ledger row, whole — its `env` naming `CLAUDE_CONFIG_DIR` first, empty where the launch left it unset |
+| `prompt` | the wave order, whole: it reaches the session as its first prompt |
+| `title` | the batch's title, the string in backticks on the order's first line |
+| `newBranch` | `<epic>-<id>` — Helmhouse makes the worktree on that branch, at `.claude/worktrees/<epic>-<id>` unless the project's settings or a path already taken put it elsewhere, cut from a base of its own rather than the wave's pin, which is why the order has the batch cut its own branch |
+| `autoProfile` | `true`, unless the user's word names a `profileId` |
+| `model`, `effort`, `profileId` | only where the user's word names them |
+
+A batch is never launched twice: one whose row already holds a launch record, or whose title
+`session_list` already shows, is read rather than launched, and a call cut off as interrupted is not
+made again before `session_list` says whether the batch's session stands. The call answers once the
+session runs, with `sessionId`, `profileId`, `cwd` and `title`; that answer — `cwd` being where the
+worktree stands, whatever path was expected — the model and effort the batch should run at and the
+moment, is its launch record, and goes into its row before anything else is sent — a start report
+arriving first waits for that write, the call's answer being already in hand. A refusal starts
+nothing and names its reason. A branch `<epic>-<id>` that already stands is a batch launched before,
+or what one left: read, never launched over. The bound on children out of the archive is met by
+archiving the accepted batches first (below). Any other refusal goes to the user as it came.
 
 ## While it runs, and after a restart
 
-```text
-node "<plugin root>/scripts/batch-launch.mjs" check --batch <epic>/<id> --session <uuid> [--agterm <id>] [--env NAME=VALUE ...]
-```
+`session_status` with the record's `sessionId` reads one batch — its `status`, whether it is
+`busy`, its `stopReason`, its `messagesWaiting`, and whether it is `archived`, its folder gone
+(`cwdGone`) or writable (`canWrite`); `session_list` reads every batch under this session at once.
+`session_wait` returns once a batch is idle, finished, waiting on an answer or failed — or once a
+message reaches this session, whichever comes first. A batch whose start report never arrives is
+read this way before anything is concluded about it.
 
-`check` and `close` take the record's `--env` too, so they read the configuration the batch
-runs under; `configs` names the ones read, and every reading below holds for them alone.
-`live` is `true` while a session stands in the batch's worktree under any of them, `null` where
-a registry did not read; `running` is `true` where any process carries the session — resumed
-in another terminal or directory. `transcript.under` names the configurations that reach the
-session's transcript. `agterm.idle` is `true` for a bare shell agterm restored — its place
-kept, its claude gone: `close` it first, then check again — and `null` where agterm could not read what runs in the
-session, a pane held open after claude exited among it: closing that one is the user's.
-`relaunchable` is `true` only where every reading answered and nothing holds the batch.
-`leftover` is `true` where nothing holds the batch, no transcript stands, and its worktree is as
-Claude Code made it — clean, on `worktree-<epic>-<id>`, no commit of its own: what a start that
-never reached its first prompt left. Removing that worktree and its branch is the user's, and
-then the batch launches again.
+Every message this session sends a batch carries `wake`, so one that stopped runs on it
+([`session-comms.md`](session-comms.md)). Helmhouse carries its sessions across its own restart, so
+a batch is never launched again for having been out of sight. One that stopped short of `accepted`
+runs again on a message sent that way: one paragraph in the epic's language, carrying the
+batch's title in backticks, that its session was restored, the name of the master it reports to,
+and to go on from where it stopped — reading the ledgers and its own transcript, its order among it,
+before it acts. One whose `cwdGone` is `true` cannot run until its folder is back, which goes to the
+user.
 
-A row from `launched` to `building`, or `blocked` from one of them, whose session is gone
-after a restart is resumed — on `relaunchable` alone, never on a session merely not seen:
+A launch record naming an agterm session rather than a Helmhouse `sessionId` came from a version of
+this plugin that started batches in agterm, and nothing here reads, wakes or archives it: the batch
+is reached through the live registry as a chip's is, a session of it that ended is the user's to
+resume in its worktree — or to have this session launch it again on their word, into that worktree
+(`worktree` in place of `newBranch`) — and closing it stays an ask. An epic's header that recorded no word on closing keeps its batches'
+sessions until the user gives one.
 
-```text
-node "<plugin root>/scripts/batch-launch.mjs" relaunch --batch <epic>/<id> --session <uuid> --agterm <id> \
-  --title "<its title>" --mode agterm <launch settings> [--launcher '<command>'] [--env NAME=VALUE ...] \
-  < <the nudge's file>
-```
+## Archiving it
 
-The way, the launcher, the environment, the model and the effort are the record's — the last
-two passed as `--model` and `--effort`, the `launcher` as its JSON array, each `env` entry as
-its own `--env` — unless the user's word moves them; a `CLAUDE_CONFIG_DIR` among them is one
-of those `check`'s `transcript.under` names. A relaunch refused for a configuration that cannot
-see the transcript goes to the user with its `reason`.
-
-The nudge, one paragraph in the epic's language: the batch's title in backticks, that its
-session was restored after a restart, the name of the master it reports to, and to go on
-from where it stopped — reading its order, the ledgers and its own transcript before it
-acts. It reaches the session as the order does, a file its first prompt names. A resume is
-no change of way, so no canary.
-
-## Closing it
-
-Where the user's word says this session closes finished batches (`wave-ledger.md`'s header),
-a batch's session is closed once its row reaches `accepted`, unless the user asked to keep
-it or it waits on the user:
-
-```text
-node "<plugin root>/scripts/batch-launch.mjs" close --batch <epic>/<id> --session <uuid> --agterm <id> [--env NAME=VALUE ...]
-```
-
-`closed` reads the tree again. It refuses a session running anything whose arguments do not
-carry the batch's session id, or whose claude stands anywhere but the batch's worktree — one git
-still registers; a bare shell standing anywhere but that worktree or, under a name carrying
-the batch's address, the repository's root; one whose running program agterm could not read;
-one waiting on the user; and one holding a second pane. For a chip, the session is archived instead, where
-the host offers `archive_session`. The transcript, the worktree and the order stay. Without that word,
-closing stays an ask in the report.
+A batch's session is archived once its row reaches `accepted`, unless the user asked to keep it or
+it waits on the user: `session_archive` with the record's `sessionId`. The call waits, up to
+`timeoutSeconds`, for nothing to run in that session's tree, and is refused while something still
+does; Helmhouse takes the worktree away only where nothing would be lost there, and the branch only
+where it was merged, and `session_unarchive` brings the session back whole. A refusal goes to the
+user with its reason, and the session stays. A chip's session is archived with the host's
+`archive_session`, where the host offers it; where it does not, archiving stays an ask in the
+report.

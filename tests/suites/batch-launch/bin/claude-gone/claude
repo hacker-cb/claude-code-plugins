@@ -1,3 +1,0 @@
-#!/nonexistent/interpreter/node
-# A claude whose interpreter was removed; a probe never runs it.
-exit 64

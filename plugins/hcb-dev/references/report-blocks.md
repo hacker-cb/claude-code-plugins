@@ -33,8 +33,8 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
   in the ask block as well.
 - **`Where it stands`, while an epic runs** — a row per batch: id, issues, state in the ledger's
   vocabulary ([`wave-ledger.md`](wave-ledger.md)), and what it waits on — nothing, its slot, the
-  reader's approval, the reader's click with the chip's age and the pin it stands on, a launch held
-  by load or a canary, another batch, or the condition holding it back: a blocker, a body to
+  reader's approval, the reader's click with the chip's age and the pin it stands on, a launch the host
+  refused, with its reason, another batch, or the condition holding it back: a blocker, a body to
   rewrite, a tracker write. The next wave is the last row, ⚪, waiting on the gate it opens on.
 - **`Where it stands`, once a run is done** — a row per slice: what it did, how it completed
   (merged locally into `<parent>`, or the change-request URL and whether it merged), what the

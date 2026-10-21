@@ -1,3 +1,0 @@
-#!/usr/bin/env node
-// A claude installed as a node script; a probe never runs it.
-process.exit(64);

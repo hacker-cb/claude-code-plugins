@@ -65,13 +65,13 @@ disagreement is itself a finding:
   ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — the
   file zone of each batch from `chipped` or `launched` until its landing is cleared against
   its checks, as the queue records, or until its end where it lands nothing;
-- **the live registry**
-  ([`../../references/session-comms.md`](../../references/session-comms.md)) — who
-  is running now, since a row outlives the session it describes;
+- **the live registry, and this session's Helmhouse tree** (`session_list`,
+  [`../../references/session-comms.md`](../../references/session-comms.md)) — who is running now,
+  since a row outlives the session it describes; a session whose batch any ledger's row records is
+  read through that row, a closed wave's included, and an archived one adds nothing;
 - **the files every open change request touches**, read per
-  [`references/delta.md`](references/delta.md) — what is actually being written,
-  which may reach past the zone an order drew, and which a request no batch row
-  claims holds just as much.
+  [`references/delta.md`](references/delta.md) — what is actually being written, which may reach
+  past the zone an order drew, and which a request no batch row claims holds just as much.
 
 Every disagreement goes to the user — a request reaching past its zone, a row
 past `chipped` or `launched` and short of `accepted` with no session, `blocked` after it
