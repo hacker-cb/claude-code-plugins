@@ -100,7 +100,7 @@ than by matching its marker again, read whole, as prose
 its launch line and the expectations the user owes; from each wave's read, its batch rows, the merge
 queue and the gates. A master reads its batches in Helmhouse too, where that line records it —
 `session_list`, and `session_status` for a launch record the list does not hold
-([`../../references/batch-launch.md`](../../references/batch-launch.md)): a batch short of `accepted`
+([`../../references/batch-launch.md`](../../references/batch-launch.md)): a batch still engaged
 that the tree does not show, or shows stopped or with its folder gone, stands in `## The picture`. Which waves an epic has —
 `LISTED` filled from the header and the block run again where the answer is not `complete` or has no
 hierarchy — and its progress across them and the work no wave took, are
