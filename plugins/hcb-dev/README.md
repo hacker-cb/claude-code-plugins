@@ -329,10 +329,10 @@ the plan stages them.
   [`skills/wave-refresh/references/delta.md`](skills/wave-refresh/references/delta.md).
 - **`wave-dispatch`** — `/hcb-dev:wave-dispatch`
   Sends each batch out the way this session can: started by the master itself
-  in a terminal session of its own beside it — in agterm, through a launcher and
-  with environment variables where you name them, at the configured model and effort, paced by
-  load and opened by a canary (`references/batch-launch.md`) — as a chip where
-  the host offers one, or as a pasteable fenced order. Title per
+  as a Helmhouse session under it — on the master's model and effort, under the
+  profile Helmhouse picks by the limits it has left, unless you name others
+  (`references/batch-launch.md`) — as a chip where the host offers one, or as a
+  pasteable fenced order. Title per
   `references/session-naming.md` (the launched
   session is asked to wear it; what later messages match on is what its start
   report says it answers to), the
@@ -510,22 +510,6 @@ name stands for.
   and `result` builds the answer no model writes. Addressed by a short round id, never by a
   path; the rules it serves are `references/verification.md` and `references/review-pipeline.md`.
 
-- [`scripts/batch-launch.mjs`](scripts/batch-launch.mjs) — whether a master session can
-  start a batch session itself, and then starting it. `probe` reads what answers from the
-  session, never what its environment variables claim: agterm, by finding this session in
-  the tree of each of its windows; the user's login shell and the PATH it builds, which is
-  where a launched batch finds `claude` and a launcher named in its place; and the machine's
-  load. `launch` exports the environment the call names and, where its `CLAUDE_CONFIG_DIR` is
-  another configuration, carries the repository's trust into it — only ever trust this
-  session's configuration already gives — and opens an agterm session after this
-  one, unselected, starting claude at the repository's root with `--worktree`, so Claude Code
-  makes the batch's worktree itself, with the order in a file of the user's alone under
-  `~/.claude/hcb-orders/` that its first prompt names — never on its command line, where `ps`
-  and `pkill -f` reach it — and a session id chosen here. `check` says whether that session is alive, `relaunch` resumes one `check`
-  found gone, and `close` ends one whose command
-  line carries that session id and whose claude stands in the batch's worktree. The model, the effort and the
-  batch limit come from the plugin's settings, read unsaved as the manifest's defaults. **The
-  fourth that acts.**
 
 They refuse rather than guess, and a refusal says which question could not be answered —
 never "nothing matched".
@@ -618,9 +602,9 @@ the run to ask the user.
   state: the epic's ledger and each wave's. Read on every event they record, and first
   after any restart.
 - [`references/batch-launch.md`](references/batch-launch.md) — how a master session
-  starts its batches: the way a batch goes out — a terminal session it starts itself, a
-  chip, a pasted order — the model, effort, launcher and environment it runs with, pacing and the
-  canary, and the commands that start, check, resume and close a batch's session. Read
+  starts its batches: the way a batch goes out — a Helmhouse session it starts itself, a
+  chip, a pasted order — the model, effort and profile it runs at, and the calls that
+  start, read, wake and archive a batch's session. Read
   wherever a batch goes out, comes back after a restart, or ends.
 - [`references/wave-issue.md`](references/wave-issue.md) — a wave's issue: filed on the
   word that approves its plan, the work hung under it, counted, closed. Read whenever a wave
@@ -696,25 +680,17 @@ request-mode completion on GitLab uses the mirrored `glab` fallback in
 
 ## Configuration
 
-Three settings shape how a master session starts its batches, set in `/config`
-or with `claude plugin configure hcb-dev@hacker-cb-plugins`; an update asks for
-none of them, and one left unset runs on its default:
-
-| setting | default | what it sets |
-|---|---|---|
-| `batch_model` | `opus[1m]` | the model a batch session starts on |
-| `batch_effort` | `high` | its effort: `low`, `medium`, `high`, `xhigh` or `max` |
-| `batches_max` | `4` | how many sessions run in one repository's worktrees at once, batches and any other; a launch past it waits |
-
-Your word in the conversation overrides any of them — for the epic, a wave or
-one batch.
+The plugin has no settings. A batch the master starts in Helmhouse runs on the
+master's own model and effort, under the profile Helmhouse picks by the limits it
+has left; your word in the conversation names others — for the epic, a wave or
+one batch. How many batches run at once is not the plugin's to bound: Helmhouse's
+own limits on the sessions it starts are.
 
 Inside one session Claude Code bounds subagents itself —
 `CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY` (10 by default) for how many run in
 parallel, `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20) for how many may stand at
-once ([environment variables](https://code.claude.com/docs/en/env-vars)) — and
-nothing bounds the sessions beside it: across them, `batches_max` is the bound.
-The plugin's own skills run four subagents at once at most
+once ([environment variables](https://code.claude.com/docs/en/env-vars)). The
+plugin's own skills run four subagents at once at most
 (`references/agent-concurrency.md`).
 
 ## Requirements
@@ -810,8 +786,8 @@ Per skill, on top of those:
   (fenced orders instead of chips, a line to the user instead of messages) —
   while a decision stands at its coordinate on the forge whichever of them
   carries the pointer to it. A master that starts its batches itself runs inside
-  agterm (`agtermctl` on the PATH its login shell builds, beside `claude` and
-  `node`), and through whatever launcher you name in `claude`'s place. The master additionally uses
+  Helmhouse, through its `helmhouse` MCP tools — `session_create`, `session_status`,
+  `session_send`, `session_archive`, `whoami`, `profile_list`. The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
   lives in one, and a repository without a tracker cannot hold the role at all.
   All sides need this plugin installed — the orders name `wave-worker` and

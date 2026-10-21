@@ -65,8 +65,8 @@ disagreement is itself a finding:
   ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)) — the
   file zone of each batch from `chipped` or `launched` until its landing is cleared against
   its checks, as the queue records, or until its end where it lands nothing;
-- **the live registry**
-  ([`../../references/session-comms.md`](../../references/session-comms.md)) — who
+- **the live registry, and this session's tree under Helmhouse** (`session_list`,
+  [`../../references/session-comms.md`](../../references/session-comms.md)) — who
   is running now, since a row outlives the session it describes;
 - **the files every open change request touches**, read per
   [`references/delta.md`](references/delta.md) — what is actually being written,

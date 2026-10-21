@@ -64,8 +64,9 @@ holds, and what it stops is named in the return as the gap it is.
    here, a premise that fell, a fork nobody foresaw; and what it runs at — its worktree, model,
    effort `${CLAUDE_EFFORT}`, session `${CLAUDE_SESSION_ID}`, the version
    `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` carries, and the directory
-   `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` expands to in its shell. Where the master's address had
-   to be guessed, open with the challenge line (`session-comms.md`). Building starts
+   `${CLAUDE_CONFIG_DIR:-$HOME/.claude}` expands to in its shell — and under Helmhouse its id and
+   profile as `whoami` answers them, its `parentSessionId` checked against the order's `Master:` id.
+   Where the master's address had to be guessed, open with the challenge line (`session-comms.md`). Building starts
    once that report is **sent**, no answer awaited; only what a reported divergence
    touches waits for one.
 

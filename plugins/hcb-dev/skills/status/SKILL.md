@@ -25,7 +25,6 @@ tracker, no message to another session — and marks nothing answered, which wou
 report is [`../../references/report-format.md`](../../references/report-format.md)'s grammar, in
 the occasion [`../../references/report-blocks.md`](../../references/report-blocks.md) lists for a
 status. Read [`../../references/invariants.md`](../../references/invariants.md) first.
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 **References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
@@ -99,9 +98,10 @@ then that comment out of `--deep`'s, picked by the author and moment `ledger.mjs
 than by matching its marker again, read whole, as prose
 ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)): from the epic's, its waves,
 its launch line and the expectations the user owes; from each wave's read, its batch rows, the merge
-queue and the gates. A master runs the `probe` of
-[`../../references/batch-launch.md`](../../references/batch-launch.md) too, with the launcher and
-environment that line records, where it records a terminal way: a `mode` other than it stands in `## The picture`. Which waves an epic has —
+queue and the gates. A master reads its batches in Helmhouse too, where that line records it —
+`session_list`, and `session_status` for each launch record
+([`../../references/batch-launch.md`](../../references/batch-launch.md)): a batch the tree does not
+show, or one it shows stopped or with its folder gone, stands in `## The picture`. Which waves an epic has —
 `LISTED` filled from the header and the block run again where the answer is not `complete` or has no
 hierarchy — and its progress across them and the work no wave took, are
 [`../../references/wave-issue.md`](../../references/wave-issue.md)'s. Each change request the queue names

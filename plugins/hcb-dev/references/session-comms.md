@@ -26,9 +26,9 @@ is answered by the host's own record of it. About another session those same
 channels may show its title instead, which is how one is read from outside.
 
 **Across a restart, three things survive**: the name a session set for itself, its
-worktree path, and anything written to the forge. A suffix a listing adds beside a
-name is re-dealt at every launch. Address by what survives; resolve what does not
-at the moment of sending.
+worktree path, and anything written to the forge — under Helmhouse, its id too. A suffix
+a listing adds beside a name is re-dealt at every launch. Address by what survives;
+resolve what does not at the moment of sending.
 
 ## Be findable: name yourself first
 
@@ -45,30 +45,32 @@ answerable, an empty one reads as an oversight.
 
 ## The ladder — send by the highest rung that answers
 
-1. **The live registry, resolved fresh.** List the live sessions and match the
-   name. Resolve before *every* send — not a cached name, not an endpoint, not
-   yesterday's listing. One worktree can hold several live sessions, so a name
-   taken from a working directory fits more than one; what settles which is the
-   challenge line below, owed by a name matched as much as by one guessed, never
-   the closest match. A reply within the same turn may reuse the address the
-   message arrived with; any later reply re-resolves.
-2. **The host's registry.** It addresses the session rather than the process, so
-   it survives restarts and resolves names the live listing does not show — the
-   same traffic, not a degraded copy. To a counterpart mid-turn, channels differ:
-   one delivers between tool calls, one holds until the turn ends, one delivers
-   nothing. **The send's own answer is the only signal of which.** A message the
-   channel says it is holding is on its way, and resending it duplicates a
-   decision rather than fixing a delivery; any other answer short of *handed over*
-   says it has not arrived. A message to a session that is not running arrives
-   nowhere — the name outlives the process, delivery does not.
-3. **The user.** A fenced block to carry by hand (`session-prompts.md`, Delivery)
-   — the rung that always works. Say who was unreachable and what the block is,
-   then keep working: this is a line handed over, never a question that halts this
-   session until a person answers.
+1. **The host's tree, by id.** To its parent or a session under it in one Helmhouse tree,
+   `session_send` to the counterpart's id — kept through `/clear` and the host's restarts, and
+   handed over by the order, so neither a fresh resolution nor a challenge line is owed. A running
+   counterpart gets it between two tool calls or as a turn of its own, a stopped one when it next
+   runs — at once, for one under this session, with `wake`. `waiting` is a message on its way, never
+   resent; a refusal delivered nothing, and the rung below carries the same message.
+2. **The live registry, resolved fresh.** List the live sessions and match the name. Resolve before
+   *every* send — not a cached name, not an endpoint, not yesterday's listing. One worktree can hold
+   several live sessions, so a name taken from a working directory fits more than one; what settles
+   which is the challenge line below, owed by a name matched as much as by one guessed, never the
+   closest match. A reply within the same turn may reuse the address the message arrived with; any
+   later reply re-resolves.
+3. **The host's registry.** It addresses the session rather than the process, so it survives
+   restarts and resolves names the live listing does not show — the same traffic, not a degraded
+   copy. To a counterpart mid-turn, channels differ: one delivers between tool calls, one holds
+   until the turn ends, one delivers nothing. **The send's own answer is the only signal of which.**
+   A message the channel says it is holding is on its way, and resending it duplicates a decision
+   rather than fixing a delivery; any other answer short of *handed over* says it has not arrived. A
+   message to a session that is not running arrives nowhere — the name outlives the process,
+   delivery does not.
+4. **The user.** A fenced block to carry by hand (`session-prompts.md`, Delivery) — the rung that
+   always works. Say who was unreachable and what the block is, then keep working: this is a line
+   handed over, never a question that halts this session until a person answers.
 
-Rungs are tried by what answers *now* — "is the tool present and does the target
-resolve", never the name of the environment. A sender missing a rung's tooling
-starts lower.
+Rungs are tried by what answers *now* — "is the tool present and does the target resolve", never the
+name of the environment. A sender missing a rung's tooling starts lower.
 
 ## A decision lives at a coordinate; a message points at it
 
@@ -98,17 +100,15 @@ and on some channels no sooner than the end of the turn. Plan for the later:
   until the turn ends. So a session inside an engagement ends a turn at every
   milestone of its own rather than only when the work runs out, drains a backlog
   by ending as many as it takes, and reads at its coordinate what it is waiting on.
-- **A turn is ended only with something that will wake this session again** — a
-  message already queued, work running in the background, or a wait armed for the
-  purpose. With none of the three, the session stops until a person nudges it.
-- **Waiting is parking, not blocking.** Say in one line what is outstanding, then
-  end the turn under the rule above. Holding the turn open — polling the
-  counterpart, or putting the question to a person in a form that stops everything
-  — is the state the counterpart's answer may be unable to end: on a channel that
-  waits for the turn, it lands in a queue nobody is reading. Where the channel
-  offers a one-shot notice that a busy counterpart went idle, take it. A run this
-  session launched itself is not this wait — [`review-runs.md`](review-runs.md)
-  owns that one.
+- **A turn is ended only with something that will wake this session again** — a message already
+  queued, work running in the background, a wait armed for the purpose, or a Helmhouse counterpart
+  whose message starts a turn here. With none of them, the session stops until a person nudges it.
+- **Waiting is parking, not blocking.** Say in one line what is outstanding, then end the turn under
+  the rule above. Holding the turn open — polling the counterpart, or putting the question to a
+  person in a form that stops everything — is the state the counterpart's answer may be unable to
+  end: on a channel that waits for the turn, it lands in a queue nobody is reading. Where the
+  channel offers a one-shot notice that a busy counterpart went idle, take it. A run this session
+  launched itself is not this wait — [`review-runs.md`](review-runs.md) owns that one.
 
 ## Contact hygiene
 
@@ -123,7 +123,7 @@ and on some channels no sooner than the end of the turn. Plan for the later:
 - **Busy is not unreachable**, and unreachable is a fact with a demonstration
   behind it. Silence, a counterpart between turns, and a send being held until a
   turn ends are the ordinary shape of one at work (*Empty is not negative*). What
-  demonstrates the fact: neither registry resolves it, the channel reported it
+  demonstrates the fact: no rung resolves it, the channel reported it
   could not deliver, or the parking ran out of use — turns ended, inbox still
   empty, nothing left to build that the answer does not touch. Then one fresh
   resolution, one send, and the rungs not yet tried; never the waiting alone.

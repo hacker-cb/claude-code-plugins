@@ -107,6 +107,6 @@ The move is the only write to HEAD, the index, the working tree or the stash: no
 checks files out of another revision or back out of the index (`git checkout <ref> -- <paths>`,
 `git checkout -- <path>`, `git restore`), stashes, resets, cleans, pulls, adds a worktree or
 commits — what goes wrong goes to the user, with what stands. A batch's worktree is made by
-Claude Code as the batch's session starts
-([`../../../references/batch-launch.md`](../../../references/batch-launch.md)), and never entered
+whatever starts the batch's session — Helmhouse, or Claude Code behind a chip
+([`../../../references/batch-launch.md`](../../../references/batch-launch.md)) — and never entered
 from here.

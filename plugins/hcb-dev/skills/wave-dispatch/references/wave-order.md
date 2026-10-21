@@ -1,7 +1,7 @@
 # The wave order — the text a batch session is started with
 
-Written by `hcb-dev:wave-dispatch`, one per batch, and carried as a file the first prompt of a
-session the master launched names, as a chip's prompt, or as a fenced block the user pastes
+Written by `hcb-dev:wave-dispatch`, one per batch, and carried as the first prompt of a Helmhouse
+session the master launched, as a chip's prompt, or as a fenced block the user pastes
 ([`../../../references/session-prompts.md`](../../../references/session-prompts.md)). The
 slots marked *by way* differ with the carrier; every other slot is the same in all three.
 
@@ -35,11 +35,11 @@ Start: <now | after <gate> — do not begin before it; it holds the reading
 below as much as the building>. Once it is open, the start report described at
 the end of this order goes out first, and building starts once it has.
 Where to work: your own worktree, and only it — the main checkout is shared
-with other sessions. <By way — launched: Claude Code made it as this session
+with other sessions. <By way — launched: Helmhouse made it as this session
 started, at <its path>; verify you stand in it before the first write, and make
 no other. Chip or paste: verify you are in a worktree of your own before the first
 write; where you are not, have Claude Code make one for this session and stand in
-it. Either way the worktree stands on whatever Claude Code cut it from, which is
+it. Either way the worktree stands on whatever its maker cut it from, which is
 nothing you build on: your branch is cut from <the base | the branch batch
 `<epic>/<id>` has published, where this batch stacks on it — before you read
 anything>.> <Or: no checkout is touched.>
@@ -78,7 +78,10 @@ Done means: <the terminal deliverable>
 Don't <what would duplicate or undo another batch's work, and the tracks that
 are not yours>
 
-Master: <its name>. The epic's ledger — the standing constraints and the
+Master: <its name><By way — launched: , Helmhouse id `helmhouse:<its id>` — your parent, which
+`whoami` names as your `parentSessionId`: send it everything this order sends the master with
+`session_send` to that id, and should that refuse, send the same through the live registry —
+`ListAgents`, then `SendMessage` to the master's name — before anything goes to your user>. The epic's ledger — the standing constraints and the
 decisions — is <its coordinate>; this wave's ledger — your batch's row, and the
 answers the master writes you — is <its coordinate>. Both carry that name too,
 should this order's go stale.
@@ -93,7 +96,8 @@ yours — the files and the issues it touches, and what taking it involves — t
 order you will take it in, and everything that came back different from this
 order: a boundary wrong from where you stand, a premise that fell, a fork nobody
 foresaw; and what this session runs at — the worktree it stands in, its session id,
-model and effort, the plugin version it loaded and the configuration directory it runs under. Then build: you do not wait for an answer to the report itself, and
+model and effort, the plugin version it loaded and the configuration directory it runs under<By
+way — launched: , and its Helmhouse id and profile as `whoami` answers them>. Then build: you do not wait for an answer to the report itself, and
 nothing of yours rests on a divergence in it until the master answers that.
 Report status when <the milestones — in request mode a change request opens;
 under a queued authority, the readiness report above; the scope moving off your
@@ -109,15 +113,16 @@ is reported whichever way it came out.
 Questions go to the master — the forks above, and every architectural one this
 order did not foresee, before your own reading of it goes into the tree. An
 answer you are still waiting for parks you and does not stop you: say in one
-line what you are waiting on, then end your turn — with a wait armed that wakes
-you again — because an answer may not reach you until your turn ends, and read
+line what you are waiting on, then end your turn — <By way — launched: the master's
+message starts your next one. Chip or paste: with a wait armed that wakes you
+again> — because an answer may not reach you until your turn ends, and read
 it at the coordinate that answer names rather than in your inbox alone; failing
 that, at the wave's ledger above and this batch's issues. Keep building
 what the answer does not touch; a fork this order reserved stays reserved until
 the master answers it. Silence is not unreachability, and neither is a master
 shown between turns or a send the channel says it is holding: the master is
-unreachable when neither registry resolves it, or when the channel itself
-refuses to deliver, and so is one whose
+unreachable when none of the channels you can reach it by resolves it, or when
+the last of them refuses to deliver, and so is one whose
 silence outlasts your turns with nothing left to build around it. Then the
 question goes to your user as a line you keep working past, never as one that
 halts you until a person answers.
@@ -127,7 +132,7 @@ anything added later edited into that same comment and never copied onto this
 batch's issues; a short notice to the master.
 Filing the follow-up issues your return proposes is authorized once the master
 confirms them. Your session
-is not free until the master accepts — and once it accepts, the master may close
-it: leave nothing running past your return.
+is not free until the master accepts — and once it accepts, the master may archive
+this session: leave nothing running past your return.
 ```
 

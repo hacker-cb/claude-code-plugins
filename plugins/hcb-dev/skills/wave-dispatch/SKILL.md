@@ -2,9 +2,9 @@
 name: wave-dispatch
 description: >-
   Turn a planned batch of work into launched parallel sessions — each started by
-  this session in a terminal session of its own where its terminal answers, as a
-  chip where the host offers one, or as a fenced block to paste where neither
-  does; the wave order inside. Use when a coordinating (master) session is told
+  this session as a Helmhouse session under it where Helmhouse runs it, as a chip
+  where the host offers one, or as a fenced block to paste where neither does; the
+  wave order inside. Use when a coordinating (master) session is told
   to launch the waves or hang chips ("запусти волны/батчи", "повесь чипы",
   "раздай работу по сессиям"), and when a batch that went out goes stale and
   needs re-issuing or withdrawing. Preflight pins the base and checks
@@ -27,7 +27,6 @@ writes obeys [`../../references/session-prompts.md`](../../references/session-pr
 settles every slot of [`../../references/order-anatomy.md`](../../references/order-anatomy.md),
 and addresses its receiver per [`../../references/session-comms.md`](../../references/session-comms.md);
 how a batch goes out is [`../../references/batch-launch.md`](../../references/batch-launch.md)'s.
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 **References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
@@ -82,12 +81,13 @@ how a batch goes out is [`../../references/batch-launch.md`](../../references/ba
   **stricter** than `queued` and stays as it is — the landing order is then held by
   the order this session puts its questions in, never by trading a person's answer
   for the queue's.
-- **Settle the way each batch goes out**, its model and effort, and the launcher
-  and environment it starts with where one is named (`batch-launch.md`). The first launch of a wave is
-  previewed with `--dry-run`, its answer in the launch report.
+- **Settle the way each batch goes out**, and the model, effort and profile it
+  runs at where the user's word names them (`batch-launch.md`). Before a wave's
+  first launch, what Helmhouse would start it under is read, its answer in the
+  launch report.
 - **Check what is already out**: a chip still pending for the same batch is
   withdrawn (`dismiss_task`) before a replacement goes up, a batch whose session
-  this session launched is `check`ed rather than launched again, and a batch
+  this session launched is read (`session_status`) rather than launched again, and a batch
   already running in a session is not sent out twice.
 - **Batches go out for the wave whose gate is clear, in the number its launch
   order allows.** A staged wave sends one, and the next only once the one before it
@@ -101,8 +101,8 @@ how a batch goes out is [`../../references/batch-launch.md`](../../references/ba
 
 One way per batch, as the preflight settled it:
 
-- **In a terminal session of this session's own** — `launch` per `batch-launch.md`. Its
-  `record` goes into the batch's row before anything else is sent.
+- **As a Helmhouse session under this one** — `session_create` per `batch-launch.md`. Its
+  launch record goes into the batch's row before anything else is sent.
 - **As a chip**, through the host's chip tool (`spawn_task`): **title** the batch
   shape of [`../../references/session-naming.md`](../../references/session-naming.md)
   under the titling tool's cap, the order's first line carrying the same string;
@@ -138,8 +138,8 @@ be read whole rather than to point.
   from its pin is still being verified; then re-issue on a fresh pin, and the row
   carrying it names that pin.
 - **A batch whose start report never arrives is unreached**, whatever its chip
-  or its launch says — `check` a launched one, ask after a chip, rather than
-  assuming the name made contact.
+  or its launch says — read a launched one (`session_status`), ask after a chip,
+  rather than assuming the name made contact.
 
 ## When a return arrives
 

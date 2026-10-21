@@ -23,7 +23,6 @@ wave ledgers ([`../../references/wave-ledger.md`](../../references/wave-ledger.m
 [`../../references/session-comms.md`](../../references/session-comms.md), accepts their returns per
 [`../../references/order-return.md`](../../references/order-return.md), and its own tree stands on
 the base per [`references/master-tree.md`](references/master-tree.md).
-**Launch settings**, substituted at invocation — use verbatim, quotes included: `--model-config '${user_config.batch_model}' --effort-config '${user_config.batch_effort}' --batches-max '${user_config.batches_max}'`.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 **References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
@@ -80,16 +79,15 @@ an `on-green` authority narrowed to `queued`, then the one with the written answ
 ruled `needs rewrite` ([`../../references/issue-currency.md`](../../references/issue-currency.md))
 is planned and held, and the rewrite releasing it is a tracker edit like any other:
 `hcb-dev:issue-tracking`, on that same word. The launch waits for their word on the table: a way this
-session starts sends the wave out on it, paced (`batch-launch.md`), a chip's click is a second,
+session starts sends the wave out on it (`batch-launch.md`), a chip's click is a second,
 separate gate — and approval of the plan sends no gated wave out early, by either way.
 
 **The epic's merge authority is settled with that same word**, once, before the first batch goes
-out — `on-green` recommended first
-([`../../references/slice-completion.md`](../../references/slice-completion.md)), since every gate
-guarding that merge has run by the time it is reached — and **the launch with it**: the way `probe`
-answers, its model, effort, launcher and environment, and whether this session closes accepted batches' sessions,
-recommended where it starts them. Both reach the ledger before anything goes out, the authority
-narrowed per batch where the plan fixes a landing order (*An authority narrows on the way down*).
+out — `on-green` recommended first ([`../../references/slice-completion.md`](../../references/slice-completion.md)),
+since every gate guarding that merge has run by the time it is reached — and **the launch with it**:
+the way that answers (`batch-launch.md`), a model, effort or profile where the user names one, and
+archiving accepted batches' sessions shown rather than asked. Both reach the ledger before anything
+goes out, the authority narrowed per batch where the plan fixes a landing order (*An authority narrows on the way down*).
 
 **Each wave's issue is filed on the word that approves its plan**, with its ledger opened and its
 issues hung under it, before its first batch goes out (`wave-issue.md`).
@@ -97,8 +95,8 @@ issues hung under it, before its first batch goes out (`wave-issue.md`).
 ## Launching
 
 `hcb-dev:wave-dispatch` — the wave whose gate is clear sent out as the epic's launch line records,
-each batch in the wave's ledger as it goes out. What it owes the batches mid-flight — pace and canary,
-boundary amendments re-issued, a batch that never reported checked on — is this role's loop.
+each batch in the wave's ledger as it goes out. What it owes the batches mid-flight — boundary
+amendments re-issued, a batch that never reported read — is this role's loop.
 
 ## The loop
 
@@ -110,10 +108,10 @@ constraints and what the user owes, the epic's.
 
 | Event | Do | Ledger |
 |---|---|---|
-| a batch's **start report** | check it against the plan — a scope read wider or narrower than the batch was drawn, a boundary read differently, a premise it says fell — and answer what diverges ahead of that batch's other traffic, since the batch holds only the work the divergence touches. Where the report arrives bearing a title — one the batch itself cannot read, and one a channel need not show (`session-comms.md`) — check it against the title that batch's order carries in its first line, and answer a different one with that string; a label a channel derived and a variant a host handed back are neither. Where it went out by launch, what it says it runs at is checked against its record as `batch-launch.md` checks a canary; one that does not match holds every later launch and goes to the user | the row, carrying what the answer changed; a cleared canary in the epic's header |
+| a batch's **start report** | check it against the plan — a scope read wider or narrower than the batch was drawn, a boundary read differently, a premise it says fell — and answer what diverges ahead of that batch's other traffic, since the batch holds only the work the divergence touches. Where the report arrives bearing a title — one the batch itself cannot read, and one a channel need not show (`session-comms.md`) — check it against the title that batch's order carries in its first line, and answer a different one with that string; a label a channel derived and a variant a host handed back are neither. Where it went out by launch, what it says it runs at — its worktree, model, effort, profile and Helmhouse id — is checked against its launch record (`batch-launch.md`), and a difference goes to the user in a line | the row, carrying what the answer changed |
 | a **question** from a batch | answer after re-verifying, never from memory: re-derive it with whatever will judge it — the run, the gate, the tool the batch itself will reach for — and read the code where reading is that instrument, through a sha — the base's, or the ref the question is about — a run going to an isolated subagent (`master-tree.md`); where the batch's own analysis came along, check it and say which parts held — a confirmation that merely echoes is adoption. `architecture-decisions.md` decides which answers must first go to the user. Every answer carries the coordinates that let the batch re-verify it back, and one that changes what a batch is building is written in the wave's answers before it is sent, the message that follows pointing at that record (`session-comms.md`) | decisions; answers; expectations, while an answer waits on the user |
 | a **status** at one of the order's milestones | read it at the coordinate it carries; a readiness report is what advances the merge queue (below) | the row, and the queue |
-| a **return** | accept per `order-return.md`, and check it against the ledger's standing constraints besides: a claim that touches one ("that request is harmless") is verified through a sha (`master-tree.md`) and in the tracker before either the claim or the constraint is believed. Acceptance ends in the words the worker waits for — accepted and free, or reopened naming the gap — and where the epic's word has this session close accepted batches, the session is closed then, as `batch-launch.md` says. A return that answers what a gate waits on is checked against the gates as a landing is | a closed session in the journal; the row to `accepted`, which frees the session and not yet the batch; to `released` once nothing of that batch is outstanding — its landing accounted for, its candidates ruled by the pass below. A row left at `accepted` holds the epic open |
+| a **return** | accept per `order-return.md`, and check it against the ledger's standing constraints besides: a claim that touches one ("that request is harmless") is verified through a sha (`master-tree.md`) and in the tracker before either the claim or the constraint is believed. Acceptance ends in the words the worker waits for — accepted and free, or reopened naming the gap — and the session is archived then, as `batch-launch.md` says, unless the user asked to keep it. A return that answers what a gate waits on is checked against the gates as a landing is | an archived session in the journal; the row to `accepted`, which frees the session and not yet the batch; to `released` once nothing of that batch is outstanding — its landing accounted for, its candidates ruled by the pass below. A row left at `accepted` holds the epic open |
 | **candidates** for the tracker, arriving with a return | record them as they arrive and rule none on the return that carried them — acceptance checks the return's own deliverable per `order-return.md`, findings included where they are that deliverable, while these ride beside it: they are verified and ruled together at the round's close — every return of it accepted, every change request it lands merged, and a batch that ended `withdrawn` or `failed` bringing whatever it already recorded, its ending being no ruling — through `hcb-dev:findings-pass`, invoked through the Skill tool, each check reading the ref the round landed on. A candidate ruled **DROP** is answered with the reason. The ruling is not the authorization to write: what `findings.md` leaves with the user goes to them, this session's recommendation first. What is opened is opened here — acceptance frees the batch's session, not the batch, before this pass runs, so a worker files its own only where the pass ruled its candidates while that session was still engaged | *Candidates*: each as it arrives, then its verdict and ruling |
 | a **new issue** born mid-epic | classify it here (`hcb-dev:issue-tracking`) — a worker's proposed milestone or label is a claim to verify, not a decision to adopt | journal; the row of the batch it belongs to |
 | a batch reports **ready**, in whichever words its order gave it for the mode it runs in (`hcb-dev:wave-dispatch`) | take it into the queue — its seam with every other batch holding a head measured, not assumed (`wave-planning.md`) — and give the go where the slot is already free. The merge is never this session's to take, whatever the queue says: the batch takes it, and everything its own completion owes behind it. A batch holding an `ask` reaches the user through this session, its recommendation first, and the answer travels back down as that batch's go. Where the epic stands at `ask` and the plan fixes a landing order, the order is held here: a later batch's question waits until the earlier one has landed, rather than reaching the user beside it | merge queue and gates |
@@ -162,14 +160,16 @@ its rebuild at the point [`../../references/epic-migration.md`](../../references
 names. Then read back what this session actually answers to: where the host would not give that name
 — it handed back a variant, or a new session took over the role — what answers wins, the ledger
 header is corrected to it before anything else is sent, and the batches hear it as the change
-`session-comms.md` has them announce. Then this session's tree, per `master-tree.md`, before any
-code is read — what it names as landed since the ledger's mark is taken as the loop takes a landing.
-Then the live registry, then a re-introduction to every batch still engaged, carrying what first
-contact carries: the name this session answers to, the standing plan, and a status request.
-Expectations the ledger lists and the registry cannot see are chased by the comms ladder, not
-assumed dead — a `chipped` row with no session goes to the user as `wave-ledger.md` reads it, one
-holding a launch record is checked and resumed per `batch-launch.md`. A header with no launch
-line takes one on the word for the next wave.
+`session-comms.md` has them announce; the batches Helmhouse started under a session this one replaced
+stay out of its reach until the user moves them under it (`helmhouse link --parent <id> <ids>`), an
+ask put first. Then this session's tree, per `master-tree.md`, before any code is read — what it names
+as landed since the ledger's mark is taken as the loop takes a landing. Then the batches —
+`session_list` for the ones Helmhouse started, the live registry for the rest — then a re-introduction
+to every batch still engaged, carrying what first contact carries: the name this session answers to,
+the standing plan, and a status request. Expectations the ledger lists and neither can see are chased
+by the comms ladder, not assumed dead — a `chipped` row with no session goes to the user as
+`wave-ledger.md` reads it, one holding a launch record is read and, where it stopped, woken per
+`batch-launch.md`. A header with no launch line takes one on the word for the next wave.
 
 ## Closing the epic
 
