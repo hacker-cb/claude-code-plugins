@@ -786,8 +786,9 @@ Per skill, on top of those:
   (fenced orders instead of chips, a line to the user instead of messages) —
   while a decision stands at its coordinate on the forge whichever of them
   carries the pointer to it. A master that starts its batches itself runs inside
-  Helmhouse, through its `helmhouse` MCP tools — `session_create`, `session_status`,
-  `session_send`, `session_archive`, `whoami`, `profile_list`. The master additionally uses
+  Helmhouse, through its `helmhouse` MCP tools — `session_create`, `session_list`,
+  `session_status`, `session_wait`, `session_send`, `session_archive`, `session_unarchive`,
+  `whoami`, `profile_list`. The master additionally uses
   whatever edits an issue comment on the repository's forge — the wave ledger
   lives in one, and a repository without a tracker cannot hold the role at all.
   All sides need this plugin installed — the orders name `wave-worker` and

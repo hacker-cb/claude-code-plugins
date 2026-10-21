@@ -99,9 +99,9 @@ than by matching its marker again, read whole, as prose
 ([`../../references/wave-ledger.md`](../../references/wave-ledger.md)): from the epic's, its waves,
 its launch line and the expectations the user owes; from each wave's read, its batch rows, the merge
 queue and the gates. A master reads its batches in Helmhouse too, where that line records it —
-`session_list`, and `session_status` for each launch record
-([`../../references/batch-launch.md`](../../references/batch-launch.md)): a batch the tree does not
-show, or one it shows stopped or with its folder gone, stands in `## The picture`. Which waves an epic has —
+`session_list`, and `session_status` for a launch record the list does not hold
+([`../../references/batch-launch.md`](../../references/batch-launch.md)): a batch short of `accepted`
+that the tree does not show, or shows stopped or with its folder gone, stands in `## The picture`. Which waves an epic has —
 `LISTED` filled from the header and the block run again where the answer is not `complete` or has no
 hierarchy — and its progress across them and the work no wave took, are
 [`../../references/wave-issue.md`](../../references/wave-issue.md)'s. Each change request the queue names

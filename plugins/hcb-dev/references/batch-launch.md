@@ -5,8 +5,9 @@ restart, or ends. It owns the launch: the way a batch goes out, what it runs at 
 and the calls that start, read, wake and archive it. What the order says differs by the way
 it went out, and that is
 [`../skills/wave-dispatch/references/wave-order.md`](../skills/wave-dispatch/references/wave-order.md)'s.
-How many batches run at once is not this plugin's to bound: the host bounds what it starts, and a
-launch it refuses goes to the user with the host's reason.
+How many batches run at once is not this plugin's to bound: Helmhouse bounds the sessions it
+starts, a chip or a pasted order starts when the user starts it, and a launch Helmhouse refuses goes
+to the user with its reason.
 
 ## The way a batch goes out
 
@@ -53,18 +54,19 @@ Both go into the launch report. Nothing read here holds a launch back.
 |---|---|
 | `prompt` | the wave order, whole: it reaches the session as its first prompt |
 | `title` | the batch's title, the string in backticks on the order's first line |
-| `newBranch` | `<epic>-<id>` — Helmhouse makes the worktree `.claude/worktrees/<epic>-<id>` on that branch, cut from a base of its own rather than the wave's pin, which is why the order has the batch cut its own branch |
+| `newBranch` | `<epic>-<id>` — Helmhouse makes the worktree on that branch, at `.claude/worktrees/<epic>-<id>` unless the project's settings or a path already taken put it elsewhere, cut from a base of its own rather than the wave's pin, which is why the order has the batch cut its own branch |
 | `autoProfile` | `true`, unless the user's word names a `profileId` |
 | `model`, `effort`, `profileId` | only where the user's word names them |
 
 A batch is never launched twice: one whose row already holds a launch record, or whose title
-`session_list` already shows, is read rather than launched. The call answers once the session
-runs, with `sessionId`, `profileId`, `cwd` and `title`; that answer, the model and effort the batch
-should run at and the moment, is its launch record, and goes into its row before anything else is
-sent. A refusal starts nothing and names its reason. A branch `<epic>-<id>` that already stands is a
-batch launched before, or what one left: read, never launched over. The bound on children out of the
-archive is met by archiving the accepted batches first (below). Any other refusal goes to the user
-as it came.
+`session_list` already shows, is read rather than launched, and a call cut off as interrupted is not
+made again before `session_list` says whether the batch's session stands. The call answers once the
+session runs, with `sessionId`, `profileId`, `cwd` and `title`; that answer — `cwd` being where the
+worktree stands, whatever path was expected — the model and effort the batch should run at and the
+moment, is its launch record, and goes into its row before anything else is sent. A refusal starts
+nothing and names its reason. A branch `<epic>-<id>` that already stands is a batch launched before,
+or what one left: read, never launched over. The bound on children out of the archive is met by
+archiving the accepted batches first (below). Any other refusal goes to the user as it came.
 
 ## While it runs, and after a restart
 
@@ -75,13 +77,21 @@ as it came.
 message reaches this session, whichever comes first. A batch whose start report never arrives is
 read this way before anything is concluded about it.
 
-Helmhouse carries its sessions across its own restart, so a batch is never launched again for
-having been out of sight. One that stopped short of `accepted` runs again on a message sent with
-`wake` ([`session-comms.md`](session-comms.md)): one paragraph in the epic's language, carrying the
+Every message this session sends a batch carries `wake`, so one that stopped runs on it
+([`session-comms.md`](session-comms.md)). Helmhouse carries its sessions across its own restart, so
+a batch is never launched again for having been out of sight. One that stopped short of `accepted`
+runs again on a message sent that way: one paragraph in the epic's language, carrying the
 batch's title in backticks, that its session was restored, the name of the master it reports to,
 and to go on from where it stopped — reading the ledgers and its own transcript, its order among it,
 before it acts. One whose `cwdGone` is `true` cannot run until its folder is back, which goes to the
 user.
+
+A launch record naming an agterm session rather than a Helmhouse `sessionId` came from a version of
+this plugin that started batches in agterm, and nothing here reads, wakes or archives it: the batch
+is reached through the live registry as a chip's is, a session of it that ended is the user's to
+resume in its worktree — or to have this session launch it again on their word, into that worktree
+(`worktree` in place of `newBranch`) — and closing it stays an ask. An epic's header that recorded no word on closing keeps its batches'
+sessions until the user gives one.
 
 ## Archiving it
 

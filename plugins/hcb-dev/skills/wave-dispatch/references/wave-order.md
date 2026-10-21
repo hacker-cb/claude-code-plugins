@@ -36,8 +36,8 @@ below as much as the building>. Once it is open, the start report described at
 the end of this order goes out first, and building starts once it has.
 Where to work: your own worktree, and only it — the main checkout is shared
 with other sessions. <By way — launched: Helmhouse made it as this session
-started, at <its path>; verify you stand in it before the first write, and make
-no other. Chip or paste: verify you are in a worktree of your own before the first
+started — the directory you started in; verify you stand in it before the first
+write, and make no other. Chip or paste: verify you are in a worktree of your own before the first
 write; where you are not, have Claude Code make one for this session and stand in
 it. Either way the worktree stands on whatever its maker cut it from, which is
 nothing you build on: your branch is cut from <the base | the branch batch
@@ -78,10 +78,12 @@ Done means: <the terminal deliverable>
 Don't <what would duplicate or undo another batch's work, and the tracks that
 are not yours>
 
-Master: <its name><By way — launched: , Helmhouse id `helmhouse:<its id>` — your parent, which
-`whoami` names as your `parentSessionId`: send it everything this order sends the master with
-`session_send` to that id, and should that refuse, send the same through the live registry —
-`ListAgents`, then `SendMessage` to the master's name — before anything goes to your user>. The epic's ledger — the standing constraints and the
+Master: <its name><By way — launched: , Helmhouse id `<its id>` — your parent: send it
+everything this order sends the master with `session_send` to the `parentSessionId` `whoami`
+answers when you send, which a person may move under a new master. A refusal naming a limit of
+Helmhouse's goes to your user, never around it; any other reaches the master through the live
+registry instead — `ListAgents`, then `SendMessage` to its name, opening with "if you are not
+<its name>, say so and I stop">. The epic's ledger — the standing constraints and the
 decisions — is <its coordinate>; this wave's ledger — your batch's row, and the
 answers the master writes you — is <its coordinate>. Both carry that name too,
 should this order's go stale.
