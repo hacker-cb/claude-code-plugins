@@ -63,7 +63,8 @@ A batch is never launched twice: one whose row already holds a launch record, or
 made again before `session_list` says whether the batch's session stands. The call answers once the
 session runs, with `sessionId`, `profileId`, `cwd` and `title`; that answer — `cwd` being where the
 worktree stands, whatever path was expected — the model and effort the batch should run at and the
-moment, is its launch record, and goes into its row before anything else is sent. A refusal starts
+moment, is its launch record, and goes into its row before anything else is sent — a start report
+arriving first waits for that write, the call's answer being already in hand. A refusal starts
 nothing and names its reason. A branch `<epic>-<id>` that already stands is a batch launched before,
 or what one left: read, never launched over. The bound on children out of the archive is met by
 archiving the accepted batches first (below). Any other refusal goes to the user as it came.

@@ -67,8 +67,8 @@ disagreement is itself a finding:
   its checks, as the queue records, or until its end where it lands nothing;
 - **the live registry, and this session's Helmhouse tree** (`session_list`,
   [`../../references/session-comms.md`](../../references/session-comms.md)) — who is running now,
-  since a row outlives the session it describes; a session archived, or whose batch a ledger has at
-  `accepted` or ended, holds no ground;
+  since a row outlives the session it describes; a session whose batch any ledger's row records is
+  read through that row, a closed wave's included, and an archived one adds nothing;
 - **the files every open change request touches**, read per
   [`references/delta.md`](references/delta.md) — what is actually being written, which may reach
   past the zone an order drew, and which a request no batch row claims holds just as much.
