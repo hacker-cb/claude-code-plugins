@@ -1,29 +1,26 @@
 # Reaching another session — addressing, channels, restarts
 
-Read by whatever contacts another Claude Code session — an order, a question, a
-status, a return — and by whatever wants to be reachable itself. It owns the
-addressing ladder and what keeps two sessions able to find each other across
-restarts. What travels inside a prompt is [`session-prompts.md`](session-prompts.md);
-what an order and its answer carry is [`order-anatomy.md`](order-anatomy.md) and
-[`order-return.md`](order-return.md). [`invariants.md`](invariants.md) holds how any
-signal here is read.
+Read by whatever contacts another Claude Code session — an order, a question, a status, a return —
+and by whatever wants to be reachable itself. It owns the addressing ladder and what keeps two
+sessions able to find each other across restarts. What travels inside a prompt is
+[`session-prompts.md`](session-prompts.md); what an order and its answer carry is
+[`order-anatomy.md`](order-anatomy.md) and [`order-return.md`](order-return.md).
+[`invariants.md`](invariants.md) holds how any signal here is read.
 
 ## What an address is
 
-A session is addressed by its **name** — one name, in one field, wherever a
-contract has one. It sets its own in the shape [`session-naming.md`](session-naming.md)
-gives, then reads back what each channel shows it as: naming it obliges no channel
-to adopt that name, and a host that finds the name taken hands back a variant. What
-comes back is what gets recorded. Where two channels differ, record the one an
-answer will arrive on and name the other in the first contact's identity line.
+A session is addressed by its **name** — one name, in one field, wherever a contract has one. It
+sets its own in the shape [`session-naming.md`](session-naming.md) gives, then reads back what each
+channel shows it as: naming it obliges no channel to adopt that name, and a host that finds the name
+taken hands back a variant. What comes back is what gets recorded. Where two channels differ, record
+the one an answer will arrive on and name the other in the first contact's identity line.
 
-**An address is what a channel answers when asked about this session** — never an
-identifier found in a path or in the environment, however much it looks like one.
-But what a channel will deliver to is not what this session WEARS: a channel may
-derive what it shows from the working directory rather than from the title, so a
-listing carrying no title is not a session without one, and what this session wears
-is answered by the host's own record of it. About another session those same
-channels may show its title instead, which is how one is read from outside.
+**An address is what a channel answers when asked about this session** — never an identifier found
+in a path or in the environment, however much it looks like one. But what a channel will deliver to
+is not what this session WEARS: a channel may derive what it shows from the working directory rather
+than from the title, so a listing carrying no title is not a session without one, and what this
+session wears is answered by the host's own record of it. About another session those same channels
+may show its title instead, which is how one is read from outside.
 
 **Across a restart, three things survive**: the name a session set for itself, its
 worktree path, and anything written to the forge — under Helmhouse, its id too. A suffix
@@ -51,10 +48,14 @@ answerable, an empty one reads as an oversight.
    is the `parentSessionId` `whoami` answers when sending, which a person may move. A running
    counterpart gets it between two tool calls or as a turn of its own, a stopped one when it next
    runs; to a session under this one the send carries `wake`, which runs it now. `waiting` is on its
-   way and never resent — save where its reason says it cannot arrive as things stand, the session
-   not woken or its CLI taking no session's messages: that reason goes to the user. A refusal naming
-   a limit of the host's asks for a person: it goes to the user, never around it. Any other refusal
-   delivered nothing, and the rung below carries the same message.
+   way and never resent, save where its reason says it cannot arrive (not woken, or a CLI taking no
+   session's messages), which goes to the user. A refusal delivered nothing, and the code ending it
+   routes it: `[peer.hops]` or `[peer.rate]` is the host's limit — to the user, never around it;
+   `[peer.pending]` waits for the counterpart to take what is queued, then goes again;
+   `[message.long]` goes again shorter, what it carried written at its coordinate (below), or split
+   where the work has none; `[message.empty]` is a send to fix; no code, its words — a limit they
+   name goes to the user; anything else, the rung below. A call cut off as interrupted is no
+   refusal: it is made again.
 2. **The live registry, resolved fresh.** List the live sessions and match the name. Resolve before
    *every* send — not a cached name, not an endpoint, not yesterday's listing. One worktree can hold
    several live sessions, so a name taken from a working directory fits more than one; what settles
@@ -78,13 +79,12 @@ name of the environment. A sender missing a rung's tooling starts lower.
 
 ## A decision lives at a coordinate; a message points at it
 
-The ladder is how a session is reached, never where a decision is kept. Anything
-that changes what the other side is building — an answer to a fork it raised, a
-form withdrawn, a stop — is written where the work lives (the epic, the issue, the
-change request) **before** it is sent, and the message shrinks to a pointer at that
-record. A decision exists once it can be read at its coordinate: a receiver that
-never got the pointer finds it anyway, and so does one that arrives later,
-replacing a session that failed.
+The ladder is how a session is reached, never where a decision is kept. Anything that changes what
+the other side is building — an answer to a fork it raised, a form withdrawn, a stop — is written
+where the work lives (the epic, the issue, the change request) **before** it is sent, and the
+message shrinks to a pointer at that record. A decision exists once it can be read at its
+coordinate: a receiver that never got the pointer finds it anyway, and so does one that arrives
+later, replacing a session that failed.
 
 Where the work has no such place — a standalone order in a repository with no
 tracker — the decision travels in the message in full, the sender's own record
