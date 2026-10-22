@@ -1,12 +1,11 @@
 # Reaching another session — addressing, channels, restarts
 
-Read by whatever contacts another Claude Code session — an order, a question, a
-status, a return — and by whatever wants to be reachable itself. It owns the
-addressing ladder and what keeps two sessions able to find each other across
-restarts. What travels inside a prompt is [`session-prompts.md`](session-prompts.md);
-what an order and its answer carry is [`order-anatomy.md`](order-anatomy.md) and
-[`order-return.md`](order-return.md). [`invariants.md`](invariants.md) holds how any
-signal here is read.
+Read by whatever contacts another Claude Code session — an order, a question, a status, a return —
+and by whatever wants to be reachable itself. It owns the addressing ladder and what keeps two
+sessions able to find each other across restarts. What travels inside a prompt is
+[`session-prompts.md`](session-prompts.md); what an order and its answer carry is
+[`order-anatomy.md`](order-anatomy.md) and [`order-return.md`](order-return.md).
+[`invariants.md`](invariants.md) holds how any signal here is read.
 
 ## What an address is
 
@@ -51,10 +50,11 @@ answerable, an empty one reads as an oversight.
    is the `parentSessionId` `whoami` answers when sending, which a person may move. A running
    counterpart gets it between two tool calls or as a turn of its own, a stopped one when it next
    runs; to a session under this one the send carries `wake`, which runs it now. `waiting` is on its
-   way and never resent — save where its reason says it cannot arrive as things stand, the session
-   not woken or its CLI taking no session's messages: that reason goes to the user. A refusal naming
-   a limit of the host's asks for a person: it goes to the user, never around it. Any other refusal
-   delivered nothing, and the rung below carries the same message.
+   way and never resent, save where its reason says it cannot arrive (not woken, or a CLI taking no
+   session's messages), which goes to the user. A refusal delivered nothing, and the code ending its
+   text routes it: `[peer.hops]`, `[peer.rate]` or `[peer.pending]` is the host's limit — to the
+   user, never around it; `[message.long]` goes again shorter, what it carried written at its
+   coordinate (below); `[message.empty]` is a send to fix; any other code, the rung below.
 2. **The live registry, resolved fresh.** List the live sessions and match the name. Resolve before
    *every* send — not a cached name, not an endpoint, not yesterday's listing. One worktree can hold
    several live sessions, so a name taken from a working directory fits more than one; what settles

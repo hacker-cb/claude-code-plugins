@@ -80,9 +80,11 @@ are not yours>
 
 Master: <its name><By way — launched: , Helmhouse id `<its id>` — your parent: send it
 everything this order sends the master with `session_send` to the `parentSessionId` `whoami`
-answers when you send, which a person may move under a new master. A refusal naming a limit of
-Helmhouse's goes to your user, never around it; any other reaches the master through the live
-registry instead — `ListAgents`, then `SendMessage` to its name, opening with "if you are not
+answers when you send, which a person may move under a new master. A refusal ending in
+`[peer.hops]`, `[peer.rate]` or `[peer.pending]` is a limit of Helmhouse's and goes to your user,
+never around it; one ending in `[message.long]` goes again as a pointer, what it carried written at
+the coordinate it is about — a change request, an issue; any other reaches the master through the
+live registry instead — `ListAgents`, then `SendMessage` to its name, opening with "if you are not
 <its name>, say so and I stop">. The epic's ledger — the standing constraints and the
 decisions — is <its coordinate>; this wave's ledger — your batch's row, and the
 answers the master writes you — is <its coordinate>. Both carry that name too,
