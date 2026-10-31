@@ -619,7 +619,9 @@ the run to ask the user.
   reported to you looks: a line or a report, the bold first line counting what
   waits on you, one `##` heading per block, five status circles — 🟢 fine,
   🔵 running by itself, 🟡 your move, 🔴 stopped, ⚪ out of play — and the ask
-  block last, each ask with its recommendation first. Read wherever work is
+  block last, each ask with its recommendation first — save where the host keeps
+  what a session needs from you itself (Helmhouse's needs list): its rules then
+  govern every ask, and no report repeats one it holds. Read wherever work is
   reported to you.
 - [`references/report-blocks.md`](references/report-blocks.md) — the blocks a
   report is built from, in the order they stand, what each holds, and which ones
