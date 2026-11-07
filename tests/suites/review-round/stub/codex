@@ -14,7 +14,10 @@
 #                        CODEX_DENY=1 adds a deny of ~/.ssh; CODEX_ESCALATABLE=1 renders every
 #                        entry with escalatable="false"; CODEX_ODD=1 gives one a scope="root";
 #                        CODEX_UNRESTRICTED=1 renders the policy self-closed as unrestricted,
-#                        beside a restricted block a repository's AGENTS.md could carry
+#                        beside a restricted block a repository's AGENTS.md could carry;
+#                        CODEX_STEAL=1 hands every round's codex.lock to pid 1, as a second
+#                        call taking it over would; CODEX_PRE_SLEEP_MODEL=<slug> takes 3 s
+#                        when asked about that model
 #   codex mcp list --json -c …
 #                        lists no server; CODEX_MCP=1 lists `fs`, enabled unless a -c
 #                        switches it off — CODEX_MCP_STUCK=1 keeps it on whatever is passed
@@ -54,6 +57,14 @@ JSON
 fi
 if [ "${1:-}" = debug ] && [ "${2:-}" = prompt-input ]; then
   printf '%s\n' "$@" > "$mark.codex-preflight-argv"
+  if [ -n "${CODEX_STEAL:-}" ]; then
+    for l in "${TMPDIR:-/tmp}"/hcb-review/r-*/codex.lock; do
+      [ -f "$l" ] && echo '{"pid": 1, "until": "2999-01-01T00:00:00.000Z"}' > "$l"
+    done
+  fi
+  if [ -n "${CODEX_PRE_SLEEP_MODEL:-}" ]; then
+    for a in "$@"; do [ "$a" = "model=\"$CODEX_PRE_SLEEP_MODEL\"" ] && sleep 3; done
+  fi
   if [ -n "${CODEX_NOPROMPT:-}" ]; then
     echo "error: unrecognized subcommand 'prompt-input'" >&2
     exit 2

@@ -126,6 +126,9 @@ const WAIT_CAP_S = 540; // under the Bash tool's 10-minute ceiling, so one windo
 // is killed, how long past both its lock still holds, and how much of the diff travels in its
 // prompt — a share of the model's window, or a fixed budget where the catalog gives none.
 const CATALOG_MS = 60_000;
+// The CLI calls a pass may make before its first run, each bounded by CATALOG_MS: the MCP
+// servers to switch off, the catalog, and the sandbox's two checks for each of two runs.
+const PRE_RUN_CALLS = 6;
 const TERM_GRACE_MS = 10_000;
 const LOCK_GRACE_MS = 60_000;
 const INLINE_SHARE = 0.25;
@@ -1374,7 +1377,8 @@ const onPath = (tool) => {
 // A tool runs from its install prefix — the parent of its `bin`, where its libraries sit —
 // found both where PATH names it and where a link from there leads: the sandbox checks the
 // path a program is started by as well as the file it is. Every directory of the prefix but
-// `var`, where a package manager keeps services' data; narrowed to the program's own
+// `var`, where a package manager keeps services' data, and `local`, a prefix of its own
+// under `/usr` that PATH names apart where a tool lives there; narrowed to the program's own
 // directory where the prefix is too wide, and left out where that is too.
 const toolRoots = (bin) => [...new Set([bin, real(bin)].filter(Boolean))].flatMap((at) => {
   const dir = path.dirname(at);
@@ -1382,7 +1386,7 @@ const toolRoots = (bin) => [...new Set([bin, real(bin)].filter(Boolean))].flatMa
   if (prefix && !tooWide(prefix)) {
     try {
       return readdirSync(prefix, { withFileTypes: true })
-        .filter((e) => (e.isDirectory() || e.isSymbolicLink()) && e.name !== 'var').map((e) => path.join(prefix, e.name));
+        .filter((e) => (e.isDirectory() || e.isSymbolicLink()) && e.name !== 'var' && e.name !== 'local').map((e) => path.join(prefix, e.name));
     } catch { /* unreadable: the program's own directory below */ }
   }
   return tooWide(dir) ? [] : [dir];
@@ -1396,15 +1400,23 @@ function confinement(round, repo) {
   const gitDirs = repo.git(['rev-parse', '--git-dir', '--git-common-dir']);
   const dirs = gitDirs.ok ? gitDirs.out.split('\n').filter(Boolean).map((l) => path.resolve(top, l)) : [];
   roots.push(...dirs.map(real));
-  // Objects a clone borrows from another repository (--shared, --reference) are read there.
-  for (const d of dirs) {
-    const objects = path.join(d, 'objects');
-    for (const l of linesOf(path.join(objects, 'info', 'alternates'))) {
-      if (l.trim() && !l.startsWith('#')) roots.push(real(path.resolve(objects, l.trim())));
+  // Objects a clone borrows from another repository (--shared, --reference) are read there,
+  // and that one may borrow in turn — as deep as git follows, five links. Only an object
+  // store is opened: a line naming any other directory is not one git could use.
+  const store = (p) => { const r = real(p); return r && path.basename(r) === 'objects' ? r : null; };
+  // An entry of the variable git C-quotes where it holds the separator.
+  const unquote = (v) => (v.startsWith('"') ? v.slice(1, -1).replace(/\\(.)/g, '$1') : v);
+  const envStores = (process.env.GIT_ALTERNATE_OBJECT_DIRECTORIES || '').match(/"(?:[^"\\]|\\.)*"|[^:"]+/g) || [];
+  let stores = [...dirs.map((d) => store(path.join(d, 'objects'))), ...envStores.map((v) => unquote(v)).filter((v) => path.isAbsolute(v)).map(store)].filter(Boolean);
+  for (let depth = 0; depth < 5 && stores.length; depth += 1) {
+    const next = [];
+    for (const objects of stores) {
+      for (const l of linesOf(path.join(objects, 'info', 'alternates'))) {
+        const s2 = l.trim() && !l.startsWith('#') ? store(path.resolve(objects, unquote(l.trim()))) : null;
+        if (s2 && !roots.includes(s2)) { roots.push(s2); next.push(s2); }
+      }
     }
-  }
-  for (const l of (process.env.GIT_ALTERNATE_OBJECT_DIRECTORIES || '').split(path.delimiter)) {
-    if (path.isAbsolute(l)) roots.push(real(l));
+    stores = next;
   }
   roots.push(round.dir, real(PLUGIN));
   roots.push(...toolRoots(process.execPath));
@@ -1416,6 +1428,19 @@ function confinement(round, repo) {
     const fields = origins.out.split('\0');
     for (let i = 0; i + 1 < fields.length; i += 2) {
       if (fields[i].startsWith('file:')) roots.push(real(path.resolve(top, fields[i].slice(5))));
+    }
+  }
+  // A file an include names is opened whether or not it sets anything, so it is read by
+  // the include, relative to the file that holds it, never only by what it set.
+  const includes = repo.git(['config', '--show-origin', '-z', '--get-regexp', '^include(if\\..*)?\\.path$']);
+  if (includes.ok) {
+    const fields = includes.out.split('\0');
+    for (let i = 0; i + 1 < fields.length; i += 2) {
+      if (!fields[i].startsWith('file:')) continue;
+      const from = path.resolve(top, fields[i].slice(5));
+      const value = fields[i + 1].slice(fields[i + 1].indexOf('\n') + 1);
+      const named = value.startsWith('~/') ? path.join(homedir(), value.slice(2)) : value;
+      if (named) roots.push(real(path.resolve(path.dirname(from), named)));
     }
   }
   for (const key of ['core.excludesFile', 'core.attributesFile']) {
@@ -1600,7 +1625,7 @@ async function codex() {
   // whose watchdog would have ended it by now, holds nothing.
   const lock = path.join(round.dir, 'codex.lock');
   const claim = () => claimJson(lock, {
-    pid: process.pid, until: new Date(Date.now() + 2 * CATALOG_MS + ms + TERM_GRACE_MS + LOCK_GRACE_MS).toISOString(),
+    pid: process.pid, until: new Date(Date.now() + PRE_RUN_CALLS * CATALOG_MS + ms + TERM_GRACE_MS + LOCK_GRACE_MS).toISOString(),
   });
   if (!claim()) {
     let held = null;
@@ -1711,21 +1736,27 @@ async function codex() {
     // stands. `-` takes the prompt from stdin, which is
     // also what stops the CLI waiting on a terminal that is not there. What it prints goes
     // to the round's log, never through this process's memory.
-    const attempt = async (model, found, effort, timeout, flag) => {
+    const attempt = async (model, found, effort, budget, flag) => {
       rmSync(out, { force: true });
       // A share of the model's window where the catalog gives one, at four bytes a token.
       const inline = Number.isInteger(found?.context_window) ? found.context_window * 4 * INLINE_SHARE : INLINE_KB * 1024;
       const prompt = codexPrompt(round, angleOf(c, task), planned.limit, rules, inline);
       confirm(model, effort);
+      // What the watchdog allows is read once the checks are done: they spend from it too.
+      const timeout = budget();
+      if (timeout < (flag === 'a' ? RERUN_MIN_MS : 1)) {
+        return { model, effort, value: null, timedOut: false, span: '0 s', how: 'not run', said: 'the sandbox checks left no time to review in' };
+      }
       const args = ['exec', '--ephemeral', '--ignore-rules', '-C', repo.top, '-m', model, ...box.flags,
         '-c', `model_reasoning_effort=${effort}`, '--output-schema', schema, '-o', out, '-'];
       // The lock holds for this run's own watchdog, counted from now: what ran before it —
       // the catalog, the sandbox's checks — may have eaten into what it was claimed for.
-      try {
-        if (readJson(lock).pid === process.pid) {
-          writeJson(lock, { pid: process.pid, until: new Date(Date.now() + timeout + TERM_GRACE_MS + LOCK_GRACE_MS).toISOString() });
-        }
-      } catch { /* gone: nothing to hold */ }
+      // A lock another call took over while this one checked is that call's pass: this one
+      // stops, as it would have had it found the lock held.
+      let held = null;
+      try { held = readJson(lock); } catch { held = null; }
+      if (held && held.pid !== process.pid) answer({ read: true, task, source, running: true, pid: held.pid });
+      writeJson(lock, { pid: process.pid, until: new Date(Date.now() + timeout + TERM_GRACE_MS + LOCK_GRACE_MS).toISOString() });
       // What the pass ran with, beside its log: the profile to read, the call to repeat.
       writeJson(path.join(round.dir, 'codex.argv'), ['codex', ...args]);
       const fd = openSync(log, flag);
@@ -1753,7 +1784,7 @@ async function codex() {
       }
       return { model, effort, value, timedOut: r.timedOut, span, how, said };
     };
-    let run = await attempt(first, entry, levelOn(ladder), ms, 'w');
+    let run = await attempt(first, entry, levelOn(ladder), () => ms, 'w');
     const notes = [];
     // No answer with time still left on the watchdog: one model's limit is not the pass's.
     // It runs once more, in what is left, on the next model the catalog lists that offers
@@ -1763,7 +1794,7 @@ async function codex() {
       const next = listed().find((m) => m.slug !== first && ladderOf(m).length && (!asked.effort || ladderOf(m).includes(asked.effort)));
       const left = deadline - Date.now();
       if (next && left >= RERUN_MIN_MS) {
-        const again = await attempt(next.slug, next, levelOn(ladderOf(next)), left, 'a');
+        const again = await attempt(next.slug, next, levelOn(ladderOf(next)), () => deadline - Date.now(), 'a');
         if (!again.value) {
           const then = again.timedOut ? `: no answer within ${again.span} — the watchdog ended it` : ` (${again.how}): ${again.said}`;
           lose(`codex gave no answer on ${first} (${run.how}): ${run.said} — nor on ${next.slug}${then}`, { model: again.model, effort: again.effort });
