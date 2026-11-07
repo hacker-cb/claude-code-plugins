@@ -1379,17 +1379,20 @@ const onPath = (tool) => {
 // path a program is started by as well as the file it is. Every directory of the prefix but
 // `var`, where a package manager keeps services' data, and `local`, a prefix of its own
 // under `/usr` that PATH names apart where a tool lives there; narrowed to the program's own
-// directory where the prefix is too wide, and left out where that is too.
+// directory where the prefix is too wide, and left out where that is too. Each is judged
+// where it leads, never by the name a link gives it.
 const toolRoots = (bin) => [...new Set([bin, real(bin)].filter(Boolean))].flatMap((at) => {
   const dir = path.dirname(at);
   const prefix = path.basename(dir) === 'bin' ? path.dirname(dir) : null;
   if (prefix && !tooWide(prefix)) {
     try {
       return readdirSync(prefix, { withFileTypes: true })
-        .filter((e) => (e.isDirectory() || e.isSymbolicLink()) && e.name !== 'var' && e.name !== 'local').map((e) => path.join(prefix, e.name));
+        .filter((e) => (e.isDirectory() || e.isSymbolicLink()) && e.name !== 'var' && e.name !== 'local')
+        .map((e) => real(path.join(prefix, e.name))).filter((p) => p && !tooWide(p));
     } catch { /* unreadable: the program's own directory below */ }
   }
-  return tooWide(dir) ? [] : [dir];
+  const own = real(dir);
+  return own && !tooWide(own) ? [own] : [];
 });
 // Lines of a file, unread where it is not there.
 const linesOf = (file) => { try { return readFileSync(file, 'utf8').split('\n'); } catch { return []; } };
@@ -1407,7 +1410,8 @@ function confinement(round, repo) {
   // An entry of the variable git C-quotes where it holds the separator.
   const unquote = (v) => (v.startsWith('"') ? v.slice(1, -1).replace(/\\(.)/g, '$1') : v);
   const envStores = (process.env.GIT_ALTERNATE_OBJECT_DIRECTORIES || '').match(/"(?:[^"\\]|\\.)*"|[^:"]+/g) || [];
-  let stores = [...dirs.map((d) => store(path.join(d, 'objects'))), ...envStores.map((v) => unquote(v)).filter((v) => path.isAbsolute(v)).map(store)].filter(Boolean);
+  const primary = process.env.GIT_OBJECT_DIRECTORY ? [path.resolve(top, process.env.GIT_OBJECT_DIRECTORY)] : [];
+  let stores = [...dirs.map((d) => store(path.join(d, 'objects'))), ...primary.map((p) => real(p)), ...envStores.map((v) => unquote(v)).filter((v) => path.isAbsolute(v)).map(store)].filter(Boolean);
   for (let depth = 0; depth < 5 && stores.length; depth += 1) {
     const next = [];
     for (const objects of stores) {
@@ -1418,6 +1422,8 @@ function confinement(round, repo) {
     }
     stores = next;
   }
+  // An index kept outside the git directory is read wherever it was put.
+  if (process.env.GIT_INDEX_FILE) roots.push(real(path.resolve(top, process.env.GIT_INDEX_FILE)));
   roots.push(round.dir, real(PLUGIN));
   roots.push(...toolRoots(process.execPath));
   for (const t of ['codex', 'git', 'rg']) { const b = onPath(t); if (b) roots.push(...toolRoots(b)); }
