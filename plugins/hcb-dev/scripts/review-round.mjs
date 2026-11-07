@@ -1373,32 +1373,54 @@ const onPath = (tool) => {
 };
 // A tool runs from its install prefix — the parent of its `bin`, where its libraries sit —
 // found both where PATH names it and where a link from there leads: the sandbox checks the
-// path a program is started by as well as the file it is. Narrowed to the program's own
+// path a program is started by as well as the file it is. Every directory of the prefix but
+// `var`, where a package manager keeps services' data; narrowed to the program's own
 // directory where the prefix is too wide, and left out where that is too.
 const toolRoots = (bin) => [...new Set([bin, real(bin)].filter(Boolean))].flatMap((at) => {
   const dir = path.dirname(at);
-  return [path.basename(dir) === 'bin' ? path.dirname(dir) : dir, dir].filter((p) => !tooWide(p)).slice(0, 1);
+  const prefix = path.basename(dir) === 'bin' ? path.dirname(dir) : null;
+  if (prefix && !tooWide(prefix)) {
+    try {
+      return readdirSync(prefix, { withFileTypes: true })
+        .filter((e) => (e.isDirectory() || e.isSymbolicLink()) && e.name !== 'var').map((e) => path.join(prefix, e.name));
+    } catch { /* unreadable: the program's own directory below */ }
+  }
+  return tooWide(dir) ? [] : [dir];
 });
+// Lines of a file, unread where it is not there.
+const linesOf = (file) => { try { return readFileSync(file, 'utf8').split('\n'); } catch { return []; } };
 function confinement(round, repo) {
   const { top } = round.req;
   if (tooWide(top)) return { refused: `the tree ${top} is, or holds, a root no pass may read whole (${FORBIDDEN_SAID})` };
   const roots = [top];
   const gitDirs = repo.git(['rev-parse', '--git-dir', '--git-common-dir']);
-  if (gitDirs.ok) for (const l of gitDirs.out.split('\n').filter(Boolean)) roots.push(real(path.resolve(top, l)));
+  const dirs = gitDirs.ok ? gitDirs.out.split('\n').filter(Boolean).map((l) => path.resolve(top, l)) : [];
+  roots.push(...dirs.map(real));
+  // Objects a clone borrows from another repository (--shared, --reference) are read there.
+  for (const d of dirs) {
+    const objects = path.join(d, 'objects');
+    for (const l of linesOf(path.join(objects, 'info', 'alternates'))) {
+      if (l.trim() && !l.startsWith('#')) roots.push(real(path.resolve(objects, l.trim())));
+    }
+  }
+  for (const l of (process.env.GIT_ALTERNATE_OBJECT_DIRECTORIES || '').split(path.delimiter)) {
+    if (path.isAbsolute(l)) roots.push(real(l));
+  }
   roots.push(round.dir, real(PLUGIN));
   roots.push(...toolRoots(process.execPath));
   for (const t of ['codex', 'git', 'rg']) { const b = onPath(t); if (b) roots.push(...toolRoots(b)); }
   // git reads its configuration — and whatever that includes — before it answers anything.
-  const origins = repo.git(['config', '--list', '--show-origin', '--name-only']);
+  // NUL-separated pairs of origin and name: a path git would quote arrives as it is.
+  const origins = repo.git(['config', '--list', '--show-origin', '--name-only', '-z']);
   if (origins.ok) {
-    for (const l of origins.out.split('\n')) {
-      const m = /^file:([^\t"]+)\t/.exec(l);
-      if (m && path.isAbsolute(m[1])) roots.push(real(m[1]));
+    const fields = origins.out.split('\0');
+    for (let i = 0; i + 1 < fields.length; i += 2) {
+      if (fields[i].startsWith('file:')) roots.push(real(path.resolve(top, fields[i].slice(5))));
     }
   }
   for (const key of ['core.excludesFile', 'core.attributesFile']) {
     const v = repo.git(['config', '--path', '--get', key]);
-    if (v.ok && path.isAbsolute(v.out.trim())) roots.push(real(v.out.trim()));
+    if (v.ok && v.out.trim()) roots.push(real(path.resolve(top, v.out.trim())));
   }
   roots.push(real(path.join(process.env.XDG_CONFIG_HOME || path.join(homedir(), '.config'), 'git')));
   if (process.platform === 'darwin') {
@@ -1419,16 +1441,31 @@ function confinement(round, repo) {
     if (!kept.some((k) => inside(r, k))) kept.push(r);
   }
   const table = `{${[':minimal', ...kept].map((p) => `${JSON.stringify(p)}="read"`).join(', ')}}`;
+  // An MCP server's tools run outside the sandbox, so every one the user's configuration
+  // starts is switched off for this call, by name: an empty table merges and removes none.
+  const servers = spawnSync('codex', ['mcp', 'list', '--json'], {
+    cwd: top, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, timeout: CATALOG_MS, killSignal: 'SIGKILL',
+  });
+  let names = [];
+  try { names = JSON.parse(servers.stdout || '').map((x) => x.name).filter((n) => typeof n === 'string'); } catch { names = []; }
+  const key = (n) => (/^[A-Za-z0-9_-]+$/.test(n) ? n : JSON.stringify(n));
   return {
     roots: kept,
-    flags: ['-c', 'approval_policy="never"', '-c', `default_permissions="${PROFILE}"`, '-c', `permissions.${PROFILE}.filesystem=${table}`],
+    flags: [
+      '-c', 'approval_policy="never"', '-c', `default_permissions="${PROFILE}"`,
+      '-c', `permissions.${PROFILE}.filesystem=${table}`, '-c', `permissions.${PROFILE}.network.enabled=false`,
+      ...names.flatMap((n) => ['-c', `mcp_servers.${key(n)}.enabled=false`]),
+    ],
   };
 }
 
 // Whether Codex will run the pass inside that profile, asked of Codex itself before any
 // model runs: the policy it renders for a session, read from the strings of its prompt
-// input. Another layer of its configuration may have widened it, and a CLI too old for
-// profiles renders none — either way the pass does not run. Null where it is confined.
+// input, and the MCP servers it would start. Another layer of its configuration may have
+// widened the policy, and a CLI too old for profiles renders none — either way the pass does
+// not run. Closed by default: every filesystem policy in the input — a repository's own
+// AGENTS.md lands there too — must be one this reads whole and finds within the profile, so
+// a form it does not know refuses rather than passes. Null where it is confined.
 const unxml = (v) => v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
 function unconfined(rendered, roots) {
   const strings = [];
@@ -1438,25 +1475,35 @@ function unconfined(rendered, roots) {
   };
   try { walk(JSON.parse(rendered)); } catch { return 'it rendered no prompt input to read the policy from'; }
   const text = strings.join('\n');
-  const blocks = [...text.matchAll(/<file_system type="([^"]*)">([\s\S]*?)<\/file_system>/g)];
-  if (!blocks.length) return 'it rendered no filesystem policy';
+  const opened = [...text.matchAll(/<file_system\b[^>]*>/g)].map((m) => m[0]);
+  const blocks = [...text.matchAll(/<file_system type="restricted">([\s\S]*?)<\/file_system>/g)];
+  if (!opened.length) return 'it rendered no filesystem policy';
+  const other = opened.find((o) => o !== '<file_system type="restricted">');
+  if (other) return `it renders the filesystem policy ${other}`;
+  if (blocks.length !== opened.length) return 'it renders a filesystem policy this check cannot read whole';
   const allowed = new Set(roots);
   // Codex adds an entry of its own, a helper under its home's tmp.
   const own = process.env.CODEX_HOME || path.join(homedir(), '.codex');
   const ownTmp = [own, real(own)].filter(Boolean).map((d) => path.join(d, 'tmp'));
+  const ENTRY = /<entry((?:\s+[a-z_]+="[^"]*")*)>([\s\S]*?)<\/entry>/g;
   let minimal = false;
-  for (const [, type, body] of blocks) {
-    if (type !== 'restricted') return `its filesystem policy is ${type}, not restricted`;
-    for (const [, access, inner] of body.matchAll(/<entry access="([^"]*)">([\s\S]*?)<\/entry>/g)) {
-      const special = /<special>([\s\S]*?)<\/special>/.exec(inner);
-      const at = /<path>([\s\S]*?)<\/path>/.exec(inner);
-      const what = special ? unxml(special[1]) : at ? unxml(at[1]) : inner;
-      if (access !== 'read') return `it grants ${access} on ${what}`;
+  for (const [, body] of blocks) {
+    if (body.replace(ENTRY, '').trim()) return `it renders a filesystem policy this check cannot read whole: ${body.replace(ENTRY, '').trim().slice(0, 120)}`;
+    for (const [, attrs, inner] of body.matchAll(ENTRY)) {
+      const attr = Object.fromEntries([...attrs.matchAll(/([a-z_]+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+      const special = /^<special>([\s\S]*?)<\/special>$/.exec(inner.trim());
+      const at = /^<path>([\s\S]*?)<\/path>$/.exec(inner.trim());
+      const what = special ? unxml(special[1]) : at ? unxml(at[1]) : inner.trim().slice(0, 120);
+      const extra = Object.keys(attr).find((k) => k !== 'access' && !(k === 'escalatable' && attr[k] === 'false'));
+      if (extra) return `it renders an entry for ${what} with ${extra}="${attr[extra]}"`;
+      if (!special && !at) return `it renders an entry this check cannot read: ${what}`;
+      // A deny narrows whatever it names; only a read is measured against the profile.
+      if (attr.access === 'deny' || attr.access === 'none') continue;
+      if (attr.access !== 'read') return `it grants ${attr.access ?? 'unnamed access'} on ${what}`;
       if (special && what === ':minimal') { minimal = true; continue; }
       if (special) return `it grants read on ${what}`;
-      const p = at && unxml(at[1]);
-      const r = p && (real(p) ?? p);
-      if (!p || !(allowed.has(p) || allowed.has(r) || ownTmp.some((t) => inside(p, t) || inside(r, t)))) return `it grants read on ${what}, which this pass did not ask for`;
+      const r = real(what) ?? what;
+      if (!(allowed.has(what) || allowed.has(r) || ownTmp.some((t) => inside(what, t) || inside(r, t)))) return `it grants read on ${what}, which this pass did not ask for`;
     }
   }
   return minimal ? null : 'its filesystem policy lacks the platform paths (:minimal) the profile asked for';
@@ -1488,7 +1535,7 @@ function codexPrompt(round, text, limit, rules, inline) {
     req.narrow ? `The caller narrowed the review: ${req.narrow}` : null,
     rules.length ? `The repository's own rules for these paths: ${rules.join(', ')}.` : null,
     '',
-    `Where to read: the working tree ${req.top} and this round's files through the two commands above${dirs.length ? `; beyond them, the directories the caller named: ${dirs.join(', ')}` : ''}. The sandbox refuses every other path. Never search from /, ~, /Users, /Volumes or ~/Library — no find, grep -r, rg or ls -R there, whatever you look for. Name a process by its pid alone, never with pkill -f or pgrep -f.`,
+    `Where to read: the working tree ${req.top} and this round's files through the two commands above${dirs.length ? `; beyond them, the directories the caller named: ${dirs.join(', ')}` : ''}. The sandbox refuses every other path. Never search from ${FORBIDDEN_SAID} — no find, grep -r, rg or ls -R there, whatever you look for. Name a process by its pid alone, never with pkill -f or pgrep -f.`,
     '',
     `Hand in at most ${limit} candidates, the most severe first, as the output schema describes:`,
     `- file: the path from the repository root, at most ${cand.file.maxLength} characters; line: the line the defect is at, counted from 1 — in the file as it is now for side "head", at the merge base for side "base", a line the change removed, under the path it had there;`,
@@ -1592,14 +1639,29 @@ async function codex() {
     // never a pass run with the whole disk to read.
     const box = confinement(round, repo);
     if (box.refused) lose(`the pass was not run: ${box.refused}`);
-    const pre = spawnSync('codex', ['debug', 'prompt-input', ...box.flags], {
-      cwd: repo.top, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: CATALOG_MS, killSignal: 'SIGKILL',
-    });
-    if (pre.error?.code === 'ENOENT') lose('the codex CLI is not on PATH');
-    const loose = pre.status === 0
-      ? unconfined(pre.stdout || '', box.roots)
-      : `it could not render its prompt input (${pre.error ? pre.error.message : `exit ${pre.status}`}): ${tail(`${pre.stdout || ''}\n${pre.stderr || ''}`, 3)}`;
-    if (loose) lose(`the codex CLI did not confirm the pass is confined to the tree — ${loose}; no pass runs unconfined`);
+    // Asked with the flags of the very run it vouches for — its model and level among them,
+    // a configuration layer may key on either — right before that run.
+    const confirm = (model, effort) => {
+      const flags = [...box.flags, '-c', `model=${JSON.stringify(model)}`, '-c', `model_reasoning_effort=${effort}`];
+      const ask = (args) => spawnSync('codex', [...args, ...flags], {
+        cwd: repo.top, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: CATALOG_MS, killSignal: 'SIGKILL',
+      });
+      const said = (r) => `${r.error ? r.error.message : `exit ${r.status}`}): ${tail(`${r.stdout || ''}\n${r.stderr || ''}`, 3)}`;
+      const pre = ask(['debug', 'prompt-input']);
+      if (pre.error?.code === 'ENOENT') lose('the codex CLI is not on PATH');
+      let loose = pre.status === 0 ? unconfined(pre.stdout || '', box.roots) : `it could not render its prompt input (${said(pre)}`;
+      if (!loose) {
+        const mcp = ask(['mcp', 'list', '--json']);
+        let listed = null;
+        try { listed = JSON.parse(mcp.stdout || ''); } catch { listed = null; }
+        if (mcp.status !== 0 || !Array.isArray(listed)) loose = `it could not list the MCP servers it would start (${said(mcp)}`;
+        else {
+          const on = listed.filter((x) => x?.enabled !== false).map((x) => x?.name);
+          if (on.length) loose = `it would start the MCP server(s) ${on.join(', ')}, whose tools run outside the sandbox`;
+        }
+      }
+      if (loose) lose(`the codex CLI did not confirm the pass is confined to the tree — ${loose}; no pass runs unconfined`, { model, effort });
+    };
 
     // A caller who named the model and the level has said what to run; the catalog is
     // read for whatever is left to choose, for the model's window where it knows it, and
@@ -1643,7 +1705,7 @@ async function codex() {
     const rules = ruleFiles(repo, round.req.files);
     const deadline = Date.now() + ms;
     // One run of the pass on one model, under a watchdog of `timeout`. Inside the profile
-    // checked above — `-s` would replace it with a sandbox that reads the whole disk — with
+    // `confirm` checked — `-s` would replace it with a sandbox that reads the whole disk — with
     // no approval and no rule to let a command out of it; sessionless, on the model and
     // level named here; the rest of the user's own Codex config — its provider, its auth —
     // stands. `-` takes the prompt from stdin, which is
@@ -1654,8 +1716,16 @@ async function codex() {
       // A share of the model's window where the catalog gives one, at four bytes a token.
       const inline = Number.isInteger(found?.context_window) ? found.context_window * 4 * INLINE_SHARE : INLINE_KB * 1024;
       const prompt = codexPrompt(round, angleOf(c, task), planned.limit, rules, inline);
+      confirm(model, effort);
       const args = ['exec', '--ephemeral', '--ignore-rules', '-C', repo.top, '-m', model, ...box.flags,
         '-c', `model_reasoning_effort=${effort}`, '--output-schema', schema, '-o', out, '-'];
+      // The lock holds for this run's own watchdog, counted from now: what ran before it —
+      // the catalog, the sandbox's checks — may have eaten into what it was claimed for.
+      try {
+        if (readJson(lock).pid === process.pid) {
+          writeJson(lock, { pid: process.pid, until: new Date(Date.now() + timeout + TERM_GRACE_MS + LOCK_GRACE_MS).toISOString() });
+        }
+      } catch { /* gone: nothing to hold */ }
       // What the pass ran with, beside its log: the profile to read, the call to repeat.
       writeJson(path.join(round.dir, 'codex.argv'), ['codex', ...args]);
       const fd = openSync(log, flag);

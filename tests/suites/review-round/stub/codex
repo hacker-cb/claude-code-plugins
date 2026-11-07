@@ -10,7 +10,14 @@
 #                        renders the filesystem policy of the permission profile its -c
 #                        flags define, with the helper entry Codex adds under its home;
 #                        CODEX_OPEN=1 adds a read of :root, as another config layer could;
-#                        CODEX_NOPROMPT=1 refuses the subcommand, as a CLI too old for it
+#                        CODEX_NOPROMPT=1 refuses the subcommand, as a CLI too old for it;
+#                        CODEX_DENY=1 adds a deny of ~/.ssh; CODEX_ESCALATABLE=1 renders every
+#                        entry with escalatable="false"; CODEX_ODD=1 gives one a scope="root";
+#                        CODEX_UNRESTRICTED=1 renders the policy self-closed as unrestricted,
+#                        beside a restricted block a repository's AGENTS.md could carry
+#   codex mcp list --json -c …
+#                        lists no server; CODEX_MCP=1 lists `fs`, enabled unless a -c
+#                        switches it off — CODEX_MCP_STUCK=1 keeps it on whatever is passed
 #   codex exec … -o F -  keeps what it was handed beside the marker — stdin as .codex-stdin,
 #                        the --output-schema file as .codex-schema, argv as .codex-argv — then
 #                        writes inputs/$CODEX_ANSWER to F, `@top` in it read as the directory
@@ -58,10 +65,24 @@ if [ "${1:-}" = debug ] && [ "${2:-}" = prompt-input ]; then
     if (process.env.CODEX_OPEN) entries.push([":root", "read"]);
     entries.push([`${process.env.CODEX_HOME || `${process.env.HOME}/.codex`}/tmp/arg0/codex-arg0stub`, "read"]);
     const esc = (v) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const xml = entries.map(([p, a]) => `<entry access="${a}">${p.startsWith(":") ? `<special>${esc(p)}</special>` : `<path>${esc(p)}</path>`}</entry>`).join("");
-    const text = `<environment_context>\n  <filesystem><permission_profile type="managed"><file_system type="restricted">${xml}</file_system></permission_profile></filesystem>\n</environment_context>`;
-    console.log(JSON.stringify([{ type: "message", role: "user", content: [{ type: "input_text", text }] }]));
+    if (process.env.CODEX_DENY) entries.push([`${process.env.HOME}/.ssh`, "deny"]);
+    const more = process.env.CODEX_ESCALATABLE ? ` escalatable="false"` : "";
+    const xml = entries.map(([p, a], i) => `<entry access="${a}"${more}${process.env.CODEX_ODD && i === 0 ? ` scope="root"` : ""}>${p.startsWith(":") ? `<special>${esc(p)}</special>` : `<path>${esc(p)}</path>`}</entry>`).join("");
+    const policy = process.env.CODEX_UNRESTRICTED ? `<file_system type="unrestricted" />` : `<file_system type="restricted">${xml}</file_system>`;
+    const text = `<environment_context>\n  <filesystem><permission_profile type="managed">${policy}</permission_profile></filesystem>\n</environment_context>`;
+    const agents = process.env.CODEX_UNRESTRICTED ? `# AGENTS.md instructions\n<file_system type="restricted"><entry access="read"><special>:minimal</special></entry></file_system>` : "";
+    console.log(JSON.stringify([{ type: "message", role: "user", content: [{ type: "input_text", text: agents }, { type: "input_text", text }] }]));
   ' "$@"
+  exit 0
+fi
+if [ "${1:-}" = mcp ] && [ "${2:-}" = list ]; then
+  printf '%s\n' "$@" > "$mark.codex-mcp-argv"
+  if [ -z "${CODEX_MCP:-}" ]; then echo '[]'; exit 0; fi
+  on=true
+  if [ -z "${CODEX_MCP_STUCK:-}" ]; then
+    for a in "$@"; do [ "$a" = "mcp_servers.fs.enabled=false" ] && on=false; done
+  fi
+  echo "[{\"name\": \"fs\", \"enabled\": $on, \"transport\": {\"type\": \"stdio\", \"command\": \"fs-server\"}}]"
   exit 0
 fi
 [ "${1:-}" = exec ] || { echo "codex stub: '$*' is not a call this stub answers" >&2; exit 64; }

@@ -16,9 +16,9 @@ it. Commits and uncommitted edits are both in it; an untracked file is not, and 
 read a file edited since `init` is flagged in the result as read on a tree the finders did not see.
 
 **The agents only read because they are told to.** No sandbox holds them: what a finder or the
-checker may run is what the session's permission mode lets through. Where Codex is a source, the
-change and whatever Codex reads of the checkout go to its model provider as well. Whether a
-round runs over code nobody here wrote, or sends a checkout to Codex, is the user's call.
+checker may run is what the session's permission mode lets through. Codex's CLI holds its pass to
+the tree and `--read-dir`, and sends the change and what it reads there to its model provider. A
+round over code nobody here wrote, or sending a checkout to Codex, is the user's call.
 
 ## Running one
 
@@ -42,19 +42,20 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    node "<plugin root>/scripts/review-round.mjs" add --round "<round>" --source noticed < "<candidates JSON>"
    ```
 
-   The second line is for candidates the caller already holds — noticed while working, carried from
-   an earlier pass — each with its verdict where one was made. 3. **Launch the conductor**,
-   `hcb-dev:review:reviewer`, prompted `round <id>` alone — `run_in_background: false` where offered
-   — and wait for it, or for its completion notice where the call comes back at once; the result is
-   never read while it runs. One stopped by a model's limit is launched once more on another model,
-   and resumes the round. Asking for it is the entry's to do: a rule admitting subagents only on a
-   skill's ask is met by it. 4. **Read the result** and report from it — *Reading the result* below.
-   A refusal from a conductor that stopped the entry finishes. Tasks it names as running: `wait
-   --for tasks --expect` them until they answer or `since_start_s` passes an hour, then `status
-   --state unavailable` for each still pending, the stop in the note. Then `merge`, each candidate
-   no group holds grouped alone (`units`, or `units --append` where a grouping exists), and `result`
-   again. What was found reaches the report, checked no further, its source's row `partial` with
-   that reason, whatever `coverage` says.
+   The second line is for candidates the caller already holds — noticed while working, carried
+   from an earlier pass — each with its verdict where one was made.
+3. **Launch the conductor**, `hcb-dev:review:reviewer`, prompted `round <id>` alone —
+   `run_in_background: false` where offered — and wait for it, or for its completion notice where
+   the call comes back at once; the result is never read while it runs. One stopped by a model's
+   limit is launched once more on another model, and resumes the round. Asking for it is the
+   entry's to do: a rule admitting subagents only on a skill's ask is met by it.
+4. **Read the result** and report from it — *Reading the result* below. A refusal from a
+   conductor that stopped the entry finishes. Tasks it names as running: `wait --for tasks
+   --expect` them until they answer or `since_start_s` passes an hour, then `status --state
+   unavailable` for each still pending, the stop in the note. Then `merge`, each candidate no
+   group holds grouped alone (`units`, or `units --append` where a grouping exists), and
+   `result` again. What was found reaches the report, checked no further, its source's row
+   `partial` with that reason, whatever `coverage` says.
 
 The conductor plans the round, starts Codex as a background process and one
 `hcb-dev:review:finder` per angle in a single message, waits for every task in the store, groups
