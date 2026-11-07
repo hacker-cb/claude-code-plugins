@@ -5,6 +5,12 @@
 #                        a 50-token window) and gpt-bare (no levels) listed, gpt-test first by
 #                        priority, and gpt-hidden unlisted; CODEX_BARE_PRIORITY=<n> moves gpt-bare;
 #                        CODEX_NOLIST=1 lists none of them; CODEX_NOCAT=1 fails to answer
+#   codex debug prompt-input -c …
+#                        keeps its argv beside the marker as .codex-preflight-argv, then
+#                        renders the filesystem policy of the permission profile its -c
+#                        flags define, with the helper entry Codex adds under its home;
+#                        CODEX_OPEN=1 adds a read of :root, as another config layer could;
+#                        CODEX_NOPROMPT=1 refuses the subcommand, as a CLI too old for it
 #   codex exec … -o F -  keeps what it was handed beside the marker — stdin as .codex-stdin,
 #                        the --output-schema file as .codex-schema, argv as .codex-argv — then
 #                        writes inputs/$CODEX_ANSWER to F, `@top` in it read as the directory
@@ -37,6 +43,25 @@ if [ "${1:-}" = debug ] && [ "${2:-}" = models ]; then
   {"slug": "gpt-bare", "visibility": "list", "priority": ${CODEX_BARE_PRIORITY:-3}, "supported_reasoning_levels": []}
 ]}
 JSON
+  exit 0
+fi
+if [ "${1:-}" = debug ] && [ "${2:-}" = prompt-input ]; then
+  printf '%s\n' "$@" > "$mark.codex-preflight-argv"
+  if [ -n "${CODEX_NOPROMPT:-}" ]; then
+    echo "error: unrecognized subcommand 'prompt-input'" >&2
+    exit 2
+  fi
+  node -e '
+    const args = process.argv.slice(1);
+    const table = args.find((a) => /^permissions\.[A-Za-z0-9_-]+\.filesystem=/.test(a)) || "";
+    const entries = [...table.matchAll(/("(?:[^"\\]|\\.)*")="(\w+)"/g)].map((m) => [JSON.parse(m[1]), m[2]]);
+    if (process.env.CODEX_OPEN) entries.push([":root", "read"]);
+    entries.push([`${process.env.CODEX_HOME || `${process.env.HOME}/.codex`}/tmp/arg0/codex-arg0stub`, "read"]);
+    const esc = (v) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const xml = entries.map(([p, a]) => `<entry access="${a}">${p.startsWith(":") ? `<special>${esc(p)}</special>` : `<path>${esc(p)}</path>`}</entry>`).join("");
+    const text = `<environment_context>\n  <filesystem><permission_profile type="managed"><file_system type="restricted">${xml}</file_system></permission_profile></filesystem>\n</environment_context>`;
+    console.log(JSON.stringify([{ type: "message", role: "user", content: [{ type: "input_text", text }] }]));
+  ' "$@"
   exit 0
 fi
 [ "${1:-}" = exec ] || { echo "codex stub: '$*' is not a call this stub answers" >&2; exit 64; }

@@ -11,7 +11,7 @@
 // Usage:
 //   node review-round.mjs init --mode round --base <ref> [--rung medium|high]
 //                              [--sources <list>] [--language <tag>] [--narrow <text>]
-//                              [--codex-model <slug>] [--codex-effort <level>]
+//                              [--codex-model <slug>] [--codex-effort <level>] [--read-dir <dir>]...
 //   node review-round.mjs init --mode pass [--tree worktree|<ref>] [--language <tag>]
 //   node review-round.mjs plan    --round <id> [--depth]
 //   node review-round.mjs brief   --round <id> --task <task>
@@ -40,13 +40,13 @@
 // wrong; 3 the round or the repository could not be read.
 
 import {
-  closeSync, existsSync, fstatSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, readSync,
+  accessSync, closeSync, constants, existsSync, fstatSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, readSync,
   readdirSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { text, writeAll } from './lib/forge.mjs';
 import { schemaDir, validate } from './lib/schema.mjs';
@@ -66,7 +66,7 @@ const cannot = (reason) => {
 const refuse = (errors, extra = {}) => answer({ accepted: false, errors, ...extra }, 1);
 
 const SPEC = {
-  init: ['--mode', '--base', '--tree', '--rung', '--sources', '--language', '--narrow', '--codex-model', '--codex-effort'],
+  init: ['--mode', '--base', '--tree', '--rung', '--sources', '--language', '--narrow', '--codex-model', '--codex-effort', '--read-dir'],
   plan: ['--round', '--depth'],
   brief: ['--round', '--task'],
   diff: ['--round', '--number'],
@@ -89,6 +89,8 @@ const [cmd, ...argv] = process.argv.slice(2);
 if (!cmd || !SPEC[cmd]) die(cmd ? `unknown subcommand '${cmd}'` : 'a subcommand is required');
 // A switch is answered by being there, and takes no value.
 const SWITCHES = new Set(['--depth', '--append', '--inbox', '--units']);
+// A flag that may be given more than once collects its values, in the order given.
+const REPEATABLE = new Set(['--read-dir']);
 const opts = {};
 for (let i = 0; i < argv.length; i += 1) {
   if (!SPEC[cmd].includes(argv[i])) die(`${cmd} takes no argument '${argv[i]}'`);
@@ -97,7 +99,8 @@ for (let i = 0; i < argv.length; i += 1) {
   // An empty one would fall back — to the working tree, to no budget, to English — and
   // the fallback answers as though it had been asked for.
   if (argv[i + 1] === '') die(`${argv[i]} was given an empty value — give it one, or drop the flag`);
-  opts[argv[i]] = argv[i + 1];
+  if (REPEATABLE.has(argv[i])) (opts[argv[i]] ??= []).push(argv[i + 1]);
+  else opts[argv[i]] = argv[i + 1];
   i += 1;
 }
 if (opts['--inbox'] && opts['--file']) die('a submission comes from --file or from --inbox, not both');
@@ -140,6 +143,18 @@ const revOk = (v) => typeof v === 'string' && v !== '' && !v.startsWith('-') && 
 const sq = (v) => `'${v.replaceAll("'", `'\\''`)}'`;
 const real = (p) => { try { return realpathSync(p); } catch { return null; } };
 const inside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
+// Where no search starts and no sandbox opens whole: a network volume, a disk snapshot, a
+// cloud folder whose files download when read may sit under any of these — and `find` from
+// one has held the machine's open-file table before. A path is too wide where it is one of
+// them or holds one; one inside them, named, is not.
+const forbiddenRoots = () => {
+  const home = homedir();
+  return [...new Set(['/', home, '/Users', '/Volumes', path.join(home, 'Library'), '/System', '/System/Volumes/Data']
+    .flatMap((p) => [p, real(p)]).filter(Boolean))];
+};
+const FORBIDDEN_SAID = '/, ~, /Users, /Volumes, ~/Library or /System';
+const tooWide = (p) => p === path.sep || forbiddenRoots().some((f) => f === p || f.startsWith(p + path.sep));
+const MAX_READ_DIRS = 8;
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
 // Written beside the target and renamed over it: a reader of the store — `wait`, a second
 // checker, `result` — sees the old file or the new one, never a truncated half.
@@ -697,6 +712,18 @@ function init() {
   }
   if (codexModel !== undefined && !MODEL_ID.test(codexModel)) die(`--codex-model '${codexModel}' is not a model name`);
   if (codexEffort !== undefined && !/^[a-z]{1,20}$/.test(codexEffort)) die(`--codex-effort '${codexEffort}' is not a level`);
+  // Directories outside the tree the Codex pass may read — an SDK, a toolchain's headers —
+  // each one named, never a root a search must not start from.
+  const readDirs = [];
+  for (const d of opts['--read-dir'] ?? []) {
+    if (!path.isAbsolute(d)) die(`--read-dir '${d}' is not an absolute path`);
+    const r = real(d);
+    if (!r || !statSync(r).isDirectory()) die(`--read-dir '${d}' is not a directory`);
+    if (tooWide(r)) die(`--read-dir '${d}' would open ${r} whole — name the directory the review needs, never ${FORBIDDEN_SAID}`);
+    if (!readDirs.includes(r)) readDirs.push(r);
+  }
+  if (readDirs.length > MAX_READ_DIRS) die(`--read-dir is given at most ${MAX_READ_DIRS} times`);
+  if (readDirs.length && !sources.some((x) => passes.has(x))) die('--read-dir belongs to a round with codex among its --sources');
   const language = opts['--language'] || 'en';
   if (!/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(language)) die(`--language '${language}' is not a language tag`);
   const narrow = opts['--narrow'] ?? null;
@@ -816,6 +843,7 @@ function init() {
       base: { ref: opts['--base'], merge_base: mergeBase }, head: { sha: headSha, dirty },
       snapshot, rung, sources, language, narrow, files, untracked: strays, warnings, notes,
       ...(codexModel || codexEffort ? { codex: { model: codexModel ?? null, effort: codexEffort ?? null } } : {}),
+      ...(readDirs.length ? { read_dirs: readDirs } : {}),
     };
   } else {
     let tree = { kind: 'worktree', ref: null, sha: null };
@@ -1330,6 +1358,110 @@ function codexSchema(limit) {
   };
 }
 
+// The pass reads inside a permission profile of Codex's own, set on this call alone: the
+// tree, its git directories, this round and the plugin its commands run, the tools those
+// commands need and the directories the caller named — every other path is refused by the
+// sandbox, whatever the prompt says. Read-only by construction: no entry grants a write.
+const PROFILE = 'hcb_dev_review';
+const onPath = (tool) => {
+  for (const d of (process.env.PATH || '').split(path.delimiter)) {
+    if (!path.isAbsolute(d)) continue;
+    const f = path.join(d, tool);
+    try { accessSync(f, constants.X_OK); if (statSync(f).isFile()) return f; } catch { /* not here */ }
+  }
+  return null;
+};
+// A tool runs from its install prefix — the parent of its `bin`, where its libraries sit —
+// found both where PATH names it and where a link from there leads: the sandbox checks the
+// path a program is started by as well as the file it is. Narrowed to the program's own
+// directory where the prefix is too wide, and left out where that is too.
+const toolRoots = (bin) => [...new Set([bin, real(bin)].filter(Boolean))].flatMap((at) => {
+  const dir = path.dirname(at);
+  return [path.basename(dir) === 'bin' ? path.dirname(dir) : dir, dir].filter((p) => !tooWide(p)).slice(0, 1);
+});
+function confinement(round, repo) {
+  const { top } = round.req;
+  if (tooWide(top)) return { refused: `the tree ${top} is, or holds, a root no pass may read whole (${FORBIDDEN_SAID})` };
+  const roots = [top];
+  const gitDirs = repo.git(['rev-parse', '--git-dir', '--git-common-dir']);
+  if (gitDirs.ok) for (const l of gitDirs.out.split('\n').filter(Boolean)) roots.push(real(path.resolve(top, l)));
+  roots.push(round.dir, real(PLUGIN));
+  roots.push(...toolRoots(process.execPath));
+  for (const t of ['codex', 'git', 'rg']) { const b = onPath(t); if (b) roots.push(...toolRoots(b)); }
+  // git reads its configuration — and whatever that includes — before it answers anything.
+  const origins = repo.git(['config', '--list', '--show-origin', '--name-only']);
+  if (origins.ok) {
+    for (const l of origins.out.split('\n')) {
+      const m = /^file:([^\t"]+)\t/.exec(l);
+      if (m && path.isAbsolute(m[1])) roots.push(real(m[1]));
+    }
+  }
+  for (const key of ['core.excludesFile', 'core.attributesFile']) {
+    const v = repo.git(['config', '--path', '--get', key]);
+    if (v.ok && path.isAbsolute(v.out.trim())) roots.push(real(v.out.trim()));
+  }
+  roots.push(real(path.join(process.env.XDG_CONFIG_HOME || path.join(homedir(), '.config'), 'git')));
+  if (process.platform === 'darwin') {
+    // OpenSSL's configuration, which node reads as it starts; the developer tools behind
+    // the system's git shim.
+    roots.push(real('/System/Library/OpenSSL'));
+    if (real(onPath('git') ?? '') === '/usr/bin/git') {
+      const dev = spawnSync('xcode-select', ['-p'], { encoding: 'utf8', timeout: 10_000 });
+      if (dev.status === 0) roots.push(real(dev.stdout.trim()));
+    }
+  }
+  for (const d of round.req.read_dirs || []) {
+    if (tooWide(d)) return { refused: `--read-dir ${d} is, or holds, a root no pass may read whole (${FORBIDDEN_SAID})` };
+    roots.push(real(d));
+  }
+  const kept = [];
+  for (const r of [...new Set(roots.filter((r) => r && !tooWide(r)))].sort((a, b) => a.length - b.length)) {
+    if (!kept.some((k) => inside(r, k))) kept.push(r);
+  }
+  const table = `{${[':minimal', ...kept].map((p) => `${JSON.stringify(p)}="read"`).join(', ')}}`;
+  return {
+    roots: kept,
+    flags: ['-c', 'approval_policy="never"', '-c', `default_permissions="${PROFILE}"`, '-c', `permissions.${PROFILE}.filesystem=${table}`],
+  };
+}
+
+// Whether Codex will run the pass inside that profile, asked of Codex itself before any
+// model runs: the policy it renders for a session, read from the strings of its prompt
+// input. Another layer of its configuration may have widened it, and a CLI too old for
+// profiles renders none — either way the pass does not run. Null where it is confined.
+const unxml = (v) => v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+function unconfined(rendered, roots) {
+  const strings = [];
+  const walk = (v) => {
+    if (typeof v === 'string') strings.push(v);
+    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  try { walk(JSON.parse(rendered)); } catch { return 'it rendered no prompt input to read the policy from'; }
+  const text = strings.join('\n');
+  const blocks = [...text.matchAll(/<file_system type="([^"]*)">([\s\S]*?)<\/file_system>/g)];
+  if (!blocks.length) return 'it rendered no filesystem policy';
+  const allowed = new Set(roots);
+  // Codex adds an entry of its own, a helper under its home's tmp.
+  const own = process.env.CODEX_HOME || path.join(homedir(), '.codex');
+  const ownTmp = [own, real(own)].filter(Boolean).map((d) => path.join(d, 'tmp'));
+  let minimal = false;
+  for (const [, type, body] of blocks) {
+    if (type !== 'restricted') return `its filesystem policy is ${type}, not restricted`;
+    for (const [, access, inner] of body.matchAll(/<entry access="([^"]*)">([\s\S]*?)<\/entry>/g)) {
+      const special = /<special>([\s\S]*?)<\/special>/.exec(inner);
+      const at = /<path>([\s\S]*?)<\/path>/.exec(inner);
+      const what = special ? unxml(special[1]) : at ? unxml(at[1]) : inner;
+      if (access !== 'read') return `it grants ${access} on ${what}`;
+      if (special && what === ':minimal') { minimal = true; continue; }
+      if (special) return `it grants read on ${what}`;
+      const p = at && unxml(at[1]);
+      const r = p && (real(p) ?? p);
+      if (!p || !(allowed.has(p) || allowed.has(r) || ownTmp.some((t) => inside(p, t) || inside(r, t)))) return `it grants read on ${what}, which this pass did not ask for`;
+    }
+  }
+  return minimal ? null : 'its filesystem policy lacks the platform paths (:minimal) the profile asked for';
+}
+
 function codexPrompt(round, text, limit, rules, inline) {
   const { req } = round;
   const mb = req.base.merge_base;
@@ -1345,7 +1477,9 @@ function codexPrompt(round, text, limit, rules, inline) {
     const size = Buffer.byteLength(k.text);
     if (used + size <= inline) { shown.push(k.text); used += size; } else named.add(k.path);
   }
-  const script = `node ${sq(SCRIPT)}`;
+  // The node this runs on, named whole: the sandbox opens its prefix, not whatever node PATH finds.
+  const script = `${sq(process.execPath)} ${sq(SCRIPT)}`;
+  const dirs = req.read_dirs || [];
   return [
     text,
     '',
@@ -1353,6 +1487,8 @@ function codexPrompt(round, text, limit, rules, inline) {
     `One file of the change is \`${script} diff --round ${round.id} --number <n>\`, and the code it had before the change \`${script} show --round ${round.id} --number <n>\`; the code as it is now is the working tree.`,
     req.narrow ? `The caller narrowed the review: ${req.narrow}` : null,
     rules.length ? `The repository's own rules for these paths: ${rules.join(', ')}.` : null,
+    '',
+    `Where to read: the working tree ${req.top} and this round's files through the two commands above${dirs.length ? `; beyond them, the directories the caller named: ${dirs.join(', ')}` : ''}. The sandbox refuses every other path. Never search from /, ~, /Users, /Volumes or ~/Library — no find, grep -r, rg or ls -R there, whatever you look for. Name a process by its pid alone, never with pkill -f or pgrep -f.`,
     '',
     `Hand in at most ${limit} candidates, the most severe first, as the output schema describes:`,
     `- file: the path from the repository root, at most ${cand.file.maxLength} characters; line: the line the defect is at, counted from 1 — in the file as it is now for side "head", at the merge base for side "base", a line the change removed, under the path it had there;`,
@@ -1417,7 +1553,7 @@ async function codex() {
   // whose watchdog would have ended it by now, holds nothing.
   const lock = path.join(round.dir, 'codex.lock');
   const claim = () => claimJson(lock, {
-    pid: process.pid, until: new Date(Date.now() + CATALOG_MS + ms + TERM_GRACE_MS + LOCK_GRACE_MS).toISOString(),
+    pid: process.pid, until: new Date(Date.now() + 2 * CATALOG_MS + ms + TERM_GRACE_MS + LOCK_GRACE_MS).toISOString(),
   });
   if (!claim()) {
     let held = null;
@@ -1452,6 +1588,19 @@ async function codex() {
   // Whatever stops the pass once it holds the task ends as the task's loss — never as a
   // silence the conductor would wait out its hour on.
   try {
+    // Confined, or not run at all: a pass Codex would not hold to its profile is a loss,
+    // never a pass run with the whole disk to read.
+    const box = confinement(round, repo);
+    if (box.refused) lose(`the pass was not run: ${box.refused}`);
+    const pre = spawnSync('codex', ['debug', 'prompt-input', ...box.flags], {
+      cwd: repo.top, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: CATALOG_MS, killSignal: 'SIGKILL',
+    });
+    if (pre.error?.code === 'ENOENT') lose('the codex CLI is not on PATH');
+    const loose = pre.status === 0
+      ? unconfined(pre.stdout || '', box.roots)
+      : `it could not render its prompt input (${pre.error ? pre.error.message : `exit ${pre.status}`}): ${tail(`${pre.stdout || ''}\n${pre.stderr || ''}`, 3)}`;
+    if (loose) lose(`the codex CLI did not confirm the pass is confined to the tree — ${loose}; no pass runs unconfined`);
+
     // A caller who named the model and the level has said what to run; the catalog is
     // read for whatever is left to choose, for the model's window where it knows it, and
     // for a model to run on once the first gave no answer.
@@ -1493,9 +1642,11 @@ async function codex() {
     writeJson(schema, codexSchema(planned.limit));
     const rules = ruleFiles(repo, round.req.files);
     const deadline = Date.now() + ms;
-    // One run of the pass on one model, under a watchdog of `timeout`. Read-only and
-    // sessionless, on the model and level named here; the rest of the user's own Codex
-    // config — its provider, its auth — stands. `-` takes the prompt from stdin, which is
+    // One run of the pass on one model, under a watchdog of `timeout`. Inside the profile
+    // checked above — `-s` would replace it with a sandbox that reads the whole disk — with
+    // no approval and no rule to let a command out of it; sessionless, on the model and
+    // level named here; the rest of the user's own Codex config — its provider, its auth —
+    // stands. `-` takes the prompt from stdin, which is
     // also what stops the CLI waiting on a terminal that is not there. What it prints goes
     // to the round's log, never through this process's memory.
     const attempt = async (model, found, effort, timeout, flag) => {
@@ -1503,11 +1654,14 @@ async function codex() {
       // A share of the model's window where the catalog gives one, at four bytes a token.
       const inline = Number.isInteger(found?.context_window) ? found.context_window * 4 * INLINE_SHARE : INLINE_KB * 1024;
       const prompt = codexPrompt(round, angleOf(c, task), planned.limit, rules, inline);
+      const args = ['exec', '--ephemeral', '--ignore-rules', '-C', repo.top, '-m', model, ...box.flags,
+        '-c', `model_reasoning_effort=${effort}`, '--output-schema', schema, '-o', out, '-'];
+      // What the pass ran with, beside its log: the profile to read, the call to repeat.
+      writeJson(path.join(round.dir, 'codex.argv'), ['codex', ...args]);
       const fd = openSync(log, flag);
       let r;
       try {
-        r = await runPass(['exec', '-s', 'read-only', '--ephemeral', '-C', repo.top, '-m', model,
-          '-c', `model_reasoning_effort=${effort}`, '--output-schema', schema, '-o', out, '-'], { cwd: repo.top, input: prompt, timeout, fd });
+        r = await runPass(args, { cwd: repo.top, input: prompt, timeout, fd });
       } finally {
         closeSync(fd);
       }

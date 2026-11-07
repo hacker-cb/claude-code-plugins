@@ -10,7 +10,7 @@ description: >-
 
 # Codex review
 
-One review round whose one source is Codex, a single read-only pass of its CLI. This skill is
+One review round whose one source is Codex, a single read-only pass of its CLI, sandboxed to the tree. This skill is
 **review-only**: never fix what it reports, return it and let the caller decide.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
