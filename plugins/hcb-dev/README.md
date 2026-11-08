@@ -151,8 +151,8 @@ form: you paste every one of them yourself.
 
 - **`codex-review`** — `/hcb-dev:codex-review`
   One review round over a range and at a rung the caller fixes (`medium` or
-  `high`), its one source a read-only pass of the Codex CLI at the level the rung
-  sets, every Critical and Important candidate then checked by the plugin's verifier —
+  `high`), its one source a read-only pass of the Codex CLI, sandboxed to the tree and
+  the directories the caller names, at the level the rung sets, every Critical and Important candidate then checked by the plugin's verifier —
   a known range in, verified findings and a coverage record back. Review-only. The round's shape is
   [`references/review-pipeline.md`](references/review-pipeline.md).
 - **`claude-review`** — `/hcb-dev:claude-review`

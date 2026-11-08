@@ -13,13 +13,12 @@ it. Commits and uncommitted edits are both in it; an untracked file is not, and 
 `review-round.mjs` writes, addressed by the id `init` prints — never by a path.
 
 **While a round runs, the tree does not change.** A verdict reads the working tree, and one that
-read a file edited since `init` is flagged in the result as read on a tree the finders did not
-see.
+read a file edited since `init` is flagged in the result as read on a tree the finders did not see.
 
 **The agents only read because they are told to.** No sandbox holds them: what a finder or the
-checker may run is what the session's permission mode lets through. Where Codex is a source, the
-change and whatever Codex reads of the checkout go to its model provider as well. Whether a
-round runs over code nobody here wrote, or sends a checkout to Codex, is the user's call.
+checker may run is what the session's permission mode lets through. Codex's CLI holds its pass to
+the tree and `--read-dir`, and sends the change and what it reads there to its model provider. A
+round over code nobody here wrote, or sending a checkout to Codex, is the user's call.
 
 ## Running one
 
@@ -28,14 +27,15 @@ round runs over code nobody here wrote, or sends a checkout to Codex, is the use
    resolves the round does not open. The working tree alone takes `HEAD`. The rung is the
    caller's, `medium` where none is named. The language is the one the report is written in.
 2. **Open it**, with the entry's own sources — `claude`, Claude's finders, one agent per angle of
-   the rung; `security`, one agent, opened only where the caller asked for it; `codex`, one pass of the Codex CLI at the rung's
-   level for it — a narrowing, `--narrow "<a path, or a focus>"`, where the caller gave one, and a
-   Codex model or level the caller named, as `--codex-model` and `--codex-effort`. First, since
-   `init` fixes the snapshot: an untracked file `git ls-files --others --exclude-standard` names
-   that belongs to the change is offered `git add -N -- '<path>'`, the path single-quoted and a
-   quote in it written `'\''` — offered, never run; one left out is a gap every row reports, and
-   untracked files that are no part of the change are none, whatever `init`'s `coverage-warning`
-   counts. A round with nothing to review ends there.
+   the rung; `security`, one agent, opened only where the caller asked for it; `codex`, one pass of
+   the Codex CLI at the rung's level for it — a narrowing, `--narrow "<a path, or a focus>"`, where
+   the caller gave one; a Codex model or level it named, as `--codex-model` and `--codex-effort`;
+   each directory outside the tree it named, an SDK, as `--read-dir "<path>"`. First, since `init`
+   fixes the snapshot: an untracked file `git ls-files --others --exclude-standard` names that
+   belongs to the change is offered `git add -N -- '<path>'`, the path single-quoted and a quote in
+   it written `'\''` — offered, never run; one left out is a gap every row reports, and untracked
+   files that are no part of the change are none, whatever `init`'s `coverage-warning` counts. A
+   round with nothing to review ends there.
 
    ```bash
    node "<plugin root>/scripts/review-round.mjs" init --mode round --base "<base>" --rung "<rung>" --sources "<sources>" --language "<tag>"
@@ -104,7 +104,7 @@ narrowing where there is one; never launch it.
 | it returned without handing in | one reminder; still nothing — `partial` |
 | a model's limit | launched again on another model, named in the status; failing again — `unavailable` |
 | the account's limit | `unavailable`, the notice in the status |
-| Codex answered nothing | where its watchdog has time left, the pass runs once more on the next model the catalog lists, both named in the status; still nothing, or not in time — `unavailable`, the log's last lines or the watchdog in the status |
+| Codex answered nothing | where its watchdog has time left, the pass runs once more on the next model the catalog lists, both named in the status; still nothing, or not in time — `unavailable`, the log's last lines or the watchdog in the status; a pass Codex did not confirm its sandbox holds to the tree is never run — `unavailable`, what the CLI showed in the status |
 | a verifier stopped by a model's limit | launched again on another model; failing again, its group reads `not measured — failed` |
 | it was never launched, or never returned | `partial` for its source, the task named — `unavailable` where no task of that source answered |
 | no agents at all | `depth` for the finders' source |

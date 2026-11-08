@@ -19,6 +19,9 @@
 #                          replaced by the scratch repository's blob of <path>, and `@top`
 #                          by the repository's own directory
 #   @empty                 a word: the empty string, which a manifest cannot write
+#   @dir:<name>            a word: a directory of that name made outside the scratch
+#                          repository, by its real path — one a caller names to a round
+#   @home                  a word: $HOME, a root no round may open whole
 #   @lit:<text>            a word: <text> with %20 read as a space and %25 as %, for a
 #                          path a manifest's word splitting would cut
 #   @elsewhere             a step: every later step runs from another git checkout, one
@@ -155,6 +158,8 @@ for ((n = 0; n < count; n++)); do
     case "$w" in
       @round) args+=("$round") ;;
       @empty) args+=("") ;;
+      @dir:*) mkdir -p "$tmp/dirs/${w#@dir:}" || exit 125; args+=("$(cd "$tmp/dirs/${w#@dir:}" && pwd -P)") ;;
+      @home) args+=("$HOME") ;;
       @lit:*) lit=${w#@lit:}; lit=${lit//%20/ }; args+=("${lit//%25/%}") ;;
       @file:*)
         src="$here/inputs/${w#@file:}"

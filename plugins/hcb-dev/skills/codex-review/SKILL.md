@@ -10,8 +10,9 @@ description: >-
 
 # Codex review
 
-One review round whose one source is Codex, a single read-only pass of its CLI. This skill is
-**review-only**: never fix what it reports, return it and let the caller decide.
+One review round whose one source is Codex, a single read-only pass of its CLI, sandboxed to the
+tree and the directories the caller names. This skill is **review-only**: never fix what it
+reports, return it and let the caller decide.
 **Paths**, substituted at invocation — use verbatim: `<plugin root>` is `${CLAUDE_PLUGIN_ROOT}`.
 
 **References** are read with the `Read` tool — never `sed`, `awk` or another shell command: they sit outside the workspace, where such a read is taken for a write and stops to ask.
