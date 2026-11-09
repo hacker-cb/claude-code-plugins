@@ -87,7 +87,7 @@ is a veto, and a veto needs the item in front of the reader.
 
 ## Needs your word
 
-Last, and the only place an ask stands — every ask in full text, never a label, a count, or a
+Last, and the only place an ask stands, save under a host that keeps them (below) — every ask in full text, never a label, a count, or a
 pointer at an earlier message. Two groups, each a `###` heading: `### 🔴 Blocking` — what holds
 work, in the order dependency puts them in — then `### 🟡 Can wait`. The numbering runs on
 across both.
@@ -112,6 +112,18 @@ deferred by the reader's word (which stops it blocking), withdrawn, failed with 
 stands, or overtaken — said in the line or report that drops it. Where the session records what
 it awaits (`wave-ledger.md` for a coordinating one), the block prints that
 record rather than recall.
+
+## A host that keeps the asks itself
+
+Where this session holds a host's own tool for what it needs from its person — Helmhouse's
+`needs_put` — the host's rules for it govern every ask: where an ask goes, how and when it is put,
+what a message may say of an open one, and how one leaves. They win over this file and over
+every skill or reference that sends an ask to `## Needs your word`, a record printed there
+included. So no line or report carries an ask the host already keeps before the reader — neither
+this session's nor one a session under it keeps there — the first line counts none of them, and
+one the host closed leaves through the host. The first line keeps its circle all the same: a
+blocking ask the host keeps still makes it 🔴. The asks this session records (`wave-ledger.md`)
+are recorded as before. Without such a tool, this file as written.
 
 ## What a report is not
 
