@@ -255,7 +255,7 @@ export const COMMIT_REQUESTS = {
     path: (oid) => `repos/{owner}/{repo}/commits/${oid}/pulls`,
     // What a request carries; a commit field present is a commit, or the answer is no answer.
     shape: (q) => Number.isInteger(q.number) && q.number > 0 && typeof q.state === 'string'
-      && typeof q.base?.ref === 'string' && (q.merge_commit_sha == null || refOk(q.merge_commit_sha)),
+      && refNameOk(q.base?.ref) && (q.merge_commit_sha == null || refOk(q.merge_commit_sha)),
     // `state` is open or closed, and `merged_at` is what tells a merged request from a
     // dropped one.
     row: (q) => ({
@@ -273,7 +273,7 @@ export const COMMIT_REQUESTS = {
     // other CLI does — a version may print either, and `requestsOf` reads both.
     path: (oid) => `projects/:id/repository/commits/${oid}/merge_requests`,
     shape: (q) => Number.isInteger(q.iid) && q.iid > 0 && typeof q.state === 'string'
-      && typeof q.target_branch === 'string' && (q.merge_commit_sha == null || refOk(q.merge_commit_sha))
+      && refNameOk(q.target_branch) && (q.merge_commit_sha == null || refOk(q.merge_commit_sha))
       && (q.squash_commit_sha == null || refOk(q.squash_commit_sha)),
     // `state` carries `merged` outright, and either commit field can hold the landing.
     row: (q) => ({
@@ -319,7 +319,11 @@ export function requestsOf(found, cwd, oid) {
   const r = runner(cwd, found.cli)(['api', ...found.hostArgs, '--paginate', found.reader.path(oid)]);
   if (!r.ok) return { error: why(r) };
   const pages = parsePages(r.out);
-  if (pages === null) return { error: 'the answer was not JSON' };
+  if (pages === null) {
+    // `parsePages` reads arrays and objects alone: a JSON scalar is JSON of the wrong shape.
+    try { JSON.parse(r.out); } catch { return { error: 'the answer was not JSON' }; }
+    return { error: 'the answer was not a list of requests' };
+  }
   const items = pages.every(Array.isArray) ? pages.flat() : null;
   if (!items || !items.every((q) => q && typeof q === 'object' && found.reader.shape(q))) {
     return { error: 'the answer was not a list of requests' };
