@@ -39,8 +39,8 @@ export function writeAll(fd, text) {
 // [`, which no ref may carry anyway. `{` and `}` go too — `gh api` substitutes
 // `{owner}`, `{repo}` and `{branch}` from the repository of the CURRENT directory, so
 // a branch actually named `{repo}` sends the request somewhere else.
-export const SEGMENT = /^[^/\\\s?#%~^:*[\]{}]+$/;
-export const readable = (v) => typeof v === 'string' && SEGMENT.test(v)
+export const SEGMENT = /^[^/\\\s\u0000-\u001f\u007f?#%~^:*[\]{}]+$/;
+export const readable = (v) => typeof v === 'string' && SEGMENT.test(v) && v.isWellFormed()
   && !v.includes('..') && !v.startsWith('-');
 // A BRANCH name is many segments — `release/1.0` is ordinary. Each is held to the
 // same rule; what keeps it inside the url is `encodeURIComponent` at the call site.
@@ -251,11 +251,11 @@ export const COMMIT_REQUESTS = {
     // The host this repository actually lives on, read from its own url: a self-hosted
     // instance asked of the SaaS answers about somebody else, or about nothing.
     host: (out) => { try { return new URL(JSON.parse(out).url).host; } catch { return null; } },
+    // `--paginate` here prints ONE DOCUMENT PER PAGE, concatenated — `requestsOf` reads them all.
     path: (oid) => `repos/{owner}/{repo}/commits/${oid}/pulls`,
-    // `--paginate` here prints ONE DOCUMENT PER PAGE, concatenated; `parsePages` splits
-    // them. Parsed as one document it is a syntax error, and as the first page it is the
-    // first page — the failure this whole reader exists to avoid.
-    read: (out) => { const p = parsePages(out); return p === null ? null : p.flat(); },
+    // What a request carries; a commit field present is a commit, or the answer is no answer.
+    shape: (q) => Number.isInteger(q.number) && q.number > 0 && typeof q.state === 'string'
+      && refNameOk(q.base?.ref) && (q.merge_commit_sha == null || refOk(q.merge_commit_sha)),
     // `state` is open or closed, and `merged_at` is what tells a merged request from a
     // dropped one.
     row: (q) => ({
@@ -269,10 +269,12 @@ export const COMMIT_REQUESTS = {
     // No url to read: this CLI takes the host from the checkout itself.
     probe: () => ['api', 'projects/:id'],
     host: () => null,
+    // `--paginate` here prints one array holding every page, or one array per page as the
+    // other CLI does — a version may print either, and `requestsOf` reads both.
     path: (oid) => `projects/:id/repository/commits/${oid}/merge_requests`,
-    // `--paginate` here is read either way: one array holding every page, or one array per
-    // page as the other CLI prints them — a version may print either.
-    read: (out) => { const p = parsePages(out); return p === null || !p.every(Array.isArray) ? null : p.flat(); },
+    shape: (q) => Number.isInteger(q.iid) && q.iid > 0 && typeof q.state === 'string'
+      && refNameOk(q.target_branch) && (q.merge_commit_sha == null || refOk(q.merge_commit_sha))
+      && (q.squash_commit_sha == null || refOk(q.squash_commit_sha)),
     // `state` carries `merged` outright, and either commit field can hold the landing.
     row: (q) => ({
       number: Number.isInteger(q.iid) ? q.iid : null,
@@ -310,13 +312,23 @@ export function forgeFor(cwd, cli) {
 }
 
 // The requests that carry one commit, read as `COMMIT_REQUESTS` rows: `rows`, or `error` where
-// the forge did not answer. `--paginate`, or a request on page two is one nobody saw.
+// the forge did not answer. `--paginate`, or a request on page two is one nobody saw. Every page
+// read, as the first page alone is the first page; an exit 0 carrying anything but requests is
+// no answer — a row with no number would be dropped, and its commit read as a push.
 export function requestsOf(found, cwd, oid) {
   const r = runner(cwd, found.cli)(['api', ...found.hostArgs, '--paginate', found.reader.path(oid)]);
   if (!r.ok) return { error: why(r) };
-  const rows = found.reader.read(r.out);
-  if (rows === null) return { error: 'the answer was not JSON' };
-  return { rows: rows.filter((q) => q && typeof q === 'object').map(found.reader.row) };
+  const pages = parsePages(r.out);
+  if (pages === null) {
+    // `parsePages` reads arrays and objects alone: a JSON scalar is JSON of the wrong shape.
+    try { JSON.parse(r.out); } catch { return { error: 'the answer was not JSON' }; }
+    return { error: 'the answer was not a list of requests' };
+  }
+  const items = pages.every(Array.isArray) ? pages.flat() : null;
+  if (!items || !items.every((q) => q && typeof q === 'object' && found.reader.shape(q))) {
+    return { error: 'the answer was not a list of requests' };
+  }
+  return { rows: items.map(found.reader.row) };
 }
 
 // A host as a URL reads it: only the scheme's own default port is dropped, and a port named on
