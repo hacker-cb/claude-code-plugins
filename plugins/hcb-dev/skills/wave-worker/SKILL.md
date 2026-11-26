@@ -190,5 +190,4 @@ arrive — the master gone for good, or this session's user standing it down —
 ends the engagement through the user: report the return's coordinates in chat
 and release. Released, leave the tree clean and the branches as the completion
 left them — retired after a confirmed merge, alive under a still-open change
-request — offer `/hcb-dev:git-cleanup` — offer, never run — and note the
-worktree itself is best left for the epic's final sweep.
+request — and note the worktree itself is best left for the epic's close.

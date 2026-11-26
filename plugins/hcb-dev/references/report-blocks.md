@@ -14,7 +14,7 @@ catalogue is the order of a report; no report invents a heading outside it.
 | `## What moved` | bullets | what this session found had changed under it — the base, the tracker, the plugin |
 | `## The picture` | bullets | a standing reading of ground nothing changed — counts, milestones, the front line, and what could not be seen |
 | `## Where it stands` | table | one row per unit the report tracks — a batch, a slice, an issue, the next wave — its state and what it waits on |
-| `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices, branches and the settlements a gate shows, what a sweep would remove and what it keeps |
+| `## The plan` | table | what is proposed and not yet done — candidate batches, a layout, slices, branches and the settlements a gate shows |
 | `## Review coverage` | table | one row per source — what it covered, at what effort, how long it ran, and the result `multi-review` classified — and a last row for the round as a whole |
 | `## Findings` | table | the table [`findings-table.md`](findings-table.md) fixes, its header and footer lines with it |
 | `## Issues` | bullets | the issues the run settles, at their state now — an epic's own issue and its waves', being structure, are not among them |
@@ -52,7 +52,7 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
 - **`What it leaves`** — any ref a completion could not retire and why
   ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions this run is done
   with and which cannot be archived, with why — archiving the rest is an ask — an offer the
-  reader turned down (`declined_offer`), and a pointer to `/hcb-dev:git-cleanup`. An offer
+  reader turned down (`declined_offer`). An offer
   already answered is recorded here, not put again.
 
 ## What each occasion carries
@@ -72,8 +72,6 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
 | a coverage gate that stopped a completion | Review coverage · Needs your word |
 | a planning gate | The plan, where the tier makes it a message of its own · Needs your word |
 | a change request merged | What happened · Findings · Issues · What it leaves · Needs your word |
-| a sweep's gate | The plan · Needs your word |
-| a sweep done | What happened · What it leaves · Needs your word |
 
 A slice completed as a change request prints two reports: the driver's, and the run's final one.
 
@@ -136,7 +134,7 @@ Answer by number; "go" takes every recommendation.
 - **#41** — still open: a local merge closes nothing, and the change request below would.
 
 ## What it leaves
-- **Worktrees** — both slices' worktrees stand; `/hcb-dev:git-cleanup` sweeps them.
+- **Worktrees** — both slices' worktrees stand.
 
 ## Needs your word
 ### 🟡 Can wait

@@ -10,8 +10,7 @@ runs anything off it.
 parent where the epic completes in `local` mode
 ([`../../../references/slice-completion.md`](../../../references/slice-completion.md)). No
 edit, no commit, no branch checked out — the switch to a newer tip is the only write it takes.
-The branch the first switch leaves behind is residue for the epic's close to offer
-`/hcb-dev:git-cleanup` for.
+The branch the first switch leaves behind is residue the epic's final report names.
 
 Only this session's own linked worktree moves, and only while no other session stands in it
 ([`../../../references/claude-worktrees.md`](../../../references/claude-worktrees.md)): nothing

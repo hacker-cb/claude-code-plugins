@@ -6,9 +6,9 @@ holding the branch, deleting it — locally, and on the remote a change request
 published it to — and what the report says about each. It sits outside either
 backend because the step is the same whoever drove the merge.
 
-It runs **as soon as the merge is confirmed**, never deferred to
-`/hcb-dev:git-cleanup`: that skill is manual-only and sweeps a whole repository, so
-a branch handed to it is a branch left standing indefinitely.
+It runs **as soon as the merge is confirmed**, never deferred: nothing in this plugin
+sweeps a repository afterwards, so a branch left for later is a branch left standing
+indefinitely.
 
 ## Two commits, not one
 
@@ -120,8 +120,8 @@ git push --force-with-lease="refs/heads/<branch>:<head>" <push-remote> \
 A refused lease means the published ref is not what the request recorded — ahead of it,
 or rewritten behind it, and the refusal does not say which. Keep the branch, read what
 the remote actually carries, and report that rather than a guess. A deletion rule
-refusing the push leaves it published, and the report is the end of that:
-`/hcb-dev:git-cleanup` writes to no remote, so nothing sweeps it afterwards.
+refusing the push leaves it published, and the report is the end of that: nothing
+sweeps it afterwards.
 
 ## The report
 
@@ -135,7 +135,7 @@ after the reading.
 
 | ❌ | ✅ |
 |---|---|
-| leave a landed branch to `/hcb-dev:git-cleanup` | retire it here; the manual sweep is for what earlier work left behind |
-| hand a refused remote deletion to that sweep instead | say it in the report — it writes to no remote, so nothing picks that branch up afterwards |
+| leave a landed branch for later | retire it here — nothing sweeps it afterwards |
+| leave a refused remote deletion unreported | say it in the report — nothing picks that branch up afterwards |
 | ask the merge command to retire a ref for you | merge, confirm, then retire — a deletion folded into the merge runs before the confirmation, and what it reports is not what it did |
 | retire the branch that was merged **into** | a parent, and the default branch, are never the branch being retired |

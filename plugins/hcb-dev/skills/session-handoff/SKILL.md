@@ -159,11 +159,6 @@ Do this, in order:
 Don't <what would duplicate or undo it, and the tracks that are not yours to touch>
 ```
 
-## Afterwards
-
-Offer `/hcb-dev:git-cleanup session` for the branches and worktrees this session
-leaves behind — offer it, never run it.
-
 ## Reference files
 
 - [`../../references/session-prompts.md`](../../references/session-prompts.md)

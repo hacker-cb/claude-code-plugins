@@ -170,8 +170,8 @@ single-slice set has no feature branch and no integration step.
   closing or linking it rides with that handoff, or the issue is left open against landed work.
 - **Cleanup** — a branch retires with the merge that landed it
   ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)), so a run
-  leaves the worktrees, the older residue, and any local branch no merge took: point at
-  `/hcb-dev:git-cleanup` (manual-only — suggest, don't run it).
+  leaves the worktrees, the older residue, and any local branch no merge took: name them in
+  `## What it leaves`, and remove none of them.
 
 ## After a restart or compaction
 
