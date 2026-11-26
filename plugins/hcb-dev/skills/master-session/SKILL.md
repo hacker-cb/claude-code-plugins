@@ -177,8 +177,8 @@ Verify the epic against its ledgers — every wave closed, every batch ended, re
 failed alike, with whatever any of them left standing accounted for; every issue at the end state
 the ledger now records for it; every deferred fork put back to the user; every mandate met — then
 report to the user as the final report, the run here being the epic and the batch sessions it is
-done with among what that report leaves — the residue among it, each batch session's own being that
-session's to remove. Write the ledger's closing
+done with among what that report leaves — every batch's worktree and every branch no merge took
+among it. Write the ledger's closing
 line, then close the epic per `epic-structure.md` — its closing comment, and the issue's close and
 the session group's deletion both put to the user.
 

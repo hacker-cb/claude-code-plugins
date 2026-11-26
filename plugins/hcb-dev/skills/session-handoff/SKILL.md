@@ -159,6 +159,11 @@ Do this, in order:
 Don't <what would duplicate or undo it, and the tracks that are not yours to touch>
 ```
 
+## Afterwards
+
+Name to the user, beside the prompt, the branches and worktrees this session leaves behind —
+nothing removes them later.
+
 ## Reference files
 
 - [`../../references/session-prompts.md`](../../references/session-prompts.md)

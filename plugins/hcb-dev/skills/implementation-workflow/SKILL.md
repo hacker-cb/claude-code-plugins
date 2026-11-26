@@ -169,9 +169,8 @@ single-slice set has no feature branch and no integration step.
   follow-ups stand in `## Needs your word`. In local mode no change request closes the intake issue:
   closing or linking it rides with that handoff, or the issue is left open against landed work.
 - **Cleanup** — a branch retires with the merge that landed it
-  ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)), so a run
-  leaves the worktrees, the older residue, and any local branch no merge took: name them in
-  `## What it leaves`, and remove none of them.
+  ([`../../references/branch-retirement.md`](../../references/branch-retirement.md)); what this
+  run leaves besides is `## What it leaves`'s (`report-blocks.md`), and nothing here removes it.
 
 ## After a restart or compaction
 

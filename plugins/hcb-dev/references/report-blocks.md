@@ -50,7 +50,8 @@ left out of a report carrying it: with nothing, its header alone says `0 after d
   where a run has several, each as [`review-pipeline.md`](review-pipeline.md) classifies it.
 - **`Issues`** — closed, or still open and why: a merged slice does not say what became of its issue.
 - **`What it leaves`** — any ref a completion could not retire and why
-  ([`branch-retirement.md`](branch-retirement.md)), the worktrees, the sessions this run is done
+  ([`branch-retirement.md`](branch-retirement.md)), any local branch of this run no merge took,
+  the worktrees, the sessions this run is done
   with and which cannot be archived, with why — archiving the rest is an ask — an offer the
   reader turned down (`declined_offer`). An offer
   already answered is recorded here, not put again.

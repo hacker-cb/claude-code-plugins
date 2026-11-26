@@ -59,14 +59,6 @@ export const refNameOk = (v) => {
   return v.split('/').every((c) => c !== '' && !c.startsWith('.') && !c.endsWith('.lock'));
 };
 
-// Safe to hand to a SHELL, which is a narrower question than either of the two above:
-// git accepts `$ ( ) ` ; & | ' " < >` in a branch name, a caller pastes the name into a
-// command, and the quoting is then the attacker's to choose. `false` does not stop a
-// branch being read — it says the name has to reach the command through a variable
-// rather than through the text of it.
-export const nameSafe = (v) => typeof v === 'string' && v !== ''
-  && !v.startsWith('-') && /^[A-Za-z0-9._/+#%@-]+$/.test(v);
-
 // `--repo-dir` reaches `spawnSync` as `cwd`, where a path that is not there produces
 // `status: null` with an EMPTY stderr — so a malformed invocation comes back as a forge
 // that would not answer, or a checkout that is not a checkout. Answered here instead, by
@@ -251,18 +243,15 @@ export function worktrees(git) {
 export const within = (child, parent) => child === parent || child.startsWith(parent + sep);
 
 // The requests that carry a commit, asked of either forge — mirrored, because the same
-// question has two answers and neither forge is assumed. The repository goes in the PATH:
-// neither CLI's `api` takes a `--repo`, and without it each reads the one the working
-// directory names.
+// question has two answers and neither forge is assumed. The repository is the one the
+// working directory names: neither CLI's `api` takes a `--repo`.
 export const COMMIT_REQUESTS = {
   gh: {
-    // Positionally, because this command has no `--repo`: passing one fails with
-    // `unknown flag`, the probe then answers nothing, and the host goes unresolved.
-    probe: (repo) => ['repo', 'view', ...(repo ? [repo] : []), '--json', 'url'],
+    probe: () => ['repo', 'view', '--json', 'url'],
     // The host this repository actually lives on, read from its own url: a self-hosted
     // instance asked of the SaaS answers about somebody else, or about nothing.
     host: (out) => { try { return new URL(JSON.parse(out).url).host; } catch { return null; } },
-    path: (repo, oid) => `repos/${repo || '{owner}/{repo}'}/commits/${oid}/pulls`,
+    path: (oid) => `repos/{owner}/{repo}/commits/${oid}/pulls`,
     // `--paginate` here prints ONE DOCUMENT PER PAGE, concatenated; `parsePages` splits
     // them. Parsed as one document it is a syntax error, and as the first page it is the
     // first page — the failure this whole reader exists to avoid.
@@ -278,10 +267,9 @@ export const COMMIT_REQUESTS = {
   },
   glab: {
     // No url to read: this CLI takes the host from the checkout itself.
-    probe: (repo) => ['api', `projects/${repo ? encodeURIComponent(repo) : ':id'}`],
+    probe: () => ['api', 'projects/:id'],
     host: () => null,
-    path: (repo, oid) => `projects/${repo ? encodeURIComponent(repo) : ':id'}`
-      + `/repository/commits/${oid}/merge_requests`,
+    path: (oid) => `projects/:id/repository/commits/${oid}/merge_requests`,
     // `--paginate` here is read either way: one array holding every page, or one array per
     // page as the other CLI prints them — a version may print either.
     read: (out) => { const p = parsePages(out); return p === null || !p.every(Array.isArray) ? null : p.flat(); },
@@ -304,11 +292,11 @@ export const why = (r) => (r.timedOut ? 'timed out' : r.line());
 // ambiguity rather than a race the first one wins: a GitLab project mirrored to GitHub under
 // the same path answers on both, and a first-success order asks the mirror. `cli` is how a
 // caller settles it. `reader` null with `reason` where none can be asked.
-export function forgeFor(cwd, cli, repo) {
+export function forgeFor(cwd, cli) {
   const answers = [];
   let reason = null;
   for (const c of cli ? [cli] : ['gh', 'glab']) {
-    const p = runner(cwd, c)(COMMIT_REQUESTS[c].probe(repo));
+    const p = runner(cwd, c)(COMMIT_REQUESTS[c].probe());
     if (!p.ok) { if (!reason) reason = `${c}: ${p.line()}`; continue; }
     answers.push({ cli: c, out: p.out });
   }
@@ -323,8 +311,8 @@ export function forgeFor(cwd, cli, repo) {
 
 // The requests that carry one commit, read as `COMMIT_REQUESTS` rows: `rows`, or `error` where
 // the forge did not answer. `--paginate`, or a request on page two is one nobody saw.
-export function requestsOf(found, cwd, repo, oid) {
-  const r = runner(cwd, found.cli)(['api', ...found.hostArgs, '--paginate', found.reader.path(repo, oid)]);
+export function requestsOf(found, cwd, oid) {
+  const r = runner(cwd, found.cli)(['api', ...found.hostArgs, '--paginate', found.reader.path(oid)]);
   if (!r.ok) return { error: why(r) };
   const rows = found.reader.read(r.out);
   if (rows === null) return { error: 'the answer was not JSON' };

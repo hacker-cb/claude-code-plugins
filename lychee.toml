@@ -11,7 +11,7 @@
 # REGULAR EXPRESSIONS matched against the whole path, not directory names — an
 # unanchored `.git` also matches `skills/github-pr-workflow` and
 # `skills/seeding-gitignore`, since `.` is any character. lychee reports
-# nothing for a file it never opened, so that silently dropped four files from a
+# nothing for a file it never opened, so that silently dropped files from a
 # run still reading "0 errors". Anchor every entry.
 #
 # The worktree entries matter for the local command above rather than for CI: a
