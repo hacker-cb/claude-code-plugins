@@ -1,0 +1,17 @@
+{
+  "since": "f1x7000000000000000000000000000000000000",
+  "to": "f1x7999999999999999999999999999999999999",
+  "refs": {
+    "f1x7000000000000000000000000000000000000": "f1x7000000000000000000000000000000000000",
+    "f1x7999999999999999999999999999999999999": "f1x7999999999999999999999999999999999999"
+  },
+  "log": "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa g1\nf1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb g2",
+  "pulls": {
+    "f1x7aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "[{\"number\": 22, \"state\": \"closed\", \"merged_at\": \"2026-09-02T00:00:00Z\", \"merge_commit_sha\": \"f1x7ffffffffffffffffffffffffffffffffffff\", \"base\": {\"ref\": \"main\"}}][{\"number\": 21, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"base\": {\"ref\": \"main\"}}]",
+    "f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": "[{\"number\": 21, \"state\": \"closed\", \"merged_at\": \"2026-09-01T00:00:00Z\", \"merge_commit_sha\": \"f1x7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"base\": {\"ref\": \"main\"}}]"
+  },
+  "repo_view": "{\"url\": \"https://forge.example/acme/app\"}",
+  "merge_held": {
+    "f1x7ffffffffffffffffffffffffffffffffffff": "no"
+  }
+}

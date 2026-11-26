@@ -116,8 +116,8 @@ quiet — a check that registers after them, and one that runs for the pull requ
 for the push that landed it, are both outside what they can see.
 
 Captured in variables, never redirected to a file: these run inside the user's checkout,
-where a stray `merged.json` is an untracked file the report, `git-cleanup` and branch
-retirement all read as work in progress. **A non-zero exit is the invocation being
+where a stray `merged.json` is an untracked file the report and branch
+retirement both read as work in progress. **A non-zero exit is the invocation being
 wrong**, never a state to retry.
 
 ## The two exit items a round cannot close

@@ -161,8 +161,8 @@ Don't <what would duplicate or undo it, and the tracks that are not yours to tou
 
 ## Afterwards
 
-Offer `/hcb-dev:git-cleanup session` for the branches and worktrees this session
-leaves behind — offer it, never run it.
+Name to the user, beside the prompt, the branches and worktrees this session leaves behind —
+nothing removes them later.
 
 ## Reference files
 

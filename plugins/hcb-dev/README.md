@@ -43,15 +43,11 @@ master-session ─▶ wave-dispatch ─▶ (launched · chipped · pasted → se
                └─▶ wave-refresh ─▶ (occupied ground · delta · free capacity) ─▶ back to wave-dispatch
 status ────────────────────────────────── "where do we stand" — any role, read-only, writes nothing
 session-plugin-refresh ────────────────── when the plugin moves under a running session
-git-cleanup ───────────────────────────── manual only, afterwards (see below)
 ```
 
 `implementation-workflow` is the front door when you start from tasks or issues;
 `shipping-workflow` is where you enter with finished work in hand. Each skill is
-also useful on its own and triggers from its own `description` — except
-`git-cleanup`, which sets `disable-model-invocation: true`: Claude never reaches
-for it on its own, so it is not an automatic post-completion step. Run it
-yourself when you want it.
+also useful on its own and triggers from its own `description`.
 
 The prompt text is the whole channel between sessions — what is not written in
 it does not arrive. `session-dispatch` and `session-handoff` are its hand-carried
@@ -221,8 +217,7 @@ work is **done** — not how the ask is worded.
   complete list of change requests and issues it touched (each with the state it
   stopped at or what became of it), how to reach the work from the reader's own
   checkout, and a re-read of every number on the forge in full. Two postures:
-  answering an order, or unbidden. Ends by offering `git-cleanup` for the
-  residue.
+  answering an order, or unbidden.
 
 ### Surveying the backlog
 
@@ -387,19 +382,6 @@ the plan stages them.
   own copies), or a decision for the addressee. It installs and updates nothing;
   `/reload-plugins` stays yours.
 
-### Cleaning up
-
-- **`git-cleanup`** — `/hcb-dev:git-cleanup` (manual-only)
-  Sweep the git residue work leaves in a repository: merged and orphaned
-  branches, stale or abandoned worktrees, dead upstream tracking. Two modes —
-  `session` (only what this session created) and `all` (everything accumulated,
-  other sessions' leftovers included). **Branches** are the bulk of it — no host
-  cleanup touches those. A worktree Claude Code created for another session it
-  reports rather than removes: the host leases those to sessions that outlive
-  their processes, so an idle one is routinely still someone's. The verdict
-  tables it classifies by are
-  [`skills/git-cleanup/references/verdicts.md`](skills/git-cleanup/references/verdicts.md).
-
 ## Agents
 
 Definitions a skill hands work to through the Agent tool — never commands you type. Each
@@ -446,9 +428,6 @@ name stands for.
   of this repository right now, read from Claude Code's live-session registry. Presence
   only: a live session proves a worktree is in use, and its absence proves nothing,
   because the host leases worktrees to sessions rather than to processes.
-- [`scripts/cleanup-scan.mjs`](scripts/cleanup-scan.mjs) — what a sweep would find in a
-  repository and what each thing carries: the git state of every worktree, and the proof
-  every branch has that its work landed. Classifies, and deletes nothing.
 - [`scripts/pr-state.mjs`](scripts/pr-state.mjs) — what the forge says about one change
   request and what is outstanding on it: its own enums, the review threads no `pr view`
   field carries, and the drift against its base, measured rather than read off
@@ -793,9 +772,3 @@ Per skill, on top of those:
   lives in one, and a repository without a tracker cannot hold the role at all.
   All sides need this plugin installed — the orders name `wave-worker` and
   `implementation-workflow` by identifier.
-- **`git-cleanup`**: nothing extra. The forge CLI is what catches a squash-merged
-  branch, and without it the skill degrades to git-only. To tell which worktrees
-  are occupied, `scripts/worktree-owners.mjs` reads Claude Code's live-session
-  registry under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`; that format is internal, and
-  it proves presence only — a worktree the host created for another session is
-  reported either way.

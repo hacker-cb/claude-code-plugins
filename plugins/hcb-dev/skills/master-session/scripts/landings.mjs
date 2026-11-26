@@ -110,14 +110,14 @@ const commitIn = (oid) => {
 };
 const inRange = (q) => !q.mergeCommit || commitIn(q.mergeCommit) !== null;
 if (opts.forge) {
-  const found = forgeFor(cwd, opts.cli, null);
+  const found = forgeFor(cwd, opts.cli);
   answer.forge.cli = found.cli;
   answer.forge.reason = found.reason;
   for (const k of keyed) {
     if (!answer.forge.reason && Date.now() > DEADLINE) answer.forge.reason = 'ran out of time before the rest were asked';
     // One refusal is the forge's answer for the rest of the range: asking on only multiplies it.
     if (answer.forge.reason) { k.kind = 'unread'; continue; }
-    const got = requestsOf(found, cwd, null, k.sha);
+    const got = requestsOf(found, cwd, k.sha);
     if (got.error) { answer.forge.reason = got.error; k.kind = 'unread'; continue; }
     const merged = got.rows.filter((q) => q.state === 'merged' && q.base === opts.base
       && Number.isInteger(q.number) && inRange(q));
