@@ -254,8 +254,9 @@ export const COMMIT_REQUESTS = {
     path: (oid) => `repos/{owner}/{repo}/commits/${oid}/pulls`,
     // `--paginate` here prints ONE DOCUMENT PER PAGE, concatenated; `parsePages` splits
     // them. Parsed as one document it is a syntax error, and as the first page it is the
-    // first page — the failure this whole reader exists to avoid.
-    read: (out) => { const p = parsePages(out); return p === null ? null : p.flat(); },
+    // first page — the failure this whole reader exists to avoid. A page that is not a list
+    // is no answer: `flat()` would keep an object as a row with no number.
+    read: (out) => { const p = parsePages(out); return p === null || !p.every(Array.isArray) ? null : p.flat(); },
     // `state` is open or closed, and `merged_at` is what tells a merged request from a
     // dropped one.
     row: (q) => ({
@@ -315,7 +316,7 @@ export function requestsOf(found, cwd, oid) {
   const r = runner(cwd, found.cli)(['api', ...found.hostArgs, '--paginate', found.reader.path(oid)]);
   if (!r.ok) return { error: why(r) };
   const rows = found.reader.read(r.out);
-  if (rows === null) return { error: 'the answer was not JSON' };
+  if (rows === null) return { error: 'the answer was not a list of requests' };
   return { rows: rows.filter((q) => q && typeof q === 'object').map(found.reader.row) };
 }
 
